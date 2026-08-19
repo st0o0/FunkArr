@@ -1,0 +1,59 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+artifacts/
+.claude/
+
+# IDE / editor
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.iml
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+
+# Test results
+[Tt]est[Rr]esult*/
+
+# MSBuild binary log
+*.binlog
+
+# Benchmark results
+BenchmarkDotNet.Artifacts/
+
+# JetBrains Rider
+*.sln.iml
+
+# Environment files
+**.env
+
+# Verify snapshot testing — only .verified files are committed
+*.received.*
+
+# OpenSpec archive (design history preserved in git)
+openspec/changes/archive/
+
+# UI build output (produced by Vite in src/FunkArr.UI/)
+src/FunkArr/wwwroot/
+src/FunkArr.UI/node_modules/
+
+# Project-specific
+coverage-results/
+results/
+.worktrees/
+.claude/settings.local.json
+
+# SQLite persistence data (runtime)
+src/Njord/data/
+
+# VitePress docs
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/public/likec4-views.js
+docs/package-lock.json
