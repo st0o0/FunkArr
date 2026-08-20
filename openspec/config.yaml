@@ -1,0 +1,35 @@
+schema: spec-driven
+
+context: |
+  # FunkArr
+
+  German public broadcaster media library (*arr ecosystem integration).
+  Bridges ARD/ZDF/etc. Mediatheken into Sonarr/Radarr/Prowlarr via
+  Newznab-compatible indexer API and SABnzbd-compatible download client API.
+
+  ## Tech Stack
+  - .NET 10 (net10.0), C#, ASP.NET Minimal API
+  - Akka.NET (Hosting, Persistence.Sql, Streams, Logger.Serilog)
+  - Servus + Servus.Akka (AppBuilder pattern, actor utilities)
+  - SQLite (Akka.Persistence backend for download queue durability)
+  - FFmpeg (video/subtitle remuxing to MKV, stream-copy)
+  - Serilog (structured logging)
+  - Docker (multi-arch: amd64/arm64, aspnet:chiseled-extra base)
+  - GitHub Actions + release-please (CI/CD)
+
+  ## Architecture
+  - Single csproj (Microsoft.NET.Sdk.Web) with namespace-based layering
+  - Servus AppBuilder startup (3 setup containers: Service, ActorSystem, Application)
+  - Actor hierarchy: SearchActor (cache/rate-limit), DownloadQueueActor (persistent, supervised), DownloadWorkerActors (transient), MuxingActor (stateless)
+  - Central package management (Directory.Packages.props)
+
+  ## Conventions
+  - Reference project: D:\GIT\Njord (same patterns, same author)
+  - Single-line git commit messages, no Co-Authored-By
+  - xUnit v3 with Microsoft Testing Platform runner
+  - Verify for snapshot testing, Akka.Hosting.TestKit for actor tests
+
+rules:
+  tasks:
+    - Break tasks into chunks completable in one session
+    - Order by dependency (infrastructure first, then features)
