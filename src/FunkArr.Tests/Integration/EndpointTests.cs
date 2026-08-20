@@ -12,8 +12,8 @@ public class EndpointTests : IClassFixture<WebApplicationFactory<Program>>
         _client = factory.WithWebHostBuilder(builder =>
         {
             builder.UseSetting("FunkArr:ApiKey", "test-key");
-            builder.UseSetting("FunkArr:DownloadPath", Path.GetTempPath());
-            builder.UseSetting("FunkArr:TempPath", Path.Combine(Path.GetTempPath(), "funkarr-int-test"));
+            builder.UseSetting("FunkArr:Download:DownloadPath", Path.GetTempPath());
+            builder.UseSetting("FunkArr:Download:TempPath", Path.Combine(Path.GetTempPath(), "funkarr-int-test"));
             builder.UseSetting("FunkArr:PersistencePath",
                 Path.Combine(Path.GetTempPath(), $"funkarr-int-{Guid.NewGuid():N}.db"));
         }).CreateClient();
@@ -86,19 +86,16 @@ public class EndpointTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Sabnzbd_WithoutApiKey_ReturnsError()
+    public async Task Sabnzbd_WithoutApiKey_Returns401()
     {
         var response = await _client.GetAsync("/download/api?mode=version");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("API Key Required", content);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task MatchIntelligence_RecentMatches_WithValidKey_ReturnsJson()
     {
-        var response = await _client.GetAsync("/api/matches/recent?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/matches/recent?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -108,14 +105,14 @@ public class EndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task MatchIntelligence_RecentMatches_WithoutKey_Returns401()
     {
-        var response = await _client.GetAsync("/api/matches/recent");
+        var response = await _client.GetAsync("/api/v1/matches/recent");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task MatchIntelligence_Topics_ReturnsEmptyArray()
     {
-        var response = await _client.GetAsync("/api/matches/topics?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/matches/topics?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -125,14 +122,14 @@ public class EndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task MatchIntelligence_TopicDetail_UnknownTopic_Returns404()
     {
-        var response = await _client.GetAsync("/api/matches/topics/nonexistent?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/matches/topics/nonexistent?apikey=test-key");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task MatchIntelligence_Unmatched_ReturnsEmptyArray()
     {
-        var response = await _client.GetAsync("/api/matches/unmatched?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/matches/unmatched?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();

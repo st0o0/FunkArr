@@ -1,37 +1,34 @@
 using System.Globalization;
 using Akka.Actor;
 using Akka.Hosting;
-using FunkArr.Configuration;
+using Asp.Versioning;
+using FunkArr.Indexer;
 using FunkArr.Search;
 using FunkArr.Shared.Models;
+using Microsoft.AspNetCore.Mvc;
 
-namespace FunkArr.Indexer;
+namespace FunkArr.Api.Controllers;
 
-public static class NewznabEndpoints
+[ApiController]
+[ApiVersionNeutral]
+[Route("api")]
+[Tags("Newznab Emulation")]
+public sealed class NewznabController(ActorRegistry actorRegistry) : ControllerBase
 {
     private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(30);
 
-    public static void MapNewznabEndpoints(this WebApplication app)
+    [HttpGet("")]
+    [Produces("application/xml")]
+    public async Task<IActionResult> HandleNewznabRequest()
     {
-        var group = app.MapGroup("/api")
-            .AddEndpointFilter<ApiKeyFilter>();
-
-        group.MapGet("/", HandleNewznabRequest);
-
-        app.MapGet("/api/fake_nzb", HandleFakeNzbDownload);
-    }
-
-    private static async Task<IResult> HandleNewznabRequest(HttpContext context,
-        ActorRegistry actorRegistry)
-    {
-        var query = context.Request.Query;
+        var query = Request.Query;
         var t = query["t"].FirstOrDefault()?.ToLowerInvariant();
-        var baseUrl = $"{context.Request.Scheme}://{context.Request.Host}";
-        var searchActor = actorRegistry.Get<SearchActor>();
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var searchActor = await actorRegistry.GetAsync<SearchActor>();
 
         return t switch
         {
-            "caps" => Results.Content(
+            "caps" => Content(
                 NewznabXmlBuilder.BuildCapsResponse(baseUrl),
                 "application/xml"),
 
@@ -39,13 +36,41 @@ public static class NewznabEndpoints
             "movie" => await HandleMovieSearch(query, baseUrl, searchActor),
             "search" => await HandleTextSearch(query, baseUrl, searchActor),
 
-            _ => Results.Content(
+            _ => Content(
                 NewznabXmlBuilder.BuildErrorResponse(202, "No such function"),
                 "application/xml"),
         };
     }
 
-    private static async Task<IResult> HandleTvSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
+    [HttpGet("fake_nzb")]
+    public IActionResult HandleFakeNzbDownload()
+    {
+        var urlParam = Request.Query["url"].FirstOrDefault();
+        var titleParam = Request.Query["title"].FirstOrDefault();
+
+        if (string.IsNullOrEmpty(urlParam) || string.IsNullOrEmpty(titleParam))
+        {
+            return BadRequest("Missing url or title parameter");
+        }
+
+        var downloadUrl = System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(Uri.UnescapeDataString(urlParam)));
+        var title = System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(Uri.UnescapeDataString(titleParam)));
+
+        var subtitleParam = Request.Query["subtitle"].FirstOrDefault();
+        string? subtitleUrl = null;
+        if (!string.IsNullOrEmpty(subtitleParam))
+        {
+            subtitleUrl = System.Text.Encoding.UTF8.GetString(
+                Convert.FromBase64String(Uri.UnescapeDataString(subtitleParam)));
+        }
+
+        var nzbContent = FakeNzbBuilder.BuildFakeNzbXml(downloadUrl, title, subtitleUrl);
+        return Content(nzbContent, "application/x-nzb");
+    }
+
+    private async Task<IActionResult> HandleTvSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
     {
         var tvdbId = int.TryParse(query["tvdbid"].FirstOrDefault(), CultureInfo.InvariantCulture, out var id) ? id : 0;
         var season = int.TryParse(query["season"].FirstOrDefault(), CultureInfo.InvariantCulture, out var s)
@@ -63,12 +88,12 @@ public static class NewznabEndpoints
             .Select(r => ToNewznabResult(r, baseUrl, tvdbId > 0 ? tvdbId : null, season, episode))
             .ToList();
 
-        return Results.Content(
+        return Content(
             NewznabXmlBuilder.BuildSearchResponse(newznabResults),
             "application/xml");
     }
 
-    private static async Task<IResult> HandleMovieSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
+    private async Task<IActionResult> HandleMovieSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
     {
         var imdbId = query["imdbid"].FirstOrDefault();
         var q = query["q"].FirstOrDefault();
@@ -80,12 +105,12 @@ public static class NewznabEndpoints
             .Select(r => ToNewznabResult(r, baseUrl, null, null, null))
             .ToList();
 
-        return Results.Content(
+        return Content(
             NewznabXmlBuilder.BuildSearchResponse(newznabResults),
             "application/xml");
     }
 
-    private static async Task<IResult> HandleTextSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
+    private async Task<IActionResult> HandleTextSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
     {
         var q = query["q"].FirstOrDefault() ?? string.Empty;
 
@@ -96,7 +121,7 @@ public static class NewznabEndpoints
             .Select(r => ToNewznabResult(r, baseUrl, null, null, null))
             .ToList();
 
-        return Results.Content(
+        return Content(
             NewznabXmlBuilder.BuildSearchResponse(newznabResults),
             "application/xml");
     }
@@ -108,7 +133,6 @@ public static class NewznabEndpoints
         var codec = qi?.Codec ?? "h264";
         var qualityTier = qi?.QualityTier ?? result.Quality;
 
-        // When estimated, use conservative 720p for HD tier
         if (qi is null or { ProbeSource: ProbeSource.Estimated })
         {
             qualityTier = result.Quality == QualityTier.HD1080 ? QualityTier.HD720 : result.Quality;
@@ -156,32 +180,5 @@ public static class NewznabEndpoints
         }
 
         return url;
-    }
-
-    private static IResult HandleFakeNzbDownload(HttpContext context)
-    {
-        var urlParam = context.Request.Query["url"].FirstOrDefault();
-        var titleParam = context.Request.Query["title"].FirstOrDefault();
-
-        if (string.IsNullOrEmpty(urlParam) || string.IsNullOrEmpty(titleParam))
-        {
-            return Results.BadRequest("Missing url or title parameter");
-        }
-
-        var downloadUrl = System.Text.Encoding.UTF8.GetString(
-            Convert.FromBase64String(Uri.UnescapeDataString(urlParam)));
-        var title = System.Text.Encoding.UTF8.GetString(
-            Convert.FromBase64String(Uri.UnescapeDataString(titleParam)));
-
-        var subtitleParam = context.Request.Query["subtitle"].FirstOrDefault();
-        string? subtitleUrl = null;
-        if (!string.IsNullOrEmpty(subtitleParam))
-        {
-            subtitleUrl = System.Text.Encoding.UTF8.GetString(
-                Convert.FromBase64String(Uri.UnescapeDataString(subtitleParam)));
-        }
-
-        var nzbContent = FakeNzbBuilder.BuildFakeNzbXml(downloadUrl, title, subtitleUrl);
-        return Results.Content(nzbContent, "application/x-nzb");
     }
 }

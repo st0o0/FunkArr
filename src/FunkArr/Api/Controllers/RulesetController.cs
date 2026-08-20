@@ -1,31 +1,28 @@
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Hosting;
+using Asp.Versioning;
+using FunkArr.Api.Models;
+using FunkArr.RuleSet;
+using Microsoft.AspNetCore.Mvc;
 
-namespace FunkArr.RuleSet;
+namespace FunkArr.Api.Controllers;
 
-public static class RulesetEndpoints
+[ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/rulesets")]
+[Tags("Rulesets")]
+public sealed class RulesetController(ActorRegistry actorRegistry) : ControllerBase
 {
     private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan TestAskTimeout = TimeSpan.FromSeconds(30);
 
-    public static void MapRulesetEndpoints(this WebApplication app)
+    [HttpGet]
+    [ProducesResponseType<RulesetSummaryResponse[]>(200)]
+    public async Task<IActionResult> GetAll()
     {
-        var group = app.MapGroup("/api/rulesets")
-            .AddEndpointFilter<MatchApiKeyFilter>();
-
-        group.MapGet("/", HandleGetAll);
-        group.MapGet("/{topic}", HandleGetOne);
-        group.MapPut("/{topic}", HandleSave);
-        group.MapDelete("/{topic}", HandleDelete);
-        group.MapPost("/test", HandleTest);
-        group.MapPost("/reload", HandleReload);
-    }
-
-    private static async Task<IResult> HandleGetAll(ActorRegistry actorRegistry)
-    {
-        var registry = actorRegistry.Get<RuleSetRegistryActor>();
-        var ledger = actorRegistry.Get<MatchLedgerActor>();
+        var registry = await actorRegistry.GetAsync<RuleSetRegistryActor>();
+        var ledger = await actorRegistry.GetAsync<MatchLedgerActor>();
 
         var rulesetsTask = registry.Ask<RuleSetRegistryActor.AllRulesetsResponse>(
             new RuleSetRegistryActor.GetAllRulesets(), AskTimeout);
@@ -42,87 +39,94 @@ public static class RulesetEndpoints
         var result = rulesets.Rulesets.Select(rs =>
         {
             statsLookup.TryGetValue(rs.Topic, out var topicStats);
-            return new
-            {
+            return new RulesetSummaryResponse(
                 rs.Topic,
                 rs.Source,
                 rs.RuleCount,
                 rs.Media,
                 rs.Aliases,
-                MatchRate = topicStats?.MatchRate,
-                SearchCount = topicStats?.SearchCount ?? 0,
-            };
-        }).ToList();
+                topicStats?.MatchRate,
+                topicStats?.SearchCount ?? 0);
+        }).ToArray();
 
-        return Results.Json(result);
+        return Ok(result);
     }
 
-    private static async Task<IResult> HandleGetOne(string topic, ActorRegistry actorRegistry)
+    [HttpGet("{topic}")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetOne(string topic)
     {
-        var registry = actorRegistry.Get<RuleSetRegistryActor>();
+        var registry = await actorRegistry.GetAsync<RuleSetRegistryActor>();
         var response = await registry.Ask<RuleSetRegistryActor.RuleSetResponse>(
             new RuleSetRegistryActor.GetRuleSet(topic), AskTimeout);
 
         if (response.RuleSet is null)
         {
-            return Results.NotFound();
+            return NotFound();
         }
 
-        return Results.Json(response.RuleSet, RuleSetJsonOptions.Default);
+        return new JsonResult(response.RuleSet, RuleSetJsonOptions.Default);
     }
 
-    private static async Task<IResult> HandleSave(
-        string topic,
-        HttpContext context,
-        ActorRegistry actorRegistry)
+    [HttpPut("{topic}")]
+    [ProducesResponseType<SuccessResponse>(200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> Save(string topic)
     {
-        var registry = actorRegistry.Get<RuleSetRegistryActor>();
+        var registry = await actorRegistry.GetAsync<RuleSetRegistryActor>();
 
         var ruleSet = await JsonSerializer.DeserializeAsync<RuleSetFile>(
-            context.Request.Body, RuleSetJsonOptions.Default);
+            Request.Body, RuleSetJsonOptions.Default);
 
         if (ruleSet is null)
         {
-            return Results.BadRequest(new { error = "Invalid ruleset" });
+            return BadRequest(new ErrorResponse("Invalid ruleset"));
         }
 
         var response = await registry.Ask<RuleSetRegistryActor.SaveLocalRuleSetResponse>(
             new RuleSetRegistryActor.SaveLocalRuleSet(ruleSet), AskTimeout);
 
-        return Results.Json(new { success = response.Success });
+        return Ok(new SuccessResponse(response.Success));
     }
 
-    private static async Task<IResult> HandleDelete(string topic, ActorRegistry actorRegistry)
+    [HttpDelete("{topic}")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> Delete(string topic)
     {
-        var registry = actorRegistry.Get<RuleSetRegistryActor>();
+        var registry = await actorRegistry.GetAsync<RuleSetRegistryActor>();
         var response = await registry.Ask<RuleSetRegistryActor.DeleteLocalRuleSetResponse>(
             new RuleSetRegistryActor.DeleteLocalRuleSet(topic), AskTimeout);
 
         if (!response.Found)
         {
-            return Results.NotFound();
+            return NotFound();
         }
 
-        return Results.Json(new { deleted = true });
+        return Ok(new { deleted = true });
     }
 
-    private static async Task<IResult> HandleTest(HttpContext context, ActorRegistry actorRegistry)
+    [HttpPost("test")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(400)]
+    public async Task<IActionResult> Test()
     {
-        var registry = actorRegistry.Get<RuleSetRegistryActor>();
+        var registry = await actorRegistry.GetAsync<RuleSetRegistryActor>();
 
         var request = await JsonSerializer.DeserializeAsync<TestRulesRequest>(
-            context.Request.Body, RuleSetJsonOptions.Default);
+            Request.Body, RuleSetJsonOptions.Default);
 
         if (request is null || string.IsNullOrWhiteSpace(request.Topic))
         {
-            return Results.BadRequest(new { error = "Invalid test request" });
+            return BadRequest(new ErrorResponse("Invalid test request"));
         }
 
         var response = await registry.Ask<RuleSetRegistryActor.TestRulesResponse>(
             new RuleSetRegistryActor.TestRules(request.Topic, request.TvdbId, request.Rules ?? []),
             TestAskTimeout);
 
-        return Results.Json(new
+        return Ok(new
         {
             response.Matched,
             response.Filtered,
@@ -131,11 +135,13 @@ public static class RulesetEndpoints
         });
     }
 
-    private static IResult HandleReload(ActorRegistry actorRegistry)
+    [HttpPost("reload")]
+    [ProducesResponseType(200)]
+    public IActionResult Reload()
     {
         var registry = actorRegistry.Get<RuleSetRegistryActor>();
-        registry.Tell(new RuleSetRegistryActor.ReloadLocal());
-        return Results.Ok(new { reloaded = true });
+        registry.Tell(new RuleSetRegistryActor.ReloadLocal(), ActorRefs.NoSender);
+        return Ok(new { reloaded = true });
     }
 
     private sealed record TestRulesRequest

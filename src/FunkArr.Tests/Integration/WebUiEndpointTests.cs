@@ -13,8 +13,8 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         _client = factory.WithWebHostBuilder(builder =>
         {
             builder.UseSetting("FunkArr:ApiKey", "test-key");
-            builder.UseSetting("FunkArr:DownloadPath", Path.GetTempPath());
-            builder.UseSetting("FunkArr:TempPath", Path.Combine(Path.GetTempPath(), "funkarr-webui-test"));
+            builder.UseSetting("FunkArr:Download:DownloadPath", Path.GetTempPath());
+            builder.UseSetting("FunkArr:Download:TempPath", Path.Combine(Path.GetTempPath(), "funkarr-webui-test"));
             builder.UseSetting("FunkArr:PersistencePath",
                 Path.Combine(Path.GetTempPath(), $"funkarr-webui-{Guid.NewGuid():N}.db"));
         }).CreateClient();
@@ -25,14 +25,14 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Queue_WithoutApiKey_Returns401()
     {
-        var response = await _client.GetAsync("/api/queue");
+        var response = await _client.GetAsync("/api/v1/queue");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task Queue_WithValidApiKey_ReturnsJsonArray()
     {
-        var response = await _client.GetAsync("/api/queue?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/queue?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -43,7 +43,7 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task History_WithValidApiKey_ReturnsJsonArray()
     {
-        var response = await _client.GetAsync("/api/history?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/history?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -56,20 +56,20 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Config_WithValidApiKey_ReturnsMaskedArrKeys()
     {
-        var response = await _client.GetAsync("/api/config?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/config?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
         var doc = JsonDocument.Parse(content);
         var root = doc.RootElement;
 
-        Assert.True(root.TryGetProperty("ApiKey", out _) || root.TryGetProperty("apiKey", out _));
+        Assert.True(root.TryGetProperty("apiKey", out _));
     }
 
     [Fact]
     public async Task Config_WithoutApiKey_Returns401()
     {
-        var response = await _client.GetAsync("/api/config");
+        var response = await _client.GetAsync("/api/v1/config");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
@@ -78,7 +78,7 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task SetupStatus_WithValidApiKey_ReturnsStatusObject()
     {
-        var response = await _client.GetAsync("/api/setup/status?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/setup/status?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -93,7 +93,7 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task TestFfmpeg_ReturnsFoundAndVersion()
     {
-        var response = await _client.PostAsync("/api/setup/test-ffmpeg?apikey=test-key", null);
+        var response = await _client.PostAsync("/api/v1/setup/test-ffmpeg?apikey=test-key", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -116,7 +116,7 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
             System.Text.Encoding.UTF8,
             "application/json");
 
-        var response = await _client.PostAsync("/api/setup/test-paths?apikey=test-key", body);
+        var response = await _client.PostAsync("/api/v1/setup/test-paths?apikey=test-key", body);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -134,7 +134,7 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Rulesets_WithValidApiKey_ReturnsArray()
     {
-        var response = await _client.GetAsync("/api/rulesets?apikey=test-key");
+        var response = await _client.GetAsync("/api/v1/rulesets?apikey=test-key");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -145,7 +145,7 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task RulesetsReload_ReturnsOk()
     {
-        var response = await _client.PostAsync("/api/rulesets/reload?apikey=test-key", null);
+        var response = await _client.PostAsync("/api/v1/rulesets/reload?apikey=test-key", null);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
@@ -155,7 +155,7 @@ public class WebUiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task Rulesets_WithoutApiKey_Returns401()
     {
-        var response = await _client.GetAsync("/api/rulesets");
+        var response = await _client.GetAsync("/api/v1/rulesets");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

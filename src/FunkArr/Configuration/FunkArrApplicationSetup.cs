@@ -1,8 +1,7 @@
-using FunkArr.DownloadClient;
-using FunkArr.Indexer;
-using FunkArr.RuleSet;
+using FunkArr.Api;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Scalar.AspNetCore;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
@@ -12,6 +11,7 @@ public sealed class FunkArrApplicationSetup : ApplicationSetupContainer<WebAppli
     protected override void SetupApplication(WebApplication app)
     {
         app.UseStaticFiles();
+        app.UseMiddleware<ApiKeyMiddleware>();
 
         app.MapHealthChecks("/healthz", new HealthCheckOptions
         {
@@ -23,12 +23,9 @@ public sealed class FunkArrApplicationSetup : ApplicationSetupContainer<WebAppli
             },
         });
         app.MapGet("/alive", () => Results.Ok("Alive"));
-        app.MapNewznabEndpoints();
-        app.MapSabnzbdEndpoints();
-        app.MapMatchIntelligenceEndpoints();
-        app.MapRulesetEndpoints();
-        app.MapQueueEndpoints();
-        app.MapSetupEndpoints();
+        app.MapControllers();
+        app.MapScalarApiReference();
+        app.MapOpenApi();
 
         app.MapFallbackToFile("index.html");
     }

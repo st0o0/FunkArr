@@ -25,6 +25,10 @@
         <PackageReference Include="Serilog.Sinks.Console" />
         <PackageReference Include="Servus" />
         <PackageReference Include="Servus.Akka" />
+        <PackageReference Include="Asp.Versioning.Mvc" />
+        <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Scalar.AspNetCore" />
     </ItemGroup>
 
 </Project>
