@@ -1,5 +1,6 @@
 using FunkArr.RuleSet;
 using FunkArr.Search;
+using FunkArr.Shared;
 
 namespace FunkArr.Tests.RuleSet;
 
@@ -54,11 +55,12 @@ public class RuleSetGeneratorTests
     [Fact]
     public void IsAccessibilityVariant_DetectsVariants()
     {
-        Assert.True(RuleSetGeneratorActor.IsAccessibilityVariant("Episode (Audiodeskription)"));
-        Assert.True(RuleSetGeneratorActor.IsAccessibilityVariant("Episode (Gebärdensprache)"));
-        Assert.True(RuleSetGeneratorActor.IsAccessibilityVariant("Episode (Gebardensprache)"));
-        Assert.True(RuleSetGeneratorActor.IsAccessibilityVariant("Episode (klare Sprache)"));
-        Assert.False(RuleSetGeneratorActor.IsAccessibilityVariant("Normal Episode"));
+        Assert.True(ContentFilter.IsAccessibilityVariant("Episode (Audiodeskription)"));
+        Assert.True(ContentFilter.IsAccessibilityVariant("Episode (Gebärdensprache)"));
+        Assert.True(ContentFilter.IsAccessibilityVariant("Episode (Gebardensprache)"));
+        Assert.True(ContentFilter.IsAccessibilityVariant("Episode (klare Sprache)"));
+        Assert.True(ContentFilter.IsAccessibilityVariant("Episode (Hörfassung)"));
+        Assert.False(ContentFilter.IsAccessibilityVariant("Normal Episode"));
     }
 
     [Fact]

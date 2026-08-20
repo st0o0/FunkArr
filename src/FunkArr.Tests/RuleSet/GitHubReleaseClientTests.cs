@@ -132,10 +132,10 @@ public sealed class GitHubReleaseClientTests : IDisposable
     [Fact]
     public async Task RefreshAsync_ReturnsFalse_WhenPinnedVersionNotFound()
     {
-        var options = new FunkArrOptions
+        var options = new RuleSetOptions
         {
-            RuleSetRepository = "st0o0/funkarr",
-            RuleSetVersion = "2.0.0",
+            Repository = "st0o0/funkarr",
+            Version = "2.0.0",
         };
 
         var sut = CreateClient(
@@ -214,10 +214,10 @@ public sealed class GitHubReleaseClientTests : IDisposable
 
     // -- Helpers -------------------------------------------------------------
 
-    private static FunkArrOptions DefaultOptions() => new()
+    private static RuleSetOptions DefaultOptions() => new()
     {
-        RuleSetRepository = "st0o0/funkarr",
-        RuleSetVersion = "latest",
+        Repository = "st0o0/funkarr",
+        Version = "latest",
     };
 
     private static string SingleReleaseJson(string version) =>
@@ -258,7 +258,7 @@ public sealed class GitHubReleaseClientTests : IDisposable
 
     private GitHubReleaseClient CreateClient(
         string releasesResponse,
-        FunkArrOptions options,
+        RuleSetOptions options,
         byte[]? assetResponse = null,
         HttpStatusCode assetStatusCode = HttpStatusCode.OK)
     {

@@ -10,11 +10,9 @@ namespace FunkArr.RuleSet;
 
 public sealed class RuleSetRegistryActor : ReceiveActor
 {
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly GitHubReleaseClient _gitHubReleaseClient;
     private readonly MediathekClient _mediathekClient;
     private readonly TvdbClient _tvdbClient;
-    private readonly FunkArrOptions _options;
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
     private readonly string _communityPath;
@@ -54,21 +52,19 @@ public sealed class RuleSetRegistryActor : ReceiveActor
         int TotalItems);
 
     public RuleSetRegistryActor(
-        IHttpClientFactory httpClientFactory,
         GitHubReleaseClient gitHubReleaseClient,
         MediathekClient mediathekClient,
         TvdbClient tvdbClient,
-        IOptions<FunkArrOptions> options)
+        IOptions<RuleSetOptions> options)
     {
-        _httpClientFactory = httpClientFactory;
         _gitHubReleaseClient = gitHubReleaseClient;
         _mediathekClient = mediathekClient;
         _tvdbClient = tvdbClient;
-        _options = options.Value;
+        var options1 = options.Value;
 
-        _communityPath = Path.Combine(_options.RuleSetPath, "community");
-        _generatedPath = Path.Combine(_options.RuleSetPath, "generated");
-        _localPath = Path.Combine(_options.RuleSetPath, "local");
+        _communityPath = Path.Combine(options1.Path, "community");
+        _generatedPath = Path.Combine(options1.Path, "generated");
+        _localPath = Path.Combine(options1.Path, "local");
 
         Directory.CreateDirectory(_communityPath);
         Directory.CreateDirectory(_generatedPath);
@@ -79,7 +75,7 @@ public sealed class RuleSetRegistryActor : ReceiveActor
         var refreshCancel = new Cancelable(Context.System.Scheduler);
         Context.System.Scheduler.ScheduleTellRepeatedly(
             TimeSpan.Zero,
-            TimeSpan.FromMinutes(_options.RuleSetRefreshIntervalMinutes),
+            TimeSpan.FromMinutes(options1.RefreshIntervalMinutes),
             Self,
             new RefreshCommunity(),
             ActorRefs.NoSender,
@@ -182,18 +178,6 @@ public sealed class RuleSetRegistryActor : ReceiveActor
 
     private async Task HandleRefreshCommunityAsync()
     {
-        if (string.Equals(_options.RuleSetRefreshMode, "github-release", StringComparison.OrdinalIgnoreCase))
-        {
-            await HandleGitHubReleaseRefreshAsync();
-        }
-        else
-        {
-            await HandleLegacyUrlRefreshAsync();
-        }
-    }
-
-    private async Task HandleGitHubReleaseRefreshAsync()
-    {
         try
         {
             var updated = await _gitHubReleaseClient.RefreshAsync(_communityPath);
@@ -210,29 +194,6 @@ public sealed class RuleSetRegistryActor : ReceiveActor
         catch (Exception ex)
         {
             _log.Warning(ex, "Failed to refresh community rulesets via GitHub release, keeping existing data");
-        }
-    }
-
-    private async Task HandleLegacyUrlRefreshAsync()
-    {
-        try
-        {
-            using var httpClient = _httpClientFactory.CreateClient();
-            var json = await httpClient.GetStringAsync(_options.RuleSetSourceUrl);
-            var ruleSets = CommunityRuleSetParser.Parse(json);
-
-            foreach (var file in Directory.EnumerateFiles(_communityPath, "*.json"))
-                File.Delete(file);
-
-            RuleSetFileWriter.WriteAll(_communityPath, ruleSets);
-
-            LoadAllFromDisk();
-
-            _log.Info("Refreshed community rulesets via legacy URL, {Count} topics loaded", _byTopic.Count);
-        }
-        catch (Exception ex)
-        {
-            _log.Warning(ex, "Failed to refresh community rulesets, keeping existing data");
         }
     }
 
@@ -353,7 +314,7 @@ public sealed class RuleSetRegistryActor : ReceiveActor
         var items = mediathekResponse?.Result ?? [];
 
         var episodes = Array.Empty<TvdbEpisodeInfo>();
-        if (msg.TvdbId is { } tvdbId && tvdbId > 0)
+        if (msg.TvdbId is { } tvdbId and > 0)
         {
             episodes = await _tvdbClient.GetEpisodesAsync(tvdbId, 1) ?? [];
         }

@@ -2,27 +2,19 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using FunkArr.Search;
+using FunkArr.Shared;
 
 namespace FunkArr.RuleSet;
 
 public static class RuleSetMatchingEngine
 {
-    private static readonly string[] AccessibilityKeywords =
-    [
-        "Audiodeskription",
-        "Gebärdensprache",
-        "Gebardensprache",
-        "klare Sprache",
-        "Hörfassung",
-    ];
-
     public static MatchedEpisodeInfo? EvaluateRules(
         MediathekResultItem item,
         IReadOnlyList<Rule> rules,
         IReadOnlyList<TvdbEpisodeInfo> tvdbEpisodes,
         string showName)
     {
-        if (ShouldSkipAccessibility(item))
+        if (ContentFilter.ShouldSkipAccessibilityOnly(item.Title))
         {
             return null;
         }
@@ -74,7 +66,7 @@ public static class RuleSetMatchingEngine
         {
             var baseTrace = new { item.Title, item.Topic, item.Duration, item.Channel };
 
-            if (ShouldSkipAccessibility(item))
+            if (ContentFilter.ShouldSkipAccessibilityOnly(item.Title))
             {
                 traces.Add(new FilteredTrace
                 {
@@ -196,18 +188,6 @@ public static class RuleSetMatchingEngine
         }
 
         return null;
-    }
-
-    internal static bool ShouldSkipAccessibility(MediathekResultItem item)
-    {
-        foreach (var keyword in AccessibilityKeywords)
-        {
-            if (item.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     internal static bool EvaluateFilterGroup(MediathekResultItem item, FilterGroup group)

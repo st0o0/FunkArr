@@ -14,12 +14,12 @@ public sealed class GitHubReleaseClient
     private const string VersionFileName = "version.txt";
 
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly FunkArrOptions _options;
+    private readonly RuleSetOptions _options;
     private readonly ILogger<GitHubReleaseClient> _logger;
 
     public GitHubReleaseClient(
         IHttpClientFactory httpClientFactory,
-        IOptions<FunkArrOptions> options,
+        IOptions<RuleSetOptions> options,
         ILogger<GitHubReleaseClient> logger)
     {
         _httpClientFactory = httpClientFactory;
@@ -31,7 +31,9 @@ public sealed class GitHubReleaseClient
     {
         var release = await FindReleaseAsync(ct);
         if (release is null)
+        {
             return false;
+        }
 
         var remoteVersion = release.TagName[TagPrefix.Length..];
         var localVersion = ReadLocalVersion(communityPath);
@@ -54,7 +56,9 @@ public sealed class GitHubReleaseClient
 
         var zipBytes = await DownloadAssetAsync(assetUrl, ct);
         if (zipBytes is null)
+        {
             return false;
+        }
 
         ExtractAtomically(communityPath, zipBytes, remoteVersion);
 
@@ -67,7 +71,7 @@ public sealed class GitHubReleaseClient
         try
         {
             using var client = CreateClient();
-            var url = $"https://api.github.com/repos/{_options.RuleSetRepository}/releases";
+            var url = $"https://api.github.com/repos/{_options.Repository}/releases";
             var response = await client.GetAsync(url, ct);
             response.EnsureSuccessStatusCode();
 
@@ -76,29 +80,31 @@ public sealed class GitHubReleaseClient
 
             if (releases is null || releases.Length == 0)
             {
-                _logger.LogWarning("No releases found in {Repository}", _options.RuleSetRepository);
+                _logger.LogWarning("No releases found in {Repository}", _options.Repository);
                 return null;
             }
 
-            var isLatest = string.Equals(_options.RuleSetVersion, "latest", StringComparison.OrdinalIgnoreCase);
+            var isLatest = string.Equals(_options.Version, "latest", StringComparison.OrdinalIgnoreCase);
 
             if (isLatest)
             {
                 return releases.FirstOrDefault(r => r.TagName.StartsWith(TagPrefix, StringComparison.Ordinal));
             }
 
-            var targetTag = $"{TagPrefix}{_options.RuleSetVersion}";
+            var targetTag = $"{TagPrefix}{_options.Version}";
             var match = releases.FirstOrDefault(r =>
                 string.Equals(r.TagName, targetTag, StringComparison.Ordinal));
 
             if (match is null)
-                _logger.LogWarning("Pinned version {Version} not found in {Repository}", _options.RuleSetVersion, _options.RuleSetRepository);
+            {
+                _logger.LogWarning("Pinned version {Version} not found in {Repository}", _options.Version, _options.Repository);
+            }
 
             return match;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to query GitHub Releases API for {Repository}", _options.RuleSetRepository);
+            _logger.LogWarning(ex, "Failed to query GitHub Releases API for {Repository}", _options.Repository);
             return null;
         }
     }
@@ -133,24 +139,32 @@ public sealed class GitHubReleaseClient
             }
 
             if (Directory.Exists(communityPath))
+            {
                 Directory.Move(communityPath, oldPath);
+            }
 
             Directory.Move(tempPath, communityPath);
 
             File.WriteAllText(Path.Combine(communityPath, VersionFileName), version);
 
             if (Directory.Exists(oldPath))
+            {
                 Directory.Delete(oldPath, recursive: true);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to extract community rulesets atomically");
 
             if (Directory.Exists(tempPath))
+            {
                 Directory.Delete(tempPath, recursive: true);
+            }
 
             if (!Directory.Exists(communityPath) && Directory.Exists(oldPath))
+            {
                 Directory.Move(oldPath, communityPath);
+            }
         }
     }
 
@@ -158,7 +172,9 @@ public sealed class GitHubReleaseClient
     {
         var versionFile = Path.Combine(communityPath, VersionFileName);
         if (!File.Exists(versionFile))
+        {
             return null;
+        }
 
         return File.ReadAllText(versionFile).Trim();
     }

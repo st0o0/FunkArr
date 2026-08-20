@@ -27,8 +27,7 @@ public sealed class RuleSetRegistryActorTests : Akka.Hosting.TestKit.TestKit
         services.AddSingleton(Options.Create(new RuleSetOptions
         {
             Path = _tempDir,
-            SourceUrl = "http://localhost:1/nonexistent",
-            RefreshMode = "legacy-url",
+            Repository = "nonexistent/nonexistent",
             RefreshIntervalMinutes = 999,
         }));
         services.AddHttpClient();

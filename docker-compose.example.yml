@@ -11,27 +11,28 @@ services:
       # ── Required ──────────────────────────────────────────────
       - FunkArr__ApiKey=your-api-key-here
 
+      # NOTE: env vars below moved from flat FunkArr__X to nested
+      # FunkArr__<Section>__X in the options-decomposition change. If you're
+      # upgrading an existing deployment, rename e.g. FunkArr__DownloadPath to
+      # FunkArr__Download__DownloadPath (see mapping in each section below).
+
       # ── Downloads ─────────────────────────────────────────────
-      - FunkArr__DownloadPath=/media/downloads
-      #- FunkArr__TempPath=data/temp
-      #- FunkArr__ConcurrentDownloads=3
+      - FunkArr__Download__DownloadPath=/media/downloads
+      #- FunkArr__Download__TempPath=data/temp
+      #- FunkArr__Download__ConcurrentDownloads=3
 
       # ── Path Mapping ──────────────────────────────────────────
       # Map internal download path to the path Sonarr/Radarr sees.
       # Format: internal_path:external_path
-      #- FunkArr__PathMapping=/media/downloads:/data/media/downloads
+      #- FunkArr__Download__PathMapping=/media/downloads:/data/media/downloads
 
       # ── RuleSets ────────────────────────────────────────────────
-      # Refresh mode: "github-release" (default) or "legacy-url"
-      #- FunkArr__RuleSetRefreshMode=github-release
       # GitHub repository for community rulesets (owner/repo)
-      #- FunkArr__RuleSetRepository=st0o0/funkarr
+      #- FunkArr__RuleSet__Repository=st0o0/funkarr
       # Pin to a specific ruleset version, or "latest"
-      #- FunkArr__RuleSetVersion=latest
-      # Legacy mode: direct URL to rulesets JSON (only with RuleSetRefreshMode=legacy-url)
-      #- FunkArr__RuleSetSourceUrl=https://raw.githubusercontent.com/rundfunkarr/rundfunkarr/main/data/rulesets.json
-      #- FunkArr__RuleSetPath=data/rulesets
-      #- FunkArr__RuleSetRefreshIntervalMinutes=60
+      #- FunkArr__RuleSet__Version=latest
+      #- FunkArr__RuleSet__Path=data/rulesets
+      #- FunkArr__RuleSet__RefreshIntervalMinutes=60
 
       # ── Match Intelligence ────────────────────────────────────
       # In-memory match ledger capacity (entries evicted when full)
@@ -39,13 +40,13 @@ services:
 
       # ── Quality Intelligence ───────────────────────────────────
       # Enable/disable quality probing (URL pattern + HTTP HEAD + container parsing)
-      #- FunkArr__QualityProbing=true
+      #- FunkArr__Quality__Probing=true
       # Cache TTL for probed quality data (minutes, default 6 hours)
-      #- FunkArr__QualityCacheTtlMinutes=360
+      #- FunkArr__Quality__CacheTtlMinutes=360
       # Max cached quality entries (evicts oldest when full)
-      #- FunkArr__QualityCacheCapacity=50000
+      #- FunkArr__Quality__CacheCapacity=50000
       # Max results to probe per search (limits HEAD requests)
-      #- FunkArr__QualityProbeLimit=30
+      #- FunkArr__Search__QualityProbeLimit=30
 
       # ── Persistence ───────────────────────────────────────────
       # Default: SQLite at data/funkarr.db (no extra config needed)

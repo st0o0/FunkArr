@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Search;
+using FunkArr.Shared;
 
 namespace FunkArr.RuleSet;
 
@@ -47,7 +48,7 @@ public sealed partial class RuleSetGeneratorActor : ReceiveActor
 
             var filtered = results
                 .Where(r => r.Topic.Equals(topic, StringComparison.OrdinalIgnoreCase))
-                .Where(r => !IsAccessibilityVariant(r.Title))
+                .Where(r => !ContentFilter.IsAccessibilityVariant(r.Title))
                 .Take(15)
                 .ToArray();
 
@@ -177,12 +178,6 @@ public sealed partial class RuleSetGeneratorActor : ReceiveActor
 
         return null;
     }
-
-    internal static bool IsAccessibilityVariant(string title) =>
-        title.Contains("Audiodeskription", StringComparison.OrdinalIgnoreCase) ||
-        title.Contains("Gebärdensprache", StringComparison.OrdinalIgnoreCase) ||
-        title.Contains("Gebardensprache", StringComparison.OrdinalIgnoreCase) ||
-        title.Contains("klare Sprache", StringComparison.OrdinalIgnoreCase);
 
     internal static PatternAnalysis AnalyzePatterns(MediathekResultItem[] samples, string topic)
     {
