@@ -24,16 +24,17 @@ public sealed class RuleSetRegistryActorTests : Akka.Hosting.TestKit.TestKit
 
     protected override void ConfigureServices(HostBuilderContext context, IServiceCollection services)
     {
-        services.AddSingleton(Options.Create(new FunkArrOptions
+        services.AddSingleton(Options.Create(new RuleSetOptions
         {
-            RuleSetPath = _tempDir,
-            RuleSetSourceUrl = "http://localhost:1/nonexistent",
-            RuleSetRefreshMode = "legacy-url",
-            RuleSetRefreshIntervalMinutes = 999,
+            Path = _tempDir,
+            SourceUrl = "http://localhost:1/nonexistent",
+            RefreshMode = "legacy-url",
+            RefreshIntervalMinutes = 999,
         }));
         services.AddHttpClient();
         services.AddSingleton<GitHubReleaseClient>();
         services.AddHttpClient("GitHubRelease");
+        services.AddHttpClient<TvdbClient>();
         services.AddHttpClient<MediathekClient>(client =>
         {
             client.BaseAddress = new Uri("https://mediathekviewweb.de/");

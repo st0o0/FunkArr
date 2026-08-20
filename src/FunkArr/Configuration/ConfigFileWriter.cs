@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.Configuration;
 
@@ -14,9 +15,9 @@ public sealed class ConfigFileWriter
     private readonly string _configPath;
     private readonly Lock _lock = new();
 
-    public ConfigFileWriter(FunkArrOptions options)
+    public ConfigFileWriter(IOptions<FunkArrOptions> options)
     {
-        var dataDir = Path.GetDirectoryName(options.PersistencePath) ?? "data";
+        var dataDir = Path.GetDirectoryName(options.Value.PersistencePath) ?? "data";
         _configPath = Path.Combine(dataDir, "config.json");
     }
 

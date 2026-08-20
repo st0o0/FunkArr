@@ -36,6 +36,6 @@ public class CommunityRulesetFilesTests
     {
         var files = Directory.GetFiles(RulesetsDir, "*.json");
 
-        Assert.Equal(59, files.Length);
+        Assert.Equal(60, files.Length);
     }
 }

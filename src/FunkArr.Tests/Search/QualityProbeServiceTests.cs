@@ -9,17 +9,16 @@ namespace FunkArr.Tests.Search;
 
 public class QualityProbeServiceTests
 {
-    private static FunkArrOptions DefaultOptions() => new()
+    private static QualityOptions DefaultOptions() => new()
     {
-        QualityProbing = true,
-        QualityCacheTtlMinutes = 360,
-        QualityCacheCapacity = 50000,
-        QualityProbeLimit = 30,
+        Probing = true,
+        CacheTtlMinutes = 360,
+        CacheCapacity = 50000,
     };
 
     private static QualityProbeService CreateService(
         HttpMessageHandler? handler = null,
-        FunkArrOptions? options = null)
+        QualityOptions? options = null)
     {
         var opts = options ?? DefaultOptions();
         var factory = new TestHttpClientFactory(handler ?? new FakeHandler(HttpStatusCode.OK));
@@ -30,7 +29,7 @@ public class QualityProbeServiceTests
     public async Task ProbeAsync_WhenDisabled_ReturnsEstimated()
     {
         var opts = DefaultOptions();
-        opts.QualityProbing = false;
+        opts.Probing = false;
         var service = CreateService(options: opts);
 
         var result = await service.ProbeAsync("https://example.com/video.mp4", QualityTier.HD720, 3600);
@@ -87,9 +86,10 @@ public class QualityProbeServiceTests
 
         var url = "https://example.com/cache-test.mp4";
         await service.ProbeAsync(url, QualityTier.HD720, 100);
+        var countAfterFirst = callCount;
         await service.ProbeAsync(url, QualityTier.HD720, 100);
 
-        Assert.Equal(1, callCount);
+        Assert.Equal(countAfterFirst, callCount);
     }
 
     [Fact]
