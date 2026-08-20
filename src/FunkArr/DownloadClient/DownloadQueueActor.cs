@@ -16,10 +16,10 @@ public sealed class DownloadQueueActor : ReceivePersistentActor, IWithStash
     public override string PersistenceId => "download-queue";
     public new IStash Stash { get; set; } = null!;
 
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly DownloadService _downloadService;
     private readonly MuxingService _muxingService;
     private readonly IFileService _fileService;
-    private readonly FunkArrOptions _options;
+    private readonly DownloadOptions _options;
     private readonly Dictionary<string, DownloadJob> _jobs = new();
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private IMaterializer? _materializer;
@@ -36,14 +36,6 @@ public sealed class DownloadQueueActor : ReceivePersistentActor, IWithStash
 
     public sealed record HistoryResponse(IReadOnlyList<DownloadJob> Jobs);
 
-    internal sealed record DownloadRequest(
-        string NzoId,
-        string VideoUrl,
-        string? SubtitleUrl,
-        string TempPath,
-        string OutputDir,
-        string Title);
-
     private sealed record StreamCompleted;
 
     private sealed record StreamFailed(Exception Reason);
@@ -51,12 +43,12 @@ public sealed class DownloadQueueActor : ReceivePersistentActor, IWithStash
     private sealed record OfferResult(string NzoId, IQueueOfferResult Result);
 
     public DownloadQueueActor(
-        IHttpClientFactory httpClientFactory,
+        DownloadService downloadService,
         MuxingService muxingService,
         IFileService fileService,
-        IOptions<FunkArrOptions> options)
+        IOptions<DownloadOptions> options)
     {
-        _httpClientFactory = httpClientFactory;
+        _downloadService = downloadService;
         _muxingService = muxingService;
         _fileService = fileService;
         _options = options.Value;
@@ -133,7 +125,11 @@ public sealed class DownloadQueueActor : ReceivePersistentActor, IWithStash
                 try
                 {
                     self.Tell(new DownloadEvents.DownloadStarted(req.NzoId));
-                    var (videoPath, subtitlePath) = await DownloadFilesAsync(req, self);
+                    var (videoPath, subtitlePath) = await _downloadService.DownloadAsync(
+                        req,
+                        onProgress: (downloaded, total) =>
+                            self.Tell(new DownloadEvents.DownloadProgressUpdated(req.NzoId, downloaded, total)),
+                        cancellationToken: default);
                     self.Tell(new DownloadEvents.DownloadCompleted(req.NzoId, videoPath, subtitlePath));
                     return (DownloadOutcome)new DownloadOutcome.Success(req.NzoId, videoPath, subtitlePath);
                 }
@@ -190,58 +186,6 @@ public sealed class DownloadQueueActor : ReceivePersistentActor, IWithStash
 
             return new StreamCompleted();
         }).PipeTo(self);
-    }
-
-    private async Task<(string videoPath, string? subtitlePath)> DownloadFilesAsync(
-        DownloadRequest req, IActorRef self)
-    {
-        var client = _httpClientFactory.CreateClient();
-        var tempFile = _fileService.GetTempVideoPath(req.TempPath, req.NzoId);
-
-        using var response = await client.GetAsync(req.VideoUrl, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
-
-        var totalBytes = response.Content.Headers.ContentLength ?? 0;
-        var downloadedBytes = 0L;
-        var buffer = new byte[8192];
-
-        await using var contentStream = await response.Content.ReadAsStreamAsync();
-        await using var fileStream =
-            new FileStream(tempFile, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
-
-        int bytesRead;
-        var lastReport = DateTimeOffset.UtcNow;
-
-        while ((bytesRead = await contentStream.ReadAsync(buffer)) > 0)
-        {
-            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
-            downloadedBytes += bytesRead;
-
-            if (DateTimeOffset.UtcNow - lastReport > TimeSpan.FromSeconds(2))
-            {
-                self.Tell(new DownloadEvents.DownloadProgressUpdated(req.NzoId, downloadedBytes, totalBytes));
-                lastReport = DateTimeOffset.UtcNow;
-            }
-        }
-
-        string? subtitlePath = null;
-        if (req.SubtitleUrl is not null)
-        {
-            subtitlePath = _fileService.GetTempSubtitlePath(req.TempPath, req.NzoId);
-            var subResponse = await client.GetAsync(req.SubtitleUrl);
-            if (subResponse.IsSuccessStatusCode)
-            {
-                var subContent = await subResponse.Content.ReadAsByteArrayAsync();
-                await _fileService.WriteSubtitleAsync(subtitlePath, subContent);
-            }
-            else
-            {
-                _log.Warning("Failed to download subtitle for {NzoId}: {Status}", req.NzoId, subResponse.StatusCode);
-                subtitlePath = null;
-            }
-        }
-
-        return (tempFile, subtitlePath);
     }
 
     private void HandleEnqueue(EnqueueDownload cmd)
