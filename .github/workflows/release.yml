@@ -41,7 +41,7 @@ jobs:
           cd data/community/rulesets
           zip -r ../../../community-rulesets.zip *.json
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.release-please.outputs.rulesets_tag_name }}
           files: community-rulesets.zip
