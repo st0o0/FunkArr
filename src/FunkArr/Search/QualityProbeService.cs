@@ -10,7 +10,7 @@ public sealed class QualityProbeService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<QualityProbeService> _logger;
-    private readonly FunkArrOptions _options;
+    private readonly QualityOptions _options;
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly ConcurrentDictionary<string, Task<QualityInfo>> _inflightProbes = new();
 
@@ -21,7 +21,7 @@ public sealed class QualityProbeService
     public QualityProbeService(
         IHttpClientFactory httpClientFactory,
         ILogger<QualityProbeService> logger,
-        IOptions<FunkArrOptions> options)
+        IOptions<QualityOptions> options)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
@@ -30,7 +30,7 @@ public sealed class QualityProbeService
 
     public async Task<QualityInfo> ProbeAsync(string url, QualityTier fallbackTier, int durationSeconds)
     {
-        if (!_options.QualityProbing)
+        if (!_options.Probing)
         {
             return EstimatedFromTier(fallbackTier, durationSeconds);
         }
@@ -239,7 +239,7 @@ public sealed class QualityProbeService
     {
         if (_cache.TryGetValue(url, out var entry))
         {
-            if (DateTimeOffset.UtcNow - entry.CreatedAt < TimeSpan.FromMinutes(_options.QualityCacheTtlMinutes))
+            if (DateTimeOffset.UtcNow - entry.CreatedAt < TimeSpan.FromMinutes(_options.CacheTtlMinutes))
             {
                 info = entry.Info;
                 return true;
@@ -254,7 +254,7 @@ public sealed class QualityProbeService
 
     private void StoreInCache(string url, QualityInfo info)
     {
-        if (_cache.Count >= _options.QualityCacheCapacity)
+        if (_cache.Count >= _options.CacheCapacity)
         {
             EvictOldest();
         }

@@ -1,22 +1,13 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using FunkArr.Shared;
 using FunkArr.Shared.Models;
 
 namespace FunkArr.Search;
 
 public static partial class MatchingPipeline
 {
-    private static readonly string[] SkipKeywords =
-    [
-        "Audiodeskription",
-        "Trailer",
-        "Gebärdensprache",
-        "Hörfassung",
-        "Vorschau",
-        "Teaser",
-    ];
-
     public static async Task<IReadOnlyList<SearchResult>> ExecuteAsync(
         IEnumerable<MediathekResultItem> items,
         MatchContext context,
@@ -24,7 +15,7 @@ public static partial class MatchingPipeline
         int probeLimit)
     {
         var matched = items
-            .Where(i => !ShouldSkip(i))
+            .Where(i => !ContentFilter.ShouldSkip(i.Title, i.Topic))
             .Where(i => MatchesShow(i, context))
             .Where(i => MatchesEpisode(i, context))
             .Where(i => IsDurationAcceptable(i, context))
@@ -48,7 +39,7 @@ public static partial class MatchingPipeline
         MatchContext context)
     {
         return items
-            .Where(i => !ShouldSkip(i))
+            .Where(i => !ContentFilter.ShouldSkip(i.Title, i.Topic))
             .Where(i => MatchesShow(i, context))
             .Where(i => MatchesEpisode(i, context))
             .Where(i => IsDurationAcceptable(i, context))
@@ -67,7 +58,7 @@ public static partial class MatchingPipeline
 
         foreach (var item in items)
         {
-            if (ShouldSkip(item))
+            if (ContentFilter.ShouldSkip(item.Title, item.Topic))
             {
                 continue;
             }
@@ -213,20 +204,6 @@ public static partial class MatchingPipeline
             normalizedCandidate.Contains(normalizedExpected[..13], StringComparison.OrdinalIgnoreCase))
         {
             return true;
-        }
-
-        return false;
-    }
-
-    private static bool ShouldSkip(MediathekResultItem item)
-    {
-        foreach (var keyword in SkipKeywords)
-        {
-            if (item.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                item.Topic.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
         }
 
         return false;
