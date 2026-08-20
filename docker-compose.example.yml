@@ -1,0 +1,78 @@
+services:
+  funkarr:
+    image: ghcr.io/st0o0/funkarr:latest
+    restart: unless-stopped
+    ports:
+      - "8080:6969"
+    volumes:
+      - funkarr-data:/app/data
+      - /path/to/media:/media
+    environment:
+      # ── Required ──────────────────────────────────────────────
+      - FunkArr__ApiKey=your-api-key-here
+
+      # ── Downloads ─────────────────────────────────────────────
+      - FunkArr__DownloadPath=/media/downloads
+      #- FunkArr__TempPath=data/temp
+      #- FunkArr__ConcurrentDownloads=3
+
+      # ── Path Mapping ──────────────────────────────────────────
+      # Map internal download path to the path Sonarr/Radarr sees.
+      # Format: internal_path:external_path
+      #- FunkArr__PathMapping=/media/downloads:/data/media/downloads
+
+      # ── RuleSets ────────────────────────────────────────────────
+      # Refresh mode: "github-release" (default) or "legacy-url"
+      #- FunkArr__RuleSetRefreshMode=github-release
+      # GitHub repository for community rulesets (owner/repo)
+      #- FunkArr__RuleSetRepository=st0o0/funkarr
+      # Pin to a specific ruleset version, or "latest"
+      #- FunkArr__RuleSetVersion=latest
+      # Legacy mode: direct URL to rulesets JSON (only with RuleSetRefreshMode=legacy-url)
+      #- FunkArr__RuleSetSourceUrl=https://raw.githubusercontent.com/rundfunkarr/rundfunkarr/main/data/rulesets.json
+      #- FunkArr__RuleSetPath=data/rulesets
+      #- FunkArr__RuleSetRefreshIntervalMinutes=60
+
+      # ── Match Intelligence ────────────────────────────────────
+      # In-memory match ledger capacity (entries evicted when full)
+      #- FunkArr__MatchLedgerCapacity=10000
+
+      # ── Quality Intelligence ───────────────────────────────────
+      # Enable/disable quality probing (URL pattern + HTTP HEAD + container parsing)
+      #- FunkArr__QualityProbing=true
+      # Cache TTL for probed quality data (minutes, default 6 hours)
+      #- FunkArr__QualityCacheTtlMinutes=360
+      # Max cached quality entries (evicts oldest when full)
+      #- FunkArr__QualityCacheCapacity=50000
+      # Max results to probe per search (limits HEAD requests)
+      #- FunkArr__QualityProbeLimit=30
+
+      # ── Persistence ───────────────────────────────────────────
+      # Default: SQLite at data/funkarr.db (no extra config needed)
+      #- FunkArr__PersistencePath=data/funkarr.db
+      #
+      # PostgreSQL: set Postgres__Host to enable (auto-detected)
+      #- FunkArr__Postgres__Host=db
+      #- FunkArr__Postgres__Port=5432
+      #- FunkArr__Postgres__User=funkarr
+      #- FunkArr__Postgres__Password=changeme
+      #- FunkArr__Postgres__Database=funkarr
+
+      # ── Logging ───────────────────────────────────────────────
+      # json = CLEF JSON (for Alloy/Promtail/Loki), text = human-readable
+      - FunkArr__LogFormat=json
+
+  # ── Uncomment for PostgreSQL persistence ───────────────────
+  # db:
+  #   image: postgres:17-alpine
+  #   restart: unless-stopped
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+  #   environment:
+  #     POSTGRES_DB: funkarr
+  #     POSTGRES_USER: funkarr
+  #     POSTGRES_PASSWORD: changeme
+
+volumes:
+  funkarr-data:
+  # db-data:

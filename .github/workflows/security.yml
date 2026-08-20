@@ -1,0 +1,66 @@
+name: security
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'src/Directory.Packages.props'
+      - 'src/**/*.csproj'
+      - '.github/workflows/security.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v4
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: funkarr:scan
+          cache-from: type=gha
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: funkarr:scan
+          format: sarif
+          output: trivy.sarif
+          severity: CRITICAL,HIGH
+          trivyignore: .trivyignore
+          exit-code: '0'
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+
+  nuget-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: src/global.json
+      - name: Restore
+        working-directory: src
+        run: dotnet restore FunkArr.slnx
+      - name: Check for vulnerable packages
+        working-directory: src
+        run: dotnet list FunkArr.slnx package --vulnerable --include-transitive

@@ -1,0 +1,4 @@
+# Trivy CVE ignore list
+# Add CVEs here that are known false positives or have no upstream fix.
+# Format: one CVE-ID per line, optional comment after #
+# Example: CVE-2024-12345  # glibc in base image, no fix available
