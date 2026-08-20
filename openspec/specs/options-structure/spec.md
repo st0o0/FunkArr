@@ -7,7 +7,7 @@ The system SHALL expose configuration through domain-scoped `IOptions<T>` classe
 
 - `FunkArrOptions` — cross-cutting and bootstrap settings: `ApiKey`, `LogFormat`, `PersistencePath`, `Postgres`, `MatchLedgerCapacity`, `Prowlarr`, `ArrInstances`.
 - `DownloadOptions` — download pipeline settings: `DownloadPath`, `TempPath`, `ConcurrentDownloads`, `PathMapping`.
-- `RuleSetOptions` — rule-set source and refresh settings: `SourceUrl`, `Repository`, `Version`, `RefreshMode`, `Path`, `RefreshIntervalMinutes`.
+- `RuleSetOptions` — rule-set source and refresh settings: `Repository`, `Version`, `Path`, `RefreshIntervalMinutes`.
 - `QualityOptions` — quality-probe cache settings: `Probing`, `CacheTtlMinutes`, `CacheCapacity`.
 - `SearchOptions` — search-time settings: `QualityProbeLimit`.
 
@@ -62,7 +62,7 @@ Each property on each domain options class SHALL retain the same default value i
 #### Scenario: Defaults match pre-decomposition values
 - **WHEN** no `FunkArr:Download`, `FunkArr:RuleSet`, `FunkArr:Quality`, or `FunkArr:Search` configuration is supplied
 - **THEN** `DownloadOptions.DownloadPath` SHALL default to `/media/downloads`, `DownloadOptions.TempPath` SHALL default to `data/temp`, `DownloadOptions.ConcurrentDownloads` SHALL default to `3`
-- **AND** `RuleSetOptions.SourceUrl` SHALL default to `https://raw.githubusercontent.com/rundfunkarr/rundfunkarr/main/data/rulesets.json`, `RuleSetOptions.Repository` SHALL default to `st0o0/funkarr`, `RuleSetOptions.Version` SHALL default to `latest`, `RuleSetOptions.RefreshMode` SHALL default to `github-release`, `RuleSetOptions.Path` SHALL default to `data/rulesets`, `RuleSetOptions.RefreshIntervalMinutes` SHALL default to `60`
+- **AND** `RuleSetOptions.Repository` SHALL default to `st0o0/funkarr`, `RuleSetOptions.Version` SHALL default to `latest`, `RuleSetOptions.Path` SHALL default to `data/rulesets`, `RuleSetOptions.RefreshIntervalMinutes` SHALL default to `60`
 - **AND** `QualityOptions.Probing` SHALL default to `true`, `QualityOptions.CacheTtlMinutes` SHALL default to `360`, `QualityOptions.CacheCapacity` SHALL default to `50000`
 - **AND** `SearchOptions.QualityProbeLimit` SHALL default to `30`
 

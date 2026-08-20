@@ -77,14 +77,6 @@ The system SHALL support the following configuration options for the GitHub rele
 - **WHEN** `FunkArr__RuleSetVersion` is not set
 - **THEN** the system SHALL default to `"latest"`
 
-#### Scenario: RuleSetRefreshMode default
-- **WHEN** `FunkArr__RuleSetRefreshMode` is not set
-- **THEN** the system SHALL default to `"github-release"`
-
-#### Scenario: Legacy URL mode
-- **WHEN** `FunkArr__RuleSetRefreshMode` is set to `"legacy-url"`
-- **THEN** the system SHALL use the existing `RuleSetSourceUrl` fetch + `CommunityRuleSetParser` behavior
-
 #### Scenario: Custom repository
 - **WHEN** `FunkArr__RuleSetRepository` is set to `"myorg/my-rulesets"`
 - **THEN** the system SHALL query that repository's releases for community rulesets

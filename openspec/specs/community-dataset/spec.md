@@ -41,7 +41,7 @@ Each JSON file SHALL be a valid `RuleSetFile` object with fields: topic (string)
 - **THEN** the `source` field SHALL be `"community"`
 
 ### Requirement: 1:1 parity with upstream
-The initial dataset SHALL be a direct transformation of the upstream `rundfunkarr/rundfunkarr` rulesets using the existing `CommunityRuleSetParser` logic. No enrichment (aliases, composite filters, channel filters) SHALL be applied in the initial port.
+The initial dataset SHALL be a direct transformation of the upstream `rundfunkarr/rundfunkarr` rulesets. No enrichment (aliases, composite filters, channel filters) SHALL be applied in the initial port.
 
 #### Scenario: All upstream topics present
 - **WHEN** comparing the ported dataset to the upstream JSON

@@ -5,7 +5,7 @@ REST API for listing, reading, saving, deleting, testing, and reloading rulesets
 ## Requirements
 
 ### Requirement: List all rulesets
-The system SHALL expose `GET /api/rulesets` returning all registered topics with metadata: topic name, source (community/generated/local), rule count, media reference, and match stats from the MatchLedger.
+The system SHALL expose `GET /api/v1/rulesets` returning all registered topics with metadata: topic name, source (community/generated/local), rule count, media reference, and match stats from the MatchLedger.
 
 #### Scenario: List with stats
 - **WHEN** a client sends `GET /api/rulesets?apikey=<valid>`
@@ -16,40 +16,40 @@ The system SHALL expose `GET /api/rulesets` returning all registered topics with
 - **THEN** the response SHALL return an empty array
 
 ### Requirement: Get single ruleset
-The system SHALL expose `GET /api/rulesets/:topic` returning the full RuleSetFile JSON for a single topic, including resolved rules (after merge if applicable).
+The system SHALL expose `GET /api/v1/rulesets/:topic` returning the full RuleSetFile JSON for a single topic, including resolved rules (after merge if applicable).
 
 #### Scenario: Topic exists
-- **WHEN** a client requests `/api/rulesets/tatort`
+- **WHEN** a client requests `/api/v1/rulesets/tatort`
 - **THEN** the response SHALL return the full ruleset with topic, media, source, rules, and aliases
 
 #### Scenario: Topic not found
-- **WHEN** a client requests `/api/rulesets/nonexistent`
+- **WHEN** a client requests `/api/v1/rulesets/nonexistent`
 - **THEN** the response SHALL return 404
 
 ### Requirement: Save local override
-The system SHALL expose `PUT /api/rulesets/:topic` accepting a RuleSetFile JSON body and saving it to `data/rulesets/local/` via the RuleSetRegistryActor.
+The system SHALL expose `PUT /api/v1/rulesets/:topic` accepting a RuleSetFile JSON body and saving it to `data/rulesets/local/` via the RuleSetRegistryActor.
 
 #### Scenario: Save new local ruleset
-- **WHEN** a client sends `PUT /api/rulesets/heute-show` with a valid ruleset body
+- **WHEN** a client sends `PUT /api/v1/rulesets/heute-show` with a valid ruleset body
 - **THEN** the system SHALL write the file to `data/rulesets/local/heute-show.json` and reload the registry
 
 #### Scenario: Overwrite existing local ruleset
-- **WHEN** a client sends `PUT /api/rulesets/tatort` for a topic with an existing local override
+- **WHEN** a client sends `PUT /api/v1/rulesets/tatort` for a topic with an existing local override
 - **THEN** the system SHALL overwrite the local file and reload
 
 ### Requirement: Delete local override
-The system SHALL expose `DELETE /api/rulesets/:topic` removing the local override file and reloading the registry to fall back to community/generated.
+The system SHALL expose `DELETE /api/v1/rulesets/:topic` removing the local override file and reloading the registry to fall back to community/generated.
 
 #### Scenario: Delete existing override
-- **WHEN** a client sends `DELETE /api/rulesets/tatort` and a local override exists
+- **WHEN** a client sends `DELETE /api/v1/rulesets/tatort` and a local override exists
 - **THEN** the system SHALL delete the local file and reload, falling back to community/generated
 
 #### Scenario: Delete non-existent override
-- **WHEN** a client sends `DELETE /api/rulesets/tatort` and no local override exists
+- **WHEN** a client sends `DELETE /api/v1/rulesets/tatort` and no local override exists
 - **THEN** the response SHALL return 404
 
 ### Requirement: Test rules against Mediathek
-The system SHALL expose `POST /api/rulesets/test` accepting a topic, optional TVDB ID, and array of rules. It SHALL search the Mediathek for the topic, fetch TVDB episodes if a TVDB ID is provided, run `RuleSetMatchingEngine.EvaluateRulesWithTraces`, and return the trace results.
+The system SHALL expose `POST /api/v1/rulesets/test` accepting a topic, optional TVDB ID, and array of rules. It SHALL search the Mediathek for the topic, fetch TVDB episodes if a TVDB ID is provided, run `RuleSetMatchingEngine.EvaluateRulesWithTraces`, and return the trace results.
 
 #### Scenario: Test with matches
 - **WHEN** a client sends a test request for topic "Tatort" with TVDB ID and valid rules
@@ -64,14 +64,14 @@ The system SHALL expose `POST /api/rulesets/test` accepting a topic, optional TV
 - **THEN** the response SHALL include an empty result set with a message indicating no items found
 
 ### Requirement: Reload rulesets
-The system SHALL expose `POST /api/rulesets/reload` triggering the RuleSetRegistryActor to reload all rulesets from disk.
+The system SHALL expose `POST /api/v1/rulesets/reload` triggering the RuleSetRegistryActor to reload all rulesets from disk.
 
 #### Scenario: Reload success
-- **WHEN** a client sends `POST /api/rulesets/reload`
+- **WHEN** a client sends `POST /api/v1/rulesets/reload`
 - **THEN** the system SHALL send a ReloadLocal message to the registry actor and return success
 
 ### Requirement: API key authentication
-All ruleset API endpoints SHALL require a valid `apikey` query parameter, consistent with existing API authentication.
+All ruleset API endpoints SHALL require a valid `apikey` query parameter. Authentication SHALL be handled by the centralized `ApiKeyMiddleware`.
 
 #### Scenario: Valid API key
 - **WHEN** a request includes a valid apikey
@@ -79,4 +79,11 @@ All ruleset API endpoints SHALL require a valid `apikey` query parameter, consis
 
 #### Scenario: Missing API key
 - **WHEN** a request has no apikey parameter
-- **THEN** the response SHALL be 401
+- **THEN** the `ApiKeyMiddleware` SHALL return 401
+
+### Requirement: Controller-based implementation
+The ruleset endpoints SHALL be implemented as an MVC controller (`RulesetController`) in the `FunkArr.Api` namespace with route prefix `/api/v1/rulesets`.
+
+#### Scenario: Versioned route
+- **WHEN** a client sends `GET /api/v1/rulesets?apikey=key`
+- **THEN** the system SHALL route to `RulesetController`

@@ -15,9 +15,17 @@ The UI SHALL display a settings form showing current configuration values: conne
 - **WHEN** settings are displayed
 - **THEN** each connection (Prowlarr, Sonarr, Radarr, Mediathek) SHALL show a live status indicator (connected/unreachable)
 
+#### Scenario: Load current config
+- **WHEN** the user navigates to settings
+- **THEN** the UI SHALL load configuration from `GET /api/v1/config`
+
 #### Scenario: Save settings
 - **WHEN** the user modifies settings and clicks "Save"
-- **THEN** the changes SHALL be persisted via `PUT /api/config`
+- **THEN** the changes SHALL be persisted via `PUT /api/v1/config`
+
+#### Scenario: Test connections
+- **WHEN** the user clicks a "Test" button for Prowlarr
+- **THEN** the UI SHALL call `POST /api/v1/setup/test-prowlarr`
 
 ### Requirement: API key management
 The settings view SHALL display the current API key (masked) with options to copy or regenerate it.

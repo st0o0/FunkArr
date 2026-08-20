@@ -5,7 +5,7 @@ Clean REST API endpoints for querying download queue state and history, independ
 ## Requirements
 
 ### Requirement: Clean queue endpoint
-The system SHALL expose `GET /api/queue` returning active downloads as a flat JSON array (not wrapped in SABnzbd envelope format).
+The system SHALL expose `GET /api/v1/queue` returning active downloads as a flat JSON array (not wrapped in SABnzbd envelope format).
 
 #### Scenario: Active downloads
 - **WHEN** there are 3 active downloads
@@ -16,7 +16,7 @@ The system SHALL expose `GET /api/queue` returning active downloads as a flat JS
 - **THEN** the response SHALL return an empty array
 
 ### Requirement: Clean history endpoint
-The system SHALL expose `GET /api/history` returning completed and failed downloads as a flat JSON array, sorted by completion time descending.
+The system SHALL expose `GET /api/v1/history` returning completed and failed downloads as a flat JSON array, sorted by completion time descending.
 
 #### Scenario: History with items
 - **WHEN** there are completed and failed downloads
@@ -27,8 +27,22 @@ The system SHALL expose `GET /api/history` returning completed and failed downlo
 - **THEN** the outputPath in history items SHALL have the mapping applied
 
 ### Requirement: API key authentication
-Both queue API endpoints SHALL require a valid `apikey` query parameter.
+Both queue API endpoints SHALL require a valid `apikey` query parameter. Authentication SHALL be handled by the centralized `ApiKeyMiddleware`.
 
 #### Scenario: Unauthenticated request
 - **WHEN** a request has no apikey
-- **THEN** the response SHALL be 401
+- **THEN** the `ApiKeyMiddleware` SHALL return 401
+
+### Requirement: Controller-based implementation
+The queue endpoints SHALL be implemented as an MVC controller (`QueueController`) in the `FunkArr.Api` namespace with route prefix `/api/v1`. The controller SHALL use constructor injection for `ActorRegistry` and options.
+
+#### Scenario: Versioned route
+- **WHEN** a client sends `GET /api/v1/queue?apikey=key`
+- **THEN** the system SHALL route to `QueueController`
+
+### Requirement: Typed response models
+Queue and history responses SHALL use typed DTOs (`QueueItemResponse`, `HistoryItemResponse`) instead of anonymous objects, enabling OpenAPI schema generation.
+
+#### Scenario: OpenAPI schema available
+- **WHEN** the OpenAPI spec is generated
+- **THEN** the queue and history response schemas SHALL include all properties with their types

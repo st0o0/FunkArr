@@ -5,7 +5,7 @@ Multi-step setup wizard for first-run configuration: API key generation, Prowlar
 ## Requirements
 
 ### Requirement: First-run detection and wizard redirect
-The system SHALL detect when FunkArr has not been configured (no API key set) and redirect users to the setup wizard automatically.
+The system SHALL detect when FunkArr has not been configured (no API key set) and redirect users to the setup wizard automatically. The wizard SHALL call versioned API endpoints at `/api/v1/setup/*` and `/api/v1/config`.
 
 #### Scenario: Unconfigured system
 - **WHEN** a user opens FunkArr for the first time and no API key is configured
@@ -14,6 +14,14 @@ The system SHALL detect when FunkArr has not been configured (no API key set) an
 #### Scenario: Already configured
 - **WHEN** a user opens FunkArr and an API key is configured
 - **THEN** the UI SHALL display the normal dashboard (queue view)
+
+#### Scenario: Wizard API calls use versioned routes
+- **WHEN** the setup wizard tests a Prowlarr connection
+- **THEN** it SHALL call `POST /api/v1/setup/test-prowlarr`
+
+#### Scenario: Wizard saves config via versioned route
+- **WHEN** the wizard completes and saves configuration
+- **THEN** it SHALL call `PUT /api/v1/config`
 
 ### Requirement: API key generation step
 The wizard SHALL provide a step for generating or manually entering an API key.
