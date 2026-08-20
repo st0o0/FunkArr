@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using FunkArr.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.Tests.Configuration;
 
@@ -17,7 +18,7 @@ public sealed class ConfigFileWriterTests : IDisposable
         {
             PersistencePath = Path.Combine(_tempDir, "funkarr.db"),
         };
-        _sut = new ConfigFileWriter(options);
+        _sut = new ConfigFileWriter(Options.Create(options));
     }
 
     public void Dispose()

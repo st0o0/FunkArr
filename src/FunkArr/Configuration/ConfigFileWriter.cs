@@ -30,7 +30,9 @@ public sealed class ConfigFileWriter
 
             var dir = Path.GetDirectoryName(_configPath);
             if (dir is not null)
+            {
                 Directory.CreateDirectory(dir);
+            }
 
             File.WriteAllText(_configPath, existing.ToJsonString(WriteOptions));
         }
@@ -47,7 +49,9 @@ public sealed class ConfigFileWriter
     private JsonObject ReadExisting()
     {
         if (!File.Exists(_configPath))
+        {
             return new JsonObject();
+        }
 
         var json = File.ReadAllText(_configPath);
         return JsonNode.Parse(json)?.AsObject() ?? new JsonObject();

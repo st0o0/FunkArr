@@ -9,8 +9,6 @@ public class FunkArrOptionsValidatorTests
     private static FunkArrOptions ValidOptions() => new()
     {
         ApiKey = "test-key",
-        DownloadPath = "/media/downloads",
-        ConcurrentDownloads = 3,
         LogFormat = "text",
     };
 
