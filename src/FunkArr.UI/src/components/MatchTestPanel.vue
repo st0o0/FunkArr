@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { apiPost } from '@/api/client'
+import { apiPost, API_BASE } from '@/api/client'
 
 interface Rule {
   priority: number
@@ -60,7 +60,7 @@ async function runTest() {
   error.value = null
   result.value = null
   try {
-    result.value = await apiPost<TestResult>('/api/rulesets/test', {
+    result.value = await apiPost<TestResult>(`${API_BASE}/rulesets/test`, {
       topic: props.topic,
       tvdbId: props.tvdbId,
       rules: props.rules,

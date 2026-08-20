@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, apiPost, apiPut, setApiKey } from '@/api/client'
+import { api, apiPost, apiPut, setApiKey, API_BASE } from '@/api/client'
 
 const router = useRouter()
 
@@ -68,7 +68,7 @@ const prowlarrKeyCopied = ref(false)
 async function testProwlarr() {
   prowlarrTest.value = { loading: true, result: null }
   try {
-    const res = await apiPost<{ success: boolean; error?: string }>('/api/setup/test-prowlarr', {
+    const res = await apiPost<{ success: boolean; error?: string }>(`${API_BASE}/setup/test-prowlarr`, {
       url: prowlarr.value.url,
       apiKey: prowlarr.value.apiKey,
     })
@@ -123,7 +123,7 @@ async function testArrInstance(index: number) {
   inst.testResult = null
   try {
     const res = await apiPost<{ success: boolean; version?: string; error?: string }>(
-      '/api/setup/test-arr',
+      `${API_BASE}/setup/test-arr`,
       {
         url: inst.url,
         apiKey: inst.apiKey,
@@ -154,7 +154,7 @@ async function testPaths() {
     const res = await apiPost<{
       downloadPath: { ok: boolean; error?: string }
       tempPath: { ok: boolean; error?: string }
-    }>('/api/setup/test-paths', {
+    >(`${API_BASE}/setup/test-paths`, {
       downloadPath: downloadPath.value,
       tempPath: tempPath.value,
     })
@@ -197,7 +197,7 @@ async function runVerification() {
 
   // FFmpeg
   runCheck(0, async () => {
-    const res = await apiPost<{ found: boolean; version?: string }>('/api/setup/test-ffmpeg', {})
+    const res = await apiPost<{ found: boolean; version?: string }>(`${API_BASE}/setup/test-ffmpeg`, {})
     if (!res.found) throw new Error('FFmpeg not found')
     return res.version ? `v${res.version}` : 'Found'
   })
@@ -207,7 +207,7 @@ async function runVerification() {
     const res = await apiPost<{
       downloadPath: { ok: boolean; error?: string }
       tempPath: { ok: boolean; error?: string }
-    }>('/api/setup/test-paths', {
+    >(`${API_BASE}/setup/test-paths`, {
       downloadPath: downloadPath.value,
       tempPath: tempPath.value,
     })
@@ -221,7 +221,7 @@ async function runVerification() {
   // Mediathek
   runCheck(2, async () => {
     const res = await apiPost<{ reachable: boolean; error?: string }>(
-      '/api/setup/test-mediathek',
+      `${API_BASE}/setup/test-mediathek`,
       {},
     )
     if (!res.reachable) throw new Error(res.error || 'Unreachable')
@@ -232,7 +232,7 @@ async function runVerification() {
   let idx = 3
   if (mode.value === 'with-prowlarr') {
     runCheck(idx, async () => {
-      const res = await apiPost<{ success: boolean; error?: string }>('/api/setup/test-prowlarr', {
+      const res = await apiPost<{ success: boolean; error?: string }>(`${API_BASE}/setup/test-prowlarr`, {
         url: prowlarr.value.url,
         apiKey: prowlarr.value.apiKey,
       })
@@ -247,7 +247,7 @@ async function runVerification() {
     const inst = arrInstances.value[i]
     runCheck(idx + i, async () => {
       const res = await apiPost<{ success: boolean; version?: string; error?: string }>(
-        '/api/setup/test-arr',
+        `${API_BASE}/setup/test-arr`,
         {
           url: inst.url,
           apiKey: inst.apiKey,
@@ -333,7 +333,7 @@ async function finishSetup() {
       }))
     }
 
-    await apiPut('/api/config', config)
+    await apiPut(`${API_BASE}/config`, config)
     router.push('/')
   } catch (e: any) {
     alert(`Failed to save configuration: ${e.message}`)

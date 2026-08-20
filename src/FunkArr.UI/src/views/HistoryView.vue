@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { api } from '@/api/client'
+import { api, API_BASE } from '@/api/client'
 import DownloadCard from '@/components/DownloadCard.vue'
 
 interface HistoryItem {
@@ -19,7 +19,7 @@ const error = ref<string | null>(null)
 
 onMounted(async () => {
   try {
-    history.value = await api<HistoryItem[]>('/api/history')
+    history.value = await api<HistoryItem[]>(`${API_BASE}/history`)
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {

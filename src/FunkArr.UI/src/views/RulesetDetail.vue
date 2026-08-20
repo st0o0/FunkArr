@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, apiDelete } from '@/api/client'
+import { api, apiDelete, API_BASE } from '@/api/client'
 import RuleCard from '@/components/RuleCard.vue'
 
 interface Rule {
@@ -77,8 +77,8 @@ async function fetchData() {
   error.value = null
   try {
     const [rs, um] = await Promise.all([
-      api<RuleSetFile>(`/api/rulesets/${encodeURIComponent(topic)}`),
-      api<UnmatchedItem[]>(`/api/matches/unmatched?topic=${encodeURIComponent(topic)}`).catch(() => [] as UnmatchedItem[]),
+      api<RuleSetFile>(`${API_BASE}/rulesets/${encodeURIComponent(topic)}`),
+      api<UnmatchedItem[]>(`${API_BASE}/matches/unmatched?topic=${encodeURIComponent(topic)}`).catch(() => [] as UnmatchedItem[]),
     ])
     ruleset.value = rs
     unmatched.value = um
@@ -92,7 +92,7 @@ async function fetchData() {
 async function deleteOverride() {
   if (!confirm(`Delete local override for "${topic}"?`)) return
   try {
-    await apiDelete(`/api/rulesets/${encodeURIComponent(topic)}`)
+    await apiDelete(`${API_BASE}/rulesets/${encodeURIComponent(topic)}`)
     await fetchData()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)

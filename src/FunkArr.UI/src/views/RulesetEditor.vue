@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, apiPut } from '@/api/client'
+import { api, apiPut, API_BASE } from '@/api/client'
 import FilterEditor from '@/components/FilterEditor.vue'
 import TitleRuleEditor from '@/components/TitleRuleEditor.vue'
 import MatchTestPanel from '@/components/MatchTestPanel.vue'
@@ -101,7 +101,7 @@ async function fetchExisting() {
   loading.value = true
   error.value = null
   try {
-    const rs = await api<RuleSetFile>(`/api/rulesets/${encodeURIComponent(topic)}`)
+    const rs = await api<RuleSetFile>(`${API_BASE}/rulesets/${encodeURIComponent(topic)}`)
     form.value = rs
     aliasesText.value = rs.aliases.join(', ')
   } catch (e) {
@@ -120,7 +120,7 @@ async function save() {
     .filter(Boolean)
   const saveTopic = form.value.topic
   try {
-    await apiPut(`/api/rulesets/${encodeURIComponent(saveTopic)}`, form.value)
+    await apiPut(`${API_BASE}/rulesets/${encodeURIComponent(saveTopic)}`, form.value)
     router.push(`/rulesets/${encodeURIComponent(saveTopic)}`)
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)

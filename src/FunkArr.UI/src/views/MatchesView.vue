@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { api } from '@/api/client'
+import { api, API_BASE } from '@/api/client'
 
 // --- Types ---
 
@@ -121,13 +121,13 @@ async function fetchData(view: SubView) {
   try {
     switch (view) {
       case 'recent':
-        recentData.value = await api<MatchRecord[]>('/api/matches/recent')
+        recentData.value = await api<MatchRecord[]>(`${API_BASE}/matches/recent`)
         break
       case 'topics':
-        topicsData.value = await api<TopicStats[]>('/api/matches/topics')
+        topicsData.value = await api<TopicStats[]>(`${API_BASE}/matches/topics`)
         break
       case 'unmatched':
-        unmatchedData.value = await api<UnmatchedGroup[]>('/api/matches/unmatched')
+        unmatchedData.value = await api<UnmatchedGroup[]>(`${API_BASE}/matches/unmatched`)
         break
     }
   } catch (e) {

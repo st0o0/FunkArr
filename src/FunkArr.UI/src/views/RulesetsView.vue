@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { api } from '@/api/client'
+import { api, API_BASE } from '@/api/client'
 
 interface RulesetSummary {
   topic: string
@@ -28,7 +28,7 @@ async function fetchRulesets() {
   loading.value = true
   error.value = null
   try {
-    rulesets.value = await api<RulesetSummary[]>('/api/rulesets')
+    rulesets.value = await api<RulesetSummary[]>(`${API_BASE}/rulesets`)
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {

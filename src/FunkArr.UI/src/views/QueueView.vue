@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { api } from '@/api/client'
+import { api, API_BASE } from '@/api/client'
 import { usePolling } from '@/composables/usePolling'
 import DownloadCard from '@/components/DownloadCard.vue'
 
@@ -14,7 +14,7 @@ interface QueueItem {
 }
 
 const { data: queue, loading, error } = usePolling<QueueItem[]>(
-  () => api<QueueItem[]>('/api/queue'),
+  () => api<QueueItem[]>(`${API_BASE}/queue`),
   3000,
 )
 </script>

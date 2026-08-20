@@ -1,3 +1,5 @@
+export const API_BASE = '/api/v1'
+
 export function getApiKey(): string | null {
   return localStorage.getItem('funkarr-apikey')
 }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, apiPut, apiPost, getApiKey, setApiKey } from '@/api/client'
+import { api, apiPut, apiPost, getApiKey, setApiKey, API_BASE } from '@/api/client'
 
 // --- Types ---
 
@@ -73,8 +73,8 @@ async function loadData() {
   error.value = null
   try {
     const [configData, statusData] = await Promise.all([
-      api<ConfigResponse>('/api/config'),
-      api<StatusResponse>('/api/setup/status'),
+      api<ConfigResponse>(`${API_BASE}/config`),
+      api<StatusResponse>(`${API_BASE}/setup/status`),
     ])
     Object.assign(config, configData)
     Object.assign(status, statusData)
@@ -100,7 +100,7 @@ async function copyApiKey() {
 
 async function regenerateApiKey() {
   try {
-    const result = await apiPost<{ apiKey: string }>('/api/config/regenerate-key', {})
+    const result = await apiPost<{ apiKey: string }>(`${API_BASE}/config/regenerate-key`, {})
     config.apiKey = result.apiKey
     setApiKey(result.apiKey)
   } catch (e) {
@@ -136,7 +136,7 @@ async function save() {
   saving.value = true
   saveMessage.value = null
   try {
-    await apiPut('/api/config', {
+    await apiPut(`${API_BASE}/config`, {
       downloadPath: config.downloadPath,
       tempPath: config.tempPath,
       concurrentDownloads: config.concurrentDownloads,
@@ -187,7 +187,7 @@ onMounted(loadData)
             <button
               class="text-xs px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
               :disabled="testing['prowlarr']"
-              @click="testConnection('prowlarr', '/api/setup/test/prowlarr')"
+              @click="testConnection('prowlarr', `${API_BASE}/setup/test/prowlarr`)"
             >
               {{ testing['prowlarr'] ? 'Testing...' : 'Test' }}
             </button>
@@ -219,7 +219,7 @@ onMounted(loadData)
             <button
               class="text-xs px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
               :disabled="testing[inst.name]"
-              @click="testConnection(inst.name, `/api/setup/test/arr/${encodeURIComponent(inst.name)}`)"
+              @click="testConnection(inst.name, `${API_BASE}/setup/test/arr/${encodeURIComponent(inst.name)}`)"
             >
               {{ testing[inst.name] ? 'Testing...' : 'Test' }}
             </button>
@@ -239,7 +239,7 @@ onMounted(loadData)
             <button
               class="text-xs px-2 py-1 border border-neutral-300 dark:border-neutral-600 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
               :disabled="testing['mediathek']"
-              @click="testConnection('mediathek', '/api/setup/test/mediathek')"
+              @click="testConnection('mediathek', `${API_BASE}/setup/test/mediathek`)"
             >
               {{ testing['mediathek'] ? 'Testing...' : 'Test' }}
             </button>
