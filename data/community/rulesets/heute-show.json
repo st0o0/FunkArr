@@ -1,0 +1,37 @@
+{
+  "topic": "heute-show",
+  "aliases": [],
+  "media": {
+    "tvdbId": 234791,
+    "imdbId": "tt1441143",
+    "name": "Heute Show",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "25"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleEqualsAirdate",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^heute-show vom (\\d{1,2}\\. \\w\u002B \\d{4})"
+        }
+      ]
+    }
+  ]
+}

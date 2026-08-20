@@ -1,0 +1,33 @@
+{
+  "topic": "30 Tage Lust",
+  "aliases": [],
+  "media": {
+    "tvdbId": 447160,
+    "imdbId": "tt31921149",
+    "name": "30 Tage Lust",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "20"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    }
+  ]
+}

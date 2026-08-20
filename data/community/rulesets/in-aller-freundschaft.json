@@ -1,0 +1,70 @@
+{
+  "topic": "In aller Freundschaft",
+  "aliases": [],
+  "media": {
+    "tvdbId": 147521,
+    "imdbId": "tt0178142",
+    "name": "In aller Freundschaft",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 10,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "any": [],
+        "not": [
+          {
+            "$type": "filter",
+            "field": "topic",
+            "op": "contains",
+            "value": "jungen Ärzte"
+          }
+        ]
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 20,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "any": [],
+        "not": [
+          {
+            "$type": "filter",
+            "field": "topic",
+            "op": "contains",
+            "value": "jungen Ärzte"
+          }
+        ]
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^Folge \\d+: (.+?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}

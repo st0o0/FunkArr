@@ -1,0 +1,60 @@
+{
+  "topic": "Aktenzeichen XY... Ungel\u00F6st",
+  "aliases": [],
+  "media": {
+    "tvdbId": 255982,
+    "imdbId": "tt0131157",
+    "name": "Aktenzeichen XY ... ungel\u00F6st",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "59"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleEqualsAirdate",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(\\d{1,2}\\.\\d{1,2}\\.\\d{4})"
+        }
+      ]
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "59"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleEqualsAirdate",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(\\d{1,2}\\.\\s*(?:Januar|Februar|M\u00E4rz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\\s*\\d{4})"
+        }
+      ]
+    }
+  ]
+}

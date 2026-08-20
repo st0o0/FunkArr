@@ -1,0 +1,33 @@
+{
+  "topic": "Nachtstreife",
+  "aliases": [],
+  "media": {
+    "tvdbId": 390010,
+    "imdbId": "tt32502749",
+    "name": "Nachtstreife",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "31"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    }
+  ]
+}

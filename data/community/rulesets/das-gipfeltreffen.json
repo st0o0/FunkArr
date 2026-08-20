@@ -1,0 +1,95 @@
+{
+  "topic": "Das Gipfeltreffen",
+  "aliases": [],
+  "media": {
+    "tvdbId": 382536,
+    "imdbId": "tt13998708",
+    "name": "Das Gipfeltreffen",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "21"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "static",
+          "field": "title",
+          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$",
+          "value": "Folge "
+        },
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$"
+        }
+      ]
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "21"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(.*)"
+        }
+      ]
+    },
+    {
+      "priority": 2,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "21"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "static",
+          "field": "title",
+          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$",
+          "value": "Das Gipfeltreffen "
+        },
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$"
+        }
+      ]
+    }
+  ]
+}

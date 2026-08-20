@@ -1,0 +1,60 @@
+{
+  "topic": "Verr\u00FCckt nach Meer",
+  "aliases": [],
+  "media": {
+    "tvdbId": 254636,
+    "imdbId": "tt2361025",
+    "name": "Verr\u00FCckt nach Meer",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "32"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^\\d\u002B:\\s*(.\u002B?)(?:\\s*\\([^)]*\\))?\\s*$"
+        }
+      ]
+    },
+    {
+      "priority": 10,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "32"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(?:Folge\\s*\\d\u002B:\\s*)?(.\u002B?)(?:\\s*\\([^)]*\\))?\\s*$"
+        }
+      ]
+    }
+  ]
+}

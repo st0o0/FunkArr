@@ -1,0 +1,137 @@
+{
+  "topic": "Löwenzahn",
+  "aliases": [
+    "Löwenzahn mit Fritz Fuchs",
+    "Löwenzahn mit Peter Lustig"
+  ],
+  "media": {
+    "tvdbId": 84829,
+    "imdbId": "tt135097",
+    "name": "Löwenzahn",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 10,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "20"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(.*)"
+        }
+      ]
+    },
+    {
+      "priority": 11,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "20"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?) \\("
+        }
+      ]
+    },
+    {
+      "priority": 12,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "20"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "- (.*?)(?= \\()"
+        }
+      ]
+    },
+    {
+      "priority": 15,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "20"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^.*? - (.*)$"
+        }
+      ]
+    },
+    {
+      "priority": 16,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "20"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(.*)"
+        },
+        {
+          "type": "static",
+          "field": "title",
+          "value": " - "
+        }
+      ]
+    }
+  ]
+}

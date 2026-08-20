@@ -1,0 +1,57 @@
+{
+  "topic": "Terra X Harald Lesch",
+  "aliases": [
+    "Leschs Kosmos"
+  ],
+  "media": {
+    "tvdbId": 152821,
+    "name": "Leschs Kosmos",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "22"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "22"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}

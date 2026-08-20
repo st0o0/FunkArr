@@ -1,0 +1,55 @@
+{
+  "topic": "Die Rosenheim-Cops",
+  "aliases": [],
+  "media": {
+    "tvdbId": 101221,
+    "name": "Die Rosenheim-Cops",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}

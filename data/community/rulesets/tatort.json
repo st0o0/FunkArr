@@ -1,0 +1,70 @@
+{
+  "topic": "Tatort",
+  "aliases": [
+    "Tatort aus Österreich"
+  ],
+  "media": {
+    "tvdbId": 83214,
+    "imdbId": "tt0806910",
+    "name": "Tatort",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "static",
+          "value": " - "
+        },
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(?<=Tatort:\\s*)\\S.*"
+        }
+      ]
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "static",
+          "value": " - "
+        },
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}

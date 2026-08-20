@@ -1,0 +1,81 @@
+{
+  "topic": "ZDF Magazin Royale",
+  "aliases": [
+    "ZDF Magazin Royale - Late-Night mit Jan Böhmermann"
+  ],
+  "media": {
+    "tvdbId": 390284,
+    "imdbId": "tt13486352",
+    "name": "ZDF Magazin Royale",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "24"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "24"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.+?)\\s*-\\s*ZDF Magazin Royale"
+        }
+      ]
+    },
+    {
+      "priority": 2,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "24"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}

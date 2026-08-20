@@ -1,0 +1,56 @@
+{
+  "topic": "Fr\u00FChling",
+  "aliases": [],
+  "media": {
+    "tvdbId": 289363,
+    "imdbId": "tt7887026",
+    "name": "Fr\u00FChling",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 5,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "50"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 20,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "50"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(.*)"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "topic": "Tiere suchen ein Zuhause",
+  "aliases": [],
+  "media": {
+    "tvdbId": 445728,
+    "name": "Tiere suchen ein Zuhause",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(\\d{2}\\.\\d{2}\\.\\d{4})"
+        }
+      ]
+    }
+  ]
+}

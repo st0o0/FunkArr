@@ -1,0 +1,77 @@
+{
+  "topic": "Der Schwarm",
+  "aliases": [],
+  "media": {
+    "tvdbId": 400779,
+    "imdbId": "tt0808491",
+    "name": "Der Schwarm",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 10,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "31"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 11,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "31"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?\u003C=Staffel\\s)(\\d{1,4})(?=, Folge\\s\\d{1,4})",
+      "episodeRegex": "(?\u003C=Folge\\s)(\\d{1,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 30,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "31"
+          },
+          {
+            "$type": "filter",
+            "field": "title",
+            "op": "regex",
+            "value": "^(?!.*Staffel).*"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "S01",
+      "episodeRegex": "^Folge\\s\u002B(\\d\u002B)(?:\\s\u002B\\(.*\\))?$",
+      "titleRules": []
+    }
+  ]
+}

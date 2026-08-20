@@ -1,0 +1,34 @@
+{
+  "topic": "Bares für Rares",
+  "aliases": [
+    "Bares für Rares - die tägliche Show"
+  ],
+  "media": {
+    "tvdbId": 307864,
+    "name": "Bares für Rares",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "40"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    }
+  ]
+}

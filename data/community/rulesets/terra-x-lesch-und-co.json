@@ -1,0 +1,41 @@
+{
+  "topic": "Terra X Lesch & Co",
+  "aliases": [],
+  "media": {
+    "tvdbId": 345177,
+    "name": "Terra X Lesch & Co",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [],
+        "any": [],
+        "not": []
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*-\\s*Lesch Co)?(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}

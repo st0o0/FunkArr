@@ -1,0 +1,61 @@
+{
+  "topic": "Polizeiruf 110",
+  "aliases": [
+    "Polizeiruf 110 - Klassiker"
+  ],
+  "media": {
+    "tvdbId": 94511,
+    "name": "Polizeiruf 110",
+    "type": "show"
+  },
+  "source": "community",
+  "confidence": 1,
+  "rules": [
+    {
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "60"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    },
+    {
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "$type": "filter",
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "60"
+          }
+        ],
+        "any": [],
+        "not": []
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}
