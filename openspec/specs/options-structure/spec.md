@@ -5,18 +5,18 @@
 ### Requirement: Domain-scoped options classes
 The system SHALL expose configuration through domain-scoped `IOptions<T>` classes instead of a single monolithic options class. The following classes SHALL exist in `FunkArr.Configuration`:
 
-- `FunkArrOptions` — cross-cutting and bootstrap settings: `ApiKey`, `LogFormat`, `PersistencePath`, `Postgres`, `MatchLedgerCapacity`, `Prowlarr`, `ArrInstances`.
+- `FunkArrOptions` — cross-cutting and bootstrap settings: `ApiKey`, `PersistencePath`, `Postgres`, `MatchLedgerCapacity`.
 - `DownloadOptions` — download pipeline settings: `DownloadPath`, `TempPath`, `ConcurrentDownloads`, `PathMapping`.
 - `RuleSetOptions` — rule-set source and refresh settings: `Repository`, `Version`, `Path`, `RefreshIntervalMinutes`.
 - `QualityOptions` — quality-probe cache settings: `Probing`, `CacheTtlMinutes`, `CacheCapacity`.
-- `SearchOptions` — search-time settings: `QualityProbeLimit`.
+- `SearchOptions` — search-time settings: `QualityProbeLimit`, `TmdbApiKey`.
 
 #### Scenario: Consumer injects only the options it needs
 - **WHEN** a class depends only on download-pipeline settings (e.g. `DownloadQueueActor`)
 - **THEN** it SHALL inject `IOptions<DownloadOptions>` and SHALL NOT inject `IOptions<FunkArrOptions>` or any other domain options class
 
 #### Scenario: Consumer needing multiple domains injects each explicitly
-- **WHEN** a class depends on settings from more than one domain (e.g. `SetupEndpoints` needing download paths, rule-set config, and the API key)
+- **WHEN** a class depends on settings from more than one domain (e.g. `SetupController` needing download paths and the API key)
 - **THEN** it SHALL inject one `IOptions<T>` per domain it actually reads, with no single options type carrying settings the consumer doesn't use
 
 ### Requirement: Nested config section binding
@@ -66,13 +66,13 @@ Each property on each domain options class SHALL retain the same default value i
 - **AND** `QualityOptions.Probing` SHALL default to `true`, `QualityOptions.CacheTtlMinutes` SHALL default to `360`, `QualityOptions.CacheCapacity` SHALL default to `50000`
 - **AND** `SearchOptions.QualityProbeLimit` SHALL default to `30`
 
-### Requirement: Documented breaking change for flat environment variables
-Because the configuration shape moves from flat (`FunkArr:DownloadPath`) to nested (`FunkArr:Download:DownloadPath`) sections, the system SHALL NOT silently continue to accept the old flat keys. The change SHALL instead be surfaced through updated reference configuration and documentation.
+### Requirement: Default API key
+`FunkArrOptions.ApiKey` SHALL default to `"funkarr-default-api-key"` in `appsettings.json`. The key exists only because Sonarr/Radarr/Prowlarr require a non-empty API key field when adding indexers and download clients. Users MAY override via the `FunkArr__ApiKey` environment variable.
 
-#### Scenario: Old flat env var no longer takes effect
-- **WHEN** only the old flat variable `FunkArr__DownloadPath` is set (and `FunkArr__Download__DownloadPath` is not)
-- **THEN** `DownloadOptions.DownloadPath` SHALL fall back to its compiled-in default rather than the old flat value, since the old key is no longer bound
+#### Scenario: Default key works out of the box
+- **WHEN** no `FunkArr__ApiKey` environment variable is set
+- **THEN** `FunkArrOptions.ApiKey` SHALL be `"funkarr-default-api-key"`
 
-#### Scenario: Reference configuration reflects the new shape
-- **WHEN** a developer consults `docker-compose.example.yml`
-- **THEN** every example environment variable for download, rule-set, quality, and search settings SHALL use the new nested `FunkArr__<Domain>__<Property>` form
+#### Scenario: Custom key via environment variable
+- **WHEN** `FunkArr__ApiKey` is set to `"my-custom-key"`
+- **THEN** `FunkArrOptions.ApiKey` SHALL be `"my-custom-key"`

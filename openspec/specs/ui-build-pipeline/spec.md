@@ -9,7 +9,7 @@ The UI project SHALL reside in `src/FunkArr.UI/` with Vue 3, Vite, Tailwind CSS,
 
 #### Scenario: Project layout
 - **WHEN** the project is set up
-- **THEN** `src/FunkArr.UI/` SHALL contain `package.json`, `vite.config.ts`, `tailwind.config.js`, `tsconfig.json`, `index.html`, and a `src/` directory with Vue components
+- **THEN** `src/FunkArr.UI/` SHALL contain `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, and a `src/` directory with Vue components (Tailwind v4 uses CSS-based configuration via the `@tailwindcss/vite` plugin — no `tailwind.config.js` file)
 
 ### Requirement: Vite build output to wwwroot
 The Vite build SHALL output to `src/FunkArr/wwwroot/`. This directory SHALL be gitignored.
@@ -26,8 +26,8 @@ The Vite build SHALL output to `src/FunkArr/wwwroot/`. This directory SHALL be g
 In development mode, the Vite dev server SHALL proxy API requests to the .NET backend.
 
 #### Scenario: Proxy API requests
-- **WHEN** the Vite dev server runs on `:5173` and the .NET backend on `:5000`
-- **THEN** requests to `/api/*` and `/download/*` SHALL be proxied to `http://localhost:5000`
+- **WHEN** the Vite dev server runs on `:5173` and the .NET backend on `:6969`
+- **THEN** requests to `/api/*` and `/download/*` SHALL be proxied to `http://localhost:6969`
 
 ### Requirement: Tailwind configuration
 Tailwind SHALL be configured with system font stack, minimal color palette, and content paths pointing to Vue component files.
@@ -36,12 +36,16 @@ Tailwind SHALL be configured with system font stack, minimal color palette, and 
 - **WHEN** the production build runs
 - **THEN** Tailwind SHALL purge unused classes based on content in `src/**/*.vue` and `src/**/*.ts`
 
-### Requirement: Docker multi-stage build
-The Dockerfile SHALL use a multi-stage build: a Node.js stage builds the UI, then the .NET stage copies the build output to `wwwroot/` before publishing.
+### Requirement: Docker build integration
+The production Dockerfile expects pre-built UI assets to be present in `src/FunkArr/wwwroot/` before the Docker build. The dev Dockerfile (`Dockerfile.dev`) includes a Node.js build stage that builds the UI during the Docker build. The production Dockerfile does NOT include a Node.js build stage.
 
-#### Scenario: Docker build succeeds
-- **WHEN** `docker build` is executed
+#### Scenario: Dev Docker build includes UI stage
+- **WHEN** `docker build -f Dockerfile.dev .` is executed
 - **THEN** the Node stage SHALL run `npm ci && npm run build` in `src/FunkArr.UI/`, and the .NET stage SHALL copy the output to `src/FunkArr/wwwroot/` before `dotnet publish`
+
+#### Scenario: Production Docker build expects pre-built assets
+- **WHEN** the production `docker build` is executed
+- **THEN** the build SHALL expect `wwwroot/` assets to already exist (no Node.js build stage)
 
 #### Scenario: Final image has no Node.js
 - **WHEN** the Docker image is built

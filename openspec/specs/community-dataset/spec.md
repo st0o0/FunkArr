@@ -10,8 +10,8 @@ V2 dataset format for community rulesets: slug-based filenames, 1:1 upstream par
 The repository SHALL contain a `data/community/rulesets/` directory with one JSON file per topic in v2 `RuleSetFile` schema format. Filenames SHALL be slug-based (lowercase, hyphens, no special characters) matching the output of `TopicSlugGenerator.Generate()`.
 
 #### Scenario: One file per topic
-- **WHEN** the upstream dataset contains 59 unique topics
-- **THEN** the `data/community/rulesets/` directory SHALL contain 59 JSON files
+- **WHEN** the upstream dataset contains 60 unique topics
+- **THEN** the `data/community/rulesets/` directory SHALL contain 60 JSON files
 
 #### Scenario: Filename matches slug
 - **WHEN** a ruleset has topic "Feuer & Flamme"
@@ -48,8 +48,8 @@ The initial dataset SHALL be a direct transformation of the upstream `rundfunkar
 - **THEN** every unique topic in the upstream SHALL have a corresponding file in `data/community/rulesets/`
 
 #### Scenario: Media references preserved
-- **WHEN** an upstream entry has tvdbId 329324 and imdbId "tt7995922"
-- **THEN** the v2 file SHALL have media.tvdbId = 329324 and media.imdbId = "tt7995922"
+- **WHEN** an upstream entry has tvdbId 329324 and imdbId "tt7996022"
+- **THEN** the v2 file SHALL have media.tvdbId = 329324 and media.imdbId = "tt7996022"
 
 #### Scenario: Title rules preserved
 - **WHEN** an upstream entry has titleRegexRules with a regex pattern

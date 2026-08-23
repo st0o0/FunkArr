@@ -1,11 +1,11 @@
 ## Purpose
 
-In-memory match result recording with per-item trace information, aggregate statistics computation per topic, and configurable retention via a bounded CircularQueue managed by a MatchLedgerActor.
+In-memory match result recording with per-item trace information, aggregate statistics computation per topic, and configurable retention via a bounded LinkedList<MatchRecord> with manual eviction managed by a MatchLedgerActor.
 
 ## Requirements
 
 ### Requirement: Match ledger actor
-The system SHALL provide a MatchLedgerActor registered via Akka.Hosting that records match results in a bounded in-memory collection (CircularQueue) and responds to queries for match data.
+The system SHALL provide a MatchLedgerActor registered via Akka.Hosting that records match results in a bounded in-memory collection (LinkedList<MatchRecord> with manual eviction: `while count > capacity, RemoveLast`) and responds to queries for match data.
 
 #### Scenario: Actor registration
 - **WHEN** the application starts
@@ -13,7 +13,7 @@ The system SHALL provide a MatchLedgerActor registered via Akka.Hosting that rec
 
 #### Scenario: Memory bounds
 - **WHEN** the ledger reaches its configured capacity (default 10,000 entries)
-- **THEN** the oldest entries SHALL be evicted automatically via CircularQueue
+- **THEN** the oldest entries SHALL be evicted automatically (`while count > capacity, RemoveLast`)
 
 ### Requirement: Match record structure
 Each match record SHALL contain: a unique record ID, timestamp, search parameters (topic, tvdbId, season, episode), the total number of Mediathek results evaluated, and three categorized lists: matched items, filtered items, and unmatched items -- each with per-item trace information.

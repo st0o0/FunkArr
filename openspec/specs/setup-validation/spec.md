@@ -1,31 +1,19 @@
-## ADDED Requirements
+## Purpose
 
-### Requirement: Setup validation endpoint authentication
-`POST /api/setup/validate` SHALL require the same `apikey` query
-parameter authentication as other FunkArr API endpoint groups.
+Setup validation endpoint for verifying FunkArr system health and external service connectivity. Runs self-checks (API key, FFmpeg, paths) and optional per-request credential checks against Prowlarr/Sonarr/Radarr without persisting any credentials.
 
-#### Scenario: Valid API key
-- **WHEN** a request to `POST /api/setup/validate?apikey=valid-key` is received
-- **THEN** the endpoint SHALL execute validation and return a result
-
-#### Scenario: Missing or incorrect API key
-- **WHEN** a request to `POST /api/setup/validate` is received without a
-  valid `apikey` query parameter
-- **THEN** the endpoint SHALL return 401 Unauthorized without executing
-  any check
+## Requirements
 
 ### Requirement: FunkArr API key self-check
-The system SHALL validate that FunkArr's own `ApiKey` configuration
-value is set to a non-empty value.
+The system SHALL validate that FunkArr's `ApiKey` configuration value is set to a non-empty value. The default key (`"funkarr-default-api-key"`) is a valid value.
 
-#### Scenario: API key configured
-- **WHEN** `FunkArrOptions.ApiKey` is a non-empty string
+#### Scenario: API key configured (default or custom)
+- **WHEN** `FunkArrOptions.ApiKey` is a non-empty string (including the default value)
 - **THEN** the `api-key` self-check SHALL report status `pass`
 
 #### Scenario: API key missing
 - **WHEN** `FunkArrOptions.ApiKey` is empty or unset
-- **THEN** the `api-key` self-check SHALL report status `fail` with fix
-  guidance describing how to set `FunkArr__ApiKey`
+- **THEN** the `api-key` self-check SHALL report status `fail` with fix guidance describing how to set `FunkArr__ApiKey`
 
 ### Requirement: FFmpeg availability self-check
 The system SHALL validate that FFmpeg is installed and executable,
@@ -45,7 +33,7 @@ duplicating it.
   image configuration
 
 ### Requirement: Download path writable self-check
-The system SHALL validate that `FunkArrOptions.DownloadPath` exists (or
+The system SHALL validate that `DownloadOptions.DownloadPath` exists (or
 can be created) and is writable by the process.
 
 #### Scenario: Download path writable
@@ -61,7 +49,7 @@ can be created) and is writable by the process.
   volume mount
 
 ### Requirement: Temp path writable self-check
-The system SHALL validate that `FunkArrOptions.TempPath` exists (or can
+The system SHALL validate that `DownloadOptions.TempPath` exists (or can
 be created) and is writable by the process, independently of the
 download path check.
 
@@ -192,12 +180,20 @@ issue read-only requests (e.g. status/health/list endpoints).
   requests to Prowlarr/Sonarr/Radarr, and SHALL NOT send `POST`, `PUT`,
   `PATCH`, or `DELETE` requests to those systems
 
-#### Scenario: Supplied credentials are not persisted
-- **WHEN** a validation request includes Prowlarr or Arr instance API
-  keys
-- **THEN** the system SHALL use them only for the duration of the
-  request and SHALL NOT write them to `FunkArrOptions`, configuration
-  files, or any persistent store
+### Requirement: Supplied credentials are not persisted
+Given that `Prowlarr` and `ArrInstances` are removed from `FunkArrOptions`, the validation endpoint SHALL accept these credentials exclusively from the request body via `[FromBody]` model binding and SHALL NOT attempt to read them from options or configuration. The endpoint SHALL use `EmptyBodyBehavior.Allow` to support requests with no body (self-checks only).
+
+#### Scenario: Validation uses [FromBody] model binding
+- **WHEN** a validation request is sent with a JSON body containing Prowlarr or Arr instance credentials
+- **THEN** the system SHALL deserialize via `[FromBody]` model binding using the global JSON options
+
+#### Scenario: Validation without body (self-checks only)
+- **WHEN** a validation request is sent with no body (Content-Length 0 or omitted)
+- **THEN** the system SHALL bind the parameter to null via `EmptyBodyBehavior.Allow` and run only self-checks (API key, FFmpeg, paths)
+
+#### Scenario: Validation response uses global JSON options
+- **WHEN** the validation endpoint returns its result
+- **THEN** the response SHALL be serialized via `Ok(result)` using the global JSON options instead of a custom `JsonResult` with `SetupValidationJsonOptions`
 
 ### Requirement: Partial results on individual check failure
 If any single check throws an unexpected error or cannot complete, the

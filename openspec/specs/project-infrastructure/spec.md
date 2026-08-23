@@ -37,7 +37,7 @@ The application SHALL expose health check endpoints at `/healthz` (liveness) and
 - **THEN** the health check reports degraded status indicating FFmpeg is missing
 
 ### Requirement: Configuration via environment variables
-The application SHALL be configurable via environment variables and appsettings.json for all operational parameters including API key, download paths, concurrency limits, log format, and persistence provider/connection string. The application SHALL listen on a hardcoded internal port of `6969` and SHALL NOT expose a configurable `HttpPort` option.
+The application SHALL be configurable via environment variables and appsettings.json for all operational parameters including API key, download paths, and concurrency limits. The application SHALL listen on a hardcoded internal port of `6969` and SHALL NOT expose a configurable `HttpPort` option.
 
 #### Scenario: Docker environment configuration
 - **WHEN** the application runs in Docker with `FunkArr__ApiKey=mykey` and `FunkArr__DownloadPath=/media/downloads`
@@ -51,12 +51,12 @@ The application SHALL be configurable via environment variables and appsettings.
 - **WHEN** the Docker container is started with `-p 8080:6969`
 - **THEN** the application is accessible on the host at port 8080
 
-#### Scenario: Persistence provider via environment variables
-- **WHEN** the application runs in Docker with `FunkArr__Persistence__Provider=PostgreSql` and `FunkArr__Persistence__ConnectionString=Host=db;Database=funkarr;...`
-- **THEN** the application uses PostgreSQL for Akka.Persistence
+#### Scenario: PostgreSQL persistence via environment variables
+- **WHEN** the application runs in Docker with `FunkArr__Postgres__Host=db`, `FunkArr__Postgres__Port=5432`, `FunkArr__Postgres__User=funkarr`, `FunkArr__Postgres__Password=secret`, `FunkArr__Postgres__Database=funkarr`
+- **THEN** the application uses PostgreSQL for Akka.Persistence with a connection string built from `PostgresOptions.BuildConnectionString()`
 
 ### Requirement: Multi-arch Docker image
-The project SHALL produce a multi-arch Docker image (linux/amd64, linux/arm64) based on `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra` with FFmpeg included.
+The project SHALL produce a multi-arch Docker image (linux/amd64, linux/arm64) based on `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra` with FFmpeg included. The Dockerfile SHALL use a `runtime-deps:10.0-noble` prep stage that installs FFmpeg, and the final `aspnet:10.0-noble-chiseled-extra` stage copies the FFmpeg binary from the prep stage.
 
 #### Scenario: Docker image runs on ARM64
 - **WHEN** the Docker image is pulled on a Raspberry Pi 4 or similar ARM64 host

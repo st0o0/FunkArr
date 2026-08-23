@@ -24,7 +24,7 @@ The queue view SHALL poll the queue API at a regular interval to update download
 
 #### Scenario: Polling active
 - **WHEN** the queue view is visible
-- **THEN** the UI SHALL poll `GET /api/queue` every 3 seconds
+- **THEN** the UI SHALL poll `GET /api/v1/queue` every 3 seconds
 
 #### Scenario: Polling paused
 - **WHEN** the user navigates away from the queue view or the browser tab is hidden

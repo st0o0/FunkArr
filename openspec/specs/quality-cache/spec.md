@@ -16,14 +16,14 @@ The system SHALL cache QualityInfo results keyed by video URL in a thread-safe i
 - **THEN** only one probe SHALL execute and both callers SHALL receive the result
 
 ### Requirement: Configurable TTL
-The cache TTL SHALL be configurable via `FunkArr__QualityCacheTtlMinutes` with a default of 360 (6 hours).
+The cache TTL SHALL be configurable via `FunkArr__Quality__CacheTtlMinutes` with a default of 360 (6 hours).
 
 #### Scenario: Default TTL
 - **WHEN** no TTL configuration is set
 - **THEN** cache entries SHALL expire after 6 hours
 
 #### Scenario: Custom TTL
-- **WHEN** `FunkArr__QualityCacheTtlMinutes` is set to 120
+- **WHEN** `FunkArr__Quality__CacheTtlMinutes` is set to 120
 - **THEN** cache entries SHALL expire after 2 hours
 
 #### Scenario: Expired entry triggers re-probe

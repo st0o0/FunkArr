@@ -70,15 +70,15 @@ After a successful extraction, the system SHALL write a `version.txt` file in th
 The system SHALL support the following configuration options for the GitHub release refresh mechanism.
 
 #### Scenario: RuleSetRepository default
-- **WHEN** `FunkArr__RuleSetRepository` is not set
+- **WHEN** `FunkArr__RuleSet__Repository` is not set
 - **THEN** the system SHALL default to `"st0o0/funkarr"`
 
 #### Scenario: RuleSetVersion default
-- **WHEN** `FunkArr__RuleSetVersion` is not set
+- **WHEN** `FunkArr__RuleSet__Version` is not set
 - **THEN** the system SHALL default to `"latest"`
 
 #### Scenario: Custom repository
-- **WHEN** `FunkArr__RuleSetRepository` is set to `"myorg/my-rulesets"`
+- **WHEN** `FunkArr__RuleSet__Repository` is set to `"myorg/my-rulesets"`
 - **THEN** the system SHALL query that repository's releases for community rulesets
 
 ### Requirement: User-Agent header

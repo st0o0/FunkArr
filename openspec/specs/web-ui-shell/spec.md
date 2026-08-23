@@ -30,7 +30,7 @@ The ASP.NET application SHALL serve static files from `wwwroot/` using `UseStati
 The Vue app SHALL provide a shared API client that appends the `apikey` query parameter to all backend requests. The API key SHALL be stored in the browser's localStorage after initial setup.
 
 #### Scenario: Authenticated API call
-- **WHEN** the UI fetches `/api/queue`
+- **WHEN** the UI fetches `/api/v1/queue`
 - **THEN** the request SHALL include `?apikey=<stored-key>` as a query parameter
 
 #### Scenario: No API key stored

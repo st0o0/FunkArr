@@ -14,7 +14,7 @@ The system MUST provide a separate DTO in `Persistence/DownloadEventDtos.cs` for
 - **THEN** a corresponding DTO (`DownloadEnqueuedDto`, `DownloadStartedDto`, etc.) exists in `Persistence/DownloadEventDtos.cs`
 
 #### Scenario: Non-persisted events have no DTO
-- **WHEN** an event is only used as an in-memory message (e.g. `DownloadProgressUpdated`)
+- **WHEN** an event is only used as an in-memory message (e.g. progress reports)
 - **THEN** no DTO exists for it in `Persistence/`
 
 ### Requirement: DTOs use primitive types and short JSON keys

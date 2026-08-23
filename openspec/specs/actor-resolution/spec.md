@@ -53,25 +53,25 @@ raw `IActorRef` values via constructor injection.
 
 ### Requirement: API endpoints resolve actors via ActorRegistry.Get
 
-All Minimal API endpoint classes SHALL resolve actors via `ActorRegistry.Get<T>()`
+All MVC Controller classes (ControllerBase subclasses) SHALL resolve actors via `ActorRegistry.GetAsync<T>()`
 injected through constructor/parameter DI, replacing `IRequiredActor<T>`.
 
 #### Scenario: Newznab endpoint resolves SearchActor
 
 - **WHEN** a Newznab API request arrives
-- **THEN** the endpoint handler resolves `SearchActor` via `ActorRegistry.Get<SearchActor>()`
+- **THEN** the controller resolves `SearchActor` via `ActorRegistry.GetAsync<SearchActor>()`
 
 #### Scenario: SABnzbd endpoint resolves DownloadQueueActor
 
 - **WHEN** a SABnzbd API request arrives
-- **THEN** the endpoint handler resolves `DownloadQueueActor` via
-  `ActorRegistry.Get<DownloadQueueActor>()`
+- **THEN** the controller resolves `DownloadQueueActor` via
+  `ActorRegistry.GetAsync<DownloadQueueActor>()`
 
 #### Scenario: Match Intelligence endpoint resolves MatchLedgerActor
 
 - **WHEN** a Match Intelligence API request arrives
-- **THEN** the endpoint handler resolves `MatchLedgerActor` via
-  `ActorRegistry.Get<MatchLedgerActor>()`
+- **THEN** the controller resolves `MatchLedgerActor` via
+  `ActorRegistry.GetAsync<MatchLedgerActor>()`
 
 ### Requirement: Child actors created via ResolveChildActor
 
@@ -91,6 +91,7 @@ Parent actors that create child actors with DI dependencies SHALL use
 `FunkArrActorSystemSetup.BuildSystem` SHALL NOT call `GetRequiredService` to obtain
 services for actor construction. All actor dependencies SHALL be resolved via the DI
 container automatically through `WithResolvableActors` or `RegisterWithBackoff`.
+Note: `GetRequiredService` for `IOptions<FunkArrOptions>` (configuration) is acceptable — the restriction applies to actor dependencies, not configuration.
 
 #### Scenario: No GetRequiredService in BuildSystem for actor deps
 

@@ -1,15 +1,19 @@
 ## Purpose
 
-Akka.NET actor managing in-memory index of show rulesets across three layers (community, generated, local), with alias indexing, startup loading, periodic community refresh, topic/alias/TVDB queries, merge-mode overrides, and auto-generation triggers.
+Akka.NET actor managing in-memory index of show rulesets across three layers (community, generated, local), with alias indexing, startup loading, periodic community refresh, topic/alias/TVDB queries, merge-mode overrides, and auto-generation triggers. Renamed from `RuleSetRegistryActor` to `RuleSetCoordinator` following the Coordinator/Worker/Tracker naming convention; the Akka.Hosting registration name stays `"ruleset-registry"` for backward compatibility.
 
 ## Requirements
 
 ### Requirement: RuleSet registry actor
-The system SHALL provide a RuleSetRegistryActor registered via Akka.Hosting that maintains an in-memory index of all loaded rulesets, queryable by topic, topic alias, and TVDB ID. The actor SHALL additionally handle messages for listing all rulesets, getting a single ruleset, saving local overrides, deleting local overrides, and testing rules against the Mediathek.
+The system SHALL provide a `RuleSetCoordinator` (formerly `RuleSetRegistryActor`) registered via Akka.Hosting under the name `"ruleset-registry"` that maintains an in-memory index of all loaded rulesets, queryable by topic, topic alias, and TVDB ID. The actor SHALL additionally handle messages for listing all rulesets, getting a single ruleset, saving local overrides, deleting local overrides, and testing rules against the Mediathek.
 
 #### Scenario: Actor registration
 - **WHEN** the application starts
-- **THEN** the RuleSetRegistryActor SHALL be registered in the ActorSystem and resolvable via IActorRegistry
+- **THEN** the `RuleSetCoordinator` SHALL be registered in the ActorSystem and resolvable via IActorRegistry
+
+#### Scenario: Resolution by new type name
+- **WHEN** code resolves `RuleSetCoordinator` via `IActorRegistry`
+- **THEN** it SHALL receive the same actor instance previously registered as `RuleSetRegistryActor`
 
 ### Requirement: Topic alias indexing
 The registry SHALL index all topic aliases alongside the primary topic name. A query for any alias SHALL return the same ruleset as the primary topic.
@@ -118,14 +122,14 @@ The community source SHALL be configurable via `FunkArr__RuleSet__Repository` (d
 - **THEN** the system SHALL query that repository's releases
 
 ### Requirement: List all rulesets message
-The RuleSetRegistryActor SHALL handle a `GetAllRulesets` message and respond with metadata for every registered topic: topic name, source, rule count, media reference, and aliases.
+The `RuleSetCoordinator` SHALL handle a `GetAllRulesets` message and respond with metadata for every registered topic: topic name, source, rule count, media reference, and aliases.
 
 #### Scenario: List all topics
 - **WHEN** a `GetAllRulesets` message is received
 - **THEN** the actor SHALL respond with a list of all topics from the in-memory index, each with topic, source, rule count, media name, TVDB ID, and aliases
 
 ### Requirement: Get single ruleset message
-The RuleSetRegistryActor SHALL handle a `GetRuleSet` message and respond with the full RuleSetFile for the requested topic.
+The `RuleSetCoordinator` SHALL handle a `GetRuleSet` message and respond with the full RuleSetFile for the requested topic.
 
 #### Scenario: Topic exists
 - **WHEN** a `GetRuleSet("tatort")` message is received and the topic exists
@@ -136,14 +140,14 @@ The RuleSetRegistryActor SHALL handle a `GetRuleSet` message and respond with th
 - **THEN** the actor SHALL respond with a not-found response
 
 ### Requirement: Save local override message
-The RuleSetRegistryActor SHALL handle a `SaveLocalRuleSet` message that writes a RuleSetFile to `data/rulesets/local/` and reloads the in-memory index.
+The `RuleSetCoordinator` SHALL handle a `SaveLocalRuleSet` message that writes a RuleSetFile to `data/rulesets/local/` and reloads the in-memory index.
 
 #### Scenario: Save and reload
 - **WHEN** a `SaveLocalRuleSet` message is received with a valid RuleSetFile
 - **THEN** the actor SHALL write the file to the local directory using RuleSetFileWriter and reload all layers from disk
 
 ### Requirement: Delete local override message
-The RuleSetRegistryActor SHALL handle a `DeleteLocalRuleSet` message that removes a local override file and reloads.
+The `RuleSetCoordinator` SHALL handle a `DeleteLocalRuleSet` message that removes a local override file and reloads.
 
 #### Scenario: Delete existing
 - **WHEN** a `DeleteLocalRuleSet("tatort")` message is received and a local file exists
@@ -154,7 +158,7 @@ The RuleSetRegistryActor SHALL handle a `DeleteLocalRuleSet` message that remove
 - **THEN** the actor SHALL respond with a not-found indicator
 
 ### Requirement: Test rules message
-The RuleSetRegistryActor SHALL handle a `TestRules` message by searching the Mediathek for the topic, optionally fetching TVDB episodes, running `RuleSetMatchingEngine.EvaluateRulesWithTraces`, and returning the trace results.
+The `RuleSetCoordinator` SHALL handle a `TestRules` message by searching the Mediathek for the topic, optionally fetching TVDB episodes, running `RuleSetMatchingEngine.EvaluateRulesWithTraces`, and returning the trace results.
 
 #### Scenario: Test with TVDB
 - **WHEN** a `TestRules` message is received with topic "Tatort", TVDB ID 83214, and a set of rules

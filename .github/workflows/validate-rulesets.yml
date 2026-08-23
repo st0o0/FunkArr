@@ -1,0 +1,21 @@
+name: validate-rulesets
+
+on:
+  pull_request:
+    paths:
+      - 'data/community/rulesets/**'
+      - 'data/community/ruleset.schema.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli ajv-formats
+      - name: Validate rulesets against schema
+        run: ajv validate -s data/community/ruleset.schema.json -d "data/community/rulesets/*.json" --spec=draft2020 --strict=false

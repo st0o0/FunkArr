@@ -1,113 +1,83 @@
 ## Purpose
 
-Multi-step setup wizard for first-run configuration: API key generation, Prowlarr/arr connections, paths, and verification checks.
+Multi-step setup guide for connecting FunkArr with Prowlarr/Sonarr/Radarr. The wizard does not configure FunkArr itself (configuration is done via environment variables) -- it guides the user through connecting external services and verifying system health.
 
 ## Requirements
 
-### Requirement: First-run detection and wizard redirect
-The system SHALL detect when FunkArr has not been configured (no API key set) and redirect users to the setup wizard automatically. The wizard SHALL call versioned API endpoints at `/api/v1/setup/*` and `/api/v1/config`.
-
-#### Scenario: Unconfigured system
-- **WHEN** a user opens FunkArr for the first time and no API key is configured
-- **THEN** the UI SHALL display the setup wizard instead of the dashboard
-
-#### Scenario: Already configured
-- **WHEN** a user opens FunkArr and an API key is configured
-- **THEN** the UI SHALL display the normal dashboard (queue view)
-
-#### Scenario: Wizard API calls use versioned routes
-- **WHEN** the setup wizard tests a Prowlarr connection
-- **THEN** it SHALL call `POST /api/v1/setup/test-prowlarr`
-
-#### Scenario: Wizard saves config via versioned route
-- **WHEN** the wizard completes and saves configuration
-- **THEN** it SHALL call `PUT /api/v1/config`
-
-### Requirement: API key generation step
-The wizard SHALL provide a step for generating or manually entering an API key.
-
-#### Scenario: Generate API key
-- **WHEN** the user clicks "Generate" in the API key step
-- **THEN** the system SHALL generate a random API key and display it with a copy button
-
-#### Scenario: Manual API key entry
-- **WHEN** the user types a custom API key
-- **THEN** the wizard SHALL accept it and proceed
-
 ### Requirement: Prowlarr mode selection
-The wizard SHALL ask the user whether they use Prowlarr, branching the setup flow accordingly.
+The wizard SHALL allow the user to indicate whether they use Prowlarr, toggling which integration instructions are displayed. This is a UI-only toggle, not a persisted configuration.
 
 #### Scenario: With Prowlarr selected
-- **WHEN** the user selects "With Prowlarr"
-- **THEN** the wizard SHALL show the Prowlarr connection step followed by Sonarr/Radarr as download client only
+- **WHEN** the user indicates they use Prowlarr
+- **THEN** the wizard SHALL show Prowlarr indexer setup instructions and Sonarr/Radarr download-client-only instructions
 
 #### Scenario: Without Prowlarr selected
-- **WHEN** the user selects "Without Prowlarr"
-- **THEN** the wizard SHALL show Sonarr/Radarr setup with instructions for both indexer and download client configuration
+- **WHEN** the user indicates they do not use Prowlarr
+- **THEN** the wizard SHALL show Sonarr/Radarr instructions for both indexer and download client setup
 
 ### Requirement: Prowlarr connection step
-The wizard SHALL allow the user to enter a Prowlarr URL and API key, test the connection, and display instructions for adding FunkArr as a Newznab indexer.
-
-#### Scenario: Prowlarr connection test succeeds
-- **WHEN** the user enters a valid Prowlarr URL and API key and clicks "Test"
-- **THEN** the system SHALL display a success indicator
-
-#### Scenario: Prowlarr connection test fails
-- **WHEN** the user enters an unreachable Prowlarr URL and clicks "Test"
-- **THEN** the system SHALL display an error message with the failure reason
+The wizard SHALL display instructions for adding FunkArr as a Newznab indexer in Prowlarr, with copyable URL and API key fields. The user MAY optionally enter their Prowlarr URL and API key to verify the connection. Entered credentials SHALL remain in browser memory only and SHALL NOT be sent to any persistence endpoint.
 
 #### Scenario: Display indexer instructions
 - **WHEN** the Prowlarr step is active
-- **THEN** the wizard SHALL display copyable fields for URL (`http://funkarr:5000/api`) and API key with instructions for adding a Newznab Custom indexer
+- **THEN** the wizard SHALL display copyable fields for FunkArr's URL and API key with step-by-step instructions for adding a Newznab Custom indexer
+
+#### Scenario: Optional connection test
+- **WHEN** the user enters a Prowlarr URL and API key and clicks "Test"
+- **THEN** the system SHALL call `POST /api/v1/setup/test-prowlarr` with the provided credentials and display the result
+
+#### Scenario: Credentials not persisted
+- **WHEN** the user enters Prowlarr credentials for testing
+- **THEN** the credentials SHALL exist only in Vue component state and SHALL NOT be sent to any config save endpoint
 
 ### Requirement: Arr instance connections
-The wizard SHALL allow adding one or more Sonarr/Radarr instances with URL, API key, type selection, and connection testing.
+The wizard SHALL display instructions for adding FunkArr as a download client (and optionally indexer) in Sonarr/Radarr. The user MAY optionally enter Arr instance URLs and API keys to verify connections. Entered credentials SHALL remain in browser memory only.
 
-#### Scenario: Add Sonarr instance
-- **WHEN** the user clicks "Add" and selects Sonarr
-- **THEN** a new connection form SHALL appear with URL, API key, and test button
+#### Scenario: Display download client instructions
+- **WHEN** the Arr instance step is active
+- **THEN** the wizard SHALL display copyable fields for FunkArr's URL and API key with step-by-step instructions for adding a SABnzbd download client
 
-#### Scenario: Multiple arr instances
-- **WHEN** the user adds a Sonarr and a Radarr instance
-- **THEN** both SHALL be stored in the config and both SHALL be testable independently
+#### Scenario: Optional connection test
+- **WHEN** the user enters an Arr instance URL and API key and clicks "Test"
+- **THEN** the system SHALL call `POST /api/v1/setup/test-arr` with the provided credentials and display the result
 
-#### Scenario: Remove arr instance
-- **WHEN** the user clicks the remove button on an arr instance
-- **THEN** that instance SHALL be removed from the list
+#### Scenario: Multiple instances testable
+- **WHEN** the user adds multiple Arr instances for testing
+- **THEN** each SHALL be testable independently and results SHALL be displayed per instance
 
-#### Scenario: Download client instructions (with Prowlarr)
-- **WHEN** Prowlarr mode is active
-- **THEN** the wizard SHALL show instructions for adding FunkArr as a SABnzbd download client only
+### Requirement: Self-check step
+The wizard SHALL display a self-check showing FunkArr's own health: API key presence, FFmpeg availability, path writability, and Mediathek reachability. For any failing check, the wizard SHALL show fix guidance with the specific environment variable name to set.
 
-#### Scenario: Full instructions (without Prowlarr)
-- **WHEN** direct mode is active
-- **THEN** the wizard SHALL show instructions for adding FunkArr as both a Newznab indexer AND a SABnzbd download client
+#### Scenario: All self-checks pass
+- **WHEN** all self-checks succeed
+- **THEN** the wizard SHALL display green indicators for each check
 
-### Requirement: Paths and downloads step
-The wizard SHALL allow configuring the download path, temp path, concurrent downloads, and optional path mapping.
+#### Scenario: Self-check fails with guidance
+- **WHEN** the download path is not writable
+- **THEN** the wizard SHALL display a failure indicator with guidance like "Set `FunkArr__Download__DownloadPath` to a writable path in your docker-compose.yml"
 
-#### Scenario: Configure paths
-- **WHEN** the user enters download and temp paths
-- **THEN** the wizard SHALL validate the paths via the backend test endpoint
-
-#### Scenario: Path mapping
-- **WHEN** the user enters a path mapping (container:host format)
-- **THEN** the mapping SHALL be stored in config for SABnzbd history path translation
+#### Scenario: Self-check data source
+- **WHEN** the self-check step loads
+- **THEN** it SHALL call `GET /api/v1/setup/status` to retrieve current system health
 
 ### Requirement: Verification step
-The wizard SHALL display a summary of all checks: FFmpeg availability, directory writability, arr connections, Mediathek API reachability, and ruleset count.
+The wizard SHALL offer an optional verification step where the user can run `POST /api/v1/setup/validate` with temporarily entered Prowlarr and Arr credentials to confirm FunkArr is correctly registered in those systems.
 
-#### Scenario: All checks pass
-- **WHEN** all verification checks succeed
-- **THEN** the wizard SHALL display all green checkmarks and enable the "Finish Setup" button
+#### Scenario: Full verification pass
+- **WHEN** the user runs verification and FunkArr is registered in all entered Arr instances
+- **THEN** the wizard SHALL display all green checkmarks
 
-#### Scenario: Some checks fail
-- **WHEN** FFmpeg is not found
-- **THEN** the wizard SHALL display a warning for FFmpeg but still allow completing setup (FFmpeg is needed for muxing, not basic operation)
+#### Scenario: Registration not found
+- **WHEN** FunkArr is not registered as a download client in a tested Sonarr instance
+- **THEN** the wizard SHALL display a warning with instructions for how to add it
 
-### Requirement: Save wizard config
-The wizard SHALL persist all configuration to `data/config.json` via the config API when the user clicks "Finish Setup".
+### Requirement: Paths and downloads step
+The wizard SHALL display the currently configured download path, temp path, and concurrent downloads as read-only information. For any path that is not writable, the wizard SHALL show fix guidance with the environment variable name.
 
-#### Scenario: Config saved
-- **WHEN** the user clicks "Finish Setup"
-- **THEN** all wizard settings SHALL be written to `data/config.json` and the user SHALL be redirected to the dashboard
+#### Scenario: Display current paths
+- **WHEN** the paths step is active
+- **THEN** the wizard SHALL show the configured `DownloadPath`, `TempPath`, and `ConcurrentDownloads` as read-only values
+
+#### Scenario: Path not writable
+- **WHEN** the configured download path is not writable
+- **THEN** the wizard SHALL show a warning with guidance to fix the Docker volume mount or set `FunkArr__Download__DownloadPath`

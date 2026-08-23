@@ -1,53 +1,35 @@
 ## Purpose
 
-UI view for displaying and editing FunkArr configuration: connections, paths, download settings, API key management, and system info.
+UI view for displaying FunkArr system status as a read-only dashboard. Configuration is done via environment variables — the settings view does not edit or save configuration.
 
 ## Requirements
 
 ### Requirement: Settings form
-The UI SHALL display a settings form showing current configuration values: connections (Prowlarr, Sonarr/Radarr instances, Mediathek), paths, download settings, and system info.
+The UI SHALL display a read-only status dashboard showing current system state. No configuration editing, no save button.
 
-#### Scenario: Show current config
+#### Scenario: Show current status
 - **WHEN** the user navigates to settings
-- **THEN** the UI SHALL display current values for all configurable fields, loaded from the config API
+- **THEN** the UI SHALL display current system status loaded from `GET /api/v1/setup/status`
 
-#### Scenario: Connection status indicators
-- **WHEN** settings are displayed
-- **THEN** each connection (Prowlarr, Sonarr, Radarr, Mediathek) SHALL show a live status indicator (connected/unreachable)
+#### Scenario: Display API key for copying
+- **WHEN** the settings page is displayed
+- **THEN** the API key SHALL be shown with a "Copy" button for pasting into Sonarr/Radarr/Prowlarr
 
-#### Scenario: Load current config
-- **WHEN** the user navigates to settings
-- **THEN** the UI SHALL load configuration from `GET /api/v1/config`
+#### Scenario: Connection status via validation
+- **WHEN** the user wants to check Arr connectivity
+- **THEN** they SHALL be directed to the Setup Guide or enter credentials temporarily for a one-off validation check
 
-#### Scenario: Save settings
-- **WHEN** the user modifies settings and clicks "Save"
-- **THEN** the changes SHALL be persisted via `PUT /api/v1/config`
-
-#### Scenario: Test connections
-- **WHEN** the user clicks a "Test" button for Prowlarr
-- **THEN** the UI SHALL call `POST /api/v1/setup/test-prowlarr`
-
-### Requirement: API key management
-The settings view SHALL display the current API key (masked) with options to copy or regenerate it.
-
-#### Scenario: Copy API key
-- **WHEN** the user clicks "Copy"
-- **THEN** the full API key SHALL be copied to the clipboard
-
-#### Scenario: Regenerate API key
-- **WHEN** the user clicks "Regenerate"
-- **THEN** a new API key SHALL be generated, saved to config, and the localStorage key updated
-
-### Requirement: Re-run wizard
-The settings view SHALL provide a button to re-run the setup wizard.
-
-#### Scenario: Re-run wizard
-- **WHEN** the user clicks "Re-run Setup Wizard"
-- **THEN** the wizard SHALL open with current values pre-filled
+#### Scenario: No save functionality
+- **WHEN** the settings page is displayed
+- **THEN** there SHALL be no "Save" button and no editable configuration fields. A note SHALL explain that configuration is done via environment variables.
 
 ### Requirement: System info display
-The settings view SHALL display FFmpeg version, ruleset count, and persistence path.
+The settings view SHALL display FFmpeg version, path writability status, API key (with copy), Mediathek reachability, and a link to the Setup Guide.
 
 #### Scenario: Show system info
 - **WHEN** settings are displayed
-- **THEN** the view SHALL show FFmpeg version (or "not found"), number of loaded ruleset topics, and the database path
+- **THEN** the view SHALL show FFmpeg version (or "not found"), download and temp path writability status, Mediathek reachability, and the configured API key with a copy button
+
+#### Scenario: Setup guide link
+- **WHEN** settings are displayed
+- **THEN** the view SHALL include a link to `/setup` labeled "Setup Guide"

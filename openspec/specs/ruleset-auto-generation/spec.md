@@ -13,7 +13,7 @@ The RuleSetGeneratorActor SHALL emit rulesets in the new format with FilterGroup
 
 #### Scenario: Generated accessibility filters
 - **WHEN** the generator creates a ruleset
-- **THEN** it SHALL include `not: [Filter(field="title", op="regex", value="(?i)audiodesk|gebaerden|hoerfassung|klare sprache")]` instead of relying on hardcoded skip logic
+- **THEN** it SHALL include `not: [Filter(field="title", op="regex", value="(?i)audiodesk|gebärden|gebardensprache|hörfassung|klare sprache")]` instead of relying on hardcoded skip logic
 
 #### Scenario: Per-rule confidence on generated rules
 - **WHEN** the generator creates a rule with detected confidence 0.8

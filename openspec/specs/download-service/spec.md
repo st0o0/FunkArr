@@ -5,7 +5,8 @@
 `DownloadService` SHALL download the video content of a `DownloadRequest` via
 HTTP GET using `HttpCompletionOption.ResponseHeadersRead`, then stream the
 response body to a temp file in 8192-byte chunks rather than buffering the
-whole response in memory.
+whole response in memory. This method SHALL only handle direct HTTP downloads
+(.mp4 URLs). HLS downloads are handled by a separate flow.
 
 #### Scenario: Successful video download
 
@@ -22,84 +23,30 @@ whole response in memory.
   `HttpResponseMessage.EnsureSuccessStatusCode`), and no partial temp file is
   left open for writing
 
-### Requirement: Subtitle download with graceful fallback
-
-`DownloadService` SHALL attempt to download a subtitle file when
-`DownloadRequest.SubtitleUrl` is not null. A non-success response MUST NOT
-throw or fail the overall download — it MUST be treated as "no subtitle
-available."
-
-#### Scenario: Subtitle downloads successfully
-
-- **WHEN** `DownloadRequest.SubtitleUrl` is set and the HTTP GET for it
-  returns a success status code
-- **THEN** the subtitle content is written via `IFileService.WriteSubtitleAsync`
-  to the path returned by `IFileService.GetTempSubtitlePath`, and
-  `DownloadAsync` returns that path as `SubtitlePath`
-
-#### Scenario: Subtitle fetch fails
-
-- **WHEN** `DownloadRequest.SubtitleUrl` is set and the HTTP GET for it
-  returns a non-success status code (e.g. 404)
-- **THEN** `DownloadAsync` does not throw, logs a warning identifying the
-  `NzoId` and the response status, and returns `SubtitlePath` as `null`
-
-#### Scenario: No subtitle requested
-
-- **WHEN** `DownloadRequest.SubtitleUrl` is `null`
-- **THEN** `DownloadAsync` does not attempt any subtitle HTTP request and
-  returns `SubtitlePath` as `null`
-
-### Requirement: Temp file management via IFileService
-
-`DownloadService` SHALL resolve all temp file paths through `IFileService`
-rather than constructing paths itself, so path conventions stay centralized.
-
-#### Scenario: Video temp path resolution
-
-- **WHEN** `DownloadAsync` begins writing the video stream
-- **THEN** the destination file path is obtained from
-  `IFileService.GetTempVideoPath(request.TempPath, request.NzoId)` and no
-  other path construction logic is used
-
-#### Scenario: Subtitle temp path resolution
-
-- **WHEN** a subtitle download succeeds
-- **THEN** the destination file path is obtained from
-  `IFileService.GetTempSubtitlePath(request.TempPath, request.NzoId)`
-
 ### Requirement: Progress callback invocation
 
-`DownloadService.DownloadAsync` SHALL accept an `Action<long, long>` progress
-callback and invoke it with `(downloadedBytes, totalBytes)` no more often
-than every 2 seconds while the video body is being read, using the same
-timing logic as the pre-extraction implementation (`DateTimeOffset.UtcNow`
-comparison against the last report time). The callback MUST NOT be invoked
-for the subtitle download.
+`DownloadService.DownloadAsync` SHALL accept an `IProgress<DownloadProgress>` parameter and invoke `progress.Report(new DownloadProgress(downloadedBytes, totalBytes))` no more often than every 2 seconds while the video body is being read. `DownloadProgress` SHALL be a class with `long DownloadedBytes` and `long TotalBytes` fields. The callback MUST NOT be invoked for the subtitle download.
 
 #### Scenario: Progress reported during a long download
 
 - **WHEN** a 500MB video download takes longer than 2 seconds to complete
-- **THEN** the `onProgress` callback is invoked one or more times during the
-  download, each call passing the cumulative bytes downloaded so far and the
-  total content length from the response's `Content-Length` header (or 0 if
-  absent)
+- **THEN** `progress.Report(...)` is invoked one or more times during the
+  download, each call passing a `DownloadProgress` with the cumulative bytes
+  downloaded so far and the total content length from the response's
+  `Content-Length` header (or 0 if absent)
 
 #### Scenario: Progress callback is lightweight and non-blocking
 
-- **WHEN** the actor supplies an `onProgress` callback that performs a
-  fire-and-forget `self.Tell(...)`
-- **THEN** `DownloadService` invokes the callback synchronously inline in the
-  read loop and does not wrap it in a `Task.Run`, `try`/`catch`, or timeout —
-  callers are responsible for keeping the callback fast and
-  non-throwing
+- **WHEN** the caller supplies an `IProgress<DownloadProgress>` backed by a
+  `Progress<T>` with a callback that updates a shared object
+- **THEN** `DownloadService` invokes `Report` synchronously inline in the
+  read loop and does not wrap it in a `Task.Run`, `try`/`catch`, or timeout
 
 #### Scenario: Fast download completes without a progress report
 
 - **WHEN** the video download completes in under 2 seconds
-- **THEN** `onProgress` may be invoked zero times before `DownloadAsync`
-  returns; this is acceptable because progress reporting is best-effort, not
-  guaranteed-at-least-once
+- **THEN** `progress.Report(...)` may be invoked zero times before
+  `DownloadAsync` returns
 
 ### Requirement: Cancellation support
 
@@ -136,3 +83,24 @@ tested with `IHttpClientFactory` and `IFileService` alone, without an
   `IFileService`
 - **THEN** `DownloadAsync` can be invoked and asserted against directly, with
   no `TestKit`, `ActorSystem`, or stream materialization involved
+
+### Requirement: HLS progress via IProgress
+`HlsDownloadService.DownloadAsync` SHALL accept an `IProgress<DownloadProgress>` parameter replacing the `Action<long, long> onProgress` callback. Progress SHALL be reported via `progress.Report(new DownloadProgress(elapsedSeconds, totalDurationSeconds))`.
+
+#### Scenario: HLS progress reported during download
+- **WHEN** an HLS download is in progress and FFmpeg reports progress
+- **THEN** `progress.Report(...)` is invoked no more often than every 2 seconds with elapsed and total duration
+
+### Requirement: DownloadProgress type
+A `DownloadProgress` class SHALL exist in the `FunkArr.DownloadClient` namespace with `long DownloadedBytes` and `long TotalBytes` fields. The fields SHALL use `Volatile.Write` for updates and `Volatile.Read` for reads to ensure visibility across threads without locking.
+
+#### Scenario: Thread-safe reads
+- **WHEN** a stream thread writes progress via `Report` and an API thread reads the same object
+- **THEN** the API thread sees the latest values without tearing or stale caches
+
+### Requirement: IProgress carried on DownloadRequest
+`DownloadRequest` SHALL include an `IProgress<DownloadProgress>` property. Stream stages SHALL use `req.Progress.Report(...)` instead of sending actor messages for progress updates.
+
+#### Scenario: Progress available in download stage
+- **WHEN** the download stage processes a `DownloadRequest`
+- **THEN** it calls `req.Progress.Report(...)` to report progress without any actor involvement
