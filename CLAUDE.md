@@ -16,15 +16,23 @@ Prowlarr) and SABnzbd-compatible download client API.
 - **Servus AppBuilder startup.** Three setup containers:
   `FunkArrServiceSetup` (DI), `FunkArrActorSystemSetup` (actors + persistence),
   `FunkArrApplicationSetup` (Minimal API endpoints).
-- **Actor hierarchy:** `SearchActor` (cache + rate-limit, stateless),
-  `DownloadQueueActor` (persistent, supervised with backoff),
-  `DownloadWorkerActor` (transient, one per active download),
-  `MuxingActor` (stateless, FFmpeg subprocess).
-- **Event-sourced download queue.** `DownloadQueueActor` is a
-  `ReceivePersistentActor`. Domain events (`DownloadEvents.*`) flow between
-  actors; persistence DTOs (`Persistence/DownloadEventDtos.cs`) go to the
-  journal. Never persist domain events directly — always map via
-  `DownloadEventDtoMapping.ToDto()` / `.ToDomain()`.
+- **Naming convention:** `*Coordinator` (singletons/parents), `*Worker`
+  (children), `*Tracker` (state-holding shard entities).
+- **Actor hierarchy:** `SearchCoordinator` (cache + coalescing + PipeTo pipeline,
+  5 workers: ShowResolver, MediathekGateway, Match, QualityProbe, Score),
+  `RuleSetCoordinator` (index + RefreshWorker + MatchQualityWorker),
+  `QueueCoordinator` (scheduling, MaxConcurrent, event-sourced),
+  `DownloadCoordinator` (shard entity, stage machine, 5 transient workers),
+  `DownloadRequestTracker` (shard entity, API-facing status).
+- **Single-node Cluster Sharding.** Two ShardRegions: `DownloadCoordinator`
+  (per-nzoId work engine) and `DownloadRequestTracker` (per-nzoId API status).
+- **Persistence tiers.** T1 (critical, event-sourced): QueueCoordinator,
+  DownloadCoordinator, DownloadRequestTracker. T2 (cache warmth,
+  event-sourced + snapshots): ShowResolverWorker, MatchQualityWorker.
+  T3 (ephemeral): everything else.
+- **Persistence DTOs** (`FunkArr.Persistence`): extend-only. Never remove or
+  rename a `[JsonProperty]` string. New properties must be nullable or have a
+  default. Increment `Version` when semantics change.
 - **Two API surfaces.** Newznab XML (indexer for Prowlarr) and SABnzbd JSON
   (download client for Sonarr/Radarr). Both authenticate via `ApiKey` query
   parameter.
@@ -58,7 +66,7 @@ Run the service from `src/FunkArr/` (`dotnet run`). Configuration layers:
   edit csproj XML for versions.
 - C#: records for messages/DTOs, `sealed` by default, nullable enabled.
 - Messages: nested `sealed record` inside owning actor (commands, queries,
-  responses). Domain events in `DownloadEvents.cs` (standalone static class).
+  responses). Domain events in dedicated `*Events.cs` files per actor.
 - Persistence DTOs (`FunkArr.Persistence`): extend-only. Never remove or rename
   a `[JsonProperty]` string. New properties must be nullable or have a default.
   Increment `Version` when semantics change. Recovery code must handle all

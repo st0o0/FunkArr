@@ -8,13 +8,9 @@ services:
       - funkarr-data:/app/data
       - /path/to/media:/media
     environment:
-      # ── Required ──────────────────────────────────────────────
-      - FunkArr__ApiKey=your-api-key-here
-
-      # NOTE: env vars below moved from flat FunkArr__X to nested
-      # FunkArr__<Section>__X in the options-decomposition change. If you're
-      # upgrading an existing deployment, rename e.g. FunkArr__DownloadPath to
-      # FunkArr__Download__DownloadPath (see mapping in each section below).
+      # ── API Key ─────────────────────────────────────────────
+      # Default: funkarr-default-api-key (override if desired)
+      #- FunkArr__ApiKey=funkarr-default-api-key
 
       # ── Downloads ─────────────────────────────────────────────
       - FunkArr__Download__DownloadPath=/media/downloads
@@ -47,6 +43,8 @@ services:
       #- FunkArr__Quality__CacheCapacity=50000
       # Max results to probe per search (limits HEAD requests)
       #- FunkArr__Search__QualityProbeLimit=30
+      # TMDB API key for movie title resolution (free at themoviedb.org)
+      #- FunkArr__Search__TmdbApiKey=your-tmdb-api-key
 
       # ── Persistence ───────────────────────────────────────────
       # Default: SQLite at data/funkarr.db (no extra config needed)
@@ -58,10 +56,6 @@ services:
       #- FunkArr__Postgres__User=funkarr
       #- FunkArr__Postgres__Password=changeme
       #- FunkArr__Postgres__Database=funkarr
-
-      # ── Logging ───────────────────────────────────────────────
-      # json = CLEF JSON (for Alloy/Promtail/Loki), text = human-readable
-      - FunkArr__LogFormat=json
 
   # ── Uncomment for PostgreSQL persistence ───────────────────
   # db:

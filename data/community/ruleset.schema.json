@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/st0o0/FunkArr/ruleset.schema.json",
+  "title": "FunkArr Ruleset",
+  "description": "Schema for FunkArr community, generated, and local ruleset files",
+  "type": "object",
+  "required": ["topic", "media", "source", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "topic": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name of the show or media"
+    },
+    "aliases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Alternative names for topic matching"
+    },
+    "media": { "$ref": "#/$defs/mediaReference" },
+    "source": {
+      "type": "string",
+      "enum": ["community", "generated", "local"],
+      "description": "Origin layer of this ruleset"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 1.0,
+      "description": "Overall confidence score"
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rule" },
+      "minItems": 1,
+      "description": "Ordered list of matching rules"
+    },
+    "overrides": { "$ref": "#/$defs/overrideConfig" }
+  },
+  "$defs": {
+    "mediaReference": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "tvdbId": { "type": "integer" },
+        "imdbId": { "type": "string", "pattern": "^tt\\d+$" },
+        "tmdbId": { "type": "integer" },
+        "name": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "enum": ["show", "movie"],
+          "default": "show"
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "required": ["strategy"],
+      "additionalProperties": false,
+      "properties": {
+        "priority": { "type": "integer", "default": 0 },
+        "filters": { "$ref": "#/$defs/filterGroup" },
+        "strategy": { "$ref": "#/$defs/matchingStrategy" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "seasonRegex": { "type": "string" },
+        "episodeRegex": { "type": "string" },
+        "captureGroup": { "type": "integer", "minimum": 0 },
+        "titleRules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/titleRule" },
+          "default": []
+        }
+      }
+    },
+    "filterNode": {
+      "oneOf": [
+        { "$ref": "#/$defs/filter" },
+        { "$ref": "#/$defs/filterGroup" }
+      ]
+    },
+    "filter": {
+      "type": "object",
+      "required": ["$type", "field", "op", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "$type": { "const": "filter" },
+        "field": { "type": "string", "minLength": 1 },
+        "op": { "$ref": "#/$defs/filterOp" },
+        "value": { "type": "string" }
+      }
+    },
+    "filterGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$type": { "const": "group" },
+        "all": { "type": "array", "items": { "$ref": "#/$defs/filterNode" }, "default": [] },
+        "any": { "type": "array", "items": { "$ref": "#/$defs/filterNode" }, "default": [] },
+        "not": { "type": "array", "items": { "$ref": "#/$defs/filterNode" }, "default": [] }
+      }
+    },
+    "matchingStrategy": {
+      "type": "string",
+      "enum": [
+        "seasonAndEpisodeNumber",
+        "itemTitleExact",
+        "itemTitleIncludes",
+        "itemTitleEqualsAirdate",
+        "byAbsoluteEpisodeNumber"
+      ]
+    },
+    "filterOp": {
+      "type": "string",
+      "enum": [
+        "greaterThan",
+        "lessThan",
+        "exactMatch",
+        "contains",
+        "regex",
+        "eq",
+        "notContains"
+      ]
+    },
+    "titleRule": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "$ref": "#/$defs/titleRuleType" },
+        "field": { "type": "string" },
+        "pattern": { "type": "string" },
+        "captureGroup": { "type": "integer", "minimum": 0 },
+        "value": { "type": "string" }
+      }
+    },
+    "titleRuleType": {
+      "type": "string",
+      "enum": ["regex", "static"]
+    },
+    "overrideConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["replace", "merge"],
+          "default": "replace"
+        },
+        "base": { "type": "string" },
+        "add": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rule" },
+          "default": []
+        },
+        "remove": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "default": []
+        }
+      }
+    }
+  }
+}

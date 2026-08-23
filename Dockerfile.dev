@@ -1,0 +1,34 @@
+# syntax=docker/dockerfile:1
+
+# Dev Dockerfile — builds from source, not for CI/production.
+
+FROM node:22-slim AS ui
+WORKDIR /ui
+COPY src/FunkArr.UI/package.json src/FunkArr.UI/package-lock.json ./
+RUN npm ci
+COPY src/FunkArr.UI/ .
+RUN mkdir -p ../FunkArr/wwwroot && npm run build && mv ../FunkArr/wwwroot dist
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY src/global.json src/Directory.Build.props src/Directory.Packages.props ./
+COPY src/FunkArr/FunkArr.csproj FunkArr/
+RUN dotnet restore FunkArr/FunkArr.csproj
+
+COPY src/FunkArr/ FunkArr/
+COPY --from=ui /ui/dist/ FunkArr/wwwroot/
+RUN dotnet publish FunkArr/FunkArr.csproj -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /app/data/temp && chown 1654:1654 /app/data /app/data/temp
+WORKDIR /app
+COPY --from=build /app/publish .
+COPY data/community/rulesets/ /app/data/rulesets/community/
+VOLUME /app/data
+VOLUME /media
+EXPOSE 6969
+ENTRYPOINT ["dotnet", "FunkArr.dll"]

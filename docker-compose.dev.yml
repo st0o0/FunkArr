@@ -1,0 +1,63 @@
+services:
+  funkarr:
+    container_name: funkarr
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "6969:6969"
+    volumes:
+      - funkarr-data:/app/data
+      - media:/media
+    environment:
+      - FunkArr__ApiKey=funkarr-dev-api-key
+      - FunkArr__Download__DownloadPath=/media/downloads
+    depends_on:
+      - sonarr
+      - radarr
+      - prowlarr
+
+  sonarr:
+    container_name: sonarr
+    image: ghcr.io/home-operations/sonarr:rolling
+    ports:
+      - "8989:8989"
+    volumes:
+      - sonarr-config:/config
+      - media:/media
+    environment:
+      SONARR__AUTH__APIKEY: funkarr-dev-api-key
+      SONARR__AUTH__METHOD: External
+      SONARR__AUTH__REQUIRED: DisabledForLocalAddresses
+
+  radarr:
+    container_name: radarr
+    image: ghcr.io/home-operations/radarr:rolling
+    ports:
+      - "7878:7878"
+    volumes:
+      - radarr-config:/config
+      - media:/media
+    environment:
+      RADARR__AUTH__APIKEY: funkarr-dev-api-key
+      RADARR__AUTH__METHOD: External
+      RADARR__AUTH__REQUIRED: DisabledForLocalAddresses
+
+  prowlarr:
+    container_name: prowlarr
+    image: ghcr.io/home-operations/prowlarr:rolling
+    ports:
+      - "9696:9696"
+    volumes:
+      - prowlarr-config:/config
+    environment:
+      PROWLARR__AUTH__APIKEY: funkarr-dev-api-key
+      PROWLARR__AUTH__METHOD: External
+      PROWLARR__AUTH__REQUIRED: DisabledForLocalAddresses
+
+volumes:
+  funkarr-data:
+  media:
+  sonarr-config:
+  radarr-config:
+  prowlarr-config:
