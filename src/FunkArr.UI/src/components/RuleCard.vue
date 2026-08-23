@@ -41,6 +41,32 @@ const props = defineProps<{
 
 const expanded = ref(true)
 
+const opLabels: Record<string, string> = {
+  greaterThan: '>',
+  lessThan: '<',
+  exactMatch: '==',
+  contains: 'contains',
+  regex: '~',
+  eq: '=',
+  notContains: '!contains',
+}
+
+function formatOp(op: string): string {
+  return opLabels[op] ?? op
+}
+
+const strategyLabels: Record<string, string> = {
+  seasonAndEpisodeNumber: 'Season & Episode Number',
+  itemTitleExact: 'Item Title Exact',
+  itemTitleIncludes: 'Item Title Includes',
+  itemTitleEqualsAirdate: 'Item Title Equals Airdate',
+  byAbsoluteEpisodeNumber: 'Absolute Episode Number',
+}
+
+function formatStrategy(s: string): string {
+  return strategyLabels[s] ?? s
+}
+
 function isFilter(node: FilterNode): node is Filter {
   return 'field' in node && 'op' in node && 'value' in node
 }
@@ -58,7 +84,7 @@ function hasFilters(group: FilterGroup): boolean {
     >
       <span class="text-sm font-bold">
         #{{ props.index }} &middot; priority:{{ props.rule.priority }} &middot;
-        <span class="font-mono">{{ props.rule.strategy }}</span>
+        <span>{{ formatStrategy(props.rule.strategy) }}</span>
       </span>
       <span class="text-xs text-neutral-400">{{ expanded ? '&#9650;' : '&#9660;' }}</span>
     </button>
@@ -81,8 +107,8 @@ function hasFilters(group: FilterGroup): boolean {
               <template v-if="isFilter(node)">
                 <span class="font-mono text-xs">
                   {{ (node as Filter).field }}
-                  <span class="text-neutral-500">{{ (node as Filter).op }}</span>
-                  {{ (node as Filter).value }}
+                  <span class="text-neutral-500">{{ formatOp((node as Filter).op) }}</span>
+                  <span class="font-semibold">{{ (node as Filter).value }}</span>
                 </span>
               </template>
               <template v-else>
@@ -118,14 +144,14 @@ function hasFilters(group: FilterGroup): boolean {
           class="ml-2 text-sm"
         >
           <span class="text-xs font-medium text-neutral-400">{{ tr.type }}</span>
-          <template v-if="tr.type === 'Regex'">
+          <template v-if="tr.type.toLowerCase() === 'regex'">
             <span class="ml-1 text-neutral-500">{{ tr.field }}:</span>
             <code class="font-mono text-xs ml-1 bg-neutral-100 dark:bg-neutral-800 px-1 rounded">{{ tr.pattern }}</code>
             <span v-if="tr.captureGroup != null" class="text-xs text-neutral-500 ml-1">
               group:{{ tr.captureGroup }}
             </span>
           </template>
-          <template v-if="tr.type === 'Static'">
+          <template v-if="tr.type.toLowerCase() === 'static'">
             <span class="ml-1 font-mono text-xs">{{ tr.value }}</span>
           </template>
         </div>

@@ -22,7 +22,15 @@ const emit = defineEmits<{
 }>()
 
 const fields = ['duration', 'title', 'description', 'topic', 'channel']
-const ops = ['GreaterThan', 'LessThan', 'ExactMatch', 'Contains', 'Regex', 'Eq', 'NotContains']
+const ops = [
+  { value: 'greaterThan', label: 'Greater Than' },
+  { value: 'lessThan', label: 'Less Than' },
+  { value: 'exactMatch', label: 'Exact Match' },
+  { value: 'contains', label: 'Contains' },
+  { value: 'regex', label: 'Regex' },
+  { value: 'eq', label: 'Equals' },
+  { value: 'notContains', label: 'Not Contains' },
+]
 
 function update(group: FilterGroup) {
   emit('update:modelValue', { ...group })
@@ -36,7 +44,7 @@ function addFilter(section: 'all' | 'any' | 'not') {
   }
   newGroup[section] = [
     ...newGroup[section],
-    { field: 'title', op: 'Contains', value: '' } as Filter,
+    { field: 'title', op: 'contains', value: '' } as Filter,
   ]
   update(newGroup)
 }
@@ -102,7 +110,7 @@ function isFilter(node: FilterNode): node is Filter {
             class="border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 rounded px-2 py-1.5 text-sm"
             @change="updateFilter(section, i, 'op', ($event.target as HTMLSelectElement).value)"
           >
-            <option v-for="o in ops" :key="o" :value="o">{{ o }}</option>
+            <option v-for="o in ops" :key="o.value" :value="o.value">{{ o.label }}</option>
           </select>
           <input
             :value="(node as Filter).value"

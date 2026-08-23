@@ -9,7 +9,6 @@ public class FunkArrOptionsValidatorTests
     private static FunkArrOptions ValidOptions() => new()
     {
         ApiKey = "test-key",
-        LogFormat = "text",
     };
 
     [Fact]

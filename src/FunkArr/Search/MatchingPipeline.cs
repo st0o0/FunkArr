@@ -280,7 +280,7 @@ public static partial class MatchingPipeline
             Url = url,
             UrlSubtitle = string.IsNullOrEmpty(item.Url_Subtitle) ? null : item.Url_Subtitle,
             DurationSeconds = item.Duration,
-            SizeBytes = item.Size > 0 ? item.Size : EstimateSize(item.Duration, quality),
+            SizeBytes = item.Size is > 0 ? item.Size.Value : EstimateSize(item.Duration, quality),
             Timestamp = timestamp,
             Description = string.IsNullOrEmpty(item.Description) ? null : item.Description,
             Quality = quality,

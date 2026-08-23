@@ -1,6 +1,6 @@
-using FunkArr.Api;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Prometheus;
 using Scalar.AspNetCore;
 using Servus.Core.Application.Startup;
 
@@ -11,7 +11,6 @@ public sealed class FunkArrApplicationSetup : ApplicationSetupContainer<WebAppli
     protected override void SetupApplication(WebApplication app)
     {
         app.UseStaticFiles();
-        app.UseMiddleware<ApiKeyMiddleware>();
 
         app.MapHealthChecks("/healthz", new HealthCheckOptions
         {
@@ -23,6 +22,8 @@ public sealed class FunkArrApplicationSetup : ApplicationSetupContainer<WebAppli
             },
         });
         app.MapGet("/alive", () => Results.Ok("Alive"));
+        app.UseHttpMetrics();
+        app.MapMetrics();
         app.MapControllers();
         app.MapScalarApiReference();
         app.MapOpenApi();

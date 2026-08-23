@@ -2,16 +2,15 @@ using System.Net;
 using System.Text;
 using FunkArr.DownloadClient;
 using FunkArr.Shared;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FunkArr.Tests.DownloadClient;
 
-public sealed class DownloadServiceTests : IDisposable
+public sealed class Mp4DownloadServiceTests : IDisposable
 {
     private readonly string _tempDir = Path.Combine(
         Path.GetTempPath(), "funkarr-download-test-" + Guid.NewGuid().ToString("N")[..8]);
 
-    public DownloadServiceTests()
+    public Mp4DownloadServiceTests()
     {
         Directory.CreateDirectory(_tempDir);
     }
@@ -29,9 +28,9 @@ public sealed class DownloadServiceTests : IDisposable
         var handler = new FakeHandler(videoBytes);
         var fileService = new FakeFileService(_tempDir);
         var sut = CreateService(handler, fileService);
-        var request = CreateRequest(subtitleUrl: null);
+        var request = CreateRequest();
 
-        var result = await sut.DownloadAsync(request, (_, _) => { });
+        var result = await sut.DownloadAsync(request, new Progress<DownloadProgress>(_ => { }));
 
         Assert.Equal(fileService.GetTempVideoPath(request.TempPath, request.NzoId), result.VideoPath);
         Assert.True(File.Exists(result.VideoPath));
@@ -39,49 +38,17 @@ public sealed class DownloadServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task DownloadAsync_SubtitleSucceeds_WritesSubtitleAndReturnsPath()
-    {
-        var videoBytes = Encoding.UTF8.GetBytes("video-content");
-        var subtitleBytes = Encoding.UTF8.GetBytes("1\n00:00:00,000 --> 00:00:01,000\nHello\n");
-        var handler = new FakeHandler(videoBytes, subtitleBytes: subtitleBytes);
-        var fileService = new FakeFileService(_tempDir);
-        var sut = CreateService(handler, fileService);
-        var request = CreateRequest(subtitleUrl: "https://example.com/sub.srt");
-
-        var result = await sut.DownloadAsync(request, (_, _) => { });
-
-        Assert.NotNull(result.SubtitlePath);
-        Assert.True(File.Exists(result.SubtitlePath));
-        Assert.Equal(subtitleBytes, await File.ReadAllBytesAsync(result.SubtitlePath!));
-    }
-
-    [Fact]
-    public async Task DownloadAsync_SubtitleFails_ReturnsNullWithoutThrowing()
-    {
-        var videoBytes = Encoding.UTF8.GetBytes("video-content");
-        var handler = new FakeHandler(videoBytes, subtitleStatusCode: HttpStatusCode.NotFound);
-        var fileService = new FakeFileService(_tempDir);
-        var sut = CreateService(handler, fileService);
-        var request = CreateRequest(subtitleUrl: "https://example.com/sub.srt");
-
-        var result = await sut.DownloadAsync(request, (_, _) => { });
-
-        Assert.Null(result.SubtitlePath);
-    }
-
-    [Fact]
-    public async Task DownloadAsync_NoSubtitleUrl_MakesNoSubtitleRequest()
+    public async Task DownloadAsync_AlwaysReturnsNullSubtitlePath()
     {
         var videoBytes = Encoding.UTF8.GetBytes("video-content");
         var handler = new FakeHandler(videoBytes);
         var fileService = new FakeFileService(_tempDir);
         var sut = CreateService(handler, fileService);
-        var request = CreateRequest(subtitleUrl: null);
+        var request = CreateRequest();
 
-        var result = await sut.DownloadAsync(request, (_, _) => { });
+        var result = await sut.DownloadAsync(request, new Progress<DownloadProgress>(_ => { }));
 
         Assert.Null(result.SubtitlePath);
-        Assert.Equal(0, handler.SubtitleRequestCount);
     }
 
     [Fact]
@@ -91,12 +58,11 @@ public sealed class DownloadServiceTests : IDisposable
         var handler = new FakeHandler(videoBytes);
         var fileService = new FakeFileService(_tempDir);
         var sut = CreateService(handler, fileService);
-        var request = CreateRequest(subtitleUrl: null);
-        var progressCalls = new List<(long Downloaded, long Total)>();
+        var request = CreateRequest();
+        var progressCalls = new List<DownloadProgress>();
 
-        await sut.DownloadAsync(request, (downloaded, total) => progressCalls.Add((downloaded, total)));
+        await sut.DownloadAsync(request, new Progress<DownloadProgress>(p => progressCalls.Add(p)));
 
-        // Best-effort reporting: a sub-2-second download is allowed to report zero times.
         Assert.True(progressCalls.Count is 0 or > 0);
     }
 
@@ -106,12 +72,11 @@ public sealed class DownloadServiceTests : IDisposable
         var handler = new FakeHandler([], videoStatusCode: HttpStatusCode.InternalServerError);
         var fileService = new FakeFileService(_tempDir);
         var sut = CreateService(handler, fileService);
-        var request = CreateRequest(subtitleUrl: null);
+        var request = CreateRequest();
 
-        await Assert.ThrowsAsync<HttpRequestException>(() => sut.DownloadAsync(request, (_, _) => { }));
+        await Assert.ThrowsAsync<HttpRequestException>(() => sut.DownloadAsync(request, new Progress<DownloadProgress>(_ => { })));
 
         var expectedPath = fileService.GetTempVideoPath(request.TempPath, request.NzoId);
-        // File may or may not exist (never written to), but must not be locked.
         if (File.Exists(expectedPath))
         {
             await using var stream = File.Open(expectedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
@@ -125,24 +90,25 @@ public sealed class DownloadServiceTests : IDisposable
         var handler = new FakeHandler(videoBytes, delayPerChunk: TimeSpan.FromMilliseconds(50));
         var fileService = new FakeFileService(_tempDir);
         var sut = CreateService(handler, fileService);
-        var request = CreateRequest(subtitleUrl: null);
+        var request = CreateRequest();
 
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(75));
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => sut.DownloadAsync(request, (_, _) => { }, cts.Token));
+            () => sut.DownloadAsync(request, new Progress<DownloadProgress>(_ => { }), cts.Token));
     }
 
-    private static DownloadService CreateService(FakeHandler handler, IFileService fileService)
-        => new(new TestHttpClientFactory(handler), fileService, NullLogger<DownloadService>.Instance);
+    private static Mp4DownloadService CreateService(FakeHandler handler, IFileService fileService)
+        => new(new TestHttpClientFactory(handler), fileService);
 
-    private static DownloadRequest CreateRequest(string? subtitleUrl) => new(
+    private static DownloadRequest CreateRequest() => new(
         NzoId: "nzo1",
         VideoUrl: "https://example.com/video.mp4",
-        SubtitleUrl: subtitleUrl,
+        SubtitleUrl: null,
         TempPath: "temp",
         OutputDir: "out",
-        Title: "Title");
+        Title: "Title",
+        Progress: new Progress<DownloadProgress>(_ => { }));
 
     private sealed class TestHttpClientFactory(HttpMessageHandler handler) : IHttpClientFactory
     {
@@ -156,7 +122,10 @@ public sealed class DownloadServiceTests : IDisposable
         public string GetTempVideoPath(string tempPath, string nzoId)
             => Path.Combine(tempDir, $"{nzoId}.video.tmp");
 
-        public string GetTempSubtitlePath(string tempPath, string nzoId)
+        public string GetTempSubtitlePath(string tempPath, string nzoId, string extension = ".sub")
+            => Path.Combine(tempDir, $"{nzoId}{extension}");
+
+        public string GetNormalizedSubtitlePath(string tempPath, string nzoId)
             => Path.Combine(tempDir, $"{nzoId}.srt");
 
         public string GetOutputPath(string downloadPath, string title)
@@ -174,46 +143,22 @@ public sealed class DownloadServiceTests : IDisposable
     private sealed class FakeHandler : HttpMessageHandler
     {
         private readonly byte[] _videoBytes;
-        private readonly byte[]? _subtitleBytes;
         private readonly HttpStatusCode _videoStatusCode;
-        private readonly HttpStatusCode _subtitleStatusCode;
         private readonly TimeSpan? _delayPerChunk;
-
-        public int SubtitleRequestCount { get; private set; }
 
         public FakeHandler(
             byte[] videoBytes,
-            byte[]? subtitleBytes = null,
             HttpStatusCode videoStatusCode = HttpStatusCode.OK,
-            HttpStatusCode subtitleStatusCode = HttpStatusCode.OK,
             TimeSpan? delayPerChunk = null)
         {
             _videoBytes = videoBytes;
-            _subtitleBytes = subtitleBytes;
             _videoStatusCode = videoStatusCode;
-            _subtitleStatusCode = subtitleStatusCode;
             _delayPerChunk = delayPerChunk;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var isSubtitle = request.RequestUri!.AbsolutePath.EndsWith(".srt", StringComparison.Ordinal);
-
-            if (isSubtitle)
-            {
-                SubtitleRequestCount++;
-                if (_subtitleStatusCode != HttpStatusCode.OK)
-                {
-                    return new HttpResponseMessage(_subtitleStatusCode);
-                }
-
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new ByteArrayContent(_subtitleBytes ?? []),
-                };
-            }
-
             if (_videoStatusCode != HttpStatusCode.OK)
             {
                 return new HttpResponseMessage(_videoStatusCode)

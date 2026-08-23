@@ -10,6 +10,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Akka.Cluster.Hosting" />
         <PackageReference Include="Akka.Hosting" />
         <PackageReference Include="Akka.Logger.Serilog" />
         <PackageReference Include="Akka.Persistence.Sql.Hosting" />
@@ -20,15 +21,14 @@
         <PackageReference Include="Serilog.Enrichers.Environment" />
         <PackageReference Include="Serilog.Enrichers.Thread" />
         <PackageReference Include="Serilog.Extensions.Hosting" />
-        <PackageReference Include="Serilog.Formatting.Compact" />
+
         <PackageReference Include="Serilog.Settings.Configuration" />
         <PackageReference Include="Serilog.Sinks.Console" />
         <PackageReference Include="Servus" />
         <PackageReference Include="Servus.Akka" />
-        <PackageReference Include="Asp.Versioning.Mvc" />
-        <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
         <PackageReference Include="Scalar.AspNetCore" />
+        <PackageReference Include="prometheus-net.AspNetCore" />
     </ItemGroup>
 
 </Project>

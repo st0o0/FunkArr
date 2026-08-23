@@ -65,7 +65,7 @@ public class FakeNzbBuilderTests
             "https://example.com/video.mp4",
             "Test Title");
 
-        Assert.StartsWith("http://localhost:8080/api/fake_nzb?url=", result);
+        Assert.StartsWith("http://localhost:8080/index/api/fake_nzb?url=", result);
         Assert.Contains("&title=", result);
     }
 }

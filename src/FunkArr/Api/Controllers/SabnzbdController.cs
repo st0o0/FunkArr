@@ -1,7 +1,7 @@
 using System.Globalization;
 using Akka.Actor;
 using Akka.Hosting;
-using Asp.Versioning;
+using FunkArr.Api.Models;
 using FunkArr.Configuration;
 using FunkArr.DownloadClient;
 using FunkArr.Indexer;
@@ -11,8 +11,8 @@ using Microsoft.Extensions.Options;
 namespace FunkArr.Api.Controllers;
 
 [ApiController]
-[ApiVersionNeutral]
 [Route("download/api")]
+[Route("sabnzbd/api")]
 [Tags("SABnzbd Emulation")]
 public sealed class SabnzbdController(
     ActorRegistry actorRegistry,
@@ -21,117 +21,117 @@ public sealed class SabnzbdController(
     private static readonly TimeSpan AskTimeout = TimeSpan.FromSeconds(10);
 
     [HttpGet("")]
-    public async Task<IActionResult> HandleGet()
+    [ProducesResponseType(200)]
+    public async Task<IActionResult> HandleGet([FromQuery] string? mode)
     {
-        var mode = Request.Query["mode"].FirstOrDefault()?.ToLowerInvariant();
-        var queueActor = await actorRegistry.GetAsync<DownloadQueueActor>();
+        var normalizedMode = mode?.ToLowerInvariant();
 
-        return mode switch
+        return normalizedMode switch
         {
-            "version" => Content("4.3.3", "text/plain"),
+            "version" => Ok(new SabnzbdVersionResponse("4.3.3")),
             "get_config" => HandleGetConfig(),
-            "queue" => await HandleQueue(queueActor),
-            "history" => await HandleHistory(queueActor),
-            _ => SabnzbdError($"Unknown mode: {mode}"),
+            "queue" => await HandleQueue(),
+            "history" => await HandleHistory(),
+            _ => Ok(new SabnzbdErrorResponse(false, $"Unknown mode: {mode}")),
         };
     }
 
     [HttpPost("")]
     [DisableRequestSizeLimit]
-    public async Task<IActionResult> HandlePost()
+    [ProducesResponseType(200)]
+    public async Task<IActionResult> HandlePost([FromQuery] string? mode, [FromForm] IFormFile? file)
     {
-        var mode = Request.Query["mode"].FirstOrDefault()?.ToLowerInvariant();
+        var normalizedMode = mode?.ToLowerInvariant();
 
-        if (mode == "addfile")
+        if (normalizedMode == "addfile")
         {
-            return await HandleAddFile();
+            return await HandleAddFile(file);
         }
 
-        return SabnzbdError($"Unknown mode: {mode}");
+        return Ok(new SabnzbdErrorResponse(false, $"Unknown mode: {mode}"));
     }
 
     private IActionResult HandleGetConfig()
     {
-        var config = new
-        {
-            misc = new { complete_dir = downloadOptions.Value.DownloadPath },
-        };
-        return Ok(config);
+        return Ok(new SabnzbdConfigResponse(new SabnzbdConfig(
+            new SabnzbdMiscConfig(downloadOptions.Value.DownloadPath ?? string.Empty),
+            [
+                new SabnzbdCategory("tv", "tv", 0, ""),
+                new SabnzbdCategory("movies", "movies", 1, ""),
+            ])));
     }
 
-    private async Task<IActionResult> HandleQueue(IActorRef queueActor)
+    private async Task<IActionResult> HandleQueue()
     {
-        var response = await queueActor.Ask<DownloadQueueActor.QueueResponse>(
-            new DownloadQueueActor.GetQueue(), AskTimeout);
+        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
+        var trackerShard = actorRegistry.Get<DownloadRequestTracker>();
 
-        var slots = response.Jobs.Select(j => new
-        {
-            nzo_id = j.NzoId,
-            filename = j.Title,
-            status = j.Status switch
+        var orderResponse = await queueCoordinator.Ask<QueueCoordinator.QueueOrderResponse>(
+            new QueueCoordinator.GetQueueOrder(), AskTimeout);
+
+        var statusTasks = orderResponse.Entries
+            .Select(e => trackerShard.Ask<DownloadRequestTracker.StatusResponse>(
+                new DownloadRequestTracker.GetStatus(e.NzoId), AskTimeout))
+            .ToList();
+
+        var statuses = await Task.WhenAll(statusTasks);
+
+        var slots = statuses.Select(s => new SabnzbdQueueSlot(
+            s.NzoId,
+            s.Title,
+            s.Status switch
             {
-                DownloadStatus.Downloading => "Downloading",
-                DownloadStatus.Muxing => "Extracting",
+                "Downloading" => "Downloading",
+                "Muxing" => "Extracting",
                 _ => "Queued",
             },
-            percentage = j.ProgressPercent.ToString("F0", CultureInfo.InvariantCulture),
-            mb = (j.TotalBytes / 1024.0 / 1024.0).ToString("F2", CultureInfo.InvariantCulture),
-            mbleft = ((j.TotalBytes - j.DownloadedBytes) / 1024.0 / 1024.0).ToString("F2", CultureInfo.InvariantCulture),
-            timeleft = "0:00:00",
-        }).ToArray();
+            "0",
+            "0.00",
+            "0.00",
+            "0:00:00")).ToArray();
 
-        var totalMb = response.Jobs.Sum(j => j.TotalBytes) / 1024.0 / 1024.0;
-        var totalMbLeft = response.Jobs.Sum(j => j.TotalBytes - j.DownloadedBytes) / 1024.0 / 1024.0;
-
-        return Ok(new
-        {
-            queue = new
-            {
-                status = slots.Length > 0 ? "Downloading" : "Idle",
-                slots,
-                speed = "0 B/s",
-                timeleft = "0:00:00",
-                mb = totalMb.ToString("F2", CultureInfo.InvariantCulture),
-                mbleft = totalMbLeft.ToString("F2", CultureInfo.InvariantCulture),
-            },
-        });
+        return Ok(new SabnzbdQueueResponse(new SabnzbdQueue(
+            slots.Length > 0 ? "Downloading" : "Idle",
+            slots,
+            "0 B/s",
+            "0:00:00",
+            "0.00",
+            "0.00")));
     }
 
-    private async Task<IActionResult> HandleHistory(IActorRef queueActor)
+    private async Task<IActionResult> HandleHistory()
     {
-        var response = await queueActor.Ask<DownloadQueueActor.HistoryResponse>(
-            new DownloadQueueActor.GetHistory(), AskTimeout);
+        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
+        var trackerShard = actorRegistry.Get<DownloadRequestTracker>();
+
+        var completedResponse = await queueCoordinator.Ask<QueueCoordinator.CompletedJobIdsResponse>(
+            new QueueCoordinator.GetCompletedJobIds(), AskTimeout);
 
         var pathMapping = PathMappingHelper.ParsePathMapping(downloadOptions.Value.PathMapping);
 
-        var slots = response.Jobs.Select(j => new
-        {
-            nzo_id = j.NzoId,
-            name = j.Title,
-            status = j.Status == DownloadStatus.Completed ? "Completed" : "Failed",
-            storage = PathMappingHelper.MapPath(j.OutputPath ?? string.Empty, pathMapping),
-            completed = j.CompletedAt?.ToUnixTimeSeconds() ?? 0,
-            fail_message = j.ErrorMessage ?? string.Empty,
-        }).ToArray();
+        var historyTasks = completedResponse.NzoIds
+            .Select(nzoId => trackerShard.Ask<DownloadRequestTracker.HistoryEntryResponse>(
+                new DownloadRequestTracker.GetHistoryEntry(nzoId), AskTimeout))
+            .ToList();
 
-        return Ok(new
-        {
-            history = new
-            {
-                slots,
-                noofslots = slots.Length,
-            },
-        });
+        var entries = await Task.WhenAll(historyTasks);
+
+        var slots = entries.Select(e => new SabnzbdHistorySlot(
+            e.NzoId,
+            e.Title,
+            e.Status,
+            PathMappingHelper.MapPath(e.OutputPath ?? string.Empty, pathMapping),
+            e.CompletedAt?.ToUnixTimeSeconds() ?? 0,
+            e.ErrorMessage ?? string.Empty)).ToArray();
+
+        return Ok(new SabnzbdHistoryResponse(new SabnzbdHistory(slots, slots.Length)));
     }
 
-    private async Task<IActionResult> HandleAddFile()
+    private async Task<IActionResult> HandleAddFile(IFormFile? file)
     {
-        var form = await Request.ReadFormAsync();
-        var file = form.Files.FirstOrDefault();
-
         if (file is null)
         {
-            return Ok(new { status = false, error = "No file uploaded" });
+            return Ok(new SabnzbdAddFileResponse(false, Error: "No file uploaded"));
         }
 
         using var reader = new StreamReader(file.OpenReadStream());
@@ -140,20 +140,13 @@ public sealed class SabnzbdController(
 
         if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(title))
         {
-            return Ok(new { status = false, error = "Could not extract download URL from NZB" });
+            return Ok(new SabnzbdAddFileResponse(false, Error: "Could not extract download URL from NZB"));
         }
 
-        var queueActor = await actorRegistry.GetAsync<DownloadQueueActor>();
-        var nzoId = await queueActor.Ask<string>(
-            new DownloadQueueActor.EnqueueDownload(url, title, subtitleUrl), AskTimeout);
+        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
+        var nzoId = await queueCoordinator.Ask<string>(
+            new QueueCoordinator.Enqueue(url, title, subtitleUrl), AskTimeout);
 
-        return Ok(new
-        {
-            status = true,
-            nzo_ids = new[] { nzoId },
-        });
+        return Ok(new SabnzbdAddFileResponse(true, NzoIds: [nzoId]));
     }
-
-    private static IActionResult SabnzbdError(string message) =>
-        new OkObjectResult(new { status = false, error = message });
 }

@@ -1,8 +1,6 @@
-using Akka.Actor;
-using Akka.DependencyInjection;
+using Akka.Cluster.Hosting;
 using Akka.Hosting;
 using Akka.Logger.Serilog;
-using Akka.Pattern;
 using Akka.Persistence.Sql.Hosting;
 using FunkArr.DownloadClient;
 using FunkArr.RuleSet;
@@ -16,10 +14,6 @@ namespace FunkArr.Configuration;
 
 public sealed class FunkArrActorSystemSetup : ActorSystemSetupContainer
 {
-    private static readonly TimeSpan MinBackoff = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(30);
-    private const double RandomFactor = 0.2;
-
     protected override string GetActorSystemName() => "funkarr";
 
     protected override void BuildSystem(AkkaConfigurationBuilder builder, IServiceProvider serviceProvider)
@@ -34,34 +28,33 @@ public sealed class FunkArrActorSystemSetup : ActorSystemSetupContainer
         var providerName = usePostgres ? ProviderName.PostgreSQL : ProviderName.SQLiteMS;
 
         builder
+            .WithActorSystemLivenessCheck()
             .ConfigureLoggers(loggers =>
             {
                 loggers.ClearLoggers();
                 loggers.AddLoggerFactory();
                 loggers.AddSerilogLogging();
             })
-            .WithSqlPersistence(connectionString, providerName, autoInitialize: true)
-            .WithActors((system, registry, resolver) =>
-            {
-                RegisterWithBackoff<DownloadQueueActor>(system, registry, resolver, "download-queue");
-            })
+            .WithSqlPersistence(
+                connectionString, providerName, autoInitialize: true,
+                journalBuilder: journal => journal.WithHealthCheck(),
+                snapshotBuilder: snapshot => snapshot.WithHealthCheck())
+            .WithClustering()
+            .WithShardRegion<DownloadRequestTracker>(
+                typeName: "download-request-tracker",
+                entityPropsFactory: (_, _, resolver) => _ => resolver.Props<DownloadRequestTracker>(),
+                messageExtractor: new DownloadRequestTrackerMessageExtractor(),
+                shardOptions: new ShardOptions())
+            .WithShardRegion<DownloadCoordinator>(
+                typeName: "download-coordinator",
+                entityPropsFactory: (_, _, resolver) => _ => resolver.Props<DownloadCoordinator>(),
+                messageExtractor: new DownloadCoordinatorMessageExtractor(),
+                shardOptions: new ShardOptions())
             .WithResolvableActors(r =>
             {
-                r.Register<RuleSetRegistryActor>("ruleset-registry");
-                r.Register<MatchLedgerActor>("match-ledger");
-                r.Register<SearchActor>("search");
+                r.Register<RuleSetCoordinator>("ruleset-registry");
+                r.Register<SearchCoordinator>("search");
+                r.Register<QueueCoordinator>("queue-coordinator");
             });
-    }
-
-    private static void RegisterWithBackoff<TActor>(
-        ActorSystem system, IActorRegistry registry,
-        IDependencyResolver resolver, string name)
-        where TActor : ActorBase
-    {
-        var childProps = resolver.Props<TActor>();
-        var supervisorProps = BackoffSupervisor.Props(
-            Backoff.OnFailure(childProps, name, MinBackoff, MaxBackoff, RandomFactor, maxNrOfRetries: -1));
-        var supervisor = system.ActorOf(supervisorProps, $"{name}-supervisor");
-        registry.Register<TActor>(supervisor);
     }
 }

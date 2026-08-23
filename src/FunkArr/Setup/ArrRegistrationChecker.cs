@@ -23,7 +23,7 @@ internal static class ArrRegistrationChecker
             selfUrl: selfUrl,
             hostFieldNames: ["baseurl", "apipath"],
             notRegisteredFixGuidance:
-                "In Prowlarr, go to Settings > Indexers > Add Indexer > Newznab and add FunkArr using its Newznab URL and API key.");
+                "In Prowlarr, go to Settings > Indexers > Add Indexer > Newznab and add FunkArr. Use the base URL (e.g. http://funkarr:6969) without /api — Prowlarr appends the API path automatically.");
     }
 
     public static async Task<CheckResult> CheckArrDownloadClientRegisteredAsync(

@@ -6,4 +6,5 @@ public sealed record DownloadRequest(
     string? SubtitleUrl,
     string TempPath,
     string OutputDir,
-    string Title);
+    string Title,
+    IProgress<DownloadProgress> Progress);

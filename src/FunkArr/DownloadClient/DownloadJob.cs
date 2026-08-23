@@ -7,14 +7,10 @@ public sealed record DownloadJob
     public required string Title { get; init; }
     public string? SubtitleUrl { get; init; }
     public DownloadStatus Status { get; init; } = DownloadStatus.Queued;
-    public double ProgressPercent { get; init; }
-    public long TotalBytes { get; init; }
-    public long DownloadedBytes { get; init; }
     public string? OutputPath { get; init; }
     public string? ErrorMessage { get; init; }
     public DateTimeOffset EnqueuedAt { get; init; }
     public DateTimeOffset? CompletedAt { get; init; }
-    public int RetryCount { get; init; }
 }
 
 public enum DownloadStatus

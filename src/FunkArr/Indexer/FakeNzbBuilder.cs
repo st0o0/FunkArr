@@ -8,7 +8,7 @@ public static class FakeNzbBuilder
     {
         var encodedUrl = Convert.ToBase64String(Encoding.UTF8.GetBytes(downloadUrl));
         var encodedTitle = Convert.ToBase64String(Encoding.UTF8.GetBytes(title));
-        return $"{baseUrl}/api/fake_nzb?url={Uri.EscapeDataString(encodedUrl)}&title={Uri.EscapeDataString(encodedTitle)}";
+        return $"{baseUrl}/index/api/fake_nzb?url={Uri.EscapeDataString(encodedUrl)}&title={Uri.EscapeDataString(encodedTitle)}";
     }
 
     public static string BuildFakeNzbXml(string downloadUrl, string title, string? subtitleUrl = null)

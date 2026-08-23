@@ -11,7 +11,10 @@ public sealed class FileService : IFileService
     public string GetTempVideoPath(string tempPath, string nzoId)
         => Path.Combine(tempPath, $"{nzoId}.mp4");
 
-    public string GetTempSubtitlePath(string tempPath, string nzoId)
+    public string GetTempSubtitlePath(string tempPath, string nzoId, string extension = ".sub")
+        => Path.Combine(tempPath, $"{nzoId}{extension}");
+
+    public string GetNormalizedSubtitlePath(string tempPath, string nzoId)
         => Path.Combine(tempPath, $"{nzoId}.srt");
 
     public string GetOutputPath(string downloadPath, string title)

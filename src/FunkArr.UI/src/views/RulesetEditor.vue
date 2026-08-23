@@ -54,11 +54,11 @@ const topic = route.params.topic as string | undefined
 const isNew = !topic
 
 const strategies = [
-  'SeasonAndEpisodeNumber',
-  'ItemTitleExact',
-  'ItemTitleIncludes',
-  'ItemTitleEqualsAirdate',
-  'ByAbsoluteEpisodeNumber',
+  { value: 'seasonAndEpisodeNumber', label: 'Season & Episode Number' },
+  { value: 'itemTitleExact', label: 'Item Title Exact' },
+  { value: 'itemTitleIncludes', label: 'Item Title Includes' },
+  { value: 'itemTitleEqualsAirdate', label: 'Item Title Equals Airdate' },
+  { value: 'byAbsoluteEpisodeNumber', label: 'Absolute Episode Number' },
 ]
 
 const form = ref<RuleSetFile>({
@@ -76,7 +76,7 @@ const saving = ref(false)
 const error = ref<string | null>(null)
 
 const showRegex = computed(() => (strategy: string) =>
-  strategy === 'SeasonAndEpisodeNumber' || strategy === 'ByAbsoluteEpisodeNumber',
+  strategy === 'seasonAndEpisodeNumber' || strategy === 'byAbsoluteEpisodeNumber',
 )
 
 function emptyFilterGroup(): FilterGroup {
@@ -87,7 +87,7 @@ function addRule() {
   form.value.rules.push({
     priority: form.value.rules.length,
     filters: emptyFilterGroup(),
-    strategy: 'SeasonAndEpisodeNumber',
+    strategy: 'seasonAndEpisodeNumber',
     titleRules: [],
   })
 }
@@ -118,6 +118,7 @@ async function save() {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
+  form.value.source = 'local'
   const saveTopic = form.value.topic
   try {
     await apiPut(`${API_BASE}/rulesets/${encodeURIComponent(saveTopic)}`, form.value)
@@ -243,7 +244,7 @@ onMounted(fetchExisting)
                   v-model="rule.strategy"
                   class="border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 rounded px-2 py-1.5 text-sm w-full"
                 >
-                  <option v-for="s in strategies" :key="s" :value="s">{{ s }}</option>
+                  <option v-for="s in strategies" :key="s.value" :value="s.value">{{ s.label }}</option>
                 </select>
               </div>
             </div>

@@ -104,6 +104,26 @@ public sealed class QualityProbeService
     {
         var patternResult = UrlPatternAnalyzer.Analyze(url);
 
+        if (patternResult?.Resolution is not null && patternResult.Codec is not null)
+        {
+            var estimatedSize = EstimateSizeFromBitrate(patternResult.BitrateKbps, durationSeconds)
+                ?? EstimateSize(durationSeconds, fallbackTier);
+            return new QualityInfo
+            {
+                Resolution = patternResult.Resolution.Value,
+                Codec = patternResult.Codec,
+                BitrateKbps = patternResult.BitrateKbps,
+                FileSize = estimatedSize,
+                Container = UrlPatternAnalyzer.IsHls(url) ? "m3u8" : "mp4",
+                ProbeSource = ProbeSource.UrlPattern,
+            };
+        }
+
+        if (UrlPatternAnalyzer.IsHls(url))
+        {
+            return await ProbeHlsManifestAsync(url, fallbackTier, durationSeconds);
+        }
+
         HeadProbeResult? headResult = null;
         try
         {
@@ -119,19 +139,6 @@ public sealed class QualityProbeService
             ?? EstimateSize(durationSeconds, fallbackTier);
 
         var container = headResult?.Container ?? "mp4";
-
-        if (patternResult?.Resolution is not null && patternResult.Codec is not null)
-        {
-            return new QualityInfo
-            {
-                Resolution = patternResult.Resolution.Value,
-                Codec = patternResult.Codec,
-                BitrateKbps = patternResult.BitrateKbps,
-                FileSize = fileSize,
-                Container = container,
-                ProbeSource = ProbeSource.UrlPattern,
-            };
-        }
 
         if (!UrlPatternAnalyzer.IsNonProbeable(url) && container is "mp4")
         {
@@ -179,6 +186,28 @@ public sealed class QualityProbeService
                 Container = container,
                 ProbeSource = ProbeSource.Head,
             };
+        }
+
+        return EstimatedFromTier(fallbackTier, durationSeconds);
+    }
+
+    private async Task<QualityInfo> ProbeHlsManifestAsync(
+        string url, QualityTier fallbackTier, int durationSeconds)
+    {
+        try
+        {
+            using var client = _httpClientFactory.CreateClient("QualityProbe");
+            using var cts = new CancellationTokenSource(HeadTimeout);
+            var content = await client.GetStringAsync(url, cts.Token);
+            var result = HlsManifestParser.Parse(content, durationSeconds);
+            if (result is not null)
+            {
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "HLS manifest probe failed for {Url}", url);
         }
 
         return EstimatedFromTier(fallbackTier, durationSeconds);

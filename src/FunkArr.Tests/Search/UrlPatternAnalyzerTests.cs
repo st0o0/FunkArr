@@ -1,5 +1,4 @@
 using FunkArr.Search;
-using FunkArr.Shared.Models;
 
 namespace FunkArr.Tests.Search;
 

@@ -15,9 +15,25 @@ public class FileServiceTests
     }
 
     [Fact]
-    public void GetTempSubtitlePath_CombinesPathAndNzoId()
+    public void GetTempSubtitlePath_DefaultExtension_UsesSub()
     {
         var result = _sut.GetTempSubtitlePath("data/temp", "abc123");
+
+        Assert.Equal(Path.Combine("data/temp", "abc123.sub"), result);
+    }
+
+    [Fact]
+    public void GetTempSubtitlePath_WithExtension_UsesProvidedExtension()
+    {
+        var result = _sut.GetTempSubtitlePath("data/temp", "abc123", ".vtt");
+
+        Assert.Equal(Path.Combine("data/temp", "abc123.vtt"), result);
+    }
+
+    [Fact]
+    public void GetNormalizedSubtitlePath_AlwaysReturnsSrt()
+    {
+        var result = _sut.GetNormalizedSubtitlePath("data/temp", "abc123");
 
         Assert.Equal(Path.Combine("data/temp", "abc123.srt"), result);
     }

@@ -5,6 +5,8 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Items/">
+    <File Path="../docker-compose.dev.yml" />
+    <File Path="../Dockerfile.dev" />
     <File Path="../README.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />

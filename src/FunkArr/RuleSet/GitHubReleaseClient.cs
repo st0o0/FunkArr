@@ -1,8 +1,10 @@
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Configuration;
-using Microsoft.Extensions.Logging;
+using FunkArr.Diagnostics;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.RuleSet;
@@ -13,6 +15,9 @@ public sealed class GitHubReleaseClient
     private const string AssetName = "community-rulesets.zip";
     private const string VersionFileName = "version.txt";
 
+    private static readonly KeyValuePair<string, object?> ClientTag = new("client", "github");
+    private readonly Counter<long> _callTotal = FunkArrMetrics.Instance.AddApiCallTotal();
+    private readonly Histogram<double> _callDuration = FunkArrMetrics.Instance.AddApiCallDuration();
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly RuleSetOptions _options;
     private readonly ILogger<GitHubReleaseClient> _logger;
@@ -68,6 +73,7 @@ public sealed class GitHubReleaseClient
 
     private async Task<GitHubRelease?> FindReleaseAsync(CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         try
         {
             using var client = CreateClient();
@@ -100,12 +106,18 @@ public sealed class GitHubReleaseClient
                 _logger.LogWarning("Pinned version {Version} not found in {Repository}", _options.Version, _options.Repository);
             }
 
+            _callTotal.Add(1, ClientTag, new("outcome", "success"));
             return match;
         }
         catch (Exception ex)
         {
+            _callTotal.Add(1, ClientTag, new("outcome", "error"));
             _logger.LogWarning(ex, "Failed to query GitHub Releases API for {Repository}", _options.Repository);
             return null;
+        }
+        finally
+        {
+            _callDuration.Record(sw.Elapsed.TotalSeconds, ClientTag);
         }
     }
 

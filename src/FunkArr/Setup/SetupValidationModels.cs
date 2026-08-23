@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using FunkArr.Configuration;
 
 namespace FunkArr.Setup;
@@ -42,16 +40,4 @@ public sealed record ValidationResult(CheckStatus OverallStatus, IReadOnlyList<C
 
         return CheckStatus.Pass;
     }
-}
-
-public static class SetupValidationJsonOptions
-{
-    public static readonly JsonSerializerOptions Default = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Converters =
-        {
-            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase),
-        },
-    };
 }

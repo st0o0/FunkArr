@@ -38,4 +38,5 @@ public enum ProbeSource
     UrlPattern,
     Head,
     ContainerHeader,
+    HlsManifest,
 }

@@ -10,16 +10,19 @@ internal static class SearchChildHelpers
     {
         try
         {
+            var isBlank = string.IsNullOrWhiteSpace(searchTerm);
             var query = new MediathekQuery
             {
-                Queries =
-                [
-                    new MediathekQueryItem { Fields = ["topic", "title"], Query = searchTerm },
-                ],
+                Queries = isBlank
+                    ? []
+                    : [new MediathekQueryItem { Fields = ["topic", "title"], Query = searchTerm }],
+                Size = isBlank ? 100 : 5000,
             };
 
             var response = await mediathekClient.QueryAsync(query);
-            return response?.Result ?? [];
+            var items = response?.Result?.Results ?? [];
+            log.Info("MediathekViewWeb query for '{SearchTerm}' returned {Count} items", searchTerm, items.Length);
+            return items;
         }
         catch (Exception ex)
         {

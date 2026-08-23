@@ -1,4 +1,5 @@
-using Asp.Versioning;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FunkArr.DownloadClient;
 using FunkArr.Health;
 using FunkArr.Muxing;
@@ -6,7 +7,9 @@ using FunkArr.RuleSet;
 using FunkArr.Search;
 using FunkArr.Setup;
 using FunkArr.Shared;
+using FunkArr.Subtitle;
 using Microsoft.Extensions.Options;
+using Prometheus;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
@@ -50,9 +53,10 @@ public sealed class FunkArrServiceSetup : IServiceSetupContainer
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<MuxingService>();
-        services.AddSingleton<DownloadService>();
-        services.AddSingleton<ConfigFileWriter>();
-
+        services.AddSingleton<Mp4DownloadService>();
+        services.AddSingleton<HlsDownloadService>();
+        services.AddSingleton<SubtitleAcquisitionService>();
+        services.AddSingleton<SubtitleNormalizerService>();
         services.AddSingleton<QualityProbeService>();
         services.AddSingleton<GitHubReleaseClient>();
 
@@ -80,20 +84,25 @@ public sealed class FunkArrServiceSetup : IServiceSetupContainer
             client.DefaultRequestHeaders.Add("User-Agent", "FunkArr");
         });
 
-        services.AddControllers();
-        services.AddApiVersioning(options =>
+        services.AddHttpClient<TmdbClient>(client =>
         {
-            options.DefaultApiVersion = new ApiVersion(1, 0);
-            options.AssumeDefaultVersionWhenUnspecified = true;
-            options.ReportApiVersions = true;
-            options.ApiVersionReader = new UrlSegmentApiVersionReader();
-        }).AddMvc()
-        .AddApiExplorer(options =>
-        {
-            options.GroupNameFormat = "'v'VVV";
-            options.SubstituteApiVersionInUrl = true;
+            client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
+            client.DefaultRequestHeaders.Add("User-Agent", "FunkArr");
         });
+
+        services.AddControllers()
+            .AddJsonOptions(o =>
+            {
+                o.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+            });
         services.AddOpenApi();
+
+        Metrics.ConfigureMeterAdapter(options =>
+        {
+            options.InstrumentFilterPredicate = instrument => instrument.Meter.Name == "FunkArr";
+        });
 
         services.AddHealthChecks()
             .AddCheck<FfmpegHealthCheck>("ffmpeg");

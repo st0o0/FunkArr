@@ -11,11 +11,6 @@ public sealed class FunkArrOptionsValidator : IValidateOptions<FunkArrOptions>
             return ValidateOptionsResult.Fail("FunkArr:ApiKey must be configured.");
         }
 
-        if (options.LogFormat is not ("json" or "text"))
-        {
-            return ValidateOptionsResult.Fail("FunkArr:LogFormat must be 'json' or 'text'.");
-        }
-
         if (options.Postgres.IsConfigured)
         {
             var pg = options.Postgres;

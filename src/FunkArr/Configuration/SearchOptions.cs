@@ -5,4 +5,5 @@ public sealed class SearchOptions
     public const string SectionName = "FunkArr:Search";
 
     public int QualityProbeLimit { get; set; } = 30;
+    public string? TmdbApiKey { get; set; }
 }

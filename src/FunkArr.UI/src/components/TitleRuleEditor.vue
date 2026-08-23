@@ -17,8 +17,12 @@ const emit = defineEmits<{
 
 const titleFields = ['title', 'topic', 'description']
 
+function isRegex(rule: TitleRule): boolean {
+  return rule.type.toLowerCase() === 'regex'
+}
+
 function addRule() {
-  emit('update:modelValue', [...props.modelValue, { type: 'Regex', field: 'title', pattern: '' }])
+  emit('update:modelValue', [...props.modelValue, { type: 'regex', field: 'title', pattern: '' }])
 }
 
 function removeRule(index: number) {
@@ -34,10 +38,10 @@ function updateRule(index: number, updates: Partial<TitleRule>) {
 
 function toggleType(index: number) {
   const rule = props.modelValue[index]
-  if (rule.type === 'Regex') {
-    updateRule(index, { type: 'Static', value: '', field: undefined, pattern: undefined, captureGroup: undefined })
+  if (isRegex(rule)) {
+    updateRule(index, { type: 'static', value: '', field: undefined, pattern: undefined, captureGroup: undefined })
   } else {
-    updateRule(index, { type: 'Regex', field: 'title', pattern: '', value: undefined })
+    updateRule(index, { type: 'regex', field: 'title', pattern: '', value: undefined })
   }
 }
 </script>
@@ -68,7 +72,7 @@ function toggleType(index: number) {
         {{ rule.type }}
       </button>
 
-      <template v-if="rule.type === 'Regex'">
+      <template v-if="isRegex(rule)">
         <select
           :value="rule.field ?? 'title'"
           class="border border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 rounded px-2 py-1.5 text-sm"
@@ -92,7 +96,7 @@ function toggleType(index: number) {
         />
       </template>
 
-      <template v-if="rule.type === 'Static'">
+      <template v-if="!isRegex(rule)">
         <input
           :value="rule.value ?? ''"
           type="text"

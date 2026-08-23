@@ -16,7 +16,7 @@ public class RuleSetGeneratorTests
         };
 
         Assert.Equal("Feuer & Flamme",
-            RuleSetGeneratorActor.FindBestTopic(results, "Feuer & Flamme"));
+            RuleSetGeneratorWorker.FindBestTopic(results, "Feuer & Flamme"));
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class RuleSetGeneratorTests
         };
 
         Assert.Equal("Checker Can, Checker Tobi und Checker Julian",
-            RuleSetGeneratorActor.FindBestTopic(results, "Checker Tobi"));
+            RuleSetGeneratorWorker.FindBestTopic(results, "Checker Tobi"));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class RuleSetGeneratorTests
         var results = new[] { CreateItem("Some Topic", "Ep1") };
 
         Assert.Equal("Some Topic",
-            RuleSetGeneratorActor.FindBestTopic(results, "Completely Different"));
+            RuleSetGeneratorWorker.FindBestTopic(results, "Completely Different"));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class RuleSetGeneratorTests
             CreateItem("TopicB", "Ep2"),
         };
 
-        Assert.Null(RuleSetGeneratorActor.FindBestTopic(results, "TopicC"));
+        Assert.Null(RuleSetGeneratorWorker.FindBestTopic(results, "TopicC"));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class RuleSetGeneratorTests
             .Select(i => CreateItem("Show", $"Episode {i} (S01/E{i:D2})"))
             .ToArray();
 
-        var result = RuleSetGeneratorActor.AnalyzePatterns(samples, "Show");
+        var result = RuleSetGeneratorWorker.AnalyzePatterns(samples, "Show");
 
         Assert.Equal(10, result.SeasonEpisodeCount);
         Assert.Equal(0, result.DateCount);
@@ -87,7 +87,7 @@ public class RuleSetGeneratorTests
             CreateItem("Show", "Normal title"),
         };
 
-        var result = RuleSetGeneratorActor.AnalyzePatterns(samples, "Show");
+        var result = RuleSetGeneratorWorker.AnalyzePatterns(samples, "Show");
 
         Assert.Equal(3, result.DateCount);
         Assert.Equal(0, result.SeasonEpisodeCount);
@@ -100,7 +100,7 @@ public class RuleSetGeneratorTests
             .Select(i => CreateItem("Sturm der Liebe", $"Sturm der Liebe ({i})"))
             .ToArray();
 
-        var result = RuleSetGeneratorActor.AnalyzePatterns(samples, "Sturm der Liebe");
+        var result = RuleSetGeneratorWorker.AnalyzePatterns(samples, "Sturm der Liebe");
 
         Assert.Equal(5, result.AbsoluteEpisodeCount);
     }
@@ -108,37 +108,44 @@ public class RuleSetGeneratorTests
     [Fact]
     public void DetectStrategy_SeasonEpisodeWins()
     {
-        var analysis = new RuleSetGeneratorActor.PatternAnalysis
+        var analysis = new RuleSetGeneratorWorker.PatternAnalysis
         {
-            SeasonEpisodeCount = 10, DateCount = 2, Total = 15,
+            SeasonEpisodeCount = 10,
+            DateCount = 2,
+            Total = 15,
         };
 
         Assert.Equal(MatchingStrategy.SeasonAndEpisodeNumber,
-            RuleSetGeneratorActor.DetectStrategy(analysis));
+            RuleSetGeneratorWorker.DetectStrategy(analysis));
     }
 
     [Fact]
     public void DetectStrategy_DateWinsOverLowSE()
     {
-        var analysis = new RuleSetGeneratorActor.PatternAnalysis
+        var analysis = new RuleSetGeneratorWorker.PatternAnalysis
         {
-            SeasonEpisodeCount = 1, DateCount = 8, Total = 15,
+            SeasonEpisodeCount = 1,
+            DateCount = 8,
+            Total = 15,
         };
 
         Assert.Equal(MatchingStrategy.ItemTitleEqualsAirdate,
-            RuleSetGeneratorActor.DetectStrategy(analysis));
+            RuleSetGeneratorWorker.DetectStrategy(analysis));
     }
 
     [Fact]
     public void DetectStrategy_FallbackToIncludes()
     {
-        var analysis = new RuleSetGeneratorActor.PatternAnalysis
+        var analysis = new RuleSetGeneratorWorker.PatternAnalysis
         {
-            SeasonEpisodeCount = 1, DateCount = 1, AbsoluteEpisodeCount = 0, Total = 15,
+            SeasonEpisodeCount = 1,
+            DateCount = 1,
+            AbsoluteEpisodeCount = 0,
+            Total = 15,
         };
 
         Assert.Equal(MatchingStrategy.ItemTitleIncludes,
-            RuleSetGeneratorActor.DetectStrategy(analysis));
+            RuleSetGeneratorWorker.DetectStrategy(analysis));
     }
 
     [Fact]
@@ -146,7 +153,7 @@ public class RuleSetGeneratorTests
     {
         var samples = new[] { CreateItem("Show", "Episode (S01/E05)") };
 
-        var (season, episode, rules) = RuleSetGeneratorActor.GenerateRegex(
+        var (season, episode, rules) = RuleSetGeneratorWorker.GenerateRegex(
             samples, MatchingStrategy.SeasonAndEpisodeNumber, "Show");
 
         Assert.NotNull(season);
@@ -159,7 +166,7 @@ public class RuleSetGeneratorTests
     {
         var samples = new[] { CreateItem("Show", "Show vom 5. Juni 2026") };
 
-        var (season, episode, rules) = RuleSetGeneratorActor.GenerateRegex(
+        var (season, episode, rules) = RuleSetGeneratorWorker.GenerateRegex(
             samples, MatchingStrategy.ItemTitleEqualsAirdate, "Show");
 
         Assert.Null(season);
@@ -173,7 +180,7 @@ public class RuleSetGeneratorTests
     {
         var samples = new[] { CreateItem("Sturm der Liebe", "Sturm der Liebe (1606)") };
 
-        var (season, episode, rules) = RuleSetGeneratorActor.GenerateRegex(
+        var (season, episode, rules) = RuleSetGeneratorWorker.GenerateRegex(
             samples, MatchingStrategy.ByAbsoluteEpisodeNumber, "Sturm der Liebe");
 
         Assert.Null(season);
@@ -188,7 +195,7 @@ public class RuleSetGeneratorTests
             .Select(_ => CreateItem("Show", "Ep", 2700))
             .ToArray();
 
-        var filter = RuleSetGeneratorActor.DeriveDurationFilter(samples);
+        var filter = RuleSetGeneratorWorker.DeriveDurationFilter(samples);
 
         Assert.NotNull(filter);
         Assert.Equal("duration", filter.Field);
@@ -211,7 +218,7 @@ public class RuleSetGeneratorTests
             Filters = FilterGroup.Empty,
         };
 
-        var confidence = RuleSetGeneratorActor.ComputeConfidence(samples, rule);
+        var confidence = RuleSetGeneratorWorker.ComputeConfidence(samples, rule);
 
         Assert.True(confidence >= 0.8);
     }

@@ -73,7 +73,7 @@ public class QualityProbeServiceTests
         Assert.Equal(ProbeSource.UrlPattern, result.ProbeSource);
         Assert.Equal(1080, result.Resolution.Height);
         Assert.Equal("h265", result.Codec);
-        Assert.Equal(2_000_000_000, result.FileSize);
+        Assert.Equal(3600L * 6660 * 1000 / 8, result.FileSize);
     }
 
     [Fact]

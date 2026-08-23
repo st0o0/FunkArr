@@ -1,19 +1,7 @@
 export const API_BASE = '/api/v1'
 
-export function getApiKey(): string | null {
-  return localStorage.getItem('funkarr-apikey')
-}
-
-export function setApiKey(key: string) {
-  localStorage.setItem('funkarr-apikey', key)
-}
-
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const apiKey = getApiKey()
-  const separator = path.includes('?') ? '&' : '?'
-  const url = apiKey ? `${path}${separator}apikey=${encodeURIComponent(apiKey)}` : path
-
-  const response = await fetch(url, {
+  const response = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -44,11 +32,7 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiDelete(path: string): Promise<void> {
-  const apiKey = getApiKey()
-  const separator = path.includes('?') ? '&' : '?'
-  const url = apiKey ? `${path}${separator}apikey=${encodeURIComponent(apiKey)}` : path
-
-  const response = await fetch(url, { method: 'DELETE' })
+  const response = await fetch(path, { method: 'DELETE' })
   if (!response.ok) {
     const text = await response.text()
     throw new Error(`${response.status}: ${text}`)

@@ -1,4 +1,3 @@
-using System.Net;
 using FunkArr.Configuration;
 using FunkArr.Setup;
 using FunkArr.Tests.Shared;

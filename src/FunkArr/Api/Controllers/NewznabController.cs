@@ -1,7 +1,5 @@
-using System.Globalization;
 using Akka.Actor;
 using Akka.Hosting;
-using Asp.Versioning;
 using FunkArr.Indexer;
 using FunkArr.Search;
 using FunkArr.Shared.Models;
@@ -10,8 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace FunkArr.Api.Controllers;
 
 [ApiController]
-[ApiVersionNeutral]
+[Route("index/api")]
 [Route("api")]
+[Route("api/api")]
 [Tags("Newznab Emulation")]
 public sealed class NewznabController(ActorRegistry actorRegistry) : ControllerBase
 {
@@ -19,22 +18,27 @@ public sealed class NewznabController(ActorRegistry actorRegistry) : ControllerB
 
     [HttpGet("")]
     [Produces("application/xml")]
-    public async Task<IActionResult> HandleNewznabRequest()
+    public async Task<IActionResult> HandleNewznabRequest(
+        [FromQuery] string? t,
+        [FromQuery] string? q,
+        [FromQuery] int? tvdbid,
+        [FromQuery] int? season,
+        [FromQuery(Name = "ep")] int? episode,
+        [FromQuery] string? imdbid)
     {
-        var query = Request.Query;
-        var t = query["t"].FirstOrDefault()?.ToLowerInvariant();
+        var mode = t?.ToLowerInvariant();
         var baseUrl = $"{Request.Scheme}://{Request.Host}";
-        var searchActor = await actorRegistry.GetAsync<SearchActor>();
+        var searchActor = await actorRegistry.GetAsync<SearchCoordinator>();
 
-        return t switch
+        return mode switch
         {
             "caps" => Content(
                 NewznabXmlBuilder.BuildCapsResponse(baseUrl),
                 "application/xml"),
 
-            "tvsearch" => await HandleTvSearch(query, baseUrl, searchActor),
-            "movie" => await HandleMovieSearch(query, baseUrl, searchActor),
-            "search" => await HandleTextSearch(query, baseUrl, searchActor),
+            "tvsearch" => await HandleTvSearch(tvdbid ?? 0, q, season, episode, baseUrl, searchActor),
+            "movie" => await HandleMovieSearch(imdbid, q, baseUrl, searchActor),
+            "search" => await HandleTextSearch(q, baseUrl, searchActor),
 
             _ => Content(
                 NewznabXmlBuilder.BuildErrorResponse(202, "No such function"),
@@ -43,46 +47,42 @@ public sealed class NewznabController(ActorRegistry actorRegistry) : ControllerB
     }
 
     [HttpGet("fake_nzb")]
-    public IActionResult HandleFakeNzbDownload()
+    public IActionResult HandleFakeNzbDownload(
+        [FromQuery] string? url,
+        [FromQuery] string? title,
+        [FromQuery] string? subtitle)
     {
-        var urlParam = Request.Query["url"].FirstOrDefault();
-        var titleParam = Request.Query["title"].FirstOrDefault();
-
-        if (string.IsNullOrEmpty(urlParam) || string.IsNullOrEmpty(titleParam))
+        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(title))
         {
             return BadRequest("Missing url or title parameter");
         }
 
         var downloadUrl = System.Text.Encoding.UTF8.GetString(
-            Convert.FromBase64String(Uri.UnescapeDataString(urlParam)));
-        var title = System.Text.Encoding.UTF8.GetString(
-            Convert.FromBase64String(Uri.UnescapeDataString(titleParam)));
+            Convert.FromBase64String(Uri.UnescapeDataString(url)));
+        var decodedTitle = System.Text.Encoding.UTF8.GetString(
+            Convert.FromBase64String(Uri.UnescapeDataString(title)));
 
-        var subtitleParam = Request.Query["subtitle"].FirstOrDefault();
         string? subtitleUrl = null;
-        if (!string.IsNullOrEmpty(subtitleParam))
+        if (!string.IsNullOrEmpty(subtitle))
         {
             subtitleUrl = System.Text.Encoding.UTF8.GetString(
-                Convert.FromBase64String(Uri.UnescapeDataString(subtitleParam)));
+                Convert.FromBase64String(Uri.UnescapeDataString(subtitle)));
         }
 
-        var nzbContent = FakeNzbBuilder.BuildFakeNzbXml(downloadUrl, title, subtitleUrl);
+        var nzbContent = FakeNzbBuilder.BuildFakeNzbXml(downloadUrl, decodedTitle, subtitleUrl);
         return Content(nzbContent, "application/x-nzb");
     }
 
-    private async Task<IActionResult> HandleTvSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
+    private async Task<IActionResult> HandleTvSearch(
+        int tvdbId, string? q, int? season, int? episode, string baseUrl, IActorRef searchActor)
     {
-        var tvdbId = int.TryParse(query["tvdbid"].FirstOrDefault(), CultureInfo.InvariantCulture, out var id) ? id : 0;
-        var season = int.TryParse(query["season"].FirstOrDefault(), CultureInfo.InvariantCulture, out var s)
-            ? s
-            : (int?)null;
-        var episode = int.TryParse(query["ep"].FirstOrDefault(), CultureInfo.InvariantCulture, out var e)
-            ? e
-            : (int?)null;
-        var q = query["q"].FirstOrDefault();
+        if (tvdbId == 0 && string.IsNullOrWhiteSpace(q))
+        {
+            return await HandleRssFeed(baseUrl, searchActor);
+        }
 
-        var request = new SearchActor.TvSearchRequest(tvdbId, q, season, episode, q);
-        var response = await searchActor.Ask<SearchActor.SearchResponse>(request, AskTimeout);
+        var request = new SearchCoordinator.TvSearchRequest(tvdbId, q, season, episode, q);
+        var response = await searchActor.Ask<SearchCoordinator.SearchResponse>(request, AskTimeout);
 
         var newznabResults = response.Results
             .Select(r => ToNewznabResult(r, baseUrl, tvdbId > 0 ? tvdbId : null, season, episode))
@@ -93,13 +93,11 @@ public sealed class NewznabController(ActorRegistry actorRegistry) : ControllerB
             "application/xml");
     }
 
-    private async Task<IActionResult> HandleMovieSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
+    private async Task<IActionResult> HandleMovieSearch(
+        string? imdbId, string? q, string baseUrl, IActorRef searchActor)
     {
-        var imdbId = query["imdbid"].FirstOrDefault();
-        var q = query["q"].FirstOrDefault();
-
-        var request = new SearchActor.MovieSearchRequest(imdbId, q);
-        var response = await searchActor.Ask<SearchActor.SearchResponse>(request, AskTimeout);
+        var request = new SearchCoordinator.MovieSearchRequest(imdbId, q);
+        var response = await searchActor.Ask<SearchCoordinator.SearchResponse>(request, AskTimeout);
 
         var newznabResults = response.Results
             .Select(r => ToNewznabResult(r, baseUrl, null, null, null))
@@ -110,12 +108,30 @@ public sealed class NewznabController(ActorRegistry actorRegistry) : ControllerB
             "application/xml");
     }
 
-    private async Task<IActionResult> HandleTextSearch(IQueryCollection query, string baseUrl, IActorRef searchActor)
+    private async Task<IActionResult> HandleTextSearch(
+        string? q, string baseUrl, IActorRef searchActor)
     {
-        var q = query["q"].FirstOrDefault() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(q))
+        {
+            return await HandleRssFeed(baseUrl, searchActor);
+        }
 
-        var request = new SearchActor.TextSearchRequest(q);
-        var response = await searchActor.Ask<SearchActor.SearchResponse>(request, AskTimeout);
+        var request = new SearchCoordinator.TextSearchRequest(q);
+        var response = await searchActor.Ask<SearchCoordinator.SearchResponse>(request, AskTimeout);
+
+        var newznabResults = response.Results
+            .Select(r => ToNewznabResult(r, baseUrl, null, null, null))
+            .ToList();
+
+        return Content(
+            NewznabXmlBuilder.BuildSearchResponse(newznabResults),
+            "application/xml");
+    }
+
+    private async Task<IActionResult> HandleRssFeed(string baseUrl, IActorRef searchActor)
+    {
+        var request = new SearchCoordinator.TextSearchRequest(string.Empty);
+        var response = await searchActor.Ask<SearchCoordinator.SearchResponse>(request, AskTimeout);
 
         var newznabResults = response.Results
             .Select(r => ToNewznabResult(r, baseUrl, null, null, null))
@@ -170,7 +186,7 @@ public sealed class NewznabController(ActorRegistry actorRegistry) : ControllerB
         var encodedTitle = Uri.EscapeDataString(
             Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(title)));
 
-        var url = $"{baseUrl}/api/fake_nzb?url={encodedUrl}&title={encodedTitle}";
+        var url = $"{baseUrl}/index/api/fake_nzb?url={encodedUrl}&title={encodedTitle}";
 
         if (subtitleUrl is not null)
         {

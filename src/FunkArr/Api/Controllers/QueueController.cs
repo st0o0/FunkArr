@@ -1,6 +1,5 @@
 using Akka.Actor;
 using Akka.Hosting;
-using Asp.Versioning;
 using FunkArr.Api.Models;
 using FunkArr.Configuration;
 using FunkArr.DownloadClient;
@@ -10,8 +9,7 @@ using Microsoft.Extensions.Options;
 namespace FunkArr.Api.Controllers;
 
 [ApiController]
-[ApiVersion("1.0")]
-[Route("api/v{version:apiVersion}")]
+[Route("api/v1")]
 [Tags("Download Queue")]
 public sealed class QueueController(ActorRegistry actorRegistry, IOptions<DownloadOptions> downloadOptions) : ControllerBase
 {
@@ -21,20 +19,28 @@ public sealed class QueueController(ActorRegistry actorRegistry, IOptions<Downlo
     [ProducesResponseType<QueueItemResponse[]>(200)]
     public async Task<ActionResult<QueueItemResponse[]>> GetQueue()
     {
-        var queueActor = await actorRegistry.GetAsync<DownloadQueueActor>();
-        var response = await queueActor.Ask<DownloadQueueActor.QueueResponse>(
-            new DownloadQueueActor.GetQueue(), AskTimeout);
+        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
+        var trackerShard = actorRegistry.Get<DownloadRequestTracker>();
 
-        var jobs = response.Jobs
-            .Where(j => j.Status is DownloadStatus.Queued or DownloadStatus.Downloading or DownloadStatus.Muxing)
-            .Select(j => new QueueItemResponse(
-                j.NzoId,
-                j.Title,
-                j.Status.ToString(),
-                j.ProgressPercent,
-                j.DownloadedBytes,
-                j.TotalBytes,
-                j.EnqueuedAt))
+        var orderResponse = await queueCoordinator.Ask<QueueCoordinator.QueueOrderResponse>(
+            new QueueCoordinator.GetQueueOrder(), AskTimeout);
+
+        var statusTasks = orderResponse.Entries
+            .Select(e => trackerShard.Ask<DownloadRequestTracker.StatusResponse>(
+                new DownloadRequestTracker.GetStatus(e.NzoId), AskTimeout))
+            .ToList();
+
+        var statuses = await Task.WhenAll(statusTasks);
+
+        var jobs = statuses
+            .Select(s => new QueueItemResponse(
+                s.NzoId,
+                s.Title,
+                s.Status,
+                0,
+                0,
+                0,
+                s.EnqueuedAt))
             .ToArray();
 
         return Ok(jobs);
@@ -44,20 +50,29 @@ public sealed class QueueController(ActorRegistry actorRegistry, IOptions<Downlo
     [ProducesResponseType<HistoryItemResponse[]>(200)]
     public async Task<ActionResult<HistoryItemResponse[]>> GetHistory()
     {
-        var queueActor = await actorRegistry.GetAsync<DownloadQueueActor>();
-        var response = await queueActor.Ask<DownloadQueueActor.HistoryResponse>(
-            new DownloadQueueActor.GetHistory(), AskTimeout);
+        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
+        var trackerShard = actorRegistry.Get<DownloadRequestTracker>();
+
+        var completedResponse = await queueCoordinator.Ask<QueueCoordinator.CompletedJobIdsResponse>(
+            new QueueCoordinator.GetCompletedJobIds(), AskTimeout);
 
         var pathMapping = PathMappingHelper.ParsePathMapping(downloadOptions.Value.PathMapping);
 
-        var jobs = response.Jobs.Select(j => new HistoryItemResponse(
-            j.NzoId,
-            j.Title,
-            j.Status.ToString(),
-            PathMappingHelper.MapPath(j.OutputPath ?? string.Empty, pathMapping),
-            j.ErrorMessage,
-            j.EnqueuedAt,
-            j.CompletedAt)).ToArray();
+        var historyTasks = completedResponse.NzoIds
+            .Select(nzoId => trackerShard.Ask<DownloadRequestTracker.HistoryEntryResponse>(
+                new DownloadRequestTracker.GetHistoryEntry(nzoId), AskTimeout))
+            .ToList();
+
+        var entries = await Task.WhenAll(historyTasks);
+
+        var jobs = entries.Select(e => new HistoryItemResponse(
+            e.NzoId,
+            e.Title,
+            e.Status,
+            PathMappingHelper.MapPath(e.OutputPath ?? string.Empty, pathMapping),
+            e.ErrorMessage,
+            e.CompletedAt ?? DateTimeOffset.MinValue,
+            e.CompletedAt)).ToArray();
 
         return Ok(jobs);
     }

@@ -17,9 +17,4 @@ export const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
-  const apiKey = localStorage.getItem('funkarr-apikey')
-  if (!apiKey && to.path !== '/setup') {
-    return '/setup'
-  }
-})
+

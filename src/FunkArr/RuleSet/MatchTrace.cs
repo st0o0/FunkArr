@@ -1,5 +1,3 @@
-using FunkArr.Search;
-
 namespace FunkArr.RuleSet;
 
 public abstract record MatchTrace
