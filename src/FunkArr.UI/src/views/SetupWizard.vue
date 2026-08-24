@@ -172,7 +172,7 @@ function finish() {
           <span class="w-2 h-2 rounded-full shrink-0" :class="status.paths.downloadOk ? 'bg-green-500' : 'bg-red-500'" />
           <span class="text-sm font-medium flex-1">Download Path</span>
           <span v-if="status.paths.downloadOk" class="text-xs text-green-600">Writable</span>
-          <span v-else class="text-xs text-red-600">Set FunkArr__Download__DownloadPath</span>
+          <span v-else class="text-xs text-red-600">Set FunkArr__Download__Path</span>
         </div>
 
         <div class="flex items-center gap-3 rounded border border-neutral-200 px-4 py-3 dark:border-neutral-700">

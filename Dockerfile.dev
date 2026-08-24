@@ -18,7 +18,7 @@ RUN dotnet restore FunkArr/FunkArr.csproj
 
 COPY src/FunkArr/ FunkArr/
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
-RUN dotnet publish FunkArr/FunkArr.csproj -c Release -o /app/publish
+RUN dotnet publish FunkArr/FunkArr.csproj -c Release -o /app/publish -p:SkipNSwag=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
 # hadolint ignore=DL3008

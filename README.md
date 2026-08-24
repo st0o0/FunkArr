@@ -1,51 +1,37 @@
-# FunkArr
+<h1 align="center">FunkArr</h1>
 
-[![Release](https://img.shields.io/github/v/release/st0o0/funkarr)](https://github.com/st0o0/funkarr/releases)
-[![License](https://img.shields.io/github/license/st0o0/funkarr)](LICENSE)
-[![Docker Pulls](https://img.shields.io/docker/pulls/st0o0/funkarr)](https://ghcr.io/st0o0/funkarr)
+<p align="center">
+  German public broadcaster Mediathek integration for the *arr ecosystem
+</p>
 
-Searches German public broadcaster Mediatheken (ARD, ZDF, etc.) for TV shows
-and movies, downloads them, and remuxes everything into MKV with proper
-metadata. Plugs into Sonarr, Radarr, and Prowlarr as if it were a Usenet
-indexer and download client.
+<p align="center">
+  <a href="https://github.com/st0o0/funkarr/releases"><img src="https://img.shields.io/github/v/release/st0o0/funkarr" alt="Release" /></a>
+  <a href="https://github.com/st0o0/funkarr/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License" /></a>
+  <img src="https://img.shields.io/badge/.NET-10.0-512bd4" alt=".NET 10" />
+  <a href="https://ghcr.io/st0o0/funkarr"><img src="https://img.shields.io/docker/pulls/st0o0/funkarr" alt="Docker Pulls" /></a>
+</p>
 
-No Usenet account needed. No torrents. Just direct downloads from public
-media libraries.
+---
 
+A .NET service (Docker container) built on [Akka.NET](https://getakka.net/) that searches ARD, ZDF, and other German public broadcaster Mediatheken via [MediathekViewWeb](https://mediathekviewweb.de/), downloads video and subtitles, and remuxes everything into MKV using FFmpeg. Plugs into Sonarr, Radarr, and Prowlarr as if it were a Usenet indexer and download client.
 
-## How it works
+No Usenet account needed. No torrents. Just direct downloads from public media libraries.
 
-FunkArr exposes two APIs:
+## Features
 
-- A Newznab-compatible indexer API (add it in Prowlarr or directly in Sonarr/Radarr)
-- A SABnzbd-compatible download client API (add it as a SABnzbd client in Sonarr/Radarr)
+- **Newznab indexer API** — add FunkArr in Prowlarr or directly in Sonarr/Radarr as an indexer
+- **SABnzbd download client API** — add it as a SABnzbd client in Sonarr/Radarr for downloads
+- **Community-driven rulesets** — map messy Mediathek titles to structured season/episode format, auto-refreshed from GitHub
+- **Quality probing** — determines real resolution and bitrate via URL pattern analysis, HTTP HEAD, and container metadata parsing
+- **Match intelligence** — tracks which mappings worked so results improve over time
+- **Movie search** — resolves IMDB IDs via TMDB, searches with original and translated titles
+- **Subtitle handling** — downloads or extracts subtitles from HLS streams, converts to SRT
+- **Single container** — runs on any Docker host with SQLite persistence by default, optional PostgreSQL
 
-When Sonarr or Radarr sends a search request, FunkArr queries MediathekViewWeb,
-matches results using rulesets, and returns them as if they were Usenet releases.
-When a download is triggered, FunkArr grabs the video and subtitles via HTTP and
-remuxes them into MKV using FFmpeg.
-
-### Matching
-
-Mediathek titles don't follow any standard naming convention. "Tatort", "TATORT",
-"Tatort: Freddy tanzt", "Tatort - Freddy tanzt" can all be the same show.
-FunkArr uses community-driven rulesets to map these messy titles to the structured
-season/episode format that Sonarr and Radarr expect. Rulesets are pulled from a
-GitHub repository and refreshed automatically. A built-in match ledger tracks
-which mappings worked so results improve over time.
-
-### Quality probing
-
-Most Mediathek APIs don't report video quality. FunkArr probes the actual media
-files using URL pattern analysis, HTTP HEAD requests, and container metadata
-parsing to determine real resolution and bitrate. Results are cached so repeated
-searches stay fast. This lets Sonarr and Radarr make proper quality-based
-decisions instead of guessing.
-
-
-## Quick start
+## Quick Start
 
 ```yaml
+# docker-compose.yml
 services:
   funkarr:
     image: ghcr.io/st0o0/funkarr:latest
@@ -63,10 +49,20 @@ volumes:
   funkarr-data:
 ```
 
-See [docker-compose.example.yml](docker-compose.example.yml) for all
-configuration options including PostgreSQL, quality probing, rulesets,
-and path mapping.
+```bash
+docker compose up -d
+```
 
+See [docker-compose.example.yml](docker-compose.example.yml) for all configuration options including PostgreSQL, quality probing, rulesets, and path mapping.
+
+## Build & Test
+
+All commands run from `src/`:
+
+```powershell
+dotnet build FunkArr.slnx
+dotnet run --project FunkArr.Tests/FunkArr.Tests.csproj   # xUnit v3 via MTP
+```
 
 ## Alternatives
 
@@ -84,3 +80,7 @@ There are other projects in this space. Pick what fits your setup.
 
 - [MediathekArr](https://github.com/PCJones/MediathekArr) by PCJones
 - [RundfunkArr](https://github.com/rundfunkarr/rundfunkarr)
+
+## License
+
+[MIT](LICENSE)

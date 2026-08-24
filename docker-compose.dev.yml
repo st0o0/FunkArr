@@ -10,8 +10,10 @@ services:
       - funkarr-data:/app/data
       - media:/media
     environment:
-      - FunkArr__ApiKey=funkarr-dev-api-key
+      - FunkArr__ApiKey=funkarr-dev-api-key-01
       - FunkArr__Download__DownloadPath=/media/downloads
+      - FunkArr__Download__Category__tv=/media/downloads/tv
+      - FunkArr__Download__Category__movies=/media/downloads/movies
     depends_on:
       - sonarr
       - radarr
@@ -26,7 +28,7 @@ services:
       - sonarr-config:/config
       - media:/media
     environment:
-      SONARR__AUTH__APIKEY: funkarr-dev-api-key
+      SONARR__AUTH__APIKEY: funkarr-dev-api-key-01
       SONARR__AUTH__METHOD: External
       SONARR__AUTH__REQUIRED: DisabledForLocalAddresses
 
@@ -39,7 +41,7 @@ services:
       - radarr-config:/config
       - media:/media
     environment:
-      RADARR__AUTH__APIKEY: funkarr-dev-api-key
+      RADARR__AUTH__APIKEY: funkarr-dev-api-key-01
       RADARR__AUTH__METHOD: External
       RADARR__AUTH__REQUIRED: DisabledForLocalAddresses
 
@@ -51,7 +53,7 @@ services:
     volumes:
       - prowlarr-config:/config
     environment:
-      PROWLARR__AUTH__APIKEY: funkarr-dev-api-key
+      PROWLARR__AUTH__APIKEY: funkarr-dev-api-key-01
       PROWLARR__AUTH__METHOD: External
       PROWLARR__AUTH__REQUIRED: DisabledForLocalAddresses
 

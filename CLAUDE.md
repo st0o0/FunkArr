@@ -12,23 +12,24 @@ Prowlarr) and SABnzbd-compatible download client API.
 
 - **Single csproj with namespace-based layering.** No multi-project solution —
   features live in namespace folders: `Search/`, `DownloadClient/`, `Muxing/`,
-  `Indexer/`, `Shared/`, `Configuration/`, `Persistence/`, `Health/`.
+  `Subtitle/`, `Indexer/`, `Shared/`, `Configuration/`, `Persistence/`,
+  `Health/`, `Setup/`, `Diagnostics/`, `RuleSet/`, `Api/`.
 - **Servus AppBuilder startup.** Three setup containers:
   `FunkArrServiceSetup` (DI), `FunkArrActorSystemSetup` (actors + persistence),
   `FunkArrApplicationSetup` (Minimal API endpoints).
-- **Naming convention:** `*Coordinator` (singletons/parents), `*Worker`
-  (children), `*Tracker` (state-holding shard entities).
-- **Actor hierarchy:** `SearchCoordinator` (cache + coalescing + PipeTo pipeline,
-  5 workers: ShowResolver, MediathekGateway, Match, QualityProbe, Score),
-  `RuleSetCoordinator` (index + RefreshWorker + MatchQualityWorker),
-  `QueueCoordinator` (scheduling, MaxConcurrent, event-sourced),
-  `DownloadCoordinator` (shard entity, stage machine, 5 transient workers),
-  `DownloadRequestTracker` (shard entity, API-facing status).
-- **Single-node Cluster Sharding.** Two ShardRegions: `DownloadCoordinator`
-  (per-nzoId work engine) and `DownloadRequestTracker` (per-nzoId API status).
-- **Persistence tiers.** T1 (critical, event-sourced): QueueCoordinator,
-  DownloadCoordinator, DownloadRequestTracker. T2 (cache warmth,
-  event-sourced + snapshots): ShowResolverWorker, MatchQualityWorker.
+- **Naming convention:** All actors use uniform `*Actor` suffix. Folder
+  structure carries semantic grouping. Resolvers keep domain names.
+- **Actor hierarchy:** `TextSearchActor`, `TvSearchActor`, `MovieSearchActor`
+  (sharded search entities), `RuleSetActor` (index + RefreshActor +
+  MatchQualityActor), `QueueActor` (scheduling, MaxConcurrent, event-sourced),
+  `DownloadActor` (shard entity, stage machine, 6 transient child actors),
+  `DownloadRequestActor` (shard entity, API-facing status).
+- **Single-node Cluster Sharding.** Five ShardRegions: `TextSearchActor`,
+  `TvSearchActor`, `MovieSearchActor`, `DownloadActor` (per-nzoId work engine),
+  `DownloadRequestActor` (per-nzoId API status).
+- **Persistence tiers.** T1 (critical, event-sourced): QueueActor,
+  DownloadActor, DownloadRequestActor. T2 (cache warmth,
+  event-sourced + snapshots): SeriesResolver, MovieResolver, MatchQualityActor.
   T3 (ephemeral): everything else.
 - **Persistence DTOs** (`FunkArr.Persistence`): extend-only. Never remove or
   rename a `[JsonProperty]` string. New properties must be nullable or have a
