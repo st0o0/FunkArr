@@ -1,9 +1,11 @@
 using System.Globalization;
 using Akka.Actor;
 using Akka.Hosting;
-using FunkArr.Api.Models;
+using FunkArr.Api.Contracts.Sabnzbd;
 using FunkArr.Configuration;
 using FunkArr.DownloadClient;
+using FunkArr.DownloadClient.Queue;
+using FunkArr.DownloadClient.Tracker;
 using FunkArr.Indexer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -12,7 +14,6 @@ namespace FunkArr.Api.Controllers;
 
 [ApiController]
 [Route("download/api")]
-[Route("sabnzbd/api")]
 [Tags("SABnzbd Emulation")]
 public sealed class SabnzbdController(
     ActorRegistry actorRegistry,
@@ -39,13 +40,13 @@ public sealed class SabnzbdController(
     [HttpPost("")]
     [DisableRequestSizeLimit]
     [ProducesResponseType(200)]
-    public async Task<IActionResult> HandlePost([FromQuery] string? mode, [FromForm] IFormFile? file)
+    public async Task<IActionResult> HandlePost([FromQuery] string? mode, [FromQuery] string? cat, [FromForm] IFormFile? file)
     {
         var normalizedMode = mode?.ToLowerInvariant();
 
         if (normalizedMode == "addfile")
         {
-            return await HandleAddFile(file);
+            return await HandleAddFile(file, cat);
         }
 
         return Ok(new SabnzbdErrorResponse(false, $"Unknown mode: {mode}"));
@@ -53,25 +54,26 @@ public sealed class SabnzbdController(
 
     private IActionResult HandleGetConfig()
     {
+        var categories = downloadOptions.Value.Category
+            .Select((kvp, i) => new SabnzbdCategory(kvp.Key, kvp.Value, i, ""))
+            .ToArray();
+
         return Ok(new SabnzbdConfigResponse(new SabnzbdConfig(
-            new SabnzbdMiscConfig(downloadOptions.Value.DownloadPath ?? string.Empty),
-            [
-                new SabnzbdCategory("tv", "tv", 0, ""),
-                new SabnzbdCategory("movies", "movies", 1, ""),
-            ])));
+            new SabnzbdMiscConfig(downloadOptions.Value.Path ?? string.Empty),
+            categories)));
     }
 
     private async Task<IActionResult> HandleQueue()
     {
-        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
-        var trackerShard = actorRegistry.Get<DownloadRequestTracker>();
+        var queueActor = await actorRegistry.GetAsync<QueueActor>();
+        var trackerShard = actorRegistry.Get<DownloadRequestActor>();
 
-        var orderResponse = await queueCoordinator.Ask<QueueCoordinator.QueueOrderResponse>(
-            new QueueCoordinator.GetQueueOrder(), AskTimeout);
+        var orderResponse = await queueActor.Ask<QueueActor.QueueOrderResponse>(
+            new QueueActor.GetQueueOrder(), AskTimeout);
 
         var statusTasks = orderResponse.Entries
-            .Select(e => trackerShard.Ask<DownloadRequestTracker.StatusResponse>(
-                new DownloadRequestTracker.GetStatus(e.NzoId), AskTimeout))
+            .Select(e => trackerShard.Ask<DownloadRequestActor.DownloadStatus>(
+                new DownloadRequestActor.QueryStatus(e.NzoId), AskTimeout))
             .ToList();
 
         var statuses = await Task.WhenAll(statusTasks);
@@ -85,6 +87,7 @@ public sealed class SabnzbdController(
                 "Muxing" => "Extracting",
                 _ => "Queued",
             },
+            s.Category ?? "*",
             "0",
             "0.00",
             "0.00",
@@ -101,17 +104,17 @@ public sealed class SabnzbdController(
 
     private async Task<IActionResult> HandleHistory()
     {
-        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
-        var trackerShard = actorRegistry.Get<DownloadRequestTracker>();
+        var queueActor = await actorRegistry.GetAsync<QueueActor>();
+        var trackerShard = actorRegistry.Get<DownloadRequestActor>();
 
-        var completedResponse = await queueCoordinator.Ask<QueueCoordinator.CompletedJobIdsResponse>(
-            new QueueCoordinator.GetCompletedJobIds(), AskTimeout);
+        var completedResponse = await queueActor.Ask<QueueActor.CompletedJobIdsResponse>(
+            new QueueActor.GetCompletedJobIds(), AskTimeout);
 
         var pathMapping = PathMappingHelper.ParsePathMapping(downloadOptions.Value.PathMapping);
 
         var historyTasks = completedResponse.NzoIds
-            .Select(nzoId => trackerShard.Ask<DownloadRequestTracker.HistoryEntryResponse>(
-                new DownloadRequestTracker.GetHistoryEntry(nzoId), AskTimeout))
+            .Select(nzoId => trackerShard.Ask<DownloadRequestActor.DownloadHistoryEntry>(
+                new DownloadRequestActor.QueryHistory(nzoId), AskTimeout))
             .ToList();
 
         var entries = await Task.WhenAll(historyTasks);
@@ -120,6 +123,7 @@ public sealed class SabnzbdController(
             e.NzoId,
             e.Title,
             e.Status,
+            e.Category ?? "*",
             PathMappingHelper.MapPath(e.OutputPath ?? string.Empty, pathMapping),
             e.CompletedAt?.ToUnixTimeSeconds() ?? 0,
             e.ErrorMessage ?? string.Empty)).ToArray();
@@ -127,7 +131,7 @@ public sealed class SabnzbdController(
         return Ok(new SabnzbdHistoryResponse(new SabnzbdHistory(slots, slots.Length)));
     }
 
-    private async Task<IActionResult> HandleAddFile(IFormFile? file)
+    private async Task<IActionResult> HandleAddFile(IFormFile? file, string? cat)
     {
         if (file is null)
         {
@@ -143,9 +147,9 @@ public sealed class SabnzbdController(
             return Ok(new SabnzbdAddFileResponse(false, Error: "Could not extract download URL from NZB"));
         }
 
-        var queueCoordinator = await actorRegistry.GetAsync<QueueCoordinator>();
-        var nzoId = await queueCoordinator.Ask<string>(
-            new QueueCoordinator.Enqueue(url, title, subtitleUrl), AskTimeout);
+        var queueActor = await actorRegistry.GetAsync<QueueActor>();
+        var nzoId = await queueActor.Ask<string>(
+            new QueueActor.Enqueue(url, title, subtitleUrl, cat), AskTimeout);
 
         return Ok(new SabnzbdAddFileResponse(true, NzoIds: [nzoId]));
     }

@@ -1,0 +1,949 @@
+openapi: 3.0.3
+info:
+  title: FunkArr Internal API
+  version: 1.0.0
+  description: Internal REST API for FunkArr frontend — queue management, setup, rulesets, and match intelligence.
+
+servers:
+  - url: /api/v1
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: query
+      name: apikey
+
+  schemas:
+    # --- Shared ---
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
+    DeletedResponse:
+      type: object
+      required: [deleted]
+      properties:
+        deleted:
+          type: boolean
+
+    ReloadedResponse:
+      type: object
+      required: [reloaded]
+      properties:
+        reloaded:
+          type: boolean
+
+    # --- Queue ---
+    QueueItem:
+      type: object
+      required: [nzoId, title, status, progressPercent, downloadedBytes, totalBytes, enqueuedAt]
+      properties:
+        nzoId:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        progressPercent:
+          type: number
+          format: double
+        downloadedBytes:
+          type: integer
+          format: int64
+        totalBytes:
+          type: integer
+          format: int64
+        enqueuedAt:
+          type: string
+          format: date-time
+        category:
+          type: string
+          nullable: true
+
+    HistoryItem:
+      type: object
+      required: [nzoId, title, status, outputPath, enqueuedAt]
+      properties:
+        nzoId:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+        outputPath:
+          type: string
+        errorMessage:
+          type: string
+        enqueuedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        category:
+          type: string
+          nullable: true
+
+    # --- Setup ---
+    StatusResponse:
+      type: object
+      required: [configured, apiKey, ffmpeg, paths, mediathek, rulesets]
+      properties:
+        configured:
+          type: boolean
+        apiKey:
+          type: string
+        ffmpeg:
+          $ref: '#/components/schemas/FfmpegStatus'
+        paths:
+          $ref: '#/components/schemas/PathsStatus'
+        mediathek:
+          $ref: '#/components/schemas/MediathekStatus'
+        rulesets:
+          $ref: '#/components/schemas/RulesetsStatus'
+
+    FfmpegStatus:
+      type: object
+      required: [found]
+      properties:
+        found:
+          type: boolean
+        version:
+          type: string
+
+    PathsStatus:
+      type: object
+      required: [downloadOk, tempOk]
+      properties:
+        downloadOk:
+          type: boolean
+        tempOk:
+          type: boolean
+
+    MediathekStatus:
+      type: object
+      required: [reachable]
+      properties:
+        reachable:
+          type: boolean
+
+    RulesetsStatus:
+      type: object
+      required: [topicCount]
+      properties:
+        topicCount:
+          type: integer
+
+    TestConnectionRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        apiKey:
+          type: string
+
+    TestArrRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        apiKey:
+          type: string
+        type:
+          type: string
+
+    TestConnectionResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        statusCode:
+          type: integer
+        error:
+          type: string
+
+    TestPathsRequest:
+      type: object
+      properties:
+        downloadPath:
+          type: string
+        tempPath:
+          type: string
+
+    TestPathsResponse:
+      type: object
+      required: [downloadOk, tempOk]
+      properties:
+        downloadOk:
+          type: boolean
+        tempOk:
+          type: boolean
+
+    FfmpegResponse:
+      type: object
+      required: [found]
+      properties:
+        found:
+          type: boolean
+        version:
+          type: string
+
+    MediathekResponse:
+      type: object
+      required: [reachable]
+      properties:
+        reachable:
+          type: boolean
+
+    ValidationRequest:
+      type: object
+      properties:
+        prowlarr:
+          $ref: '#/components/schemas/ArrConnection'
+        arrInstances:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArrInstanceConnection'
+        selfUrl:
+          type: string
+
+    ArrConnection:
+      type: object
+      properties:
+        url:
+          type: string
+        apiKey:
+          type: string
+
+    ArrInstanceConnection:
+      type: object
+      properties:
+        url:
+          type: string
+        apiKey:
+          type: string
+        type:
+          type: string
+
+    ValidationResult:
+      type: object
+      required: [overallStatus, checks]
+      properties:
+        overallStatus:
+          type: string
+          enum: [pass, warning, fail]
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckResult'
+
+    CheckResult:
+      type: object
+      required: [category, name, status, message]
+      properties:
+        category:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [pass, warning, fail]
+        message:
+          type: string
+        fixGuidance:
+          type: string
+
+    # --- Rulesets ---
+    RulesetSummary:
+      type: object
+      required: [topic, source, ruleCount, searchCount]
+      properties:
+        topic:
+          type: string
+        source:
+          type: string
+        ruleCount:
+          type: integer
+        media:
+          $ref: '#/components/schemas/MediaReference'
+        aliases:
+          type: array
+          items:
+            type: string
+        matchRate:
+          type: number
+          format: double
+        searchCount:
+          type: integer
+
+    RulesetDetail:
+      type: object
+      required: [topic, media, source, rules]
+      properties:
+        topic:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        media:
+          $ref: '#/components/schemas/MediaReference'
+        source:
+          type: string
+        confidence:
+          type: number
+          format: double
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+        overrides:
+          $ref: '#/components/schemas/OverrideConfig'
+
+    MediaReference:
+      type: object
+      required: [name]
+      properties:
+        tvdbId:
+          type: integer
+        imdbId:
+          type: string
+        tmdbId:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+
+    Rule:
+      type: object
+      required: [strategy]
+      properties:
+        priority:
+          type: integer
+        filters:
+          $ref: '#/components/schemas/FilterGroup'
+        strategy:
+          type: string
+          enum: [seasonAndEpisodeNumber, itemTitleExact, itemTitleIncludes, itemTitleEqualsAirdate, byAbsoluteEpisodeNumber]
+        confidence:
+          type: number
+          format: double
+        seasonRegex:
+          type: string
+        episodeRegex:
+          type: string
+        captureGroup:
+          type: integer
+        titleRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/TitleRule'
+
+    FilterGroup:
+      type: object
+      properties:
+        all:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterNode'
+        any:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterNode'
+        not:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterNode'
+
+    FilterNode:
+      type: object
+      properties:
+        field:
+          type: string
+        op:
+          type: string
+          enum: [greaterThan, lessThan, exactMatch, contains, regex, eq, notContains]
+        value:
+          type: string
+        all:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterNode'
+        any:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterNode'
+        not:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterNode'
+
+    TitleRule:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [regex, static]
+        field:
+          type: string
+        pattern:
+          type: string
+        captureGroup:
+          type: integer
+        value:
+          type: string
+
+    OverrideConfig:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [replace, merge]
+        base:
+          type: string
+        add:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+        remove:
+          type: array
+          items:
+            type: integer
+
+    TestRulesRequest:
+      type: object
+      required: [topic]
+      properties:
+        topic:
+          type: string
+        tvdbId:
+          type: integer
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rule'
+
+    TestRulesResult:
+      type: object
+      required: [matched, filtered, unmatched, totalItems]
+      properties:
+        matched:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchedTraceContract'
+        filtered:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilteredTraceContract'
+        unmatched:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnmatchedTraceContract'
+        totalItems:
+          type: integer
+
+    MatchedTraceContract:
+      type: object
+      required: [itemTitle, itemTopic, itemDuration, itemChannel, ruleIndex, strategy, confidence, season, episode, episodeName]
+      properties:
+        itemTitle:
+          type: string
+        itemTopic:
+          type: string
+        itemDuration:
+          type: integer
+        itemChannel:
+          type: string
+        ruleIndex:
+          type: integer
+        strategy:
+          type: string
+          enum: [seasonAndEpisodeNumber, itemTitleExact, itemTitleIncludes, itemTitleEqualsAirdate, byAbsoluteEpisodeNumber]
+        confidence:
+          type: number
+          format: double
+        season:
+          type: integer
+        episode:
+          type: integer
+        episodeName:
+          type: string
+
+    FilteredTraceContract:
+      type: object
+      required: [itemTitle, itemTopic, itemDuration, itemChannel, filterField, filterOp, filterValue, actualValue, reason]
+      properties:
+        itemTitle:
+          type: string
+        itemTopic:
+          type: string
+        itemDuration:
+          type: integer
+        itemChannel:
+          type: string
+        filterField:
+          type: string
+        filterOp:
+          type: string
+        filterValue:
+          type: string
+        actualValue:
+          type: string
+        reason:
+          type: string
+
+    UnmatchedTraceContract:
+      type: object
+      required: [itemTitle, itemTopic, itemDuration, itemChannel, ruleFailures]
+      properties:
+        itemTitle:
+          type: string
+        itemTopic:
+          type: string
+        itemDuration:
+          type: integer
+        itemChannel:
+          type: string
+        ruleFailures:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleFailureContract'
+
+    RuleFailureContract:
+      type: object
+      required: [ruleIndex, failReason]
+      properties:
+        ruleIndex:
+          type: integer
+        failReason:
+          type: string
+        detail:
+          type: string
+
+    # --- Match Intelligence ---
+    MatchSummary:
+      type: object
+      required: [id, timestamp, searchTopic, source, totalResults, matched, filtered, unmatched]
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        searchTopic:
+          type: string
+        tvdbId:
+          type: integer
+        season:
+          type: integer
+        episode:
+          type: integer
+        source:
+          type: string
+        totalResults:
+          type: integer
+        matched:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchedTraceContract'
+        filtered:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilteredTraceContract'
+        unmatched:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnmatchedTraceContract'
+
+    TopicSummary:
+      type: object
+      required: [topic, searchCount, totalItemsEvaluated, matchedCount, filteredCount, unmatchedCount, matchRate, perRuleHitCounts]
+      properties:
+        topic:
+          type: string
+        searchCount:
+          type: integer
+        totalItemsEvaluated:
+          type: integer
+        matchedCount:
+          type: integer
+        filteredCount:
+          type: integer
+        unmatchedCount:
+          type: integer
+        matchRate:
+          type: number
+          format: double
+        perRuleHitCounts:
+          type: object
+          additionalProperties:
+            type: integer
+
+    UnmatchedGroup:
+      type: object
+      required: [topic, items]
+      properties:
+        topic:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnmatchedTraceContract'
+
+paths:
+  # --- Queue ---
+  /queue:
+    get:
+      operationId: getQueue
+      tags: [Queue]
+      summary: List active downloads
+      responses:
+        '200':
+          description: Active downloads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QueueItem'
+
+  /history:
+    get:
+      operationId: getHistory
+      tags: [Queue]
+      summary: List completed and failed downloads
+      responses:
+        '200':
+          description: Download history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryItem'
+
+  # --- Setup ---
+  /setup/status:
+    get:
+      operationId: getSetupStatus
+      tags: [Setup]
+      summary: Get overall system status
+      responses:
+        '200':
+          description: System status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+
+  /setup/test-prowlarr:
+    post:
+      operationId: testProwlarr
+      tags: [Setup]
+      summary: Test Prowlarr connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestConnectionRequest'
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestConnectionResponse'
+
+  /setup/test-arr:
+    post:
+      operationId: testArr
+      tags: [Setup]
+      summary: Test Sonarr/Radarr connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestArrRequest'
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestConnectionResponse'
+
+  /setup/test-paths:
+    post:
+      operationId: testPaths
+      tags: [Setup]
+      summary: Test download and temp path write access
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestPathsRequest'
+      responses:
+        '200':
+          description: Path test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestPathsResponse'
+
+  /setup/test-ffmpeg:
+    post:
+      operationId: testFfmpeg
+      tags: [Setup]
+      summary: Test FFmpeg availability
+      responses:
+        '200':
+          description: FFmpeg test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FfmpegResponse'
+
+  /setup/validate:
+    post:
+      operationId: validate
+      tags: [Setup]
+      summary: Run full setup validation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+
+  /setup/test-mediathek:
+    post:
+      operationId: testMediathek
+      tags: [Setup]
+      summary: Test Mediathek reachability
+      responses:
+        '200':
+          description: Mediathek test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediathekResponse'
+
+  # --- Rulesets ---
+  /rulesets:
+    get:
+      operationId: getAllRulesets
+      tags: [Rulesets]
+      summary: List all registered rulesets with metadata
+      responses:
+        '200':
+          description: List of ruleset summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RulesetSummary'
+
+  /rulesets/{topic}:
+    get:
+      operationId: getRuleset
+      tags: [Rulesets]
+      summary: Get full ruleset for a topic
+      parameters:
+        - name: topic
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Full ruleset detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RulesetDetail'
+        '404':
+          description: Topic not found
+
+    put:
+      operationId: saveRuleset
+      tags: [Rulesets]
+      summary: Save a local ruleset override
+      parameters:
+        - name: topic
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RulesetDetail'
+      responses:
+        '200':
+          description: Save result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+    delete:
+      operationId: deleteRuleset
+      tags: [Rulesets]
+      summary: Delete a local ruleset override
+      parameters:
+        - name: topic
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deletion result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletedResponse'
+        '404':
+          description: Topic not found
+
+  /rulesets/test:
+    post:
+      operationId: testRules
+      tags: [Rulesets]
+      summary: Test rules against Mediathek items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestRulesRequest'
+      responses:
+        '200':
+          description: Test results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestRulesResult'
+
+  /rulesets/reload:
+    post:
+      operationId: reloadRulesets
+      tags: [Rulesets]
+      summary: Reload all rulesets from disk
+      responses:
+        '200':
+          description: Reload result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReloadedResponse'
+
+  # --- Match Intelligence ---
+  /matches/recent:
+    get:
+      operationId: getRecentMatches
+      tags: [Match Intelligence]
+      summary: Get most recent match records
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Recent match records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchSummary'
+
+  /matches/topics:
+    get:
+      operationId: getAllTopicStats
+      tags: [Match Intelligence]
+      summary: Get aggregate match statistics per topic
+      responses:
+        '200':
+          description: Per-topic match statistics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TopicSummary'
+
+  /matches/topics/{topic}:
+    get:
+      operationId: getTopicStats
+      tags: [Match Intelligence]
+      summary: Get match statistics for a specific topic
+      parameters:
+        - name: topic
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Topic match statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicSummary'
+        '404':
+          description: Topic not found
+
+  /matches/unmatched:
+    get:
+      operationId: getUnmatchedItems
+      tags: [Match Intelligence]
+      summary: Get items that fell through all rules
+      parameters:
+        - name: topic
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unmatched item groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnmatchedGroup'

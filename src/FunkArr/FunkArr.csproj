@@ -28,7 +28,16 @@
         <PackageReference Include="Servus.Akka" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
         <PackageReference Include="Scalar.AspNetCore" />
+        <PackageReference Include="NSwag.MSBuild">
+            <IncludeAssets>build; buildTransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
         <PackageReference Include="prometheus-net.AspNetCore" />
+        <PackageReference Include="System.IO.Abstractions" />
     </ItemGroup>
+
+    <Target Name="NSwagGenerateContracts" BeforeTargets="CoreCompile" Condition="'$(SkipNSwag)' != 'true'" Inputs="$(MSBuildProjectDirectory)\..\..\openapi\funkArr-v1.yaml" Outputs="$(MSBuildProjectDirectory)\Api\Generated\Contracts.g.cs">
+        <Exec Command="$(NSwagExe) openapi2csclient /input:$(MSBuildProjectDirectory)\..\..\openapi\funkArr-v1.yaml /namespace:FunkArr.Api.Contracts /output:$(MSBuildProjectDirectory)\Api\Generated\Contracts.g.cs /generateClientClasses:false /generateDtoTypes:true /generateOptionalParameters:true /dateTimeType:System.DateTimeOffset /arrayType:System.Collections.Generic.IReadOnlyList /classStyle:Record /generateDataAnnotations:false /jsonLibrary:SystemTextJson" ConsoleToMSBuild="true" />
+    </Target>
 
 </Project>

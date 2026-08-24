@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Contracts.Sabnzbd;
 
 public sealed record SabnzbdVersionResponse(
     [property: JsonPropertyName("version")] string Version);
@@ -36,6 +36,7 @@ public sealed record SabnzbdQueueSlot(
     [property: JsonPropertyName("nzo_id")] string NzoId,
     [property: JsonPropertyName("filename")] string Filename,
     [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("cat")] string Cat,
     [property: JsonPropertyName("percentage")] string Percentage,
     [property: JsonPropertyName("mb")] string Mb,
     [property: JsonPropertyName("mbleft")] string Mbleft,
@@ -52,6 +53,7 @@ public sealed record SabnzbdHistorySlot(
     [property: JsonPropertyName("nzo_id")] string NzoId,
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("cat")] string Cat,
     [property: JsonPropertyName("storage")] string Storage,
     [property: JsonPropertyName("completed")] long Completed,
     [property: JsonPropertyName("fail_message")] string FailMessage);

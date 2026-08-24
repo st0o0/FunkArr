@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using FunkArr.Api.Models;
 using FunkArr.Configuration;
 using FunkArr.Setup;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Contracts = FunkArr.Api.Contracts;
 
 namespace FunkArr.Api.Controllers;
 
@@ -18,14 +18,14 @@ public sealed class SetupController(
     SetupValidationService validationService) : ControllerBase
 {
     [HttpGet("status")]
-    [ProducesResponseType<StatusResponse>(200)]
-    public async Task<ActionResult<StatusResponse>> GetStatus()
+    [ProducesResponseType<Contracts.StatusResponse>(200)]
+    public async Task<ActionResult<Contracts.StatusResponse>> GetStatus()
     {
         var opts = options.Value;
         var download = downloadOptions.Value;
 
         var ffmpegTask = CheckFfmpeg();
-        var pathsTask = Task.Run(() => (DownloadOk: TestWriteAccess(download.DownloadPath), TempOk: TestWriteAccess(download.TempPath)));
+        var pathsTask = Task.Run(() => (DownloadOk: TestWriteAccess(download.Path), TempOk: TestWriteAccess(download.TempPath)));
         var mediathekTask = CheckMediathek();
 
         await Task.WhenAll(ffmpegTask, pathsTask, mediathekTask);
@@ -39,23 +39,23 @@ public sealed class SetupController(
                          && mediathek
                          && !string.IsNullOrEmpty(opts.ApiKey);
 
-        return Ok(new StatusResponse(
-            configured,
+        return Ok(new Contracts.StatusResponse(
             opts.ApiKey ?? string.Empty,
-            new FfmpegStatus(ffmpeg.Found, ffmpeg.Version),
-            new PathsStatus(paths.DownloadOk, paths.TempOk),
-            new MediathekStatus(mediathek),
-            new RulesetsStatus(0)));
+            configured,
+            new Contracts.FfmpegStatus(ffmpeg.Found, ffmpeg.Version),
+            new Contracts.MediathekStatus(mediathek),
+            new Contracts.PathsStatus(paths.DownloadOk, paths.TempOk),
+            new Contracts.RulesetsStatus(0)));
     }
 
     [HttpPost("test-prowlarr")]
-    [ProducesResponseType<TestConnectionResponse>(200)]
+    [ProducesResponseType<Contracts.TestConnectionResponse>(200)]
     [ProducesResponseType(400)]
-    public async Task<IActionResult> TestProwlarr([FromBody] TestConnectionRequest body)
+    public async Task<IActionResult> TestProwlarr([FromBody] Contracts.TestConnectionRequest body)
     {
         if (string.IsNullOrEmpty(body.Url) || string.IsNullOrEmpty(body.ApiKey))
         {
-            return BadRequest(new TestConnectionResponse(false, Error: "url and apiKey are required"));
+            return BadRequest(new Contracts.TestConnectionResponse(error: "url and apiKey are required", statusCode: 0, success: false));
         }
 
         try
@@ -67,22 +67,22 @@ public sealed class SetupController(
             request.Headers.Add("X-Api-Key", body.ApiKey);
             var response = await client.SendAsync(request);
 
-            return Ok(new TestConnectionResponse(response.IsSuccessStatusCode, (int)response.StatusCode));
+            return Ok(new Contracts.TestConnectionResponse(error: null, statusCode: (int)response.StatusCode, success: response.IsSuccessStatusCode));
         }
         catch (Exception ex)
         {
-            return Ok(new TestConnectionResponse(false, Error: ex.Message));
+            return Ok(new Contracts.TestConnectionResponse(error: ex.Message, statusCode: 0, success: false));
         }
     }
 
     [HttpPost("test-arr")]
-    [ProducesResponseType<TestConnectionResponse>(200)]
+    [ProducesResponseType<Contracts.TestConnectionResponse>(200)]
     [ProducesResponseType(400)]
-    public async Task<IActionResult> TestArr([FromBody] TestArrRequest body)
+    public async Task<IActionResult> TestArr([FromBody] Contracts.TestArrRequest body)
     {
         if (string.IsNullOrEmpty(body.Url) || string.IsNullOrEmpty(body.ApiKey))
         {
-            return BadRequest(new TestConnectionResponse(false, Error: "url, apiKey, and type are required"));
+            return BadRequest(new Contracts.TestConnectionResponse(error: "url, apiKey, and type are required", statusCode: 0, success: false));
         }
 
         try
@@ -94,50 +94,58 @@ public sealed class SetupController(
             request.Headers.Add("X-Api-Key", body.ApiKey);
             var response = await client.SendAsync(request);
 
-            return Ok(new TestConnectionResponse(response.IsSuccessStatusCode, (int)response.StatusCode));
+            return Ok(new Contracts.TestConnectionResponse(error: null, statusCode: (int)response.StatusCode, success: response.IsSuccessStatusCode));
         }
         catch (Exception ex)
         {
-            return Ok(new TestConnectionResponse(false, Error: ex.Message));
+            return Ok(new Contracts.TestConnectionResponse(error: ex.Message, statusCode: 0, success: false));
         }
     }
 
     [HttpPost("test-paths")]
-    [ProducesResponseType<TestPathsResponse>(200)]
+    [ProducesResponseType<Contracts.TestPathsResponse>(200)]
     [ProducesResponseType(400)]
-    public ActionResult<TestPathsResponse> TestPaths([FromBody] TestPathsRequest body)
+    public ActionResult<Contracts.TestPathsResponse> TestPaths([FromBody] Contracts.TestPathsRequest body)
     {
         var downloadOk = TestWriteAccess(body.DownloadPath);
         var tempOk = TestWriteAccess(body.TempPath);
 
-        return Ok(new TestPathsResponse(downloadOk, tempOk));
+        return Ok(new Contracts.TestPathsResponse(downloadOk, tempOk));
     }
 
     [HttpPost("test-ffmpeg")]
-    [ProducesResponseType<FfmpegResponse>(200)]
-    public async Task<ActionResult<FfmpegResponse>> TestFfmpeg()
+    [ProducesResponseType<Contracts.FfmpegResponse>(200)]
+    public async Task<ActionResult<Contracts.FfmpegResponse>> TestFfmpeg()
     {
         var result = await CheckFfmpeg();
-        return Ok(new FfmpegResponse(result.Found, result.Version));
+        return Ok(new Contracts.FfmpegResponse(result.Found, result.Version));
     }
 
     [HttpPost("validate")]
-    [ProducesResponseType<ValidationResult>(200)]
-    public async Task<ActionResult<ValidationResult>> Validate(
+    [ProducesResponseType<Contracts.ValidationResult>(200)]
+    public async Task<ActionResult<Contracts.ValidationResult>> Validate(
         [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] ValidationRequest? request,
         CancellationToken cancellationToken)
     {
         request ??= new ValidationRequest(null, null, null);
         var result = await validationService.ValidateAsync(request, cancellationToken);
-        return Ok(result);
+
+        var checks = result.Checks.Select(c => new Contracts.CheckResult(
+            c.Category, c.FixGuidance, c.Message, c.Name,
+            Enum.Parse<Contracts.CheckResultStatus>(c.Status.ToString(), ignoreCase: true))).ToList();
+
+        var overallStatus = Enum.Parse<Contracts.ValidationResultOverallStatus>(
+            result.OverallStatus.ToString(), ignoreCase: true);
+
+        return Ok(new Contracts.ValidationResult(checks, overallStatus));
     }
 
     [HttpPost("test-mediathek")]
-    [ProducesResponseType<MediathekResponse>(200)]
-    public async Task<ActionResult<MediathekResponse>> TestMediathek()
+    [ProducesResponseType<Contracts.MediathekResponse>(200)]
+    public async Task<ActionResult<Contracts.MediathekResponse>> TestMediathek()
     {
         var reachable = await CheckMediathek();
-        return Ok(new MediathekResponse(reachable));
+        return Ok(new Contracts.MediathekResponse(reachable));
     }
 
     private async Task<FfmpegResult> CheckFfmpeg()
