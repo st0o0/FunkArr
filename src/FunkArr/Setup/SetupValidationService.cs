@@ -20,7 +20,7 @@ public sealed class SetupValidationService(
         {
             RunSafely(() => CheckApiKeyAsync(), "self", "api-key"),
             RunSafely(() => CheckFfmpegAsync(cancellationToken), "self", "ffmpeg"),
-            RunSafely(() => CheckPathAsync("download-path", downloadOptions.Value.DownloadPath), "self", "download-path"),
+            RunSafely(() => CheckPathAsync("download-path", downloadOptions.Value.Path), "self", "download-path"),
             RunSafely(() => CheckPathAsync("temp-path", downloadOptions.Value.TempPath), "self", "temp-path"),
         };
 

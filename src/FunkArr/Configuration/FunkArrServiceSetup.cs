@@ -1,13 +1,15 @@
+using System.IO.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.DownloadClient;
+using FunkArr.DownloadClient.Ffmpeg;
 using FunkArr.Health;
-using FunkArr.Muxing;
 using FunkArr.RuleSet;
 using FunkArr.Search;
+using FunkArr.Search.Quality;
+using FunkArr.Search.Resolvers;
 using FunkArr.Setup;
 using FunkArr.Shared;
-using FunkArr.Subtitle;
 using Microsoft.Extensions.Options;
 using Prometheus;
 using Servus.Core.Application.Startup;
@@ -50,13 +52,11 @@ public sealed class FunkArrServiceSetup : IServiceSetupContainer
             .Bind(configuration.GetSection(SearchOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<SearchOptions>, SearchOptionsValidator>();
+
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IFileSystem, FileSystem>();
         services.AddSingleton<IFileService, FileService>();
-        services.AddSingleton<MuxingService>();
-        services.AddSingleton<Mp4DownloadService>();
-        services.AddSingleton<HlsDownloadService>();
-        services.AddSingleton<SubtitleAcquisitionService>();
-        services.AddSingleton<SubtitleNormalizerService>();
+        services.AddSingleton<IFfmpegService, FfmpegService>();
         services.AddSingleton<QualityProbeService>();
         services.AddSingleton<GitHubReleaseClient>();
 

@@ -89,18 +89,41 @@ public sealed record MediathekQueryResult
 
 public sealed record MediathekResultItem
 {
+    [JsonPropertyName("channel")]
     public string Channel { get; init; } = string.Empty;
+
+    [JsonPropertyName("topic")]
     public string Topic { get; init; } = string.Empty;
+
+    [JsonPropertyName("title")]
     public string Title { get; init; } = string.Empty;
+
+    [JsonPropertyName("description")]
     public string Description { get; init; } = string.Empty;
+
+    [JsonPropertyName("timestamp")]
     public long Timestamp { get; init; }
+
+    [JsonPropertyName("duration")]
     public int Duration { get; init; }
+
+    [JsonPropertyName("size")]
     public long? Size { get; init; }
-    public string Url_Website { get; init; } = string.Empty;
-    public string Url_Video { get; init; } = string.Empty;
-    public string Url_Video_Low { get; init; } = string.Empty;
-    public string Url_Video_HD { get; init; } = string.Empty;
-    public string Url_Subtitle { get; init; } = string.Empty;
+
+    [JsonPropertyName("url_website")]
+    public string UrlWebsite { get; init; } = string.Empty;
+
+    [JsonPropertyName("url_video")]
+    public string UrlVideo { get; init; } = string.Empty;
+
+    [JsonPropertyName("url_video_low")]
+    public string UrlVideoLow { get; init; } = string.Empty;
+
+    [JsonPropertyName("url_video_hd")]
+    public string UrlVideoHd { get; init; } = string.Empty;
+
+    [JsonPropertyName("url_subtitle")]
+    public string UrlSubtitle { get; init; } = string.Empty;
 }
 
 public sealed record MediathekQueryMeta

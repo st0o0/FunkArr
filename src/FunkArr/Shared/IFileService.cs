@@ -2,12 +2,14 @@ namespace FunkArr.Shared;
 
 public interface IFileService
 {
-    void EnsureDirectoriesExist(string tempPath, string downloadPath);
-    string GetTempVideoPath(string tempPath, string nzoId);
-    string GetTempSubtitlePath(string tempPath, string nzoId, string extension = ".sub");
-    string GetNormalizedSubtitlePath(string tempPath, string nzoId);
-    string GetOutputPath(string downloadPath, string title);
-    void EnsureOutputDirectory(string downloadPath, string title);
-    void CleanupTempFiles(string videoPath, params string?[] additionalPaths);
-    Task WriteSubtitleAsync(string path, byte[] content);
+    void EnsureDirectoriesExist();
+    string GetTempVideoPath(string nzoId);
+    string GetTempSubtitlePath(string nzoId, string extension = ".sub");
+    string GetNormalizedSubtitlePath(string nzoId);
+    string GetOutputPath(string title, string? category = null);
+    void EnsureOutputDirectory(string title, string? category = null);
+    void CleanupTemp(string nzoId);
+    Task SaveVideoAsync(string nzoId, Stream content);
+    Task SaveSubtitleAsync(string nzoId, byte[] content, string extension);
+    Task<string?> NormalizeSubtitleAsync(string nzoId);
 }

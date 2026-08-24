@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using FunkArr.Search;
+using FunkArr.Search.Resolvers;
 using FunkArr.Shared;
 
 namespace FunkArr.RuleSet;

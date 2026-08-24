@@ -1,16 +1,21 @@
 using FunkArr.RuleSet;
+using FunkArr.Search.Matching;
+using FunkArr.Search.Resolvers;
 using FunkArr.Shared.Models;
 
 namespace FunkArr.Search;
 
-internal sealed record ResolveTvShow(int TvdbId, int? Season);
-internal sealed record TvShowResolved(string? ShowName, TvdbEpisodeInfo[]? Episodes);
+public sealed record ResolveTvShow(int TvdbId, int? Season);
+public sealed record TvShowResolved(string? ShowName, TvdbEpisodeInfo[]? Episodes);
 
-internal sealed record ResolveMovie(string? ImdbId, string? SearchTerm);
-internal sealed record MovieResolved(TmdbMovieInfo? Info);
+public sealed record ResolveMovie(string? ImdbId, string? SearchTerm);
+public sealed record MovieResolved(TmdbMovieInfo? Info);
 
-internal sealed record FetchItems(string SearchTerm);
-internal sealed record ItemsFetched(MediathekResultItem[] Items);
+internal sealed record CachedShow(string ShowName, long TimestampUtcTicks);
+internal sealed record CachedMovie(string Title, string? OriginalTitle, int? RuntimeMinutes, long TimestampUtcTicks);
+
+public sealed record FetchItems(string SearchTerm);
+public sealed record ItemsFetched(MediathekResultItem[] Items);
 
 internal sealed record MatchItems(
     MediathekResultItem[] Items,
@@ -25,3 +30,5 @@ internal sealed record UrlsProbed(IReadOnlyList<SearchResult> Results);
 
 internal sealed record ScoreResults(IReadOnlyList<SearchResult> Results, MatchContext Context);
 internal sealed record ResultsScored(IReadOnlyList<SearchResult> Results);
+
+public sealed record SearchResponse(IReadOnlyList<SearchResult> Results);

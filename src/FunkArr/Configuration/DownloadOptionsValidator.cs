@@ -6,9 +6,9 @@ public sealed class DownloadOptionsValidator : IValidateOptions<DownloadOptions>
 {
     public ValidateOptionsResult Validate(string? name, DownloadOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.DownloadPath))
+        if (string.IsNullOrWhiteSpace(options.Path))
         {
-            return ValidateOptionsResult.Fail("FunkArr:Download:DownloadPath must be configured.");
+            return ValidateOptionsResult.Fail("FunkArr:Download:Path must be configured.");
         }
 
         if (options.ConcurrentDownloads < 1 || options.ConcurrentDownloads > 10)

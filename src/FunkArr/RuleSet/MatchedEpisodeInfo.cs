@@ -1,4 +1,5 @@
 using FunkArr.Search;
+using FunkArr.Search.Resolvers;
 
 namespace FunkArr.RuleSet;
 
