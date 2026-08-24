@@ -16,7 +16,9 @@ public sealed class SetupValidationServiceTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_tempDir))
+        {
             Directory.Delete(_tempDir, recursive: true);
+        }
     }
 
     // -- Self-checks ----------------------------------------------------
@@ -249,7 +251,7 @@ public sealed class SetupValidationServiceTests : IDisposable
         var funkArrOptions = Options.Create(new FunkArrOptions { ApiKey = apiKey });
         var downloadOptions = Options.Create(new DownloadOptions
         {
-            DownloadPath = downloadPath ?? Path.Combine(_tempDir, "downloads"),
+            Path = downloadPath ?? Path.Combine(_tempDir, "downloads"),
             TempPath = tempPath ?? Path.Combine(_tempDir, "temp"),
         });
 

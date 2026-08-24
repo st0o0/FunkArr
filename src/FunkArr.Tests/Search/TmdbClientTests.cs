@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FunkArr.Configuration;
 using FunkArr.Search;
+using FunkArr.Search.Resolvers;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Options;
 
@@ -25,9 +26,15 @@ public sealed class TmdbClientTests
         {
             var path = req.RequestUri!.AbsolutePath;
             if (path.Contains("/find/"))
+            {
                 return FakeHttpMessageHandler.JsonResponse(JsonSerializer.Serialize(findResponse));
+            }
+
             if (path.Contains("/movie/424"))
+            {
                 return FakeHttpMessageHandler.JsonResponse(JsonSerializer.Serialize(detailResponse));
+            }
+
             return FakeHttpMessageHandler.JsonResponse("{}");
         });
 
@@ -82,9 +89,15 @@ public sealed class TmdbClientTests
         {
             var path = req.RequestUri!.AbsolutePath;
             if (path.Contains("/search/movie"))
+            {
                 return FakeHttpMessageHandler.JsonResponse(JsonSerializer.Serialize(searchResponse));
+            }
+
             if (path.Contains("/movie/601"))
+            {
                 return FakeHttpMessageHandler.JsonResponse(JsonSerializer.Serialize(detailResponse));
+            }
+
             return FakeHttpMessageHandler.JsonResponse("{}");
         });
 
@@ -116,7 +129,10 @@ public sealed class TmdbClientTests
         {
             var path = req.RequestUri!.AbsolutePath;
             if (path.Contains("/find/"))
+            {
                 return FakeHttpMessageHandler.JsonResponse(JsonSerializer.Serialize(findResponse));
+            }
+
             return FakeHttpMessageHandler.JsonResponse("{}", System.Net.HttpStatusCode.InternalServerError);
         });
 

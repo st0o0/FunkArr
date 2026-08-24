@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "nzo": "nzo1",
+  "t": "Show S01E02",
+  "url": "https://example.com/dl",
+  "cat": null,
+  "ts": 639079632000000000
+}

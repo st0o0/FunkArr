@@ -1,21 +1,10 @@
 using FunkArr.DownloadClient;
+using FunkArr.DownloadClient.Tracker;
 
 namespace FunkArr.Tests.DownloadClient;
 
-public class HlsDownloadServiceTests
+public class DownloadSourceDetectorTests
 {
-    [Fact]
-    public void BuildFfmpegArgs_ProducesCorrectCommand()
-    {
-        var args = HlsDownloadService.BuildFfmpegArgs(
-            "https://example.com/stream.m3u8",
-            "/tmp/output.mp4");
-
-        Assert.Equal(
-            "-i \"https://example.com/stream.m3u8\" -map 0:v -map 0:a -c copy -y \"/tmp/output.mp4\"",
-            args);
-    }
-
     [Fact]
     public void DownloadSourceDetector_Mp4Url_ReturnsDirect()
     {

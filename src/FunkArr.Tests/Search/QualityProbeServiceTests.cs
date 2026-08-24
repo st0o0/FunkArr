@@ -1,6 +1,7 @@
 using System.Net;
 using FunkArr.Configuration;
 using FunkArr.Search;
+using FunkArr.Search.Quality;
 using FunkArr.Shared.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -115,9 +116,9 @@ public class QualityProbeServiceTests
             Title = "Test",
             Topic = "Test Topic",
             Channel = "ZDF",
-            Url_Video_HD = "https://example.com/hd.mp4",
-            Url_Video = "https://example.com/sd.mp4",
-            Url_Video_Low = "",
+            UrlVideoHd = "https://example.com/hd.mp4",
+            UrlVideo = "https://example.com/sd.mp4",
+            UrlVideoLow = "",
             Duration = 3600,
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
         };

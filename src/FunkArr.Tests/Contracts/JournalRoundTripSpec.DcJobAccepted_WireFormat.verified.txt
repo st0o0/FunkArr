@@ -1,0 +1,10 @@
+{
+  "v": 1,
+  "nzo": "nzo1",
+  "url": "https://example.com/v.mp4",
+  "sub": "https://example.com/s.vtt",
+  "tmp": "",
+  "out": "",
+  "t": "My Show S01E01",
+  "cat": "tv"
+}

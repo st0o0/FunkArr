@@ -14,7 +14,10 @@ public class CommunityRulesetFilesTests
     {
         var data = new TheoryData<string>();
         foreach (var file in Directory.GetFiles(RulesetsDir, "*.json"))
+        {
             data.Add(Path.GetFileName(file));
+        }
+
         return data;
     }
 

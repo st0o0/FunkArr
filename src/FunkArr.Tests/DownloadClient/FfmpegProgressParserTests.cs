@@ -1,4 +1,5 @@
 using FunkArr.DownloadClient;
+using FunkArr.DownloadClient.Ffmpeg;
 
 namespace FunkArr.Tests.DownloadClient;
 

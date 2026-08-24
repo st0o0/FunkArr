@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-16"?>
+<rss version="2.0" xmlns:newznab="http://www.newznab.com/DTD/2010/feeds/attributes/">
+  <channel>
+    <title>FunkArr</title>
+    <newznab:response offset="0" total="1" />
+    <item>
+      <title>Tatort.S2026E10.GERMAN.1080p.WEB.h264-FA</title>
+      <guid>abc-123</guid>
+      <link>http://localhost:5000/api?t=get&amp;id=abc</link>
+      <pubDate>Mon, 01 Jun 2026 20:15:00 GMT</pubDate>
+      <enclosure url="http://localhost:5000/api?t=get&amp;id=abc" length="1500000000" type="application/x-nzb" />
+      <newznab:attr name="category" value="5040" />
+      <newznab:attr name="size" value="1500000000" />
+      <newznab:attr name="language" value="German" />
+      <newznab:attr name="video" value="h264" />
+      <newznab:attr name="resolution" value="1080p" />
+      <newznab:attr name="tvdbid" value="12345" />
+      <newznab:attr name="season" value="2026" />
+      <newznab:attr name="episode" value="10" />
+    </item>
+  </channel>
+</rss>

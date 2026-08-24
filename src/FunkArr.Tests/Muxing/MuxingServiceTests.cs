@@ -1,13 +1,14 @@
-using FunkArr.Muxing;
+using FunkArr.DownloadClient;
+using FunkArr.DownloadClient.Ffmpeg;
 
 namespace FunkArr.Tests.Muxing;
 
-public class MuxingServiceTests
+public class FfmpegRemuxArgsTests
 {
     [Fact]
-    public void BuildFfmpegArgs_VideoOnly_NoSubtitle()
+    public void BuildRemuxArgs_VideoOnly_NoSubtitle()
     {
-        var args = MuxingService.BuildFfmpegArgs("/tmp/video.mp4", null, "/out/video.mkv");
+        var args = FfmpegService.BuildRemuxArgs("/tmp/video.mp4", null, "/out/video.mkv");
 
         Assert.Contains("-i \"/tmp/video.mp4\"", args);
         Assert.Contains("-map 0:v -map 0:a", args);
@@ -18,9 +19,9 @@ public class MuxingServiceTests
     }
 
     [Fact]
-    public void BuildFfmpegArgs_WithSubtitle_MapsSubtitleStream()
+    public void BuildRemuxArgs_WithSubtitle_MapsSubtitleStream()
     {
-        var args = MuxingService.BuildFfmpegArgs("/tmp/video.mp4", "/tmp/sub.srt", "/out/video.mkv");
+        var args = FfmpegService.BuildRemuxArgs("/tmp/video.mp4", "/tmp/sub.srt", "/out/video.mkv");
 
         Assert.Contains("-i \"/tmp/video.mp4\"", args);
         Assert.Contains("-i \"/tmp/sub.srt\"", args);

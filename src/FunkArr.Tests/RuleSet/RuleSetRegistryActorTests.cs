@@ -5,18 +5,19 @@ using Akka.Hosting;
 using FunkArr.Configuration;
 using FunkArr.RuleSet;
 using FunkArr.Search;
+using FunkArr.Search.Resolvers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Tests.RuleSet;
 
-public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
+public sealed class RuleSetActorTests : Akka.Hosting.TestKit.TestKit
 {
     private readonly string _tempDir = Path.Combine(
         Path.GetTempPath(), "funkarr-tests", Guid.NewGuid().ToString("N"));
 
-    public RuleSetCoordinatorTests()
+    public RuleSetActorTests()
     {
         Directory.CreateDirectory(_tempDir);
     }
@@ -52,7 +53,7 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
     private IActorRef CreateActor()
     {
         var resolver = DependencyResolver.For(Sys);
-        var props = resolver.Props<RuleSetCoordinator>();
+        var props = resolver.Props<RuleSetActor>();
         return Sys.ActorOf(props);
     }
 
@@ -80,7 +81,9 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
             if (Directory.Exists(dir))
             {
                 foreach (var file in Directory.EnumerateFiles(dir, "*.json"))
+                {
                     File.Delete(file);
+                }
             }
         }
     }
@@ -105,10 +108,10 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
     private static Rule MakeRule(int priority, MatchingStrategy strategy = MatchingStrategy.ItemTitleIncludes) =>
         new() { Priority = priority, Strategy = strategy };
 
-    private static async Task<RuleSetCoordinator.RulesResponse> Ask(IActorRef actor, string topic, int? tvdbId = null)
+    private static async Task<RuleSetActor.RulesResponse> Ask(IActorRef actor, string topic, int? tvdbId = null)
     {
-        var msg = new RuleSetCoordinator.GetRulesForTopic(topic, tvdbId);
-        return await actor.Ask<RuleSetCoordinator.RulesResponse>(msg, TimeSpan.FromSeconds(5));
+        var msg = new RuleSetActor.GetRulesForTopic(topic, tvdbId);
+        return await actor.Ask<RuleSetActor.RulesResponse>(msg, TimeSpan.FromSeconds(5));
     }
 
     [Fact(Timeout = 5000)]
@@ -408,8 +411,8 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
         WriteCommunityRuleSet(CreateRuleSet("heute-show", rules: [MakeRule(2)]));
 
         var actor = CreateActor();
-        var response = await actor.Ask<RuleSetCoordinator.AllRulesetsResponse>(
-            new RuleSetCoordinator.GetAllRulesets(), TimeSpan.FromSeconds(5));
+        var response = await actor.Ask<RuleSetActor.AllRulesetsResponse>(
+            new RuleSetActor.GetAllRulesets(), TimeSpan.FromSeconds(5));
 
         Assert.Equal(2, response.Rulesets.Count);
         Assert.Contains(response.Rulesets, r => r.Topic == "Tatort");
@@ -428,8 +431,8 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
             source: "community"));
 
         var actor = CreateActor();
-        var response = await actor.Ask<RuleSetCoordinator.AllRulesetsResponse>(
-            new RuleSetCoordinator.GetAllRulesets(), TimeSpan.FromSeconds(5));
+        var response = await actor.Ask<RuleSetActor.AllRulesetsResponse>(
+            new RuleSetActor.GetAllRulesets(), TimeSpan.FromSeconds(5));
 
         var summary = Assert.Single(response.Rulesets);
         Assert.Equal("Terra X", summary.Topic);
@@ -446,8 +449,8 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
         WriteCommunityRuleSet(CreateRuleSet("Tatort", rules: [MakeRule(10)]));
 
         var actor = CreateActor();
-        var response = await actor.Ask<RuleSetCoordinator.RuleSetResponse>(
-            new RuleSetCoordinator.GetRuleSet("Tatort"), TimeSpan.FromSeconds(5));
+        var response = await actor.Ask<RuleSetActor.RuleSetResponse>(
+            new RuleSetActor.GetRuleSet("Tatort"), TimeSpan.FromSeconds(5));
 
         Assert.NotNull(response.RuleSet);
         Assert.Equal("Tatort", response.RuleSet.Topic);
@@ -459,8 +462,8 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
         ClearAllLayers();
 
         var actor = CreateActor();
-        var response = await actor.Ask<RuleSetCoordinator.RuleSetResponse>(
-            new RuleSetCoordinator.GetRuleSet("nonexistent"), TimeSpan.FromSeconds(5));
+        var response = await actor.Ask<RuleSetActor.RuleSetResponse>(
+            new RuleSetActor.GetRuleSet("nonexistent"), TimeSpan.FromSeconds(5));
 
         Assert.Null(response.RuleSet);
     }
@@ -473,12 +476,12 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
         var actor = CreateActor();
         var ruleSet = CreateRuleSet("My Local Show", source: "local", rules: [MakeRule(55)]);
 
-        var saveResponse = await actor.Ask<RuleSetCoordinator.SaveLocalRuleSetResponse>(
-            new RuleSetCoordinator.SaveLocalRuleSet(ruleSet), TimeSpan.FromSeconds(5));
+        var saveResponse = await actor.Ask<RuleSetActor.SaveLocalRuleSetResponse>(
+            new RuleSetActor.SaveLocalRuleSet(ruleSet), TimeSpan.FromSeconds(5));
         Assert.True(saveResponse.Success);
 
-        var getResponse = await actor.Ask<RuleSetCoordinator.RuleSetResponse>(
-            new RuleSetCoordinator.GetRuleSet("My Local Show"), TimeSpan.FromSeconds(5));
+        var getResponse = await actor.Ask<RuleSetActor.RuleSetResponse>(
+            new RuleSetActor.GetRuleSet("My Local Show"), TimeSpan.FromSeconds(5));
         Assert.NotNull(getResponse.RuleSet);
         Assert.Single(getResponse.RuleSet.Rules);
         Assert.Equal(55, getResponse.RuleSet.Rules[0].Priority);
@@ -499,8 +502,8 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
         Assert.Equal(99, before.Rules[0].Priority);
 
         // Delete local override
-        var deleteResponse = await actor.Ask<RuleSetCoordinator.DeleteLocalRuleSetResponse>(
-            new RuleSetCoordinator.DeleteLocalRuleSet("Tatort"), TimeSpan.FromSeconds(5));
+        var deleteResponse = await actor.Ask<RuleSetActor.DeleteLocalRuleSetResponse>(
+            new RuleSetActor.DeleteLocalRuleSet("Tatort"), TimeSpan.FromSeconds(5));
         Assert.True(deleteResponse.Found);
 
         // Should fall back to community
@@ -515,8 +518,8 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
         ClearAllLayers();
 
         var actor = CreateActor();
-        var response = await actor.Ask<RuleSetCoordinator.DeleteLocalRuleSetResponse>(
-            new RuleSetCoordinator.DeleteLocalRuleSet("nonexistent"), TimeSpan.FromSeconds(5));
+        var response = await actor.Ask<RuleSetActor.DeleteLocalRuleSetResponse>(
+            new RuleSetActor.DeleteLocalRuleSet("nonexistent"), TimeSpan.FromSeconds(5));
 
         Assert.False(response.Found);
     }
@@ -564,7 +567,7 @@ public sealed class RuleSetCoordinatorTests : Akka.Hosting.TestKit.TestKit
             "Lindenstrasse",
             rules: [MakeRule(77)]));
 
-        actor.Tell(new RuleSetCoordinator.ReloadLocal());
+        actor.Tell(new RuleSetActor.ReloadLocal());
         await Task.Delay(200);
 
         var after = await Ask(actor, "Lindenstrasse");

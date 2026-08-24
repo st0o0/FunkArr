@@ -1,119 +1,175 @@
+using System.IO.Abstractions.TestingHelpers;
+using FunkArr.Configuration;
 using FunkArr.Shared;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.Tests.Shared;
 
 public class FileServiceTests
 {
-    private readonly FileService _sut = new();
+    private static FileService CreateService(
+        MockFileSystem? fs = null,
+        string tempPath = "data/temp",
+        string downloadPath = "/media/downloads",
+        Dictionary<string, string>? category = null)
+    {
+        fs ??= new MockFileSystem();
+        var opts = new DownloadOptions { TempPath = tempPath, Path = downloadPath };
+        if (category is not null)
+        {
+            opts.Category = category;
+        }
+
+        var options = Options.Create(opts);
+        return new FileService(fs, options);
+    }
 
     [Fact]
     public void GetTempVideoPath_CombinesPathAndNzoId()
     {
-        var result = _sut.GetTempVideoPath("data/temp", "abc123");
-
+        var sut = CreateService();
+        var result = sut.GetTempVideoPath("abc123");
         Assert.Equal(Path.Combine("data/temp", "abc123.mp4"), result);
     }
 
     [Fact]
     public void GetTempSubtitlePath_DefaultExtension_UsesSub()
     {
-        var result = _sut.GetTempSubtitlePath("data/temp", "abc123");
-
+        var sut = CreateService();
+        var result = sut.GetTempSubtitlePath("abc123");
         Assert.Equal(Path.Combine("data/temp", "abc123.sub"), result);
     }
 
     [Fact]
     public void GetTempSubtitlePath_WithExtension_UsesProvidedExtension()
     {
-        var result = _sut.GetTempSubtitlePath("data/temp", "abc123", ".vtt");
-
+        var sut = CreateService();
+        var result = sut.GetTempSubtitlePath("abc123", ".vtt");
         Assert.Equal(Path.Combine("data/temp", "abc123.vtt"), result);
     }
 
     [Fact]
     public void GetNormalizedSubtitlePath_AlwaysReturnsSrt()
     {
-        var result = _sut.GetNormalizedSubtitlePath("data/temp", "abc123");
-
+        var sut = CreateService();
+        var result = sut.GetNormalizedSubtitlePath("abc123");
         Assert.Equal(Path.Combine("data/temp", "abc123.srt"), result);
     }
 
     [Fact]
     public void GetOutputPath_CreatesNestedStructure()
     {
-        var result = _sut.GetOutputPath("/media/downloads", "My Show S01E03");
-
+        var sut = CreateService();
+        var result = sut.GetOutputPath("My Show S01E03");
         Assert.Equal(Path.Combine("/media/downloads", "My Show S01E03", "My Show S01E03.mkv"), result);
     }
 
     [Fact]
     public void EnsureDirectoriesExist_CreatesDirectories()
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}", "temp");
-        var dlDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}", "downloads");
+        var fs = new MockFileSystem();
+        var sut = CreateService(fs);
 
-        try
-        {
-            _sut.EnsureDirectoriesExist(tempDir, dlDir);
+        sut.EnsureDirectoriesExist();
 
-            Assert.True(Directory.Exists(tempDir));
-            Assert.True(Directory.Exists(dlDir));
-        }
-        finally
-        {
-            if (Directory.Exists(tempDir))
-            {
-                Directory.Delete(tempDir, true);
-            }
-
-            if (Directory.Exists(dlDir))
-            {
-                Directory.Delete(dlDir, true);
-            }
-        }
+        Assert.True(fs.Directory.Exists("data/temp"));
+        Assert.True(fs.Directory.Exists("/media/downloads"));
     }
 
     [Fact]
-    public void CleanupTempFiles_DeletesExistingFiles()
+    public void EnsureOutputDirectory_CreatesSubdirectory()
     {
-        var dir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(dir);
-        var videoPath = Path.Combine(dir, "test.mp4");
-        var subPath = Path.Combine(dir, "test.srt");
-        File.WriteAllText(videoPath, "video");
-        File.WriteAllText(subPath, "subtitle");
+        var fs = new MockFileSystem();
+        var sut = CreateService(fs);
 
-        try
-        {
-            _sut.CleanupTempFiles(videoPath, subPath);
+        sut.EnsureOutputDirectory("My Show S01E03");
 
-            Assert.False(File.Exists(videoPath));
-            Assert.False(File.Exists(subPath));
-        }
-        finally
-        {
-            if (Directory.Exists(dir))
-            {
-                Directory.Delete(dir, true);
-            }
-        }
+        Assert.True(fs.Directory.Exists(Path.Combine("/media/downloads", "My Show S01E03")));
     }
 
     [Fact]
-    public void CleanupTempFiles_ToleratesMissingFiles()
+    public void CleanupTemp_DeletesMatchingFiles()
     {
-        var ex = Record.Exception(() =>
-            _sut.CleanupTempFiles("/nonexistent/path.mp4", "/also/nonexistent.srt"));
+        var fs = new MockFileSystem();
+        fs.Directory.CreateDirectory("data/temp");
+        fs.File.WriteAllText(Path.Combine("data/temp", "abc123.mp4"), "video");
+        fs.File.WriteAllText(Path.Combine("data/temp", "abc123.srt"), "subtitle");
+        fs.File.WriteAllText(Path.Combine("data/temp", "other.mp4"), "keep");
+        var sut = CreateService(fs);
 
+        sut.CleanupTemp("abc123");
+
+        Assert.False(fs.File.Exists(Path.Combine("data/temp", "abc123.mp4")));
+        Assert.False(fs.File.Exists(Path.Combine("data/temp", "abc123.srt")));
+        Assert.True(fs.File.Exists(Path.Combine("data/temp", "other.mp4")));
+    }
+
+    [Fact]
+    public void CleanupTemp_ToleratesMissingDirectory()
+    {
+        var sut = CreateService();
+        var ex = Record.Exception(() => sut.CleanupTemp("nonexistent"));
         Assert.Null(ex);
     }
 
     [Fact]
-    public void CleanupTempFiles_SkipsNullPaths()
+    public async Task SaveVideoAsync_WritesStreamToTempPath()
     {
-        var ex = Record.Exception(() =>
-            _sut.CleanupTempFiles("/nonexistent/path.mp4", null, null));
+        var fs = new MockFileSystem();
+        fs.Directory.CreateDirectory("data/temp");
+        var sut = CreateService(fs);
+        var content = new MemoryStream("video-content"u8.ToArray());
 
-        Assert.Null(ex);
+        await sut.SaveVideoAsync("abc123", content);
+
+        var written = fs.File.ReadAllText(Path.Combine("data/temp", "abc123.mp4"));
+        Assert.Equal("video-content", written);
+    }
+
+    [Fact]
+    public async Task SaveSubtitleAsync_WritesBytes()
+    {
+        var fs = new MockFileSystem();
+        fs.Directory.CreateDirectory("data/temp");
+        var sut = CreateService(fs);
+        var content = "subtitle-content"u8.ToArray();
+
+        await sut.SaveSubtitleAsync("abc123", content, ".vtt");
+
+        var written = fs.File.ReadAllBytes(Path.Combine("data/temp", "abc123.vtt"));
+        Assert.Equal(content, written);
+    }
+
+    [Fact]
+    public void GetOutputPath_WithConfiguredCategory_ResolvesViaCategory()
+    {
+        var category = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["tv"] = "serien" };
+        var sut = CreateService(downloadPath: "/downloads", category: category);
+
+        var result = sut.GetOutputPath("My Show S01E03", "tv");
+
+        Assert.Equal(Path.Combine("/downloads", "serien", "My Show S01E03", "My Show S01E03.mkv"), result);
+    }
+
+    [Fact]
+    public void GetOutputPath_WithUnknownCategory_UsesCategoryAsSubfolder()
+    {
+        var sut = CreateService(downloadPath: "/downloads");
+
+        var result = sut.GetOutputPath("My Show S01E03", "anime");
+
+        Assert.Equal(Path.Combine("/downloads", "anime", "My Show S01E03", "My Show S01E03.mkv"), result);
+    }
+
+    [Fact]
+    public void EnsureOutputDirectory_WithCategory_CreatesCorrectSubdirectory()
+    {
+        var fs = new MockFileSystem();
+        var category = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["tv"] = "serien" };
+        var sut = CreateService(fs, downloadPath: "/downloads", category: category);
+
+        sut.EnsureOutputDirectory("My Show S01E03", "tv");
+
+        Assert.True(fs.Directory.Exists(Path.Combine("/downloads", "serien", "My Show S01E03")));
     }
 }

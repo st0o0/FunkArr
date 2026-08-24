@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FunkArr.Search;
+using FunkArr.Search.Resolvers;
 using FunkArr.Tests.Shared;
 
 namespace FunkArr.Tests.Search;

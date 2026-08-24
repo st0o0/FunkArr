@@ -20,7 +20,9 @@ public sealed class GitHubReleaseClientTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_tempDir))
+        {
             Directory.Delete(_tempDir, recursive: true);
+        }
     }
 
     // -- Version check tests -------------------------------------------------
@@ -240,7 +242,9 @@ public sealed class GitHubReleaseClientTests : IDisposable
     private static byte[] CreateTestZip(params string[] fileNames)
     {
         if (fileNames.Length == 0)
+        {
             fileNames = ["dummy.json"];
+        }
 
         using var ms = new MemoryStream();
         using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))

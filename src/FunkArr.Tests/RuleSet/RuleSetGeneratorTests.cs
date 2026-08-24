@@ -16,7 +16,7 @@ public class RuleSetGeneratorTests
         };
 
         Assert.Equal("Feuer & Flamme",
-            RuleSetGeneratorWorker.FindBestTopic(results, "Feuer & Flamme"));
+            RuleSetGeneratorActor.FindBestTopic(results, "Feuer & Flamme"));
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class RuleSetGeneratorTests
         };
 
         Assert.Equal("Checker Can, Checker Tobi und Checker Julian",
-            RuleSetGeneratorWorker.FindBestTopic(results, "Checker Tobi"));
+            RuleSetGeneratorActor.FindBestTopic(results, "Checker Tobi"));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class RuleSetGeneratorTests
         var results = new[] { CreateItem("Some Topic", "Ep1") };
 
         Assert.Equal("Some Topic",
-            RuleSetGeneratorWorker.FindBestTopic(results, "Completely Different"));
+            RuleSetGeneratorActor.FindBestTopic(results, "Completely Different"));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class RuleSetGeneratorTests
             CreateItem("TopicB", "Ep2"),
         };
 
-        Assert.Null(RuleSetGeneratorWorker.FindBestTopic(results, "TopicC"));
+        Assert.Null(RuleSetGeneratorActor.FindBestTopic(results, "TopicC"));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class RuleSetGeneratorTests
             .Select(i => CreateItem("Show", $"Episode {i} (S01/E{i:D2})"))
             .ToArray();
 
-        var result = RuleSetGeneratorWorker.AnalyzePatterns(samples, "Show");
+        var result = RuleSetGeneratorActor.AnalyzePatterns(samples, "Show");
 
         Assert.Equal(10, result.SeasonEpisodeCount);
         Assert.Equal(0, result.DateCount);
@@ -87,7 +87,7 @@ public class RuleSetGeneratorTests
             CreateItem("Show", "Normal title"),
         };
 
-        var result = RuleSetGeneratorWorker.AnalyzePatterns(samples, "Show");
+        var result = RuleSetGeneratorActor.AnalyzePatterns(samples, "Show");
 
         Assert.Equal(3, result.DateCount);
         Assert.Equal(0, result.SeasonEpisodeCount);
@@ -100,7 +100,7 @@ public class RuleSetGeneratorTests
             .Select(i => CreateItem("Sturm der Liebe", $"Sturm der Liebe ({i})"))
             .ToArray();
 
-        var result = RuleSetGeneratorWorker.AnalyzePatterns(samples, "Sturm der Liebe");
+        var result = RuleSetGeneratorActor.AnalyzePatterns(samples, "Sturm der Liebe");
 
         Assert.Equal(5, result.AbsoluteEpisodeCount);
     }
@@ -108,7 +108,7 @@ public class RuleSetGeneratorTests
     [Fact]
     public void DetectStrategy_SeasonEpisodeWins()
     {
-        var analysis = new RuleSetGeneratorWorker.PatternAnalysis
+        var analysis = new RuleSetGeneratorActor.PatternAnalysis
         {
             SeasonEpisodeCount = 10,
             DateCount = 2,
@@ -116,13 +116,13 @@ public class RuleSetGeneratorTests
         };
 
         Assert.Equal(MatchingStrategy.SeasonAndEpisodeNumber,
-            RuleSetGeneratorWorker.DetectStrategy(analysis));
+            RuleSetGeneratorActor.DetectStrategy(analysis));
     }
 
     [Fact]
     public void DetectStrategy_DateWinsOverLowSE()
     {
-        var analysis = new RuleSetGeneratorWorker.PatternAnalysis
+        var analysis = new RuleSetGeneratorActor.PatternAnalysis
         {
             SeasonEpisodeCount = 1,
             DateCount = 8,
@@ -130,13 +130,13 @@ public class RuleSetGeneratorTests
         };
 
         Assert.Equal(MatchingStrategy.ItemTitleEqualsAirdate,
-            RuleSetGeneratorWorker.DetectStrategy(analysis));
+            RuleSetGeneratorActor.DetectStrategy(analysis));
     }
 
     [Fact]
     public void DetectStrategy_FallbackToIncludes()
     {
-        var analysis = new RuleSetGeneratorWorker.PatternAnalysis
+        var analysis = new RuleSetGeneratorActor.PatternAnalysis
         {
             SeasonEpisodeCount = 1,
             DateCount = 1,
@@ -145,7 +145,7 @@ public class RuleSetGeneratorTests
         };
 
         Assert.Equal(MatchingStrategy.ItemTitleIncludes,
-            RuleSetGeneratorWorker.DetectStrategy(analysis));
+            RuleSetGeneratorActor.DetectStrategy(analysis));
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public class RuleSetGeneratorTests
     {
         var samples = new[] { CreateItem("Show", "Episode (S01/E05)") };
 
-        var (season, episode, rules) = RuleSetGeneratorWorker.GenerateRegex(
+        var (season, episode, rules) = RuleSetGeneratorActor.GenerateRegex(
             samples, MatchingStrategy.SeasonAndEpisodeNumber, "Show");
 
         Assert.NotNull(season);
@@ -166,7 +166,7 @@ public class RuleSetGeneratorTests
     {
         var samples = new[] { CreateItem("Show", "Show vom 5. Juni 2026") };
 
-        var (season, episode, rules) = RuleSetGeneratorWorker.GenerateRegex(
+        var (season, episode, rules) = RuleSetGeneratorActor.GenerateRegex(
             samples, MatchingStrategy.ItemTitleEqualsAirdate, "Show");
 
         Assert.Null(season);
@@ -180,7 +180,7 @@ public class RuleSetGeneratorTests
     {
         var samples = new[] { CreateItem("Sturm der Liebe", "Sturm der Liebe (1606)") };
 
-        var (season, episode, rules) = RuleSetGeneratorWorker.GenerateRegex(
+        var (season, episode, rules) = RuleSetGeneratorActor.GenerateRegex(
             samples, MatchingStrategy.ByAbsoluteEpisodeNumber, "Sturm der Liebe");
 
         Assert.Null(season);
@@ -195,7 +195,7 @@ public class RuleSetGeneratorTests
             .Select(_ => CreateItem("Show", "Ep", 2700))
             .ToArray();
 
-        var filter = RuleSetGeneratorWorker.DeriveDurationFilter(samples);
+        var filter = RuleSetGeneratorActor.DeriveDurationFilter(samples);
 
         Assert.NotNull(filter);
         Assert.Equal("duration", filter.Field);
@@ -218,7 +218,7 @@ public class RuleSetGeneratorTests
             Filters = FilterGroup.Empty,
         };
 
-        var confidence = RuleSetGeneratorWorker.ComputeConfidence(samples, rule);
+        var confidence = RuleSetGeneratorActor.ComputeConfidence(samples, rule);
 
         Assert.True(confidence >= 0.8);
     }
@@ -231,6 +231,6 @@ public class RuleSetGeneratorTests
             Title = title,
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             Duration = duration,
-            Url_Video = "http://video.mp4",
+            UrlVideo = "http://video.mp4",
         };
 }

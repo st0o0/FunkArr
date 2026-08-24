@@ -1,4 +1,5 @@
 using FunkArr.Search;
+using FunkArr.Search.Matching;
 using FunkArr.Shared.Models;
 
 namespace FunkArr.Tests.Search;
@@ -118,9 +119,9 @@ public class MatchingPipelineTests
                 Title = "Episode 1",
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Duration = 2700,
-                Url_Video = "http://video.mp4",
-                Url_Video_HD = "http://video_hd.mp4",
-                Url_Video_Low = "http://video_low.mp4",
+                UrlVideo = "http://video.mp4",
+                UrlVideoHd = "http://video_hd.mp4",
+                UrlVideoLow = "http://video_low.mp4",
             },
         };
 
@@ -197,7 +198,7 @@ public class MatchingPipelineTests
             Description = "Erstausstrahlung am 15.03.2025",
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             Duration = 2700,
-            Url_Video = "http://v.mp4",
+            UrlVideo = "http://v.mp4",
         };
         var context = new MatchContext
         {
@@ -276,8 +277,8 @@ public class MatchingPipelineTests
                 Channel = "ARD", Topic = "Tatort", Title = "Episode",
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 Duration = 2700,
-                Url_Video = "http://sd.mp4",
-                Url_Video_HD = "http://hd.mp4",
+                UrlVideo = "http://sd.mp4",
+                UrlVideoHd = "http://hd.mp4",
             },
         };
 
@@ -298,7 +299,7 @@ public class MatchingPipelineTests
             Title = title,
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             Duration = duration,
-            Url_Video = videoUrl,
+            UrlVideo = videoUrl,
         };
 
     private static SearchResult CreateSearchResult(QualityTier quality) =>

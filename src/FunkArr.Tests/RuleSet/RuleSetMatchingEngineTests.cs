@@ -1,5 +1,7 @@
 using FunkArr.RuleSet;
 using FunkArr.Search;
+using FunkArr.Search.Matching;
+using FunkArr.Search.Resolvers;
 
 namespace FunkArr.Tests.RuleSet;
 
@@ -401,7 +403,7 @@ public class RuleSetMatchingEngineTests
             Title = title,
             Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
             Duration = duration,
-            Url_Video = "http://video.mp4",
+            UrlVideo = "http://video.mp4",
         };
 
     private static TvdbEpisodeInfo CreateEpisode(

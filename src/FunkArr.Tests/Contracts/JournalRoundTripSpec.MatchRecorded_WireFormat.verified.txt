@@ -1,0 +1,4 @@
+﻿{
+  "v": 1,
+  "r": "{\"id\":\"mr-001\",\"timestamp\":\"2026-06-01T14:00:00+00:00\",\"searchTopic\":\"tatort\",\"tvdbId\":12345,\"season\":2026,\"episode\":10,\"source\":\"mediathek\",\"totalResults\":5,\"matched\":[],\"filtered\":[],\"unmatched\":[]}"
+}

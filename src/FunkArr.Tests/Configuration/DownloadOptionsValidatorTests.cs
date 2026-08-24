@@ -8,7 +8,7 @@ public class DownloadOptionsValidatorTests
 
     private static DownloadOptions ValidOptions() => new()
     {
-        DownloadPath = "/media/downloads",
+        Path = "/media/downloads",
         ConcurrentDownloads = 3,
     };
 
@@ -24,12 +24,12 @@ public class DownloadOptionsValidatorTests
     public void Validate_EmptyDownloadPath_Fails()
     {
         var options = ValidOptions();
-        options.DownloadPath = "";
+        options.Path = "";
 
         var result = _sut.Validate(null, options);
 
         Assert.True(result.Failed);
-        Assert.Contains("DownloadPath", result.FailureMessage);
+        Assert.Contains("Path", result.FailureMessage);
     }
 
     [Theory]
