@@ -5,55 +5,59 @@ Cluster-sharded persistent actors that track per-download request lifecycle (sta
 ## Requirements
 
 ### Requirement: Single-node Cluster Sharding infrastructure
-The system SHALL configure Akka.Cluster with single-node seed and register a DownloadRequestTracker ShardRegion. Entity IDs SHALL be nzoIds extracted from messages via `IWithNzoId` interface.
+The system SHALL configure Akka.Cluster with single-node seed and register a DownloadRequestActor ShardRegion using `ShardedMessageExtractor` with `maxNumberOfShards: 10`. Entity IDs SHALL be nzoIds extracted from messages via `IWithNzoId` which extends `IShardedMessage`. The namespace SHALL be `FunkArr.DownloadClient.Tracker`.
 
 #### Scenario: Cluster starts on single node
 - **WHEN** the application starts
-- **THEN** the ActorSystem SHALL join a single-node cluster and the DownloadRequestTracker ShardRegion SHALL be available
+- **THEN** the ActorSystem SHALL join a single-node cluster and the DownloadRequestActor ShardRegion SHALL use `new ShardedMessageExtractor(10)`
 
-#### Scenario: Entity addressed by nzoId
+#### Scenario: Entity addressed by nzoId via IShardedMessage
 - **WHEN** a message implementing `IWithNzoId` with `NzoId = "abc123"` is sent to the ShardRegion
-- **THEN** it SHALL be routed to the DownloadRequestTracker entity with entityId "abc123"
+- **THEN** `IShardedMessage.EntityKey` SHALL return `"abc123"` and the message SHALL be routed to entity `"abc123"`
 
-### Requirement: DownloadRequestTracker entity persistence
-Each `DownloadRequestTracker` entity SHALL be a `ReceivePersistentActor` with `PersistenceId: "download-request-{nzoId}"`. It SHALL persist events: `RequestCreated`, `StatusChanged`, `Completed`, `Failed`.
+### Requirement: DownloadRequestActor entity persistence
+Each `DownloadRequestActor` entity SHALL be a `ReceivePersistentActor` with `PersistenceId: "download-request-{nzoId}"`. It SHALL persist journal DTOs: `RequestCreated`, `RequestStatusChanged`, `RequestCompleted`, `RequestFailed` (from `FunkArr.Persistence`). Domain events are defined in `DownloadRequestActorEvents`: `RequestCreated`, `StatusChanged`, `Completed`, `Failed`. Persistence uses extension methods `ToJournal()` / `ToDomain()` for DTO conversion.
 
-#### Scenario: Request created on first message
-- **WHEN** a `CreateRequest(nzoId, title, downloadUrl)` message arrives for a new entity
-- **THEN** the tracker SHALL persist `RequestCreated` and initialize its state
+#### Scenario: Request created with category
+- **WHEN** a `TrackDownload(nzoId, title, downloadUrl, category: "tv", enqueuedAt)` message arrives for a new entity
+- **THEN** the tracker SHALL persist `RequestCreated` journal DTO with category `"tv"` and initialize its state
+
+#### Scenario: Request created without category
+- **WHEN** a `TrackDownload(nzoId, title, downloadUrl, category: null, enqueuedAt)` message arrives
+- **THEN** the tracker SHALL persist `RequestCreated` journal DTO with null category
 
 #### Scenario: Status survives restart
 - **WHEN** a tracker entity restarts after a crash
-- **THEN** it SHALL replay events and restore its last known status
+- **THEN** it SHALL replay journal DTOs, convert via `ToDomain()`, and restore its last known status including category
 
 ### Requirement: Status query for SABnzbd queue
-Each tracker entity SHALL respond to `GetStatus` with its current nzoId, title, status, and timestamps.
+Each tracker entity SHALL respond to `QueryStatus` with its current nzoId, title, status, category, and enqueuedAt timestamp.
 
-#### Scenario: Active download status query
-- **WHEN** `GetStatus` is received for an entity in "Downloading" state
-- **THEN** the tracker SHALL reply with `StatusResponse(nzoId, title, "Downloading", enqueuedAt)`
+#### Scenario: Active download status query includes category
+- **WHEN** `QueryStatus` is received for an entity with category `"tv"` in "Downloading" state
+- **THEN** the tracker SHALL reply with `DownloadStatus(nzoId, title, "Downloading", category: "tv", enqueuedAt)`
 
 ### Requirement: History entry query for SABnzbd history
-Each tracker entity SHALL respond to `GetHistoryEntry` with its nzoId, title, final status, output path, completion time, and error message.
+Each tracker entity SHALL respond to `QueryHistory` with its nzoId, title, final status, category, output path, completion time, and error message.
 
-#### Scenario: Completed download history query
-- **WHEN** `GetHistoryEntry` is received for an entity in "Completed" state
-- **THEN** the tracker SHALL reply with `HistoryEntryResponse(nzoId, title, "Completed", outputPath, completedAt, null)`
+#### Scenario: Completed download history query includes category
+- **WHEN** `QueryHistory` is received for a completed entity with category `"movies"`
+- **THEN** the tracker SHALL reply with `DownloadHistoryEntry(nzoId, title, "Completed", category: "movies", outputPath, completedAt, null)`
 
-### Requirement: Status updates from DownloadQueueActor
-The tracker SHALL accept `UpdateStatus(nzoId, status)`, `MarkCompleted(nzoId, outputPath)`, and `MarkFailed(nzoId, error)` messages to update its state with persisted events.
+### Requirement: Status updates from DownloadActor
+The tracker SHALL accept `ReportProgress(nzoId, status)`, `CompleteDownload(nzoId, outputPath)`, and `FailDownload(nzoId, error)` messages to update its state with persisted events.
 
 #### Scenario: Status changed to Downloading
-- **WHEN** `UpdateStatus("abc123", "Downloading")` is received
-- **THEN** the tracker SHALL persist `StatusChanged` and update its in-memory status
+- **WHEN** `ReportProgress("abc123", "Downloading")` is received
+- **THEN** the tracker SHALL persist `RequestStatusChanged` journal DTO and update its in-memory status
 
 #### Scenario: Mark completed
-- **WHEN** `MarkCompleted("abc123", "/output/file.mkv")` is received
-- **THEN** the tracker SHALL persist `Completed` with the output path and timestamp
+- **WHEN** `CompleteDownload("abc123", "/output/file.mkv")` is received
+- **THEN** the tracker SHALL persist `RequestCompleted` journal DTO with the output path and timestamp
 
-### Requirement: QueueCoordinator creates tracker on Enqueue
-When `QueueCoordinator` enqueues a new job, it SHALL tell the DownloadRequestTracker ShardRegion with `CreateRequest(nzoId, title, downloadUrl)` to create the tracker entity.
+### Requirement: QueueActor creates tracker on Enqueue
+When `QueueActor` enqueues a new job, it SHALL tell the DownloadRequestActor ShardRegion with `TrackDownload(nzoId, title, downloadUrl, category, enqueuedAt)` to create the tracker entity.
 
-#### Scenario: Tracker created alongside queue entry
-- **WHEN** QueueCoordinator processes an Enqueue command
-- **THEN** it SHALL tell the ShardRegion with `CreateRequest` containing the nzoId and job metadata
+#### Scenario: Tracker created with category
+- **WHEN** QueueActor processes an Enqueue command with category `"tv"`
+- **THEN** it SHALL tell the ShardRegion with `TrackDownload` containing the nzoId, job metadata, category `"tv"`, and enqueue timestamp

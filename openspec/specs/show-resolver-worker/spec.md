@@ -1,3 +1,5 @@
+> **ARCHIVED**: Split into `series-resolver` and `movie-resolver`.
+
 ## Purpose
 
 ShowResolverWorker is a persistent child actor of SearchCoordinator that resolves TVDB and TMDB metadata, maintaining an in-memory cache backed by event-sourced persistence with inflight request coalescing.
@@ -44,3 +46,9 @@ ShowResolverWorker is a persistent child actor of SearchCoordinator that resolve
 #### Scenario: TTL enforcement during recovery
 - **WHEN** a recovered event is older than the cache TTL
 - **THEN** `ShowResolverWorker` SHALL skip that entry during recovery
+
+## REMOVED Requirements
+
+### Requirement: ShowResolverWorker persistent actor
+**Reason**: Split into two independent singleton persistent actors: `SeriesResolver` (TVDB) and `MovieResolver` (TMDB). Each has its own persistence stream, cache, and request coalescing -- eliminating the mixed-concern design.
+**Migration**: PersistenceId `show-resolver` is abandoned. New PersistenceIds `series-resolver` and `movie-resolver` start with empty journals. Caches rebuild organically within 24h from API calls. Acceptable at version 0.x (no data migration needed).

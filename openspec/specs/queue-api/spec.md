@@ -5,11 +5,15 @@ Clean REST API endpoints for querying download queue state and history, independ
 ## Requirements
 
 ### Requirement: Clean queue endpoint
-The system SHALL expose `GET /api/v1/queue` returning active downloads as a flat JSON array. Each job SHALL contain: nzoId, title, status (Queued/Downloading/Muxing), progressPercent, downloadedBytes, totalBytes, enqueuedAt. Progress data (progressPercent, downloadedBytes, totalBytes) SHALL be read from the shared `DownloadProgress` object associated with each job, not from `DownloadJob` fields. If no progress data is available for a job, progress fields SHALL default to 0.
+The system SHALL expose `GET /api/v1/queue` returning active downloads as a flat JSON array. Each job SHALL contain: nzoId, title, status (Queued/Downloading/Muxing), category, progressPercent, downloadedBytes, totalBytes, enqueuedAt. Progress data (progressPercent, downloadedBytes, totalBytes) SHALL be read from the shared `DownloadProgress` object associated with each job, not from `DownloadJob` fields. If no progress data is available for a job, progress fields SHALL default to 0.
 
 #### Scenario: Active downloads with progress
 - **WHEN** there are 3 active downloads, 2 with progress data and 1 without
 - **THEN** the response SHALL be a JSON array with progress fields populated from the shared `DownloadProgress` objects for the 2 jobs that have them, and 0 for the job without
+
+#### Scenario: Active downloads with category
+- **WHEN** there are active downloads with categories
+- **THEN** the response SHALL include a `category` field (nullable string) for each item
 
 #### Scenario: Empty queue
 - **WHEN** no downloads are active
@@ -21,6 +25,10 @@ The system SHALL expose `GET /api/v1/history` returning completed and failed dow
 #### Scenario: History with items
 - **WHEN** there are completed and failed downloads
 - **THEN** the response SHALL be a JSON array with each job containing: nzoId, title, status (Completed/Failed), outputPath, errorMessage, enqueuedAt, completedAt
+
+#### Scenario: History with category
+- **WHEN** there are completed downloads with categories
+- **THEN** the response SHALL include a `category` field (nullable string) for each item alongside nzoId, title, status, outputPath, errorMessage, enqueuedAt, completedAt
 
 #### Scenario: Path mapping applied
 - **WHEN** a path mapping is configured

@@ -1,64 +1,56 @@
 ## Purpose
 
-FFmpeg process management for remuxing downloaded video + subtitle streams into MKV containers with correct German language metadata. Exposed as a stateless MuxingService for use within the Akka.Streams download pipeline.
+FFmpeg process management for remuxing downloaded video + subtitle streams into MKV containers with correct German language metadata. The `RemuxActor` is a transient child actor of `DownloadActor`; the actual FFmpeg invocation is delegated to `FfmpegService.RemuxAsync`.
 
 ## Requirements
 
-### Requirement: Video remuxing to MKV
-The MuxingService SHALL remux downloaded video files into MKV containers using FFmpeg with stream-copy (no re-encoding). The output MUST have correct language metadata set to German. MuxingService is a stateless DI-registered service, not an actor. The remux stage SHALL be exposed as a composable stream flow.
+### Requirement: Video remuxing to MKV via RemuxActor
+The `RemuxActor` SHALL be a transient child `ReceiveActor` of `DownloadActor` in namespace `FunkArr.DownloadClient.Pipeline`. It SHALL delegate remuxing to `IFfmpegService.RemuxAsync(nzoId, title, hasSubtitle, category)` and report results to its parent. The actor records mux duration via `FunkArrMetrics.Instance.AddMuxDuration()` histogram with an `outcome` tag (`"success"` or `"error"`).
 
-#### Scenario: MP4 to MKV remux
-- **WHEN** a downloaded MP4 file is passed to the remux stage
-- **THEN** FFmpeg runs with `-c copy` flags, produces an MKV file with `language=ger` metadata on video and audio streams, and the original MP4 is deleted
+#### Scenario: Successful remux
+- **WHEN** the actor receives a `RemuxVideo(nzoId, title, hasSubtitle, category)` command
+- **THEN** it calls `FfmpegService.RemuxAsync`, tells the parent `VideoRemuxed(nzoId)` on success, records duration with outcome `"success"`, and stops itself
 
-#### Scenario: Remux stage as composable flow
-- **WHEN** the remux stage is used in the pipeline graph
-- **THEN** it accepts a record containing video path, optional subtitle path, output directory, and title, and produces a `MuxOutcome`
+#### Scenario: Remux fails
+- **WHEN** `RemuxAsync` throws an exception
+- **THEN** the actor tells the parent `WorkerFailed(nzoId, FailureKind.Malformed, ex.Message)`, records duration with outcome `"error"`, and stops itself
 
-### Requirement: Subtitle merging
-The remux stage SHALL merge subtitle files into the MKV container during remuxing when subtitles are available. Subtitle files arriving at the remux stage MUST already be in SRT format (normalization happens in a prior stage).
+### Requirement: FFmpeg remux logic in FfmpegService
+`FfmpegService.RemuxAsync` in namespace `FunkArr.DownloadClient.Ffmpeg` SHALL remux downloaded video files into MKV containers using FFmpeg with stream-copy (no re-encoding). The output MUST have correct language metadata set to German (`language=ger` on video, audio, and subtitle streams).
 
-#### Scenario: Video with SRT subtitle
-- **WHEN** a video file and an SRT subtitle file are available for the same content
-- **THEN** FFmpeg maps both into the output MKV with the subtitle stream tagged as `language=ger`
+#### Scenario: MP4 to MKV remux without subtitles
+- **WHEN** `RemuxAsync` is called with `hasSubtitle: false`
+- **THEN** FFmpeg runs with `-i video -map 0:v -map 0:a -c copy -metadata:s:v:0 language=ger -metadata:s:a:0 language=ger -y output.mkv`
 
-#### Scenario: Video without subtitles
-- **WHEN** only a video file is available (no subtitle file)
-- **THEN** FFmpeg remuxes the video alone into MKV without subtitle streams
+#### Scenario: MP4 to MKV remux with subtitles
+- **WHEN** `RemuxAsync` is called with `hasSubtitle: true`
+- **THEN** FFmpeg maps both video and subtitle inputs with `-i video -i subtitle -map 0:v -map 0:a -map 1:s -c copy -c:s srt` and tags all streams (video, audio, subtitle) with `language=ger`
+
+### Requirement: Output directory and file management
+`FfmpegService.RemuxAsync` SHALL use `IFileService` to resolve paths: `GetTempVideoPath(nzoId)` for input video, `GetNormalizedSubtitlePath(nzoId)` for input subtitle, `EnsureOutputDirectory(title, category)` to create the output folder, and `GetOutputPath(title, category)` for the final MKV path.
+
+#### Scenario: Category-aware output path
+- **WHEN** `RemuxAsync` is called with `category: "tv"`
+- **THEN** `IFileService.EnsureOutputDirectory(title, "tv")` and `GetOutputPath(title, "tv")` are called to place the MKV in a category-specific directory
 
 ### Requirement: FFmpeg process management
-The MuxingService SHALL manage FFmpeg as an external process with timeout protection and error detection.
+`FfmpegService` SHALL manage FFmpeg as an external process with timeout protection (default 600 seconds for remux). On timeout, the process is killed via `Process.Kill(entireProcessTree: true)`.
 
 #### Scenario: FFmpeg completes successfully
 - **WHEN** FFmpeg exits with code 0
-- **THEN** the stage produces a `MuxOutcome.Success` with the output file path
+- **THEN** temp files are cleaned up via `IFileService.CleanupTemp(nzoId)` and the output path is returned
 
 #### Scenario: FFmpeg fails
 - **WHEN** FFmpeg exits with a non-zero exit code
-- **THEN** the stage produces a `MuxOutcome.Failure` with the error details
+- **THEN** `FfmpegService` throws `InvalidOperationException` with the FFmpeg stderr content
 
 #### Scenario: FFmpeg hangs
-- **WHEN** FFmpeg does not complete within the configured timeout (default 10 minutes)
-- **THEN** the process is killed and the stage produces a `MuxOutcome.Failure`
+- **WHEN** FFmpeg does not complete within the configured timeout
+- **THEN** the process is killed and an `OperationCanceledException` is thrown
 
-### Requirement: Temp file cleanup
-The MuxingService SHALL clean up temporary files (downloaded source video, intermediate subtitle files) after successful muxing.
+### Requirement: Transient child actor lifecycle
+The `RemuxActor` SHALL stop itself after completing its work (success or failure) via `Context.Stop(Self)` in a `finally` block.
 
-#### Scenario: Cleanup after successful mux
-- **WHEN** muxing completes successfully
-- **THEN** the source MP4 and any intermediate subtitle files are deleted, leaving only the final MKV
-
-#### Scenario: Cleanup after failed mux
-- **WHEN** muxing fails
-- **THEN** temporary files are preserved for debugging
-
-### Requirement: Parallel mux execution
-The download pipeline SHALL run multiple mux operations concurrently via the stream's `SelectAsyncUnordered` stage, using `_options.ConcurrentDownloads` (default 3) as the parallelism value. There is no separate mux concurrency configuration — all stages share `ConcurrentDownloads`.
-
-#### Scenario: Multiple muxes run in parallel
-- **WHEN** 3 downloads complete at roughly the same time
-- **THEN** all 3 are muxed concurrently by the stream stage independently
-
-#### Scenario: Mux parallelism respects configuration
-- **WHEN** `FunkArr__ConcurrentDownloads=2` is configured
-- **THEN** at most 2 mux operations run concurrently, with additional completions waiting via backpressure
+#### Scenario: Actor self-terminates after work
+- **WHEN** remuxing completes (success or failure)
+- **THEN** the actor stops itself, freeing resources in the parent's child collection

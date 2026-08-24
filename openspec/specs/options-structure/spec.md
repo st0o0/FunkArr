@@ -6,7 +6,7 @@
 The system SHALL expose configuration through domain-scoped `IOptions<T>` classes instead of a single monolithic options class. The following classes SHALL exist in `FunkArr.Configuration`:
 
 - `FunkArrOptions` — cross-cutting and bootstrap settings: `ApiKey`, `PersistencePath`, `Postgres`, `MatchLedgerCapacity`.
-- `DownloadOptions` — download pipeline settings: `DownloadPath`, `TempPath`, `ConcurrentDownloads`, `PathMapping`.
+- `DownloadOptions` — download pipeline settings: `Path`, `TempPath`, `ConcurrentDownloads`, `PathMapping`, `Category`.
 - `RuleSetOptions` — rule-set source and refresh settings: `Repository`, `Version`, `Path`, `RefreshIntervalMinutes`.
 - `QualityOptions` — quality-probe cache settings: `Probing`, `CacheTtlMinutes`, `CacheCapacity`.
 - `SearchOptions` — search-time settings: `QualityProbeLimit`, `TmdbApiKey`.
@@ -61,10 +61,21 @@ Each property on each domain options class SHALL retain the same default value i
 
 #### Scenario: Defaults match pre-decomposition values
 - **WHEN** no `FunkArr:Download`, `FunkArr:RuleSet`, `FunkArr:Quality`, or `FunkArr:Search` configuration is supplied
-- **THEN** `DownloadOptions.DownloadPath` SHALL default to `/media/downloads`, `DownloadOptions.TempPath` SHALL default to `data/temp`, `DownloadOptions.ConcurrentDownloads` SHALL default to `3`
+- **THEN** `DownloadOptions.Path` SHALL default to `/media/downloads`, `DownloadOptions.TempPath` SHALL default to `data/temp`, `DownloadOptions.ConcurrentDownloads` SHALL default to `3`
 - **AND** `RuleSetOptions.Repository` SHALL default to `st0o0/funkarr`, `RuleSetOptions.Version` SHALL default to `latest`, `RuleSetOptions.Path` SHALL default to `data/rulesets`, `RuleSetOptions.RefreshIntervalMinutes` SHALL default to `60`
 - **AND** `QualityOptions.Probing` SHALL default to `true`, `QualityOptions.CacheTtlMinutes` SHALL default to `360`, `QualityOptions.CacheCapacity` SHALL default to `50000`
 - **AND** `SearchOptions.QualityProbeLimit` SHALL default to `30`
+
+### Requirement: Category dictionary on DownloadOptions
+`DownloadOptions` SHALL have a `Dictionary<string, string> Category` property that maps category names to output directory paths. The dictionary SHALL default to an empty dictionary.
+
+#### Scenario: Category configured via environment variables
+- **WHEN** environment variables `FunkArr__Download__Category__tv=tv` and `FunkArr__Download__Category__movies=/data/movies` are set
+- **THEN** `DownloadOptions.Category` SHALL contain `{"tv": "tv", "movies": "/data/movies"}`
+
+#### Scenario: No categories configured
+- **WHEN** no `FunkArr__Download__Category__*` environment variables are set
+- **THEN** `DownloadOptions.Category` SHALL be an empty dictionary
 
 ### Requirement: Default API key
 `FunkArrOptions.ApiKey` SHALL default to `"funkarr-default-api-key"` in `appsettings.json`. The key exists only because Sonarr/Radarr/Prowlarr require a non-empty API key field when adding indexers and download clients. Users MAY override via the `FunkArr__ApiKey` environment variable.

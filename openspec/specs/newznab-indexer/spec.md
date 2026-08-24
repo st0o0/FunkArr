@@ -84,24 +84,16 @@ The Newznab controller SHALL be tagged with `"Newznab Emulation"` for API docume
 - **THEN** Newznab endpoints SHALL appear under the "Newznab Emulation" group
 
 ### Requirement: RSS feed via SearchActor pipeline
-When a Newznab search request arrives with no search criteria (empty query and no tvdbid/imdbid), the system SHALL route the request through `SearchActor.TextSearchRequest("")` to produce an RSS feed of recent content. The results SHALL flow through the full pipeline: MediathekViewWeb query, content filtering, quality probing, and caching.
+When a Newznab search request arrives with no search criteria (empty query and no tvdbid/imdbid), the system SHALL route the request through the normal `SearchRouter` → `TextSearchActor` path with an empty query string. The `TextSearchActor` entity (keyed by `""`) SHALL return the latest MediathekViewWeb content via its standard caching mechanism.
 
-#### Scenario: Empty tvsearch triggers RSS feed
+#### Scenario: Empty tvsearch serves latest content
 - **WHEN** a client sends `GET /api?t=tvsearch&apikey=key` without `tvdbid` or `q` parameters
-- **THEN** the system SHALL send `TextSearchRequest("")` to SearchActor and return the results as Newznab XML
+- **THEN** the system SHALL send a `TextSearchRequest("")` through `SearchRouter` and return the results as Newznab XML
 
-#### Scenario: Empty text search triggers RSS feed
+#### Scenario: Empty text search serves latest content
 - **WHEN** a client sends `GET /api?t=search&apikey=key` without a `q` parameter
-- **THEN** the system SHALL send `TextSearchRequest("")` to SearchActor and return the results as Newznab XML
+- **THEN** the system SHALL send a `TextSearchRequest("")` through `SearchRouter` and return the results as Newznab XML
 
-#### Scenario: RSS results include quality probing
-- **WHEN** an RSS feed request is processed
-- **THEN** the results SHALL include probed quality data (resolution, codec, file size) just like regular search results
-
-#### Scenario: RSS results are cached
-- **WHEN** two RSS feed requests arrive within 55 minutes
-- **THEN** the second request SHALL be served from SearchActor's cache
-
-#### Scenario: RSS results filtered by ContentFilter
-- **WHEN** the MediathekViewWeb response includes items with accessibility keywords (Audiodeskription, Gebärdensprache) or content type keywords (Trailer, Vorschau)
-- **THEN** those items SHALL be excluded from the RSS feed
+#### Scenario: RSS pagination applied in controller
+- **WHEN** a client sends `GET /api?t=search&limit=50&offset=10&apikey=key` without a `q` parameter
+- **THEN** the system SHALL apply `limit` and `offset` to the `TextSearchActor` response before converting to Newznab XML
