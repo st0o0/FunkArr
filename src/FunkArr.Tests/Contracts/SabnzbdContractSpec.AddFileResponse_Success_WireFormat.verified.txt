@@ -1,7 +1,0 @@
-﻿{
-  "status": true,
-  "nzo_ids": [
-    "nzo_abc123"
-  ],
-  "error": null
-}
