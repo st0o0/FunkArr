@@ -7,39 +7,32 @@ namespace FunkArr.MatchMagic.Tests;
 
 public sealed class MatchMagicManagerTests : TestKit
 {
-    private static string CreateSimpleRuleSetJson() =>
-        new RuleSet(
-            "Test",
-            Media: new MediaRef(Name: "Test"),
-            Confidence: 0.9f,
-            Rules: [new Rule("airdate-rule", 0, 0.9f, MatchStrategy.ItemTitleEqualsAirdate, new FilterGroup())])
-        .ToJson();
+    private static MatchingConfig CreateAirdateConfig(string ruleSetId = "test", float confidence = 0.9f) =>
+        new(ruleSetId, confidence, [
+            new MatchingRule("airdate-rule", 0, null, null,
+                new IdentificationSpec(IdentificationStrategy.AirdateExtraction)),
+        ]);
 
     [Fact]
-    public void Scores_items_with_loaded_ruleset()
+    public void Scores_items_with_loaded_config()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager()));
+        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager(1)));
 
-        manager.Tell(new LoadRuleSet("test", CreateSimpleRuleSetJson()));
+        manager.Tell(CreateAirdateConfig());
 
-        var candidates = new[]
-        {
-            new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720),
-        };
-
+        var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720) };
         manager.Tell(new ScoreItems(candidates, "test"));
-        var result = ExpectMsg<ScoreCompleted>();
 
+        var result = ExpectMsg<ScoreCompleted>();
         Assert.Single(result.Results);
-        Assert.Equal(0, result.Results[0].Index);
         Assert.True(result.Results[0].Matched);
-        Assert.True(result.Results[0].Score > 0);
+        Assert.Equal(0.9, result.Results[0].Score, 0.001);
     }
 
     [Fact]
-    public void Returns_default_scores_when_no_ruleset_loaded()
+    public void Returns_zeros_for_unknown_ruleset_id()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager()));
+        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager(1)));
 
         var candidates = new[]
         {
@@ -47,7 +40,7 @@ public sealed class MatchMagicManagerTests : TestKit
             new ScoreCandidate("Another Title", "Test", "ZDF", 3600, 1080),
         };
 
-        manager.Tell(new ScoreItems(candidates, null));
+        manager.Tell(new ScoreItems(candidates, "nonexistent"));
         var result = ExpectMsg<ScoreCompleted>();
 
         Assert.Equal(2, result.Results.Length);
@@ -59,33 +52,38 @@ public sealed class MatchMagicManagerTests : TestKit
     }
 
     [Fact]
-    public void Unload_removes_ruleset()
+    public void Config_update_replaces_previous()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager()));
+        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager(1)));
 
-        manager.Tell(new LoadRuleSet("test", CreateSimpleRuleSetJson()));
-        manager.Tell(new UnloadRuleSet("test"));
+        manager.Tell(CreateAirdateConfig("test", 0.5f));
+        manager.Tell(CreateAirdateConfig("test", 0.99f));
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720) };
         manager.Tell(new ScoreItems(candidates, "test"));
-        var result = ExpectMsg<ScoreCompleted>();
 
+        var result = ExpectMsg<ScoreCompleted>();
         Assert.Single(result.Results);
-        Assert.False(result.Results[0].Matched);
+        Assert.True(result.Results[0].Matched);
+        Assert.Equal(0.99, result.Results[0].Score, 0.001);
     }
 
     [Fact]
-    public void Falls_back_to_first_loaded_when_id_not_found()
+    public void Multiple_configs_stored_independently()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager()));
+        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager(1)));
 
-        manager.Tell(new LoadRuleSet("default", CreateSimpleRuleSetJson()));
+        manager.Tell(CreateAirdateConfig("show-a", 0.8f));
+        manager.Tell(CreateAirdateConfig("show-b", 0.6f));
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720) };
-        manager.Tell(new ScoreItems(candidates, "nonexistent"));
-        var result = ExpectMsg<ScoreCompleted>();
 
-        Assert.Single(result.Results);
-        Assert.True(result.Results[0].Matched);
+        manager.Tell(new ScoreItems(candidates, "show-a"));
+        var resultA = ExpectMsg<ScoreCompleted>();
+        Assert.Equal(0.8, resultA.Results[0].Score, 0.001);
+
+        manager.Tell(new ScoreItems(candidates, "show-b"));
+        var resultB = ExpectMsg<ScoreCompleted>();
+        Assert.Equal(0.6, resultB.Results[0].Score, 0.001);
     }
 }
