@@ -6,26 +6,23 @@
     "name": "Take the Money and Run",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "30"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "(?\u003C=S)(\\d{2})(?=/E)",
-      "episodeRegex": "(?\u003C=E)(\\d{2})(?=\\))",
+      "seasonRegex": "(?<=S)(\\d{2})(?=/E)",
+      "episodeRegex": "(?<=E)(\\d{2})(?=\\))",
       "titleRules": []
     }
   ]

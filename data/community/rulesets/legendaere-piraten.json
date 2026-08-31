@@ -1,31 +1,28 @@
 {
-  "topic": "Legend\u00E4re Piraten",
+  "topic": "Legendäre Piraten",
   "aliases": [],
   "media": {
     "tvdbId": 451126,
     "name": "Piraten: Die Geschichten hinter den Legenden",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "31"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
       "titleRules": []
     }
   ]

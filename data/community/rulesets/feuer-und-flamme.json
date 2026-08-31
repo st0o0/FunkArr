@@ -1,32 +1,29 @@
 {
-  "topic": "Feuer \u0026 Flamme",
+  "topic": "Feuer & Flamme",
   "aliases": [],
   "media": {
     "tvdbId": 329324,
     "imdbId": "tt7995922",
-    "name": "Feuer \u0026 Flamme",
+    "name": "Feuer & Flamme",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
       "titleRules": []
     }
   ]

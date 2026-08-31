@@ -10,22 +10,19 @@
     "name": "Löwenzahn",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-exact",
       "priority": 10,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "20"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
@@ -37,18 +34,16 @@
       ]
     },
     {
+      "id": "title-exact-p11",
       "priority": 11,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "20"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
@@ -60,18 +55,16 @@
       ]
     },
     {
+      "id": "title-exact-p12",
       "priority": 12,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "20"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
@@ -83,18 +76,16 @@
       ]
     },
     {
+      "id": "title-includes",
       "priority": 15,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "20"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleIncludes",
       "titleRules": [
@@ -106,18 +97,16 @@
       ]
     },
     {
+      "id": "title-includes-p16",
       "priority": 16,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "20"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleIncludes",
       "titleRules": [

@@ -7,40 +7,35 @@
     "name": "Schloss Einstein",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "absolute-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "15"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "byAbsoluteEpisodeNumber",
       "episodeRegex": "\\((\\d{3,5})\\)",
       "titleRules": []
     },
     {
+      "id": "absolute-episode-p1",
       "priority": 1,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "15"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "byAbsoluteEpisodeNumber",
       "episodeRegex": "\\(Folge (\\d{3,5})\\)",

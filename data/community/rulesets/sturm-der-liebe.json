@@ -7,40 +7,35 @@
     "name": "Sturm der Liebe",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "absolute-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "byAbsoluteEpisodeNumber",
       "episodeRegex": "Episode\\s(\\d+)",
       "titleRules": []
     },
     {
+      "id": "absolute-episode-p1",
       "priority": 1,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "byAbsoluteEpisodeNumber",
       "episodeRegex": "\\((\\d+)\\)",

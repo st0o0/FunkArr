@@ -7,22 +7,19 @@
     "name": "Die Sendung mit der Maus",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "airdate",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "21"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleEqualsAirdate",
       "titleRules": [

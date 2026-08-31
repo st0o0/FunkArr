@@ -9,22 +9,19 @@
     "name": "Tatort",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-includes",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleIncludes",
       "titleRules": [
@@ -40,18 +37,16 @@
       ]
     },
     {
+      "id": "title-includes-p1",
       "priority": 1,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleIncludes",
       "titleRules": [

@@ -7,64 +7,57 @@
     "name": "Leo da Vinci",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "9"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
       "titleRules": []
     },
     {
+      "id": "title-exact",
       "priority": 1,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "9"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^\\d\u002B\\.\\s*(.*)"
+          "pattern": "^\\d+\\.\\s*(.*)"
         }
       ]
     },
     {
+      "id": "title-exact-p2",
       "priority": 2,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "9"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [

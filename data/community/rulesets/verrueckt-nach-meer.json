@@ -1,58 +1,53 @@
 {
-  "topic": "Verr\u00FCckt nach Meer",
+  "topic": "Verrückt nach Meer",
   "aliases": [],
   "media": {
     "tvdbId": 254636,
     "imdbId": "tt2361025",
-    "name": "Verr\u00FCckt nach Meer",
+    "name": "Verrückt nach Meer",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-exact",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "32"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^\\d\u002B:\\s*(.\u002B?)(?:\\s*\\([^)]*\\))?\\s*$"
+          "pattern": "^\\d+:\\s*(.+?)(?:\\s*\\([^)]*\\))?\\s*$"
         }
       ]
     },
     {
+      "id": "title-exact-p10",
       "priority": 10,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "32"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^(?:Folge\\s*\\d\u002B:\\s*)?(.\u002B?)(?:\\s*\\([^)]*\\))?\\s*$"
+          "pattern": "^(?:Folge\\s*\\d+:\\s*)?(.+?)(?:\\s*\\([^)]*\\))?\\s*$"
         }
       ]
     }

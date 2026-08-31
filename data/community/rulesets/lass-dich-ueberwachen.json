@@ -1,46 +1,41 @@
 {
-  "topic": "Lass dich \u00FCberwachen!",
+  "topic": "Lass dich überwachen!",
   "aliases": [],
   "media": {
     "tvdbId": 345251,
-    "name": "Lass dich \u00FCberwachen!",
+    "name": "Lass dich überwachen!",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "63"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "(?\u003C=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?\u003C=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
       "titleRules": []
     },
     {
+      "id": "season-episode-p99",
       "priority": 99,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "description",
             "op": "contains",
             "value": "im Herbst 2024 ist das Internet voll"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "S2024",

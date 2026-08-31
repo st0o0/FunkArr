@@ -1,44 +1,41 @@
 {
-  "topic": "Wer wei\u00DF denn sowas?",
+  "topic": "Wer weiß denn sowas?",
   "aliases": [],
   "media": {
     "tvdbId": 298954,
-    "name": "Wer wei\u00DF denn sowas?",
+    "name": "Wer weiß denn sowas?",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-exact",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "31"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^(.\u002B?)\\s\u002Bund\\s\u002B"
+          "pattern": "^(.+?)\\s+und\\s+"
         },
         {
           "type": "static",
           "field": "title",
-          "value": " \u0026 "
+          "value": " & "
         },
         {
           "type": "regex",
           "field": "title",
-          "pattern": "\\s\u002Bund\\s\u002B([^|]\u002B?)(?:\\s*\\||$)"
+          "pattern": "\\s+und\\s+([^|]+?)(?:\\s*\\||$)"
         }
       ]
     }

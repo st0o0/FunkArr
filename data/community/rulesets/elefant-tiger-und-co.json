@@ -1,40 +1,37 @@
 {
-  "topic": "Elefant, Tiger \u0026 Co.",
+  "topic": "Elefant, Tiger & Co.",
   "aliases": [],
   "media": {
     "tvdbId": 249482,
     "name": "Elefant, Tiger und Co.",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-includes",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "20"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleIncludes",
       "titleRules": [
         {
           "type": "static",
           "field": "title",
-          "pattern": "\\((\\d\u002B)\\)$",
+          "pattern": "\\((\\d+)\\)$",
           "value": "("
         },
         {
           "type": "regex",
           "field": "title",
-          "pattern": "\\((\\d\u002B)\\)$"
+          "pattern": "\\((\\d+)\\)$"
         },
         {
           "type": "static",

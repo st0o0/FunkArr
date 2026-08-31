@@ -1,28 +1,25 @@
 {
-  "topic": "Aktenzeichen XY... Ungel\u00F6st",
+  "topic": "Aktenzeichen XY... Ungelöst",
   "aliases": [],
   "media": {
     "tvdbId": 255982,
     "imdbId": "tt0131157",
-    "name": "Aktenzeichen XY ... ungel\u00F6st",
+    "name": "Aktenzeichen XY ... ungelöst",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "airdate",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "59"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleEqualsAirdate",
       "titleRules": [
@@ -34,25 +31,23 @@
       ]
     },
     {
+      "id": "airdate-p1",
       "priority": 1,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "59"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleEqualsAirdate",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "(\\d{1,2}\\.\\s*(?:Januar|Februar|M\u00E4rz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\\s*\\d{4})"
+          "pattern": "(\\d{1,2}\\.\\s*(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\\s*\\d{4})"
         }
       ]
     }

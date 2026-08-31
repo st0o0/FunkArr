@@ -4,32 +4,29 @@
   "media": {
     "tvdbId": 289363,
     "imdbId": "tt7887026",
-    "name": "Fr\u00FChling",
+    "name": "Frühling",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-exact",
       "priority": 40,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "50"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "Fr\u00FChling - (.*)"
+          "pattern": "Frühling - (.*)"
         }
       ]
     }

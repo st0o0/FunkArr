@@ -7,51 +7,46 @@
     "name": "Das Gipfeltreffen",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-exact",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "21"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "static",
           "field": "title",
-          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$",
+          "pattern": "\\w+\\s+\\((\\d+)\\)$",
           "value": "Folge "
         },
         {
           "type": "regex",
           "field": "title",
-          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$"
+          "pattern": "\\w+\\s+\\((\\d+)\\)$"
         }
       ]
     },
     {
+      "id": "title-exact-p1",
       "priority": 1,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "21"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
@@ -63,31 +58,29 @@
       ]
     },
     {
+      "id": "title-exact-p2",
       "priority": 2,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "21"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "static",
           "field": "title",
-          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$",
+          "pattern": "\\w+\\s+\\((\\d+)\\)$",
           "value": "Das Gipfeltreffen "
         },
         {
           "type": "regex",
           "field": "title",
-          "pattern": "\\w\u002B\\s\u002B\\((\\d\u002B)\\)$"
+          "pattern": "\\w+\\s+\\((\\d+)\\)$"
         }
       ]
     }

@@ -10,22 +10,19 @@
     "name": "Vorstadtweiber",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "31"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
@@ -33,18 +30,16 @@
       "titleRules": []
     },
     {
+      "id": "absolute-episode",
       "priority": 1,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "31"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "byAbsoluteEpisodeNumber",
       "episodeRegex": "\\((\\d+)\\/\\d+\\)",

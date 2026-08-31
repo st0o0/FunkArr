@@ -1,38 +1,29 @@
 {
-  "topic": "Unser Sandm\u00E4nnchen",
+  "topic": "Unser Sandmännchen",
   "aliases": [],
   "media": {
     "tvdbId": 289772,
     "imdbId": "tt3168736",
-    "name": "Jan \u0026 Henry",
+    "name": "Jan & Henry",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "title-exact",
       "priority": 0,
-      "filters": {
-        "all": [],
-        "any": [],
-        "not": []
-      },
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "(?\u003C=Henry: )(.*?)(?= \\| Unser Sandm\u00E4nnchen)"
+          "pattern": "(?<=Henry: )(.*?)(?= \\| Unser Sandmännchen)"
         }
       ]
     },
     {
+      "id": "title-exact-p1",
       "priority": 1,
-      "filters": {
-        "all": [],
-        "any": [],
-        "not": []
-      },
       "strategy": "itemTitleExact",
       "titleRules": [
         {

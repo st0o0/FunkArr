@@ -6,42 +6,36 @@
     "name": "Sherlock",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "50"
           },
           {
-            "$type": "filter",
             "field": "channel",
             "op": "contains",
             "value": "ONE"
           }
         ],
-        "any": [],
         "not": [
           {
-            "$type": "filter",
             "field": "topic",
             "op": "contains",
             "value": "Yack"
           },
           {
-            "$type": "filter",
             "field": "topic",
             "op": "contains",
             "value": "Streetgames"
           },
           {
-            "$type": "filter",
             "field": "topic",
             "op": "contains",
             "value": "Blind"

@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/st0o0/FunkArr/ruleset.schema.json",
   "title": "FunkArr Ruleset",
-  "description": "Schema for FunkArr community, generated, and local ruleset files",
+  "description": "Schema for FunkArr community and local ruleset files",
   "type": "object",
-  "required": ["topic", "media", "source", "rules"],
+  "required": ["topic", "rules"],
   "additionalProperties": false,
   "properties": {
     "topic": {
@@ -15,29 +15,30 @@
     "aliases": {
       "type": "array",
       "items": { "type": "string" },
-      "default": [],
       "description": "Alternative names for topic matching"
     },
     "media": { "$ref": "#/$defs/mediaReference" },
-    "source": {
-      "type": "string",
-      "enum": ["community", "generated", "local"],
-      "description": "Origin layer of this ruleset"
-    },
     "confidence": {
       "type": "number",
       "minimum": 0,
       "maximum": 1,
-      "default": 1.0,
-      "description": "Overall confidence score"
+      "description": "Default confidence score for rules without their own"
     },
     "rules": {
       "type": "array",
       "items": { "$ref": "#/$defs/rule" },
-      "minItems": 1,
       "description": "Ordered list of matching rules"
     },
-    "overrides": { "$ref": "#/$defs/overrideConfig" }
+    "standalone": {
+      "type": "boolean",
+      "default": false,
+      "description": "Local only: if true, ignore community base and use this ruleset as-is"
+    },
+    "disable": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{2,}$" },
+      "description": "Local only: rule IDs to skip from community base"
+    }
   },
   "$defs": {
     "mediaReference": {
@@ -58,9 +59,14 @@
     },
     "rule": {
       "type": "object",
-      "required": ["strategy"],
+      "required": ["id", "strategy"],
       "additionalProperties": false,
       "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{2,}$",
+          "description": "Unique identifier for override targeting"
+        },
         "priority": { "type": "integer", "default": 0 },
         "filters": { "$ref": "#/$defs/filterGroup" },
         "strategy": { "$ref": "#/$defs/matchingStrategy" },
@@ -70,8 +76,7 @@
         "captureGroup": { "type": "integer", "minimum": 0 },
         "titleRules": {
           "type": "array",
-          "items": { "$ref": "#/$defs/titleRule" },
-          "default": []
+          "items": { "$ref": "#/$defs/titleRule" }
         }
       }
     },
@@ -83,10 +88,9 @@
     },
     "filter": {
       "type": "object",
-      "required": ["$type", "field", "op", "value"],
+      "required": ["field", "op", "value"],
       "additionalProperties": false,
       "properties": {
-        "$type": { "const": "filter" },
         "field": { "type": "string", "minLength": 1 },
         "op": { "$ref": "#/$defs/filterOp" },
         "value": { "type": "string" }
@@ -96,10 +100,9 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "$type": { "const": "group" },
-        "all": { "type": "array", "items": { "$ref": "#/$defs/filterNode" }, "default": [] },
-        "any": { "type": "array", "items": { "$ref": "#/$defs/filterNode" }, "default": [] },
-        "not": { "type": "array", "items": { "$ref": "#/$defs/filterNode" }, "default": [] }
+        "all": { "type": "array", "items": { "$ref": "#/$defs/filterNode" } },
+        "any": { "type": "array", "items": { "$ref": "#/$defs/filterNode" } },
+        "not": { "type": "array", "items": { "$ref": "#/$defs/filterNode" } }
       }
     },
     "matchingStrategy": {
@@ -117,11 +120,10 @@
       "enum": [
         "greaterThan",
         "lessThan",
-        "exactMatch",
-        "contains",
-        "regex",
         "eq",
-        "notContains"
+        "contains",
+        "notContains",
+        "regex"
       ]
     },
     "titleRule": {
@@ -139,28 +141,6 @@
     "titleRuleType": {
       "type": "string",
       "enum": ["regex", "static"]
-    },
-    "overrideConfig": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "mode": {
-          "type": "string",
-          "enum": ["replace", "merge"],
-          "default": "replace"
-        },
-        "base": { "type": "string" },
-        "add": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/rule" },
-          "default": []
-        },
-        "remove": {
-          "type": "array",
-          "items": { "type": "integer" },
-          "default": []
-        }
-      }
     }
   }
 }

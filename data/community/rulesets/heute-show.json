@@ -7,29 +7,26 @@
     "name": "Heute Show",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "airdate",
       "priority": 0,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "25"
           }
-        ],
-        "any": [],
-        "not": []
+        ]
       },
       "strategy": "itemTitleEqualsAirdate",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^heute-show vom (\\d{1,2}\\. \\w\u002B \\d{4})"
+          "pattern": "^heute-show vom (\\d{1,2}\\. \\w+ \\d{4})"
         }
       ]
     }

@@ -7,24 +7,21 @@
     "name": "In aller Freundschaft",
     "type": "show"
   },
-  "source": "community",
   "confidence": 1,
   "rules": [
     {
+      "id": "season-episode",
       "priority": 10,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
           }
         ],
-        "any": [],
         "not": [
           {
-            "$type": "filter",
             "field": "topic",
             "op": "contains",
             "value": "jungen Ärzte"
@@ -37,20 +34,18 @@
       "titleRules": []
     },
     {
+      "id": "title-exact",
       "priority": 20,
       "filters": {
         "all": [
           {
-            "$type": "filter",
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
           }
         ],
-        "any": [],
         "not": [
           {
-            "$type": "filter",
             "field": "topic",
             "op": "contains",
             "value": "jungen Ärzte"
