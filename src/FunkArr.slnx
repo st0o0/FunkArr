@@ -1,0 +1,36 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Folder Name="/Items/">
+    <File Path="../README.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+  </Folder>
+  <Folder Name="/Domain/">
+    <Project Path="FunkArr.Search/FunkArr.Search.csproj" />
+    <Project Path="FunkArr.Download/FunkArr.Download.csproj" />
+    <Project Path="FunkArr.RuleSet/FunkArr.RuleSet.csproj" />
+    <Project Path="FunkArr.MatchMagic/FunkArr.MatchMagic.csproj" />
+  </Folder>
+  <Folder Name="/Adapters/">
+    <Project Path="FunkArr.Api/FunkArr.Api.csproj" />
+    <Project Path="FunkArr.ArrApi/FunkArr.ArrApi.csproj" />
+  </Folder>
+  <Folder Name="/Foundation/">
+    <Project Path="FunkArr.Core/FunkArr.Core.csproj" />
+    <Project Path="FunkArr.Messages/FunkArr.Messages.csproj" />
+    <Project Path="FunkArr.Persistence/FunkArr.Persistence.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="FunkArr.Tests.Shared/FunkArr.Tests.Shared.csproj" />
+    <Project Path="FunkArr.Search.Tests/FunkArr.Search.Tests.csproj" />
+    <Project Path="FunkArr.Download.Tests/FunkArr.Download.Tests.csproj" />
+    <Project Path="FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj" />
+    <Project Path="FunkArr.MatchMagic.Tests/FunkArr.MatchMagic.Tests.csproj" />
+    <Project Path="FunkArr.Api.Tests/FunkArr.Api.Tests.csproj" />
+    <Project Path="FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj" />
+  </Folder>
+  <Project Path="FunkArr/FunkArr.csproj" />
+</Solution>

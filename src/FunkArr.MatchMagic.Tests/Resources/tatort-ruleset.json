@@ -1,0 +1,52 @@
+{
+  "topic": "Tatort",
+  "aliases": ["Tatort - Münster", "Tatort - Schimanski"],
+  "media": {
+    "tvdbId": 83214,
+    "imdbId": "tt0806910",
+    "tmdbId": 2116,
+    "name": "Tatort",
+    "type": "show"
+  },
+  "confidence": 0.9,
+  "rules": [
+    {
+      "id": "season-episode",
+      "priority": 0,
+      "confidence": 0.95,
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=/E)",
+      "episodeRegex": "(?<=E)(\\d{2,4})(?=\\))",
+      "filters": {
+        "all": [
+          { "field": "duration", "op": "greaterThan", "value": "60" }
+        ],
+        "not": [
+          { "field": "title", "op": "regex", "value": "(?i)audiodesk|gebärden|hörfassung|klare sprache" },
+          { "field": "title", "op": "contains", "value": "Trailer" }
+        ],
+        "any": [
+          { "field": "channel", "op": "eq", "value": "ARD" },
+          { "field": "channel", "op": "eq", "value": "Das Erste" }
+        ]
+      }
+    },
+    {
+      "id": "title-fallback",
+      "priority": 10,
+      "confidence": 0.7,
+      "strategy": "itemTitleExact",
+      "filters": {
+        "all": [
+          { "field": "duration", "op": "greaterThan", "value": "60" }
+        ],
+        "not": [
+          { "field": "title", "op": "contains", "value": "Audiodeskription" }
+        ]
+      },
+      "titleRules": [
+        { "type": "regex", "field": "title", "pattern": "^Tatort[^:]*:\\s*(.+)" }
+      ]
+    }
+  ]
+}

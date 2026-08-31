@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\FunkArr.Core\FunkArr.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Akka.Hosting.TestKit" />
+    <PackageReference Include="Akka.Persistence.TestKit" />
+    <PackageReference Include="Akka.TestKit.Xunit" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <PackageReference Include="Verify.XunitV3" />
+  </ItemGroup>
+
+</Project>
