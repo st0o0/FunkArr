@@ -9,27 +9,49 @@ context: |
 
   ## Tech Stack
   - .NET 10 (net10.0), C#, ASP.NET Minimal API
-  - Akka.NET (Hosting, Persistence.Sql, Streams, Logger.Serilog)
-  - Servus + Servus.Akka (AppBuilder pattern, actor utilities)
-  - SQLite (Akka.Persistence backend for download queue durability)
+  - Akka.NET (Hosting, Persistence.Sql, Cluster Sharding, Streams, Logger.Serilog)
+  - Servus + Servus.Akka (AppBuilder startup, actor registration/resolution, safe child communication, Option<T>, ServusTrace)
+  - SQLite (Akka.Persistence backend)
   - FFmpeg (video/subtitle remuxing to MKV, stream-copy)
   - Serilog (structured logging)
   - Docker (multi-arch: amd64/arm64, aspnet:chiseled-extra base)
   - GitHub Actions + release-please (CI/CD)
+  - ArchUnitNET (architecture tests)
 
   ## Architecture
-  - Single csproj (Microsoft.NET.Sdk.Web) with namespace-based layering
+  - Multi-project solution with domain isolation
+  - Projects: FunkArr (host), FunkArr.Api, FunkArr.IndexerApi, FunkArr.DownloadApi,
+    FunkArr.Search, FunkArr.Download, FunkArr.RuleSet, FunkArr.Messages,
+    FunkArr.Persistence, FunkArr.Shared
+  - Domain projects must not reference each other — communication only through Messages
+  - Adapter projects (IndexerApi, DownloadApi) are thin translators, no business logic
+  - Reference direction: Host → Api/Adapters → Domains → Messages/Persistence/Shared
   - Servus AppBuilder startup (3 setup containers: Service, ActorSystem, Application)
-  - Actor hierarchy: SearchActor (cache/rate-limit), DownloadQueueActor (persistent, supervised), DownloadWorkerActors (transient), MuxingActor (stateless)
+  - Actor naming: *Manager (singleton), *Worker (sharded entity), *Actor (other)
+  - Actors use ReceiveActor directly, explicit State records, Receive<T>() dispatch
+  - No separate Event types: Command → Actor → Persistence DTO → State update
+  - Persistence DTOs: extend-only, versioned, never rename [JsonProperty] strings
+  - Single-node Cluster Sharding for entity actors
   - Central package management (Directory.Packages.props)
 
   ## Conventions
-  - Reference project: D:\GIT\Njord (same patterns, same author)
+  - Reference project: D:\GIT\njord (same patterns, same author)
   - Single-line git commit messages, no Co-Authored-By
-  - xUnit v3 with Microsoft Testing Platform runner
-  - Verify for snapshot testing, Akka.Hosting.TestKit for actor tests
+  - xUnit v3 with Microsoft Testing Platform runner, tests per domain project
+  - Built-in .NET analyzers only, .editorconfig for style rules
+  - dotnet format enforced in CI
+  - ArchUnitNET architecture tests enforce boundaries and naming
+  - sealed by default, records for messages/DTOs, nullable enabled
+  - Messages: nested sealed record inside owning actor, primitive params preferred
+  - No XML docs
+
+  ## API paths
+  - /api — internal REST API (UI backend, OpenAPI-first)
+  - /index/api — Newznab XML indexer (Prowlarr/Sonarr/Radarr)
+  - /download/api — SABnzbd JSON download client
 
 rules:
   tasks:
     - Break tasks into chunks completable in one session
     - Order by dependency (infrastructure first, then features)
+    - Architecture tests land with the slice that makes them pass, never up front

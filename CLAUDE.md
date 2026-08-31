@@ -8,89 +8,175 @@ Mediatheken via MediathekViewWeb API, downloads video + subtitles, remuxes to
 MKV via FFmpeg, and exposes Newznab-compatible indexer API (for Sonarr/Radarr/
 Prowlarr) and SABnzbd-compatible download client API.
 
+## Solution structure
+
+Multi-project solution with domain isolation:
+
+```
+src/
+├── FunkArr.slnx
+├── FunkArr/                        # Host: Program.cs, Startup, DI, Config
+├── FunkArr.Core/                   # Common types, Akka/Servus refs
+├── FunkArr.Api/                    # Internal REST API (JSON, OpenAPI-first)
+├── FunkArr.ArrApi/                 # Newznab + SABnzbd adapter (thin translation)
+├── FunkArr.Search/                 # MediathekViewWeb query + fetch
+├── FunkArr.Download/               # Download pipeline, FFmpeg, subtitles, muxing
+├── FunkArr.RuleSet/                # Ruleset registry, models, GitHub sync, generator
+├── FunkArr.MatchMagic/             # Match scoring, stats, diagnostics
+├── FunkArr.Messages/               # Commands, queries, responses (all domains)
+├── FunkArr.Persistence/            # DTOs (extend-only, versioned)
+├── FunkArr.UI/                     # Vue.js frontend (Vite + Tailwind)
+├── FunkArr.Search.Tests/
+├── FunkArr.Download.Tests/
+├── FunkArr.RuleSet.Tests/
+├── FunkArr.MatchMagic.Tests/
+├── FunkArr.Api.Tests/
+├── FunkArr.ArrApi.Tests/
+└── FunkArr.Tests.Shared/           # Shared test infrastructure
+```
+
 ### Architecture guardrails
 
-- **Single csproj with namespace-based layering.** No multi-project solution —
-  features live in namespace folders: `Search/`, `DownloadClient/`, `Muxing/`,
-  `Subtitle/`, `Indexer/`, `Shared/`, `Configuration/`, `Persistence/`,
-  `Health/`, `Setup/`, `Diagnostics/`, `RuleSet/`, `Api/`.
-- **Servus AppBuilder startup.** Three setup containers:
-  `FunkArrServiceSetup` (DI), `FunkArrActorSystemSetup` (actors + persistence),
-  `FunkArrApplicationSetup` (Minimal API endpoints).
-- **Naming convention:** All actors use uniform `*Actor` suffix. Folder
-  structure carries semantic grouping. Resolvers keep domain names.
-- **Actor hierarchy:** `TextSearchActor`, `TvSearchActor`, `MovieSearchActor`
-  (sharded search entities), `RuleSetActor` (index + RefreshActor +
-  MatchQualityActor), `QueueActor` (scheduling, MaxConcurrent, event-sourced),
-  `DownloadActor` (shard entity, stage machine, 6 transient child actors),
-  `DownloadRequestActor` (shard entity, API-facing status).
-- **Single-node Cluster Sharding.** Five ShardRegions: `TextSearchActor`,
-  `TvSearchActor`, `MovieSearchActor`, `DownloadActor` (per-nzoId work engine),
-  `DownloadRequestActor` (per-nzoId API status).
-- **Persistence tiers.** T1 (critical, event-sourced): QueueActor,
-  DownloadActor, DownloadRequestActor. T2 (cache warmth,
-  event-sourced + snapshots): SeriesResolver, MovieResolver, MatchQualityActor.
-  T3 (ephemeral): everything else.
-- **Persistence DTOs** (`FunkArr.Persistence`): extend-only. Never remove or
-  rename a `[JsonProperty]` string. New properties must be nullable or have a
-  default. Increment `Version` when semantics change.
+- **Domain isolation.** Domain projects (Search, Download, RuleSet, MatchMagic)
+  must not reference each other. Communication only through Messages.
+- **Adapter projects are thin translators.** ArrApi contains no business logic
+  — it translates between external wire formats (Newznab XML, SABnzbd JSON) and
+  internal Messages.
+- **Reference direction:** Host → Api/Adapters → Domains → Core → Messages/Persistence.
+  Never upward, never cross-domain.
+- **Core bundles framework refs.** FunkArr.Core references Messages + Persistence
+  and declares Akka/Servus NuGet packages. Domain projects reference only Core.
 - **Two API surfaces.** Newznab XML (indexer for Prowlarr) and SABnzbd JSON
   (download client for Sonarr/Radarr). Both authenticate via `ApiKey` query
-  parameter.
+  parameter. These are compatibility adapters — the internal API is modern
+  JSON/OpenAPI-first.
+
+### Actor naming
+
+- `*Manager` — Cluster Singleton
+- `*Worker` — Sharded Entity (ShardRegion)
+- `*Actor` — everything else (local, child, transient)
+
+### Persistence
+
+- **No separate Event types.** Flow: Command (Message) → Actor processes →
+  Persistence DTO written to journal → State updated.
+- **Persistence DTOs** (`FunkArr.Persistence`): extend-only. Never remove or
+  rename a `[JsonProperty]` string. New properties must be nullable or have a
+  default. Increment `Version` when semantics change. Recovery code must handle
+  all versions >= 1.
+- **Persistence tiers.** T1 (critical, event-sourced): queue, downloads.
+  T2 (cache warmth, event-sourced + snapshots): resolvers, match quality.
+  T3 (ephemeral): everything else.
+
+### Servus & Servus.Akka usage
+
+Use:
+- **AppBuilder startup** — three setup containers: `IServiceSetupContainer` (DI),
+  `ActorSystemSetupContainer` (actors + persistence),
+  `ApplicationSetupContainer` (endpoints).
+- **Actor registration** — `WithResolvableActors(b => b.Register<T>("name"))`.
+- **Actor resolution** — `context.GetActor<T>()`, `context.ResolveChildActor<T>()`.
+- **Safe child communication** — `context.GetChild("name")` → `Option<IActorRef>`,
+  `context.ChildTell()`, `context.ChildForward()`.
+- **`Option<T>` extensions** — `Match(some, none)` pattern.
+- **Diagnostics** — `ServusTrace.For("category")` for tracing.
+
+Do NOT use:
+- `HandlerRegistry` — use `Receive<T>()` directly.
+- `LocalEntityRegion` — use Akka.NET Cluster Sharding.
+- `ActorRef<T>` — use `IActorRef` + `IActorRegistry`.
+- Concurrency utils (`NamedSemaphoreSlimStore`, etc.).
 
 ## Build & test
 
-All commands run from `src/` (where `global.json` lives):
+All commands run from `src/`:
 
 ```powershell
 dotnet build FunkArr.slnx
-dotnet run --project FunkArr.Tests/FunkArr.Tests.csproj                                    # all tests
-dotnet run --project FunkArr.Tests/FunkArr.Tests.csproj -- -class "<FullyQualifiedName>"   # single class
+dotnet format --verify-no-changes                                                          # style check
 ```
 
 Tests are xUnit v3 on Microsoft.Testing.Platform — `dotnet run`, **not** `dotnet test`.
-Shared test infrastructure lives in `FunkArr.Tests.Shared`.
+Each domain has its own test project. Run all or target a specific one:
+
+```powershell
+dotnet run --project FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
+dotnet run --project FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
+```
 
 Run the service from `src/FunkArr/` (`dotnet run`). Configuration layers:
 - `appsettings.json` — production defaults.
 - `appsettings.Development.json` — dev overrides.
 - Environment variables — Docker-compose (`FunkArr__ApiKey`, etc.).
 
-## Conventions
+## C# conventions
 
-- **Git: NEVER `git push`** — the user pushes. Commit messages are Conventional
-  Commits (commitlint-enforced). Single-line only, no Co-Authored-By.
-- Versioning is release-please. Never edit `<Version>` in
-  `src/Directory.Build.props` by hand.
-- Central package management with transitive pinning: versions live only in
-  `src/Directory.Packages.props`; add packages via `dotnet add package`, never
-  edit csproj XML for versions.
-- C#: records for messages/DTOs, `sealed` by default, nullable enabled.
-- Messages: nested `sealed record` inside owning actor (commands, queries,
-  responses). Domain events in dedicated `*Events.cs` files per actor.
-- Persistence DTOs (`FunkArr.Persistence`): extend-only. Never remove or rename
-  a `[JsonProperty]` string. New properties must be nullable or have a default.
-  Increment `Version` when semantics change. Recovery code must handle all
-  versions >= 1.
-- All artifacts, specs, and communication in English.
+- `sealed` by default, `record` for messages/DTOs, nullable enabled everywhere.
+- No XML docs. Code speaks through naming.
+- `dotnet format` enforced — run after editing `.cs` files. CI rejects violations.
+- Built-in .NET analyzers only (no StyleCop, no SonarAnalyzer).
+- `.editorconfig` defines all style rules.
+
+### Messages
+
+- Nested `sealed record` inside owning actor (commands, queries, responses).
+- Prefer primitive parameters. No external domain types in messages.
+- Below ~10 parameters: flat record.
+- Above ~10 parameters: one level of nesting allowed (nested record defined
+  inside the message, used only by that message).
+
+```csharp
+// Good: flat, primitive
+public sealed record StartDownload(string MediaId, string Url, int Quality);
+
+// Good: >10 params, one nested level
+public sealed record StartDownload(string MediaId, DownloadSpec Spec)
+{
+    public sealed record DownloadSpec(string Url, int Quality, ...);
+}
+
+// Forbidden: external domain types as parameters
+// Forbidden: multiple nesting levels
+```
+
+### Actors
+
+- Inherit `ReceiveActor` directly (no custom base classes).
+- Actors own explicit state records — `sealed record State(...)`.
+- Use `Receive<T>()` for message handling.
+- Single-node Cluster Sharding for entity actors.
+
+### Architecture tests
+
+ArchUnitNET tests enforce:
+- Reference direction (no cross-domain, no upward references).
+- Naming conventions (`*Manager` = singleton, `*Worker` = sharded, `*Actor` = other).
+- Messages/Persistence have no dependency on Akka.
+- All domain types are `sealed`.
+
+## Git & CI
+
+- **NEVER `git push`** — the user pushes.
+- Conventional Commits (commitlint-enforced). Single-line only, no Co-Authored-By.
+- Versioning is release-please. Never edit `<Version>` in `Directory.Build.props`.
+- Central package management: versions in `Directory.Packages.props` only.
+- CI gates: `dotnet format --verify-no-changes` + tests + architecture tests.
 
 ## Workflow
 
-Changes go through OpenSpec: `/opsx:explore` to think -> `/opsx:propose` to create
-a change (proposal/design/specs/tasks) -> `/opsx:apply` to implement -> `/opsx:archive`.
+Changes go through OpenSpec: `/opsx:explore` to think → `/opsx:propose` to create
+a change (proposal/design/specs/tasks) → `/opsx:apply` to implement → `/opsx:archive`.
 
 ## Skill routing (invoke by name)
 
 - Actors & supervision: `sepp:actor-pattern-library`, `sepp:resilience-patterns`
 - Messages & pipeline design: `sepp:message-driven-designer`
 - Domain modeling: `sepp:domain-modeling-patterns`
-- State machines: `sepp:state-machine-designer`
-- Code quality: `sepp:complexity-guardian`, `sepp:code-complexity-analyzer`
-- Servus patterns: `servus-skills:servus-*` (startup, actors, handlers, etc.)
+- Servus patterns: `servus-skills:servus-*` (startup, actors, etc.)
 
 ## References
 
 - MediathekViewWeb API: https://mediathekviewweb.de/ (search endpoint)
 - Newznab API spec: https://newznab.readthedocs.io/
 - SABnzbd API spec: https://sabnzbd.org/wiki/advanced/api
-- Reference project: D:\GIT\njord (same patterns, same author)

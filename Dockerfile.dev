@@ -7,18 +7,28 @@ WORKDIR /ui
 COPY src/FunkArr.UI/package.json src/FunkArr.UI/package-lock.json ./
 RUN npm ci
 COPY src/FunkArr.UI/ .
-RUN mkdir -p ../FunkArr/wwwroot && npm run build && mv ../FunkArr/wwwroot dist
+RUN npm run build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY src/global.json src/Directory.Build.props src/Directory.Packages.props ./
 COPY src/FunkArr/FunkArr.csproj FunkArr/
+COPY src/FunkArr.Core/FunkArr.Core.csproj FunkArr.Core/
+COPY src/FunkArr.Messages/FunkArr.Messages.csproj FunkArr.Messages/
+COPY src/FunkArr.Persistence/FunkArr.Persistence.csproj FunkArr.Persistence/
+COPY src/FunkArr.Api/FunkArr.Api.csproj FunkArr.Api/
+COPY src/FunkArr.IndexerApi/FunkArr.IndexerApi.csproj FunkArr.IndexerApi/
+COPY src/FunkArr.DownloadApi/FunkArr.DownloadApi.csproj FunkArr.DownloadApi/
+COPY src/FunkArr.Search/FunkArr.Search.csproj FunkArr.Search/
+COPY src/FunkArr.Download/FunkArr.Download.csproj FunkArr.Download/
+COPY src/FunkArr.RuleSet/FunkArr.RuleSet.csproj FunkArr.RuleSet/
+COPY src/FunkArr.MatchMagic/FunkArr.MatchMagic.csproj FunkArr.MatchMagic/
 RUN dotnet restore FunkArr/FunkArr.csproj
 
-COPY src/FunkArr/ FunkArr/
+COPY src/ .
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
-RUN dotnet publish FunkArr/FunkArr.csproj -c Release -o /app/publish -p:SkipNSwag=true
+RUN dotnet publish FunkArr/FunkArr.csproj -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
 # hadolint ignore=DL3008
@@ -30,5 +40,6 @@ COPY --from=build /app/publish .
 COPY data/community/rulesets/ /app/data/rulesets/community/
 VOLUME /app/data
 VOLUME /media
+ENV ASPNETCORE_URLS=http://+:6969
 EXPOSE 6969
 ENTRYPOINT ["dotnet", "FunkArr.dll"]
