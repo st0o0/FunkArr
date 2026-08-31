@@ -1,6 +1,7 @@
 using Akka.Actor;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 using Servus.Akka;
@@ -9,7 +10,10 @@ namespace FunkArr.Search;
 
 public sealed class TvSearchWorker : ReceiveActor
 {
-    private sealed record SearchContext(Guid SearchId, IActorRef ReplyTo, MediathekItem[] RawItems);
+    private sealed record SearchContext(
+        Guid SearchId,
+        MediathekItem[] RawItems,
+        string? RuleSetId);
 
     private SearchContext? _context;
 
@@ -17,14 +21,17 @@ public sealed class TvSearchWorker : ReceiveActor
     {
         var mediathekManager = Context.GetActor<IMediathekGateway>();
         var matchMagicManager = Context.GetActor<IMatchMagicService>();
+        var ruleSetResolver = Context.GetActor<IRuleSetResolver>();
 
         Receive<TvSearchCommand>(cmd =>
         {
-            _context = new SearchContext(cmd.SearchId, Sender, []);
+            _context = new SearchContext(cmd.SearchId, [], null);
 
             var fields = new List<MediathekQueryField>();
             if (!string.IsNullOrWhiteSpace(cmd.Query))
+            {
                 fields.Add(new MediathekQueryField(["topic"], cmd.Query));
+            }
 
             var query = new MediathekQuery(
                 Fields: fields.ToArray(),
@@ -42,19 +49,52 @@ public sealed class TvSearchWorker : ReceiveActor
 
         Receive<MediathekQueryCompleted>(result =>
         {
-            if (_context is null) return;
+            if (_context is null)
+            {
+                return;
+            }
+
             _context = _context with { RawItems = result.Items };
 
-            var candidates = result.Items.Select(item => new ScoreCandidate(
+            var topic = result.Items.Length > 0 ? result.Items[0].Topic : null;
+            if (topic is not null)
+            {
+                ruleSetResolver.Ask<object>(new ResolveRuleSet(topic), TimeSpan.FromSeconds(5))
+                    .PipeTo(Self, Sender);
+            }
+            else
+            {
+                ReplyWithUnscored();
+            }
+        });
+
+        Receive<RuleSetResolved>(resolved =>
+        {
+            if (_context is null)
+            {
+                return;
+            }
+
+            _context = _context with { RuleSetId = resolved.RuleSetId };
+
+            var candidates = _context.RawItems.Select(item => new ScoreCandidate(
                 item.Title, item.Topic, item.Channel, item.Duration, ResolveQuality(item))).ToArray();
 
-            matchMagicManager.Ask<object>(new ScoreItems(candidates, null), TimeSpan.FromSeconds(10))
+            matchMagicManager.Ask<object>(new ScoreItems(candidates, resolved.RuleSetId), TimeSpan.FromSeconds(10))
                 .PipeTo(Self, Sender);
+        });
+
+        Receive<RuleSetNotFound>(_ =>
+        {
+            ReplyWithUnscored();
         });
 
         Receive<ScoreCompleted>(scored =>
         {
-            if (_context is null) return;
+            if (_context is null)
+            {
+                return;
+            }
 
             var items = scored.Results
                 .Select(s =>
@@ -76,23 +116,57 @@ public sealed class TvSearchWorker : ReceiveActor
                 .OrderByDescending(i => i.Score)
                 .ToArray();
 
-            _context.ReplyTo.Tell(new SearchCompleted(_context.SearchId, items, items.Length));
+            Sender.Tell(new SearchCompleted(_context.SearchId, items, items.Length));
             Context.Stop(Self);
         });
 
         Receive<MediathekQueryFailed>(failed =>
         {
-            if (_context is null) return;
-            _context.ReplyTo.Tell(new SearchFailed(_context.SearchId, failed.Reason));
+            if (_context is null)
+            {
+                return;
+            }
+
+            Sender.Tell(new SearchFailed(_context.SearchId, failed.Reason));
             Context.Stop(Self);
         });
 
         Receive<Status.Failure>(failure =>
         {
-            if (_context is null) return;
-            _context.ReplyTo.Tell(new SearchFailed(_context.SearchId, failure.Cause.Message));
+            if (_context is null)
+            {
+                return;
+            }
+
+            Sender.Tell(new SearchFailed(_context.SearchId, failure.Cause.Message));
             Context.Stop(Self);
         });
+    }
+
+    private void ReplyWithUnscored()
+    {
+        if (_context is null)
+        {
+            return;
+        }
+
+        var items = _context.RawItems
+            .Select(raw => new SearchResultItem(
+                Title: raw.Title,
+                Channel: raw.Channel,
+                Topic: raw.Topic,
+                Url: raw.UrlVideoHd ?? raw.UrlVideo ?? raw.UrlVideoLow ?? "",
+                Duration: raw.Duration,
+                Size: raw.Size,
+                Quality: ResolveQuality(raw),
+                AiredAt: raw.Timestamp > 0
+                    ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
+                    : null,
+                Score: 0.0))
+            .ToArray();
+
+        Sender.Tell(new SearchCompleted(_context.SearchId, items, items.Length));
+        Context.Stop(Self);
     }
 
     private static int ResolveQuality(MediathekItem item) =>

@@ -9,4 +9,8 @@ public sealed class FunkArrOptions
     public string PersistencePath { get; set; } = "data/funkarr.db";
 
     public string DownloadPath { get; set; } = "downloads";
+
+    public string DataPath { get; set; } = "data";
+
+    public int ScoringPoolSize { get; set; } = 4;
 }

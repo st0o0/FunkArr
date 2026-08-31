@@ -4,6 +4,7 @@ using Akka.Hosting;
 using Akka.Persistence.Sql.Hosting;
 using FunkArr.Core;
 using FunkArr.MatchMagic;
+using FunkArr.RuleSet;
 using FunkArr.Search;
 using LinqToDB;
 using Microsoft.Extensions.Options;
@@ -36,9 +37,20 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithSingleton<IMediathekGateway>(
                 "mediathek-view-web-manager",
                 (_, _, resolver) => resolver.Props<MediathekViewWebManager>())
+            .WithSingleton<IRuleSetResolver>(
+                "ruleset-resolver",
+                Props.Create(() => new RuleSetResolver()))
+            .WithSingleton<IRuleSetService>(
+                "ruleset-manager",
+                Props.Create(() => new RuleSetManager()))
+            .WithShardRegion<IRuleSetRegion>(
+                "ruleset-worker",
+                (_, _, _) => _ => Props.Create(() => new RuleSetWorker()),
+                new ShardMessageExtractor(),
+                new ShardOptions())
             .WithSingleton<IMatchMagicService>(
                 "match-magic-manager",
-                Props.Create(() => new MatchMagicManager()))
+                Props.Create(() => new MatchMagicManager(options.ScoringPoolSize)))
             .WithShardRegion<ITvSearchRegion>(
                 "tv-search",
                 (_, _, _) => _ => Props.Create(() => new TvSearchWorker()),

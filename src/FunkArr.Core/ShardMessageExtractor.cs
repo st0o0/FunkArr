@@ -9,6 +9,7 @@ public sealed class ShardMessageExtractor(int maxShards = 25) : HashCodeMessageE
     {
         IWithDownloadId m => m.DownloadId.ToString(),
         IWithSearchId m => m.SearchId.ToString(),
+        IWithRuleSetId m => m.RuleSetId,
         _ => throw new ArgumentException($"Unknown sharded message type: {message.GetType().Name}", nameof(message)),
     };
 }

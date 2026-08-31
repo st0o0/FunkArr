@@ -8,9 +8,9 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 {
     private sealed record State(int InFlight);
 
-    private sealed record HttpCompleted(MediathekQueryCompleted Result, IActorRef ReplyTo);
+    private sealed record HttpCompleted(MediathekQueryCompleted Result);
 
-    private sealed record HttpFailed(string Reason, IActorRef ReplyTo);
+    private sealed record HttpFailed(string Reason);
 
     private readonly HttpClient _httpClient;
     private readonly int _maxConcurrent;
@@ -75,24 +75,24 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
                 var total = apiResponse?.Result?.QueryInfo?.TotalResults ?? items.Length;
 
-                return new HttpCompleted(new MediathekQueryCompleted(items, total), replyTo) as object;
+                return new HttpCompleted(new MediathekQueryCompleted(items, total)) as object;
             }
             catch (Exception ex)
             {
-                return new HttpFailed(ex.Message, replyTo);
+                return new HttpFailed(ex.Message);
             }
-        }).PipeTo(self);
+        }).PipeTo(self, replyTo);
     }
 
     private void HandleHttpCompleted(HttpCompleted msg)
     {
-        msg.ReplyTo.Tell(msg.Result);
+        Sender.Tell(msg.Result);
         SlotFreed();
     }
 
     private void HandleHttpFailed(HttpFailed msg)
     {
-        msg.ReplyTo.Tell(new MediathekQueryFailed(msg.Reason));
+        Sender.Tell(new MediathekQueryFailed(msg.Reason));
         SlotFreed();
     }
 

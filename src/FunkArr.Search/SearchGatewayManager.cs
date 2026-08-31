@@ -99,7 +99,9 @@ public sealed class SearchGatewayManager : ReceiveActor, IWithTimers
     private void HandleSearchCompleted(SearchCompleted completed)
     {
         if (!_pending.TryGetValue(completed.SearchId, out var pending))
+        {
             return;
+        }
 
         switch (pending.Type)
         {
@@ -131,7 +133,9 @@ public sealed class SearchGatewayManager : ReceiveActor, IWithTimers
     private void HandleSearchFailed(SearchFailed failed)
     {
         if (!_pending.TryGetValue(failed.SearchId, out var pending))
+        {
             return;
+        }
 
         if (pending.Type == SearchType.Both)
         {
@@ -151,7 +155,9 @@ public sealed class SearchGatewayManager : ReceiveActor, IWithTimers
     private void HandleTimeout(SearchTimeout timeout)
     {
         if (!_pending.TryGetValue(timeout.SearchId, out var pending))
+        {
             return;
+        }
 
         if (pending.Type == SearchType.Both)
         {
