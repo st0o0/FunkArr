@@ -1,10 +1,13 @@
 name: validate-rulesets
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
   pull_request:
     paths:
-      - 'data/community/rulesets/**'
-      - 'data/community/ruleset.schema.json'
+      - 'data/**'
 
 permissions:
   contents: read
@@ -17,5 +20,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install ajv-cli
         run: npm install -g ajv-cli ajv-formats
-      - name: Validate rulesets against schema
+      - name: Validate community rulesets against schema
         run: ajv validate -s data/community/ruleset.schema.json -d "data/community/rulesets/*.json" --spec=draft2020 --strict=false
