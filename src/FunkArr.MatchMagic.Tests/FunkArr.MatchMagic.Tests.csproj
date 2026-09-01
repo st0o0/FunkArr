@@ -19,10 +19,5 @@
     <EmbeddedResource Include="Resources\**\*" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Snapshots\*.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 
 </Project>

@@ -6,9 +6,9 @@ namespace FunkArr.MatchMagic;
 
 public sealed class MatchMagicManager : ReceiveActor
 {
-    private readonly Dictionary<string, MatchingConfig> _configs = new(StringComparer.Ordinal);
     private readonly IActorRef _router;
     private readonly IActorRef _historyRef;
+    private MatchMagicManagerState _state = MatchMagicManagerState.Empty;
 
     public MatchMagicManager(int poolSize = 4, IActorRef? historyRef = null)
     {
@@ -17,18 +17,14 @@ public sealed class MatchMagicManager : ReceiveActor
         _router = Context.ActorOf(routerProps, "scoring-pool");
         _historyRef = historyRef ?? ActorRefs.Nobody;
 
-        Receive<MatchingConfig>(HandleConfig);
+        Receive<MatchingConfig>(config => _state = _state.Apply(config));
         Receive<ScoreItems>(HandleScoreItems);
-    }
-
-    private void HandleConfig(MatchingConfig config)
-    {
-        _configs[config.RuleSetId] = config;
     }
 
     private void HandleScoreItems(ScoreItems msg)
     {
-        if (!_configs.TryGetValue(msg.RuleSetId, out var config))
+        var config = _state.GetConfig(msg.RuleSetId);
+        if (config is null)
         {
             var defaults = msg.Candidates.Select((_, i) => new ScoredItem(i, 0.0, false)).ToArray();
             Sender.Tell(new ScoreCompleted(msg.RequestId, defaults));

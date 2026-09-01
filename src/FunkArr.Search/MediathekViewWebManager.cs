@@ -6,15 +6,13 @@ namespace FunkArr.Search;
 
 public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 {
-    private sealed record State(int InFlight);
-
     private sealed record HttpCompleted(MediathekQueryCompleted Result);
 
     private sealed record HttpFailed(string Reason);
 
     private readonly HttpClient _httpClient;
     private readonly int _maxConcurrent;
-    private State _state = new(InFlight: 0);
+    private MediathekViewWebManagerState _state = MediathekViewWebManagerState.Empty;
 
     public IStash Stash { get; set; } = null!;
 
@@ -30,13 +28,13 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private void HandleQuery(MediathekQuery query)
     {
-        if (_state.InFlight >= _maxConcurrent)
+        if (!_state.HasCapacity(_maxConcurrent))
         {
             Stash.Stash();
             return;
         }
 
-        _state = _state with { InFlight = _state.InFlight + 1 };
+        _state = _state.Increment();
         var sender = Sender;
         ExecuteQuery(query, sender);
     }
@@ -98,7 +96,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private void SlotFreed()
     {
-        _state = _state with { InFlight = _state.InFlight - 1 };
+        _state = _state.Decrement();
         Stash.Unstash();
     }
 

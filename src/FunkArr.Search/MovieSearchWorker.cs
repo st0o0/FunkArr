@@ -10,12 +10,7 @@ namespace FunkArr.Search;
 
 public sealed class MovieSearchWorker : ReceiveActor
 {
-    private sealed record SearchContext(
-        Guid SearchId,
-        MediathekItem[] RawItems,
-        string? RuleSetId);
-
-    private SearchContext? _context;
+    private MovieSearchWorkerState? _state;
 
     public MovieSearchWorker()
     {
@@ -25,7 +20,7 @@ public sealed class MovieSearchWorker : ReceiveActor
 
         Receive<MovieSearchCommand>(cmd =>
         {
-            _context = new SearchContext(cmd.SearchId, [], null);
+            _state = MovieSearchWorkerState.Empty.Apply(cmd);
 
             var fields = new List<MediathekQueryField>();
             if (!string.IsNullOrWhiteSpace(cmd.Query))
@@ -56,12 +51,9 @@ public sealed class MovieSearchWorker : ReceiveActor
 
         Receive<MediathekQueryCompleted>(result =>
         {
-            if (_context is null)
-            {
-                return;
-            }
+            if (_state is null) return;
 
-            _context = _context with { RawItems = result.Items };
+            _state = _state.Apply(result);
 
             var topic = result.Items.Length > 0 ? result.Items[0].Topic : null;
             if (topic is not null)
@@ -71,116 +63,56 @@ public sealed class MovieSearchWorker : ReceiveActor
             }
             else
             {
-                ReplyWithUnscored();
+                Sender.Tell(_state.ToUnscoredResult());
+                Context.Stop(Self);
             }
         });
 
         Receive<RuleSetResolved>(resolved =>
         {
-            if (_context is null)
-            {
-                return;
-            }
+            if (_state is null) return;
 
-            _context = _context with { RuleSetId = resolved.RuleSetId };
+            _state = _state.ApplyRuleSet(resolved.RuleSetId);
 
-            var candidates = _context.RawItems.Select(item => new ScoreCandidate(
-                item.Title, item.Topic, item.Channel, item.Duration, ResolveQuality(item),
+            var candidates = _state.RawItems.Select(item => new ScoreCandidate(
+                item.Title, item.Topic, item.Channel, item.Duration,
+                MovieSearchWorkerStateExtensions.ResolveQuality(item),
                 item.Description, item.Timestamp)).ToArray();
 
             var requestId = Guid.NewGuid();
-            var origin = new ScoringOrigin("radarr", _context.RawItems[0].Topic);
-            matchMagicManager.Ask<object>(new ScoreItems(requestId, resolved.RuleSetId, origin, candidates), TimeSpan.FromSeconds(10))
+            var origin = new ScoringOrigin("radarr", _state.RawItems[0].Topic);
+            matchMagicManager.Ask<object>(
+                    new ScoreItems(requestId, resolved.RuleSetId, origin, candidates),
+                    TimeSpan.FromSeconds(10))
                 .PipeTo(Self, Sender);
         });
 
         Receive<RuleSetNotFound>(_ =>
         {
-            ReplyWithUnscored();
+            if (_state is null) return;
+            Sender.Tell(_state.ToUnscoredResult());
+            Context.Stop(Self);
         });
 
         Receive<ScoreCompleted>(scored =>
         {
-            if (_context is null)
-            {
-                return;
-            }
-
-            var items = scored.Results
-                .Select(s =>
-                {
-                    var raw = _context.RawItems[s.Index];
-                    return new SearchResultItem(
-                        Title: raw.Title,
-                        Channel: raw.Channel,
-                        Topic: raw.Topic,
-                        Url: raw.UrlVideoHd ?? raw.UrlVideo ?? raw.UrlVideoLow ?? "",
-                        Duration: raw.Duration,
-                        Size: raw.Size,
-                        Quality: ResolveQuality(raw),
-                        AiredAt: raw.Timestamp > 0
-                            ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
-                            : null,
-                        Score: s.Score);
-                })
-                .OrderByDescending(i => i.Score)
-                .ToArray();
-
-            Sender.Tell(new SearchCompleted(_context.SearchId, items, items.Length));
+            if (_state is null) return;
+            Sender.Tell(_state.ToScoredResult(scored));
             Context.Stop(Self);
         });
 
         Receive<MediathekQueryFailed>(failed =>
         {
-            if (_context is null)
-            {
-                return;
-            }
-
-            Sender.Tell(new SearchFailed(_context.SearchId, failed.Reason));
+            if (_state is null) return;
+            Sender.Tell(new SearchFailed(_state.SearchId, failed.Reason));
             Context.Stop(Self);
         });
 
         Receive<Status.Failure>(failure =>
         {
-            if (_context is null)
-            {
-                return;
-            }
-
-            Sender.Tell(new SearchFailed(_context.SearchId, failure.Cause.Message));
+            if (_state is null) return;
+            Sender.Tell(new SearchFailed(_state.SearchId, failure.Cause.Message));
             Context.Stop(Self);
         });
     }
-
-    private void ReplyWithUnscored()
-    {
-        if (_context is null)
-        {
-            return;
-        }
-
-        var items = _context.RawItems
-            .Select(raw => new SearchResultItem(
-                Title: raw.Title,
-                Channel: raw.Channel,
-                Topic: raw.Topic,
-                Url: raw.UrlVideoHd ?? raw.UrlVideo ?? raw.UrlVideoLow ?? "",
-                Duration: raw.Duration,
-                Size: raw.Size,
-                Quality: ResolveQuality(raw),
-                AiredAt: raw.Timestamp > 0
-                    ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
-                    : null,
-                Score: 0.0))
-            .ToArray();
-
-        Sender.Tell(new SearchCompleted(_context.SearchId, items, items.Length));
-        Context.Stop(Self);
-    }
-
-    private static int ResolveQuality(MediathekItem item) =>
-        item.UrlVideoHd is not null ? 720 :
-        item.UrlVideo is not null ? 480 :
-        item.UrlVideoLow is not null ? 270 : 0;
 }

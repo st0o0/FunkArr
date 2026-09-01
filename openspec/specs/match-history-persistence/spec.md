@@ -27,12 +27,12 @@ The MatchHistoryWorker SHALL be a sharded entity actor keyed by RuleSetId. It SH
 
 ### Requirement: MatchHistoryWorker persists scoring events
 
-The MatchHistoryWorker SHALL persist each RecordScoringResult as a ScoringRecordedDto event to the Akka.Persistence journal. It SHALL use the FunkArr persistence pattern: Command -> Actor -> Persistence DTO -> State update.
+The MatchHistoryWorker SHALL persist each RecordScoringResult as a `ScoringRecorded` domain event to the Akka.Persistence journal. It SHALL use the new pattern: Command -> `State.ProcessCommand(cmd)` -> `(new State, Event)` -> `Persist(event)` -> assign new state.
 
 #### Scenario: Persist scoring result
 
 - **WHEN** a RecordScoringResult message is received
-- **THEN** the MatchHistoryWorker SHALL map it to a ScoringRecordedDto and persist it, then update in-memory state
+- **THEN** the MatchHistoryWorker SHALL call `_state.ProcessCommand(cmd)`, persist the returned `ScoringRecorded`, and update `_state` to the returned new state
 
 #### Scenario: Persist failure does not crash actor
 
@@ -41,36 +41,36 @@ The MatchHistoryWorker SHALL persist each RecordScoringResult as a ScoringRecord
 
 ### Requirement: MatchHistoryWorker maintains bounded in-memory state
 
-The MatchHistoryWorker SHALL maintain a list of ScoringSnapshot records in memory, bounded by the retention policy. State SHALL be represented as an explicit `sealed record State(ImmutableList<ScoringSnapshot> Snapshots)`.
+The MatchHistoryWorker SHALL maintain a list of ScoringSnapshot records in memory, bounded by the retention policy. State SHALL be represented as `MatchHistoryState` defined in a dedicated `MatchHistoryState.cs` file, initialized from `MatchHistoryState.Empty`.
 
 #### Scenario: State after persist
 
-- **WHEN** a ScoringRecordedDto is persisted
-- **THEN** the in-memory state SHALL contain a new ScoringSnapshot derived from the DTO, and retention trimming SHALL be applied
+- **WHEN** a ScoringRecorded is persisted
+- **THEN** the in-memory state SHALL contain a new ScoringSnapshot derived from the event, and retention trimming SHALL be applied via state extension methods
 
 #### Scenario: State on recovery
 
 - **WHEN** a MatchHistoryWorker recovers from journal
-- **THEN** it SHALL replay all events (applying each to state), apply retention trimming, and be ready to accept new messages
+- **THEN** it SHALL replay all events via `_state = _state.Apply(evt)`, apply retention trimming, and be ready to accept new messages
 
 ### Requirement: MatchHistoryWorker takes Akka.Persistence snapshots
 
-The MatchHistoryWorker SHALL save an Akka.Persistence snapshot every N events (configurable, default 20). On recovery, it SHALL load the latest snapshot first, then replay events after the snapshot.
+The MatchHistoryWorker SHALL save an Akka.Persistence snapshot every N events (configurable, default 20) using `LastSequenceNr % snapshotInterval == 0`. The state record SHALL be passed directly to `SaveSnapshot()`. On recovery, it SHALL cast the snapshot to `MatchHistoryState` and assign it directly.
 
 #### Scenario: Snapshot after interval
 
-- **WHEN** the MatchHistoryWorker has persisted 20 events since the last snapshot (or since start)
-- **THEN** it SHALL save a snapshot of current state
+- **WHEN** `LastSequenceNr % snapshotInterval == 0` after persisting an event
+- **THEN** it SHALL call `SaveSnapshot(_state)`
 
 #### Scenario: Recovery with snapshot
 
-- **WHEN** a MatchHistoryWorker recovers and a snapshot exists at sequence number 40
-- **THEN** it SHALL load the snapshot and replay only events after sequence number 40
+- **WHEN** a MatchHistoryWorker recovers and a SnapshotOffer is received
+- **THEN** it SHALL assign `_state = (MatchHistoryState)offer.Snapshot` and replay only events after the snapshot
 
 #### Scenario: Snapshot interval configurable
 
 - **WHEN** appsettings.json has `FunkArr:MatchHistory:SnapshotInterval` set to 10
-- **THEN** snapshots SHALL be taken every 10 events
+- **THEN** snapshots SHALL be taken when `LastSequenceNr % 10 == 0`
 
 ### Requirement: Retention policy trims old snapshots
 
