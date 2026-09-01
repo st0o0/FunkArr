@@ -1,3 +1,3 @@
 namespace FunkArr.Messages.Scoring;
 
-public sealed record ScoreCompleted(ScoredItem[] Results);
+public sealed record ScoreCompleted(Guid RequestId, ScoredItem[] Results);

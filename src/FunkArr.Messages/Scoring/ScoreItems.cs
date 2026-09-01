@@ -1,5 +1,7 @@
 namespace FunkArr.Messages.Scoring;
 
 public sealed record ScoreItems(
-    ScoreCandidate[] Items,
-    string RuleSetId);
+    Guid RequestId,
+    string RuleSetId,
+    ScoringOrigin Origin,
+    ScoreCandidate[] Candidates);

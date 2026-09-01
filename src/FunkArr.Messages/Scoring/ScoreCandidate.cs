@@ -5,4 +5,6 @@ public sealed record ScoreCandidate(
     string Topic,
     string Channel,
     int Duration,
-    int Quality);
+    int Quality,
+    string? Description,
+    long Timestamp);
