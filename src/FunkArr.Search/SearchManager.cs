@@ -5,7 +5,7 @@ using Servus.Akka;
 
 namespace FunkArr.Search;
 
-public sealed class SearchGatewayManager : ReceiveActor, IWithTimers
+public sealed class SearchManager : ReceiveActor, IWithTimers
 {
     public enum SearchType { Tv, Movie, Both }
 
@@ -24,7 +24,7 @@ public sealed class SearchGatewayManager : ReceiveActor, IWithTimers
 
     public ITimerScheduler Timers { get; set; } = null!;
 
-    public SearchGatewayManager(TimeSpan? searchTimeout = null)
+    public SearchManager(TimeSpan? searchTimeout = null)
     {
         _tvShardRegion = Context.GetActor<ITvSearchRegion>();
         _movieShardRegion = Context.GetActor<IMovieSearchRegion>();

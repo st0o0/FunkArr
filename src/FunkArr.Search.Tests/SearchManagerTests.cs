@@ -9,14 +9,14 @@ using Xunit;
 
 namespace FunkArr.Search.Tests;
 
-public sealed class SearchGatewayManagerTests : TestKit
+public sealed class SearchManagerTests : TestKit
 {
     private IActorRef CreateGateway(TestProbe tvProbe, TestProbe movieProbe)
     {
         var registry = ActorRegistry.For(Sys);
         registry.Register<ITvSearchRegion>(tvProbe, overwrite: true);
         registry.Register<IMovieSearchRegion>(movieProbe, overwrite: true);
-        return Sys.ActorOf(Props.Create(() => new SearchGatewayManager()));
+        return Sys.ActorOf(Props.Create(() => new SearchManager()));
     }
 
     [Fact]
@@ -159,7 +159,7 @@ public sealed class SearchGatewayManagerTests : TestKit
         registry.Register<ITvSearchRegion>(tvProbe, overwrite: true);
         registry.Register<IMovieSearchRegion>(movieProbe, overwrite: true);
         var gateway = Sys.ActorOf(Props.Create(() =>
-            new SearchGatewayManager(TimeSpan.FromMilliseconds(200))));
+            new SearchManager(TimeSpan.FromMilliseconds(200))));
 
         gateway.Tell(new TvSearchCommand(Guid.Empty, "Tatort", null, null, null, null), TestActor);
 

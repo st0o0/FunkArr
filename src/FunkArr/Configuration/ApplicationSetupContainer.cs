@@ -15,7 +15,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
     {
         var options = app.Services.GetRequiredService<IOptions<FunkArrOptions>>().Value;
         var registry = app.Services.GetRequiredService<IActorRegistry>();
-        var searchGateway = registry.Get<SearchGatewayManager>();
+        var searchGateway = registry.Get<SearchManager>();
 
         app.MapHealthChecks("/healthz", new HealthCheckOptions
         {

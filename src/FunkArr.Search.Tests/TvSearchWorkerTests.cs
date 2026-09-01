@@ -20,8 +20,8 @@ public sealed class TvSearchWorkerTests : TestKit
         var matchMagicProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
         var registry = ActorRegistry.For(Sys);
-        registry.Register<IMediathekGateway>(mediathekProbe);
-        registry.Register<IMatchMagicService>(matchMagicProbe);
+        registry.Register<IMediathekManager>(mediathekProbe);
+        registry.Register<IMatchMagicManager>(matchMagicProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
 
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
@@ -45,10 +45,10 @@ public sealed class TvSearchWorkerTests : TestKit
         resolverProbe.Reply(new RuleSetResolved("tatort"));
 
         var scoreRequest = matchMagicProbe.ExpectMsg<ScoreItems>();
-        Assert.Single(scoreRequest.Items);
+        Assert.Single(scoreRequest.Candidates);
         Assert.Equal("tatort", scoreRequest.RuleSetId);
 
-        matchMagicProbe.Reply(new ScoreCompleted([new ScoredItem(0, 0.95, true)]));
+        matchMagicProbe.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.95, true)]));
 
         var result = ExpectMsg<SearchCompleted>();
         Assert.Equal(searchId, result.SearchId);
@@ -64,8 +64,8 @@ public sealed class TvSearchWorkerTests : TestKit
         var matchMagicProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
         var registry = ActorRegistry.For(Sys);
-        registry.Register<IMediathekGateway>(mediathekProbe);
-        registry.Register<IMatchMagicService>(matchMagicProbe);
+        registry.Register<IMediathekManager>(mediathekProbe);
+        registry.Register<IMatchMagicManager>(matchMagicProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
 
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
@@ -88,8 +88,8 @@ public sealed class TvSearchWorkerTests : TestKit
         var matchMagicProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
         var registry = ActorRegistry.For(Sys);
-        registry.Register<IMediathekGateway>(mediathekProbe);
-        registry.Register<IMatchMagicService>(matchMagicProbe);
+        registry.Register<IMediathekManager>(mediathekProbe);
+        registry.Register<IMatchMagicManager>(matchMagicProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
 
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
@@ -121,8 +121,8 @@ public sealed class TvSearchWorkerTests : TestKit
         var matchMagicProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
         var registry = ActorRegistry.For(Sys);
-        registry.Register<IMediathekGateway>(mediathekProbe);
-        registry.Register<IMatchMagicService>(matchMagicProbe);
+        registry.Register<IMediathekManager>(mediathekProbe);
+        registry.Register<IMatchMagicManager>(matchMagicProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
 
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));

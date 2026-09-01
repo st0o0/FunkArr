@@ -34,13 +34,13 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 snapshotBuilder: snapshot => snapshot.WithHealthCheck())
             .WithActorSystemLivenessCheck()
             .WithClustering()
-            .WithSingleton<IMediathekGateway>(
+            .WithSingleton<IMediathekManager>(
                 "mediathek-view-web-manager",
                 (_, _, resolver) => resolver.Props<MediathekViewWebManager>())
             .WithSingleton<IRuleSetResolver>(
                 "ruleset-resolver",
                 Props.Create(() => new RuleSetResolver()))
-            .WithSingleton<IRuleSetService>(
+            .WithSingleton<IRuleSetManager>(
                 "ruleset-manager",
                 Props.Create(() => new RuleSetManager()))
             .WithShardRegion<IRuleSetRegion>(
@@ -48,7 +48,12 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, _) => _ => Props.Create(() => new RuleSetWorker()),
                 new ShardMessageExtractor(),
                 new ShardOptions())
-            .WithSingleton<IMatchMagicService>(
+            .WithShardRegion<IMatchHistoryRegion>(
+                "match-history",
+                (_, _, _) => entityId => Props.Create(() => new MatchHistoryWorker(entityId)),
+                new ShardMessageExtractor(),
+                new ShardOptions())
+            .WithSingleton<IMatchMagicManager>(
                 "match-magic-manager",
                 Props.Create(() => new MatchMagicManager(options.ScoringPoolSize)))
             .WithShardRegion<ITvSearchRegion>(
@@ -61,8 +66,8 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, _) => _ => Props.Create(() => new MovieSearchWorker()),
                 new ShardMessageExtractor(),
                 new ShardOptions())
-            .WithSingleton<ISearchGateway>(
-                "search-gateway-manager",
-                Props.Create(() => new SearchGatewayManager()));
+            .WithSingleton<ISearchManager>(
+                "search-manager",
+                Props.Create(() => new SearchManager()));
     }
 }

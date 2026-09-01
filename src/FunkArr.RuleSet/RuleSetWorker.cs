@@ -45,7 +45,7 @@ public sealed class RuleSetWorker : ReceiveActor
             return;
         }
 
-        var matchMagicManager = Context.GetActor<IMatchMagicService>();
+        var matchMagicManager = Context.GetActor<IMatchMagicManager>();
         matchMagicManager.Tell(config);
 
         var resolver = Context.GetActor<IRuleSetResolver>();

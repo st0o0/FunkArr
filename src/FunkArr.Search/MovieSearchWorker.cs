@@ -19,8 +19,8 @@ public sealed class MovieSearchWorker : ReceiveActor
 
     public MovieSearchWorker()
     {
-        var mediathekManager = Context.GetActor<IMediathekGateway>();
-        var matchMagicManager = Context.GetActor<IMatchMagicService>();
+        var mediathekManager = Context.GetActor<IMediathekManager>();
+        var matchMagicManager = Context.GetActor<IMatchMagicManager>();
         var ruleSetResolver = Context.GetActor<IRuleSetResolver>();
 
         Receive<MovieSearchCommand>(cmd =>
@@ -85,9 +85,12 @@ public sealed class MovieSearchWorker : ReceiveActor
             _context = _context with { RuleSetId = resolved.RuleSetId };
 
             var candidates = _context.RawItems.Select(item => new ScoreCandidate(
-                item.Title, item.Topic, item.Channel, item.Duration, ResolveQuality(item))).ToArray();
+                item.Title, item.Topic, item.Channel, item.Duration, ResolveQuality(item),
+                item.Description, item.Timestamp)).ToArray();
 
-            matchMagicManager.Ask<object>(new ScoreItems(candidates, resolved.RuleSetId), TimeSpan.FromSeconds(10))
+            var requestId = Guid.NewGuid();
+            var origin = new ScoringOrigin("radarr", _context.RawItems[0].Topic);
+            matchMagicManager.Ask<object>(new ScoreItems(requestId, resolved.RuleSetId, origin, candidates), TimeSpan.FromSeconds(10))
                 .PipeTo(Self, Sender);
         });
 
