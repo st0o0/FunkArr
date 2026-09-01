@@ -4,4 +4,6 @@ public sealed record MovieSearchCommand(
     Guid SearchId,
     string? Query,
     string? ImdbId,
-    int? TmdbId) : IWithSearchId;
+    int? TmdbId,
+    int? Limit,
+    int? Offset) : IWithSearchId;

@@ -45,8 +45,8 @@ public sealed class MovieSearchWorker : ReceiveActor
                 SortBy: "timestamp",
                 SortOrder: "desc",
                 Future: false,
-                Offset: 0,
-                Size: 50,
+                Offset: cmd.Offset ?? 0,
+                Size: cmd.Limit ?? 50,
                 DurationMin: 3600,
                 DurationMax: null);
 

@@ -6,4 +6,6 @@ public sealed record TvSearchCommand(
     int? Season,
     int? Episode,
     int? TvdbId,
-    string? ImdbId) : IWithSearchId;
+    string? ImdbId,
+    int? Limit,
+    int? Offset) : IWithSearchId;

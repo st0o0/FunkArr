@@ -79,20 +79,20 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
 
     private PendingSearch RouteToTv(Guid searchId, GeneralSearchCommand cmd)
     {
-        _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query, null, null, null, null));
+        _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query, null, null, null, null, cmd.Limit, cmd.Offset));
         return new PendingSearch(Sender, SearchType.Tv, null, null);
     }
 
     private PendingSearch RouteToMovie(Guid searchId, GeneralSearchCommand cmd)
     {
-        _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query, null, null));
+        _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query, null, null, cmd.Limit, cmd.Offset));
         return new PendingSearch(Sender, SearchType.Movie, null, null);
     }
 
     private PendingSearch RouteToAll(Guid searchId, GeneralSearchCommand cmd)
     {
-        _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query, null, null, null, null));
-        _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query, null, null));
+        _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query, null, null, null, null, cmd.Limit, cmd.Offset));
+        _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query, null, null, cmd.Limit, cmd.Offset));
         return new PendingSearch(Sender, SearchType.Both, null, null);
     }
 

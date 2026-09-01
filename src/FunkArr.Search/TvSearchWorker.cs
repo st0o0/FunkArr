@@ -38,8 +38,8 @@ public sealed class TvSearchWorker : ReceiveActor
                 SortBy: "timestamp",
                 SortOrder: "desc",
                 Future: false,
-                Offset: 0,
-                Size: 50,
+                Offset: cmd.Offset ?? 0,
+                Size: cmd.Limit ?? 50,
                 DurationMin: 300,
                 DurationMax: null);
 

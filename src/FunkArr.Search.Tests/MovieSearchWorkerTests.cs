@@ -27,7 +27,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, "Das Boot", null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "Das Boot", null, null, null, null), TestActor);
 
         var mediathekQuery = mediathekProbe.ExpectMsg<MediathekQuery>();
         Assert.Contains("title", mediathekQuery.Fields[0].Fields);
@@ -68,7 +68,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, null, null, null, null, null), TestActor);
 
         var result = ExpectMsg<SearchFailed>();
         Assert.Equal(searchId, result.SearchId);
@@ -89,7 +89,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, "Unknown Movie", null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "Unknown Movie", null, null, null, null), TestActor);
 
         mediathekProbe.ExpectMsg<MediathekQuery>();
         mediathekProbe.Reply(new MediathekQueryCompleted(

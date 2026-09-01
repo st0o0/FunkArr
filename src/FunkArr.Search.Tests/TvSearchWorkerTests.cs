@@ -27,7 +27,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
 
         var mediathekQuery = mediathekProbe.ExpectMsg<MediathekQuery>();
         Assert.Equal("topic", mediathekQuery.Fields[0].Fields[0]);
@@ -71,7 +71,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
 
         mediathekProbe.ExpectMsg<MediathekQuery>();
         mediathekProbe.Reply(new MediathekQueryFailed("Connection refused"));
@@ -95,7 +95,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
 
         mediathekProbe.ExpectMsg<MediathekQuery>();
         mediathekProbe.Reply(new MediathekQueryCompleted(
@@ -128,7 +128,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Unknown Show", null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "Unknown Show", null, null, null, null, null, null), TestActor);
 
         mediathekProbe.ExpectMsg<MediathekQuery>();
         mediathekProbe.Reply(new MediathekQueryCompleted(
