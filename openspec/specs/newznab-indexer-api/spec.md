@@ -27,7 +27,7 @@ The system SHALL respond to `GET /index/api?t=caps` with a Newznab capabilities 
 
 #### Scenario: Limits declared
 - **WHEN** the caps XML is returned
-- **THEN** `<limits>` SHALL have `max="5000"` and `default="5000"`
+- **THEN** `<limits>` SHALL have `max="500"` and `default="100"`
 
 ### Requirement: TV search endpoint
 The system SHALL respond to `GET /index/api?t=tvsearch` with Newznab RSS XML containing search results. It SHALL accept optional parameters: `tvdbid` (int), `season` (string), `ep` (string), `q` (string), `offset` (int), `limit` (int), `cat` (string), `maxage` (int), `extended` (int), `attrs` (string).
@@ -130,15 +130,23 @@ The system SHALL return errors as XML `<error code="X" description="Y"/>` using 
 - **THEN** the response SHALL be `<error code="202" description="No such function"/>` with HTTP 400
 
 ### Requirement: Search pagination parameters
-The system SHALL accept `offset` (int, default 0) and `limit` (int, default 5000) query parameters on all search endpoints (`t=search`, `t=tvsearch`, `t=movie`).
+The system SHALL accept `offset` (int, default 0) and `limit` (int, default 100) query parameters on all search endpoints (`t=search`, `t=tvsearch`, `t=movie`). The system SHALL cap `limit` to the Caps-advertised max (500) before forwarding to the search pipeline.
 
-#### Scenario: Pagination parameters accepted
+#### Scenario: Pagination parameters forwarded
 - **WHEN** `?t=tvsearch&q=Tatort&offset=10&limit=25` is requested
-- **THEN** the response SHALL be valid Newznab RSS XML with `<newznab:response offset="10" total="0"/>` reflecting the requested offset
+- **THEN** the system SHALL forward Limit=25 and Offset=10 to the TvSearchCommand
 
 #### Scenario: Default pagination
 - **WHEN** a search request omits `offset` and `limit`
-- **THEN** the system SHALL use offset=0 and limit=5000 (matching caps declaration)
+- **THEN** the system SHALL forward Limit=null and Offset=null (workers apply their own defaults)
+
+#### Scenario: Limit exceeds max
+- **WHEN** `?t=tvsearch&q=Tatort&limit=1000` is requested
+- **THEN** the system SHALL cap limit to 500 before forwarding to the search pipeline
+
+#### Scenario: RSS response pagination
+- **WHEN** search results are returned with offset=10
+- **THEN** the RSS response SHALL have `<newznab:response offset="10" total="N"/>` where N is the total number of matching items
 
 ### Requirement: Search filter parameters
 The system SHALL accept optional filter parameters on search endpoints: `cat` (comma-separated category IDs), `maxage` (int, days), `minsize` (long, bytes), `maxsize` (long, bytes), `extended` (int, 0 or 1), `attrs` (comma-separated attribute names).
@@ -165,3 +173,17 @@ The system SHALL support `o=json` query parameter on all Newznab endpoints to re
 #### Scenario: Default output is XML
 - **WHEN** `o` parameter is absent or set to `xml`
 - **THEN** the response SHALL be `application/xml` as before
+
+### Requirement: IndexerApiEndpoints resolves dependencies via DI
+
+`MapIndexerApi` SHALL be a parameterless extension method on `WebApplication`. The endpoint handler SHALL resolve `IActorRegistry` and `IOptions<FunkArrOptions>` via Minimal API DI parameter injection instead of receiving them as closure-captured values.
+
+#### Scenario: Endpoint resolves actor registry from DI
+
+- **WHEN** a search request arrives at `/index/api`
+- **THEN** the handler SHALL resolve `IActorRegistry` from DI and look up the SearchManager actor
+
+#### Scenario: API key validated from options
+
+- **WHEN** a request arrives at `/index/api`
+- **THEN** the `ApiKeyEndpointFilter` SHALL resolve the API key from `IOptions<FunkArrOptions>` via `HttpContext.RequestServices`

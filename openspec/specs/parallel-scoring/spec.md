@@ -12,26 +12,34 @@ The MatchMagicManager (Singleton) SHALL maintain a `Dictionary<string, MatchingC
 - **THEN** the previous config is replaced with the new one
 
 ### Requirement: MatchMagicManager routes scoring to Router Pool
-The MatchMagicManager SHALL own a SmallestMailboxPool of MatchMagicActors and route scoring requests to the pool by looking up the MatchingConfig and forwarding the sender identity via `Tell(msg, Sender)`.
+The MatchMagicManager SHALL own a SmallestMailboxPool of MatchMagicActors and route scoring requests to the pool. When routing, it SHALL resolve the MatchHistory ShardRegion and include it in the ExecuteScoring message along with RequestId and Origin from the ScoreItems command.
 
 #### Scenario: Route scoring request
-- **WHEN** MatchMagicManager receives ScoreItems with ruleSetId "die-anstalt" and the config exists
-- **THEN** it sends ExecuteScoring(config, items) to the Router Pool with the original Sender preserved
+- **WHEN** MatchMagicManager receives ScoreItems with RequestId=abc, RuleSetId="die-anstalt", Origin=ScoringOrigin("sonarr", "Die Anstalt") and the config exists
+- **THEN** it sends ExecuteScoring(config, items, RequestId=abc, Origin, HistoryRef) to the Router Pool with the original Sender preserved
 
 #### Scenario: Unknown ruleSetId
 - **WHEN** MatchMagicManager receives ScoreItems with a ruleSetId not in the dictionary
-- **THEN** it replies to the sender with ScoreCompleted containing all items scored at 0.0 with matched=false
+- **THEN** it replies to the sender with ScoreCompleted(RequestId, defaults) containing all items scored at 0.0 with matched=false
 
 #### Scenario: Pool size is configurable
 - **WHEN** the system starts with pool size configured to N
 - **THEN** the Router Pool contains N MatchMagicActor instances
 
 ### Requirement: MatchMagicActor is stateless
-The MatchMagicActor SHALL hold no state. It receives ExecuteScoring messages containing config and items, and replies to `Sender` (the original caller, propagated by MatchMagicManager).
+The MatchMagicActor SHALL hold no state. It receives ExecuteScoring messages containing config, items, RequestId, Origin, and HistoryRef. It SHALL reply to Sender with ScoreCompleted and fire-and-forget a RecordScoringResult to the HistoryRef.
 
-#### Scenario: Stateless processing
-- **WHEN** MatchMagicActor receives ExecuteScoring with config and items
-- **THEN** it evaluates all items against the config's rules and sends ScoreCompleted to Sender
+#### Scenario: Stateless processing with trace
+- **WHEN** MatchMagicActor receives ExecuteScoring with config, items, RequestId, Origin, and HistoryRef
+- **THEN** it SHALL evaluate all items against the config's rules, build a full ItemTrace per item, send ScoreCompleted(RequestId, scored) to Sender, and send RecordScoringResult(RequestId, RuleSetId, Origin, Timestamp, CandidateCount, MatchedCount, ItemTraces) to HistoryRef
+
+#### Scenario: History emission is fire-and-forget
+- **WHEN** MatchMagicActor sends RecordScoringResult to HistoryRef
+- **THEN** it SHALL use Tell (not Ask) and SHALL NOT wait for confirmation or handle failure
+
+#### Scenario: ScoreCompleted sent before history
+- **WHEN** MatchMagicActor completes evaluation
+- **THEN** it SHALL send ScoreCompleted to Sender first, then send RecordScoringResult to HistoryRef
 
 #### Scenario: Concurrent scoring
 - **WHEN** two ScoreItems arrive at MatchMagicManager simultaneously and pool size >= 2
@@ -112,19 +120,34 @@ The MatchMagicActor SHALL evaluate rules in ascending priority order. The first 
 - **WHEN** an item does not match the priority 0 rule but matches priority 1
 - **THEN** the priority 1 rule's result is used
 
-### Requirement: ScoreItems requires ruleSetId
-The ScoreItems message SHALL require a non-null ruleSetId. The previous fallback behavior (null ruleSetId → pick first available) is removed.
+### Requirement: ExecuteScoring message carries trace context
+The internal ExecuteScoring message (MatchMagicManager -> MatchMagicActor) SHALL carry RequestId (Guid), Origin (ScoringOrigin), and HistoryRef (IActorRef) in addition to the existing Config and Items.
 
-#### Scenario: ScoreItems with ruleSetId
-- **WHEN** SearchWorker sends ScoreItems with ruleSetId "die-anstalt"
-- **THEN** MatchMagicManager looks up config for "die-anstalt"
+#### Scenario: ExecuteScoring fields
+- **WHEN** MatchMagicManager constructs an ExecuteScoring message
+- **THEN** it SHALL contain: Config (MatchingConfig), Items (ScoreCandidate[]), RequestId (Guid), Origin (ScoringOrigin), HistoryRef (IActorRef)
+
+#### Scenario: HistoryRef resolution
+- **WHEN** MatchMagicManager starts
+- **THEN** it SHALL resolve the MatchHistory ShardRegion via Context.GetActor and cache the reference for use in all ExecuteScoring messages
+
+### Requirement: ScoreItems requires ruleSetId
+The ScoreItems message SHALL require a non-null RuleSetId, a RequestId (Guid) for correlation, a ScoringOrigin for provenance tracking, and a Candidates array.
+
+#### Scenario: ScoreItems with all fields
+- **WHEN** SearchWorker sends ScoreItems with RequestId=abc, RuleSetId="die-anstalt", Origin=ScoringOrigin("sonarr", "Die Anstalt"), Candidates=[...]
+- **THEN** MatchMagicManager looks up config for "die-anstalt" and forwards RequestId and Origin to the pool worker
+
+#### Scenario: ScoringOrigin record
+- **WHEN** a ScoringOrigin is constructed
+- **THEN** it SHALL contain Source (string) and Query (string)
 
 ### Requirement: SearchWorker resolves ruleSetId via RuleSetResolver
-TvSearchWorker and MovieSearchWorker SHALL query the RuleSetResolver for the ruleSetId before sending ScoreItems to MatchMagicManager.
+TvSearchWorker and MovieSearchWorker SHALL query the RuleSetResolver for the ruleSetId before sending ScoreItems to MatchMagicManager. They SHALL generate a RequestId, populate ScoringOrigin with the source ("sonarr", "radarr", or "ui") and original query, and include Description and Timestamp from the MediathekItem in ScoreCandidate.
 
 #### Scenario: Successful resolution and scoring
 - **WHEN** SearchWorker receives a search command, it asks RuleSetResolver for the ruleSetId
-- **THEN** after receiving RuleSetResolved, it uses the ruleSetId in ScoreItems
+- **THEN** after receiving RuleSetResolved, it creates ScoreItems with a new RequestId, ScoringOrigin(source, query), and candidates including Description and Timestamp from the raw MediathekItems
 
 #### Scenario: Resolution fails
 - **WHEN** RuleSetResolver responds with RuleSetNotFound

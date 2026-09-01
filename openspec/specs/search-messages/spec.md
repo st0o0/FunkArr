@@ -7,12 +7,17 @@ All search command and response messages SHALL be defined as sealed records in F
 #### Scenario: TvSearchCommand record
 
 - **WHEN** a TV search is initiated
-- **THEN** TvSearchCommand SHALL contain: SearchId (Guid), Query (string?), Season (int?), Episode (int?), TvdbId (int?), ImdbId (string?)
+- **THEN** TvSearchCommand SHALL contain: SearchId (Guid), Query (string?), Season (int?), Episode (int?), TvdbId (int?), ImdbId (string?), Limit (int?), Offset (int?)
 
 #### Scenario: MovieSearchCommand record
 
 - **WHEN** a movie search is initiated
-- **THEN** MovieSearchCommand SHALL contain: SearchId (Guid), Query (string?), ImdbId (string?), TmdbId (int?)
+- **THEN** MovieSearchCommand SHALL contain: SearchId (Guid), Query (string?), ImdbId (string?), TmdbId (int?), Limit (int?), Offset (int?)
+
+#### Scenario: GeneralSearchCommand record
+
+- **WHEN** a general search is initiated
+- **THEN** GeneralSearchCommand SHALL contain: Query (string?), Cat (int?), Limit (int?), Offset (int?)
 
 #### Scenario: SearchCompleted record
 
@@ -59,22 +64,27 @@ MediathekQuery and MediathekQueryCompleted SHALL model the MediathekViewWeb API 
 
 ### Requirement: Scoring messages use primitive candidates
 
-ScoreItems and ScoreCompleted SHALL use flat primitive records for MatchMagic interaction.
+ScoreItems and ScoreCompleted SHALL use flat primitive records for MatchMagic interaction. ScoreItems SHALL include RequestId and ScoringOrigin for correlation and provenance. ScoreCompleted SHALL include RequestId for response correlation.
 
 #### Scenario: ScoreItems record
 
 - **WHEN** items are submitted for scoring
-- **THEN** ScoreItems SHALL contain: Items (ScoreCandidate[]), RuleSetId (string?)
+- **THEN** ScoreItems SHALL contain: RequestId (Guid), RuleSetId (string), Origin (ScoringOrigin), Candidates (ScoreCandidate[])
+
+#### Scenario: ScoringOrigin record
+
+- **WHEN** a scoring origin is specified
+- **THEN** ScoringOrigin SHALL contain: Source (string), Query (string)
 
 #### Scenario: ScoreCandidate record
 
 - **WHEN** a candidate is prepared for scoring
-- **THEN** ScoreCandidate SHALL contain: Title (string), Topic (string), Channel (string), Duration (int), Quality (int)
+- **THEN** ScoreCandidate SHALL contain: Title (string), Topic (string), Channel (string), Duration (int), Quality (int), Description (string?), Timestamp (long)
 
 #### Scenario: ScoreCompleted record
 
 - **WHEN** scoring completes
-- **THEN** ScoreCompleted SHALL contain: Results (ScoredItem[])
+- **THEN** ScoreCompleted SHALL contain: RequestId (Guid), Results (ScoredItem[])
 
 #### Scenario: ScoredItem record
 
