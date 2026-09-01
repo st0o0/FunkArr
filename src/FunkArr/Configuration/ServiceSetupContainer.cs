@@ -11,6 +11,11 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             .Bind(configuration.GetSection(FunkArrOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<MatchHistoryOptions>()
+            .Bind(configuration.GetSection(MatchHistoryOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddHealthChecks();
 
         services.AddHttpClient("MediathekViewWeb", client =>

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using FunkArr.Messages.Scoring;
+using FunkArr.Messages.Scoring.History;
 
 namespace FunkArr.MatchMagic;
 
@@ -24,27 +25,46 @@ public sealed class MatchMagicActor : ReceiveActor
     {
         var sortedRules = msg.Config.Rules.OrderBy(r => r.Priority).ToArray();
         var scored = new ScoredItem[msg.Items.Length];
+        var itemTraces = new ItemTrace[msg.Items.Length];
 
         for (var i = 0; i < msg.Items.Length; i++)
         {
             var candidate = msg.Items[i];
             var matched = false;
+            var ruleTraces = new List<RuleTrace>();
+            string? matchedRuleId = null;
+            TracedIdentification? identification = null;
 
             foreach (var rule in sortedRules)
             {
-                if (!EvaluateFilters(rule.Filters, candidate))
+                var (filterPassed, filterTrace) = EvaluateFiltersTraced(rule.Filters, candidate);
+
+                if (!filterPassed)
                 {
+                    ruleTraces.Add(new RuleTrace(
+                        rule.Id, rule.Priority, RuleOutcome.FilterFailed,
+                        filterTrace, new IdentificationTrace(null, false, null)));
                     continue;
                 }
 
-                if (!Identify(rule.Identification, candidate))
+                var (idSuccess, idTrace, tracedId) = IdentifyTraced(rule.Identification, candidate);
+
+                if (!idSuccess)
                 {
+                    ruleTraces.Add(new RuleTrace(
+                        rule.Id, rule.Priority, RuleOutcome.IdentificationFailed,
+                        filterTrace, idTrace));
                     continue;
                 }
 
                 var confidence = rule.Confidence ?? msg.Config.DefaultConfidence;
                 scored[i] = new ScoredItem(i, confidence, true);
                 matched = true;
+                matchedRuleId = rule.Id;
+                identification = tracedId;
+                ruleTraces.Add(new RuleTrace(
+                    rule.Id, rule.Priority, RuleOutcome.Matched,
+                    filterTrace, idTrace));
                 break;
             }
 
@@ -52,52 +72,205 @@ public sealed class MatchMagicActor : ReceiveActor
             {
                 scored[i] = new ScoredItem(i, 0.0, false);
             }
+
+            itemTraces[i] = new ItemTrace(
+                candidate.Title, candidate.Topic, candidate.Channel,
+                candidate.Duration, candidate.Quality,
+                candidate.Description, candidate.Timestamp,
+                matched, scored[i].Score, matchedRuleId,
+                identification, ruleTraces.ToArray());
         }
 
-        Sender.Tell(new ScoreCompleted(scored));
+        Sender.Tell(new ScoreCompleted(msg.RequestId, scored));
+
+        if (msg.HistoryRef != ActorRefs.Nobody)
+        {
+            var matchedCount = scored.Count(s => s.Matched);
+            msg.HistoryRef.Tell(new RecordScoringResult(
+                msg.RequestId, msg.Config.RuleSetId, msg.Origin,
+                DateTimeOffset.UtcNow, msg.Items.Length, matchedCount, itemTraces));
+        }
     }
 
-    private static bool EvaluateFilters(FilterSpec? filters, ScoreCandidate candidate)
+    private static (bool passed, FilterGroupTrace? trace) EvaluateFiltersTraced(
+        FilterSpec? filters, ScoreCandidate candidate)
     {
         if (filters is null)
         {
-            return true;
+            return (true, null);
         }
 
-        if (filters.All is { Length: > 0 } && !filters.All.All(n => EvaluateNode(n, candidate)))
+        var subGroups = new List<FilterNodeTrace>();
+        var overallPassed = true;
+
+        if (filters.All is { Length: > 0 })
         {
-            return false;
+            var (passed, trace) = EvaluateGroupTraced(filters.All, "All", candidate);
+            subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
+            if (!passed)
+            {
+                overallPassed = false;
+            }
         }
 
-        if (filters.Any is { Length: > 0 } && !filters.Any.Any(n => EvaluateNode(n, candidate)))
+        if (filters.Any is { Length: > 0 })
         {
-            return false;
+            var (passed, trace) = EvaluateGroupTraced(filters.Any, "Any", candidate);
+            subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
+            if (!passed)
+            {
+                overallPassed = false;
+            }
         }
 
-        if (filters.Not is { Length: > 0 } && filters.Not.Any(n => EvaluateNode(n, candidate)))
+        if (filters.Not is { Length: > 0 })
         {
-            return false;
+            var (passed, trace) = EvaluateGroupTraced(filters.Not, "Not", candidate);
+            subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
+            if (!passed)
+            {
+                overallPassed = false;
+            }
         }
 
-        return true;
+        if (subGroups.Count == 0)
+        {
+            return (true, null);
+        }
+
+        if (subGroups.Count == 1)
+        {
+            return (overallPassed, subGroups[0].Group);
+        }
+
+        return (overallPassed, new FilterGroupTrace("All", overallPassed, subGroups.ToArray()));
     }
 
-    private static bool EvaluateNode(FilterNode node, ScoreCandidate candidate) => node switch
+    private static (bool passed, FilterGroupTrace trace) EvaluateGroupTraced(
+        FilterNode[] nodes, string op, ScoreCandidate candidate)
     {
-        FilterNode.ConditionNode c => EvaluateCondition(c.Condition, candidate),
-        FilterNode.GroupNode g => EvaluateFilters(g.Group, candidate),
-        _ => false,
+        var nodeTraces = new List<FilterNodeTrace>(nodes.Length);
+        bool groupPassed;
+
+        switch (op)
+        {
+            case "All":
+                {
+                    var failed = false;
+                    foreach (var node in nodes)
+                    {
+                        if (failed)
+                        {
+                            nodeTraces.Add(CreateSkippedNodeTrace(node));
+                            continue;
+                        }
+
+                        var (result, trace) = EvaluateNodeTraced(node, candidate);
+                        nodeTraces.Add(trace);
+                        if (!result)
+                        {
+                            failed = true;
+                        }
+                    }
+
+                    groupPassed = !failed;
+                    break;
+                }
+            case "Any":
+                {
+                    var found = false;
+                    foreach (var node in nodes)
+                    {
+                        if (found)
+                        {
+                            nodeTraces.Add(CreateSkippedNodeTrace(node));
+                            continue;
+                        }
+
+                        var (result, trace) = EvaluateNodeTraced(node, candidate);
+                        nodeTraces.Add(trace);
+                        if (result)
+                        {
+                            found = true;
+                        }
+                    }
+
+                    groupPassed = found;
+                    break;
+                }
+            case "Not":
+                {
+                    var anyMatched = false;
+                    foreach (var node in nodes)
+                    {
+                        if (anyMatched)
+                        {
+                            nodeTraces.Add(CreateSkippedNodeTrace(node));
+                            continue;
+                        }
+
+                        var (result, trace) = EvaluateNodeTraced(node, candidate);
+                        nodeTraces.Add(trace);
+                        if (result)
+                        {
+                            anyMatched = true;
+                        }
+                    }
+
+                    groupPassed = !anyMatched;
+                    break;
+                }
+            default:
+                groupPassed = false;
+                break;
+        }
+
+        return (groupPassed, new FilterGroupTrace(op, groupPassed, nodeTraces.ToArray()));
+    }
+
+    private static FilterNodeTrace CreateSkippedNodeTrace(FilterNode node) => node switch
+    {
+        FilterNode.ConditionNode c => new FilterNodeTrace(
+            c.Condition.Field.ToString(), c.Condition.Op.ToString(),
+            c.Condition.Value, null, false, true, null),
+        FilterNode.GroupNode => new FilterNodeTrace(
+            null, null, null, null, false, true, null),
+        _ => new FilterNodeTrace(null, null, null, null, false, true, null),
     };
 
-    private static bool EvaluateCondition(FilterCondition condition, ScoreCandidate candidate)
+    private static (bool result, FilterNodeTrace trace) EvaluateNodeTraced(
+        FilterNode node, ScoreCandidate candidate)
+    {
+        switch (node)
+        {
+            case FilterNode.ConditionNode c:
+                {
+                    var (result, actualValue) = EvaluateConditionTraced(c.Condition, candidate);
+                    return (result, new FilterNodeTrace(
+                        c.Condition.Field.ToString(), c.Condition.Op.ToString(),
+                        c.Condition.Value, actualValue, result, false, null));
+                }
+            case FilterNode.GroupNode g:
+                {
+                    var (passed, groupTrace) = EvaluateFiltersTraced(g.Group, candidate);
+                    return (passed, new FilterNodeTrace(
+                        null, null, null, null, passed, false, groupTrace));
+                }
+            default:
+                return (false, new FilterNodeTrace(null, null, null, null, false, false, null));
+        }
+    }
+
+    private static (bool result, string? actualValue) EvaluateConditionTraced(
+        FilterCondition condition, ScoreCandidate candidate)
     {
         var fieldValue = ResolveField(condition.Field, candidate);
         if (fieldValue is null)
         {
-            return false;
+            return (false, null);
         }
 
-        return condition.Op switch
+        var result = condition.Op switch
         {
             FilterOp.Eq => string.Equals(fieldValue, condition.Value, StringComparison.OrdinalIgnoreCase),
             FilterOp.Contains => fieldValue.Contains(condition.Value, StringComparison.OrdinalIgnoreCase),
@@ -107,6 +280,8 @@ public sealed class MatchMagicActor : ReceiveActor
             FilterOp.Regex => EvaluateRegex(fieldValue, condition.Value),
             _ => false,
         };
+
+        return (result, fieldValue);
     }
 
     private static string? ResolveField(FilterField field, ScoreCandidate candidate) => field switch
@@ -115,8 +290,8 @@ public sealed class MatchMagicActor : ReceiveActor
         FilterField.Topic => candidate.Topic,
         FilterField.Channel => candidate.Channel,
         FilterField.Duration => (candidate.Duration / 60).ToString(CultureInfo.InvariantCulture),
-        FilterField.Description => null,
-        FilterField.Timestamp => "0",
+        FilterField.Description => candidate.Description,
+        FilterField.Timestamp => candidate.Timestamp.ToString(CultureInfo.InvariantCulture),
         _ => null,
     };
 
@@ -143,50 +318,72 @@ public sealed class MatchMagicActor : ReceiveActor
         }
     }
 
-    private static bool Identify(IdentificationSpec spec, ScoreCandidate candidate) => spec.Strategy switch
-    {
-        IdentificationStrategy.RegexCapture => IdentifyRegexCapture(spec, candidate),
-        IdentificationStrategy.TitleConstruction => IdentifyTitleConstruction(spec, candidate),
-        IdentificationStrategy.AirdateExtraction => IdentifyAirdate(candidate),
-        _ => false,
-    };
+    private static (bool success, IdentificationTrace trace, TracedIdentification? identification)
+        IdentifyTraced(IdentificationSpec spec, ScoreCandidate candidate) => spec.Strategy switch
+        {
+            IdentificationStrategy.RegexCapture => IdentifyRegexCaptureTraced(spec, candidate),
+            IdentificationStrategy.TitleConstruction => IdentifyTitleConstructionTraced(spec, candidate),
+            IdentificationStrategy.AirdateExtraction => IdentifyAirdateTraced(candidate),
+            _ => (false, new IdentificationTrace(null, false, "unknown strategy"), null),
+        };
 
-    private static bool IdentifyRegexCapture(IdentificationSpec spec, ScoreCandidate candidate)
+    private static (bool, IdentificationTrace, TracedIdentification?) IdentifyRegexCaptureTraced(
+        IdentificationSpec spec, ScoreCandidate candidate)
     {
+        string? season = null;
+
         if (spec.SeasonPattern is not null)
         {
-            var season = ExtractCapture(candidate.Title, spec.SeasonPattern, spec.CaptureGroup);
+            season = ExtractCapture(candidate.Title, spec.SeasonPattern, spec.CaptureGroup);
             if (season is null)
             {
-                return false;
+                return (false,
+                    new IdentificationTrace("RegexCapture", true, "season pattern did not match"),
+                    null);
             }
         }
 
         if (spec.EpisodePattern is null)
         {
-            return false;
+            return (false,
+                new IdentificationTrace("RegexCapture", true, "no episode pattern configured"),
+                null);
         }
 
         var episode = ExtractCapture(candidate.Title, spec.EpisodePattern, spec.CaptureGroup);
-        return episode is not null;
+        if (episode is null)
+        {
+            return (false,
+                new IdentificationTrace("RegexCapture", true, "episode pattern did not match"),
+                null);
+        }
+
+        return (true,
+            new IdentificationTrace("RegexCapture", true, null),
+            new TracedIdentification(season, episode, null));
     }
 
-    private static bool IdentifyTitleConstruction(IdentificationSpec spec, ScoreCandidate candidate)
+    private static (bool, IdentificationTrace, TracedIdentification?) IdentifyTitleConstructionTraced(
+        IdentificationSpec spec, ScoreCandidate candidate)
     {
         if (spec.TitleParts is not { Length: > 0 })
         {
-            return false;
+            return (false,
+                new IdentificationTrace("TitleConstruction", true, "no title parts configured"),
+                null);
         }
 
         var constructedTitle = BuildTitle(spec.TitleParts, candidate);
         if (constructedTitle is null)
         {
-            return false;
+            return (false,
+                new IdentificationTrace("TitleConstruction", true, "title part regex did not match"),
+                null);
         }
 
         var mode = spec.MatchMode ?? TitleMatchMode.Exact;
 
-        return mode switch
+        var matched = mode switch
         {
             TitleMatchMode.Exact => string.Equals(constructedTitle, candidate.Title,
                 StringComparison.OrdinalIgnoreCase),
@@ -194,6 +391,34 @@ public sealed class MatchMagicActor : ReceiveActor
                 .Contains(NormalizeUmlauts(constructedTitle), StringComparison.OrdinalIgnoreCase),
             _ => false,
         };
+
+        if (!matched)
+        {
+            return (false,
+                new IdentificationTrace("TitleConstruction", true, "title does not match constructed title"),
+                null);
+        }
+
+        return (true,
+            new IdentificationTrace("TitleConstruction", true, null),
+            new TracedIdentification(null, null, constructedTitle));
+    }
+
+    private static (bool, IdentificationTrace, TracedIdentification?) IdentifyAirdateTraced(
+        ScoreCandidate candidate)
+    {
+        var date = ExtractGermanDate(candidate.Title);
+        if (date is null)
+        {
+            return (false,
+                new IdentificationTrace("AirdateExtraction", true, "no date found in title"),
+                null);
+        }
+
+        var formatted = date.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return (true,
+            new IdentificationTrace("AirdateExtraction", true, null),
+            new TracedIdentification(null, null, formatted));
     }
 
     private static string? BuildTitle(TitlePart[] parts, ScoreCandidate candidate)
@@ -237,12 +462,10 @@ public sealed class MatchMagicActor : ReceiveActor
         FilterField.Title => candidate.Title,
         FilterField.Topic => candidate.Topic,
         FilterField.Channel => candidate.Channel,
-        FilterField.Description => null,
+        FilterField.Description => candidate.Description,
         null => candidate.Title,
         _ => null,
     };
-
-    private static bool IdentifyAirdate(ScoreCandidate candidate) => ExtractGermanDate(candidate.Title) is not null;
 
     private static string? ExtractCapture(string input, string pattern, int? captureGroup = null)
     {

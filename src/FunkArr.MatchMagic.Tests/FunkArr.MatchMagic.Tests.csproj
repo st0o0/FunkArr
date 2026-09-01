@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FunkArr.MatchMagic\FunkArr.MatchMagic.csproj" />
+    <ProjectReference Include="..\FunkArr.Persistence\FunkArr.Persistence.csproj" />
     <ProjectReference Include="..\FunkArr.Tests.Shared\FunkArr.Tests.Shared.csproj" />
   </ItemGroup>
 
@@ -16,6 +17,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Snapshots\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

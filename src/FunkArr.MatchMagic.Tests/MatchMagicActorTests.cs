@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.TestKit.Xunit;
 using FunkArr.Messages.Scoring;
+using FunkArr.Messages.Scoring.History;
 using Xunit;
 
 namespace FunkArr.MatchMagic.Tests;
@@ -16,7 +17,7 @@ public sealed class MatchMagicActorTests : TestKit
         string channel = "ARD",
         int durationSeconds = 5400,
         int quality = 720) =>
-        new(title, topic, channel, durationSeconds, quality);
+        new(title, topic, channel, durationSeconds, quality, null, 0);
 
     private static FilterNode Condition(FilterField field, FilterOp op, string value) =>
         new FilterNode.ConditionNode(new FilterCondition(field, op, value));
@@ -24,7 +25,7 @@ public sealed class MatchMagicActorTests : TestKit
     private ScoreCompleted Score(MatchingConfig config, params ScoreCandidate[] items)
     {
         var actor = Sys.ActorOf(Props.Create<MatchMagicActor>());
-        actor.Tell(new ExecuteScoring(config, items));
+        actor.Tell(new ExecuteScoring(config, items, Guid.Empty, new ScoringOrigin("test", "test"), ActorRefs.Nobody));
         return ExpectMsg<ScoreCompleted>();
     }
 
@@ -495,5 +496,133 @@ public sealed class MatchMagicActorTests : TestKit
 
         var fail = Score(Config(0.5f, rule), Candidate(title: "Trailer vom 24.10.2024"));
         Assert.False(fail.Results[0].Matched);
+    }
+
+    private RecordScoringResult ScoreWithTrace(MatchingConfig config, params ScoreCandidate[] items)
+    {
+        var historyProbe = CreateTestProbe();
+        var actor = Sys.ActorOf(Props.Create<MatchMagicActor>());
+        actor.Tell(new ExecuteScoring(config, items, Guid.NewGuid(), new ScoringOrigin("test", "test"), historyProbe));
+        ExpectMsg<ScoreCompleted>();
+        return historyProbe.ExpectMsg<RecordScoringResult>();
+    }
+
+    [Fact]
+    public void Trace_matched_item_has_outcome_matched()
+    {
+        var rule = new MatchingRule("airdate", 0, 0.9f,
+            new FilterSpec(All: [Condition(FilterField.Channel, FilterOp.Eq, "ARD")]),
+            new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
+
+        var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
+
+        Assert.Single(result.ItemTraces);
+        var trace = result.ItemTraces[0];
+        Assert.True(trace.Matched);
+        Assert.Equal("airdate", trace.MatchedRuleId);
+        Assert.NotNull(trace.Identification);
+        Assert.Equal("2024-10-24", trace.Identification!.Title);
+
+        Assert.Single(trace.RuleTraces);
+        Assert.Equal(RuleOutcome.Matched, trace.RuleTraces[0].Outcome);
+        Assert.NotNull(trace.RuleTraces[0].FilterTrace);
+        Assert.True(trace.RuleTraces[0].FilterTrace!.Passed);
+        Assert.NotNull(trace.RuleTraces[0].IdentificationTrace);
+        Assert.True(trace.RuleTraces[0].IdentificationTrace!.Attempted);
+        Assert.Null(trace.RuleTraces[0].IdentificationTrace!.Detail);
+    }
+
+    [Fact]
+    public void Trace_unmatched_item_filter_failed_shows_condition()
+    {
+        var rule = new MatchingRule("r1", 0, 0.9f,
+            new FilterSpec(All: [Condition(FilterField.Channel, FilterOp.Eq, "ZDF")]),
+            new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
+
+        var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", channel: "ARD"));
+
+        var trace = result.ItemTraces[0];
+        Assert.False(trace.Matched);
+        Assert.Single(trace.RuleTraces);
+        Assert.Equal(RuleOutcome.FilterFailed, trace.RuleTraces[0].Outcome);
+
+        var filterTrace = trace.RuleTraces[0].FilterTrace!;
+        Assert.False(filterTrace.Passed);
+        Assert.Single(filterTrace.Nodes);
+        Assert.Equal("Channel", filterTrace.Nodes[0].Field);
+        Assert.Equal("Eq", filterTrace.Nodes[0].Op);
+        Assert.Equal("ZDF", filterTrace.Nodes[0].ExpectedValue);
+        Assert.Equal("ARD", filterTrace.Nodes[0].ActualValue);
+        Assert.False(filterTrace.Nodes[0].Passed);
+    }
+
+    [Fact]
+    public void Trace_short_circuit_marks_skipped()
+    {
+        var rule = new MatchingRule("r1", 0, 0.9f,
+            new FilterSpec(All: [
+                Condition(FilterField.Channel, FilterOp.Eq, "ZDF"),
+                Condition(FilterField.Duration, FilterOp.GreaterThan, "30"),
+            ]),
+            new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
+
+        var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", channel: "ARD"));
+
+        var filterTrace = result.ItemTraces[0].RuleTraces[0].FilterTrace!;
+        Assert.Equal(2, filterTrace.Nodes.Length);
+        Assert.False(filterTrace.Nodes[0].Passed);
+        Assert.False(filterTrace.Nodes[0].Skipped);
+        Assert.True(filterTrace.Nodes[1].Skipped);
+        Assert.Null(filterTrace.Nodes[1].ActualValue);
+    }
+
+    [Fact]
+    public void Trace_identification_failed_has_detail()
+    {
+        var rule = new MatchingRule("r1", 0, 0.9f, null,
+            new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
+
+        var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
+
+        var trace = result.ItemTraces[0];
+        Assert.Equal(RuleOutcome.IdentificationFailed, trace.RuleTraces[0].Outcome);
+        Assert.NotNull(trace.RuleTraces[0].IdentificationTrace);
+        Assert.True(trace.RuleTraces[0].IdentificationTrace!.Attempted);
+        Assert.Equal("no date found in title", trace.RuleTraces[0].IdentificationTrace!.Detail);
+    }
+
+    [Fact]
+    public void Trace_multiple_rules_shows_fallthrough()
+    {
+        var rule0 = new MatchingRule("season-ep", 0, 0.95f, null,
+            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+                SeasonPattern: @"(?<=S)(\d{2,4})",
+                EpisodePattern: @"(?<=E)(\d{2,4})"));
+
+        var rule1 = new MatchingRule("airdate", 10, 0.7f, null,
+            new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
+
+        var result = ScoreWithTrace(Config(0.5f, rule0, rule1),
+            Candidate(title: "Sendung vom 24.10.2024"));
+
+        var trace = result.ItemTraces[0];
+        Assert.True(trace.Matched);
+        Assert.Equal("airdate", trace.MatchedRuleId);
+        Assert.Equal(2, trace.RuleTraces.Length);
+        Assert.Equal(RuleOutcome.IdentificationFailed, trace.RuleTraces[0].Outcome);
+        Assert.Equal(RuleOutcome.Matched, trace.RuleTraces[1].Outcome);
+    }
+
+    [Fact]
+    public void Trace_history_not_sent_when_nobody()
+    {
+        var actor = Sys.ActorOf(Props.Create<MatchMagicActor>());
+        var config = Config(0.9f, new MatchingRule("r1", 0, null, null,
+            new IdentificationSpec(IdentificationStrategy.AirdateExtraction)));
+
+        actor.Tell(new ExecuteScoring(config, [Candidate(title: "Sendung vom 24.10.2024")],
+            Guid.Empty, new ScoringOrigin("test", "test"), ActorRefs.Nobody));
+
+        ExpectMsg<ScoreCompleted>();
     }
 }
