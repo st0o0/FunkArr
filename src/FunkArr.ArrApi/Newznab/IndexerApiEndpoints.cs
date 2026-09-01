@@ -2,7 +2,9 @@ using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using Akka.Actor;
+using Akka.Hosting;
 using FunkArr.ArrApi.Newznab.Models;
+using FunkArr.Core;
 using FunkArr.Messages.Search;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -16,14 +18,19 @@ public static class IndexerApiEndpoints
 
     private static readonly TimeSpan _searchTimeout = TimeSpan.FromSeconds(30);
 
-    public static WebApplication MapIndexerApi(this WebApplication app, string apiKey, IActorRef searchGateway)
+    internal const int MaxLimit = 500;
+    internal const int DefaultLimit = 100;
+
+    public static WebApplication MapIndexerApi(this WebApplication app)
     {
         var group = app.MapGroup("/index/api")
-            .AddEndpointFilter(new ApiKeyEndpointFilter(apiKey,
+            .AddEndpointFilter(new ApiKeyEndpointFilter(
                 () => ErrorResult(NewznabError.InvalidApiKey)));
 
-        group.MapGet("/", async ([AsParameters] IndexerRequest req) =>
+        group.MapGet("/", async ([AsParameters] IndexerRequest req, IActorRegistry registry) =>
         {
+            var searchGateway = registry.Get<ISearchManager>();
+
             return (req.T ?? "") switch
             {
                 "caps" => XmlResult(Serialize(new Caps())),
@@ -38,38 +45,47 @@ public static class IndexerApiEndpoints
         return app;
     }
 
+    internal static int? CapLimit(int? limit) => limit switch
+    {
+        null => null,
+        > MaxLimit => MaxLimit,
+        _ => limit,
+    };
+
     private static async Task<IResult> HandleTvSearch(IActorRef gateway, IndexerRequest req)
     {
         var cmd = new TvSearchCommand(
             Guid.Empty, req.Q,
             ParseInt(req.Season), ParseInt(req.Ep),
-            ParseInt(req.TvdbId), req.ImdbId);
+            ParseInt(req.TvdbId), req.ImdbId,
+            CapLimit(req.Limit), req.Offset);
 
-        return await AskAndFormat(gateway, cmd, req.Offset ?? 0);
+        return await AskAndFormat(gateway, cmd, req.Offset ?? 0, req.Limit ?? DefaultLimit);
     }
 
     private static async Task<IResult> HandleMovieSearch(IActorRef gateway, IndexerRequest req)
     {
         var cmd = new MovieSearchCommand(
-            Guid.Empty, req.Q, req.ImdbId, ParseInt(req.TmdbId));
+            Guid.Empty, req.Q, req.ImdbId, ParseInt(req.TmdbId),
+            CapLimit(req.Limit), req.Offset);
 
-        return await AskAndFormat(gateway, cmd, req.Offset ?? 0);
+        return await AskAndFormat(gateway, cmd, req.Offset ?? 0, req.Limit ?? DefaultLimit);
     }
 
     private static async Task<IResult> HandleGeneralSearch(IActorRef gateway, IndexerRequest req)
     {
-        var cmd = new GeneralSearchCommand(req.Q, ParseInt(req.Cat));
-        return await AskAndFormat(gateway, cmd, req.Offset ?? 0);
+        var cmd = new GeneralSearchCommand(req.Q, ParseInt(req.Cat), CapLimit(req.Limit), req.Offset);
+        return await AskAndFormat(gateway, cmd, req.Offset ?? 0, req.Limit ?? DefaultLimit);
     }
 
-    private static async Task<IResult> AskAndFormat(IActorRef gateway, object cmd, int offset)
+    private static async Task<IResult> AskAndFormat(IActorRef gateway, object cmd, int offset, int limit)
     {
         try
         {
             var response = await gateway.Ask<object>(cmd, _searchTimeout);
             return response switch
             {
-                SearchCompleted completed => XmlResult(Serialize(ToRss(completed, offset))),
+                SearchCompleted completed => XmlResult(Serialize(ToRss(completed, offset, limit))),
                 SearchFailed failed => ErrorResult(NewznabError.UnknownError(failed.Reason)),
                 _ => ErrorResult(NewznabError.UnknownError("Unexpected response")),
             };
@@ -80,9 +96,11 @@ public static class IndexerApiEndpoints
         }
     }
 
-    internal static Rss ToRss(SearchCompleted completed, int offset)
+    internal static Rss ToRss(SearchCompleted completed, int offset, int limit = DefaultLimit)
     {
-        var items = completed.Items.Select(item =>
+        var paged = completed.Items.Take(limit);
+
+        var items = paged.Select(item =>
         {
             var nzbId = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{item.Title}|{item.Url}"));
             return new Item

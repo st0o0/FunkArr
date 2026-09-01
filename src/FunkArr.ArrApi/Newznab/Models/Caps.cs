@@ -30,10 +30,10 @@ public sealed class Server
 public sealed class Limits
 {
     [XmlAttribute("max")]
-    public int Max { get; init; } = 5000;
+    public int Max { get; init; } = 500;
 
     [XmlAttribute("default")]
-    public int Default { get; init; } = 5000;
+    public int Default { get; init; } = 100;
 }
 
 public sealed class Registration

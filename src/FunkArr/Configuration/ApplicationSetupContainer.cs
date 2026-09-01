@@ -1,10 +1,7 @@
-using Akka.Hosting;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Sabnzbd;
-using FunkArr.Search;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
@@ -13,10 +10,6 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
 {
     protected override void SetupApplication(WebApplication app)
     {
-        var options = app.Services.GetRequiredService<IOptions<FunkArrOptions>>().Value;
-        var registry = app.Services.GetRequiredService<IActorRegistry>();
-        var searchGateway = registry.Get<SearchManager>();
-
         app.MapHealthChecks("/healthz", new HealthCheckOptions
         {
             ResultStatusCodes =
@@ -28,7 +21,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
         });
         app.MapGet("/alive", () => Results.Ok("Alive"));
 
-        app.MapIndexerApi(options.ApiKey, searchGateway);
-        app.MapDownloadApi(options.ApiKey, options.DownloadPath);
+        app.MapIndexerApi();
+        app.MapDownloadApi();
     }
 }

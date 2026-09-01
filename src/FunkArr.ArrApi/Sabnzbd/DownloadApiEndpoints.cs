@@ -2,6 +2,7 @@ using System.Xml.Serialization;
 using FunkArr.ArrApi.Sabnzbd.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace FunkArr.ArrApi.Sabnzbd;
 
@@ -9,14 +10,16 @@ public static class DownloadApiEndpoints
 {
     private static readonly XmlSerializer _nzbSerializer = new(typeof(Nzb));
 
-    public static WebApplication MapDownloadApi(this WebApplication app, string apiKey, string downloadPath)
+    public static WebApplication MapDownloadApi(this WebApplication app)
     {
         var group = app.MapGroup("/download/api")
-            .AddEndpointFilter(new ApiKeyEndpointFilter(apiKey,
+            .AddEndpointFilter(new ApiKeyEndpointFilter(
                 () => Results.Json(new { status = false, error = "API Key Incorrect" }, statusCode: 403)));
 
-        group.MapGet("/", ([AsParameters] DownloadGetRequest req) =>
+        group.MapGet("/", ([AsParameters] DownloadGetRequest req, IConfiguration configuration) =>
         {
+            var downloadPath = configuration["FunkArr:DownloadPath"] ?? "downloads";
+
             return (req.Mode ?? "") switch
             {
                 "version" => Results.Json(new { version = "4.3.3" }),

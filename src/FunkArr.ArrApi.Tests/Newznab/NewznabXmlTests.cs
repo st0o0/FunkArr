@@ -76,8 +76,8 @@ public sealed class NewznabXmlTests
         var doc = XDocument.Parse(xml);
         var limits = doc.Root!.Element("limits")!;
 
-        Assert.Equal("5000", limits.Attribute("max")!.Value);
-        Assert.Equal("5000", limits.Attribute("default")!.Value);
+        Assert.Equal("500", limits.Attribute("max")!.Value);
+        Assert.Equal("100", limits.Attribute("default")!.Value);
     }
 
     [Fact]

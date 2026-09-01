@@ -20,7 +20,7 @@ public sealed class SearchResultMappingTests
             ],
             1);
 
-        var rss = IndexerApiEndpoints.ToRss(completed, 0);
+        var rss = IndexerApiEndpoints.ToRss(completed, 0, 100);
 
         Assert.Equal(1, rss.Channel.Response.Total);
         Assert.Single(rss.Channel.Items);
@@ -40,7 +40,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Test", "ZDF", "Topic", "url", 3600, 500000, 480, null, 0.5)],
             1);
 
-        var rss = IndexerApiEndpoints.ToRss(completed, 0);
+        var rss = IndexerApiEndpoints.ToRss(completed, 0, 100);
 
         Assert.Equal("TV > SD", rss.Channel.Items[0].Category);
         Assert.Equal("5030", rss.Channel.Items[0].Attributes[1].Value);
@@ -54,7 +54,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Title", "CH", "Topic", "https://example.com/v.mp4", 100, 0, 720, null, 1.0)],
             1);
 
-        var rss = IndexerApiEndpoints.ToRss(completed, 0);
+        var rss = IndexerApiEndpoints.ToRss(completed, 0, 100);
         var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(rss.Channel.Items[0].Guid.Value));
 
         Assert.Equal("Title|https://example.com/v.mp4", decoded);
@@ -68,7 +68,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)],
             1);
 
-        var rss = IndexerApiEndpoints.ToRss(completed, 5);
+        var rss = IndexerApiEndpoints.ToRss(completed, 5, 100);
         var xml = IndexerApiEndpoints.Serialize(rss);
 
         Assert.Contains("<title>Test</title>", xml);
