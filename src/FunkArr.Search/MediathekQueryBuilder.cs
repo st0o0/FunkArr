@@ -49,7 +49,7 @@ internal sealed class MediathekQueryBuilder
         return this;
     }
 
-    public static MediathekQueryBuilder FromMessage(MediathekQuery query)
+    public static MediathekQueryBuilder FromMessage(QueryMediathek query)
     {
         var builder = new MediathekQueryBuilder
         {

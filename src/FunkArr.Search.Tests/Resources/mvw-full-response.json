@@ -1,0 +1,38 @@
+{
+  "result": {
+    "results": [
+      {
+        "channel": "ARD",
+        "topic": "Tatort",
+        "title": "Tatort: Der letzte Schrey",
+        "description": "Ein Münchner Kommissar ermittelt in einem mysteriösen Mordfall.",
+        "timestamp": 1719244800,
+        "duration": 5400,
+        "size": 1200000000,
+        "url_video": "https://example.com/tatort-sd.mp4",
+        "url_video_low": "https://example.com/tatort-low.mp4",
+        "url_video_hd": "https://example.com/tatort-hd.mp4",
+        "url_subtitle": "https://example.com/tatort.srt",
+        "url_website": "https://www.ardmediathek.de/tatort"
+      },
+      {
+        "channel": "Das Erste",
+        "topic": "Tatort",
+        "title": "Tatort: Münster - Fangschuss",
+        "description": null,
+        "timestamp": 1718640000,
+        "duration": 5280,
+        "size": 980000000,
+        "url_video": "https://example.com/tatort2-sd.mp4",
+        "url_video_low": null,
+        "url_video_hd": "https://example.com/tatort2-hd.mp4",
+        "url_subtitle": null,
+        "url_website": null
+      }
+    ],
+    "queryInfo": {
+      "totalResults": 42
+    }
+  },
+  "err": null
+}

@@ -4,8 +4,6 @@ using Akka.TestKit;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.Search;
-using FunkArr.Search;
-using Xunit;
 
 namespace FunkArr.Search.Tests;
 

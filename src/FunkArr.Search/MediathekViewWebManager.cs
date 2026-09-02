@@ -21,12 +21,12 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
         _httpClient = httpClientFactory.CreateClient("MediathekViewWeb");
         _maxConcurrent = maxConcurrent;
 
-        Receive<MediathekQuery>(HandleQuery);
+        Receive<QueryMediathek>(HandleQuery);
         Receive<HttpCompleted>(HandleHttpCompleted);
         Receive<HttpFailed>(HandleHttpFailed);
     }
 
-    private void HandleQuery(MediathekQuery query)
+    private void HandleQuery(QueryMediathek query)
     {
         if (!_state.HasCapacity(_maxConcurrent))
         {
@@ -39,7 +39,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
         ExecuteQuery(query, sender);
     }
 
-    private void ExecuteQuery(MediathekQuery query, IActorRef replyTo)
+    private void ExecuteQuery(QueryMediathek query, IActorRef replyTo)
     {
         var json = MediathekQueryBuilder.FromMessage(query).Build();
         var self = Self;
@@ -102,27 +102,6 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private static readonly JsonSerializerOptions _apiJsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         PropertyNameCaseInsensitive = true,
     };
-
-    internal sealed record MediathekApiResponse(MediathekApiResult? Result, string? Err);
-
-    internal sealed record MediathekApiResult(MediathekApiItem[]? Results, MediathekApiQueryInfo? QueryInfo);
-
-    internal sealed record MediathekApiQueryInfo(int TotalResults);
-
-    internal sealed record MediathekApiItem(
-        string? Channel,
-        string? Topic,
-        string? Title,
-        string? Description,
-        long Timestamp,
-        int Duration,
-        long Size,
-        string? UrlVideo,
-        string? UrlVideoLow,
-        string? UrlVideoHd,
-        string? UrlSubtitle,
-        string? UrlWebsite);
 }

@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Akka.Cluster.Sharding;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
@@ -22,90 +23,163 @@ public sealed class TvSearchWorker : ReceiveActor
         {
             _state = TvSearchWorkerState.Empty.Apply(cmd);
 
-            var fields = new List<MediathekQueryField>();
-            if (!string.IsNullOrWhiteSpace(cmd.Query))
+            var hasQuery = !string.IsNullOrWhiteSpace(cmd.Query);
+            var hasId = cmd.TvdbId is not null || cmd.ImdbId is not null;
+
+            if (hasQuery)
             {
-                fields.Add(new MediathekQueryField(["topic"], cmd.Query));
+                QueryMediathek(mediathekManager, cmd.Query!, cmd.Offset, cmd.Limit);
             }
-
-            var query = new MediathekQuery(
-                Fields: fields.ToArray(),
-                SortBy: "timestamp",
-                SortOrder: "desc",
-                Future: false,
-                Offset: cmd.Offset ?? 0,
-                Size: cmd.Limit ?? 50,
-                DurationMin: 300,
-                DurationMax: null);
-
-            mediathekManager.Ask<object>(query, TimeSpan.FromSeconds(15))
-                .PipeTo(Self, Sender);
-        });
-
-        Receive<MediathekQueryCompleted>(result =>
-        {
-            if (_state is null) return;
-
-            _state = _state.Apply(result);
-
-            var topic = result.Items.Length > 0 ? result.Items[0].Topic : null;
-            if (topic is not null)
+            else if (hasId)
             {
-                ruleSetResolver.Ask<object>(new ResolveRuleSet(topic), TimeSpan.FromSeconds(5))
+                ruleSetResolver.Ask<object>(
+                        new ResolveRuleSet(null, cmd.TvdbId, cmd.ImdbId),
+                        TimeSpan.FromSeconds(5))
                     .PipeTo(Self, Sender);
             }
             else
             {
+                QueryMediathek(mediathekManager, "", cmd.Offset, cmd.Limit);
+            }
+        });
+
+        Receive<MediathekQueryCompleted>(result =>
+        {
+            if (_state is null)
+            {
+                return;
+            }
+
+            _state = _state.Apply(result);
+
+            var topic = result.Items.Length > 0 ? result.Items[0].Topic : null;
+            if (topic is not null && _state.RuleSetId is null)
+            {
+                ruleSetResolver.Ask<object>(new ResolveRuleSet(topic), TimeSpan.FromSeconds(5))
+                    .PipeTo(Self, Sender);
+            }
+            else if (_state.RuleSetId is not null)
+            {
+                StartScoring(matchMagicManager);
+            }
+            else
+            {
                 Sender.Tell(_state.ToUnscoredResult());
-                Context.Stop(Self);
+                Context.Parent.Tell(new Passivate(PoisonPill.Instance));
             }
         });
 
         Receive<RuleSetResolved>(resolved =>
         {
-            if (_state is null) return;
+            if (_state is null)
+            {
+                return;
+            }
 
             _state = _state.ApplyRuleSet(resolved.RuleSetId);
 
-            var candidates = _state.RawItems.Select(item => new ScoreCandidate(
-                item.Title, item.Topic, item.Channel, item.Duration,
-                TvSearchWorkerStateExtensions.ResolveQuality(item),
-                item.Description, item.Timestamp)).ToArray();
-
-            var requestId = Guid.NewGuid();
-            var origin = new ScoringOrigin("sonarr", _state.RawItems[0].Topic);
-            matchMagicManager.Ask<object>(
-                    new ScoreItems(requestId, resolved.RuleSetId, origin, candidates),
-                    TimeSpan.FromSeconds(10))
-                .PipeTo(Self, Sender);
+            if (_state.RawItems.Length == 0)
+            {
+                QueryMediathek(mediathekManager, resolved.Topic, null, null);
+            }
+            else
+            {
+                StartScoring(matchMagicManager);
+            }
         });
 
         Receive<RuleSetNotFound>(_ =>
         {
-            if (_state is null) return;
-            Sender.Tell(_state.ToUnscoredResult());
-            Context.Stop(Self);
+            if (_state is null)
+            {
+                return;
+            }
+
+            if (_state.RawItems.Length == 0)
+            {
+                Sender.Tell(new SearchCompleted(_state.SearchId, [], 0));
+            }
+            else
+            {
+                Sender.Tell(_state.ToUnscoredResult());
+            }
+
+            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
 
         Receive<ScoreCompleted>(scored =>
         {
-            if (_state is null) return;
+            if (_state is null)
+            {
+                return;
+            }
+
             Sender.Tell(_state.ToScoredResult(scored));
-            Context.Stop(Self);
+            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
 
         Receive<MediathekQueryFailed>(failed =>
         {
-            if (_state is null) return;
+            if (_state is null)
+            {
+                return;
+            }
+
             Sender.Tell(new SearchFailed(_state.SearchId, failed.Reason));
-            Context.Stop(Self);
+            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
 
         Receive<Status.Failure>(failure =>
         {
-            if (_state is null) return;
+            if (_state is null)
+            {
+                return;
+            }
+
             Sender.Tell(new SearchFailed(_state.SearchId, failure.Cause.Message));
-            Context.Stop(Self);
+            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
+    }
+
+    private void QueryMediathek(IActorRef mediathekManager, string query, int? offset, int? limit)
+    {
+        var fields = new List<MediathekQueryField>();
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            fields.Add(new MediathekQueryField(["topic"], query));
+        }
+
+        var msg = new QueryMediathek(
+            Fields: fields.ToArray(),
+            SortBy: "timestamp",
+            SortOrder: "desc",
+            Future: false,
+            Offset: offset ?? 0,
+            Size: limit ?? 50,
+            DurationMin: 300,
+            DurationMax: null);
+
+        mediathekManager.Ask<object>(msg, TimeSpan.FromSeconds(15))
+            .PipeTo(Self, Sender);
+    }
+
+    private void StartScoring(IActorRef matchMagicManager)
+    {
+        if (_state is null)
+        {
+            return;
+        }
+
+        var candidates = _state.RawItems.Select(item => new ScoreCandidate(
+            item.Title, item.Topic, item.Channel, item.Duration,
+            TvSearchWorkerStateExtensions.ResolveQuality(item),
+            item.Description, item.Timestamp)).ToArray();
+
+        var requestId = Guid.NewGuid();
+        var origin = new ScoringOrigin("sonarr", _state.RawItems[0].Topic);
+        matchMagicManager.Ask<object>(
+                new ScoreItems(requestId, _state.RuleSetId!, origin, candidates),
+                TimeSpan.FromSeconds(10))
+            .PipeTo(Self, Sender);
     }
 }

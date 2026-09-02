@@ -180,8 +180,5 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         _state = _state.RemovePending(timeout.SearchId);
     }
 
-    private void ScheduleTimeout(Guid searchId)
-    {
-        Timers.StartSingleTimer($"timeout-{searchId}", new SearchTimeout(searchId), _searchTimeout);
-    }
+    private void ScheduleTimeout(Guid searchId) => Timers.StartSingleTimer($"timeout-{searchId}", new SearchTimeout(searchId), _searchTimeout);
 }

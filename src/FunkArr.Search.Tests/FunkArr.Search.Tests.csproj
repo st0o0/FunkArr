@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\**\*" />
+  </ItemGroup>
+
 </Project>

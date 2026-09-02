@@ -1,7 +1,5 @@
 using System.Text.Json;
 using FunkArr.Messages.Mediathek;
-using FunkArr.Search;
-using Xunit;
 
 namespace FunkArr.Search.Tests;
 
@@ -84,7 +82,7 @@ public sealed class MediathekQueryBuilderTests
     [Fact]
     public void FromMessage_roundtrips()
     {
-        var query = new MediathekQuery(
+        var query = new QueryMediathek(
             Fields: [new MediathekQueryField(["topic"], "Tatort"), new MediathekQueryField(["channel"], "ARD")],
             SortBy: "timestamp",
             SortOrder: "desc",
