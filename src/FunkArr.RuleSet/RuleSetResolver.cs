@@ -10,6 +10,8 @@ public sealed class RuleSetResolver : ReceiveActor
     public RuleSetResolver()
     {
         Receive<RegisterRuleSet>(msg => _state = _state.Apply(msg));
+        Receive<DeregisterRuleSet>(msg => _state = _state.Apply(msg));
         Receive<ResolveRuleSet>(msg => Sender.Tell(_state.Resolve(msg)));
+        Receive<QueryRegisteredRuleSets>(_ => Sender.Tell(_state.QueryAll()));
     }
 }
