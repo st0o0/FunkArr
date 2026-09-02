@@ -1,7 +1,5 @@
 using System.Xml.Serialization;
-using FunkArr.ArrApi;
 using FunkArr.ArrApi.Newznab;
-using Xunit;
 
 namespace FunkArr.ArrApi.Tests;
 

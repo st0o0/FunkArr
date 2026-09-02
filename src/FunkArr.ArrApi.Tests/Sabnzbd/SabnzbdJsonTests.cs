@@ -1,6 +1,5 @@
 using System.Text.Json;
 using FunkArr.ArrApi.Sabnzbd.Models;
-using Xunit;
 
 namespace FunkArr.ArrApi.Tests.Sabnzbd;
 

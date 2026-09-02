@@ -1,8 +1,9 @@
 using System.Xml.Serialization;
 using FunkArr.ArrApi.Sabnzbd.Models;
+using FunkArr.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.ArrApi.Sabnzbd;
 
@@ -16,9 +17,9 @@ public static class DownloadApiEndpoints
             .AddEndpointFilter(new ApiKeyEndpointFilter(
                 () => Results.Json(new { status = false, error = "API Key Incorrect" }, statusCode: 403)));
 
-        group.MapGet("/", ([AsParameters] DownloadGetRequest req, IConfiguration configuration) =>
+        group.MapGet("/", ([AsParameters] DownloadGetRequest req, IOptionsMonitor<FunkArrOptions> options) =>
         {
-            var downloadPath = configuration["FunkArr:DownloadPath"] ?? "downloads";
+            var downloadPath = options.CurrentValue.DownloadPath;
 
             return (req.Mode ?? "") switch
             {

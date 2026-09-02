@@ -1,6 +1,4 @@
 using System.Xml.Serialization;
-using FunkArr.ArrApi;
-using Xunit;
 
 namespace FunkArr.ArrApi.Tests.Sabnzbd;
 
@@ -29,19 +27,19 @@ public sealed class NzbParserTests
     [Fact]
     public void Parse_extracts_title_and_url_from_head_meta()
     {
-        var nzb = """
-                  <?xml version="1.0" encoding="utf-16"?>
-                  <nzb>
-                    <head>
-                      <meta type="title">Tatort S01E05</meta>
-                      <meta type="url">https://example.com/video.mp4</meta>
-                    </head>
-                    <file post_id="1">
-                      <groups><group>a.b.mediathek</group></groups>
-                      <segments><segment number="1">FunkArr@news.example.com</segment></segments>
-                    </file>
-                  </nzb>
-                  """;
+        const string nzb = """
+                           <?xml version="1.0" encoding="utf-16"?>
+                           <nzb>
+                             <head>
+                               <meta type="title">Tatort S01E05</meta>
+                               <meta type="url">https://example.com/video.mp4</meta>
+                             </head>
+                             <file post_id="1">
+                               <groups><group>a.b.mediathek</group></groups>
+                               <segments><segment number="1">FunkArr@news.example.com</segment></segments>
+                             </file>
+                           </nzb>
+                           """;
 
         var (title, url) = Parse(nzb);
 
@@ -52,15 +50,15 @@ public sealed class NzbParserTests
     [Fact]
     public void Parse_returns_null_for_missing_head()
     {
-        var nzb = """
-                  <?xml version="1.0" encoding="utf-16"?>
-                  <nzb>
-                    <file post_id="1">
-                      <groups><group>a.b.mediathek</group></groups>
-                      <segments><segment number="1">FunkArr@news.example.com</segment></segments>
-                    </file>
-                  </nzb>
-                  """;
+        const string nzb = """
+                           <?xml version="1.0" encoding="utf-16"?>
+                           <nzb>
+                             <file post_id="1">
+                               <groups><group>a.b.mediathek</group></groups>
+                               <segments><segment number="1">FunkArr@news.example.com</segment></segments>
+                             </file>
+                           </nzb>
+                           """;
 
         var (title, url) = Parse(nzb);
 
@@ -71,18 +69,18 @@ public sealed class NzbParserTests
     [Fact]
     public void Parse_returns_null_for_missing_url_meta()
     {
-        var nzb = """
-                  <?xml version="1.0" encoding="utf-16"?>
-                  <nzb>
-                    <head>
-                      <meta type="title">Test</meta>
-                    </head>
-                    <file post_id="1">
-                      <groups><group>a.b.mediathek</group></groups>
-                      <segments><segment number="1">FunkArr@news.example.com</segment></segments>
-                    </file>
-                  </nzb>
-                  """;
+        const string nzb = """
+                           <?xml version="1.0" encoding="utf-16"?>
+                           <nzb>
+                             <head>
+                               <meta type="title">Test</meta>
+                             </head>
+                             <file post_id="1">
+                               <groups><group>a.b.mediathek</group></groups>
+                               <segments><segment number="1">FunkArr@news.example.com</segment></segments>
+                             </file>
+                           </nzb>
+                           """;
 
         var (title, url) = Parse(nzb);
 

@@ -1,8 +1,6 @@
 using System.Text;
 using System.Xml.Linq;
-using FunkArr.ArrApi;
 using FunkArr.ArrApi.Newznab;
-using Xunit;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 

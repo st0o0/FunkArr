@@ -1,7 +1,6 @@
 using System.Xml.Linq;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
-using Xunit;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 

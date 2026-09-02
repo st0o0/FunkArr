@@ -2,7 +2,6 @@ using System.Text;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
 using Microsoft.AspNetCore.Http;
-using Xunit;
 
 namespace FunkArr.ArrApi.Tests;
 

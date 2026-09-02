@@ -112,11 +112,7 @@ public static class IndexerApiEndpoints
                 Category = item.Quality >= 720 ? "TV > HD" : "TV > SD",
                 Description = $"{item.Channel} - {item.Topic}",
                 Enclosure = new Enclosure { Url = item.Url, Length = item.Size },
-                Attributes =
-                [
-                    new NewznabAttribute { Name = "size", Value = item.Size.ToString() },
-                    new NewznabAttribute { Name = "category", Value = item.Quality >= 720 ? "5040" : "5030" },
-                ],
+                Attributes = BuildAttributes(item),
             };
         }).ToList();
 
@@ -128,6 +124,32 @@ public static class IndexerApiEndpoints
                 Items = items,
             },
         };
+    }
+
+    internal static List<NewznabAttribute> BuildAttributes(SearchResultItem item)
+    {
+        var attrs = new List<NewznabAttribute>
+        {
+            new() { Name = "size", Value = item.Size.ToString() },
+            new() { Name = "category", Value = item.Quality >= 720 ? "5040" : "5030" },
+        };
+
+        if (item.TvdbId is not null)
+        {
+            attrs.Add(new NewznabAttribute { Name = "tvdbid", Value = item.TvdbId.Value.ToString() });
+        }
+
+        if (item.ImdbId is not null)
+        {
+            attrs.Add(new NewznabAttribute { Name = "imdb", Value = item.ImdbId });
+        }
+
+        if (item.TmdbId is not null)
+        {
+            attrs.Add(new NewznabAttribute { Name = "tmdbid", Value = item.TmdbId.Value.ToString() });
+        }
+
+        return attrs;
     }
 
     internal static int? ParseInt(string? value) =>

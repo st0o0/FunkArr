@@ -1,7 +1,6 @@
 using System.Text;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.Messages.Search;
-using Xunit;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 
@@ -74,6 +73,68 @@ public sealed class SearchResultMappingTests
         Assert.Contains("<title>Test</title>", xml);
         Assert.Contains("offset=\"5\"", xml);
         Assert.Contains("total=\"1\"", xml);
+    }
+
+    [Fact]
+    public void ToRss_emits_tvdbid_attribute()
+    {
+        var completed = new SearchCompleted(
+            Guid.NewGuid(),
+            [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
+                TvdbId: 83214)],
+            1);
+
+        var rss = IndexerApiEndpoints.ToRss(completed, 0, 100);
+        var attrs = rss.Channel.Items[0].Attributes;
+
+        Assert.Contains(attrs, a => a.Name == "tvdbid" && a.Value == "83214");
+    }
+
+    [Fact]
+    public void ToRss_emits_imdb_attribute_not_imdbid()
+    {
+        var completed = new SearchCompleted(
+            Guid.NewGuid(),
+            [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
+                ImdbId: "tt0806910")],
+            1);
+
+        var rss = IndexerApiEndpoints.ToRss(completed, 0, 100);
+        var attrs = rss.Channel.Items[0].Attributes;
+
+        Assert.Contains(attrs, a => a.Name == "imdb" && a.Value == "tt0806910");
+        Assert.DoesNotContain(attrs, a => a.Name == "imdbid");
+    }
+
+    [Fact]
+    public void ToRss_emits_tmdbid_attribute()
+    {
+        var completed = new SearchCompleted(
+            Guid.NewGuid(),
+            [new SearchResultItem("Test", "ARD", "Tatort", "url", 7200, 100, 720, null, 0.9,
+                TmdbId: 2116)],
+            1);
+
+        var rss = IndexerApiEndpoints.ToRss(completed, 0, 100);
+        var attrs = rss.Channel.Items[0].Attributes;
+
+        Assert.Contains(attrs, a => a.Name == "tmdbid" && a.Value == "2116");
+    }
+
+    [Fact]
+    public void ToRss_omits_id_attributes_when_null()
+    {
+        var completed = new SearchCompleted(
+            Guid.NewGuid(),
+            [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)],
+            1);
+
+        var rss = IndexerApiEndpoints.ToRss(completed, 0, 100);
+        var attrs = rss.Channel.Items[0].Attributes;
+
+        Assert.DoesNotContain(attrs, a => a.Name == "tvdbid");
+        Assert.DoesNotContain(attrs, a => a.Name == "imdb");
+        Assert.DoesNotContain(attrs, a => a.Name == "tmdbid");
     }
 
     [Fact]
