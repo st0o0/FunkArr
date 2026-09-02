@@ -9,4 +9,7 @@ public sealed record SearchResultItem(
     long Size,
     int Quality,
     DateTimeOffset? AiredAt,
-    double Score);
+    double Score,
+    int? TvdbId = null,
+    string? ImdbId = null,
+    int? TmdbId = null);

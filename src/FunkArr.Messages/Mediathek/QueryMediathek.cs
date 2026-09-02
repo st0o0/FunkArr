@@ -1,6 +1,6 @@
 namespace FunkArr.Messages.Mediathek;
 
-public sealed record MediathekQuery(
+public sealed record QueryMediathek(
     MediathekQueryField[] Fields,
     string? SortBy,
     string? SortOrder,
