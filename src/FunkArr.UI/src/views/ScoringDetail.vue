@@ -1,20 +1,20 @@
 <template>
   <div>
-    <div class="mb-4 text-sm text-gray-500">
-      <router-link to="/rulesets" class="hover:text-gray-700">RuleSets</router-link>
+    <div class="mb-4 text-sm text-text-muted">
+      <router-link to="/rulesets" class="hover:text-text-secondary">RuleSets</router-link>
       <span class="mx-1">&gt;</span>
-      <router-link :to="`/rulesets/${id}`" class="hover:text-gray-700">{{ id }}</router-link>
+      <router-link :to="`/rulesets/${id}`" class="hover:text-text-secondary">{{ id }}</router-link>
       <span class="mx-1">&gt;</span>
-      <router-link :to="`/rulesets/${id}/history`" class="hover:text-gray-700">History</router-link>
+      <router-link :to="`/rulesets/${id}/history`" class="hover:text-text-secondary">History</router-link>
       <span class="mx-1">&gt;</span>
-      <span class="font-mono">{{ requestId.substring(0, 8) }}...</span>
+      <span class="font-mono text-text-secondary">{{ requestId.substring(0, 8) }}...</span>
     </div>
 
-    <div v-if="loading" class="text-gray-500">Loading...</div>
-    <div v-else-if="error" class="text-red-600">{{ error }}</div>
+    <div v-if="loading" class="text-text-muted">Loading...</div>
+    <div v-else-if="error" class="text-status-fail">{{ error }}</div>
     <div v-else-if="detail">
-      <h1 class="text-2xl font-bold mb-2">Scoring Detail</h1>
-      <div class="text-sm text-gray-500 mb-6">
+      <h1 class="text-xl font-bold text-text-primary mb-2">Scoring Detail</h1>
+      <div class="text-sm text-text-muted mb-6">
         <span>Source: {{ detail.source }}</span>
         <span class="mx-2">|</span>
         <span>Query: {{ detail.query }}</span>
@@ -26,29 +26,34 @@
         <div
           v-for="(item, idx) in detail.itemTraces"
           :key="idx"
-          class="bg-white rounded border p-4 text-sm"
-          :class="item.matched ? 'border-green-300' : 'border-gray-200'"
+          class="bg-surface-raised rounded-lg border-l-2 border-r border-t border-b p-4 text-sm"
+          :class="item.matched
+            ? 'border-l-status-ok border-r-border-default border-t-border-default border-b-border-default'
+            : 'border-l-border-default border-r-border-default border-t-border-default border-b-border-default'"
         >
           <div class="flex items-baseline gap-3 mb-1">
-            <span class="font-semibold" :class="item.matched ? 'text-green-700' : 'text-gray-900'">
+            <span class="font-semibold" :class="item.matched ? 'text-status-ok' : 'text-text-body'">
               {{ item.candidateTitle }}
             </span>
-            <span class="text-xs px-2 py-0.5 rounded" :class="item.matched ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'">
+            <span
+              class="text-xs px-2 py-0.5 rounded"
+              :class="item.matched ? 'bg-status-ok/10 text-status-ok' : 'bg-surface-elevated text-text-muted'"
+            >
               {{ item.matched ? 'matched' : 'no match' }}
             </span>
-            <span class="text-gray-500 text-xs">score {{ item.score.toFixed(2) }}</span>
+            <span class="text-text-muted text-xs">score {{ item.score.toFixed(2) }}</span>
           </div>
 
-          <div class="text-xs text-gray-500 mb-2">
+          <div class="text-xs text-text-muted mb-2">
             {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
             {{ Math.floor(item.candidateDuration / 60) }}min &middot;
             {{ item.candidateQuality }}p
-            <span v-if="item.matchedRuleId" class="ml-2 text-green-600">rule: {{ item.matchedRuleId }}</span>
+            <span v-if="item.matchedRuleId" class="ml-2 text-status-ok">rule: {{ item.matchedRuleId }}</span>
           </div>
 
           <!-- Expandable rule traces -->
           <details class="mt-2">
-            <summary class="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+            <summary class="text-xs text-text-muted cursor-pointer hover:text-text-secondary">
               {{ item.ruleTraces.length }} rule trace(s)
             </summary>
             <div class="mt-2 space-y-2">
@@ -57,24 +62,24 @@
                 :key="ri"
                 class="pl-3 border-l-2 text-xs"
                 :class="{
-                  'border-green-400': rt.outcome === 'matched',
-                  'border-red-300': rt.outcome === 'filterFailed',
-                  'border-gray-300': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
+                  'border-status-ok': rt.outcome === 'matched',
+                  'border-status-fail': rt.outcome === 'filterFailed',
+                  'border-border-default': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
                 }"
               >
                 <div class="flex gap-2">
-                  <span class="font-mono">{{ rt.ruleId }}</span>
-                  <span class="text-gray-500">prio {{ rt.priority }}</span>
+                  <span class="font-mono text-brand-400">{{ rt.ruleId }}</span>
+                  <span class="text-text-muted">prio {{ rt.priority }}</span>
                   <span
                     :class="{
-                      'text-green-600': rt.outcome === 'matched',
-                      'text-red-500': rt.outcome === 'filterFailed',
-                      'text-gray-400': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
+                      'text-status-ok': rt.outcome === 'matched',
+                      'text-status-fail': rt.outcome === 'filterFailed',
+                      'text-text-muted': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
                     }"
                   >{{ rt.outcome }}</span>
                 </div>
-                <pre v-if="rt.filterTrace" class="text-gray-500 mt-1 whitespace-pre-wrap">{{ JSON.stringify(rt.filterTrace, null, 2) }}</pre>
-                <pre v-if="rt.identificationTrace" class="text-gray-500 mt-1 whitespace-pre-wrap">{{ JSON.stringify(rt.identificationTrace, null, 2) }}</pre>
+                <pre v-if="rt.filterTrace" class="text-text-muted mt-1 whitespace-pre-wrap font-mono">{{ JSON.stringify(rt.filterTrace, null, 2) }}</pre>
+                <pre v-if="rt.identificationTrace" class="text-text-muted mt-1 whitespace-pre-wrap font-mono">{{ JSON.stringify(rt.identificationTrace, null, 2) }}</pre>
               </div>
             </div>
           </details>

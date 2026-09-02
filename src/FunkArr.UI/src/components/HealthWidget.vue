@@ -1,12 +1,12 @@
 <template>
-  <div class="bg-white rounded border border-gray-200 p-4">
+  <div class="bg-surface-raised rounded-lg border border-border-default p-4">
     <div class="flex items-center justify-between mb-3">
-      <h2 class="text-lg font-semibold">System Health</h2>
-      <router-link to="/setup" class="text-sm text-blue-600 hover:text-blue-800">Setup Guide</router-link>
+      <h2 class="text-base font-semibold text-text-primary">System Health</h2>
+      <router-link to="/setup" class="text-sm text-brand-500 hover:text-brand-400">Setup Guide</router-link>
     </div>
 
-    <div v-if="loading && !health" class="text-gray-500 text-sm">Checking...</div>
-    <div v-else-if="error" class="text-red-600 text-sm">{{ error }}</div>
+    <div v-if="loading && !health" class="text-text-muted text-sm">Checking...</div>
+    <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
 
     <div v-else-if="health" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       <div
@@ -15,31 +15,31 @@
         class="flex items-center gap-2 text-sm"
       >
         <span
-          class="w-2.5 h-2.5 rounded-full flex-shrink-0"
+          class="w-2.5 h-2.5 rounded-full shrink-0"
           :class="{
-            'bg-green-500': result.status === 'ok',
-            'bg-yellow-500': result.status === 'warn',
-            'bg-red-500': result.status === 'fail',
+            'bg-status-ok': result.status === 'ok',
+            'bg-status-warn': result.status === 'warn',
+            'bg-status-fail': result.status === 'fail',
           }"
         />
-        <span class="text-gray-700">{{ labels[name] ?? name }}</span>
+        <span class="text-text-body">{{ labels[name] ?? name }}</span>
       </div>
     </div>
 
     <div
       v-if="health && failedChecks.length > 0"
-      class="mt-3 pt-3 border-t border-gray-100 space-y-1"
+      class="mt-3 pt-3 border-t border-border-subtle space-y-1"
     >
-      <div v-for="check in failedChecks" :key="check.name" class="text-xs text-red-600">
+      <div v-for="check in failedChecks" :key="check.name" class="text-xs text-status-fail">
         {{ labels[check.name] ?? check.name }}: {{ check.result.message }}
       </div>
     </div>
 
     <div
       v-if="health && warnChecks.length > 0"
-      class="mt-3 pt-3 border-t border-gray-100 space-y-1"
+      class="mt-3 pt-3 border-t border-border-subtle space-y-1"
     >
-      <div v-for="check in warnChecks" :key="check.name" class="text-xs text-yellow-600">
+      <div v-for="check in warnChecks" :key="check.name" class="text-xs text-status-warn">
         {{ labels[check.name] ?? check.name }}: {{ check.result.message }}
       </div>
     </div>
