@@ -93,15 +93,32 @@ calls. The setup SHALL NOT use `ClusterSharding.Get(system).Start(...)` directly
 
 ### Requirement: FunkArrOptions binding
 `FunkArrServiceSetup` SHALL register `FunkArrOptions` bound to config section `"FunkArr"`
-with `.ValidateOnStart()`. `FunkArrOptions` SHALL have properties:
+with `.ValidateOnStart()`. `FunkArrOptions` SHALL be defined in `FunkArr.Core` and have properties:
 - `ApiKey` (string, default `"funkarr-default-api-key"`)
-- `PersistencePath` (string, default `"data/funkarr.db"`)
+- `DataPath` (string, default `"data"`) — the single configurable storage root
+
+`FunkArrOptions` SHALL expose the following computed read-only properties:
+- `PersistencePath` — returns `Path.Combine(DataPath, "funkarr.db")`
+- `DownloadPath` — returns `Path.Combine(DataPath, "downloads")`
+- `RuleSetDataPath` — returns `Path.Combine(DataPath, "community")`
+
+These computed properties SHALL NOT be bindable from configuration. Only `DataPath` SHALL be configurable.
+
+`RuleSetUpdaterOptions` SHALL NOT have a `DataPath` property. Consumers needing the ruleset data path SHALL use `FunkArrOptions.RuleSetDataPath`.
 
 #### Scenario: Default options bind without configuration
 - **WHEN** no `FunkArr` section exists in configuration
-- **THEN** `FunkArrOptions.ApiKey` equals `"funkarr-default-api-key"` and `PersistencePath` equals `"data/funkarr.db"`
+- **THEN** `FunkArrOptions.ApiKey` equals `"funkarr-default-api-key"` and `DataPath` equals `"data"`
 
-#### Scenario: Environment variable overrides option
+#### Scenario: Computed paths derive from DataPath
+- **WHEN** `FunkArrOptions.DataPath` is `"/data"`
+- **THEN** `PersistencePath` equals `"/data/funkarr.db"`, `DownloadPath` equals `"/data/downloads"`, and `RuleSetDataPath` equals `"/data/community"`
+
+#### Scenario: Environment variable overrides DataPath
+- **WHEN** `FunkArr__DataPath` is set to `"/custom/path"`
+- **THEN** `FunkArrOptions.DataPath` equals `"/custom/path"` and all computed paths derive from it
+
+#### Scenario: Environment variable overrides ApiKey
 - **WHEN** `FunkArr__ApiKey` is set to `"custom-key"`
 - **THEN** `FunkArrOptions.ApiKey` equals `"custom-key"`
 
@@ -113,8 +130,12 @@ with `.ValidateOnStart()`. `FunkArrOptions` SHALL have properties:
 `FunkArrApplicationSetup` SHALL map:
 - `GET /healthz` -- ASP.NET health checks endpoint (200 for healthy/degraded, 503 for unhealthy)
 - `GET /alive` -- simple liveness probe returning 200 with body `"Alive"`
+- `app.UseStaticFiles()` -- serve Vue frontend assets from dist/
+- `app.MapRuleSetApi()` -- internal REST API for rulesets and scoring history
+- `app.MapSetupApi()` -- internal REST API for setup health checks
 - `app.MapIndexerApi()` -- Newznab indexer API (parameterless, dependencies resolved via DI)
 - `app.MapDownloadApi()` -- SABnzbd download client API (parameterless, dependencies resolved via DI)
+- SPA fallback route serving `index.html` for unmatched routes (mapped last)
 
 `ApplicationSetupContainer` SHALL NOT resolve `IActorRegistry`, `IOptions<FunkArrOptions>`, or any `IActorRef` directly. All dependency resolution SHALL happen inside the endpoint handlers.
 
@@ -130,6 +151,18 @@ with `.ValidateOnStart()`. `FunkArrOptions` SHALL have properties:
 - **WHEN** `GET /healthz` is requested and all health checks pass
 - **THEN** the response status is 200
 
+#### Scenario: Setup API is mapped
+- **WHEN** `GET /api/health/setup` is requested
+- **THEN** the setup health check endpoint responds (not 404)
+
+#### Scenario: Static files and SPA fallback are mapped
+- **WHEN** reviewing `ApplicationSetupContainer.SetupApplication`
+- **THEN** `UseStaticFiles()` is called before endpoint mapping, `MapRuleSetApi()` and `MapSetupApi()` are called, and a SPA fallback route is registered last
+
+#### Scenario: SPA fallback does not intercept API routes
+- **WHEN** `GET /api/rulesets` is requested
+- **THEN** the API endpoint responds, not the SPA fallback
+
 ### Requirement: Configuration files
 The host SHALL load configuration from:
 1. `appsettings.json` (required, production defaults)
@@ -137,7 +170,7 @@ The host SHALL load configuration from:
 3. Environment variables
 
 `appsettings.json` SHALL contain sensible defaults including the `FunkArr` section
-with `ApiKey` and `PersistencePath`, and Serilog minimum level set to `Information`
+with `ApiKey` and `DataPath`, and Serilog minimum level set to `Information`
 with `Microsoft.AspNetCore` override to `Warning`.
 
 #### Scenario: Development overrides apply
