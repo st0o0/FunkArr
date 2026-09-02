@@ -1,4 +1,4 @@
-namespace FunkArr.Configuration;
+namespace FunkArr.Core;
 
 public sealed class MatchHistoryOptions
 {
