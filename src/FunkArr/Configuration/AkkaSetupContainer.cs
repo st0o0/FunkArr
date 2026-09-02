@@ -1,7 +1,9 @@
 using Akka.Cluster.Hosting;
 using Akka.Hosting;
 using Akka.Persistence.Sql.Hosting;
+using Akka.Remote.Hosting;
 using FunkArr.Core;
+using FunkArr.Download;
 using FunkArr.MatchMagic;
 using FunkArr.RuleSet;
 using FunkArr.Search;
@@ -34,7 +36,15 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 journalBuilder: journal => journal.WithHealthCheck(),
                 snapshotBuilder: snapshot => snapshot.WithHealthCheck())
             .WithActorSystemLivenessCheck()
-            .WithClustering()
+            .WithRemoting(new RemoteOptions
+            {
+                HostName = "localhost",
+                Port = 2552,
+            })
+            .WithClustering(new ClusterOptions
+            {
+                SeedNodes = ["akka.tcp://funkarr@localhost:2552"],
+            })
             .WithSingleton<IMediathekManager>("mediathek-view-web-manager",
                 (_, _, resolver) => resolver.Props<MediathekViewWebManager>())
             .WithSingleton<IRuleSetResolver>("ruleset-resolver",
@@ -69,6 +79,14 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 new ShardOptions())
             .WithSingleton<ISearchManager>(
                 "search-manager",
-                (_, _, resolver) => resolver.Props<SearchManager>());
+                (_, _, resolver) => resolver.Props<SearchManager>())
+            .WithSingleton<IDownloadManager>(
+                "download-manager",
+                (_, _, resolver) => resolver.Props<DownloadManager>())
+            .WithShardRegion<IDownloadRegion>(
+                "download-worker",
+                (_, _, resolver) => _ => resolver.Props<DownloadWorker>(),
+                new ShardMessageExtractor(),
+                new ShardOptions());
     }
 }
