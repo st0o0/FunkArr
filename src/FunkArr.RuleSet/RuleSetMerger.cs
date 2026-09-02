@@ -34,7 +34,8 @@ public static class RuleSetMerger
         return new MatchingConfig(ruleSetId, confidence, rules);
     }
 
-    public static (string Topic, string[] Aliases)? ExtractIdentity(string? communityJson, string? localJson)
+    public static (string Topic, string[] Aliases, int? TvdbId, string? ImdbId, int? TmdbId)? ExtractIdentity(
+        string? communityJson, string? localJson)
     {
         var community = communityJson is not null
             ? JsonSerializer.Deserialize<RawRuleSet>(communityJson, _jsonOptions)
@@ -50,7 +51,8 @@ public static class RuleSetMerger
         }
 
         var aliases = resolved.Aliases?.ToArray() ?? [];
-        return (resolved.Topic, aliases);
+        var media = resolved.Media;
+        return (resolved.Topic, aliases, media?.TvdbId, media?.ImdbId, media?.TmdbId);
     }
 
     private static RawRuleSet? Resolve(RawRuleSet? community, RawRuleSet? local)
@@ -83,13 +85,40 @@ public static class RuleSetMerger
         var rules = MergeRules(community.Rules ?? [], local.Rules ?? [], local.Disable);
         var aliases = MergeAliases(community.Aliases, local.Aliases);
         var confidence = local.Confidence ?? community.Confidence;
+        var media = MergeMedia(community.Media, local.Media);
 
         return new RawRuleSet
         {
             Topic = community.Topic,
             Aliases = aliases,
+            Media = media,
             Confidence = confidence,
             Rules = rules,
+        };
+    }
+
+    private static RawMedia? MergeMedia(RawMedia? community, RawMedia? local)
+    {
+        if (community is null && local is null)
+        {
+            return null;
+        }
+
+        if (community is null)
+        {
+            return local;
+        }
+
+        if (local is null)
+        {
+            return community;
+        }
+
+        return new RawMedia
+        {
+            TvdbId = local.TvdbId ?? community.TvdbId,
+            ImdbId = local.ImdbId ?? community.ImdbId,
+            TmdbId = local.TmdbId ?? community.TmdbId,
         };
     }
 
@@ -331,14 +360,14 @@ public static class RuleSetMerger
         _ => null,
     };
 
-    private static Messages.Scoring.FilterOp? ParseFilterOp(string? value) => value switch
+    private static FilterOp? ParseFilterOp(string? value) => value switch
     {
-        "eq" => Messages.Scoring.FilterOp.Eq,
-        "contains" => Messages.Scoring.FilterOp.Contains,
-        "notContains" => Messages.Scoring.FilterOp.NotContains,
-        "greaterThan" => Messages.Scoring.FilterOp.GreaterThan,
-        "lessThan" => Messages.Scoring.FilterOp.LessThan,
-        "regex" => Messages.Scoring.FilterOp.Regex,
+        "eq" => FilterOp.Eq,
+        "contains" => FilterOp.Contains,
+        "notContains" => FilterOp.NotContains,
+        "greaterThan" => FilterOp.GreaterThan,
+        "lessThan" => FilterOp.LessThan,
+        "regex" => FilterOp.Regex,
         _ => null,
     };
 
@@ -346,10 +375,18 @@ public static class RuleSetMerger
     {
         public string Topic { get; set; } = "";
         public List<string>? Aliases { get; set; }
+        public RawMedia? Media { get; set; }
         public float? Confidence { get; set; }
         public List<RawRule>? Rules { get; set; }
         public bool Standalone { get; set; }
         public List<string>? Disable { get; set; }
+    }
+
+    private sealed class RawMedia
+    {
+        public int? TvdbId { get; set; }
+        public string? ImdbId { get; set; }
+        public int? TmdbId { get; set; }
     }
 
     private sealed class RawRule

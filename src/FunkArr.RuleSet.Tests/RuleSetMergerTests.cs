@@ -1,5 +1,4 @@
 using FunkArr.Messages.Scoring;
-using Xunit;
 
 namespace FunkArr.RuleSet.Tests;
 
@@ -346,6 +345,92 @@ public sealed class RuleSetMergerTests
         var config = RuleSetMerger.Build("test", null, null);
 
         Assert.Null(config);
+    }
+
+    [Fact]
+    public void ExtractIdentity_returns_media_ids_from_community()
+    {
+        var json = """
+            {
+              "topic": "Tatort",
+              "aliases": [],
+              "media": {
+                "tvdbId": 83214,
+                "imdbId": "tt0806910",
+                "tmdbId": 2116
+              },
+              "rules": []
+            }
+            """;
+
+        var identity = RuleSetMerger.ExtractIdentity(json, null);
+
+        Assert.NotNull(identity);
+        Assert.Equal(83214, identity.Value.TvdbId);
+        Assert.Equal("tt0806910", identity.Value.ImdbId);
+        Assert.Equal(2116, identity.Value.TmdbId);
+    }
+
+    [Fact]
+    public void ExtractIdentity_local_overrides_community_media_ids()
+    {
+        var communityJson = """
+            {
+              "topic": "Tatort",
+              "media": { "tvdbId": 83214, "imdbId": "tt0806910" },
+              "rules": []
+            }
+            """;
+        var localJson = """
+            {
+              "topic": "Tatort",
+              "media": { "tvdbId": 99999 },
+              "rules": []
+            }
+            """;
+
+        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
+
+        Assert.NotNull(identity);
+        Assert.Equal(99999, identity.Value.TvdbId);
+        Assert.Equal("tt0806910", identity.Value.ImdbId);
+    }
+
+    [Fact]
+    public void ExtractIdentity_standalone_local_uses_local_media()
+    {
+        var communityJson = """
+            {
+              "topic": "Tatort",
+              "media": { "tvdbId": 83214 },
+              "rules": []
+            }
+            """;
+        var localJson = """
+            {
+              "topic": "Custom",
+              "standalone": true,
+              "media": { "imdbId": "tt1234567" },
+              "rules": []
+            }
+            """;
+
+        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
+
+        Assert.NotNull(identity);
+        Assert.Null(identity.Value.TvdbId);
+        Assert.Equal("tt1234567", identity.Value.ImdbId);
+    }
+
+    [Fact]
+    public void ExtractIdentity_no_media_block_returns_null_ids()
+    {
+        var identity = RuleSetMerger.ExtractIdentity(_communityJson, null);
+
+        Assert.NotNull(identity);
+        Assert.Null(identity.Value.TvdbId);
+        Assert.Null(identity.Value.ImdbId);
+        Assert.Null(identity.Value.TmdbId);
     }
 
     [Fact]
