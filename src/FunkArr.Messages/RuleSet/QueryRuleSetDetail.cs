@@ -18,7 +18,7 @@ public sealed record RuleSetDetailResult(
     RuleSetDetailResult.RuleSetIdentity Identity,
     RuleSetDetailResult.RuleSetSource Source,
     float DefaultConfidence,
-    RuleSetDetailRule[] Rules)
+    RuleSetDetailRule[] Rules) : IRuleSetResponse
 {
     public sealed record RuleSetIdentity(
         string Topic,

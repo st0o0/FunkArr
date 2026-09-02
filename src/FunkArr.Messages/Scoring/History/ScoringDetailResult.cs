@@ -5,4 +5,4 @@ public sealed record ScoringDetailResult(
     string Source,
     string Query,
     DateTimeOffset Timestamp,
-    ItemTrace[] ItemTraces);
+    ItemTrace[] ItemTraces) : IScoringResponse;

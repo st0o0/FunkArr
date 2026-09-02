@@ -10,4 +10,4 @@ public sealed record RegisteredRuleSetEntry(
     string? ImdbId,
     int? TmdbId);
 
-public sealed record RegisteredRuleSetsResult(RegisteredRuleSetEntry[] Entries);
+public sealed record RegisteredRuleSetsResult(RegisteredRuleSetEntry[] Entries) : IRuleSetResponse;

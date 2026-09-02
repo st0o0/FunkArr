@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -40,7 +41,7 @@ public static class RuleSetApiEndpoints
             var manager = await registry.GetAsync<IRuleSetManager>();
             try
             {
-                var result = await manager.Ask<object>(
+                var result = await manager.Ask<IRuleSetResponse>(
                     new QueryRuleSetDetail(id), _queryTimeout);
                 return result switch
                 {
@@ -80,7 +81,7 @@ public static class RuleSetApiEndpoints
             var historyRegion = await registry.GetAsync<IMatchHistoryRegion>();
             try
             {
-                var result = await historyRegion.Ask<object>(
+                var result = await historyRegion.Ask<IScoringResponse>(
                     new QueryScoringDetail(id, requestId), _queryTimeout);
                 return result switch
                 {
