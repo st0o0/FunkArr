@@ -15,6 +15,11 @@ The MediathekViewWeb API response models SHALL be defined in a standalone file `
 - **WHEN** a MVW API response is deserialized
 - **THEN** the following models SHALL be used: `MediathekApiResponse(MediathekApiResult? Result, string? Err)`, `MediathekApiResult(MediathekApiItem[]? Results, MediathekApiQueryInfo? QueryInfo)`, `MediathekApiQueryInfo(int TotalResults)`, `MediathekApiItem` with all media fields
 
+#### Scenario: Nullable size field
+
+- **WHEN** a MVW API response item has `"size": null`
+- **THEN** the `MediathekApiItem.Size` property SHALL be `long?` and deserialize to null without error
+
 #### Scenario: JSON property naming
 
 - **WHEN** `MediathekApiItem` properties are defined

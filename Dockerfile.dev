@@ -18,8 +18,7 @@ COPY src/FunkArr.Core/FunkArr.Core.csproj FunkArr.Core/
 COPY src/FunkArr.Messages/FunkArr.Messages.csproj FunkArr.Messages/
 COPY src/FunkArr.Persistence/FunkArr.Persistence.csproj FunkArr.Persistence/
 COPY src/FunkArr.Api/FunkArr.Api.csproj FunkArr.Api/
-COPY src/FunkArr.IndexerApi/FunkArr.IndexerApi.csproj FunkArr.IndexerApi/
-COPY src/FunkArr.DownloadApi/FunkArr.DownloadApi.csproj FunkArr.DownloadApi/
+COPY src/FunkArr.ArrApi/FunkArr.ArrApi.csproj FunkArr.ArrApi/
 COPY src/FunkArr.Search/FunkArr.Search.csproj FunkArr.Search/
 COPY src/FunkArr.Download/FunkArr.Download.csproj FunkArr.Download/
 COPY src/FunkArr.RuleSet/FunkArr.RuleSet.csproj FunkArr.RuleSet/

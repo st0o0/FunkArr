@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/node_modules/
+src/FunkArr/wwwroot/
+src/FunkArr.UI/dist/
+**/*.Tests/
+**/*.Tests.Shared/
+openspec/
+.git/
+.github/
+.vscode/

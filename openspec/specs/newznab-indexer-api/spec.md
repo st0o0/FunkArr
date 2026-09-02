@@ -23,7 +23,7 @@ The system SHALL respond to `GET /index/api?t=caps` with a Newznab capabilities 
 
 #### Scenario: Categories declared
 - **WHEN** the caps XML is returned
-- **THEN** `<categories>` SHALL include category 2000 (Movies) with subcats 2030 (SD) and 2040 (HD), and category 5000 (TV) with subcats 5030 (SD) and 5040 (HD)
+- **THEN** `<categories>` SHALL include category 5000 (TV) with subcategories 5030 (SD) and 5040 (HD), and category 2000 (Movies) with subcategories 2030 (SD) and 2040 (HD)
 
 #### Scenario: Limits declared
 - **WHEN** the caps XML is returned
@@ -81,7 +81,7 @@ The system SHALL return Newznab error XML with code 202 for unrecognized `t` par
 - **THEN** the system SHALL return `<error code="202" description="No such function"/>` with HTTP 400
 
 ### Requirement: Newznab RSS XML format
-Search results SHALL be formatted as RSS 2.0 XML with the Newznab namespace `http://www.newznab.com/DTD/2010/feeds/attributes/`. Each item SHALL include media ID attributes when available.
+Search results SHALL be formatted as RSS 2.0 XML with the Newznab namespace `http://www.newznab.com/DTD/2010/feeds/attributes/`. Each item SHALL include media ID attributes when available. Category attributes SHALL reflect the search type.
 
 #### Scenario: RSS structure
 - **WHEN** results are returned
@@ -90,6 +90,18 @@ Search results SHALL be formatted as RSS 2.0 XML with the Newznab namespace `htt
 #### Scenario: Item structure
 - **WHEN** an item is in the results
 - **THEN** it SHALL contain `<title>`, `<guid>`, `<link>`, `<comments>`, `<pubDate>`, `<category>`, `<description>`, `<enclosure>` with url/length/type attributes, and `<newznab:attr>` elements for category, size, and media IDs
+
+#### Scenario: TV search category attributes
+- **WHEN** a search result item is returned from a `t=tvsearch` request
+- **THEN** the `<newznab:attr name="category">` SHALL be `5040` for HD (quality >= 720) or `5030` for SD, and the `<category>` element SHALL be `TV > HD` or `TV > SD`
+
+#### Scenario: Movie search category attributes
+- **WHEN** a search result item is returned from a `t=movie` request
+- **THEN** the `<newznab:attr name="category">` SHALL be `2040` for HD (quality >= 720) or `2030` for SD, and the `<category>` element SHALL be `Movies > HD` or `Movies > SD`
+
+#### Scenario: General search category attributes
+- **WHEN** a search result item is returned from a `t=search` request
+- **THEN** the category SHALL default to TV categories (5040/5030) unless the `cat` parameter indicates movie categories (2000-2999)
 
 #### Scenario: Item with tvdbid attribute
 - **WHEN** a search result item has TvdbId=83214
@@ -146,21 +158,41 @@ The system SHALL return errors as XML `<error code="X" description="Y"/>` using 
 - **THEN** the response SHALL be `<error code="202" description="No such function"/>` with HTTP 400
 
 ### Requirement: Search pagination parameters
-The system SHALL accept `offset` (int, default 0) and `limit` (int, default 100) query parameters on all search endpoints (`t=search`, `t=tvsearch`, `t=movie`). The system SHALL cap `limit` to the Caps-advertised max (500) before forwarding to the search pipeline.
+
+The system SHALL accept `offset` (int, default 0) and `limit` (int, default 100) query parameters on all search endpoints (`t=search`, `t=tvsearch`, `t=movie`). The system SHALL cap `limit` to the Caps-advertised max (500) before forwarding to the search pipeline. The SearchHandler SHALL build a unified `SearchCommand` for all search types.
+
+#### Scenario: TV search builds SearchCommand with TvParams
+
+- **WHEN** `?t=tvsearch&q=Tatort&season=01&ep=05&tvdbid=83214` is requested
+- **THEN** the SearchHandler SHALL build `SearchCommand(Query: "Tatort", Cat: null, Limit: null, Offset: null, Params: TvParams(Season: 1, Episode: 5, TvdbId: 83214, ImdbId: null))`
+
+#### Scenario: Movie search builds SearchCommand with MovieParams
+
+- **WHEN** `?t=movie&imdbid=tt0806910` is requested
+- **THEN** the SearchHandler SHALL build `SearchCommand(Query: null, Cat: null, Limit: null, Offset: null, Params: MovieParams(ImdbId: "tt0806910", TmdbId: null))`
+
+#### Scenario: General search builds SearchCommand without type params
+
+- **WHEN** `?t=search&q=Tatort&cat=5040` is requested
+- **THEN** the SearchHandler SHALL build `SearchCommand(Query: "Tatort", Cat: 5040, Limit: null, Offset: null, Params: null)`
 
 #### Scenario: Pagination parameters forwarded
+
 - **WHEN** `?t=tvsearch&q=Tatort&offset=10&limit=25` is requested
-- **THEN** the system SHALL forward Limit=25 and Offset=10 to the TvSearchCommand
+- **THEN** the system SHALL forward Limit=25 and Offset=10 in the SearchCommand
 
 #### Scenario: Default pagination
+
 - **WHEN** a search request omits `offset` and `limit`
 - **THEN** the system SHALL forward Limit=null and Offset=null (workers apply their own defaults)
 
 #### Scenario: Limit exceeds max
+
 - **WHEN** `?t=tvsearch&q=Tatort&limit=1000` is requested
 - **THEN** the system SHALL cap limit to 500 before forwarding to the search pipeline
 
 #### Scenario: RSS response pagination
+
 - **WHEN** search results are returned with offset=10
 - **THEN** the RSS response SHALL have `<newznab:response offset="10" total="N"/>` where N is the total number of matching items
 

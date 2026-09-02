@@ -20,9 +20,21 @@ The system SHALL respond to `GET /download/api?mode=get_config` with a JSON obje
 - **WHEN** `?mode=get_config` is requested
 - **THEN** the response SHALL be JSON with `config.misc.complete_dir` set to the configured DownloadPath, and `config.categories` containing entries for "sonarr", "radarr", "tv", and "movies"
 
+#### Scenario: Config category entries
+- **WHEN** the config is returned
+- **THEN** each entry in `config.categories` SHALL contain `name` (string), `order` (int), `dir` (empty string), `newzbin` (empty string), `priority` (0)
+
 #### Scenario: Config sorting disabled
 - **WHEN** the config is returned
 - **THEN** `config.misc.enable_tv_sorting`, `config.misc.enable_movie_sorting`, and `config.misc.enable_date_sorting` SHALL be `false`
+
+#### Scenario: Config pre_check field
+- **WHEN** the config is returned
+- **THEN** `config.misc.pre_check` SHALL be `false`
+
+#### Scenario: Config history retention
+- **WHEN** the config is returned
+- **THEN** `config.misc.history_retention` SHALL be `"all"`
 
 #### Scenario: Config sorting category lists
 - **WHEN** the config is returned
@@ -37,100 +49,124 @@ The system SHALL respond to `GET /download/api?mode=fullstatus` with a JSON stat
 
 #### Scenario: Full status response structure
 - **WHEN** `?mode=fullstatus` is requested
-- **THEN** the response SHALL be JSON with a `status` object containing `paused` (bool, default false), `speedlimit` (string, default ""), `diskspace1` (string, free GB), `diskspace2` (string, free GB), and `completedir` (string, configured download path)
+- **THEN** the response SHALL be JSON with a `status` object containing `paused` (bool, default false), `speedlimit` (string, default ""), `diskspace1` (string, free GB), `diskspace2` (string, free GB), `completedir` (string, configured download path), and `speed` (string, aggregate bytes/second of active downloads)
 
 #### Scenario: Skip dashboard parameter accepted
 - **WHEN** `?mode=fullstatus&skip_dashboard=1` is requested
 - **THEN** the response SHALL be the same as without `skip_dashboard` (parameter accepted but ignored)
 
+#### Scenario: Full status with active downloads
+- **WHEN** `?mode=fullstatus` is requested and downloads are active
+- **THEN** the response SHALL include `status.speed` as the sum of all active download speeds formatted as bytes/second string
+
 ### Requirement: Queue endpoint
-The system SHALL respond to `GET /download/api?mode=queue` with a JSON object wrapping the current download queue. It SHALL accept optional `start` (int), `limit` (int), and `name` (string, subcommand) parameters.
+The system SHALL respond to `GET /download/api?mode=queue` by querying the DownloadManager for current queue state and translating the response to SABnzbd JSON format. It SHALL accept optional `start` (int), `limit` (int), `category` (string), and `name` (string, subcommand) parameters.
+
+#### Scenario: Queue with active downloads
+- **WHEN** the DownloadManager has items in Queued or Processing status
+- **THEN** each slot SHALL contain `nzo_id` (DownloadId string), `status` ("Queued" or "Downloading"), `filename` (title), `cat` (category), `mb` (total MB), `mbleft` (remaining MB), `percentage` (0-100), `timeleft` (formatted), `speed` (bytes/second string), `priority` ("Normal"), `index` (position)
+
+#### Scenario: Queue progress mapping
+- **WHEN** a queue item has DownloadStatus Processing with progress data
+- **THEN** `percentage` SHALL be calculated as `(CurrentTimeUs / 1_000_000) / TotalDuration * 100`
+- **AND** `mbleft` SHALL be calculated as `(TotalBytes - BytesDownloaded) / 1_048_576`
+- **AND** `timeleft` SHALL be formatted as `HH:MM:SS` based on remaining time at current speed
+- **AND** `status` SHALL be `"Downloading"`
+
+#### Scenario: Queue item with no progress yet
+- **WHEN** a queue item has DownloadStatus Processing but no progress data received yet
+- **THEN** `percentage` SHALL be `"0"`, `mbleft` SHALL equal `mb`, `timeleft` SHALL be `"00:00:00"`, and `speed` SHALL be `"0"`
 
 #### Scenario: Empty queue
-- **WHEN** no downloads are in progress
-- **THEN** the response SHALL be JSON `{"queue":{"paused":false,"speedlimit":"","noofslots_total":0,"diskspace1":"0","diskspace2":"0","speed":"0","slots":[]}}`
-
-#### Scenario: Queue item structure
-- **WHEN** a download is in the queue
-- **THEN** each slot SHALL contain `nzo_id` (string), `status` (string: "Queued", "Downloading", "Extracting"), `index` (int), `timeleft` (string), `mb` (string, total MB), `filename` (string), `cat` (string, category), `mbleft` (string, remaining MB), `percentage` (string, 0-100), `priority` (string, default "Normal")
+- **WHEN** no downloads are in Queued or Processing status
+- **THEN** the response SHALL be JSON with `queue.slots` as empty array and `queue.noofslots_total` as 0
 
 ### Requirement: Queue delete subcommand
-The system SHALL respond to `GET /download/api?mode=queue&name=delete&value=<nzo_id>` by removing the item from the download queue.
+The system SHALL respond to `GET /download/api?mode=queue&name=delete&value=<nzo_id>` by sending a `DeleteDownload` message to the DownloadManager. It SHALL accept an optional `del_files` parameter.
 
 #### Scenario: Successful queue item deletion
 - **WHEN** `?mode=queue&name=delete&value=existing-id` is requested
-- **THEN** the response SHALL be JSON `{"status":true}` and the item SHALL be removed from the queue
+- **THEN** the system SHALL send DeleteDownload to the Manager, and respond with JSON `{"status":true}` on success
 
-#### Scenario: Queue delete with file removal
+#### Scenario: Queue delete with del_files
 - **WHEN** `?mode=queue&name=delete&value=existing-id&del_files=1` is requested
-- **THEN** the item SHALL be removed from the queue (file deletion is a no-op for stubbed implementation)
+- **THEN** the system SHALL send DeleteDownload with DeleteFiles=true to the Manager
 
 #### Scenario: Queue delete non-existent item
 - **WHEN** `?mode=queue&name=delete&value=non-existent-id` is requested
 - **THEN** the response SHALL be JSON `{"status":false,"error":"Item not found"}`
 
 ### Requirement: History endpoint
-The system SHALL respond to `GET /download/api?mode=history` with a JSON object wrapping the download history. It SHALL accept optional `start` (int), `limit` (int), and `name` (string, subcommand) parameters.
+The system SHALL respond to `GET /download/api?mode=history` by querying the DownloadManager for history and translating the response to SABnzbd JSON format. It SHALL accept optional `start` (int), `limit` (int), `category` (string), and `name` (string, subcommand) parameters.
+
+#### Scenario: History with completed downloads
+- **WHEN** the DownloadManager has items in history
+- **THEN** each slot SHALL contain `nzo_id` (DownloadId string), `name` (title), `nzb_name` (title + ".nzb"), `category` (category), `bytes` (total bytes), `download_time` (seconds), `storage` (file path), `status` ("Completed", "Failed", "Extracting", "Moving", or "Verifying"), `fail_message` (error string or empty), `completed_on` (Unix timestamp)
 
 #### Scenario: Empty history
-- **WHEN** no downloads have completed
+- **WHEN** no downloads have completed or failed
 - **THEN** the response SHALL be JSON `{"history":{"noofslots":0,"slots":[]}}`
 
-#### Scenario: History item structure
-- **WHEN** a download is in history
-- **THEN** each slot SHALL contain `nzo_id` (string), `name` (string), `nzb_name` (string), `category` (string), `bytes` (long), `download_time` (int, seconds), `storage` (string, file path), `status` (string: "Completed", "Failed"), `fail_message` (string, empty for non-failed), `completed_on` (long, Unix timestamp)
-
 ### Requirement: Delete history item
-The system SHALL respond to `GET /download/api?mode=history&name=delete&value=<nzo_id>` by removing the item from history.
+The system SHALL respond to `GET /download/api?mode=history&name=delete&value=<nzo_id>` by sending a `DeleteDownload` message to the DownloadManager. It SHALL accept optional `del_files` and `archive` parameters.
 
-#### Scenario: Successful deletion
+#### Scenario: Successful history deletion
 - **WHEN** `?mode=history&name=delete&value=existing-id` is requested
-- **THEN** the response SHALL be JSON `{"status":true}` and the item SHALL be removed from history
+- **THEN** the system SHALL send DeleteDownload to the Manager, and respond with JSON `{"status":true}` on success
 
-#### Scenario: Delete with file removal
+#### Scenario: History delete with del_files
 - **WHEN** `?mode=history&name=delete&value=existing-id&del_files=1` is requested
-- **THEN** the item SHALL be removed from history (file deletion is a no-op for stubbed implementation)
+- **THEN** the system SHALL send DeleteDownload with DeleteFiles=true to the Manager
 
-#### Scenario: Delete non-existent item
+#### Scenario: History delete with archive parameter
+- **WHEN** `?mode=history&name=delete&value=existing-id&archive=1` is requested
+- **THEN** the system SHALL treat `archive` as a regular delete (parameter accepted but ignored)
+
+#### Scenario: Delete non-existent history item
 - **WHEN** `?mode=history&name=delete&value=non-existent-id` is requested
 - **THEN** the response SHALL be JSON `{"status":false,"error":"Item not found"}`
 
 ### Requirement: Add file endpoint
-The system SHALL respond to `POST /download/api?mode=addfile&cat=<category>` by accepting an NZB file as a multipart/form-data upload (field name `nzbfile`), parsing the download URL and title from XML comments, and adding the item to the download queue. It SHALL accept optional `priority` (int) query parameter.
+The system SHALL respond to `POST /download/api?mode=addfile&cat=<category>` by accepting an NZB file as a multipart/form-data upload (field name `nzbfile`), parsing all metadata from the NZB XML, sending an `AddDownload` message to the DownloadManager, and returning the assigned download ID. It SHALL forward the `priority` parameter.
 
 #### Scenario: Successful addfile via multipart
 - **WHEN** a valid NZB is POSTed as multipart/form-data with field `nzbfile` and `?mode=addfile&cat=sonarr`
-- **THEN** the response SHALL be JSON `{"status":true,"nzo_ids":["<generated-id>"]}` and the item SHALL appear in the queue
+- **THEN** the system SHALL parse the NZB, extract VideoUrl, SubtitleUrl, Title, Channel, Duration, and Size from meta elements, send AddDownload to the DownloadManager, and respond with JSON `{"status":true,"nzo_ids":["<download-id>"]}`
+
+#### Scenario: Addfile with priority
+- **WHEN** a valid NZB is POSTed with `?mode=addfile&cat=sonarr&priority=-100`
+- **THEN** the system SHALL send AddDownload with Priority=-100 to the DownloadManager
 
 #### Scenario: Missing NZB file
 - **WHEN** a POST is made with `?mode=addfile` but no `nzbfile` form field
 - **THEN** the response SHALL be JSON `{"status":false,"error":"No NZB file uploaded"}` with HTTP 400
 
 #### Scenario: Invalid NZB format
-- **WHEN** the uploaded NZB file does not contain parseable URL/title comments
+- **WHEN** the uploaded NZB file does not contain a parseable `X-FunkArr-Url` meta element
 - **THEN** the response SHALL be JSON `{"status":false,"error":"Invalid NZB format"}` with HTTP 400
 
 ### Requirement: Retry failed download
-The system SHALL respond to `GET /download/api?mode=retry&value=<nzo_id>` by re-queuing a failed download from history.
+The system SHALL respond to `GET /download/api?mode=retry&value=<nzo_id>` by sending a `RetryDownload` message to the DownloadManager.
 
 #### Scenario: Successful retry
-- **WHEN** `?mode=retry&value=failed-item-id` is requested and the item exists in history with status "Failed"
-- **THEN** the response SHALL be JSON `{"status":true}` and the item SHALL be moved back to the queue with status "Queued"
+- **WHEN** `?mode=retry&value=failed-item-id` is requested and the item exists in history with status Failed
+- **THEN** the system SHALL send RetryDownload to the Manager, and respond with JSON `{"status":true}` on success
+
+#### Scenario: Retry non-failed item
+- **WHEN** `?mode=retry&value=completed-item-id` is requested and the item has status Completed
+- **THEN** the response SHALL be JSON `{"status":false,"error":"Item is not failed"}`
 
 #### Scenario: Retry non-existent item
 - **WHEN** `?mode=retry&value=non-existent-id` is requested
 - **THEN** the response SHALL be JSON `{"status":false,"error":"Item not found"}`
 
-#### Scenario: Retry non-failed item
-- **WHEN** `?mode=retry&value=completed-item-id` is requested and the item has status "Completed"
-- **THEN** the response SHALL be JSON `{"status":false,"error":"Item is not failed"}`
-
 ### Requirement: Queue and history pagination
-The system SHALL accept `start` (int, default 0) and `limit` (int, default 50) query parameters on queue and history endpoints.
+The system SHALL accept `start` (int, default 0) and `limit` (int, default 0) query parameters on queue and history endpoints. A limit of 0 means unlimited (return all items).
 
 #### Scenario: Paginated queue
 - **WHEN** `?mode=queue&start=5&limit=10` is requested
 - **THEN** the response SHALL contain at most 10 queue slots starting from index 5
+- **AND** `queue.noofslots_total` SHALL reflect the total count before pagination
 
 #### Scenario: Paginated history
 - **WHEN** `?mode=history&start=0&limit=25` is requested
@@ -138,7 +174,19 @@ The system SHALL accept `start` (int, default 0) and `limit` (int, default 50) q
 
 #### Scenario: Default pagination
 - **WHEN** queue or history is requested without `start`/`limit`
-- **THEN** the system SHALL return all items (start=0, limit=unlimited for stub)
+- **THEN** the system SHALL return all items (start=0, limit=0 meaning unlimited)
+
+#### Scenario: Limit zero means unlimited
+- **WHEN** `?mode=queue&start=0&limit=0` is requested
+- **THEN** the response SHALL return all queue items
+
+#### Scenario: Queue category filter
+- **WHEN** `?mode=queue&category=sonarr` is requested
+- **THEN** the response SHALL contain only queue slots matching category "sonarr"
+
+#### Scenario: History category filter
+- **WHEN** `?mode=history&category=radarr` is requested
+- **THEN** the response SHALL contain only history slots matching category "radarr"
 
 ### Requirement: Output query parameter
 The system SHALL accept the `output` query parameter on all download API endpoints. The parameter value SHALL be accepted but ignored — the response format is always JSON.
@@ -161,3 +209,10 @@ The system SHALL return HTTP 400 for unrecognized `mode` parameter values, inclu
 #### Scenario: Unknown queue subcommand
 - **WHEN** `?mode=queue&name=unknown` is requested
 - **THEN** the response SHALL be JSON `{"status":false,"error":"Invalid queue command"}` with HTTP 400
+
+### Requirement: Download GET request parameters
+The system SHALL bind the following query parameters on GET requests: `mode` (string), `name` (string), `value` (string), `start` (int), `limit` (int), `output` (string), `del_files` (int), `category` (string), `archive` (int).
+
+#### Scenario: All parameters bound
+- **WHEN** a GET request is made with `?mode=queue&start=0&limit=10&category=sonarr&del_files=1&archive=0`
+- **THEN** all parameters SHALL be available in the request binding
