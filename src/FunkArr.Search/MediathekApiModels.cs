@@ -20,7 +20,7 @@ internal sealed record MediathekApiItem(
     [property: JsonPropertyName("description")] string? Description,
     [property: JsonPropertyName("timestamp")] long Timestamp,
     [property: JsonPropertyName("duration")] int Duration,
-    [property: JsonPropertyName("size")] long Size,
+    [property: JsonPropertyName("size")] long? Size,
     [property: JsonPropertyName("url_video")] string? UrlVideo,
     [property: JsonPropertyName("url_video_low")] string? UrlVideoLow,
     [property: JsonPropertyName("url_video_hd")] string? UrlVideoHd,

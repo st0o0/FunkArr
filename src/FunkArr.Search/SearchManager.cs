@@ -24,78 +24,76 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         _movieShardRegion = Context.GetActor<IMovieSearchRegion>();
         _searchTimeout = searchTimeout ?? TimeSpan.FromSeconds(30);
 
-        Receive<TvSearchCommand>(HandleTvSearch);
-        Receive<MovieSearchCommand>(HandleMovieSearch);
-        Receive<GeneralSearchCommand>(HandleGeneralSearch);
+        Receive<SearchCommand>(HandleSearch);
         Receive<SearchCompleted>(HandleSearchCompleted);
         Receive<SearchFailed>(HandleSearchFailed);
         Receive<SearchTimeout>(HandleTimeout);
     }
 
-    private void HandleTvSearch(TvSearchCommand cmd)
+    private void HandleSearch(SearchCommand cmd)
     {
         var searchId = Guid.NewGuid();
-        var tvCmd = cmd with { SearchId = searchId };
 
-        _state = _state.AddPending(searchId,
-            new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
-        _tvShardRegion.Tell(tvCmd);
-        ScheduleTimeout(searchId);
-    }
-
-    private void HandleMovieSearch(MovieSearchCommand cmd)
-    {
-        var searchId = Guid.NewGuid();
-        var movieCmd = cmd with { SearchId = searchId };
-
-        _state = _state.AddPending(searchId,
-            new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
-        _movieShardRegion.Tell(movieCmd);
-        ScheduleTimeout(searchId);
-    }
-
-    private void HandleGeneralSearch(GeneralSearchCommand cmd)
-    {
-        var searchId = Guid.NewGuid();
-        var type = DetermineSearchType(cmd.Cat);
-
-        _state = type switch
+        switch (cmd.Params)
         {
-            SearchType.Tv => RouteTv(searchId, cmd),
-            SearchType.Movie => RouteMovie(searchId, cmd),
-            _ => RouteAll(searchId, cmd),
+            case SearchCommand.TvParams tv:
+                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query,
+                    tv.Season, tv.Episode, tv.TvdbId, tv.ImdbId,
+                    cmd.Limit, cmd.Offset));
+                _state = _state.AddPending(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
+                break;
+
+            case SearchCommand.MovieParams movie:
+                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query,
+                    movie.ImdbId, movie.TmdbId,
+                    cmd.Limit, cmd.Offset));
+                _state = _state.AddPending(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
+                break;
+
+            default:
+                RouteByCategory(searchId, cmd);
+                break;
+        }
+
+        ScheduleTimeout(searchId);
+    }
+
+    private void RouteByCategory(Guid searchId, SearchCommand cmd)
+    {
+        var type = cmd.Cat switch
+        {
+            >= 5000 and < 6000 => SearchType.Tv,
+            >= 2000 and < 3000 => SearchType.Movie,
+            _ => SearchType.Both,
         };
 
-        ScheduleTimeout(searchId);
-    }
+        switch (type)
+        {
+            case SearchType.Tv:
+                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query,
+                    null, null, null, null, cmd.Limit, cmd.Offset));
+                _state = _state.AddPending(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
+                break;
 
-    private static SearchType DetermineSearchType(int? cat) => cat switch
-    {
-        >= 5000 and < 6000 => SearchType.Tv,
-        >= 2000 and < 3000 => SearchType.Movie,
-        _ => SearchType.Both,
-    };
+            case SearchType.Movie:
+                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query,
+                    null, null, cmd.Limit, cmd.Offset));
+                _state = _state.AddPending(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
+                break;
 
-    private SearchManagerState RouteTv(Guid searchId, GeneralSearchCommand cmd)
-    {
-        _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query, null, null, null, null, cmd.Limit, cmd.Offset));
-        return _state.AddPending(searchId,
-            new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
-    }
-
-    private SearchManagerState RouteMovie(Guid searchId, GeneralSearchCommand cmd)
-    {
-        _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query, null, null, cmd.Limit, cmd.Offset));
-        return _state.AddPending(searchId,
-            new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
-    }
-
-    private SearchManagerState RouteAll(Guid searchId, GeneralSearchCommand cmd)
-    {
-        _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query, null, null, null, null, cmd.Limit, cmd.Offset));
-        _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query, null, null, cmd.Limit, cmd.Offset));
-        return _state.AddPending(searchId,
-            new SearchManagerState.PendingSearch(Sender, SearchType.Both, null, null));
+            default:
+                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query,
+                    null, null, null, null, cmd.Limit, cmd.Offset));
+                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query,
+                    null, null, cmd.Limit, cmd.Offset));
+                _state = _state.AddPending(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Both, null, null));
+                break;
+        }
     }
 
     private void HandleSearchCompleted(SearchCompleted completed)

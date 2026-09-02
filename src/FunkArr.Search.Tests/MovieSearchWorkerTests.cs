@@ -53,7 +53,7 @@ public sealed class MovieSearchWorkerTests : TestKit
     }
 
     [Fact]
-    public void No_query_returns_search_failed()
+    public void No_query_queries_mediathek_for_recent_items()
     {
         var mediathekProbe = CreateTestProbe();
         var matchMagicProbe = CreateTestProbe();
@@ -68,9 +68,13 @@ public sealed class MovieSearchWorkerTests : TestKit
         var searchId = Guid.NewGuid();
         worker.Tell(new MovieSearchCommand(searchId, null, null, null, null, null), TestActor);
 
-        var result = ExpectMsg<SearchFailed>();
+        var query = mediathekProbe.ExpectMsg<QueryMediathek>();
+        Assert.Empty(query.Fields);
+        mediathekProbe.Reply(new MediathekQueryCompleted([], 0));
+
+        var result = ExpectMsg<SearchCompleted>();
         Assert.Equal(searchId, result.SearchId);
-        Assert.Contains("requires a query or media ID", result.Reason);
+        Assert.Empty(result.Items);
     }
 
     [Fact]

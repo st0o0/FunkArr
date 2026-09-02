@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Akka.Actor;
+using Akka.IO;
 using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Search;
@@ -35,14 +36,14 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
         }
 
         _state = _state.Increment();
-        var sender = Sender;
-        ExecuteQuery(query, sender);
+        ExecuteQuery(query);
     }
 
-    private void ExecuteQuery(QueryMediathek query, IActorRef replyTo)
+    private void ExecuteQuery(QueryMediathek query)
     {
         var json = MediathekQueryBuilder.FromMessage(query).Build();
         var self = Self;
+        var sender = Sender;
 
         Task.Run(async () =>
         {
@@ -63,7 +64,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
                         Description: r.Description,
                         Timestamp: r.Timestamp,
                         Duration: r.Duration,
-                        Size: r.Size,
+                        Size: r.Size ?? EstimateSize(r.Duration, r.UrlVideoHd, r.UrlVideo, r.UrlVideoLow),
                         UrlVideoLow: r.UrlVideoLow,
                         UrlVideo: r.UrlVideo,
                         UrlVideoHd: r.UrlVideoHd,
@@ -79,7 +80,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
             {
                 return new HttpFailed(ex.Message);
             }
-        }).PipeTo(self, replyTo);
+        }).PipeTo(self, sender);
     }
 
     private void HandleHttpCompleted(HttpCompleted msg)
@@ -99,6 +100,9 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
         _state = _state.Decrement();
         Stash.Unstash();
     }
+
+    internal static long EstimateSize(int duration, string? urlHd, string? urlVideo, string? urlLow) =>
+        duration * (urlHd is not null ? 312_500L : urlVideo is not null ? 187_500L : urlLow is not null ? 100_000L : 0L);
 
     private static readonly JsonSerializerOptions _apiJsonOptions = new()
     {

@@ -57,6 +57,7 @@ public static class MovieSearchWorkerStateExtensions
             ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
             : null,
         Score: score,
+        SubtitleUrl: string.IsNullOrEmpty(raw.UrlSubtitle) ? null : raw.UrlSubtitle,
         ImdbId: state.ImdbId,
         TmdbId: state.TmdbId);
 

@@ -13,12 +13,12 @@ public sealed class TvSearchWorker : ReceiveActor
 {
     private TvSearchWorkerState? _state;
 
+    private readonly IActorRef _mediathekManager = Context.GetActor<IMediathekManager>();
+    private readonly IActorRef _matchMagicManager = Context.GetActor<IMatchMagicManager>();
+    private readonly IActorRef _ruleSetResolver = Context.GetActor<IRuleSetResolver>();
+
     public TvSearchWorker()
     {
-        var mediathekManager = Context.GetActor<IMediathekManager>();
-        var matchMagicManager = Context.GetActor<IMatchMagicManager>();
-        var ruleSetResolver = Context.GetActor<IRuleSetResolver>();
-
         Receive<TvSearchCommand>(cmd =>
         {
             _state = TvSearchWorkerState.Empty.Apply(cmd);
@@ -28,18 +28,18 @@ public sealed class TvSearchWorker : ReceiveActor
 
             if (hasQuery)
             {
-                QueryMediathek(mediathekManager, cmd.Query!, cmd.Offset, cmd.Limit);
+                QueryMediathek(cmd.Query!, cmd.Offset, cmd.Limit);
             }
             else if (hasId)
             {
-                ruleSetResolver.Ask<object>(
+                _ruleSetResolver.Ask<IRuleSetResponse>(
                         new ResolveRuleSet(null, cmd.TvdbId, cmd.ImdbId),
                         TimeSpan.FromSeconds(5))
                     .PipeTo(Self, Sender);
             }
             else
             {
-                QueryMediathek(mediathekManager, "", cmd.Offset, cmd.Limit);
+                QueryMediathek("", cmd.Offset, cmd.Limit);
             }
         });
 
@@ -55,12 +55,12 @@ public sealed class TvSearchWorker : ReceiveActor
             var topic = result.Items.Length > 0 ? result.Items[0].Topic : null;
             if (topic is not null && _state.RuleSetId is null)
             {
-                ruleSetResolver.Ask<object>(new ResolveRuleSet(topic), TimeSpan.FromSeconds(5))
+                _ruleSetResolver.Ask<IRuleSetResponse>(new ResolveRuleSet(topic), TimeSpan.FromSeconds(5))
                     .PipeTo(Self, Sender);
             }
             else if (_state.RuleSetId is not null)
             {
-                StartScoring(matchMagicManager);
+                StartScoring();
             }
             else
             {
@@ -80,11 +80,11 @@ public sealed class TvSearchWorker : ReceiveActor
 
             if (_state.RawItems.Length == 0)
             {
-                QueryMediathek(mediathekManager, resolved.Topic, null, null);
+                QueryMediathek(resolved.Topic, null, null);
             }
             else
             {
-                StartScoring(matchMagicManager);
+                StartScoring();
             }
         });
 
@@ -141,7 +141,7 @@ public sealed class TvSearchWorker : ReceiveActor
         });
     }
 
-    private void QueryMediathek(IActorRef mediathekManager, string query, int? offset, int? limit)
+    private void QueryMediathek(string query, int? offset, int? limit)
     {
         var fields = new List<MediathekQueryField>();
         if (!string.IsNullOrWhiteSpace(query))
@@ -159,11 +159,11 @@ public sealed class TvSearchWorker : ReceiveActor
             DurationMin: 300,
             DurationMax: null);
 
-        mediathekManager.Ask<object>(msg, TimeSpan.FromSeconds(15))
+        _mediathekManager.Ask<IMediathekResponse>(msg, TimeSpan.FromSeconds(15))
             .PipeTo(Self, Sender);
     }
 
-    private void StartScoring(IActorRef matchMagicManager)
+    private void StartScoring()
     {
         if (_state is null)
         {
@@ -177,7 +177,7 @@ public sealed class TvSearchWorker : ReceiveActor
 
         var requestId = Guid.NewGuid();
         var origin = new ScoringOrigin("sonarr", _state.RawItems[0].Topic);
-        matchMagicManager.Ask<object>(
+        _matchMagicManager.Ask<ScoreCompleted>(
                 new ScoreItems(requestId, _state.RuleSetId!, origin, candidates),
                 TimeSpan.FromSeconds(10))
             .PipeTo(Self, Sender);

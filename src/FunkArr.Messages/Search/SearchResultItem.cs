@@ -10,6 +10,7 @@ public sealed record SearchResultItem(
     int Quality,
     DateTimeOffset? AiredAt,
     double Score,
+    string? SubtitleUrl = null,
     int? TvdbId = null,
     string? ImdbId = null,
     int? TmdbId = null);

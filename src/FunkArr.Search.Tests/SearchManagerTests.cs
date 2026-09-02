@@ -24,7 +24,8 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new TvSearchCommand(Guid.Empty, "Tatort", null, null, null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+            new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var forwarded = tvProbe.ExpectMsg<TvSearchCommand>();
         Assert.Equal("Tatort", forwarded.Query);
@@ -40,7 +41,8 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new MovieSearchCommand(Guid.Empty, "Das Boot", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("Das Boot", null, null, null,
+            new SearchCommand.MovieParams(null, null)), TestActor);
 
         var forwarded = movieProbe.ExpectMsg<MovieSearchCommand>();
         Assert.Equal("Das Boot", forwarded.Query);
@@ -55,7 +57,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new GeneralSearchCommand("test", 5040, null, null), TestActor);
+        gateway.Tell(new SearchCommand("test", 5040, null, null, null), TestActor);
 
         tvProbe.ExpectMsg<TvSearchCommand>();
         movieProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
@@ -68,7 +70,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new GeneralSearchCommand("test", 2040, null, null), TestActor);
+        gateway.Tell(new SearchCommand("test", 2040, null, null, null), TestActor);
 
         movieProbe.ExpectMsg<MovieSearchCommand>();
         tvProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
@@ -81,7 +83,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new GeneralSearchCommand("test", null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("test", null, null, null, null), TestActor);
 
         tvProbe.ExpectMsg<TvSearchCommand>();
         movieProbe.ExpectMsg<MovieSearchCommand>();
@@ -94,7 +96,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new GeneralSearchCommand("test", null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("test", null, null, null, null), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
         var movieCmd = movieProbe.ExpectMsg<MovieSearchCommand>();
@@ -121,7 +123,8 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new TvSearchCommand(Guid.Empty, "Tatort", null, null, null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+            new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
         var item = new SearchResultItem("Tatort: Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.95);
@@ -139,7 +142,8 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new TvSearchCommand(Guid.Empty, "Tatort", null, null, null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+            new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
         gateway.Tell(new SearchFailed(tvCmd.SearchId, "Error"));
@@ -159,7 +163,8 @@ public sealed class SearchManagerTests : TestKit
         var gateway = Sys.ActorOf(Props.Create(() =>
             new SearchManager(TimeSpan.FromMilliseconds(200))));
 
-        gateway.Tell(new TvSearchCommand(Guid.Empty, "Tatort", null, null, null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+            new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         tvProbe.ExpectMsg<TvSearchCommand>();
 
