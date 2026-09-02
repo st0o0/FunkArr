@@ -8,4 +8,7 @@ internal sealed record DownloadGetRequest(
     [FromQuery(Name = "value")] string? Value,
     [FromQuery(Name = "start")] int? Start,
     [FromQuery(Name = "limit")] int? Limit,
-    [FromQuery(Name = "output")] string? Output);
+    [FromQuery(Name = "output")] string? Output,
+    [FromQuery(Name = "del_files")] int? DelFiles,
+    [FromQuery(Name = "category")] string? Category,
+    [FromQuery(Name = "archive")] int? Archive);

@@ -21,7 +21,7 @@ public sealed class SabnzbdJsonTests
     [Fact]
     public void QueueSlot_serializes_with_sab_property_names()
     {
-        var slot = new QueueSlot("abc123", "Downloading", 0, "01:00:00", "500", "test.mkv", "sonarr", "250", "50", "Normal");
+        var slot = new QueueSlot("abc123", "Downloading", 0, "01:00:00", "500", "test.mkv", "sonarr", "250", "50", "Normal", "0");
         var json = JsonSerializer.Serialize(slot);
 
         Assert.Contains("\"nzo_id\":\"abc123\"", json);
@@ -72,7 +72,7 @@ public sealed class SabnzbdJsonTests
     [Fact]
     public void FullStatusResponse_serializes_correctly()
     {
-        var response = new FullStatusResponse(new FullStatusData(false, "", "100", "100", "/downloads"));
+        var response = new FullStatusResponse(new FullStatusData(false, "", "100", "100", "/downloads", "0"));
         var json = JsonSerializer.Serialize(response);
 
         Assert.Contains("\"status\"", json);

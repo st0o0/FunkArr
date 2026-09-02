@@ -10,4 +10,5 @@ public sealed record FullStatusData(
     [property: JsonPropertyName("speedlimit")] string Speedlimit,
     [property: JsonPropertyName("diskspace1")] string Diskspace1,
     [property: JsonPropertyName("diskspace2")] string Diskspace2,
-    [property: JsonPropertyName("completedir")] string Completedir);
+    [property: JsonPropertyName("completedir")] string Completedir,
+    [property: JsonPropertyName("speed")] string Speed);

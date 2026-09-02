@@ -24,4 +24,5 @@ public sealed record QueueSlot(
     [property: JsonPropertyName("cat")] string Cat,
     [property: JsonPropertyName("mbleft")] string Mbleft,
     [property: JsonPropertyName("percentage")] string Percentage,
-    [property: JsonPropertyName("priority")] string Priority);
+    [property: JsonPropertyName("priority")] string Priority,
+    [property: JsonPropertyName("speed")] string Speed);
