@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\FunkArr.UI\dist\**" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FunkArr.Core\FunkArr.Core.csproj" />
     <ProjectReference Include="..\FunkArr.Api\FunkArr.Api.csproj" />
     <ProjectReference Include="..\FunkArr.ArrApi\FunkArr.ArrApi.csproj" />
@@ -15,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Serilog.Extensions.Hosting" />
     <PackageReference Include="Serilog.Settings.Configuration" />
     <PackageReference Include="Serilog.Sinks.Console" />

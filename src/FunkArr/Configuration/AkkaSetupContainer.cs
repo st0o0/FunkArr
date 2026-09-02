@@ -1,4 +1,3 @@
-using Akka.Actor;
 using Akka.Cluster.Hosting;
 using Akka.Hosting;
 using Akka.Persistence.Sql.Hosting;
@@ -12,13 +11,15 @@ using Servus.Akka.Startup;
 
 namespace FunkArr.Configuration;
 
+
+
 public sealed class AkkaSetupContainer : ActorSystemSetupContainer
 {
     protected override string GetActorSystemName() => "funkarr";
 
     protected override void BuildSystem(AkkaConfigurationBuilder builder, IServiceProvider serviceProvider)
     {
-        var options = serviceProvider.GetRequiredService<IOptions<FunkArrOptions>>().Value;
+        var options = serviceProvider.GetRequiredService<IOptionsMonitor<FunkArrOptions>>().CurrentValue;
         var dbPath = Path.GetFullPath(options.PersistencePath);
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
         var connectionString = $"Data Source={dbPath}";
@@ -34,40 +35,40 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 snapshotBuilder: snapshot => snapshot.WithHealthCheck())
             .WithActorSystemLivenessCheck()
             .WithClustering()
-            .WithSingleton<IMediathekManager>(
-                "mediathek-view-web-manager",
+            .WithSingleton<IMediathekManager>("mediathek-view-web-manager",
                 (_, _, resolver) => resolver.Props<MediathekViewWebManager>())
-            .WithSingleton<IRuleSetResolver>(
-                "ruleset-resolver",
-                Props.Create(() => new RuleSetResolver()))
-            .WithSingleton<IRuleSetManager>(
-                "ruleset-manager",
-                Props.Create(() => new RuleSetManager()))
+            .WithSingleton<IRuleSetResolver>("ruleset-resolver",
+                (_, _, resolver) => resolver.Props<RuleSetResolver>())
+            .WithSingleton<IRuleSetManager>("ruleset-manager",
+                (_, _, resolver) => resolver.Props<RuleSetManager>())
             .WithShardRegion<IRuleSetRegion>(
                 "ruleset-worker",
-                (_, _, _) => _ => Props.Create(() => new RuleSetWorker()),
+                (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
+            .WithSingleton<IRuleSetUpdater>(
+                "ruleset-updater",
+                (_, _, resolver) => resolver.Props<RuleSetUpdater>())
             .WithShardRegion<IMatchHistoryRegion>(
                 "match-history",
-                (_, _, _) => entityId => Props.Create(() => new MatchHistoryWorker(entityId)),
+                (_, _, resolver) => entityId => resolver.Props<MatchHistoryWorker>(entityId),
                 new ShardMessageExtractor(),
                 new ShardOptions())
             .WithSingleton<IMatchMagicManager>(
                 "match-magic-manager",
-                Props.Create(() => new MatchMagicManager(options.ScoringPoolSize)))
+                (_, _, resolver) => resolver.Props<MatchMagicManager>())
             .WithShardRegion<ITvSearchRegion>(
                 "tv-search",
-                (_, _, _) => _ => Props.Create(() => new TvSearchWorker()),
+                (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
             .WithShardRegion<IMovieSearchRegion>(
                 "movie-search",
-                (_, _, _) => _ => Props.Create(() => new MovieSearchWorker()),
+                (_, _, resolver) => _ => resolver.Props<MovieSearchWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
             .WithSingleton<ISearchManager>(
                 "search-manager",
-                Props.Create(() => new SearchManager()));
+                (_, _, resolver) => resolver.Props<SearchManager>());
     }
 }
