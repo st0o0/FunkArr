@@ -1,11 +1,9 @@
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
-using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
-using FunkArr.Messages.Search;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
@@ -15,8 +13,6 @@ public static class IndexerApiEndpoints
 {
     private static readonly XmlSerializerNamespaces _namespaces = new(
         [new XmlQualifiedName("newznab", NewznabNamespace.Uri)]);
-
-    private static readonly TimeSpan _searchTimeout = TimeSpan.FromSeconds(30);
 
     internal const int MaxLimit = 500;
     internal const int DefaultLimit = 100;
@@ -29,14 +25,11 @@ public static class IndexerApiEndpoints
 
         group.MapGet("/", async ([AsParameters] IndexerRequest req, IActorRegistry registry) =>
         {
-            var searchGateway = registry.Get<ISearchManager>();
-
             return (req.T ?? "") switch
             {
                 "caps" => XmlResult(Serialize(new Caps())),
-                "tvsearch" => await HandleTvSearch(searchGateway, req),
-                "movie" => await HandleMovieSearch(searchGateway, req),
-                "search" => await HandleGeneralSearch(searchGateway, req),
+                "tvsearch" or "movie" or "search" =>
+                    await new SearchHandler(registry.Get<ISearchManager>()).Handle(req),
                 "get" => NzbGetResult(req.Id),
                 _ => ErrorResult(NewznabError.NoSuchFunction),
             };
@@ -52,105 +45,15 @@ public static class IndexerApiEndpoints
         _ => limit,
     };
 
-    private static async Task<IResult> HandleTvSearch(IActorRef gateway, IndexerRequest req)
-    {
-        var cmd = new TvSearchCommand(
-            Guid.Empty, req.Q,
-            ParseInt(req.Season), ParseInt(req.Ep),
-            ParseInt(req.TvdbId), req.ImdbId,
-            CapLimit(req.Limit), req.Offset);
-
-        return await AskAndFormat(gateway, cmd, req.Offset ?? 0, req.Limit ?? DefaultLimit);
-    }
-
-    private static async Task<IResult> HandleMovieSearch(IActorRef gateway, IndexerRequest req)
-    {
-        var cmd = new MovieSearchCommand(
-            Guid.Empty, req.Q, req.ImdbId, ParseInt(req.TmdbId),
-            CapLimit(req.Limit), req.Offset);
-
-        return await AskAndFormat(gateway, cmd, req.Offset ?? 0, req.Limit ?? DefaultLimit);
-    }
-
-    private static async Task<IResult> HandleGeneralSearch(IActorRef gateway, IndexerRequest req)
-    {
-        var cmd = new GeneralSearchCommand(req.Q, ParseInt(req.Cat), CapLimit(req.Limit), req.Offset);
-        return await AskAndFormat(gateway, cmd, req.Offset ?? 0, req.Limit ?? DefaultLimit);
-    }
-
-    private static async Task<IResult> AskAndFormat(IActorRef gateway, object cmd, int offset, int limit)
-    {
-        try
-        {
-            var response = await gateway.Ask<object>(cmd, _searchTimeout);
-            return response switch
-            {
-                SearchCompleted completed => XmlResult(Serialize(ToRss(completed, offset, limit))),
-                SearchFailed failed => ErrorResult(NewznabError.UnknownError(failed.Reason)),
-                _ => ErrorResult(NewznabError.UnknownError("Unexpected response")),
-            };
-        }
-        catch (Exception)
-        {
-            return ErrorResult(NewznabError.UnknownError("Search timed out"));
-        }
-    }
-
-    internal static Rss ToRss(SearchCompleted completed, int offset, int limit = DefaultLimit)
-    {
-        var paged = completed.Items.Take(limit);
-
-        var items = paged.Select(item =>
-        {
-            var nzbId = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{item.Title}|{item.Url}"));
-            return new Item
-            {
-                Title = item.Title,
-                Guid = new ItemGuid { Value = nzbId, IsPermaLink = false },
-                Link = item.Url,
-                PubDate = item.AiredAt?.ToString("R") ?? "",
-                Category = item.Quality >= 720 ? "TV > HD" : "TV > SD",
-                Description = $"{item.Channel} - {item.Topic}",
-                Enclosure = new Enclosure { Url = item.Url, Length = item.Size },
-                Attributes = BuildAttributes(item),
-            };
-        }).ToList();
-
-        return new Rss
+    internal static IResult EmptyResult(int offset) =>
+        XmlResult(Serialize(new Rss
         {
             Channel = new Channel
             {
-                Response = new NewznabResponse { Offset = offset, Total = completed.Total },
-                Items = items,
+                Response = new NewznabResponse { Offset = offset, Total = 0 },
+                Items = [],
             },
-        };
-    }
-
-    internal static List<NewznabAttribute> BuildAttributes(SearchResultItem item)
-    {
-        var attrs = new List<NewznabAttribute>
-        {
-            new() { Name = "size", Value = item.Size.ToString() },
-            new() { Name = "category", Value = item.Quality >= 720 ? "5040" : "5030" },
-        };
-
-        if (item.TvdbId is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "tvdbid", Value = item.TvdbId.Value.ToString() });
-        }
-
-        if (item.ImdbId is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "imdb", Value = item.ImdbId });
-        }
-
-        if (item.TmdbId is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "tmdbid", Value = item.TmdbId.Value.ToString() });
-        }
-
-        return attrs;
-    }
+        }));
 
     internal static int? ParseInt(string? value) =>
         int.TryParse(value, out var result) ? result : null;
@@ -172,25 +75,36 @@ public static class IndexerApiEndpoints
             return ErrorResult(NewznabError.IncorrectParameter);
         }
 
-        var pipeIndex = decoded.IndexOf('|');
-        if (pipeIndex < 0)
+        var parts = decoded.Split('\t');
+        if (parts.Length < 2)
         {
             return ErrorResult(NewznabError.IncorrectParameter);
         }
 
-        var title = decoded[..pipeIndex];
-        var url = decoded[(pipeIndex + 1)..];
+        var title = parts[0];
+        var url = parts[1];
+        var subtitleUrl = parts.Length > 2 && parts[2].Length > 0 ? parts[2] : null;
+        var channel = parts.Length > 3 ? parts[3] : "";
+        var duration = parts.Length > 4 ? parts[4] : "0";
+        var size = parts.Length > 5 ? parts[5] : "0";
+
+        var metas = new List<NzbMeta>
+        {
+            new() { Type = "title", Value = title },
+            new() { Type = "X-FunkArr-Url", Value = url },
+            new() { Type = "X-FunkArr-Channel", Value = channel },
+            new() { Type = "X-FunkArr-Duration", Value = duration },
+            new() { Type = "X-FunkArr-Size", Value = size },
+        };
+
+        if (subtitleUrl is not null)
+        {
+            metas.Add(new NzbMeta { Type = "X-FunkArr-SubtitleUrl", Value = subtitleUrl });
+        }
 
         var nzb = new Nzb
         {
-            Head = new NzbHead
-            {
-                Metas =
-                [
-                    new NzbMeta { Type = "title", Value = title },
-                    new NzbMeta { Type = "url", Value = url },
-                ],
-            },
+            Head = new NzbHead { Metas = metas },
         };
 
         return Results.File(
@@ -220,6 +134,6 @@ public static class IndexerApiEndpoints
         return writer.ToString();
     }
 
-    private static IResult XmlResult(string xml) =>
+    internal static IResult XmlResult(string xml) =>
         Results.Content(xml, "application/xml", Encoding.UTF8);
 }

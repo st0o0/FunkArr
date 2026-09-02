@@ -18,7 +18,7 @@ public sealed class Caps
     public Searching Searching { get; init; } = new();
 
     [XmlElement("categories")]
-    public Categories Categories { get; init; } = new();
+    public Categories Categories { get; init; } = Categories.Default;
 }
 
 public sealed class Server
@@ -74,6 +74,22 @@ public sealed class SearchType
 
 public sealed class Categories
 {
+    public static readonly Categories Default = new()
+    {
+        Items = [FromCategory(NewznabCategory.Movie), FromCategory(NewznabCategory.Tv)],
+    };
+
+    private static CategoryEntry FromCategory(NewznabCategory cat) => new()
+    {
+        Id = cat.ParentId,
+        Name = cat.Label,
+        SubCategories =
+        [
+            new() { Id = int.Parse(cat.SdId), Name = "SD" },
+            new() { Id = int.Parse(cat.HdId), Name = "HD" },
+        ],
+    };
+
     [XmlElement("category")]
     public List<CategoryEntry> Items { get; init; } = [];
 }

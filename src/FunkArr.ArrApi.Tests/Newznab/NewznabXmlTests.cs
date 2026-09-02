@@ -59,13 +59,24 @@ public sealed class NewznabXmlTests
     }
 
     [Fact]
-    public void Caps_categories_default_empty()
+    public void Caps_categories_declares_tv_and_movies()
     {
         var xml = IndexerApiEndpoints.Serialize(new Caps());
         var doc = XDocument.Parse(xml);
         var categories = doc.Root!.Element("categories")!.Elements("category").ToList();
 
-        Assert.Empty(categories);
+        Assert.Equal(2, categories.Count);
+        var movies = categories.First(c => c.Attribute("id")!.Value == "2000");
+        Assert.Equal("Movies", movies.Attribute("name")!.Value);
+        var movieSubs = movies.Elements("subcat").ToList();
+        Assert.Contains(movieSubs, s => s.Attribute("id")!.Value == "2030");
+        Assert.Contains(movieSubs, s => s.Attribute("id")!.Value == "2040");
+
+        var tv = categories.First(c => c.Attribute("id")!.Value == "5000");
+        Assert.Equal("TV", tv.Attribute("name")!.Value);
+        var tvSubs = tv.Elements("subcat").ToList();
+        Assert.Contains(tvSubs, s => s.Attribute("id")!.Value == "5030");
+        Assert.Contains(tvSubs, s => s.Attribute("id")!.Value == "5040");
     }
 
     [Fact]
