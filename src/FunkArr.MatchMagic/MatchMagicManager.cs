@@ -1,6 +1,8 @@
 using Akka.Actor;
 using Akka.Routing;
+using FunkArr.Core;
 using FunkArr.Messages.Scoring;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.MatchMagic;
 
@@ -10,14 +12,15 @@ public sealed class MatchMagicManager : ReceiveActor
     private readonly IActorRef _historyRef;
     private MatchMagicManagerState _state = MatchMagicManagerState.Empty;
 
-    public MatchMagicManager(int poolSize = 4, IActorRef? historyRef = null)
+    public MatchMagicManager(IOptionsMonitor<ScoringOptions> optionsMonitor, IActorRef? historyRef = null)
     {
         var routerProps = Props.Create<MatchMagicActor>()
-            .WithRouter(new SmallestMailboxPool(poolSize));
+            .WithRouter(new SmallestMailboxPool(optionsMonitor.CurrentValue.PoolSize));
         _router = Context.ActorOf(routerProps, "scoring-pool");
         _historyRef = historyRef ?? ActorRefs.Nobody;
 
         Receive<MatchingConfig>(config => _state = _state.Apply(config));
+        Receive<RemoveMatchingConfig>(msg => _state = _state.Apply(msg));
         Receive<ScoreItems>(HandleScoreItems);
     }
 

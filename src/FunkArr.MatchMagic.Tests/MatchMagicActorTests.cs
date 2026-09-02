@@ -2,7 +2,6 @@ using Akka.Actor;
 using Akka.TestKit.Xunit;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
-using Xunit;
 
 namespace FunkArr.MatchMagic.Tests;
 

@@ -1,9 +1,11 @@
 using Akka.Actor;
 using Akka.Configuration;
 using Akka.TestKit.Xunit;
+using FunkArr.Core;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
-using Xunit;
+using FunkArr.Tests.Shared;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.MatchMagic.Tests;
 
@@ -20,8 +22,16 @@ public sealed class MatchHistoryWorkerTests : TestKit
 
     private static string UniqueId() => Guid.NewGuid().ToString("N")[..12];
 
+    private static IOptionsMonitor<MatchHistoryOptions> HistoryOpts(int maxSnapshots = 100, int maxAgeDays = 30, int snapshotInterval = 20) =>
+        new TestOptionsMonitor<MatchHistoryOptions>(new MatchHistoryOptions
+        {
+            MaxSnapshots = maxSnapshots,
+            MaxAgeDays = maxAgeDays,
+            SnapshotInterval = snapshotInterval,
+        });
+
     private IActorRef CreateWorker(string ruleSetId, int maxSnapshots = 100, int maxAgeDays = 30, int snapshotInterval = 20) =>
-        Sys.ActorOf(Props.Create(() => new MatchHistoryWorker(ruleSetId, maxSnapshots, maxAgeDays, snapshotInterval)));
+        Sys.ActorOf(Props.Create(() => new MatchHistoryWorker(HistoryOpts(maxSnapshots, maxAgeDays, snapshotInterval), ruleSetId)));
 
     private static RecordScoringResult CreateRecord(string ruleSetId, Guid? requestId = null, DateTimeOffset? timestamp = null) =>
         new(

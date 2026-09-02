@@ -15,6 +15,9 @@ public static class MatchMagicManagerStateExtensions
     public static MatchMagicManagerState Apply(this MatchMagicManagerState state, MatchingConfig config) =>
         state with { Configs = state.Configs.SetItem(config.RuleSetId, config) };
 
+    public static MatchMagicManagerState Apply(this MatchMagicManagerState state, RemoveMatchingConfig msg) =>
+        state with { Configs = state.Configs.Remove(msg.RuleSetId) };
+
     public static MatchingConfig? GetConfig(this MatchMagicManagerState state, string ruleSetId) =>
         state.Configs.TryGetValue(ruleSetId, out var config) ? config : null;
 }
