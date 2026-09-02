@@ -8,4 +8,5 @@ public interface IRuleSetRegion;
 public interface ITvSearchRegion;
 public interface IMovieSearchRegion;
 public interface ISearchManager;
+public interface IRuleSetUpdater;
 public interface IMatchHistoryRegion;
