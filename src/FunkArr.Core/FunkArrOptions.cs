@@ -10,7 +10,7 @@ public sealed class FunkArrOptions
 
     public string PersistencePath => Path.Combine(DataPath, "funkarr.db");
 
-    public string DownloadPath => Path.Combine(DataPath, "downloads");
-
     public string RuleSetDataPath => Path.Combine(DataPath, "community");
+
+    public string LocalRuleSetDataPath => Path.Combine(DataPath, "local");
 }
