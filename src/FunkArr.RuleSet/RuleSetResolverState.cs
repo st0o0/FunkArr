@@ -132,11 +132,9 @@ public static class RuleSetResolverStateExtensions
         return idIndex;
     }
 
-    private static ImmutableDictionary<string, string> AddIdEntry(
-        ImmutableDictionary<string, string> idIndex, string prefix, string? value, string ruleSetId)
-    {
-        return value is not null ? idIndex.SetItem($"{prefix}:{value}", ruleSetId) : idIndex;
-    }
+    private static ImmutableDictionary<string, string> AddIdEntry(ImmutableDictionary<string, string> idIndex,
+        string prefix, string? value, string ruleSetId)
+        => value is not null ? idIndex.SetItem($"{prefix}:{value}", ruleSetId) : idIndex;
 
     public static RegisteredRuleSetsResult QueryAll(this RuleSetResolverState state)
     {

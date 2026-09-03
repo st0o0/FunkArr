@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
@@ -5,13 +6,13 @@ using FunkArr.Messages.Scoring;
 namespace FunkArr.RuleSet;
 
 public sealed record RuleSetManagerState(
-    Dictionary<string, RuleSetPaths> KnownRuleSets,
-    HashSet<string> PendingIds,
+    ImmutableDictionary<string, RuleSetPaths> KnownRuleSets,
+    ImmutableHashSet<string> PendingIds,
     bool FullRescanRequested)
 {
     public static readonly RuleSetManagerState Empty = new(
-        new Dictionary<string, RuleSetPaths>(StringComparer.Ordinal),
-        new HashSet<string>(StringComparer.Ordinal),
+        ImmutableDictionary<string, RuleSetPaths>.Empty.WithComparers(StringComparer.Ordinal),
+        ImmutableHashSet<string>.Empty.WithComparer(StringComparer.Ordinal),
         false);
 }
 
@@ -35,7 +36,6 @@ public static class RuleSetManagerStateExtensions
 
         if (!communityExists && !localExists)
         {
-            state.KnownRuleSets.Remove(ruleSetId);
             return null;
         }
 

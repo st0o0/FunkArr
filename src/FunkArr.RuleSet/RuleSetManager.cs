@@ -2,13 +2,14 @@ using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
+using Microsoft.Extensions.Options;
 using Servus.Akka;
 
 namespace FunkArr.RuleSet;
 
 public sealed class RuleSetManager : ReceiveActor
 {
-    public sealed record ScanRuleSets(string DataDirectory);
+    public sealed record ScanRuleSets;
 
     private sealed record FileChanged(string RuleSetId);
 
@@ -19,28 +20,30 @@ public sealed class RuleSetManager : ReceiveActor
     private static readonly TimeSpan _debounceWindow = TimeSpan.FromSeconds(2);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly IOptionsMonitor<FunkArrOptions> _optionsMonitor;
     private RuleSetManagerState _state = RuleSetManagerState.Empty;
-    private string _dataDirectory = "";
     private string _communityDir = "";
     private string _localDir = "";
     private FileSystemWatcher? _communityWatcher;
     private FileSystemWatcher? _localWatcher;
     private ICancelable? _flushSchedule;
 
-    public RuleSetManager()
+    public RuleSetManager(IOptionsMonitor<FunkArrOptions> optionsMonitor)
     {
-        Receive<ScanRuleSets>(HandleScan);
+        _optionsMonitor = optionsMonitor;
+
+        Receive<ScanRuleSets>(_ => HandleScan());
         Receive<FileChanged>(HandleFileChanged);
         Receive<FullRescanRequested>(_ => HandleFullRescanRequested());
         Receive<FlushChanges>(_ => HandleFlush());
         Receive<QueryRuleSetDetail>(HandleQueryDetail);
     }
 
-    private void HandleScan(ScanRuleSets msg)
+    protected override void PreStart()
     {
-        _dataDirectory = msg.DataDirectory;
-        _communityDir = Path.Combine(_dataDirectory, "community", "rulesets");
-        _localDir = Path.Combine(_dataDirectory, "local", "rulesets");
+        var options = _optionsMonitor.CurrentValue;
+        _communityDir = Path.GetFullPath(Path.Combine(options.RuleSetDataPath, "rulesets"));
+        _localDir = Path.GetFullPath(Path.Combine(options.LocalRuleSetDataPath, "rulesets"));
 
         var current = ScanDirectories();
 
@@ -56,9 +59,23 @@ public sealed class RuleSetManager : ReceiveActor
         SetupWatchers();
     }
 
+    private void HandleScan()
+    {
+        var current = ScanDirectories();
+
+        var shardRegion = Context.GetActor<IRuleSetRegion>();
+        foreach (var (id, paths) in current)
+        {
+            shardRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
+        }
+
+        _state = _state with { KnownRuleSets = current };
+        _log.Info("Re-scan: discovered {Count} rulesets", current.Count);
+    }
+
     private void HandleFileChanged(FileChanged msg)
     {
-        _state.PendingIds.Add(msg.RuleSetId);
+        _state = _state with { PendingIds = _state.PendingIds.Add(msg.RuleSetId) };
         ScheduleFlushIfNeeded();
     }
 
@@ -127,8 +144,8 @@ public sealed class RuleSetManager : ReceiveActor
         {
             KnownRuleSets = current,
             FullRescanRequested = false,
+            PendingIds = _state.PendingIds.Clear(),
         };
-        _state.PendingIds.Clear();
 
         if (added > 0 || updated > 0 || removed > 0)
         {
@@ -142,36 +159,41 @@ public sealed class RuleSetManager : ReceiveActor
         var added = 0;
         var updated = 0;
         var removed = 0;
+        var knownRuleSets = _state.KnownRuleSets;
 
         foreach (var id in _state.PendingIds)
         {
             var current = RuleSetManagerStateExtensions.CheckRuleSetPaths(id, _communityDir, _localDir);
             var hasFiles = current.CommunityPath is not null || current.LocalPath is not null;
 
-            if (!_state.KnownRuleSets.TryGetValue(id, out var known))
+            if (!knownRuleSets.TryGetValue(id, out var known))
             {
                 if (hasFiles)
                 {
                     shardRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
-                    _state.KnownRuleSets[id] = current;
+                    knownRuleSets = knownRuleSets.SetItem(id, current);
                     added++;
                 }
             }
             else if (!hasFiles)
             {
                 shardRegion.Tell(new RuleSetWorker.RemoveRuleSet(id));
-                _state.KnownRuleSets.Remove(id);
+                knownRuleSets = knownRuleSets.Remove(id);
                 removed++;
             }
             else if (known != current)
             {
                 shardRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
-                _state.KnownRuleSets[id] = current;
+                knownRuleSets = knownRuleSets.SetItem(id, current);
                 updated++;
             }
         }
 
-        _state.PendingIds.Clear();
+        _state = _state with
+        {
+            KnownRuleSets = knownRuleSets,
+            PendingIds = _state.PendingIds.Clear(),
+        };
 
         if (added > 0 || updated > 0 || removed > 0)
         {
@@ -184,6 +206,7 @@ public sealed class RuleSetManager : ReceiveActor
         var result = _state.BuildDetail(msg.RuleSetId);
         if (result is null)
         {
+            _state = _state with { KnownRuleSets = _state.KnownRuleSets.Remove(msg.RuleSetId) };
             Sender.Tell(new RuleSetNotFound(msg.RuleSetId));
             return;
         }
@@ -191,7 +214,7 @@ public sealed class RuleSetManager : ReceiveActor
         Sender.Tell(result);
     }
 
-    private Dictionary<string, RuleSetPaths> ScanDirectories()
+    private System.Collections.Immutable.ImmutableDictionary<string, RuleSetPaths> ScanDirectories()
     {
         var communityFiles = Directory.Exists(_communityDir)
             ? Directory.GetFiles(_communityDir, "*.json")
@@ -201,7 +224,7 @@ public sealed class RuleSetManager : ReceiveActor
             ? Directory.GetFiles(_localDir, "*.json")
             : [];
 
-        var result = new Dictionary<string, RuleSetPaths>(StringComparer.Ordinal);
+        var result = System.Collections.Immutable.ImmutableDictionary.CreateBuilder<string, RuleSetPaths>(StringComparer.Ordinal);
 
         foreach (var file in communityFiles)
         {
@@ -222,7 +245,7 @@ public sealed class RuleSetManager : ReceiveActor
             }
         }
 
-        return result;
+        return result.ToImmutable();
     }
 
     private void SetupWatchers()
@@ -261,6 +284,5 @@ public sealed class RuleSetManager : ReceiveActor
         _communityWatcher?.Dispose();
         _localWatcher?.Dispose();
         _flushSchedule?.Cancel();
-        base.PostStop();
     }
 }
