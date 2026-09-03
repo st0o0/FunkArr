@@ -1,6 +1,6 @@
-namespace FunkArr.Persistence.Events.Download;
+namespace FunkArr.Messages.Download;
 
-public sealed record DownloadQueued(
+public sealed record InitDownload(
     Guid DownloadId,
     string Title,
     string VideoUrl,
@@ -8,4 +8,4 @@ public sealed record DownloadQueued(
     string Channel,
     int Duration,
     long Size,
-    string Category);
+    string Category) : IWithDownloadId;

@@ -1,6 +1,6 @@
 namespace FunkArr.Messages.Download;
 
-public sealed record QueueResult(QueueItem[] Items, int TotalSlots) : IDownloadResponse;
+public sealed record QueueResult(QueueItem[] Items, int TotalSlots, int TotalItems);
 
 public sealed record QueueItem(
     Guid DownloadId,

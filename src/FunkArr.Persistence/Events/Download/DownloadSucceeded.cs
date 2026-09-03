@@ -1,9 +1,7 @@
 namespace FunkArr.Persistence.Events.Download;
 
-public sealed record DownloadStatusChanged(
+public sealed record DownloadSucceeded(
     Guid DownloadId,
-    int Status,
-    string? FilePath,
+    string FilePath,
     int DownloadTimeSeconds,
-    string? FailMessage,
     long CompletedAt);

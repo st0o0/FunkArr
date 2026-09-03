@@ -6,7 +6,4 @@ public enum DownloadStatus
     Processing = 1,
     Completed = 2,
     Failed = 3,
-    Extracting = 4,
-    Moving = 5,
-    Verifying = 6,
 }
