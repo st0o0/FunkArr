@@ -1,28 +1,33 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface-base: #020617;
-  --color-surface-raised: #0F172A;
-  --color-surface-elevated: #1E293B;
+  --color-surface-base: #0c0f1a;
+  --color-surface-raised: #141829;
+  --color-surface-elevated: #1c2137;
+  --color-surface-overlay: #242a42;
 
-  --color-border-default: #334155;
-  --color-border-subtle: rgb(51 65 85 / 0.5);
+  --color-border-default: rgba(255 255 255 / 0.08);
+  --color-border-subtle: rgba(255 255 255 / 0.04);
+  --color-border-focus: rgba(99 179 237 / 0.4);
 
-  --color-text-primary: #F8FAFC;
-  --color-text-body: #E2E8F0;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #475569;
+  --color-text-primary: #f0f2f8;
+  --color-text-body: #c8cee0;
+  --color-text-secondary: #8892ab;
+  --color-text-muted: #4e576e;
 
-  --color-brand-400: #2DD4BF;
-  --color-brand-500: #14B8A6;
-  --color-brand-600: #0D9488;
-  --color-brand-700: #0F766E;
-  --color-brand-900: #134E4A;
+  --color-brand-400: #63b3ed;
+  --color-brand-500: #4299e1;
+  --color-brand-600: #3182ce;
+  --color-brand-700: #2b6cb0;
+  --color-brand-900: #1a365d;
 
-  --color-status-ok: #22C55E;
-  --color-status-warn: #F59E0B;
-  --color-status-fail: #EF4444;
-  --color-status-info: #3B82F6;
+  --color-accent-400: #68d391;
+  --color-accent-500: #48bb78;
+
+  --color-status-ok: #48bb78;
+  --color-status-warn: #ecc94b;
+  --color-status-fail: #fc8181;
+  --color-status-info: #63b3ed;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, monospace;
@@ -31,4 +36,24 @@
 body {
   background-color: var(--color-surface-base);
   color: var(--color-text-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255 255 255 / 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255 255 255 / 0.18);
 }

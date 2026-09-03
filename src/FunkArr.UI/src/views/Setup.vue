@@ -1,26 +1,29 @@
 <template>
   <div>
-    <h1 class="text-xl font-bold text-text-primary mb-6">Setup Guide</h1>
+    <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-6">Setup Guide</h1>
 
     <!-- Step indicators -->
-    <div class="flex items-center gap-2 mb-8">
+    <div class="flex items-center gap-1 mb-8">
       <div
         v-for="(label, i) in stepLabels"
         :key="i"
-        class="flex items-center gap-2"
+        class="flex items-center gap-1"
       >
-        <div
-          class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold"
+        <button
+          @click="i < currentStep ? currentStep = i : null"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
           :class="i < currentStep
-            ? 'bg-status-ok text-white'
+            ? 'bg-status-ok/10 text-status-ok cursor-pointer hover:bg-status-ok/20'
             : i === currentStep
-              ? 'bg-brand-500 text-white'
-              : 'bg-surface-elevated text-text-muted'"
+              ? 'bg-brand-600/15 text-brand-400'
+              : 'bg-surface-elevated text-text-muted cursor-default'"
         >
-          {{ i < currentStep ? '✓' : i + 1 }}
-        </div>
-        <span class="text-sm text-text-secondary hidden sm:inline">{{ label }}</span>
-        <span v-if="i < stepLabels.length - 1" class="w-6 border-t border-border-default" />
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" :class="i < currentStep ? 'bg-status-ok text-white' : i === currentStep ? 'bg-brand-500 text-white' : 'bg-surface-overlay text-text-muted'">
+            {{ i < currentStep ? '&#x2713;' : i + 1 }}
+          </span>
+          <span class="hidden sm:inline font-medium">{{ label }}</span>
+        </button>
+        <svg v-if="i < stepLabels.length - 1" class="w-4 h-4 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
       </div>
     </div>
 
@@ -31,15 +34,15 @@
       <div v-if="loading" class="text-text-muted">Running checks...</div>
       <div v-else-if="error" class="text-status-fail mb-4">{{ error }}</div>
 
-      <div v-if="health" class="space-y-3 mb-6">
+      <div v-if="health" class="space-y-2.5 mb-6">
         <div
           v-for="(result, name) in health.checks"
           :key="name"
-          class="flex items-start gap-3 p-3 rounded-lg bg-surface-raised border-l-2"
+          class="flex items-start gap-3 p-3.5 rounded-xl bg-surface-raised border-l-2 border border-border-subtle"
           :class="{
-            'border-status-ok': result.status === 'ok',
-            'border-status-warn': result.status === 'warn',
-            'border-status-fail': result.status === 'fail',
+            'border-l-status-ok': result.status === 'ok',
+            'border-l-status-warn': result.status === 'warn',
+            'border-l-status-fail': result.status === 'fail',
           }"
         >
           <span
@@ -65,14 +68,14 @@
       <div class="flex gap-3">
         <button
           @click="runHealthCheck"
-          class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-md hover:border-brand-500 text-text-body"
+          class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors"
         >
           Re-check
         </button>
         <button
           @click="currentStep++"
           :disabled="hasFailures"
-          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-md hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>
@@ -84,12 +87,12 @@
       <h2 class="text-base font-semibold text-text-primary mb-4">Select Services to Configure</h2>
       <p class="text-text-secondary text-sm mb-6">Choose which *arr applications you want to set up with FunkArr.</p>
 
-      <div class="space-y-3 mb-6">
+      <div class="space-y-2.5 mb-6">
         <label
           v-for="svc in services"
           :key="svc.value"
-          class="flex items-start gap-3 p-4 rounded-lg bg-surface-raised border cursor-pointer transition-colors"
-          :class="selectedServices.includes(svc.value) ? 'border-brand-500' : 'border-border-default hover:bg-surface-elevated'"
+          class="flex items-start gap-3 p-4 rounded-xl bg-surface-raised border cursor-pointer transition-colors"
+          :class="selectedServices.includes(svc.value) ? 'border-brand-500/50 bg-brand-900/10' : 'border-border-default hover:bg-surface-elevated'"
         >
           <input type="checkbox" v-model="selectedServices" :value="svc.value" class="mt-0.5 accent-brand-500" />
           <div>
@@ -100,11 +103,11 @@
       </div>
 
       <div class="flex gap-3">
-        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-md hover:border-brand-500 text-text-body">Back</button>
+        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors">Back</button>
         <button
           @click="currentStep++"
           :disabled="selectedServices.length === 0"
-          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-md hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>
@@ -116,7 +119,7 @@
       <h2 class="text-base font-semibold text-text-primary mb-1">Configure {{ currentServiceConfig.title }}</h2>
       <p class="text-text-secondary text-sm mb-6">{{ currentServiceConfig.description }}</p>
 
-      <div class="bg-surface-raised rounded-lg border border-border-default overflow-hidden mb-6">
+      <div class="bg-surface-raised rounded-xl border border-border-default overflow-hidden mb-6">
         <table class="w-full text-sm">
           <tbody>
             <tr
@@ -124,14 +127,14 @@
               :key="field.label"
               class="border-b border-border-subtle last:border-b-0"
             >
-              <td class="px-4 py-3 font-medium text-text-secondary bg-surface-elevated w-36">{{ field.label }}</td>
+              <td class="px-4 py-3 font-medium text-text-secondary bg-surface-elevated/50 w-36">{{ field.label }}</td>
               <td class="px-4 py-3 font-mono text-sm text-text-body">
                 <div class="flex items-center gap-2">
                   <span>{{ field.value }}</span>
                   <button
                     v-if="field.copyable"
                     @click="copyToClipboard(field.value)"
-                    class="text-xs px-2 py-0.5 border border-border-default rounded-md hover:border-brand-500 text-text-secondary"
+                    class="text-xs px-2 py-0.5 border border-border-default rounded-md hover:border-brand-500/40 hover:bg-brand-900/10 text-text-secondary transition-colors"
                     :title="'Copy ' + field.label"
                   >
                     {{ justCopied === field.value ? 'Copied!' : 'Copy' }}
@@ -144,23 +147,23 @@
         </table>
       </div>
 
-      <div class="p-4 bg-brand-900/20 border border-brand-500/30 rounded-lg text-sm text-brand-400 mb-6">
+      <div class="p-4 bg-brand-900/15 border border-brand-500/20 rounded-xl text-sm text-brand-400 mb-6">
         After entering these values, use the <strong>Test</strong> button in {{ currentServiceConfig.title }} to verify the connection works.
       </div>
 
       <div class="flex gap-3">
-        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-md hover:border-brand-500 text-text-body">Back</button>
+        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors">Back</button>
         <button
           v-if="isLastStep"
           @click="$router.push('/')"
-          class="px-4 py-2 text-sm bg-status-ok text-white rounded-md hover:brightness-110"
+          class="px-4 py-2 text-sm bg-status-ok text-white rounded-lg hover:brightness-110 transition"
         >
           Done
         </button>
         <button
           v-else
           @click="currentStep++"
-          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-md hover:bg-brand-500"
+          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 transition-colors"
         >
           Next
         </button>

@@ -1,17 +1,17 @@
 <template>
   <div>
-    <h1 class="text-xl font-bold text-text-primary mb-4">RuleSets</h1>
+    <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-5">RuleSets</h1>
 
-    <div v-if="loading" class="text-text-muted">Loading...</div>
-    <div v-else-if="error" class="text-status-fail">{{ error }}</div>
-    <div v-else-if="rulesets.length === 0" class="text-text-muted">No rulesets registered.</div>
+    <div v-if="loading" class="text-text-muted text-sm">Loading...</div>
+    <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
+    <div v-else-if="rulesets.length === 0" class="text-text-muted text-sm">No rulesets registered.</div>
 
-    <div v-else class="grid gap-3">
+    <div v-else class="grid gap-2.5">
       <router-link
         v-for="rs in rulesets"
         :key="rs.ruleSetId"
         :to="`/rulesets/${rs.ruleSetId}`"
-        class="block p-4 bg-surface-raised rounded-lg border border-border-default hover:border-brand-500 transition-colors"
+        class="block p-4 bg-surface-raised rounded-xl border border-border-default hover:border-brand-500/30 hover:bg-surface-elevated/50 transition-colors"
       >
         <div class="flex items-baseline gap-3 mb-1">
           <span class="font-mono text-sm font-semibold text-brand-400">{{ rs.ruleSetId }}</span>

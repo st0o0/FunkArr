@@ -1,18 +1,23 @@
 <template>
-  <div class="min-h-screen grid grid-cols-[64px_1fr] md:grid-cols-[64px_1fr]" :class="collapsed ? 'grid-cols-[48px_1fr]!' : ''">
-    <aside class="bg-surface-raised border-r border-border-default flex flex-col h-screen sticky top-0">
-      <div class="px-3 py-4 flex items-center justify-center md:justify-start">
-        <router-link to="/" class="text-brand-500 font-bold tracking-tight text-lg">
-          <span class="hidden md:inline">FunkArr</span>
-          <span class="md:hidden text-sm">FA</span>
+  <div class="min-h-screen grid grid-cols-[200px_1fr]">
+    <aside class="bg-surface-raised flex flex-col h-screen sticky top-0 border-r border-border-default">
+      <div class="px-4 py-5">
+        <router-link to="/" class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 2v12M8 5v9M13 3v11" />
+            </svg>
+          </div>
+          <span class="text-text-primary font-semibold tracking-tight">FunkArr</span>
         </router-link>
       </div>
 
-      <div class="border-t border-border-default" />
-
-      <nav class="flex-1 flex flex-col gap-1 px-2 py-3">
+      <nav class="flex-1 flex flex-col gap-0.5 px-2 py-1">
+        <div class="px-3 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          Media
+        </div>
         <router-link
-          v-for="item in navItems"
+          v-for="item in primaryNav"
           :key="item.to"
           :to="item.to"
           custom
@@ -20,26 +25,46 @@
         >
           <button
             @click="navigate"
-            class="w-full flex items-center gap-3 px-2 py-2 rounded-md text-sm transition-colors"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors"
             :class="isRouteActive(item, isActive, isExactActive)
-              ? 'border-l-2 border-brand-500 bg-brand-900/20 text-text-primary'
-              : 'border-l-2 border-transparent text-text-secondary hover:bg-surface-elevated hover:text-text-body'"
+              ? 'bg-brand-600/15 text-brand-400'
+              : 'text-text-secondary hover:bg-surface-elevated hover:text-text-body'"
           >
-            <svg class="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="item.icon" />
-            <span class="hidden md:inline truncate">{{ item.label }}</span>
-            <span class="sr-only md:hidden">{{ item.label }}</span>
+            <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="item.icon" />
+            <span class="truncate">{{ item.label }}</span>
+          </button>
+        </router-link>
+
+        <div class="px-3 pt-5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+          System
+        </div>
+        <router-link
+          v-for="item in systemNav"
+          :key="item.to"
+          :to="item.to"
+          custom
+          v-slot="{ navigate, isActive, isExactActive }"
+        >
+          <button
+            @click="navigate"
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors"
+            :class="isRouteActive(item, isActive, isExactActive)
+              ? 'bg-brand-600/15 text-brand-400'
+              : 'text-text-secondary hover:bg-surface-elevated hover:text-text-body'"
+          >
+            <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" v-html="item.icon" />
+            <span class="truncate">{{ item.label }}</span>
           </button>
         </router-link>
       </nav>
 
-      <div class="border-t border-border-default" />
-      <div class="px-3 py-3 text-text-muted text-xs text-center">
-        <span class="hidden md:inline">v0.1.0</span>
+      <div class="border-t border-border-default px-4 py-3">
+        <div class="text-[11px] text-text-muted">v0.1.0</div>
       </div>
     </aside>
 
-    <main class="min-h-screen bg-surface-base">
-      <div class="max-w-7xl mx-auto w-full p-6">
+    <main class="min-h-screen">
+      <div class="max-w-6xl mx-auto w-full px-8 py-6">
         <slot />
       </div>
     </main>
@@ -51,13 +76,35 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
-const navItems = [
+interface NavItem {
+  to: string
+  label: string
+  exact: boolean
+  icon: string
+}
+
+const primaryNav: NavItem[] = [
   {
     to: '/',
     label: 'Dashboard',
     exact: true,
     icon: '<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>',
   },
+  {
+    to: '/queue',
+    label: 'Downloads',
+    exact: false,
+    icon: '<path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>',
+  },
+  {
+    to: '/history',
+    label: 'History',
+    exact: false,
+    icon: '<circle cx="8" cy="8" r="6"/><path d="M8 4v4l2.5 2.5"/>',
+  },
+]
+
+const systemNav: NavItem[] = [
   {
     to: '/rulesets',
     label: 'RuleSets',
@@ -72,9 +119,7 @@ const navItems = [
   },
 ]
 
-const collapsed = false
-
-function isRouteActive(item: typeof navItems[number], isActive: boolean, isExactActive: boolean): boolean {
+function isRouteActive(item: NavItem, isActive: boolean, isExactActive: boolean): boolean {
   if (item.exact) return isExactActive
   return isActive || route.path.startsWith(item.to)
 }
