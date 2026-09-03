@@ -4,7 +4,7 @@ namespace FunkArr.Download;
 
 internal static class FfmpegProgressParser
 {
-    public static FfmpegProgress? Parse(Dictionary<string, string> block)
+    public static ProgressUpdate? Parse(Dictionary<string, string> block)
     {
         if (block.Count == 0)
         {
@@ -14,9 +14,8 @@ internal static class FfmpegProgressParser
         var outTimeUs = GetLong(block, "out_time_us");
         var totalSize = GetLong(block, "total_size");
         var speed = ParseSpeed(block.GetValueOrDefault("speed"));
-        var isEnd = block.GetValueOrDefault("progress") == "end";
 
-        return new FfmpegProgress(outTimeUs, totalSize, speed, isEnd);
+        return new ProgressUpdate(totalSize, outTimeUs, speed);
     }
 
     public static Dictionary<string, string> AccumulateLine(Dictionary<string, string> block, string line)

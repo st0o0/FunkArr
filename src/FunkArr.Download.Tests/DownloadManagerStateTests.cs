@@ -6,165 +6,187 @@ namespace FunkArr.Download.Tests;
 
 public sealed class DownloadManagerStateTests
 {
-    private static DownloadQueued MakeQueued(Guid id, string title = "Test") =>
-        new(id, title, "https://example.com/video.mp4", null, "ARD", 3600, 1_000_000, "tv");
-
     [Fact]
-    public void Apply_DownloadQueued_adds_to_queue()
-    {
-        var id = Guid.NewGuid();
-        var state = DownloadManagerState.Empty.Apply(MakeQueued(id));
-
-        Assert.Single(state.Queue);
-        Assert.Equal(id, state.Queue[0].DownloadId);
-        Assert.Equal(DownloadStatus.Queued, state.Queue[0].Status);
-    }
-
-    [Fact]
-    public void Apply_StatusChanged_to_processing()
+    public void Apply_Enqueued_adds_to_queue()
     {
         var id = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .Apply(new DownloadStatusChanged(id, (int)DownloadStatus.Processing, null, 0, null, 0));
+            .Apply(new DownloadEnqueued(id));
 
-        Assert.Single(state.Queue);
-        Assert.Equal(DownloadStatus.Processing, state.Queue[0].Status);
+        Assert.Single(state.Queued);
+        Assert.Equal(id, state.Queued[0]);
+        Assert.Empty(state.Dispatched);
     }
 
     [Fact]
-    public void Apply_StatusChanged_to_completed_moves_to_history()
+    public void Apply_Dispatched_moves_from_queued_to_dispatched()
     {
         var id = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .Apply(new DownloadStatusChanged(id, (int)DownloadStatus.Completed,
-                "/downloads/test.mkv", 120, null, 1234567890));
+            .Apply(new DownloadEnqueued(id))
+            .Apply(new DownloadDispatched(id));
 
-        Assert.Empty(state.Queue);
-        Assert.Single(state.History);
-        Assert.Equal(DownloadStatus.Completed, state.History[0].Status);
-        Assert.Equal("/downloads/test.mkv", state.History[0].FilePath);
+        Assert.Empty(state.Queued);
+        Assert.Contains(id, state.Dispatched);
     }
 
     [Fact]
-    public void Apply_StatusChanged_to_failed_moves_to_history()
+    public void Apply_Dequeued_removes_from_dispatched()
     {
         var id = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .Apply(new DownloadStatusChanged(id, (int)DownloadStatus.Failed,
-                null, 0, "Connection refused", 1234567890));
+            .Apply(new DownloadEnqueued(id))
+            .Apply(new DownloadDispatched(id))
+            .Apply(new DownloadDequeued(id));
 
-        Assert.Empty(state.Queue);
-        Assert.Single(state.History);
-        Assert.Equal(DownloadStatus.Failed, state.History[0].Status);
-        Assert.Equal("Connection refused", state.History[0].FailMessage);
+        Assert.Empty(state.Queued);
+        Assert.Empty(state.Dispatched);
     }
 
     [Fact]
-    public void Apply_DownloadRemoved_removes_from_queue()
+    public void Apply_Dequeued_removes_from_queued()
     {
         var id = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .Apply(new DownloadRemoved(id));
+            .Apply(new DownloadEnqueued(id))
+            .Apply(new DownloadDequeued(id));
 
-        Assert.Empty(state.Queue);
+        Assert.Empty(state.Queued);
+        Assert.Empty(state.Dispatched);
     }
 
     [Fact]
-    public void Apply_DownloadRemoved_removes_from_history()
-    {
-        var id = Guid.NewGuid();
-        var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .Apply(new DownloadStatusChanged(id, (int)DownloadStatus.Completed,
-                "/downloads/test.mkv", 120, null, 1234567890))
-            .Apply(new DownloadRemoved(id));
-
-        Assert.Empty(state.History);
-    }
-
-    [Fact]
-    public void UpdateProgress_updates_in_memory()
-    {
-        var id = Guid.NewGuid();
-        var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .UpdateProgress(id, 500_000, 1_800_000_000, 1.5);
-
-        Assert.Equal(500_000L, state.Queue[0].BytesDownloaded);
-        Assert.Equal(1_800_000_000L, state.Queue[0].CurrentTimeUs);
-        Assert.Equal(1.5, state.Queue[0].Speed);
-    }
-
-    [Fact]
-    public void RequeueProcessing_resets_processing_items()
-    {
-        var id = Guid.NewGuid();
-        var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .Apply(new DownloadStatusChanged(id, (int)DownloadStatus.Processing, null, 0, null, 0))
-            .UpdateProgress(id, 500_000, 1_800_000_000, 1.5)
-            .RequeueProcessing();
-
-        Assert.Equal(DownloadStatus.Queued, state.Queue[0].Status);
-        Assert.Equal(0L, state.Queue[0].BytesDownloaded);
-        Assert.Equal(0.0, state.Queue[0].Speed);
-    }
-
-    [Fact]
-    public void ActiveCount_counts_processing_items()
+    public void ResetDispatched_moves_dispatched_to_front_of_queue()
     {
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id1))
-            .Apply(MakeQueued(id2))
-            .Apply(new DownloadStatusChanged(id1, (int)DownloadStatus.Processing, null, 0, null, 0));
+            .Apply(new DownloadEnqueued(id1))
+            .Apply(new DownloadEnqueued(id2))
+            .Apply(new DownloadDispatched(id1))
+            .ResetDispatched();
 
-        Assert.Equal(1, state.ActiveCount());
+        Assert.Equal(2, state.Queued.Count);
+        Assert.Equal(id1, state.Queued[0]);
+        Assert.Equal(id2, state.Queued[1]);
+        Assert.Empty(state.Dispatched);
     }
 
     [Fact]
-    public void NextQueued_returns_first_queued()
+    public void Contains_finds_queued_items()
+    {
+        var id = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(new DownloadEnqueued(id));
+
+        Assert.True(state.Contains(id));
+        Assert.False(state.Contains(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public void Contains_finds_dispatched_items()
+    {
+        var id = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(new DownloadEnqueued(id))
+            .Apply(new DownloadDispatched(id));
+
+        Assert.True(state.Contains(id));
+    }
+
+    [Fact]
+    public void Queue_preserves_insertion_order()
     {
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
+        var id3 = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id1, "First"))
-            .Apply(MakeQueued(id2, "Second"))
-            .Apply(new DownloadStatusChanged(id1, (int)DownloadStatus.Processing, null, 0, null, 0));
+            .Apply(new DownloadEnqueued(id1))
+            .Apply(new DownloadEnqueued(id2))
+            .Apply(new DownloadEnqueued(id3));
 
-        var next = state.NextQueued();
-        Assert.NotNull(next);
-        Assert.Equal(id2, next.DownloadId);
+        Assert.Equal(3, state.Queued.Count);
+        Assert.Equal(id1, state.Queued[0]);
+        Assert.Equal(id2, state.Queued[1]);
+        Assert.Equal(id3, state.Queued[2]);
     }
 
     [Fact]
-    public void ToQueueResult_maps_all_queue_items()
+    public void Multiple_dispatches_respected()
     {
-        var id = Guid.NewGuid();
-        var state = DownloadManagerState.Empty.Apply(MakeQueued(id));
-        var result = state.ToQueueResult();
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var id3 = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(new DownloadEnqueued(id1))
+            .Apply(new DownloadEnqueued(id2))
+            .Apply(new DownloadEnqueued(id3))
+            .Apply(new DownloadDispatched(id1))
+            .Apply(new DownloadDispatched(id2));
 
-        Assert.Single(result.Items);
-        Assert.Equal(1, result.TotalSlots);
-        Assert.Equal(id, result.Items[0].DownloadId);
+        Assert.Single(state.Queued);
+        Assert.Equal(id3, state.Queued[0]);
+        Assert.Equal(2, state.Dispatched.Count);
+    }
+
+    private static QueueItem MakeItem(string title, string category = "tv") =>
+        new(Guid.NewGuid(), title, DownloadStatus.Queued, 1000, 0, 0, 100, 0, category);
+
+    [Fact]
+    public void PaginateQueue_returns_all_when_limit_zero()
+    {
+        var items = new[] { MakeItem("A"), MakeItem("B"), MakeItem("C") };
+
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(), 3);
+
+        Assert.Equal(3, result.Items.Length);
+        Assert.Equal(3, result.TotalItems);
+        Assert.Equal(3, result.TotalSlots);
     }
 
     [Fact]
-    public void ToHistoryResult_maps_all_history_items()
+    public void PaginateQueue_applies_start_and_limit()
     {
-        var id = Guid.NewGuid();
-        var state = DownloadManagerState.Empty
-            .Apply(MakeQueued(id))
-            .Apply(new DownloadStatusChanged(id, (int)DownloadStatus.Completed,
-                "/downloads/test.mkv", 120, null, 1234567890));
+        var items = new[] { MakeItem("A"), MakeItem("B"), MakeItem("C"), MakeItem("D") };
 
-        var result = state.ToHistoryResult();
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 2), 3);
+
+        Assert.Equal(2, result.Items.Length);
+        Assert.Equal("B", result.Items[0].Title);
+        Assert.Equal("C", result.Items[1].Title);
+        Assert.Equal(4, result.TotalItems);
+    }
+
+    [Fact]
+    public void PaginateQueue_filters_by_category()
+    {
+        var items = new[] { MakeItem("A", "tv"), MakeItem("B", "movies"), MakeItem("C", "tv") };
+
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: "tv"), 3);
+
+        Assert.Equal(2, result.Items.Length);
+        Assert.Equal(2, result.TotalItems);
+    }
+
+    [Fact]
+    public void PaginateQueue_category_filter_is_case_insensitive()
+    {
+        var items = new[] { MakeItem("A", "TV"), MakeItem("B", "movies") };
+
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: "tv"), 3);
+
         Assert.Single(result.Items);
-        Assert.Equal(id, result.Items[0].DownloadId);
+    }
+
+    [Fact]
+    public void PaginateQueue_category_filter_with_pagination()
+    {
+        var items = new[] { MakeItem("A", "tv"), MakeItem("B", "tv"), MakeItem("C", "tv"), MakeItem("D", "movies") };
+
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 1, Category: "tv"), 3);
+
+        Assert.Single(result.Items);
+        Assert.Equal("B", result.Items[0].Title);
+        Assert.Equal(3, result.TotalItems);
     }
 }

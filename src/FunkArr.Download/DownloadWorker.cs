@@ -1,166 +1,258 @@
-using System.Diagnostics;
 using Akka.Actor;
 using Akka.Cluster.Sharding;
+using Akka.Event;
+using Akka.Persistence;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
+using FunkArr.Persistence.Events.Download;
+using Microsoft.Extensions.Options;
 using Servus.Akka;
 
 namespace FunkArr.Download;
 
-public sealed class DownloadWorker : ReceiveActor
+public sealed class DownloadWorker : ReceivePersistentActor
 {
-    private sealed record FfmpegCompleted(int ExitCode, string? ErrorOutput, int ElapsedSeconds);
-    private sealed record FfmpegProgressTick(FfmpegProgress Progress);
-    private sealed record SubtitleRetry;
+    public override string PersistenceId => "download-" + Context.Self.Path.Name;
 
-    private DownloadWorkerState _state = DownloadWorkerState.Empty;
-    private FfmpegProcess? _ffmpeg;
+    private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
+    private readonly IActorRef _downloadHistory = Context.GetActor<IDownloadHistoryManager>();
+    private readonly DownloadOptions _downloadOptions;
+    private DownloadWorkerState _state = DownloadWorkerState.Empty;
+    private CancellationTokenSource? _cts;
+    private string? _incompletePath;
+    private string? _outputPath;
 
-    public DownloadWorker()
+    public DownloadWorker(IOptionsMonitor<DownloadOptions> options)
     {
-        Receive<StartDownload>(HandleStart);
-        Receive<FfmpegProgressTick>(HandleProgress);
-        Receive<FfmpegCompleted>(HandleCompleted);
-        Receive<SubtitleRetry>(HandleSubtitleRetry);
+        _downloadOptions = options.CurrentValue;
+
+        Command<InitDownload>(HandleInit);
+        Command<StartDownload>(HandleStart);
+        Command<CancelDownload>(HandleCancel);
+        Command<ResetDownload>(HandleReset);
+        Command<QueryWorkerStatus>(HandleQueryStatus);
+        Command<ProgressUpdate>(HandleProgress);
+        Command<ProcessExited>(HandleExited);
+
+        Recover<DownloadInitialized>(evt => _state = _state.Apply(evt));
+        Recover<DownloadStarted>(evt => _state = _state.Apply(evt));
+        Recover<DownloadSucceeded>(evt => _state = _state.Apply(evt));
+        Recover<DownloadFaulted>(evt => _state = _state.Apply(evt));
+        Recover<RecoveryCompleted>(_ => OnRecoveryCompleted());
+    }
+
+    private void HandleInit(InitDownload cmd)
+    {
+        if (_state.IsInitialized)
+        {
+            return;
+        }
+
+        var evt = new DownloadInitialized(
+            cmd.DownloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
+            cmd.Channel, cmd.Duration, cmd.Size, cmd.Category);
+
+        Persist(evt, e => _state = _state.Apply(e));
     }
 
     private void HandleStart(StartDownload cmd)
     {
-        _state = _state.Apply(cmd);
-        StartFfmpeg(cmd.VideoUrl, cmd.SubtitleUrl, cmd.OutputPath);
-    }
-
-    private void HandleProgress(FfmpegProgressTick tick)
-    {
-        if (_state.Command is null)
+        if (!_state.IsInitialized || _state.Status != WorkerStatus.Initialized)
         {
             return;
         }
 
-        var cmd = _state.Command;
-        var progress = new DownloadProgress(
-            cmd.DownloadId,
-            tick.Progress.OutTimeUs,
-            cmd.Duration,
-            tick.Progress.TotalSize,
-            cmd.Size,
-            tick.Progress.Speed);
+        ComputePaths();
+        Directory.CreateDirectory(_incompletePath!);
 
-        _downloadManager.Tell(progress);
+        Persist(new DownloadStarted(cmd.DownloadId), e =>
+        {
+            _state = _state.Apply(e);
+            _cts = FfmpegRunner.Run(Self, _state.VideoUrl!, _state.SubtitleUrl, _outputPath!);
+        });
     }
 
-    private void HandleCompleted(FfmpegCompleted msg)
+    private void HandleCancel(CancelDownload _)
     {
-        if (_state.Command is null)
+        CancelRunning();
+        Passivate();
+    }
+
+    private void HandleReset(ResetDownload _)
+    {
+        if (_state.Status != WorkerStatus.Failed)
         {
             return;
         }
 
-        var cmd = _state.Command;
+        var evt = new DownloadInitialized(
+            Guid.Parse(Context.Self.Path.Name),
+            _state.Title!, _state.VideoUrl!, _state.SubtitleUrl,
+            _state.Channel!, _state.Duration, _state.Size,
+            _state.Category!);
+
+        Persist(evt, e => _state = _state.Apply(e));
+    }
+
+    private void HandleQueryStatus(QueryWorkerStatus _)
+    {
+        if (!_state.IsInitialized)
+        {
+            return;
+        }
+
+        Sender.Tell(new WorkerStatusResult(
+            Guid.Parse(Context.Self.Path.Name),
+            _state.Title!,
+            _state.Category!,
+            _state.Size,
+            (int)_state.Status,
+            _state.BytesDownloaded,
+            _state.CurrentTimeUs,
+            _state.Duration,
+            _state.Speed,
+            _outputPath,
+            _state.FailMessage));
+    }
+
+    private void HandleProgress(ProgressUpdate msg)
+    {
+        if (!_state.IsInitialized)
+        {
+            return;
+        }
+
+        _state = _state with
+        {
+            BytesDownloaded = msg.TotalSize,
+            CurrentTimeUs = msg.OutTimeUs,
+            Speed = msg.Speed,
+        };
+    }
+
+    private void HandleExited(ProcessExited msg)
+    {
+        if (!_state.IsInitialized)
+        {
+            return;
+        }
+
+        var downloadId = Guid.Parse(Context.Self.Path.Name);
 
         if (msg.ExitCode == 0)
         {
-            _state = _state.WithStatus(DownloadStatus.Completed);
-            _downloadManager.Tell(new DownloadCompleted(cmd.DownloadId, cmd.OutputPath, msg.ElapsedSeconds));
-            Passivate();
+            var outputDir = Path.GetDirectoryName(_outputPath!);
+            if (outputDir is not null)
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+
+            var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var evt = new DownloadSucceeded(
+                downloadId, _outputPath!, msg.ElapsedSeconds, completedAt);
+
+            Persist(evt, e =>
+            {
+                _state = _state.Apply(e);
+                CleanupIncomplete();
+                _downloadManager.Tell(new SlotFree(downloadId));
+                _downloadHistory.Tell(new RecordDownload(
+                    downloadId, _state.Title!, _state.Category!, _state.Size,
+                    DownloadStatus.Completed, _outputPath!, null,
+                    msg.ElapsedSeconds, completedAt));
+                Passivate();
+            });
         }
-        else if (cmd.SubtitleUrl is not null && IsSubtitleError(msg.ErrorOutput))
+        else if (_state.SubtitleUrl is not null && IsSubtitleError(msg.ErrorOutput))
         {
-            Self.Tell(new SubtitleRetry());
+            _state = _state with { SubtitleUrl = null };
+            _cts = FfmpegRunner.Run(Self, _state.VideoUrl!, null, _outputPath!);
         }
         else
         {
-            _state = _state.WithStatus(DownloadStatus.Failed);
             var reason = TruncateError(msg.ErrorOutput ?? "FFmpeg exited with code " + msg.ExitCode);
-            _downloadManager.Tell(new DownloadFailed(cmd.DownloadId, reason));
-            Passivate();
+            var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var evt = new DownloadFaulted(downloadId, reason);
+
+            Persist(evt, e =>
+            {
+                _state = _state.Apply(e);
+                _downloadManager.Tell(new SlotFree(downloadId));
+                _downloadHistory.Tell(new RecordDownload(
+                    downloadId, _state.Title!, _state.Category!, _state.Size,
+                    DownloadStatus.Failed, null, reason, 0, completedAt));
+                Passivate();
+            });
         }
     }
 
-    private void HandleSubtitleRetry(SubtitleRetry _)
+    private void ComputePaths()
     {
-        if (_state.Command is null)
+        var entityId = Context.Self.Path.Name;
+        _incompletePath = Path.GetFullPath(Path.Combine(_downloadOptions.IncompletePath, entityId));
+
+        var categoryDir = _downloadOptions.ResolveCategoryDir(_state.Category);
+        var outputDir = string.IsNullOrEmpty(categoryDir)
+            ? Path.Combine(_downloadOptions.CompletePath, _state.Title!)
+            : Path.Combine(_downloadOptions.CompletePath, categoryDir, _state.Title!);
+        _outputPath = Path.GetFullPath(Path.Combine(outputDir, _state.Title! + ".mkv"));
+    }
+
+    private void CleanupIncomplete()
+    {
+        if (_incompletePath is null)
         {
             return;
         }
-
-        var cmd = _state.Command;
-        _state = _state.Apply(cmd with { SubtitleUrl = null });
-        StartFfmpeg(cmd.VideoUrl, null, cmd.OutputPath);
-    }
-
-    private void StartFfmpeg(string videoUrl, string? subtitleUrl, string outputPath)
-    {
-        var args = FfmpegArgumentBuilder.Build(videoUrl, subtitleUrl, outputPath);
-        var self = Self;
 
         try
         {
-            _ffmpeg = FfmpegProcess.Start(args);
-            _state = _state.WithProcessId(_ffmpeg.ProcessId);
+            if (Directory.Exists(_incompletePath))
+            {
+                Directory.Delete(_incompletePath, recursive: true);
+            }
         }
         catch (Exception ex)
         {
-            if (_state.Command is not { } cmd)
-            {
-                return;
-            }
-
-            _state = _state.WithStatus(DownloadStatus.Failed);
-            _downloadManager.Tell(new DownloadFailed(cmd.DownloadId, "Failed to start FFmpeg: " + ex.Message));
-            Passivate();
-            return;
+            _log.Warning("Failed to clean up incomplete directory {Path}: {Error}",
+                _incompletePath, ex.Message);
         }
+    }
 
-        var process = _ffmpeg;
-        var sw = Stopwatch.StartNew();
-
-        Task.Run(async () =>
-        {
-            var block = new Dictionary<string, string>();
-            var lastProgressAt = DateTimeOffset.MinValue;
-
-            while (await process.StandardOutput.ReadLineAsync() is { } line)
-            {
-                FfmpegProgressParser.AccumulateLine(block, line);
-
-                if (FfmpegProgressParser.IsBlockComplete(block))
-                {
-                    var progress = FfmpegProgressParser.Parse(block);
-                    if (progress is not null)
-                    {
-                        var now = DateTimeOffset.UtcNow;
-                        if ((now - lastProgressAt).TotalSeconds >= 1.0 || progress.IsEnd)
-                        {
-                            self.Tell(new FfmpegProgressTick(progress));
-                            lastProgressAt = now;
-                        }
-                    }
-                    block = [];
-                }
-            }
-
-            var exitCode = await process.WaitForExitAsync();
-            sw.Stop();
-            var stderr = exitCode != 0 ? process.GetStderrOutput() : null;
-            return new FfmpegCompleted(exitCode, stderr, (int)sw.Elapsed.TotalSeconds);
-        }).PipeTo(self);
+    private void CancelRunning()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
     }
 
     private void Passivate()
     {
-        _ffmpeg?.Dispose();
-        _ffmpeg = null;
+        CancelRunning();
         Context.Parent.Tell(new Passivate(PoisonPill.Instance));
     }
 
-    protected override void PostStop()
+    private void OnRecoveryCompleted()
     {
-        _ffmpeg?.Dispose();
-        _ffmpeg = null;
-        base.PostStop();
+        if (_state.IsInitialized)
+        {
+            ComputePaths();
+        }
+
+        switch (_state.Status)
+        {
+            case WorkerStatus.Downloading:
+                _state = _state with { Status = WorkerStatus.Initialized };
+                break;
+            case WorkerStatus.Completed:
+            case WorkerStatus.Failed:
+                Passivate();
+                break;
+        }
     }
+
+    protected override void PostStop() => CancelRunning();
 
     private static bool IsSubtitleError(string? stderr) =>
         stderr is not null && (

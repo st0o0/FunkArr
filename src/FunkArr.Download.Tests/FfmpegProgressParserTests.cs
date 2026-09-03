@@ -21,7 +21,6 @@ public sealed class FfmpegProgressParserTests
         Assert.Equal(11_360_000L, result.OutTimeUs);
         Assert.Equal(11_010_048L, result.TotalSize);
         Assert.Equal(1.5, result.Speed);
-        Assert.False(result.IsEnd);
     }
 
     [Fact]
@@ -38,7 +37,9 @@ public sealed class FfmpegProgressParserTests
         var result = FfmpegProgressParser.Parse(block);
 
         Assert.NotNull(result);
-        Assert.True(result.IsEnd);
+        Assert.Equal(5_348_000_000L, result.OutTimeUs);
+        Assert.Equal(1_632_632_832L, result.TotalSize);
+        Assert.Equal(1.0, result.Speed);
     }
 
     [Fact]

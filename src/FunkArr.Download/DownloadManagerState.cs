@@ -4,119 +4,58 @@ using FunkArr.Persistence.Events.Download;
 namespace FunkArr.Download;
 
 public sealed record DownloadManagerState(
-    IReadOnlyList<DownloadEntry> Queue,
-    IReadOnlyList<HistoryEntry> History)
+    IReadOnlyList<Guid> Queued,
+    IReadOnlySet<Guid> Dispatched)
 {
-    public static readonly DownloadManagerState Empty = new([], []);
+    public static readonly DownloadManagerState Empty = new([], new HashSet<Guid>());
 }
-
-public sealed record DownloadEntry(
-    Guid DownloadId,
-    string Title,
-    string VideoUrl,
-    string? SubtitleUrl,
-    string Channel,
-    int Duration,
-    long Size,
-    string Category,
-    DownloadStatus Status,
-    long BytesDownloaded,
-    long CurrentTimeUs,
-    double Speed);
-
-public sealed record HistoryEntry(
-    Guid DownloadId,
-    string Title,
-    string Category,
-    long Size,
-    int DownloadTimeSeconds,
-    string FilePath,
-    DownloadStatus Status,
-    string FailMessage,
-    long CompletedAt);
 
 public static class DownloadManagerStateExtensions
 {
-    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadQueued evt)
-    {
-        var entry = new DownloadEntry(
-            evt.DownloadId, evt.Title, evt.VideoUrl, evt.SubtitleUrl,
-            evt.Channel, evt.Duration, evt.Size, evt.Category,
-            DownloadStatus.Queued, 0, 0, 0.0);
+    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadEnqueued evt) =>
+        state with { Queued = [.. state.Queued, evt.DownloadId] };
 
-        return state with { Queue = [.. state.Queue, entry] };
-    }
-
-    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadStatusChanged evt)
-    {
-        var status = (DownloadStatus)evt.Status;
-
-        if (status is DownloadStatus.Completed or DownloadStatus.Failed)
+    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadDispatched evt) =>
+        state with
         {
-            var queueEntry = state.Queue.FirstOrDefault(e => e.DownloadId == evt.DownloadId);
-            if (queueEntry is null)
-            {
-                return state;
-            }
+            Queued = state.Queued.Where(id => id != evt.DownloadId).ToArray(),
+            Dispatched = state.Dispatched.Append(evt.DownloadId).ToHashSet(),
+        };
 
-            var historyEntry = new HistoryEntry(
-                evt.DownloadId, queueEntry.Title, queueEntry.Category, queueEntry.Size,
-                evt.DownloadTimeSeconds, evt.FilePath ?? "", status,
-                evt.FailMessage ?? "", evt.CompletedAt);
+    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadDequeued evt) =>
+        state with
+        {
+            Queued = state.Queued.Where(id => id != evt.DownloadId).ToArray(),
+            Dispatched = state.Dispatched.Where(id => id != evt.DownloadId).ToHashSet(),
+        };
 
-            return state with
-            {
-                Queue = state.Queue.Where(e => e.DownloadId != evt.DownloadId).ToArray(),
-                History = [.. state.History, historyEntry],
-            };
+    public static DownloadManagerState ResetDispatched(this DownloadManagerState state) =>
+        state with
+        {
+            Queued = [.. state.Dispatched, .. state.Queued],
+            Dispatched = new HashSet<Guid>(),
+        };
+
+    public static bool Contains(this DownloadManagerState state, Guid downloadId) =>
+        state.Queued.Contains(downloadId) || state.Dispatched.Contains(downloadId);
+
+    public static QueueResult PaginateQueue(QueueItem[] items, QueryQueue query, int totalSlots)
+    {
+        IEnumerable<QueueItem> filtered = items;
+        if (query.Category is not null)
+        {
+            filtered = filtered.Where(i => string.Equals(i.Category, query.Category, StringComparison.OrdinalIgnoreCase));
         }
 
-        return state with
+        var materialized = filtered.ToArray();
+        var totalItems = materialized.Length;
+
+        IEnumerable<QueueItem> paged = materialized.Skip(query.Start);
+        if (query.Limit > 0)
         {
-            Queue = state.Queue.Select(e => e.DownloadId == evt.DownloadId
-                ? e with { Status = status }
-                : e).ToArray(),
-        };
+            paged = paged.Take(query.Limit);
+        }
+
+        return new QueueResult(paged.ToArray(), totalSlots, totalItems);
     }
-
-    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadRemoved evt) =>
-        state with
-        {
-            Queue = state.Queue.Where(e => e.DownloadId != evt.DownloadId).ToArray(),
-            History = state.History.Where(e => e.DownloadId != evt.DownloadId).ToArray(),
-        };
-
-    public static DownloadManagerState UpdateProgress(
-        this DownloadManagerState state, Guid downloadId, long bytesDownloaded, long currentTimeUs, double speed) =>
-        state with
-        {
-            Queue = state.Queue.Select(e => e.DownloadId == downloadId
-                ? e with { BytesDownloaded = bytesDownloaded, CurrentTimeUs = currentTimeUs, Speed = speed }
-                : e).ToArray(),
-        };
-
-    public static DownloadManagerState RequeueProcessing(this DownloadManagerState state) =>
-        state with
-        {
-            Queue = state.Queue.Select(e => e.Status == DownloadStatus.Processing
-                ? e with { Status = DownloadStatus.Queued, BytesDownloaded = 0, CurrentTimeUs = 0, Speed = 0.0 }
-                : e).ToArray(),
-        };
-
-    public static int ActiveCount(this DownloadManagerState state) =>
-        state.Queue.Count(e => e.Status == DownloadStatus.Processing);
-
-    public static DownloadEntry? NextQueued(this DownloadManagerState state) =>
-        state.Queue.FirstOrDefault(e => e.Status == DownloadStatus.Queued);
-
-    public static QueueResult ToQueueResult(this DownloadManagerState state) =>
-        new(state.Queue.Select(e => new QueueItem(
-            e.DownloadId, e.Title, e.Status, e.Size, e.BytesDownloaded,
-            e.CurrentTimeUs, e.Duration, e.Speed, e.Category)).ToArray(),
-            state.Queue.Count);
-
-    public static HistoryResult ToHistoryResult(this DownloadManagerState state) =>
-        new(state.History.Select(e => new HistoryItem(
-            e.DownloadId, e.Title, e.Category, e.Size, e.DownloadTimeSeconds,
-            e.FilePath, e.Status, e.FailMessage, e.CompletedAt)).ToArray());
 }
