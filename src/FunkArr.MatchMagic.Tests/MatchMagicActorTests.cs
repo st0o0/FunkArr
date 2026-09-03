@@ -1,5 +1,8 @@
 using Akka.Actor;
+using Akka.Hosting;
+using Akka.TestKit;
 using Akka.TestKit.Xunit;
+using FunkArr.Core;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 
@@ -7,6 +10,13 @@ namespace FunkArr.MatchMagic.Tests;
 
 public sealed class MatchMagicActorTests : TestKit
 {
+    private readonly TestProbe _historyProbe;
+
+    public MatchMagicActorTests()
+    {
+        _historyProbe = CreateTestProbe();
+        ActorRegistry.For(Sys).Register<IMatchHistoryRegion>(_historyProbe, overwrite: true);
+    }
     private static MatchingConfig Config(float confidence, params MatchingRule[] rules) =>
         new("test", confidence, rules);
 
@@ -24,7 +34,7 @@ public sealed class MatchMagicActorTests : TestKit
     private ScoreCompleted Score(MatchingConfig config, params ScoreCandidate[] items)
     {
         var actor = Sys.ActorOf(Props.Create<MatchMagicActor>());
-        actor.Tell(new ExecuteScoring(config, items, Guid.Empty, new ScoringOrigin("test", "test"), ActorRefs.Nobody));
+        actor.Tell(new ExecuteScoring(config, items, Guid.Empty, new ScoringOrigin("test", "test")));
         return ExpectMsg<ScoreCompleted>();
     }
 
@@ -499,11 +509,10 @@ public sealed class MatchMagicActorTests : TestKit
 
     private RecordScoringResult ScoreWithTrace(MatchingConfig config, params ScoreCandidate[] items)
     {
-        var historyProbe = CreateTestProbe();
         var actor = Sys.ActorOf(Props.Create<MatchMagicActor>());
-        actor.Tell(new ExecuteScoring(config, items, Guid.NewGuid(), new ScoringOrigin("test", "test"), historyProbe));
+        actor.Tell(new ExecuteScoring(config, items, Guid.NewGuid(), new ScoringOrigin("test", "test")));
         ExpectMsg<ScoreCompleted>();
-        return historyProbe.ExpectMsg<RecordScoringResult>();
+        return _historyProbe.ExpectMsg<RecordScoringResult>();
     }
 
     [Fact]
@@ -612,16 +621,4 @@ public sealed class MatchMagicActorTests : TestKit
         Assert.Equal(RuleOutcome.Matched, trace.RuleTraces[1].Outcome);
     }
 
-    [Fact]
-    public void Trace_history_not_sent_when_nobody()
-    {
-        var actor = Sys.ActorOf(Props.Create<MatchMagicActor>());
-        var config = Config(0.9f, new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.AirdateExtraction)));
-
-        actor.Tell(new ExecuteScoring(config, [Candidate(title: "Sendung vom 24.10.2024")],
-            Guid.Empty, new ScoringOrigin("test", "test"), ActorRefs.Nobody));
-
-        ExpectMsg<ScoreCompleted>();
-    }
 }

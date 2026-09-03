@@ -11,14 +11,13 @@ namespace FunkArr.MatchMagic;
 public sealed class MatchHistoryWorker : ReceivePersistentActor
 {
     private readonly IOptionsMonitor<MatchHistoryOptions> _optionsMonitor;
-    private readonly string _ruleSetId;
     private MatchHistoryState _state = MatchHistoryState.Empty;
 
-    public override string PersistenceId => $"match-history-{_ruleSetId}";
+    public override string PersistenceId => $"match-history-{field}";
 
     public MatchHistoryWorker(IOptionsMonitor<MatchHistoryOptions> optionsMonitor, string ruleSetId)
     {
-        _ruleSetId = ruleSetId;
+        PersistenceId = ruleSetId;
         _optionsMonitor = optionsMonitor;
 
         Context.SetReceiveTimeout(TimeSpan.FromMinutes(5));

@@ -1,8 +1,8 @@
 using Akka.Actor;
+using Akka.Hosting;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.Scoring;
-using FunkArr.Messages.Scoring.History;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Options;
 
@@ -10,6 +10,10 @@ namespace FunkArr.MatchMagic.Tests;
 
 public sealed class MatchMagicManagerTests : TestKit
 {
+    public MatchMagicManagerTests()
+    {
+        ActorRegistry.For(Sys).Register<IMatchHistoryRegion>(CreateTestProbe(), overwrite: true);
+    }
     private static IOptionsMonitor<ScoringOptions> ScoringOpts(int poolSize = 1) =>
         new TestOptionsMonitor<ScoringOptions>(new ScoringOptions { PoolSize = poolSize });
 
@@ -91,26 +95,6 @@ public sealed class MatchMagicManagerTests : TestKit
         manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin("test", "test"), candidates));
         var resultB = ExpectMsg<ScoreCompleted>();
         Assert.Equal(0.6, resultB.Results[0].Score, 0.001);
-    }
-
-    [Fact]
-    public void HistoryRef_forwarded_to_pool_workers()
-    {
-        var historyProbe = CreateTestProbe();
-        var manager = Sys.ActorOf(Props.Create(() => new MatchMagicManager(ScoringOpts(), historyProbe)));
-
-        manager.Tell(CreateAirdateConfig());
-
-        var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
-        manager.Tell(new ScoreItems(Guid.NewGuid(), "test", new ScoringOrigin("sonarr", "Test"), candidates));
-
-        ExpectMsg<ScoreCompleted>();
-        var history = historyProbe.ExpectMsg<RecordScoringResult>();
-        Assert.Equal("test", history.RuleSetId);
-        Assert.Equal("sonarr", history.Origin.Source);
-        Assert.Equal(1, history.CandidateCount);
-        Assert.Equal(1, history.MatchedCount);
-        Assert.Single(history.ItemTraces);
     }
 
     [Fact]

@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Akka.Actor;
+using FunkArr.Core;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
+using Servus.Akka;
 
 namespace FunkArr.MatchMagic;
 
@@ -15,6 +17,8 @@ public sealed class MatchMagicActor : ReceiveActor
         "Januar", "Februar", "März", "April", "Mai", "Juni",
         "Juli", "August", "September", "Oktober", "November", "Dezember"
     ];
+
+    private readonly IActorRef _historyRegion = Context.GetActor<IMatchHistoryRegion>();
 
     public MatchMagicActor()
     {
@@ -58,7 +62,8 @@ public sealed class MatchMagicActor : ReceiveActor
                 }
 
                 var confidence = rule.Confidence ?? msg.Config.DefaultConfidence;
-                scored[i] = new ScoredItem(i, confidence, true);
+                var metadata = BuildMetadata(tracedId, candidate);
+                scored[i] = new ScoredItem(i, confidence, true, metadata);
                 matched = true;
                 matchedRuleId = rule.Id;
                 identification = tracedId;
@@ -83,13 +88,10 @@ public sealed class MatchMagicActor : ReceiveActor
 
         Sender.Tell(new ScoreCompleted(msg.RequestId, scored));
 
-        if (msg.HistoryRef != ActorRefs.Nobody)
-        {
-            var matchedCount = scored.Count(s => s.Matched);
-            msg.HistoryRef.Tell(new RecordScoringResult(
-                msg.RequestId, msg.Config.RuleSetId, msg.Origin,
-                DateTimeOffset.UtcNow, msg.Items.Length, matchedCount, itemTraces));
-        }
+        var matchedCount = scored.Count(s => s.Matched);
+        _historyRegion.Tell(new RecordScoringResult(
+            msg.RequestId, msg.Config.RuleSetId, msg.Origin,
+            DateTimeOffset.UtcNow, msg.Items.Length, matchedCount, itemTraces));
     }
 
     private static (bool passed, FilterGroupTrace? trace) EvaluateFiltersTraced(
@@ -133,17 +135,12 @@ public sealed class MatchMagicActor : ReceiveActor
             }
         }
 
-        if (subGroups.Count == 0)
+        return subGroups.Count switch
         {
-            return (true, null);
-        }
-
-        if (subGroups.Count == 1)
-        {
-            return (overallPassed, subGroups[0].Group);
-        }
-
-        return (overallPassed, new FilterGroupTrace("All", overallPassed, subGroups.ToArray()));
+            0 => (true, null),
+            1 => (overallPassed, subGroups[0].Group),
+            _ => (overallPassed, new FilterGroupTrace("All", overallPassed, subGroups.ToArray()))
+        };
     }
 
     private static (bool passed, FilterGroupTrace trace) EvaluateGroupTraced(
@@ -233,8 +230,6 @@ public sealed class MatchMagicActor : ReceiveActor
         FilterNode.ConditionNode c => new FilterNodeTrace(
             c.Condition.Field.ToString(), c.Condition.Op.ToString(),
             c.Condition.Value, null, false, true, null),
-        FilterNode.GroupNode => new FilterNodeTrace(
-            null, null, null, null, false, true, null),
         _ => new FilterNodeTrace(null, null, null, null, false, true, null),
     };
 
@@ -548,6 +543,20 @@ public sealed class MatchMagicActor : ReceiveActor
         }
 
         return null;
+    }
+
+    private static MetadataSpec? BuildMetadata(TracedIdentification? id, ScoreCandidate candidate)
+    {
+        if (id is null)
+        {
+            return null;
+        }
+
+        DateTimeOffset? airedAt = candidate.Timestamp > 0
+            ? DateTimeOffset.FromUnixTimeSeconds(candidate.Timestamp)
+            : null;
+
+        return new MetadataSpec(id.Season, id.Episode, airedAt);
     }
 
     private static string NormalizeUmlauts(string input) => input

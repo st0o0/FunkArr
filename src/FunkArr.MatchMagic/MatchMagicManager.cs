@@ -9,15 +9,13 @@ namespace FunkArr.MatchMagic;
 public sealed class MatchMagicManager : ReceiveActor
 {
     private readonly IActorRef _router;
-    private readonly IActorRef _historyRef;
     private MatchMagicManagerState _state = MatchMagicManagerState.Empty;
 
-    public MatchMagicManager(IOptionsMonitor<ScoringOptions> optionsMonitor, IActorRef? historyRef = null)
+    public MatchMagicManager(IOptionsMonitor<ScoringOptions> optionsMonitor)
     {
         var routerProps = Props.Create<MatchMagicActor>()
             .WithRouter(new SmallestMailboxPool(optionsMonitor.CurrentValue.PoolSize));
         _router = Context.ActorOf(routerProps, "scoring-pool");
-        _historyRef = historyRef ?? ActorRefs.Nobody;
 
         Receive<MatchingConfig>(config => _state = _state.Apply(config));
         Receive<RemoveMatchingConfig>(msg => _state = _state.Apply(msg));
@@ -34,6 +32,6 @@ public sealed class MatchMagicManager : ReceiveActor
             return;
         }
 
-        _router.Tell(new ExecuteScoring(config, msg.Candidates, msg.RequestId, msg.Origin, _historyRef), Sender);
+        _router.Tell(new ExecuteScoring(config, msg.Candidates, msg.RequestId, msg.Origin), Sender);
     }
 }

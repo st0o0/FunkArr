@@ -45,7 +45,7 @@ public static class MatchHistoryStateExtensions
             evt.MatchedCount,
             evt.ItemTraces);
 
-        return state with { Snapshots = state.Snapshots.Add(snapshot) };
+        return new MatchHistoryState(Snapshots: state.Snapshots.Add(snapshot));
     }
 
     public static MatchHistoryState Trim(this MatchHistoryState state, int maxSnapshots, int maxAgeDays)
@@ -60,7 +60,7 @@ public static class MatchHistoryStateExtensions
             trimmed = trimmed.Skip(trimmed.Count - maxSnapshots).ToImmutableList();
         }
 
-        return state with { Snapshots = trimmed };
+        return new MatchHistoryState(Snapshots: trimmed);
     }
 
     public static ScoringHistoryResult QueryHistory(
