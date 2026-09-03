@@ -18,35 +18,42 @@ public static class SetupApiEndpoints
 
         group.MapGet("/setup", async (
             IOptionsMonitor<FunkArrOptions> options,
-            IHttpClientFactory httpClientFactory) =>
+            IOptionsMonitor<DownloadOptions> downloadOpts,
+            IHttpClientFactory httpClientFactory,
+            HttpContext ctx) =>
         {
             var opts = options.CurrentValue;
+            var dlOpts = downloadOpts.CurrentValue;
+            var selfBaseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
 
             var apiKeyCheck = CheckApiKey(opts);
             var mediathekTask = CheckMediathekViewWeb(httpClientFactory);
             var dataTask = CheckDirectory("dataDirectory", opts.DataPath);
-            var downloadTask = CheckDirectory("downloadDirectory", opts.DownloadPath);
-            var indexerTask = CheckSelfEndpoint(httpClientFactory, opts, "/index/api?t=caps&apikey=");
-            var downloadApiTask = CheckSelfEndpoint(httpClientFactory, opts, "/download/api?mode=version&apikey=");
+            var completeTask = CheckDirectory("completeDirectory", dlOpts.CompletePath);
+            var incompleteTask = CheckDirectory("incompleteDirectory", dlOpts.IncompletePath);
+            var indexerTask = CheckSelfEndpoint(httpClientFactory, selfBaseUrl, opts, "/index/api?t=caps&apikey=");
+            var downloadApiTask = CheckSelfEndpoint(httpClientFactory, selfBaseUrl, opts, "/download/api?mode=version&apikey=");
             var ffmpegTask = CheckFfmpeg();
 
-            await Task.WhenAll(mediathekTask, dataTask, downloadTask, indexerTask, downloadApiTask, ffmpegTask);
+            await Task.WhenAll(mediathekTask, dataTask, completeTask, incompleteTask, indexerTask, downloadApiTask, ffmpegTask);
 
             var checks = new Dictionary<string, CheckResult>
             {
                 ["apiKey"] = apiKeyCheck,
                 ["mediathekViewWeb"] = await mediathekTask,
                 ["dataDirectory"] = await dataTask,
-                ["downloadDirectory"] = await downloadTask,
+                ["completeDirectory"] = await completeTask,
+                ["incompleteDirectory"] = await incompleteTask,
                 ["indexerApi"] = await indexerTask,
                 ["downloadApi"] = await downloadApiTask,
                 ["ffmpeg"] = await ffmpegTask,
             };
 
+            var port = ctx.Request.Host.Port ?? (ctx.Request.Scheme == "https" ? 443 : 80);
             var connectionInfo = new SetupConnectionInfo(
                 IndexerApiPath: "/index/api",
                 DownloadApiPath: "/download/api",
-                DefaultPort: 5000);
+                DefaultPort: port);
 
             return Results.Ok(new SetupHealthCheck(checks, connectionInfo));
         });
@@ -110,12 +117,12 @@ public static class SetupApiEndpoints
     }
 
     private static async Task<CheckResult> CheckSelfEndpoint(
-        IHttpClientFactory factory, FunkArrOptions options, string pathWithParam)
+        IHttpClientFactory factory, string selfBaseUrl, FunkArrOptions options, string pathWithParam)
     {
         try
         {
             using var client = factory.CreateClient();
-            client.BaseAddress = new Uri("http://localhost:5000");
+            client.BaseAddress = new Uri(selfBaseUrl);
             client.Timeout = _httpTimeout;
             var url = $"{pathWithParam}{Uri.EscapeDataString(options.ApiKey)}";
             using var response = await client.GetAsync(url);

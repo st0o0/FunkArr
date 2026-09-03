@@ -7,6 +7,7 @@ namespace FunkArr.ArrApi.Tests.Newznab;
 
 public sealed class SearchResultMappingTests
 {
+    private static readonly SearchHandler _handler = new(null!, "http://localhost:6969", "test-key");
     [Fact]
     public void ToRss_maps_search_completed_to_rss()
     {
@@ -20,16 +21,17 @@ public sealed class SearchResultMappingTests
             ],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
 
         Assert.Equal(1, rss.Channel.Response.Total);
         Assert.Single(rss.Channel.Items);
         var item = rss.Channel.Items[0];
         Assert.Equal("Tatort: Die goldene Zeit", item.Title);
-        Assert.Equal("https://example.com/hd.mp4", item.Link);
+        Assert.StartsWith("http://localhost:6969/index/api?t=get&id=", item.Link);
         Assert.Equal("TV > HD", item.Category);
         Assert.Equal("ARD - Tatort", item.Description);
         Assert.Equal(1200000000, item.Enclosure.Length);
+        Assert.Equal(item.Link, item.Enclosure.Url);
     }
 
     [Fact]
@@ -40,7 +42,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Test", "ZDF", "Topic", "url", 3600, 500000, 480, null, 0.5)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
 
         Assert.Equal("TV > SD", rss.Channel.Items[0].Category);
         Assert.Equal("5030", rss.Channel.Items[0].Attributes[1].Value);
@@ -54,10 +56,10 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Title", "CH", "Topic", "https://example.com/v.mp4", 100, 0, 720, null, 1.0)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
         var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(rss.Channel.Items[0].Guid.Value));
 
-        Assert.Equal("Title\thttps://example.com/v.mp4\t\tCH\t100\t0", decoded);
+        Assert.Equal("Title\thttps://example.com/v.mp4\t\tCH\t100\t0\ttv", decoded);
     }
 
     [Fact]
@@ -68,7 +70,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 5, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 5, 100, NewznabCategory.Tv);
         var xml = IndexerApiEndpoints.Serialize(rss);
 
         Assert.Contains("<title>Test</title>", xml);
@@ -85,7 +87,7 @@ public sealed class SearchResultMappingTests
                 TvdbId: 83214)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
         var attrs = rss.Channel.Items[0].Attributes;
 
         Assert.Contains(attrs, a => a.Name == "tvdbid" && a.Value == "83214");
@@ -100,7 +102,7 @@ public sealed class SearchResultMappingTests
                 ImdbId: "tt0806910")],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
         var attrs = rss.Channel.Items[0].Attributes;
 
         Assert.Contains(attrs, a => a.Name == "imdb" && a.Value == "tt0806910");
@@ -116,7 +118,7 @@ public sealed class SearchResultMappingTests
                 TmdbId: 2116)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
         var attrs = rss.Channel.Items[0].Attributes;
 
         Assert.Contains(attrs, a => a.Name == "tmdbid" && a.Value == "2116");
@@ -130,7 +132,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
         var attrs = rss.Channel.Items[0].Attributes;
 
         Assert.DoesNotContain(attrs, a => a.Name == "tvdbid");
@@ -146,7 +148,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Film", "ARD", "Film", "url", 5400, 1200000000, 720, null, 0.9)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Movie);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Movie);
 
         Assert.Equal("Movies > HD", rss.Channel.Items[0].Category);
         Assert.Equal("2040", rss.Channel.Items[0].Attributes[1].Value);
@@ -160,7 +162,7 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Film", "ZDF", "Film", "url", 3600, 500000, 480, null, 0.5)],
             1);
 
-        var rss = SearchHandler.ToRss(completed, 0, 100, NewznabCategory.Movie);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Movie);
 
         Assert.Equal("Movies > SD", rss.Channel.Items[0].Category);
         Assert.Equal("2030", rss.Channel.Items[0].Attributes[1].Value);

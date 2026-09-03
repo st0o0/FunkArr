@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace FunkArr.ArrApi.Newznab;
 
-internal sealed class SearchHandler(IActorRef gateway)
+internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string apiKey)
 {
     private static readonly TimeSpan _searchTimeout = TimeSpan.FromSeconds(30);
 
@@ -34,11 +34,6 @@ internal sealed class SearchHandler(IActorRef gateway)
 
     private static (SearchCommand?, NewznabCategory) BuildTvSearch(IndexerRequest req)
     {
-        if (string.IsNullOrEmpty(req.Q) && req.TvdbId is null && req.ImdbId is null)
-        {
-            return (null, NewznabCategory.Tv);
-        }
-
         var cmd = new SearchCommand(req.Q, null,
             IndexerApiEndpoints.CapLimit(req.Limit), req.Offset,
             new SearchCommand.TvParams(
@@ -52,11 +47,6 @@ internal sealed class SearchHandler(IActorRef gateway)
 
     private static (SearchCommand?, NewznabCategory) BuildMovieSearch(IndexerRequest req)
     {
-        if (string.IsNullOrEmpty(req.Q) && req.ImdbId is null && req.TmdbId is null)
-        {
-            return (null, NewznabCategory.Movie);
-        }
-
         var cmd = new SearchCommand(req.Q, null,
             IndexerApiEndpoints.CapLimit(req.Limit), req.Offset,
             new SearchCommand.MovieParams(req.ImdbId, IndexerApiEndpoints.ParseInt(req.TmdbId)));
@@ -80,7 +70,7 @@ internal sealed class SearchHandler(IActorRef gateway)
             return response switch
             {
                 SearchCompleted completed => IndexerApiEndpoints.XmlResult(
-                    IndexerApiEndpoints.Serialize(ToRss(completed, offset, limit, category))),
+                    IndexerApiEndpoints.Serialize(this.ToRss(completed, offset, limit, category))),
                 SearchFailed failed => IndexerApiEndpoints.ErrorResult(NewznabError.UnknownError(failed.Reason)),
                 _ => IndexerApiEndpoints.ErrorResult(NewznabError.UnknownError("Unexpected response")),
             };
@@ -91,7 +81,7 @@ internal sealed class SearchHandler(IActorRef gateway)
         }
     }
 
-    internal static Rss ToRss(SearchCompleted completed, int offset, int limit, NewznabCategory category)
+    internal Rss ToRss(SearchCompleted completed, int offset, int limit, NewznabCategory category)
     {
         var paged = completed.Items.Take(limit);
 
@@ -103,17 +93,19 @@ internal sealed class SearchHandler(IActorRef gateway)
                 item.SubtitleUrl ?? "",
                 item.Channel,
                 item.Duration.ToString(),
-                item.Size.ToString());
+                item.Size.ToString(),
+                category == NewznabCategory.Movie ? "movie" : "tv");
             var nzbId = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(nzbPayload));
+            var getNzbUrl = $"{baseUrl}/index/api?t=get&id={Uri.EscapeDataString(nzbId)}&apikey={Uri.EscapeDataString(apiKey)}";
             return new Item
             {
                 Title = item.Title,
                 Guid = new ItemGuid { Value = nzbId, IsPermaLink = false },
-                Link = item.Url,
+                Link = getNzbUrl,
                 PubDate = item.AiredAt?.ToString("R") ?? "",
                 Category = category.DisplayName(item.Quality),
                 Description = $"{item.Channel} - {item.Topic}",
-                Enclosure = new Enclosure { Url = item.Url, Length = item.Size },
+                Enclosure = new Enclosure { Url = getNzbUrl, Length = item.Size },
                 Attributes = BuildAttributes(item, category),
             };
         }).ToList();

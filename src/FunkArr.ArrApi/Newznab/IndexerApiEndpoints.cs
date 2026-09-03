@@ -23,13 +23,16 @@ public static class IndexerApiEndpoints
             .AddEndpointFilter(new ApiKeyEndpointFilter(
                 () => ErrorResult(NewznabError.InvalidApiKey)));
 
-        group.MapGet("/", async ([AsParameters] IndexerRequest req, IActorRegistry registry) =>
+        group.MapGet("/", async ([AsParameters] IndexerRequest req, IActorRegistry registry, HttpContext ctx) =>
         {
             return (req.T ?? "") switch
             {
                 "caps" => XmlResult(Serialize(new Caps())),
                 "tvsearch" or "movie" or "search" =>
-                    await new SearchHandler(registry.Get<ISearchManager>()).Handle(req),
+                    await new SearchHandler(
+                        await registry.GetAsync<ISearchManager>(),
+                        $"{ctx.Request.Scheme}://{ctx.Request.Host}",
+                        ctx.Request.Query["apikey"].FirstOrDefault() ?? "").Handle(req),
                 "get" => NzbGetResult(req.Id),
                 _ => ErrorResult(NewznabError.NoSuchFunction),
             };
@@ -87,6 +90,7 @@ public static class IndexerApiEndpoints
         var channel = parts.Length > 3 ? parts[3] : "";
         var duration = parts.Length > 4 ? parts[4] : "0";
         var size = parts.Length > 5 ? parts[5] : "0";
+        var category = parts.Length > 6 && parts[6].Length > 0 ? parts[6] : null;
 
         var metas = new List<NzbMeta>
         {
@@ -100,6 +104,11 @@ public static class IndexerApiEndpoints
         if (subtitleUrl is not null)
         {
             metas.Add(new NzbMeta { Type = "X-FunkArr-SubtitleUrl", Value = subtitleUrl });
+        }
+
+        if (category is not null)
+        {
+            metas.Add(new NzbMeta { Type = "X-FunkArr-Category", Value = category });
         }
 
         var nzb = new Nzb
