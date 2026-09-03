@@ -29,6 +29,11 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             .Bind(configuration.GetSection(MatchHistoryOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<DownloadOptions>()
+            .Bind(configuration.GetSection(DownloadOptions.SectionName))
+            .ValidateOnStart();
+
         services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;

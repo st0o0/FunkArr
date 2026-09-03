@@ -30,6 +30,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
 
         app.MapRuleSetApi();
         app.MapSetupApi();
+        app.MapQueueApi();
         app.MapIndexerApi();
         app.MapDownloadApi();
 

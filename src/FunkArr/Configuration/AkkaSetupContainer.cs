@@ -13,8 +13,6 @@ using Servus.Akka.Startup;
 
 namespace FunkArr.Configuration;
 
-
-
 public sealed class AkkaSetupContainer : ActorSystemSetupContainer
 {
     protected override string GetActorSystemName() => "funkarr";
@@ -51,24 +49,17 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => resolver.Props<RuleSetResolver>())
             .WithSingleton<IRuleSetManager>("ruleset-manager",
                 (_, _, resolver) => resolver.Props<RuleSetManager>())
-            .WithShardRegion<IRuleSetRegion>(
-                "ruleset-worker",
-                (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
-                new ShardMessageExtractor(),
-                new ShardOptions())
-            .WithSingleton<IRuleSetUpdater>(
-                "ruleset-updater",
+            .WithSingleton<IRuleSetUpdater>("ruleset-updater",
                 (_, _, resolver) => resolver.Props<RuleSetUpdater>())
-            .WithShardRegion<IMatchHistoryRegion>(
-                "match-history",
-                (_, _, resolver) => entityId => resolver.Props<MatchHistoryWorker>(entityId),
-                new ShardMessageExtractor(),
-                new ShardOptions())
-            .WithSingleton<IMatchMagicManager>(
-                "match-magic-manager",
+            .WithSingleton<ISearchManager>("search-manager",
+                (_, _, resolver) => resolver.Props<SearchManager>())
+            .WithSingleton<IDownloadManager>("download-manager",
+                (_, _, resolver) => resolver.Props<DownloadManager>())
+            .WithSingleton<IDownloadHistoryManager>("download-history",
+                (_, _, resolver) => resolver.Props<DownloadHistoryManager>())
+            .WithSingleton<IMatchMagicManager>("match-magic-manager",
                 (_, _, resolver) => resolver.Props<MatchMagicManager>())
-            .WithShardRegion<ITvSearchRegion>(
-                "tv-search",
+            .WithShardRegion<ITvSearchRegion>("tv-search",
                 (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
@@ -77,15 +68,19 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => _ => resolver.Props<MovieSearchWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
-            .WithSingleton<ISearchManager>(
-                "search-manager",
-                (_, _, resolver) => resolver.Props<SearchManager>())
-            .WithSingleton<IDownloadManager>(
-                "download-manager",
-                (_, _, resolver) => resolver.Props<DownloadManager>())
             .WithShardRegion<IDownloadRegion>(
                 "download-worker",
                 (_, _, resolver) => _ => resolver.Props<DownloadWorker>(),
+                new ShardMessageExtractor(),
+                new ShardOptions())
+            .WithShardRegion<IRuleSetRegion>(
+                "ruleset-worker",
+                (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
+                new ShardMessageExtractor(),
+                new ShardOptions())
+            .WithShardRegion<IMatchHistoryRegion>(
+                "match-history",
+                (_, _, resolver) => entityId => resolver.Props<MatchHistoryWorker>(entityId),
                 new ShardMessageExtractor(),
                 new ShardOptions());
     }

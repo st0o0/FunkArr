@@ -13,9 +13,7 @@ services:
       - Serilog__MinimumLevel__Default=Debug
       - Serilog__MinimumLevel__Override__Akka=Information
       - FunkArr__ApiKey=funkarr-dev-api-key-01
-      - FunkArr__Download__DownloadPath=/media/downloads
-      - FunkArr__Download__Category__tv=/media/downloads/tv
-      - FunkArr__Download__Category__movies=/media/downloads/movies
+      - FunkArr__DownloadPath=/media/downloads
     depends_on:
       - sonarr
       - radarr
