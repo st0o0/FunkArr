@@ -51,7 +51,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var result = ExpectMsg<SearchCompleted>();
         Assert.Equal(searchId, result.SearchId);
         Assert.Single(result.Items);
-        Assert.Equal("Tatort: Test", result.Items[0].Title);
+        Assert.Equal("Tatort.Tatort.Test.GERMAN.720p.WEB.h264-FunkArr", result.Items[0].Title);
         Assert.Equal(0.95, result.Items[0].Score);
     }
 

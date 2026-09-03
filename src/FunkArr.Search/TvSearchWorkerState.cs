@@ -1,4 +1,6 @@
+using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 
 namespace FunkArr.Search;
@@ -34,7 +36,7 @@ public static class TvSearchWorkerStateExtensions
             .Select(s =>
             {
                 var raw = state.RawItems[s.Index];
-                return ToResultItem(state, raw, s.Score);
+                return ToResultItem(state, raw, s.Score, s.Metadata);
             })
             .OrderByDescending(i => i.Score)
             .ToArray();
@@ -43,23 +45,30 @@ public static class TvSearchWorkerStateExtensions
     }
 
     private static SearchResultItem[] MapItems(TvSearchWorkerState state, double score) =>
-        state.RawItems.Select(raw => ToResultItem(state, raw, score)).ToArray();
+        state.RawItems.Select(raw => ToResultItem(state, raw, score, null)).ToArray();
 
-    private static SearchResultItem ToResultItem(TvSearchWorkerState state, MediathekItem raw, double score) => new(
-        Title: raw.Title,
-        Channel: raw.Channel,
-        Topic: raw.Topic,
-        Url: raw.UrlVideoHd ?? raw.UrlVideo ?? raw.UrlVideoLow ?? "",
-        Duration: raw.Duration,
-        Size: raw.Size,
-        Quality: ResolveQuality(raw),
-        AiredAt: raw.Timestamp > 0
-            ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
-            : null,
-        Score: score,
-        SubtitleUrl: string.IsNullOrEmpty(raw.UrlSubtitle) ? null : raw.UrlSubtitle,
-        TvdbId: state.TvdbId,
-        ImdbId: state.ImdbId);
+    private static SearchResultItem ToResultItem(
+        TvSearchWorkerState state, MediathekItem raw, double score, MetadataSpec? metadata)
+    {
+        var quality = ResolveQuality(raw);
+        var title = ReleaseTitleBuilder.Build(raw.Topic, raw.Title, metadata, quality, "tv");
+
+        return new SearchResultItem(
+            Title: title,
+            Channel: raw.Channel,
+            Topic: raw.Topic,
+            Url: raw.UrlVideoHd ?? raw.UrlVideo ?? raw.UrlVideoLow ?? "",
+            Duration: raw.Duration,
+            Size: raw.Size,
+            Quality: quality,
+            AiredAt: raw.Timestamp > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
+                : null,
+            Score: score,
+            SubtitleUrl: string.IsNullOrEmpty(raw.UrlSubtitle) ? null : raw.UrlSubtitle,
+            TvdbId: state.TvdbId,
+            ImdbId: state.ImdbId);
+    }
 
     public static int ResolveQuality(MediathekItem item) =>
         item.UrlVideoHd is not null ? 720 :
