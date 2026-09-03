@@ -30,11 +30,11 @@ RuleSet SHALL expose an `Evaluate(IReadOnlyList<MediaItem> items)` method that r
 - **THEN** Evaluate SHALL return an empty result list
 
 ### Requirement: Rule matching
-Rule SHALL expose a `Match(MediaItem item, float defaultConfidence)` method that returns a `MatchResult?`. It SHALL first evaluate its FilterGroup against the item. If filters fail, return null. If filters pass, apply the matching strategy. If the strategy produces no identification, return null. If the strategy succeeds, build quality variants from the item's URL fields and return a MatchResult.
+Rule SHALL expose a `Match(MediaItem item, float defaultConfidence)` method that returns a `MatchResult?`. It SHALL first evaluate its FilterGroup against the item. If filters fail, return null. If filters pass, apply the matching strategy. If the strategy produces no identification, return null. If the strategy succeeds, build quality variants from the item's URL fields and return a MatchResult including the extracted `MetadataSpec`.
 
 #### Scenario: Filters pass, strategy succeeds
 - **WHEN** a Rule's FilterGroup passes for an item AND the strategy identifies an episode
-- **THEN** Match SHALL return a MatchResult with the identification, confidence, and quality variants
+- **THEN** Match SHALL return a MatchResult with the identification, confidence, quality variants, and a MetadataSpec populated from the identification result
 
 #### Scenario: Filters fail
 - **WHEN** a Rule's FilterGroup fails for an item
@@ -43,6 +43,18 @@ Rule SHALL expose a `Match(MediaItem item, float defaultConfidence)` method that
 #### Scenario: Filters pass, strategy fails
 - **WHEN** a Rule's FilterGroup passes but the strategy cannot identify an episode (e.g., regex doesn't match)
 - **THEN** Match SHALL return null
+
+#### Scenario: MetadataSpec from SeasonAndEpisodeNumber strategy
+- **WHEN** a Rule uses SeasonAndEpisodeNumber and extracts Season "01", Episode "05"
+- **THEN** the MatchResult's MetadataSpec SHALL have Season "01", Episode "05", AiredAt derived from the item's Timestamp (if > 0)
+
+#### Scenario: MetadataSpec from ItemTitleEqualsAirdate strategy
+- **WHEN** a Rule uses ItemTitleEqualsAirdate and extracts date 2024-10-24
+- **THEN** the MatchResult's MetadataSpec SHALL have Season null, Episode null, AiredAt 2024-10-24
+
+#### Scenario: MetadataSpec from ByAbsoluteEpisodeNumber strategy
+- **WHEN** a Rule uses ByAbsoluteEpisodeNumber and extracts episode "312"
+- **THEN** the MatchResult's MetadataSpec SHALL have Season null, Episode "312", AiredAt derived from item Timestamp
 
 ### Requirement: FilterGroup evaluation
 FilterGroup SHALL expose an `Evaluate(MediaItem item)` method returning bool. Evaluation SHALL be recursive: `All` requires every node to pass, `Any` requires at least one node to pass, `Not` requires every node to fail. When multiple groups are present (e.g., both All and Not), ALL groups must pass for the overall FilterGroup to pass.
@@ -283,3 +295,19 @@ All regex evaluations (filters, season/episode extraction, title rules) SHALL us
 #### Scenario: Normal regex completes
 - **WHEN** a filter regex pattern matches within the timeout
 - **THEN** the filter SHALL return the correct match result
+
+### Requirement: MatchMagicActor records scoring history via shard region
+
+After sending `ScoreCompleted` to the caller, the MatchMagicActor SHALL send a `RecordScoringResult` to the `IMatchHistoryRegion` shard region. The actor SHALL resolve the shard region at runtime via `Context.GetActor<IMatchHistoryRegion>()`. The actor SHALL NOT receive the history ref via constructor injection or through messages.
+
+#### Scenario: Scoring result recorded after evaluation
+- **WHEN** MatchMagicActor completes scoring with at least one candidate
+- **THEN** it SHALL send a `RecordScoringResult` to the `IMatchHistoryRegion` shard region containing the request id, rule set id, origin, timestamp, candidate count, matched count, and item traces
+
+#### Scenario: No IActorRef in messages or constructor
+- **WHEN** MatchMagicManager creates an `ExecuteScoring` message for the pool
+- **THEN** the message SHALL NOT contain an `IActorRef` field
+
+#### Scenario: History region resolved at runtime
+- **WHEN** MatchMagicActor is constructed
+- **THEN** it SHALL resolve `IMatchHistoryRegion` via `Context.GetActor<IMatchHistoryRegion>()` and cache it as a field

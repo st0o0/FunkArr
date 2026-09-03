@@ -48,16 +48,20 @@ The endpoint SHALL verify that the directory at `FunkArrOptions.DataPath` exists
 - **WHEN** the data directory does not exist or is read-only
 - **THEN** the `dataDirectory` check has `"status": "fail"` and a message with the path and the failure reason
 
-### Requirement: Download directory check
-The endpoint SHALL verify that the directory at `FunkArrOptions.DownloadPath` exists and is writable by attempting to create and delete a temporary file.
+### Requirement: Directory checks
+The setup health check SHALL verify both the `complete` and `incomplete` subdirectories under `DownloadPath` instead of the single `DownloadPath` directory.
 
-#### Scenario: Download directory writable
-- **WHEN** the download directory exists and the process can write to it
-- **THEN** the `downloadDirectory` check has `"status": "ok"` and includes the resolved path
+#### Scenario: Both directories exist and are writable
+- **WHEN** `GET /api/health/setup` is requested and both `{DownloadPath}/complete` and `{DownloadPath}/incomplete` exist and are writable
+- **THEN** the `downloadDirectory` check SHALL have `"status": "ok"` and report both paths
 
-#### Scenario: Download directory not writable
-- **WHEN** the download directory does not exist or is read-only
-- **THEN** the `downloadDirectory` check has `"status": "fail"` and a message with the path and the failure reason
+#### Scenario: Complete directory not writable
+- **WHEN** `{DownloadPath}/complete` does not exist or is not writable
+- **THEN** the `downloadDirectory` check SHALL have `"status": "fail"` with a message identifying the complete directory
+
+#### Scenario: Incomplete directory not writable
+- **WHEN** `{DownloadPath}/incomplete` does not exist or is not writable
+- **THEN** the `downloadDirectory` check SHALL have `"status": "fail"` with a message identifying the incomplete directory
 
 ### Requirement: Indexer API self-test
 The endpoint SHALL make an internal HTTP request to its own Newznab caps endpoint (`/index/api?t=caps&apikey=<configured-key>`) and verify it returns a valid XML response with status 200.

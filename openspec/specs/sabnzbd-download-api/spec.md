@@ -18,11 +18,15 @@ The system SHALL respond to `GET /download/api?mode=get_config` with a JSON obje
 
 #### Scenario: Config response structure
 - **WHEN** `?mode=get_config` is requested
-- **THEN** the response SHALL be JSON with `config.misc.complete_dir` set to the configured DownloadPath, and `config.categories` containing entries for "sonarr", "radarr", "tv", and "movies"
+- **THEN** the response SHALL be JSON with `config.misc.complete_dir` set to `DownloadOptions.CompletePath` (i.e., `{DownloadPath}/complete`), and `config.categories` dynamically built from `DownloadOptions.Categories`
 
 #### Scenario: Config category entries
-- **WHEN** the config is returned
-- **THEN** each entry in `config.categories` SHALL contain `name` (string), `order` (int), `dir` (empty string), `newzbin` (empty string), `priority` (0)
+- **WHEN** the config is returned and `DownloadOptions.Categories` contains entries
+- **THEN** each entry in `config.categories` SHALL contain `name` (from category Name), `order` (index), `dir` (resolved directory name), `newzbin` (empty string), `priority` (0)
+
+#### Scenario: Config with no categories configured
+- **WHEN** the config is returned and `DownloadOptions.Categories` is empty
+- **THEN** `config.categories` SHALL be an empty array
 
 #### Scenario: Config sorting disabled
 - **WHEN** the config is returned
@@ -49,7 +53,7 @@ The system SHALL respond to `GET /download/api?mode=fullstatus` with a JSON stat
 
 #### Scenario: Full status response structure
 - **WHEN** `?mode=fullstatus` is requested
-- **THEN** the response SHALL be JSON with a `status` object containing `paused` (bool, default false), `speedlimit` (string, default ""), `diskspace1` (string, free GB), `diskspace2` (string, free GB), `completedir` (string, configured download path), and `speed` (string, aggregate bytes/second of active downloads)
+- **THEN** the response SHALL be JSON with a `status` object containing `paused` (bool, default false), `speedlimit` (string, default ""), `diskspace1` (string, free GB), `diskspace2` (string, free GB), `completedir` (string, `DownloadOptions.CompletePath`), and `speed` (string, aggregate bytes/second of active downloads)
 
 #### Scenario: Skip dashboard parameter accepted
 - **WHEN** `?mode=fullstatus&skip_dashboard=1` is requested

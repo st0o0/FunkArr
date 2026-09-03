@@ -1,10 +1,22 @@
 ## Requirements
 
+### Requirement: FunkArrOptions exposes local ruleset path
+`FunkArrOptions` SHALL expose a `LocalRuleSetDataPath` computed property returning `Path.Combine(DataPath, "local")`, complementing the existing `RuleSetDataPath` (which returns `Path.Combine(DataPath, "community")`).
+
+#### Scenario: LocalRuleSetDataPath derivation
+- **WHEN** `DataPath` is `"data"`
+- **THEN** `LocalRuleSetDataPath` SHALL return `"data/local"`
+
+#### Scenario: Custom DataPath propagates
+- **WHEN** `DataPath` is `"/app/config"`
+- **THEN** `LocalRuleSetDataPath` SHALL return `"/app/config/local"`
+- **AND** `RuleSetDataPath` SHALL return `"/app/config/community"`
+
 ### Requirement: RuleSetManager scans ruleset directories at startup
-The RuleSetManager (Singleton) SHALL scan `data/community/rulesets/*.json` and `data/local/rulesets/*.json` at startup and activate a RuleSetWorker for each discovered ruleSetId. The Manager SHALL store the scan result as known state for subsequent diff operations. The Manager SHALL also respond to `QueryRuleSetDetail` queries by re-reading the JSON files for a given ruleSetId and returning the merged result with source metadata.
+The RuleSetManager (Singleton) SHALL inject `IOptionsMonitor<FunkArrOptions>` and derive directory paths from `FunkArrOptions.RuleSetDataPath` and `FunkArrOptions.LocalRuleSetDataPath` in `PreStart()`. It SHALL scan `{RuleSetDataPath}/rulesets/*.json` and `{LocalRuleSetDataPath}/rulesets/*.json` at startup and activate a RuleSetWorker for each discovered ruleSetId. `ScanRuleSets` becomes a parameterless internal message for triggering re-scans; initialization happens directly in `PreStart()`.
 
 #### Scenario: Startup with community rulesets only
-- **WHEN** the system starts with 5 JSON files in `data/community/rulesets/`
+- **WHEN** the system starts with 5 JSON files in `{RuleSetDataPath}/rulesets/`
 - **THEN** 5 RuleSetWorkers are activated via `LoadRuleSet`, one per file, using the filename (without extension) as ruleSetId
 
 #### Scenario: Startup with community and local rulesets
@@ -12,7 +24,7 @@ The RuleSetManager (Singleton) SHALL scan `data/community/rulesets/*.json` and `
 - **THEN** one `LoadRuleSet` is sent for that ruleSetId, containing both file paths
 
 #### Scenario: Local-only ruleset
-- **WHEN** a ruleSetId exists only in `data/local/rulesets/`
+- **WHEN** a ruleSetId exists only in `{LocalRuleSetDataPath}/rulesets/`
 - **THEN** a `LoadRuleSet` is sent for that ruleSetId with only the local file path
 
 #### Scenario: Query detail for known ruleset

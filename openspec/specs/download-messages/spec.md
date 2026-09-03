@@ -7,18 +7,24 @@ Commands, queries, responses, and status enum for the download domain. All messa
 ## Requirements
 
 ### Requirement: DownloadStatus enum
-The system SHALL define a `DownloadStatus` enum with values `Queued`, `Processing`, `Completed`, `Failed`, `Extracting`, `Moving`, `Verifying` in `FunkArr.Messages.Download`.
+The system SHALL define a `DownloadStatus` enum with values `Queued`, `Processing`, `Completed`, `Failed` in `FunkArr.Messages.Download`.
 
 #### Scenario: Enum values
 - **WHEN** the DownloadStatus enum is inspected
-- **THEN** it SHALL contain seven values: `Queued` (0), `Processing` (1), `Completed` (2), `Failed` (3), `Extracting` (4), `Moving` (5), `Verifying` (6)
+- **THEN** it SHALL contain four values: `Queued` (0), `Processing` (1), `Completed` (2), `Failed` (3)
+- **AND** these values SHALL remain unchanged for SABnzbd API compatibility
 
 ### Requirement: AddDownload command
-The system SHALL define an `AddDownload` record containing all metadata needed to start a download, extracted from the NZB file, including priority.
+The system SHALL define an `AddDownload` record containing all metadata needed to start a download, extracted from the NZB file. The Title SHALL be the scene-style formatted release title.
 
 #### Scenario: AddDownload fields
 - **WHEN** an AddDownload message is created
-- **THEN** it SHALL contain `Title` (string), `VideoUrl` (string), `SubtitleUrl` (string?, nullable), `Channel` (string), `Duration` (int, seconds), `Size` (long, bytes), `Category` (string), `Priority` (int, default 0)
+- **THEN** it SHALL contain `Title` (string, scene-formatted), `VideoUrl` (string), `SubtitleUrl` (string?, nullable), `Channel` (string), `Duration` (int, seconds), `Size` (long, bytes), `Category` (string)
+
+#### Scenario: Title is scene-formatted
+- **WHEN** an AddDownload is created from a parsed NZB
+- **THEN** the Title SHALL already be a scene-style string (e.g. `Tatort.S01E05.Der.letzte.Schrei.GERMAN.720p.WEB.h264-FunkArr`)
+- **AND** the DownloadManager SHALL use this title directly for the output filename by appending `.mkv`
 
 ### Requirement: DownloadAdded response
 The system SHALL define a `DownloadAdded` record returned after a download is accepted into the queue.
@@ -27,37 +33,59 @@ The system SHALL define a `DownloadAdded` record returned after a download is ac
 - **WHEN** a DownloadAdded message is created
 - **THEN** it SHALL contain `DownloadId` (Guid) and SHALL implement `IWithDownloadId`
 
+### Requirement: InitDownload command
+The system SHALL define an `InitDownload` record sent from Manager to Worker to initialize the Worker with all download metadata. Infrastructure paths (IncompletePath, OutputPath) SHALL NOT be included — the Worker computes these at runtime.
+
+#### Scenario: InitDownload fields
+- **WHEN** an InitDownload message is created
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `VideoUrl` (string), `SubtitleUrl` (string?), `Channel` (string), `Duration` (int), `Size` (long), `Category` (string)
+- **AND** it SHALL implement `IWithDownloadId`
+- **AND** it SHALL NOT contain `IncompletePath` or `OutputPath`
+
 ### Requirement: StartDownload command
-The system SHALL define a `StartDownload` record sent from Manager to Worker to begin processing.
+The system SHALL define a `StartDownload` record as a bare go-signal from Manager to Worker containing only the DownloadId.
 
 #### Scenario: StartDownload fields
 - **WHEN** a StartDownload message is created
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `VideoUrl` (string), `SubtitleUrl` (string?), `Channel` (string), `Duration` (int), `Size` (long), `OutputPath` (string)
+- **THEN** it SHALL contain `DownloadId` (Guid) only
 - **AND** it SHALL implement `IWithDownloadId`
 
-### Requirement: DownloadProgress event
-The system SHALL define a `DownloadProgress` record reported periodically by the Worker during FFmpeg execution.
+### Requirement: CancelDownload command
+The system SHALL define a `CancelDownload` record sent from Manager to Worker to cancel an active download and passivate the Worker.
 
-#### Scenario: DownloadProgress fields
-- **WHEN** a DownloadProgress message is created
-- **THEN** it SHALL contain `DownloadId` (Guid), `CurrentTimeUs` (long, microseconds from FFmpeg), `TotalDuration` (int, seconds), `BytesDownloaded` (long), `TotalBytes` (long), `Speed` (double, playback speed multiplier)
+#### Scenario: CancelDownload fields
+- **WHEN** a CancelDownload message is created
+- **THEN** it SHALL contain `DownloadId` (Guid)
 - **AND** it SHALL implement `IWithDownloadId`
 
-### Requirement: DownloadCompleted event
-The system SHALL define a `DownloadCompleted` record sent when FFmpeg exits successfully.
+### Requirement: ResetDownload command
+The system SHALL define a `ResetDownload` record sent from Manager to Worker to reset a Failed Worker back to Initialized for retry.
 
-#### Scenario: DownloadCompleted fields
-- **WHEN** a DownloadCompleted message is created
-- **THEN** it SHALL contain `DownloadId` (Guid), `FilePath` (string, path to output MKV), `DownloadTimeSeconds` (int)
+#### Scenario: ResetDownload fields
+- **WHEN** a ResetDownload message is created
+- **THEN** it SHALL contain `DownloadId` (Guid)
 - **AND** it SHALL implement `IWithDownloadId`
 
-### Requirement: DownloadFailed event
-The system SHALL define a `DownloadFailed` record sent when FFmpeg exits with a non-zero code or an error occurs.
+### Requirement: DownloadStarted persistence DTO
+The system SHALL define a `DownloadStarted` persistence DTO for the Worker's FFmpeg start event.
 
-#### Scenario: DownloadFailed fields
-- **WHEN** a DownloadFailed message is created
+#### Scenario: DownloadStarted fields
+- **WHEN** a DownloadStarted event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid)
+
+### Requirement: DownloadSucceeded persistence DTO
+The system SHALL define a `DownloadSucceeded` persistence DTO for the Worker's successful completion event.
+
+#### Scenario: DownloadSucceeded fields
+- **WHEN** a DownloadSucceeded event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid), `FilePath` (string), `DownloadTimeSeconds` (int), `CompletedAt` (long, Unix timestamp)
+
+### Requirement: DownloadFailed persistence DTO
+The system SHALL define a `DownloadFailed` persistence DTO in `FunkArr.Persistence.Events.Download` for the Worker's failure event. This is distinct from the `DownloadFailed` message in `FunkArr.Messages.Download`.
+
+#### Scenario: DownloadFailed DTO fields
+- **WHEN** a DownloadFailed persistence event is persisted
 - **THEN** it SHALL contain `DownloadId` (Guid), `Reason` (string)
-- **AND** it SHALL implement `IWithDownloadId`
 
 ### Requirement: QueryQueue query
 The system SHALL define a `QueryQueue` record for requesting the current download queue state with optional pagination and category filter.
@@ -67,11 +95,11 @@ The system SHALL define a `QueryQueue` record for requesting the current downloa
 - **THEN** it SHALL contain `Start` (int, default 0), `Limit` (int, default 0 meaning unlimited), `Category` (string?, nullable, default null)
 
 ### Requirement: QueueResult response
-The system SHALL define a `QueueResult` record containing the current queue state.
+The system SHALL define a `QueueResult` record containing the current queue state with pagination metadata.
 
 #### Scenario: QueueResult fields
 - **WHEN** a QueueResult message is created
-- **THEN** it SHALL contain `Items` (array of `QueueItem`) and `TotalSlots` (int)
+- **THEN** it SHALL contain `Items` (array of `QueueItem`), `TotalSlots` (int), and `TotalItems` (int)
 
 #### Scenario: QueueItem fields
 - **WHEN** a QueueItem is inspected
@@ -85,11 +113,11 @@ The system SHALL define a `QueryHistory` record for requesting download history 
 - **THEN** it SHALL contain `Start` (int, default 0), `Limit` (int, default 0 meaning unlimited), `Category` (string?, nullable, default null)
 
 ### Requirement: HistoryResult response
-The system SHALL define a `HistoryResult` record containing completed and failed downloads.
+The system SHALL define a `HistoryResult` record containing completed and failed downloads with pagination metadata.
 
 #### Scenario: HistoryResult fields
 - **WHEN** a HistoryResult message is created
-- **THEN** it SHALL contain `Items` (array of `HistoryItem`)
+- **THEN** it SHALL contain `Items` (array of `HistoryItem`) and `TotalItems` (int)
 
 #### Scenario: HistoryItem fields
 - **WHEN** a HistoryItem is inspected
@@ -124,9 +152,80 @@ The system SHALL define a `RetryDownloadResult` record indicating success or fai
 - **WHEN** a RetryDownloadResult message is created
 - **THEN** it SHALL contain `Success` (bool) and `Error` (string?, nullable)
 
-### Requirement: IDownloadResponse marker interface
-The system SHALL define an `IDownloadResponse` marker interface implemented by all download response messages.
+### Requirement: SlotFree message
+The system SHALL define a `SlotFree` record sent from Worker to Manager when a download completes or fails, signaling that the concurrency slot is free.
 
-#### Scenario: Marker interface implementations
-- **WHEN** download response types are inspected
-- **THEN** `DownloadAdded`, `QueueResult`, `HistoryResult`, `DeleteDownloadResult`, and `RetryDownloadResult` SHALL implement `IDownloadResponse`
+#### Scenario: SlotFree fields
+- **WHEN** a `SlotFree` message is created
+- **THEN** it SHALL contain `DownloadId` (Guid)
+
+### Requirement: QueryWorkerStatus query
+The system SHALL define a `QueryWorkerStatus` record sent from Manager to Worker to request current state and progress.
+
+#### Scenario: QueryWorkerStatus fields
+- **WHEN** a `QueryWorkerStatus` message is created
+- **THEN** it SHALL contain `DownloadId` (Guid)
+- **AND** it SHALL implement `IWithDownloadId`
+
+### Requirement: WorkerStatusResult response
+The system SHALL define a `WorkerStatusResult` record returned by the Worker containing full current state and live progress.
+
+#### Scenario: WorkerStatusResult fields
+- **WHEN** a `WorkerStatusResult` message is created
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (WorkerStatus), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `FilePath` (string?), `FailMessage` (string?)
+
+### Requirement: RecordDownload message
+The system SHALL define a `RecordDownload` record sent from Worker to HistoryActor when a download completes or fails.
+
+#### Scenario: RecordDownload fields
+- **WHEN** a `RecordDownload` message is created
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (DownloadStatus), `FilePath` (string?), `FailMessage` (string?), `DownloadTimeSeconds` (int), `CompletedAt` (long)
+
+### Requirement: RemoveHistoryEntry command
+The system SHALL define a `RemoveHistoryEntry` record sent to the HistoryActor to delete a history entry.
+
+#### Scenario: RemoveHistoryEntry fields
+- **WHEN** a `RemoveHistoryEntry` message is created
+- **THEN** it SHALL contain `DownloadId` (Guid)
+
+### Requirement: DownloadEnqueued persistence DTO
+The system SHALL define a `DownloadEnqueued` persistence DTO for the Manager's queue add event.
+
+#### Scenario: DownloadEnqueued fields
+- **WHEN** a `DownloadEnqueued` event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid)
+
+### Requirement: DownloadDispatched persistence DTO
+The system SHALL define a `DownloadDispatched` persistence DTO for the Manager's dispatch event.
+
+#### Scenario: DownloadDispatched fields
+- **WHEN** a `DownloadDispatched` event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid)
+
+### Requirement: DownloadDequeued persistence DTO
+The system SHALL define a `DownloadDequeued` persistence DTO for the Manager's queue remove event.
+
+#### Scenario: DownloadDequeued fields
+- **WHEN** a `DownloadDequeued` event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid)
+
+### Requirement: HistoryRecorded persistence DTO
+The system SHALL define a `HistoryRecorded` persistence DTO for the HistoryActor's record event.
+
+#### Scenario: HistoryRecorded fields
+- **WHEN** a `HistoryRecorded` event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (int), `FilePath` (string?), `FailMessage` (string?), `DownloadTimeSeconds` (int), `CompletedAt` (long)
+
+### Requirement: HistoryRemoved persistence DTO
+The system SHALL define a `HistoryRemoved` persistence DTO for the HistoryActor's delete event.
+
+#### Scenario: HistoryRemoved fields
+- **WHEN** a `HistoryRemoved` event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid)
+
+### Requirement: IDownloadHistoryManager marker interface
+The system SHALL define an `IDownloadHistoryManager` marker interface for resolving the DownloadHistoryManager via Servus actor registry.
+
+#### Scenario: Actor resolution
+- **WHEN** the DownloadHistoryManager needs to be resolved
+- **THEN** it SHALL be resolved via `Context.GetActor<IDownloadHistoryManager>()` or `registry.Get<IDownloadHistoryManager>()`

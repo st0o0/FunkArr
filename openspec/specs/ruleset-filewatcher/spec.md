@@ -7,14 +7,15 @@ FileSystemWatcher-based live reload for the RuleSetManager — monitors communit
 ## Requirements
 
 ### Requirement: RuleSetManager monitors ruleset directories with FileSystemWatcher
-The RuleSetManager SHALL create two `FileSystemWatcher` instances on startup: one for `data/community/rulesets/` and one for `data/local/rulesets/`. Both SHALL watch for `*.json` file changes (Created, Changed, Deleted, Renamed events).
+The RuleSetManager SHALL inject `IOptionsMonitor<FunkArrOptions>` via DI and derive its watched directories from `FunkArrOptions.RuleSetDataPath` and `FunkArrOptions.LocalRuleSetDataPath` in `PreStart()`. It SHALL create two `FileSystemWatcher` instances: one for `{RuleSetDataPath}/rulesets/` and one for `{LocalRuleSetDataPath}/rulesets/`. Both SHALL watch for `*.json` file changes. All paths SHALL be resolved via `Path.GetFullPath` at initialization.
 
 #### Scenario: Watchers start on PreStart
 - **WHEN** the RuleSetManager actor starts
-- **THEN** two FileSystemWatchers SHALL be active, monitoring `{DataPath}/community/rulesets/` and `{DataPath}/local/rulesets/` for `*.json` files
+- **THEN** it SHALL read paths from `IOptionsMonitor<FunkArrOptions>.CurrentValue`
+- **AND** two FileSystemWatchers SHALL be active, monitoring the resolved community and local ruleset directories for `*.json` files
 
 #### Scenario: Watcher created for non-existent directory
-- **WHEN** `data/local/rulesets/` does not exist at startup
+- **WHEN** the local rulesets directory does not exist at startup
 - **THEN** the RuleSetManager SHALL create the directory and start the watcher
 
 #### Scenario: Watchers disposed on PostStop
@@ -87,7 +88,7 @@ The RuleSetManager SHALL handle `FileSystemWatcher.Error` events by scheduling a
 - **THEN** the full rescan SHALL process everything — pending IDs are irrelevant and SHALL be cleared
 
 ### Requirement: RuleSetManager holds known ruleset state
-The RuleSetManager SHALL maintain a dictionary of known ruleset IDs mapped to their community and local file paths. This state is populated on initial scan and updated on each `FlushChanges`.
+The RuleSetManager SHALL maintain its known ruleset state using `ImmutableDictionary<string, RuleSetPaths>` and pending IDs using `ImmutableHashSet<string>`, consistent with other state records in the project.
 
 #### Scenario: State populated on startup scan
 - **WHEN** the RuleSetManager performs its initial scan and finds 62 community files and 3 local files
@@ -96,3 +97,8 @@ The RuleSetManager SHALL maintain a dictionary of known ruleset IDs mapped to th
 #### Scenario: State updated after FlushChanges
 - **WHEN** `FlushChanges` detects a new file `new-show.json` in community
 - **THEN** the known state SHALL include `new-show` after dispatching `LoadRuleSet`
+
+#### Scenario: State mutations are immutable
+- **WHEN** `PendingIds.Add(id)` is called
+- **THEN** a new `ImmutableHashSet` SHALL be produced and assigned via `_state = _state with { ... }`
+- **AND** the previous state reference SHALL remain unchanged

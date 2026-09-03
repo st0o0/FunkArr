@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Cluster Singleton actor managing download queue, history, concurrency limits, and persistence. Coordinates DownloadWorker shard region.
+Cluster Singleton actor managing download queue, concurrency limits, and persistence. Coordinates DownloadWorker shard region.
 
 ## Requirements
 
@@ -14,107 +14,94 @@ The DownloadManager SHALL be registered as a Cluster Singleton actor named "down
 - **THEN** exactly one DownloadManager instance SHALL exist in the cluster
 
 ### Requirement: DownloadManager accepts AddDownload
-The DownloadManager SHALL handle `AddDownload` messages by assigning a new `Guid` as `DownloadId`, persisting the download entry, and responding with `DownloadAdded`.
+The DownloadManager SHALL handle `AddDownload` messages by assigning a new `Guid` as `DownloadId`, persisting a `DownloadEnqueued` event, forwarding an `InitDownload` message (with domain metadata only, no paths) to the DownloadWorker shard region, and responding with `DownloadAdded`.
 
 #### Scenario: Successful add
 - **WHEN** an `AddDownload` message is received
-- **THEN** the Manager SHALL generate a new DownloadId, add the item to the queue with status `Queued`, persist the state change, and respond with `DownloadAdded(DownloadId)`
+- **THEN** the Manager SHALL generate a new DownloadId
+- **AND** persist a `DownloadEnqueued` event with DownloadId
+- **AND** send `InitDownload` with domain metadata (DownloadId, Title, VideoUrl, SubtitleUrl, Channel, Duration, Size, Category) to the Worker shard region
+- **AND** the `InitDownload` message SHALL NOT contain IncompletePath or OutputPath
+- **AND** respond with `DownloadAdded(DownloadId)`
+- **AND** call DispatchNext to check if the download can start immediately
 
 ### Requirement: DownloadManager enforces concurrency limit
-The DownloadManager SHALL limit the number of concurrent downloads to a configurable maximum (default 3). Downloads beyond the limit SHALL be stashed and processed as slots free up.
+The DownloadManager SHALL limit the number of concurrent downloads to the configured `DownloadOptions.ConcurrentDownloads` (default 3). When a slot is available, the Manager SHALL persist a `DownloadDispatched` event and send a bare `StartDownload(DownloadId)` go-signal to the Worker shard region.
 
 #### Scenario: Under capacity
-- **WHEN** an AddDownload arrives and fewer than the configured maximum downloads are in Processing status
-- **THEN** the Manager SHALL immediately send StartDownload to the DownloadWorker shard region
+- **WHEN** DispatchNext runs and fewer than `DownloadOptions.ConcurrentDownloads` downloads are in the Dispatched set
+- **THEN** the Manager SHALL move the next Queued item to the Dispatched set
+- **AND** persist a `DownloadDispatched` event with DownloadId
+- **AND** send `StartDownload(DownloadId)` to the Worker shard region
 
 #### Scenario: At capacity
-- **WHEN** an AddDownload arrives and the maximum number of downloads are already Processing
-- **THEN** the Manager SHALL add the item to queue with status Queued and stash the dispatch
+- **WHEN** DispatchNext runs and the Dispatched set has reached the configured maximum
+- **THEN** the Manager SHALL not dispatch any further downloads
 
 #### Scenario: Slot freed
-- **WHEN** a DownloadCompleted or DownloadFailed is received
-- **THEN** the Manager SHALL start the next Queued download if any exist
-
-### Requirement: DownloadManager tracks progress
-The DownloadManager SHALL handle `DownloadProgress` messages from workers and update the in-memory state for the corresponding queue item. Progress SHALL NOT be persisted.
-
-#### Scenario: Progress update
-- **WHEN** a DownloadProgress message is received for a known DownloadId
-- **THEN** the Manager SHALL update the in-memory queue item with current BytesDownloaded, CurrentTimeUs, and Speed
-
-#### Scenario: Progress for unknown download
-- **WHEN** a DownloadProgress message is received for an unknown DownloadId
-- **THEN** the Manager SHALL ignore the message
-
-### Requirement: DownloadManager handles completion
-The DownloadManager SHALL handle `DownloadCompleted` messages by moving the item from queue to history with status `Completed` and persisting the state change.
-
-#### Scenario: Download completed
-- **WHEN** a DownloadCompleted message is received
-- **THEN** the Manager SHALL remove the item from the queue, add it to history with status Completed, FilePath, DownloadTimeSeconds, and CompletedAt timestamp, and persist the change
-
-### Requirement: DownloadManager handles failure
-The DownloadManager SHALL handle `DownloadFailed` messages by moving the item from queue to history with status `Failed` and persisting the state change.
-
-#### Scenario: Download failed
-- **WHEN** a DownloadFailed message is received
-- **THEN** the Manager SHALL remove the item from the queue, add it to history with status Failed and the failure reason, and persist the change
+- **WHEN** a `SlotFree` message is received
+- **THEN** the Manager SHALL persist a `DownloadDequeued` event for the DownloadId
+- **AND** call DispatchNext
 
 ### Requirement: DownloadManager answers queue queries
-The DownloadManager SHALL handle `QueryQueue` messages by responding with a `QueueResult` reflecting current queue state.
+The DownloadManager SHALL handle `QueryQueue` messages by fanning out `QueryWorkerStatus` to all Workers in its Queued and Dispatched sets, collecting responses, and building a `QueueResult`. The handler SHALL apply the `Category` filter, `Start` offset, and `Limit` from the `QueryQueue` message to the collected responses before building the result.
 
-#### Scenario: Queue query
-- **WHEN** a QueryQueue message is received
-- **THEN** the Manager SHALL respond with a QueueResult containing all items with status Queued or Processing, including latest progress data
+#### Scenario: Queue query with fan-out
+- **WHEN** a `QueryQueue` message is received
+- **THEN** the Manager SHALL send `QueryWorkerStatus` to each Worker in the Queued and Dispatched sets via the shard region
+- **AND** collect responses with a timeout of 2 seconds
+- **AND** respond with a `QueueResult` built from Worker responses
+- **AND** Workers that do not respond within the timeout SHALL be represented with zero progress
 
-### Requirement: DownloadManager answers history queries
-The DownloadManager SHALL handle `QueryHistory` messages by responding with a `HistoryResult` reflecting download history.
+#### Scenario: Queue query with category filter
+- **WHEN** a `QueryQueue` message is received with `Category = "sonarr"`
+- **THEN** the Manager SHALL include only items matching the `"sonarr"` category in the result
 
-#### Scenario: History query
-- **WHEN** a QueryHistory message is received
-- **THEN** the Manager SHALL respond with a HistoryResult containing all Completed and Failed items
+#### Scenario: Queue query with pagination
+- **WHEN** a `QueryQueue` message is received with `Start = 2` and `Limit = 5`
+- **THEN** the Manager SHALL skip the first 2 items and return at most 5 items
+- **AND** `QueueResult.TotalItems` SHALL reflect the total count after category filtering but before pagination
+
+#### Scenario: Queue query with Limit 0 means all
+- **WHEN** a `QueryQueue` message is received with `Limit = 0`
+- **THEN** the Manager SHALL return all items (after category filter and start offset)
 
 ### Requirement: DownloadManager handles delete
-The DownloadManager SHALL handle `DeleteDownload` messages by removing items from queue or history.
+The DownloadManager SHALL handle `DeleteDownload` messages for items in its queue (Queued or Dispatched) by dequeuing and cancelling the Worker.
 
-#### Scenario: Delete from queue
-- **WHEN** a DeleteDownload is received for an item in the queue
-- **THEN** the Manager SHALL remove it from the queue, persist the change, and respond with `DeleteDownloadResult(true, null)`
-
-#### Scenario: Delete from history
-- **WHEN** a DeleteDownload is received for an item in history
-- **THEN** the Manager SHALL remove it from history, persist the change, and respond with `DeleteDownloadResult(true, null)`
+#### Scenario: Delete queued or dispatched download
+- **WHEN** a `DeleteDownload` is received for a DownloadId in the Queued or Dispatched set
+- **THEN** the Manager SHALL persist a `DownloadDequeued` event
+- **AND** send `CancelDownload` to the Worker shard region
+- **AND** respond with `DeleteDownloadResult(true, null)`
 
 #### Scenario: Delete unknown item
-- **WHEN** a DeleteDownload is received for an unknown DownloadId
+- **WHEN** a `DeleteDownload` is received for a DownloadId not in the Queued or Dispatched set
 - **THEN** the Manager SHALL respond with `DeleteDownloadResult(false, "Item not found")`
 
 ### Requirement: DownloadManager handles retry
-The DownloadManager SHALL handle `RetryDownload` messages by re-queuing a failed download from history.
+The DownloadManager SHALL handle `RetryDownload` messages by re-enqueuing a download and resetting the Worker.
 
-#### Scenario: Retry failed item
-- **WHEN** a RetryDownload is received for a Failed item in history
-- **THEN** the Manager SHALL remove it from history, add it back to queue with status Queued, persist the change, and respond with `RetryDownloadResult(true, null)`
-
-#### Scenario: Retry non-failed item
-- **WHEN** a RetryDownload is received for a Completed item in history
-- **THEN** the Manager SHALL respond with `RetryDownloadResult(false, "Item is not failed")`
-
-#### Scenario: Retry unknown item
-- **WHEN** a RetryDownload is received for an unknown DownloadId
-- **THEN** the Manager SHALL respond with `RetryDownloadResult(false, "Item not found")`
-
-### Requirement: DownloadManager persistence is T1 event-sourced
-The DownloadManager SHALL persist queue and history state changes using Akka.Persistence event sourcing. On recovery, the full queue and history state SHALL be rebuilt from the journal.
-
-#### Scenario: Recovery after restart
-- **WHEN** the DownloadManager recovers from a restart
-- **THEN** all previously persisted queue and history items SHALL be restored
-- **AND** items that were Processing at crash time SHALL be re-queued with status Queued
+#### Scenario: Retry download
+- **WHEN** a `RetryDownload` is received with a DownloadId
+- **THEN** the Manager SHALL persist a `DownloadEnqueued` event
+- **AND** send `ResetDownload` to the Worker shard region
+- **AND** call DispatchNext
+- **AND** respond with `RetryDownloadResult(true, null)`
 
 ### Requirement: DownloadManager state
-The DownloadManager SHALL maintain an explicit state record containing the download queue and history.
+The DownloadManager SHALL maintain a persistent state containing two sets of DownloadIds: Queued and Dispatched. No download metadata, progress, or history SHALL be stored on the Manager.
 
 #### Scenario: State structure
 - **WHEN** the Manager state is inspected
-- **THEN** it SHALL contain a list of queue entries (DownloadId, metadata, status, progress) and a list of history entries (DownloadId, metadata, status, result)
+- **THEN** the persistent state SHALL contain an ordered list of Queued DownloadIds and a set of Dispatched DownloadIds
+- **AND** no other download data
+
+### Requirement: DownloadManager persistence is T1 event-sourced
+The DownloadManager SHALL persist state changes using Akka.Persistence event sourcing with three event types: `DownloadEnqueued`, `DownloadDispatched`, `DownloadDequeued`.
+
+#### Scenario: Recovery after restart
+- **WHEN** the DownloadManager recovers from a restart
+- **THEN** the Queued and Dispatched sets SHALL be restored from persisted events
+- **AND** items that were Dispatched at crash time SHALL be moved to Queued
+- **AND** DispatchNext SHALL be called to re-dispatch StartDownload signals to Workers

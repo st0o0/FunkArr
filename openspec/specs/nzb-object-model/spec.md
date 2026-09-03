@@ -18,9 +18,13 @@ The NZB generator SHALL produce NZB XML by serializing an `[XmlRoot("nzb")]`-dec
 - **WHEN** an NZB is generated for a search result with no subtitle URL
 - **THEN** the output SHALL NOT contain a `<meta type="X-FunkArr-SubtitleUrl">` element
 
-#### Scenario: Generated NZB with all custom metas
-- **WHEN** an NZB is generated for a search result with Channel "NDR", Duration 5348, Size 1632632832
-- **THEN** the output SHALL contain `<meta type="X-FunkArr-Channel">NDR</meta>`, `<meta type="X-FunkArr-Duration">5348</meta>`, and `<meta type="X-FunkArr-Size">1632632832</meta>`
+#### Scenario: Generated NZB with all custom metas including category
+- **WHEN** an NZB is generated for a search result with Channel "NDR", Duration 5348, Size 1632632832, Category "tv"
+- **THEN** the output SHALL contain `<meta type="X-FunkArr-Channel">NDR</meta>`, `<meta type="X-FunkArr-Duration">5348</meta>`, `<meta type="X-FunkArr-Size">1632632832</meta>`, and `<meta type="X-FunkArr-Category">tv</meta>`
+
+#### Scenario: Generated NZB without category
+- **WHEN** an NZB is generated for a search result with no Category
+- **THEN** the output SHALL NOT contain a `<meta type="X-FunkArr-Category">` element
 
 ### Requirement: NZB metadata uses head/meta elements
 Title and URL metadata SHALL be stored in `<head><meta type="...">` elements per the NZB specification, not as XML comments. Custom FunkArr metadata SHALL use the `X-` prefix as specified by the NZB standard.
@@ -32,15 +36,15 @@ Title and URL metadata SHALL be stored in `<head><meta type="...">` elements per
 - **AND** no XML comments are used for metadata
 
 ### Requirement: NZB parser reads head/meta elements
-The DownloadApi NZB parser SHALL extract title, video URL, subtitle URL, channel, duration, and size from `<head><meta>` elements by deserializing the NZB XML into an object model.
+The DownloadApi NZB parser SHALL extract title, video URL, subtitle URL, channel, duration, size, and category from `<head><meta>` elements by deserializing the NZB XML into an object model.
 
-#### Scenario: Parse NZB with all custom metas
-- **WHEN** an NZB containing standard and `X-FunkArr-*` meta elements is parsed
-- **THEN** the parser SHALL return title, VideoUrl, SubtitleUrl, Channel, Duration, and Size from the corresponding meta elements
+#### Scenario: Parse NZB with all custom metas including category
+- **WHEN** an NZB containing standard and `X-FunkArr-*` meta elements including `X-FunkArr-Category` is parsed
+- **THEN** the parser SHALL return title, VideoUrl, SubtitleUrl, Channel, Duration, Size, and Category from the corresponding meta elements
 
 #### Scenario: Parse NZB with missing optional metas
-- **WHEN** an NZB contains `<meta type="X-FunkArr-Url">` but no `<meta type="X-FunkArr-SubtitleUrl">`
-- **THEN** the parser SHALL return null for SubtitleUrl
+- **WHEN** an NZB contains `<meta type="X-FunkArr-Url">` but no `<meta type="X-FunkArr-SubtitleUrl">` and no `<meta type="X-FunkArr-Category">`
+- **THEN** the parser SHALL return null for SubtitleUrl and null for Category
 
 #### Scenario: Parse NZB with missing video URL
 - **WHEN** an NZB contains no `<meta type="X-FunkArr-Url">` element

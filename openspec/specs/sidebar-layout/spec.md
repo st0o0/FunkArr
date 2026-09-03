@@ -26,7 +26,7 @@ The sidebar SHALL display "FunkArr" as a text wordmark using the `brand-500` col
 
 ### Requirement: Navigation items
 
-The sidebar SHALL contain three navigation items: Dashboard (`/`), RuleSets (`/rulesets`), and Setup (`/setup`). Each item SHALL show an icon and label.
+The sidebar SHALL contain five navigation items in order: Dashboard (`/`), Queue (`/queue`), History (`/history`), RuleSets (`/rulesets`), and Setup (`/setup`). Each item SHALL show an icon and label.
 
 #### Scenario: Active route indication
 - **WHEN** the current route matches a navigation item
@@ -39,6 +39,14 @@ The sidebar SHALL contain three navigation items: Dashboard (`/`), RuleSets (`/r
 #### Scenario: Hover state
 - **WHEN** the user hovers over an inactive navigation item
 - **THEN** the item background changes to `surface-elevated` and text changes to `text-body`
+
+#### Scenario: Queue navigation icon
+- **WHEN** the Queue navigation item renders
+- **THEN** it SHALL display a download/arrow-down icon
+
+#### Scenario: History navigation icon
+- **WHEN** the History navigation item renders
+- **THEN** it SHALL display a clock/history icon
 
 ### Requirement: RuleSets route matching
 
