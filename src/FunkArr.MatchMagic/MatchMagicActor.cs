@@ -86,12 +86,19 @@ public sealed class MatchMagicActor : ReceiveActor
                 identification, ruleTraces.ToArray());
         }
 
-        Sender.Tell(new ScoreCompleted(msg.RequestId, scored));
+        if (msg.Origin.Source == "Test")
+        {
+            Sender.Tell(new TestScoreCompleted(msg.RequestId, itemTraces));
+        }
+        else
+        {
+            Sender.Tell(new ScoreCompleted(msg.RequestId, scored));
 
-        var matchedCount = scored.Count(s => s.Matched);
-        _historyRegion.Tell(new RecordScoringResult(
-            msg.RequestId, msg.Config.RuleSetId, msg.Origin,
-            DateTimeOffset.UtcNow, msg.Items.Length, matchedCount, itemTraces));
+            var matchedCount = scored.Count(s => s.Matched);
+            _historyRegion.Tell(new RecordScoringResult(
+                msg.RequestId, msg.Config.RuleSetId, msg.Origin,
+                DateTimeOffset.UtcNow, msg.Items.Length, matchedCount, itemTraces));
+        }
     }
 
     private static (bool passed, FilterGroupTrace? trace) EvaluateFiltersTraced(

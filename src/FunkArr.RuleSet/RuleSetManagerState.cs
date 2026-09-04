@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 
@@ -24,23 +25,23 @@ public sealed record RuleSetPaths(
 
 public static class RuleSetManagerStateExtensions
 {
-    public static RuleSetDetailResult? BuildDetail(this RuleSetManagerState state, string ruleSetId)
+    public static RuleSetDetailResult? BuildDetail(this RuleSetManagerState state, string ruleSetId, IDataFiles dataFiles)
     {
         if (!state.KnownRuleSets.TryGetValue(ruleSetId, out var paths))
         {
             return null;
         }
 
-        var communityExists = paths.CommunityPath is not null && File.Exists(paths.CommunityPath);
-        var localExists = paths.LocalPath is not null && File.Exists(paths.LocalPath);
+        var communityExists = paths.CommunityPath is not null && dataFiles.Exists(paths.CommunityPath);
+        var localExists = paths.LocalPath is not null && dataFiles.Exists(paths.LocalPath);
 
         if (!communityExists && !localExists)
         {
             return null;
         }
 
-        var communityJson = communityExists ? File.ReadAllText(paths.CommunityPath!) : null;
-        var localJson = localExists ? File.ReadAllText(paths.LocalPath!) : null;
+        var communityJson = communityExists ? dataFiles.ReadText(paths.CommunityPath!) : null;
+        var localJson = localExists ? dataFiles.ReadText(paths.LocalPath!) : null;
 
         var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
         var config = RuleSetMerger.Build(ruleSetId, communityJson, localJson);
@@ -127,13 +128,13 @@ public static class RuleSetManagerStateExtensions
         _ => "?",
     };
 
-    public static RuleSetPaths CheckRuleSetPaths(string ruleSetId, string communityDir, string localDir)
+    public static RuleSetPaths CheckRuleSetPaths(string ruleSetId, string communityDir, string localDir, IDataFiles dataFiles)
     {
         var communityPath = Path.Combine(communityDir, $"{ruleSetId}.json");
         var localPath = Path.Combine(localDir, $"{ruleSetId}.json");
 
-        var communityExists = File.Exists(communityPath);
-        var localExists = File.Exists(localPath);
+        var communityExists = dataFiles.Exists(communityPath);
+        var localExists = dataFiles.Exists(localPath);
 
         return new RuleSetPaths(
             communityExists ? communityPath : null,

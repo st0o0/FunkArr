@@ -18,21 +18,24 @@ public sealed class RuleSetWorker : ReceiveActor
     public sealed record RemoveRuleSet(string RuleSetId) : IWithRuleSetId;
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly IDataFiles _dataFiles;
 
-    public RuleSetWorker()
+    public RuleSetWorker(IDataFiles dataFiles)
     {
+        _dataFiles = dataFiles;
+
         Receive<LoadRuleSet>(HandleLoad);
         Receive<RemoveRuleSet>(HandleRemove);
     }
 
     private void HandleLoad(LoadRuleSet msg)
     {
-        var communityJson = msg.CommunityPath is not null && File.Exists(msg.CommunityPath)
-            ? File.ReadAllText(msg.CommunityPath)
+        var communityJson = msg.CommunityPath is not null && _dataFiles.Exists(msg.CommunityPath)
+            ? _dataFiles.ReadText(msg.CommunityPath)
             : null;
 
-        var localJson = msg.LocalPath is not null && File.Exists(msg.LocalPath)
-            ? File.ReadAllText(msg.LocalPath)
+        var localJson = msg.LocalPath is not null && _dataFiles.Exists(msg.LocalPath)
+            ? _dataFiles.ReadText(msg.LocalPath)
             : null;
 
         var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);

@@ -1,8 +1,8 @@
+using System.IO.Abstractions;
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
-using Microsoft.Extensions.Options;
 using Servus.Akka;
 
 namespace FunkArr.RuleSet;
@@ -20,17 +20,17 @@ public sealed class RuleSetManager : ReceiveActor
     private static readonly TimeSpan _debounceWindow = TimeSpan.FromSeconds(2);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly IOptionsMonitor<FunkArrOptions> _optionsMonitor;
+    private readonly IDataFiles _dataFiles;
+    private readonly DataPaths _dataPaths;
     private RuleSetManagerState _state = RuleSetManagerState.Empty;
-    private string _communityDir = "";
-    private string _localDir = "";
-    private FileSystemWatcher? _communityWatcher;
-    private FileSystemWatcher? _localWatcher;
+    private IFileSystemWatcher? _communityWatcher;
+    private IFileSystemWatcher? _localWatcher;
     private ICancelable? _flushSchedule;
 
-    public RuleSetManager(IOptionsMonitor<FunkArrOptions> optionsMonitor)
+    public RuleSetManager(IDataFiles dataFiles, DataPaths dataPaths)
     {
-        _optionsMonitor = optionsMonitor;
+        _dataFiles = dataFiles;
+        _dataPaths = dataPaths;
 
         Receive<ScanRuleSets>(_ => HandleScan());
         Receive<FileChanged>(HandleFileChanged);
@@ -41,10 +41,6 @@ public sealed class RuleSetManager : ReceiveActor
 
     protected override void PreStart()
     {
-        var options = _optionsMonitor.CurrentValue;
-        _communityDir = Path.GetFullPath(Path.Combine(options.RuleSetDataPath, "rulesets"));
-        _localDir = Path.GetFullPath(Path.Combine(options.LocalRuleSetDataPath, "rulesets"));
-
         var current = ScanDirectories();
 
         var shardRegion = Context.GetActor<IRuleSetRegion>();
@@ -163,7 +159,8 @@ public sealed class RuleSetManager : ReceiveActor
 
         foreach (var id in _state.PendingIds)
         {
-            var current = RuleSetManagerStateExtensions.CheckRuleSetPaths(id, _communityDir, _localDir);
+            var current = RuleSetManagerStateExtensions.CheckRuleSetPaths(
+                id, _dataPaths.CommunityRuleSets, _dataPaths.LocalRuleSets, _dataFiles);
             var hasFiles = current.CommunityPath is not null || current.LocalPath is not null;
 
             if (!knownRuleSets.TryGetValue(id, out var known))
@@ -203,7 +200,7 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void HandleQueryDetail(QueryRuleSetDetail msg)
     {
-        var result = _state.BuildDetail(msg.RuleSetId);
+        var result = _state.BuildDetail(msg.RuleSetId, _dataFiles);
         if (result is null)
         {
             _state = _state with { KnownRuleSets = _state.KnownRuleSets.Remove(msg.RuleSetId) };
@@ -216,13 +213,8 @@ public sealed class RuleSetManager : ReceiveActor
 
     private System.Collections.Immutable.ImmutableDictionary<string, RuleSetPaths> ScanDirectories()
     {
-        var communityFiles = Directory.Exists(_communityDir)
-            ? Directory.GetFiles(_communityDir, "*.json")
-            : [];
-
-        var localFiles = Directory.Exists(_localDir)
-            ? Directory.GetFiles(_localDir, "*.json")
-            : [];
+        var communityFiles = _dataFiles.ListFiles(_dataPaths.CommunityRuleSets, "*.json");
+        var localFiles = _dataFiles.ListFiles(_dataPaths.LocalRuleSets, "*.json");
 
         var result = System.Collections.Immutable.ImmutableDictionary.CreateBuilder<string, RuleSetPaths>(StringComparer.Ordinal);
 
@@ -250,21 +242,14 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void SetupWatchers()
     {
-        Directory.CreateDirectory(_communityDir);
-        Directory.CreateDirectory(_localDir);
-
-        _communityWatcher = CreateWatcher(_communityDir);
-        _localWatcher = CreateWatcher(_localDir);
+        _communityWatcher = SetupWatcher(_dataPaths.CommunityRuleSets);
+        _localWatcher = SetupWatcher(_dataPaths.LocalRuleSets);
     }
 
-    private FileSystemWatcher CreateWatcher(string directory)
+    private IFileSystemWatcher SetupWatcher(string directory)
     {
         var self = Self;
-        var watcher = new FileSystemWatcher(directory, "*.json")
-        {
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
-            EnableRaisingEvents = true,
-        };
+        var watcher = _dataFiles.Watch(directory, "*.json");
 
         watcher.Created += (_, e) => self.Tell(new FileChanged(Path.GetFileNameWithoutExtension(e.FullPath)));
         watcher.Changed += (_, e) => self.Tell(new FileChanged(Path.GetFileNameWithoutExtension(e.FullPath)));

@@ -1,26 +1,31 @@
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using Akka.Actor;
 using Akka.Hosting;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
-using FunkArr.Tests.Shared;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FunkArr.RuleSet.Tests;
 
 public sealed class RuleSetManagerTests : TestKit
 {
     private readonly string _tempDir;
-    private readonly IOptionsMonitor<FunkArrOptions> _optionsMonitor;
+    private readonly IDataFiles _dataFiles;
+    private readonly DataPaths _dataPaths;
 
     public RuleSetManagerTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(Path.Combine(_tempDir, "community", "rulesets"));
-        Directory.CreateDirectory(Path.Combine(_tempDir, "local", "rulesets"));
+        Directory.CreateDirectory(Path.Combine(_tempDir, "rulesets", "community"));
+        Directory.CreateDirectory(Path.Combine(_tempDir, "rulesets", "local"));
+        Directory.CreateDirectory(Path.Combine(_tempDir, "temp"));
 
-        var options = new FunkArrOptions { DataPath = _tempDir };
-        _optionsMonitor = new TestOptionsMonitor<FunkArrOptions>(options);
+        var funkArrOptions = new FunkArrOptions { DataPath = _tempDir };
+        var downloadOptions = new DownloadOptions();
+        _dataPaths = new DataPaths(funkArrOptions, downloadOptions);
+        _dataFiles = new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance);
     }
 
     private const string _sampleJson = """
@@ -50,10 +55,10 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        File.WriteAllText(Path.Combine(_tempDir, "community", "rulesets", "show-a.json"), _sampleJson);
-        File.WriteAllText(Path.Combine(_tempDir, "community", "rulesets", "show-b.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_optionsMonitor)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         var msg1 = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
         var msg2 = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
@@ -77,10 +82,10 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        File.WriteAllText(Path.Combine(_tempDir, "community", "rulesets", "show-a.json"), _sampleJson);
-        File.WriteAllText(Path.Combine(_tempDir, "local", "rulesets", "show-a.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.LocalRuleSets, "show-a.json"), _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_optionsMonitor)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         var msg = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
         Assert.Equal("show-a", msg.RuleSetId);
@@ -102,11 +107,11 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_optionsMonitor)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         shardProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
 
-        File.WriteAllText(Path.Combine(_tempDir, "community", "rulesets", "new-show.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "new-show.json"), _sampleJson);
 
         var msg = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(TimeSpan.FromSeconds(3));
         Assert.Equal("new-show", msg.RuleSetId);
@@ -126,10 +131,10 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        var filePath = Path.Combine(_tempDir, "community", "rulesets", "temp-show.json");
+        var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "temp-show.json");
         File.WriteAllText(filePath, _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_optionsMonitor)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
 
@@ -153,9 +158,9 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        File.WriteAllText(Path.Combine(_tempDir, "community", "rulesets", "test-show.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "test-show.json"), _sampleJson);
 
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_optionsMonitor)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
 
         manager.Tell(new QueryRuleSetDetail("test-show"));
@@ -185,7 +190,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_optionsMonitor)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         manager.Tell(new QueryRuleSetDetail("nonexistent"));
         var result = ExpectMsg<RuleSetNotFound>();
@@ -207,10 +212,10 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        var filePath = Path.Combine(_tempDir, "community", "rulesets", "deleted-show.json");
+        var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "deleted-show.json");
         File.WriteAllText(filePath, _sampleJson);
 
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_optionsMonitor)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
 
         File.Delete(filePath);

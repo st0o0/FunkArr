@@ -20,6 +20,7 @@ public sealed class MatchMagicManager : ReceiveActor
         Receive<MatchingConfig>(config => _state = _state.Apply(config));
         Receive<RemoveMatchingConfig>(msg => _state = _state.Apply(msg));
         Receive<ScoreItems>(HandleScoreItems);
+        Receive<TestScoreItems>(HandleTestScoreItems);
     }
 
     private void HandleScoreItems(ScoreItems msg)
@@ -33,5 +34,10 @@ public sealed class MatchMagicManager : ReceiveActor
         }
 
         _router.Tell(new ExecuteScoring(config, msg.Candidates, msg.RequestId, msg.Origin), Sender);
+    }
+
+    private void HandleTestScoreItems(TestScoreItems msg)
+    {
+        _router.Tell(new ExecuteScoring(msg.Config, msg.Candidates, msg.RequestId, new ScoringOrigin("Test", "ad-hoc")), Sender);
     }
 }

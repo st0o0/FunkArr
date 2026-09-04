@@ -14,7 +14,8 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
     private static readonly TimeSpan _refreshInterval = TimeSpan.FromMinutes(30);
 
     private readonly HttpClient _httpClient;
-    private readonly IOptionsMonitor<FunkArrOptions> _funkArrOptionsMonitor;
+    private readonly IDataFiles _dataFiles;
+    private readonly DataPaths _dataPaths;
     private readonly IOptionsMonitor<RuleSetUpdaterOptions> _optionsMonitor;
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
@@ -22,11 +23,13 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
 
     public RuleSetUpdater(
         IHttpClientFactory httpClientFactory,
-        IOptionsMonitor<FunkArrOptions> funkArrOptionsMonitor,
+        IDataFiles dataFiles,
+        DataPaths dataPaths,
         IOptionsMonitor<RuleSetUpdaterOptions> optionsMonitor)
     {
         _httpClient = httpClientFactory.CreateClient("GitHub");
-        _funkArrOptionsMonitor = funkArrOptionsMonitor;
+        _dataFiles = dataFiles;
+        _dataPaths = dataPaths;
         _optionsMonitor = optionsMonitor;
 
         ReceiveAsync<CheckForUpdates>(_ => HandleCheckForUpdates());
@@ -63,12 +66,11 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
     private async Task DoCheckForUpdates()
     {
         var opts = _optionsMonitor.CurrentValue;
-        var communityDir = _funkArrOptionsMonitor.CurrentValue.RuleSetDataPath;
-        var rulesetsDir = Path.Combine(communityDir, "rulesets");
-        var versionFile = Path.Combine(communityDir, "version.txt");
+        var rulesetsDir = _dataPaths.CommunityRuleSets;
+        var versionFile = _dataPaths.RuleSetVersion;
 
-        var localVersion = File.Exists(versionFile)
-            ? (await File.ReadAllTextAsync(versionFile)).Trim()
+        var localVersion = _dataFiles.Exists(versionFile)
+            ? _dataFiles.ReadText(versionFile).Trim()
             : null;
 
         var release = await FindRelease();
@@ -94,46 +96,25 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
 
         var zipBytes = await _httpClient.GetByteArrayAsync(release.Value.AssetUrl);
 
-        var tempDir = Path.Combine(communityDir, $"rulesets-temp-{Guid.NewGuid():N}");
-        var oldDir = Path.Combine(communityDir, $"rulesets-old-{Guid.NewGuid():N}");
+        var tempDir = Path.Join(_dataPaths.Temp, $"rulesets-{Guid.NewGuid():N}");
 
         try
         {
-            Directory.CreateDirectory(tempDir);
+            _dataFiles.CreateDirectory(tempDir);
 
             using var stream = new MemoryStream(zipBytes);
             await using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
             await archive.ExtractToDirectoryAsync(tempDir);
 
-            if (Directory.Exists(rulesetsDir))
-            {
-                Directory.Move(rulesetsDir, oldDir);
-            }
-
-            Directory.Move(tempDir, rulesetsDir);
-
-            if (Directory.Exists(oldDir))
-            {
-                Directory.Delete(oldDir, recursive: true);
-            }
-
-            await File.WriteAllTextAsync(versionFile, release.Value.Version);
+            _dataFiles.ReplaceDirectory(tempDir, rulesetsDir);
+            _dataFiles.WriteText(versionFile, release.Value.Version);
 
             _log.Info("Community rulesets updated to version {Version}", release.Value.Version);
         }
         catch (Exception ex)
         {
             _log.Error(ex, "Failed to extract community rulesets");
-
-            if (!Directory.Exists(rulesetsDir) && Directory.Exists(oldDir))
-            {
-                Directory.Move(oldDir, rulesetsDir);
-            }
-
-            if (Directory.Exists(tempDir))
-            {
-                Directory.Delete(tempDir, recursive: true);
-            }
+            _dataFiles.Remove(tempDir);
         }
     }
 

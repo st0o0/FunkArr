@@ -1,3 +1,4 @@
+using FunkArr.Messages.MetadataResolver;
 using FunkArr.Messages.Scoring;
 
 namespace FunkArr.RuleSet.Tests;
@@ -431,6 +432,137 @@ public sealed class RuleSetMergerTests
         Assert.Null(identity.Value.TvdbId);
         Assert.Null(identity.Value.ImdbId);
         Assert.Null(identity.Value.TmdbId);
+    }
+
+    [Fact]
+    public void Build_with_resolution_config_produces_resolution()
+    {
+        var json = """
+            {
+              "topic": "Tatort",
+              "confidence": 1.0,
+              "resolution": {
+                "strategy": "fuzzy",
+                "threshold": 0.7,
+                "airdateTolerance": 7
+              },
+              "rules": [
+                {
+                  "id": "title",
+                  "priority": 0,
+                  "strategy": "itemTitleEqualsAirdate"
+                }
+              ]
+            }
+            """;
+
+        var config = RuleSetMerger.Build("tatort", json, null);
+
+        Assert.NotNull(config);
+        Assert.NotNull(config.Resolution);
+        Assert.Equal("fuzzy", config.Resolution.Strategy);
+        Assert.Equal(0.7f, config.Resolution.Threshold);
+        Assert.Equal(7, config.Resolution.AirdateTolerance);
+    }
+
+    [Fact]
+    public void Build_without_resolution_config_has_null_resolution()
+    {
+        var config = RuleSetMerger.Build("test", _communityJson, null);
+
+        Assert.NotNull(config);
+        Assert.Null(config.Resolution);
+    }
+
+    [Fact]
+    public void Build_merge_local_resolution_overrides_community()
+    {
+        var communityJson = """
+            {
+              "topic": "Tatort",
+              "resolution": {
+                "strategy": "fuzzy",
+                "threshold": 0.7,
+                "airdateTolerance": 7
+              },
+              "rules": [
+                { "id": "r1", "priority": 0, "strategy": "itemTitleEqualsAirdate" }
+              ]
+            }
+            """;
+        var localJson = """
+            {
+              "topic": "Tatort",
+              "resolution": {
+                "strategy": "strict",
+                "threshold": 0.95
+              },
+              "rules": []
+            }
+            """;
+
+        var config = RuleSetMerger.Build("tatort", communityJson, localJson);
+
+        Assert.NotNull(config);
+        Assert.NotNull(config.Resolution);
+        Assert.Equal("strict", config.Resolution.Strategy);
+        Assert.Equal(0.95f, config.Resolution.Threshold);
+        Assert.Equal(7, config.Resolution.AirdateTolerance);
+    }
+
+    [Fact]
+    public void Build_merge_community_only_resolution_preserved()
+    {
+        var communityJson = """
+            {
+              "topic": "Tatort",
+              "resolution": {
+                "strategy": "fuzzy",
+                "threshold": 0.8
+              },
+              "rules": [
+                { "id": "r1", "priority": 0, "strategy": "itemTitleEqualsAirdate" }
+              ]
+            }
+            """;
+        var localJson = """
+            {
+              "topic": "Tatort",
+              "rules": []
+            }
+            """;
+
+        var config = RuleSetMerger.Build("tatort", communityJson, localJson);
+
+        Assert.NotNull(config);
+        Assert.NotNull(config.Resolution);
+        Assert.Equal("fuzzy", config.Resolution.Strategy);
+        Assert.Equal(0.8f, config.Resolution.Threshold);
+    }
+
+    [Fact]
+    public void BuildFromJson_includes_resolution_config()
+    {
+        var json = """
+            {
+              "topic": "Tatort",
+              "confidence": 1.0,
+              "resolution": {
+                "strategy": "strict",
+                "threshold": 0.95,
+                "airdateTolerance": 3
+              },
+              "rules": []
+            }
+            """;
+
+        var config = RuleSetMerger.BuildFromJson("tatort", json);
+
+        Assert.NotNull(config);
+        Assert.NotNull(config.Resolution);
+        Assert.Equal("strict", config.Resolution.Strategy);
+        Assert.Equal(0.95f, config.Resolution.Threshold);
+        Assert.Equal(3, config.Resolution.AirdateTolerance);
     }
 
     [Fact]
