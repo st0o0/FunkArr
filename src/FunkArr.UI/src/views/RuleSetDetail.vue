@@ -101,27 +101,67 @@
         </div>
       </section>
 
-      <router-link
-        :to="`/rulesets/${id}/history`"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors"
-      >
-        Scoring History
-      </router-link>
+      <div class="flex items-center gap-3">
+        <router-link
+          :to="`/rulesets/${id}/history`"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors"
+        >
+          Scoring History
+        </router-link>
+        <router-link
+          :to="`/rulesets/${id}/edit`"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors"
+        >
+          Edit
+        </router-link>
+        <button
+          v-if="detail.source.localPath"
+          class="px-4 py-2 bg-status-fail/10 text-status-fail rounded-lg hover:bg-status-fail/20 text-sm transition-colors border border-status-fail/20"
+          @click="showDeleteConfirm = true"
+        >
+          Delete Local
+        </button>
+      </div>
+
+      <div v-if="showDeleteConfirm" class="mt-4 p-4 bg-surface-raised rounded-xl border border-status-fail/20">
+        <p class="text-sm text-text-body mb-3">Delete local overlay? This cannot be undone.</p>
+        <div class="flex items-center gap-3">
+          <button
+            class="px-4 py-2 bg-status-fail text-white rounded-lg hover:bg-status-fail/80 text-sm transition-colors"
+            :disabled="deleting"
+            @click="handleDelete"
+          >
+            {{ deleting ? 'Deleting...' : 'Confirm' }}
+          </button>
+          <button
+            class="px-4 py-2 bg-surface-elevated text-text-body rounded-lg hover:bg-surface-elevated/80 text-sm transition-colors border border-border-default"
+            :disabled="deleting"
+            @click="showDeleteConfirm = false"
+          >
+            Cancel
+          </button>
+        </div>
+        <div v-if="deleteError" class="text-status-fail text-sm mt-2">{{ deleteError }}</div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { getRuleSetDetail, type RuleSetDetail } from '../api/rulesets'
+import { useRoute, useRouter } from 'vue-router'
+import { getRuleSetDetail, deleteRuleSet, type RuleSetDetail } from '../api/rulesets'
 
 const route = useRoute()
+const router = useRouter()
 const id = route.params.id as string
 
 const detail = ref<RuleSetDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+const showDeleteConfirm = ref(false)
+const deleting = ref(false)
+const deleteError = ref<string | null>(null)
 
 const mergeMode = computed(() => {
   if (!detail.value) return ''
@@ -134,6 +174,25 @@ const mergeMode = computed(() => {
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleString()
+}
+
+async function handleDelete() {
+  deleting.value = true
+  deleteError.value = null
+  try {
+    await deleteRuleSet(id)
+    const hasCommunity = detail.value?.source.communityPath != null
+    if (hasCommunity) {
+      detail.value = await getRuleSetDetail(id)
+      showDeleteConfirm.value = false
+    } else {
+      router.push('/rulesets')
+    }
+  } catch (e) {
+    deleteError.value = e instanceof Error ? e.message : 'Failed to delete'
+  } finally {
+    deleting.value = false
+  }
 }
 
 onMounted(async () => {

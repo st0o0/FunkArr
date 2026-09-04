@@ -15,7 +15,7 @@ export interface SetupConnectionInfo {
 
 export interface SetupHealthCheck {
   checks: Record<string, CheckResult>
-  connectionInfo: SetupConnectionInfo
+  setupConnectionInfo: SetupConnectionInfo
 }
 
 export async function getSetupHealth(): Promise<SetupHealthCheck> {

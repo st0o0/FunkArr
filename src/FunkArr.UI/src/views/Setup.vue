@@ -187,7 +187,8 @@ const checkLabels: Record<string, string> = {
   apiKey: 'API Key',
   mediathekViewWeb: 'MediathekViewWeb',
   dataDirectory: 'Data Directory',
-  downloadDirectory: 'Download Directory',
+  completeDirectory: 'Complete Directory',
+  incompleteDirectory: 'Incomplete Directory',
   indexerApi: 'Indexer API',
   downloadApi: 'Download API',
   ffmpeg: 'FFmpeg',
@@ -197,7 +198,8 @@ const fixHints: Record<string, string> = {
   apiKey: 'Set FunkArr__ApiKey environment variable or update appsettings.json.',
   mediathekViewWeb: 'Check your internet connection. MediathekViewWeb must be reachable.',
   dataDirectory: 'Ensure the data directory exists and is writable. Set FunkArr__DataPath if needed.',
-  downloadDirectory: 'Ensure the download directory exists and is writable.',
+  completeDirectory: 'Ensure the complete download directory exists and is writable.',
+  incompleteDirectory: 'Ensure the incomplete download directory exists and is writable.',
   indexerApi: 'The Newznab indexer endpoint is not responding. Check application logs.',
   downloadApi: 'The SABnzbd download endpoint is not responding. Check application logs.',
 }
@@ -222,6 +224,7 @@ interface ServiceConfig {
 }
 
 const apiKey = computed(() => health.value?.checks.apiKey?.value ?? '<your-api-key>')
+const defaultPort = computed(() => health.value?.setupConnectionInfo?.defaultPort ?? 6969)
 
 function prowlarrConfig(): ServiceConfig {
   return {
@@ -244,7 +247,7 @@ function sonarrConfig(): ServiceConfig {
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
       { label: 'Host', value: '<funkarr-host>', copyable: false, note: 'Replace with your FunkArr hostname or IP' },
-      { label: 'Port', value: '<funkarr-port>', copyable: false, note: 'Replace with your FunkArr port (default: 5000)' },
+      { label: 'Port', value: '<funkarr-port>', copyable: false, note: `Replace with your FunkArr port (default: ${defaultPort.value})` },
       { label: 'URL Base', value: '/download/api', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Category', value: 'tv', copyable: true },
@@ -259,7 +262,7 @@ function radarrConfig(): ServiceConfig {
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
       { label: 'Host', value: '<funkarr-host>', copyable: false, note: 'Replace with your FunkArr hostname or IP' },
-      { label: 'Port', value: '<funkarr-port>', copyable: false, note: 'Replace with your FunkArr port (default: 5000)' },
+      { label: 'Port', value: '<funkarr-port>', copyable: false, note: `Replace with your FunkArr port (default: ${defaultPort.value})` },
       { label: 'URL Base', value: '/download/api', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Category', value: 'movies', copyable: true },

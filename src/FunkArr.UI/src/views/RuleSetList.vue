@@ -2,13 +2,29 @@
   <div>
     <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-5">RuleSets</h1>
 
+    <div class="flex items-center gap-3 mb-5">
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search rulesets..."
+        class="bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted w-full focus:outline-none focus:border-brand-500/50"
+      />
+      <router-link
+        to="/rulesets/new"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors whitespace-nowrap"
+      >
+        New RuleSet
+      </router-link>
+    </div>
+
     <div v-if="loading" class="text-text-muted text-sm">Loading...</div>
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
     <div v-else-if="rulesets.length === 0" class="text-text-muted text-sm">No rulesets registered.</div>
+    <div v-else-if="filteredRulesets.length === 0" class="text-text-muted text-sm">No matching rulesets.</div>
 
     <div v-else class="grid gap-2.5">
       <router-link
-        v-for="rs in rulesets"
+        v-for="rs in filteredRulesets"
         :key="rs.ruleSetId"
         :to="`/rulesets/${rs.ruleSetId}`"
         class="block p-4 bg-surface-raised rounded-xl border border-border-default hover:border-brand-500/30 hover:bg-surface-elevated/50 transition-colors"
@@ -31,12 +47,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { listRuleSets, type RuleSetEntry } from '../api/rulesets'
 
 const rulesets = ref<RuleSetEntry[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
+const search = ref('')
+
+const filteredRulesets = computed(() => {
+  const term = search.value.toLowerCase()
+  if (!term) return rulesets.value
+  return rulesets.value.filter(rs => {
+    const haystack = [
+      rs.ruleSetId,
+      rs.topic,
+      ...rs.aliases,
+      rs.tvdbId?.toString() ?? '',
+      rs.imdbId ?? '',
+      rs.tmdbId?.toString() ?? '',
+    ].join(' ').toLowerCase()
+    return haystack.includes(term)
+  })
+})
 
 onMounted(async () => {
   try {
