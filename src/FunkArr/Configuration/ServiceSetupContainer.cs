@@ -1,6 +1,10 @@
+using System.IO.Abstractions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
+using FunkArr.Download;
+using FunkArr.MetadataResolver;
+using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
@@ -40,9 +44,35 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         });
 
+        services.AddSingleton<IFileSystem, FileSystem>();
+        services.AddSingleton(sp => new DataPaths(
+            sp.GetRequiredService<IOptions<FunkArrOptions>>().Value,
+            sp.GetRequiredService<IOptions<DownloadOptions>>().Value));
+        services.AddSingleton<IDataFiles, DataFiles>();
+
         services.AddOpenApi();
 
         services.AddHealthChecks();
+
+        services.AddDownloadServices();
+
+        services
+            .AddOptions<TvdbOptions>()
+            .Bind(configuration.GetSection("Tvdb"));
+
+        services
+            .AddOptions<MetadataResolverOptions>()
+            .Bind(configuration.GetSection("MetadataResolver"));
+
+        services
+            .AddOptions<TmdbOptions>()
+            .Bind(configuration.GetSection("Tmdb"));
+
+        services.AddHttpClient("Tvdb");
+        services.AddSingleton<TvdbClient>();
+
+        services.AddHttpClient("Tmdb");
+        services.AddSingleton<TmdbClient>();
 
         services.AddHttpClient("MediathekViewWeb", client =>
         {

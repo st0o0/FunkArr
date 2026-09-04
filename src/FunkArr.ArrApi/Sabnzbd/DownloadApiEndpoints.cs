@@ -1,3 +1,4 @@
+using System.Xml;
 using System.Xml.Serialization;
 using Akka.Actor;
 using Akka.Hosting;
@@ -13,6 +14,10 @@ namespace FunkArr.ArrApi.Sabnzbd;
 public static class DownloadApiEndpoints
 {
     private static readonly XmlSerializer _nzbSerializer = new(typeof(Nzb));
+    private static readonly XmlReaderSettings _xmlSettings = new()
+    {
+        DtdProcessing = DtdProcessing.Ignore,
+    };
     private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
 
     public static WebApplication MapDownloadApi(this WebApplication app)
@@ -24,6 +29,7 @@ public static class DownloadApiEndpoints
         group.MapGet("/", async (
             [AsParameters] DownloadGetRequest req,
             IOptionsMonitor<DownloadOptions> downloadOptions,
+            DataPaths dataPaths,
             IActorRegistry registry) =>
         {
             var opts = downloadOptions.CurrentValue;
@@ -33,8 +39,8 @@ public static class DownloadApiEndpoints
             return (req.Mode ?? "") switch
             {
                 "version" => Results.Json(new { version = "4.3.3" }),
-                "get_config" => ConfigResult(opts),
-                "fullstatus" => await FullStatusResult(manager, opts.CompletePath),
+                "get_config" => ConfigResult(opts, dataPaths),
+                "fullstatus" => await FullStatusResult(manager, dataPaths.Complete),
                 "queue" when req.Name == "delete" && !string.IsNullOrEmpty(req.Value) =>
                     await DeleteFromQueueResult(manager, req.Value),
                 "queue" when req.Name is not null =>
@@ -42,7 +48,7 @@ public static class DownloadApiEndpoints
                 "queue" => await QueueResult(manager, req.Start ?? 0, req.Limit ?? 0, req.Category),
                 "history" when req.Name == "delete" && !string.IsNullOrEmpty(req.Value) =>
                     await DeleteFromHistoryResult(history, req.Value),
-                "history" => await HistoryResult(history, req.Start ?? 0, req.Limit ?? 0, req.Category),
+                "history" => await HistoryResult(history, dataPaths, req.Start ?? 0, req.Limit ?? 0, req.Category),
                 "retry" when string.IsNullOrEmpty(req.Value) =>
                     Results.Json(new { status = false, error = "Missing value parameter" }, statusCode: 400),
                 "retry" => await RetryResult(manager, history, req.Value),
@@ -52,7 +58,7 @@ public static class DownloadApiEndpoints
 
         group.MapPost("/", async (
             [AsParameters] DownloadPostRequest req,
-            IFormFile? nzbfile,
+            IFormFile? name,
             IActorRegistry registry) =>
         {
             if ((req.Mode ?? "") != "addfile")
@@ -60,13 +66,14 @@ public static class DownloadApiEndpoints
                 return Results.Json(new { status = false, error = "Invalid mode" }, statusCode: 400);
             }
 
-            if (nzbfile is null)
+            if (name is null)
             {
                 return Results.Json(new { status = false, error = "No NZB file uploaded" }, statusCode: 400);
             }
 
-            await using var stream = nzbfile.OpenReadStream();
-            var nzb = _nzbSerializer.Deserialize(stream) as Nzb;
+            await using var stream = name.OpenReadStream();
+            using var xmlReader = XmlReader.Create(stream, _xmlSettings);
+            var nzb = _nzbSerializer.Deserialize(xmlReader) as Nzb;
 
             var videoUrl = Meta("X-FunkArr-Url") ?? Meta("url");
             if (videoUrl is null)
@@ -93,14 +100,14 @@ public static class DownloadApiEndpoints
         return app;
     }
 
-    private static IResult ConfigResult(DownloadOptions opts) =>
+    private static IResult ConfigResult(DownloadOptions opts, DataPaths dataPaths) =>
         Results.Json(new
         {
             config = new
             {
                 misc = new
                 {
-                    complete_dir = opts.CompletePath.Replace('\\', '/'),
+                    complete_dir = dataPaths.Complete.Replace('\\', '/'),
                     enable_tv_sorting = false,
                     enable_movie_sorting = false,
                     enable_date_sorting = false,
@@ -167,7 +174,7 @@ public static class DownloadApiEndpoints
             Slots: slots)));
     }
 
-    private static async Task<IResult> HistoryResult(IActorRef history, int start, int limit, string? category)
+    private static async Task<IResult> HistoryResult(IActorRef history, DataPaths dataPaths, int start, int limit, string? category)
     {
         var result = await history.Ask<HistoryResult>(new QueryHistory(start, limit, category), _askTimeout);
 
@@ -178,7 +185,9 @@ public static class DownloadApiEndpoints
             Category: item.Category,
             Bytes: item.TotalBytes,
             DownloadTime: item.DownloadTimeSeconds,
-            Storage: item.FilePath,
+            Storage: !string.IsNullOrEmpty(item.RelativePath)
+                ? Path.GetDirectoryName(Path.Join(dataPaths.Complete, item.RelativePath))
+                : null,
             Status: MapHistoryStatus(item.Status),
             FailMessage: item.FailMessage,
             CompletedOn: item.CompletedAt)).ToArray();

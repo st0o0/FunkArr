@@ -29,6 +29,9 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
         app.MapGet("/alive", () => Results.Ok("Alive"));
 
         app.MapRuleSetApi();
+        app.MapRuleSetWriteApi();
+        app.MapRuleSetTestApi();
+        app.MapMediathekApi();
         app.MapSetupApi();
         app.MapQueueApi();
         app.MapIndexerApi();

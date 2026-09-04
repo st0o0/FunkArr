@@ -187,7 +187,7 @@ public static class QueueApiEndpoints
             item.Category,
             item.TotalBytes,
             item.DownloadTimeSeconds,
-            item.Status == DownloadStatus.Completed ? item.FilePath : null,
+            item.Status == DownloadStatus.Completed ? item.RelativePath : null,
             item.Status == DownloadStatus.Completed ? "Completed" : "Failed",
             item.Status == DownloadStatus.Failed ? item.FailMessage : null,
             DateTimeOffset.FromUnixTimeSeconds(item.CompletedAt).ToString("o"));

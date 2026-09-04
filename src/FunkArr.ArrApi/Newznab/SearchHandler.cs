@@ -128,6 +128,16 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
             new() { Name = "category", Value = category.CategoryId(item.Quality) },
         };
 
+        if (item.Season is not null)
+        {
+            attrs.Add(new NewznabAttribute { Name = "season", Value = item.Season });
+        }
+
+        if (item.Episode is not null)
+        {
+            attrs.Add(new NewznabAttribute { Name = "episode", Value = item.Episode });
+        }
+
         if (item.TvdbId is not null)
         {
             attrs.Add(new NewznabAttribute { Name = "tvdbid", Value = item.TvdbId.Value.ToString() });

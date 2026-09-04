@@ -1,7 +1,4 @@
 <Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-  </Configurations>
   <Folder Name="/Items/">
     <File Path="../README.md" />
     <File Path="Directory.Build.props" />
@@ -12,6 +9,7 @@
     <Project Path="FunkArr.Search/FunkArr.Search.csproj" />
     <Project Path="FunkArr.Download/FunkArr.Download.csproj" />
     <Project Path="FunkArr.RuleSet/FunkArr.RuleSet.csproj" />
+    <Project Path="FunkArr.MetadataResolver/FunkArr.MetadataResolver.csproj" />
     <Project Path="FunkArr.MatchMagic/FunkArr.MatchMagic.csproj" />
   </Folder>
   <Folder Name="/Adapters/">
@@ -28,6 +26,7 @@
     <Project Path="FunkArr.Search.Tests/FunkArr.Search.Tests.csproj" />
     <Project Path="FunkArr.Download.Tests/FunkArr.Download.Tests.csproj" />
     <Project Path="FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj" />
+    <Project Path="FunkArr.MetadataResolver.Tests/FunkArr.MetadataResolver.Tests.csproj" />
     <Project Path="FunkArr.MatchMagic.Tests/FunkArr.MatchMagic.Tests.csproj" />
     <Project Path="FunkArr.Api.Tests/FunkArr.Api.Tests.csproj" />
     <Project Path="FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj" />

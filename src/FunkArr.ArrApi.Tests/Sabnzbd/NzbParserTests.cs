@@ -29,7 +29,7 @@ public sealed class NzbParserTests
     {
         const string nzb = """
                            <?xml version="1.0" encoding="utf-16"?>
-                           <nzb>
+                           <nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">
                              <head>
                                <meta type="title">Tatort S01E05</meta>
                                <meta type="url">https://example.com/video.mp4</meta>
@@ -52,7 +52,7 @@ public sealed class NzbParserTests
     {
         const string nzb = """
                            <?xml version="1.0" encoding="utf-16"?>
-                           <nzb>
+                           <nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">
                              <file post_id="1">
                                <groups><group>a.b.mediathek</group></groups>
                                <segments><segment number="1">FunkArr@news.example.com</segment></segments>
@@ -71,7 +71,7 @@ public sealed class NzbParserTests
     {
         const string nzb = """
                            <?xml version="1.0" encoding="utf-16"?>
-                           <nzb>
+                           <nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">
                              <head>
                                <meta type="title">Test</meta>
                              </head>

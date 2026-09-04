@@ -8,12 +8,14 @@ services:
       - "6969:6969"
     volumes:
       - funkarr-data:/app/data
-      - media:/media
+      - media:/shared
     environment:
       - Serilog__MinimumLevel__Default=Debug
       - Serilog__MinimumLevel__Override__Akka=Information
       - FunkArr__ApiKey=funkarr-dev-api-key-01
-      - FunkArr__DownloadPath=/media/downloads
+      - FunkArr__Tvdb__ApiKey=${TVDB_API_KEY:-}
+      - FunkArr__Tmdb__ApiKey=${TMDB_API_KEY:-}
+      - FunkArr__Download__Path=/shared/downloads
     depends_on:
       - sonarr
       - radarr
@@ -26,7 +28,7 @@ services:
       - "8989:8989"
     volumes:
       - sonarr-config:/config
-      - media:/media
+      - media:/shared
     environment:
       SONARR__AUTH__APIKEY: funkarr-dev-api-key-01
       SONARR__AUTH__METHOD: External
@@ -39,7 +41,7 @@ services:
       - "7878:7878"
     volumes:
       - radarr-config:/config
-      - media:/media
+      - media:/shared
     environment:
       RADARR__AUTH__APIKEY: funkarr-dev-api-key-01
       RADARR__AUTH__METHOD: External

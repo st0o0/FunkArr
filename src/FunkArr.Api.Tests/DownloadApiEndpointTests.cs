@@ -76,7 +76,7 @@ public sealed class DownloadApiEndpointTests
             Category: "tv",
             TotalBytes: 245_000_000,
             DownloadTimeSeconds: 185,
-            FilePath: "/downloads/tagesschau.mkv",
+            RelativePath: "/downloads/tagesschau.mkv",
             Status: DownloadStatus.Completed,
             FailMessage: "",
             CompletedAt: 1725300000);
@@ -84,7 +84,7 @@ public sealed class DownloadApiEndpointTests
         var result = QueueApiEndpoints.ToHistoryItem(item);
 
         Assert.Equal("Completed", result.Status);
-        Assert.Equal("/downloads/tagesschau.mkv", result.FilePath);
+        Assert.Equal("/downloads/tagesschau.mkv", result.RelativePath);
         Assert.Null(result.FailMessage);
     }
 
@@ -97,7 +97,7 @@ public sealed class DownloadApiEndpointTests
             Category: "tv",
             TotalBytes: 98_000_000,
             DownloadTimeSeconds: 0,
-            FilePath: "",
+            RelativePath: "",
             Status: DownloadStatus.Failed,
             FailMessage: "FFmpeg exited with code 1",
             CompletedAt: 1725300000);
@@ -105,7 +105,7 @@ public sealed class DownloadApiEndpointTests
         var result = QueueApiEndpoints.ToHistoryItem(item);
 
         Assert.Equal("Failed", result.Status);
-        Assert.Null(result.FilePath);
+        Assert.Null(result.RelativePath);
         Assert.Equal("FFmpeg exited with code 1", result.FailMessage);
     }
 
@@ -129,7 +129,7 @@ public sealed class DownloadApiEndpointTests
             Category: "tv",
             TotalBytes: 100,
             DownloadTimeSeconds: 10,
-            FilePath: "/test.mkv",
+            RelativePath: "/test.mkv",
             Status: DownloadStatus.Completed,
             FailMessage: "",
             CompletedAt: 1725300000);

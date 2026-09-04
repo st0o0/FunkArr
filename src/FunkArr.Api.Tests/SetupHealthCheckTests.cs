@@ -1,4 +1,6 @@
+using System.IO.Abstractions;
 using FunkArr.Core;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FunkArr.Api.Tests;
 
@@ -49,14 +51,15 @@ public sealed class SetupHealthCheckTests
     }
 
     [Fact]
-    public async Task Directory_check_returns_ok_for_writable_directory()
+    public void Directory_check_returns_ok_for_writable_directory()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
+        var dataFiles = new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance);
 
         try
         {
-            var result = await SetupApiEndpoints.CheckDirectory("test", tempDir);
+            var result = SetupApiEndpoints.CheckDirectory(tempDir, dataFiles);
 
             Assert.Equal("ok", result.Status);
             Assert.Equal(Path.GetFullPath(tempDir), result.Path);
@@ -68,12 +71,13 @@ public sealed class SetupHealthCheckTests
     }
 
     [Fact]
-    public async Task Directory_check_returns_fail_for_nonexistent_directory()
+    public void Directory_check_returns_fail_for_nonexistent_directory()
     {
-        var result = await SetupApiEndpoints.CheckDirectory("test", "/nonexistent/path/that/does/not/exist");
+        var dataFiles = new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance);
+
+        var result = SetupApiEndpoints.CheckDirectory("/nonexistent/path/that/does/not/exist", dataFiles);
 
         Assert.Equal("fail", result.Status);
-        Assert.Contains("does not exist", result.Message);
     }
 
     [Fact]

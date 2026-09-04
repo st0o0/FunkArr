@@ -132,7 +132,7 @@ public static class IndexerApiEndpoints
     internal static string Serialize<T>(T obj) where T : class
     {
         var serializer = new XmlSerializer(typeof(T));
-        using var writer = new StringWriter();
+        using var writer = new Utf8StringWriter();
         using var xmlWriter = XmlWriter.Create(writer, new XmlWriterSettings
         {
             Encoding = Encoding.UTF8,
@@ -141,6 +141,11 @@ public static class IndexerApiEndpoints
         });
         serializer.Serialize(xmlWriter, obj, _namespaces);
         return writer.ToString();
+    }
+
+    private sealed class Utf8StringWriter : StringWriter
+    {
+        public override Encoding Encoding => Encoding.UTF8;
     }
 
     internal static IResult XmlResult(string xml) =>

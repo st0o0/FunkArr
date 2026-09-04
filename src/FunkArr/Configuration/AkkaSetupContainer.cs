@@ -5,10 +5,10 @@ using Akka.Remote.Hosting;
 using FunkArr.Core;
 using FunkArr.Download;
 using FunkArr.MatchMagic;
+using FunkArr.MetadataResolver;
 using FunkArr.RuleSet;
 using FunkArr.Search;
 using LinqToDB;
-using Microsoft.Extensions.Options;
 using Servus.Akka.Startup;
 
 namespace FunkArr.Configuration;
@@ -19,10 +19,10 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
 
     protected override void BuildSystem(AkkaConfigurationBuilder builder, IServiceProvider serviceProvider)
     {
-        var options = serviceProvider.GetRequiredService<IOptionsMonitor<FunkArrOptions>>().CurrentValue;
-        var dbPath = Path.GetFullPath(options.PersistencePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
-        var connectionString = $"Data Source={dbPath}";
+        var dataPaths = serviceProvider.GetRequiredService<DataPaths>();
+        var dataFiles = serviceProvider.GetRequiredService<IDataFiles>();
+        dataFiles.CreateDirectory(Path.GetDirectoryName(dataPaths.Database)!);
+        var connectionString = $"Data Source={dataPaths.Database}";
 
         builder
             .ConfigureLoggers(loggers =>
@@ -59,6 +59,8 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => resolver.Props<DownloadHistoryManager>())
             .WithSingleton<IMatchMagicManager>("match-magic-manager",
                 (_, _, resolver) => resolver.Props<MatchMagicManager>())
+            .WithSingleton<IMetadataResolver>("metadata-resolver",
+                (_, _, resolver) => resolver.Props<MetadataResolverManager>())
             .WithShardRegion<ITvSearchRegion>("tv-search",
                 (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
                 new ShardMessageExtractor(),

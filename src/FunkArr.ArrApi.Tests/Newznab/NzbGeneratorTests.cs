@@ -6,6 +6,8 @@ namespace FunkArr.ArrApi.Tests.Newznab;
 
 public sealed class NzbGeneratorTests
 {
+    private static readonly XNamespace _ns = "http://www.newzbin.com/DTD/2003/nzb";
+
     [Fact]
     public void Nzb_serialization_creates_valid_xml_with_head_meta()
     {
@@ -26,10 +28,10 @@ public sealed class NzbGeneratorTests
         var root = doc.Root!;
 
         Assert.Equal("nzb", root.Name.LocalName);
-        Assert.NotNull(root.Element("head"));
-        Assert.NotNull(root.Element("file"));
+        Assert.NotNull(root.Element(_ns + "head"));
+        Assert.NotNull(root.Element(_ns + "file"));
 
-        var metas = root.Element("head")!.Elements("meta").ToList();
+        var metas = root.Element(_ns + "head")!.Elements(_ns + "meta").ToList();
         var titleMeta = metas.First(m => m.Attribute("type")!.Value == "title");
         var urlMeta = metas.First(m => m.Attribute("type")!.Value == "url");
 
@@ -54,12 +56,12 @@ public sealed class NzbGeneratorTests
 
         var xml = IndexerApiEndpoints.Serialize(nzb);
         var doc = XDocument.Parse(xml);
-        var file = doc.Root!.Element("file")!;
+        var file = doc.Root!.Element(_ns + "file")!;
 
         Assert.Equal("1", file.Attribute("post_id")!.Value);
-        Assert.NotNull(file.Element("groups"));
-        Assert.NotNull(file.Element("segments"));
-        Assert.Equal("a.b.mediathek", file.Element("groups")!.Element("group")!.Value);
+        Assert.NotNull(file.Element(_ns + "groups"));
+        Assert.NotNull(file.Element(_ns + "segments"));
+        Assert.Equal("a.b.mediathek", file.Element(_ns + "groups")!.Element(_ns + "group")!.Value);
     }
 
     [Fact]

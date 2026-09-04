@@ -10,7 +10,7 @@ public sealed record DownloadHistoryItem(
     string Category,
     long TotalBytes,
     int DownloadTimeSeconds,
-    string? FilePath,
+    string? RelativePath,
     string Status,
     string? FailMessage,
     string CompletedAt);

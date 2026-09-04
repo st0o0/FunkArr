@@ -129,7 +129,7 @@ public static class RuleSetApiEndpoints
         new(msg.RequestId, msg.Source, msg.Query, msg.Timestamp,
             msg.ItemTraces.Select(ToItemTraceModel).ToArray());
 
-    private static ApiModels.ItemTrace ToItemTraceModel(ItemTrace msg) =>
+    internal static ApiModels.ItemTrace ToItemTraceModel(ItemTrace msg) =>
         new(msg.CandidateTitle, msg.CandidateTopic, msg.CandidateChannel,
             msg.CandidateDuration, msg.CandidateQuality, msg.CandidateDescription,
             msg.CandidateTimestamp, msg.Matched, msg.Score, msg.MatchedRuleId,
@@ -138,14 +138,14 @@ public static class RuleSetApiEndpoints
                 : null,
             msg.RuleTraces.Select(ToRuleTraceModel).ToArray());
 
-    private static ApiModels.RuleTrace ToRuleTraceModel(RuleTrace msg) =>
+    internal static ApiModels.RuleTrace ToRuleTraceModel(RuleTrace msg) =>
         new(msg.RuleId, msg.Priority, (ApiModels.RuleOutcome)msg.Outcome,
             msg.FilterTrace is not null ? ToFilterGroupModel(msg.FilterTrace) : null,
             msg.IdentificationTrace is not null
                 ? new ApiModels.IdentificationTrace(msg.IdentificationTrace.Strategy, msg.IdentificationTrace.Attempted, msg.IdentificationTrace.Detail)
                 : null);
 
-    private static ApiModels.FilterGroupTrace ToFilterGroupModel(FilterGroupTrace msg) =>
+    internal static ApiModels.FilterGroupTrace ToFilterGroupModel(FilterGroupTrace msg) =>
         new(msg.Operator, msg.Passed,
             msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
                 n.Field, n.Op, n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,

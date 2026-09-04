@@ -18,32 +18,32 @@ public static class SetupApiEndpoints
 
         group.MapGet("/setup", async (
             IOptionsMonitor<FunkArrOptions> options,
-            IOptionsMonitor<DownloadOptions> downloadOpts,
+            DataPaths dataPaths,
+            IDataFiles dataFiles,
             IHttpClientFactory httpClientFactory,
             HttpContext ctx) =>
         {
             var opts = options.CurrentValue;
-            var dlOpts = downloadOpts.CurrentValue;
             var selfBaseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
 
             var apiKeyCheck = CheckApiKey(opts);
             var mediathekTask = CheckMediathekViewWeb(httpClientFactory);
-            var dataTask = CheckDirectory("dataDirectory", opts.DataPath);
-            var completeTask = CheckDirectory("completeDirectory", dlOpts.CompletePath);
-            var incompleteTask = CheckDirectory("incompleteDirectory", dlOpts.IncompletePath);
+            var dataCheck = CheckDirectory(dataPaths.DataRoot, dataFiles);
+            var completeCheck = CheckDirectory(dataPaths.Complete, dataFiles);
+            var incompleteCheck = CheckDirectory(dataPaths.Incomplete, dataFiles);
             var indexerTask = CheckSelfEndpoint(httpClientFactory, selfBaseUrl, opts, "/index/api?t=caps&apikey=");
             var downloadApiTask = CheckSelfEndpoint(httpClientFactory, selfBaseUrl, opts, "/download/api?mode=version&apikey=");
             var ffmpegTask = CheckFfmpeg();
 
-            await Task.WhenAll(mediathekTask, dataTask, completeTask, incompleteTask, indexerTask, downloadApiTask, ffmpegTask);
+            await Task.WhenAll(mediathekTask, indexerTask, downloadApiTask, ffmpegTask);
 
             var checks = new Dictionary<string, CheckResult>
             {
                 ["apiKey"] = apiKeyCheck,
                 ["mediathekViewWeb"] = await mediathekTask,
-                ["dataDirectory"] = await dataTask,
-                ["completeDirectory"] = await completeTask,
-                ["incompleteDirectory"] = await incompleteTask,
+                ["dataDirectory"] = dataCheck,
+                ["completeDirectory"] = completeCheck,
+                ["incompleteDirectory"] = incompleteCheck,
                 ["indexerApi"] = await indexerTask,
                 ["downloadApi"] = await downloadApiTask,
                 ["ffmpeg"] = await ffmpegTask,
@@ -93,27 +93,12 @@ public static class SetupApiEndpoints
         }
     }
 
-    internal static async Task<CheckResult> CheckDirectory(string name, string path)
+    internal static CheckResult CheckDirectory(string path, IDataFiles dataFiles)
     {
-        try
-        {
-            var fullPath = Path.GetFullPath(path);
-
-            if (!Directory.Exists(fullPath))
-            {
-                return new CheckResult("fail", $"Directory does not exist: {fullPath}", Path: fullPath);
-            }
-
-            var testFile = Path.Combine(fullPath, $".funkarr-write-test-{Guid.NewGuid():N}");
-            await File.WriteAllTextAsync(testFile, "test");
-            File.Delete(testFile);
-
-            return new CheckResult("ok", Path: fullPath);
-        }
-        catch (Exception ex)
-        {
-            return new CheckResult("fail", $"Directory not writable: {ex.Message}", Path: Path.GetFullPath(path));
-        }
+        var fullPath = Path.GetFullPath(path);
+        return dataFiles.CanWrite(fullPath)
+            ? new CheckResult("ok", Path: fullPath)
+            : new CheckResult("fail", $"Directory not writable or does not exist: {fullPath}", Path: fullPath);
     }
 
     private static async Task<CheckResult> CheckSelfEndpoint(
