@@ -13,4 +13,8 @@ public sealed record SearchResultItem(
     string? SubtitleUrl = null,
     int? TvdbId = null,
     string? ImdbId = null,
-    int? TmdbId = null);
+    int? TmdbId = null,
+    string? Season = null,
+    string? Episode = null,
+    float? ResolutionConfidence = null,
+    string? ResolutionStrategy = null);

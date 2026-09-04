@@ -5,18 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FunkArr.Search\FunkArr.Search.csproj" />
+    <ProjectReference Include="..\FunkArr.MetadataResolver\FunkArr.MetadataResolver.csproj" />
     <ProjectReference Include="..\FunkArr.Tests.Shared\FunkArr.Tests.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit.v3.mtp-v2" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\**\*" />
   </ItemGroup>
 
 </Project>

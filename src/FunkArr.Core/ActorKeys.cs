@@ -13,3 +13,4 @@ public interface IMatchHistoryRegion;
 public interface IDownloadManager;
 public interface IDownloadRegion;
 public interface IDownloadHistoryManager;
+public interface IMetadataResolver;

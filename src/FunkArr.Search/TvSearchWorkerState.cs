@@ -1,5 +1,6 @@
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Messages.MetadataResolver;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 
@@ -10,7 +11,8 @@ public sealed record TvSearchWorkerState(
     MediathekItem[] RawItems,
     string? RuleSetId,
     int? TvdbId,
-    string? ImdbId)
+    string? ImdbId,
+    int? Season = null)
 {
     public static readonly TvSearchWorkerState Empty = new(Guid.Empty, [], null, null, null);
 }
@@ -18,7 +20,7 @@ public sealed record TvSearchWorkerState(
 public static class TvSearchWorkerStateExtensions
 {
     public static TvSearchWorkerState Apply(this TvSearchWorkerState state, TvSearchCommand cmd) =>
-        state with { SearchId = cmd.SearchId, TvdbId = cmd.TvdbId, ImdbId = cmd.ImdbId };
+        state with { SearchId = cmd.SearchId, TvdbId = cmd.TvdbId, ImdbId = cmd.ImdbId, Season = cmd.Season };
 
     public static TvSearchWorkerState Apply(this TvSearchWorkerState state, MediathekQueryCompleted result) =>
         state with { RawItems = result.Items };
@@ -44,11 +46,37 @@ public static class TvSearchWorkerStateExtensions
         return new SearchCompleted(state.SearchId, items, items.Length);
     }
 
+    public static SearchCompleted ToScoredResult(
+        this TvSearchWorkerState state, Messages.Scoring.ScoreCompleted scored,
+        IReadOnlyDictionary<int, ResolvedEpisode> resolvedEpisodes)
+    {
+        var items = scored.Results
+            .Select(s =>
+            {
+                var raw = state.RawItems[s.Index];
+                var metadata = s.Metadata;
+
+                if (resolvedEpisodes.TryGetValue(s.Index, out var resolved))
+                {
+                    metadata = new MetadataSpec(resolved.Season, resolved.Episode, metadata?.AiredAt);
+                }
+
+                return ToResultItem(state, raw, s.Score, metadata,
+                    resolvedEpisodes.TryGetValue(s.Index, out var res) ? res.Confidence : null,
+                    resolvedEpisodes.TryGetValue(s.Index, out var resSt) ? resSt.Strategy : null);
+            })
+            .OrderByDescending(i => i.Score)
+            .ToArray();
+
+        return new SearchCompleted(state.SearchId, items, items.Length);
+    }
+
     private static SearchResultItem[] MapItems(TvSearchWorkerState state, double score) =>
         state.RawItems.Select(raw => ToResultItem(state, raw, score, null)).ToArray();
 
     private static SearchResultItem ToResultItem(
-        TvSearchWorkerState state, MediathekItem raw, double score, MetadataSpec? metadata)
+        TvSearchWorkerState state, MediathekItem raw, double score, MetadataSpec? metadata,
+        float? resolutionConfidence = null, string? resolutionStrategy = null)
     {
         var quality = ResolveQuality(raw);
         var title = ReleaseTitleBuilder.Build(raw.Topic, raw.Title, metadata, quality, "tv");
@@ -67,7 +95,11 @@ public static class TvSearchWorkerStateExtensions
             Score: score,
             SubtitleUrl: string.IsNullOrEmpty(raw.UrlSubtitle) ? null : raw.UrlSubtitle,
             TvdbId: state.TvdbId,
-            ImdbId: state.ImdbId);
+            ImdbId: state.ImdbId,
+            Season: metadata?.Season,
+            Episode: metadata?.Episode,
+            ResolutionConfidence: resolutionConfidence,
+            ResolutionStrategy: resolutionStrategy);
     }
 
     public static int ResolveQuality(MediathekItem item) =>

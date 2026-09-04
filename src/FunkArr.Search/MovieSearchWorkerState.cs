@@ -1,5 +1,6 @@
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Messages.MetadataResolver;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 
@@ -44,11 +45,32 @@ public static class MovieSearchWorkerStateExtensions
         return new SearchCompleted(state.SearchId, items, items.Length);
     }
 
+    public static SearchCompleted ToScoredResult(
+        this MovieSearchWorkerState state, Messages.Scoring.ScoreCompleted scored,
+        IReadOnlyDictionary<int, MovieResolved> resolvedMovies)
+    {
+        var items = scored.Results
+            .Select(s =>
+            {
+                var raw = state.RawItems[s.Index];
+                resolvedMovies.TryGetValue(s.Index, out var resolved);
+                return ToResultItem(state, raw, s.Score, s.Metadata,
+                    resolved?.Confidence, resolved?.Strategy,
+                    resolved?.ImdbId ?? state.ImdbId, resolved?.TmdbId ?? state.TmdbId);
+            })
+            .OrderByDescending(i => i.Score)
+            .ToArray();
+
+        return new SearchCompleted(state.SearchId, items, items.Length);
+    }
+
     private static SearchResultItem[] MapItems(MovieSearchWorkerState state, double score) =>
         state.RawItems.Select(raw => ToResultItem(state, raw, score, null)).ToArray();
 
     private static SearchResultItem ToResultItem(
-        MovieSearchWorkerState state, MediathekItem raw, double score, MetadataSpec? metadata)
+        MovieSearchWorkerState state, MediathekItem raw, double score, MetadataSpec? metadata,
+        float? resolutionConfidence = null, string? resolutionStrategy = null,
+        string? imdbId = null, int? tmdbId = null)
     {
         var quality = ResolveQuality(raw);
         var title = ReleaseTitleBuilder.Build(raw.Topic, raw.Title, metadata, quality, "movie");
@@ -66,8 +88,10 @@ public static class MovieSearchWorkerStateExtensions
                 : null,
             Score: score,
             SubtitleUrl: string.IsNullOrEmpty(raw.UrlSubtitle) ? null : raw.UrlSubtitle,
-            ImdbId: state.ImdbId,
-            TmdbId: state.TmdbId);
+            ImdbId: imdbId ?? state.ImdbId,
+            TmdbId: tmdbId ?? state.TmdbId,
+            ResolutionConfidence: resolutionConfidence,
+            ResolutionStrategy: resolutionStrategy);
     }
 
     public static int ResolveQuality(MediathekItem item) =>

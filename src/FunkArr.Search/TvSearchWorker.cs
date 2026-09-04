@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Cluster.Sharding;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Messages.MetadataResolver;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
@@ -12,10 +13,13 @@ namespace FunkArr.Search;
 public sealed class TvSearchWorker : ReceiveActor
 {
     private TvSearchWorkerState? _state;
+    private ScoreCompleted? _scoredResults;
+    private IActorRef? _originalSender;
 
     private readonly IActorRef _mediathekManager = Context.GetActor<IMediathekManager>();
     private readonly IActorRef _matchMagicManager = Context.GetActor<IMatchMagicManager>();
     private readonly IActorRef _ruleSetResolver = Context.GetActor<IRuleSetResolver>();
+    private readonly IActorRef _metadataResolver = Context.GetActor<IMetadataResolver>();
 
     public TvSearchWorker()
     {
@@ -107,16 +111,9 @@ public sealed class TvSearchWorker : ReceiveActor
             Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
 
-        Receive<ScoreCompleted>(scored =>
-        {
-            if (_state is null)
-            {
-                return;
-            }
-
-            Sender.Tell(_state.ToScoredResult(scored));
-            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
-        });
+        Receive<ScoreCompleted>(HandleScoreCompleted);
+        Receive<EpisodesResolved>(HandleEpisodesResolved);
+        Receive<EpisodeResolutionFailed>(HandleEpisodeResolutionFailed);
 
         Receive<MediathekQueryFailed>(failed =>
         {
@@ -136,9 +133,86 @@ public sealed class TvSearchWorker : ReceiveActor
                 return;
             }
 
+            if (_originalSender is not null && _scoredResults is not null)
+            {
+                _originalSender.Tell(_state.ToScoredResult(_scoredResults));
+                _originalSender = null;
+                _scoredResults = null;
+                Context.Parent.Tell(new Passivate(PoisonPill.Instance));
+                return;
+            }
+
             Sender.Tell(new SearchFailed(_state.SearchId, failure.Cause.Message));
             Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
+    }
+
+    private void HandleScoreCompleted(ScoreCompleted scored)
+    {
+        if (_state is null)
+        {
+            return;
+        }
+
+        var needsResolution = _state.TvdbId is not null &&
+                              scored.Results.Any(s => s is
+                              { Matched: true, Metadata: { Season: null, Episode: null } });
+
+        if (!needsResolution)
+        {
+            Sender.Tell(_state.ToScoredResult(scored));
+            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
+            return;
+        }
+
+        _scoredResults = scored;
+        _originalSender = Sender;
+
+        var candidates = scored.Results
+            .Where(s => s is { Matched: true, Metadata: not null })
+            .Select(s =>
+            {
+                var raw = _state.RawItems[s.Index];
+                return new EpisodeCandidate(
+                    s.Index, raw.Title, null,
+                    s.Metadata!.AiredAt, raw.Duration,
+                    s.Metadata.Season, s.Metadata.Episode);
+            })
+            .ToArray();
+
+        var config = new ResolutionConfig();
+
+        _metadataResolver.Ask<IEpisodeResolutionResponse>(
+                new ResolveEpisodes(_state.TvdbId!.Value, _state.Season, config, candidates),
+                TimeSpan.FromSeconds(10))
+            .PipeTo(Self);
+    }
+
+    private void HandleEpisodesResolved(EpisodesResolved resolved)
+    {
+        if (_state is null || _scoredResults is null || _originalSender is null)
+        {
+            return;
+        }
+
+        var resolvedMap = resolved.Episodes.ToDictionary(e => e.Index);
+        _originalSender.Tell(_state.ToScoredResult(_scoredResults, resolvedMap));
+        _originalSender = null;
+        _scoredResults = null;
+        Context.Parent.Tell(new Passivate(PoisonPill.Instance));
+    }
+
+    private void HandleEpisodeResolutionFailed(EpisodeResolutionFailed _)
+    {
+        if (_state is null || _scoredResults is null || _originalSender is null)
+        {
+            return;
+        }
+
+        _originalSender.Tell(_state.ToScoredResult(_scoredResults));
+        _originalSender = null;
+        _scoredResults = null;
+        Context.Parent.Tell(new Passivate(PoisonPill.Instance));
     }
 
     private void QueryMediathek(string query, int? offset, int? limit)
