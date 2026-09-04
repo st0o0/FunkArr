@@ -7,20 +7,21 @@ FileSystemWatcher-based live reload for the RuleSetManager — monitors communit
 ## Requirements
 
 ### Requirement: RuleSetManager monitors ruleset directories with FileSystemWatcher
-The RuleSetManager SHALL inject `IOptionsMonitor<FunkArrOptions>` via DI and derive its watched directories from `FunkArrOptions.RuleSetDataPath` and `FunkArrOptions.LocalRuleSetDataPath` in `PreStart()`. It SHALL create two `FileSystemWatcher` instances: one for `{RuleSetDataPath}/rulesets/` and one for `{LocalRuleSetDataPath}/rulesets/`. Both SHALL watch for `*.json` file changes. All paths SHALL be resolved via `Path.GetFullPath` at initialization.
+The RuleSetManager SHALL inject `IDataFiles` and `DataPaths` via DI and use `DataPaths.CommunityRuleSets` and `DataPaths.LocalRuleSets` as its watched directories. It SHALL create two watchers using `IDataFiles.Watch()`: one for the community directory and one for the local directory. Both SHALL watch for `*.json` file changes.
 
 #### Scenario: Watchers start on PreStart
 - **WHEN** the RuleSetManager actor starts
-- **THEN** it SHALL read paths from `IOptionsMonitor<FunkArrOptions>.CurrentValue`
-- **AND** two FileSystemWatchers SHALL be active, monitoring the resolved community and local ruleset directories for `*.json` files
+- **THEN** it SHALL use `DataPaths.CommunityRuleSets` and `DataPaths.LocalRuleSets` for directory paths
+- **AND** two watchers SHALL be created via `IDataFiles.Watch(directory, "*.json")`
+- **AND** both watchers SHALL be active, monitoring for `*.json` file changes
 
 #### Scenario: Watcher created for non-existent directory
 - **WHEN** the local rulesets directory does not exist at startup
-- **THEN** the RuleSetManager SHALL create the directory and start the watcher
+- **THEN** `IDataFiles.Watch()` SHALL create the directory and return a watcher
 
 #### Scenario: Watchers disposed on PostStop
 - **WHEN** the RuleSetManager actor stops
-- **THEN** both FileSystemWatcher instances SHALL be disposed
+- **THEN** both watcher instances SHALL be disposed
 
 ### Requirement: FileSystemWatcher events are debounced via scheduler
 The RuleSetManager SHALL debounce FileSystemWatcher events by accumulating affected ruleset IDs in a `HashSet<string>` and scheduling a `FlushChanges` message after 2 seconds. The ruleset ID SHALL be extracted from the changed file's name (`Path.GetFileNameWithoutExtension`). Multiple events for the same ID within the debounce window SHALL be deduplicated.
@@ -46,10 +47,10 @@ The RuleSetManager SHALL debounce FileSystemWatcher events by accumulating affec
 - **THEN** the pending IDs set SHALL contain one entry for `"tatort"` and flush SHALL check both paths
 
 ### Requirement: FlushChanges checks only affected rulesets
-On `FlushChanges`, the RuleSetManager SHALL check file existence and timestamps only for the accumulated pending ruleset IDs, not for all known rulesets. For each pending ID, it SHALL check both `{communityDir}/{id}.json` and `{localDir}/{id}.json`, build the current `RuleSetPaths`, and compare against the known state to dispatch `LoadRuleSet` or `RemoveRuleSet`.
+On `FlushChanges`, the RuleSetManager SHALL check file existence using `IDataFiles.Exists()` for the accumulated pending ruleset IDs. For each pending ID, it SHALL check both `{CommunityRuleSets}/{id}.json` and `{LocalRuleSets}/{id}.json`, build the current `RuleSetPaths`, and compare against the known state to dispatch `LoadRuleSet` or `RemoveRuleSet`.
 
 #### Scenario: New ruleset detected via targeted check
-- **WHEN** `FlushChanges` fires with pending ID `"new-show"` and `new-show.json` exists in `data/community/rulesets/` but is not in known state
+- **WHEN** `FlushChanges` fires with pending ID `"new-show"` and `IDataFiles.Exists("{CommunityRuleSets}/new-show.json")` returns true but the ID is not in known state
 - **THEN** the RuleSetManager SHALL send `LoadRuleSet("new-show", communityPath, null)` to the shard region
 
 #### Scenario: Changed ruleset detected via targeted check
@@ -57,7 +58,7 @@ On `FlushChanges`, the RuleSetManager SHALL check file existence and timestamps 
 - **THEN** the RuleSetManager SHALL send `LoadRuleSet("tatort", communityPath, localPath)` with current paths
 
 #### Scenario: Ruleset removed detected via targeted check
-- **WHEN** `FlushChanges` fires with pending ID `"custom-show"` and the file no longer exists in either directory
+- **WHEN** `FlushChanges` fires with pending ID `"custom-show"` and `IDataFiles.Exists()` returns false for both directories
 - **THEN** the RuleSetManager SHALL send `RemoveRuleSet("custom-show")` and remove it from known state
 
 #### Scenario: No actual change for pending ID

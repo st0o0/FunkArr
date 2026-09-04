@@ -67,18 +67,20 @@ The system SHALL define a `ResetDownload` record sent from Manager to Worker to 
 - **AND** it SHALL implement `IWithDownloadId`
 
 ### Requirement: DownloadStarted persistence DTO
-The system SHALL define a `DownloadStarted` persistence DTO for the Worker's FFmpeg start event.
+The system SHALL define a `DownloadInitialized` persistence DTO in `FunkArr.Persistence.Events.Download` for the Worker's initialization event. Infrastructure paths SHALL NOT be persisted.
 
-#### Scenario: DownloadStarted fields
-- **WHEN** a DownloadStarted event is persisted
-- **THEN** it SHALL contain `DownloadId` (Guid)
+#### Scenario: DownloadInitialized fields
+- **WHEN** a DownloadInitialized event is persisted
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `VideoUrl` (string), `SubtitleUrl` (string?), `Channel` (string), `Duration` (int), `Size` (long), `Category` (string)
+- **AND** it SHALL NOT contain `IncompletePath` or `OutputPath`
 
 ### Requirement: DownloadSucceeded persistence DTO
-The system SHALL define a `DownloadSucceeded` persistence DTO for the Worker's successful completion event.
+The system SHALL define a `DownloadSucceeded` persistence DTO for the Worker's successful completion event. It SHALL NOT contain a file path.
 
 #### Scenario: DownloadSucceeded fields
 - **WHEN** a DownloadSucceeded event is persisted
-- **THEN** it SHALL contain `DownloadId` (Guid), `FilePath` (string), `DownloadTimeSeconds` (int), `CompletedAt` (long, Unix timestamp)
+- **THEN** it SHALL contain `DownloadId` (Guid), `DownloadTimeSeconds` (int), `CompletedAt` (long, Unix timestamp)
+- **AND** it SHALL NOT contain `FilePath`
 
 ### Requirement: DownloadFailed persistence DTO
 The system SHALL define a `DownloadFailed` persistence DTO in `FunkArr.Persistence.Events.Download` for the Worker's failure event. This is distinct from the `DownloadFailed` message in `FunkArr.Messages.Download`.
@@ -121,7 +123,8 @@ The system SHALL define a `HistoryResult` record containing completed and failed
 
 #### Scenario: HistoryItem fields
 - **WHEN** a HistoryItem is inspected
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `TotalBytes` (long), `DownloadTimeSeconds` (int), `FilePath` (string), `Status` (DownloadStatus), `FailMessage` (string), `CompletedAt` (long, Unix timestamp)
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `TotalBytes` (long), `DownloadTimeSeconds` (int), `RelativePath` (string), `Status` (DownloadStatus), `FailMessage` (string), `CompletedAt` (long, Unix timestamp)
+- **AND** it SHALL NOT contain `FilePath`
 
 ### Requirement: DeleteDownload command
 The system SHALL define a `DeleteDownload` record for removing an item from queue or history, with an optional flag to delete associated files.
@@ -168,18 +171,20 @@ The system SHALL define a `QueryWorkerStatus` record sent from Manager to Worker
 - **AND** it SHALL implement `IWithDownloadId`
 
 ### Requirement: WorkerStatusResult response
-The system SHALL define a `WorkerStatusResult` record returned by the Worker containing full current state and live progress.
+The system SHALL define a `WorkerStatusResult` record returned by the Worker containing full current state and live progress, without a file path.
 
 #### Scenario: WorkerStatusResult fields
 - **WHEN** a `WorkerStatusResult` message is created
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (WorkerStatus), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `FilePath` (string?), `FailMessage` (string?)
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (int), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `FailMessage` (string?)
+- **AND** it SHALL NOT contain `FilePath`
 
 ### Requirement: RecordDownload message
-The system SHALL define a `RecordDownload` record sent from Worker to HistoryActor when a download completes or fails.
+The system SHALL define a `RecordDownload` record sent from Worker to HistoryActor when a download completes or fails, carrying `RelativePath` instead of absolute `FilePath`.
 
 #### Scenario: RecordDownload fields
 - **WHEN** a `RecordDownload` message is created
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (DownloadStatus), `FilePath` (string?), `FailMessage` (string?), `DownloadTimeSeconds` (int), `CompletedAt` (long)
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (DownloadStatus), `RelativePath` (string?), `FailMessage` (string?), `DownloadTimeSeconds` (int), `CompletedAt` (long)
+- **AND** it SHALL NOT contain `FilePath`
 
 ### Requirement: RemoveHistoryEntry command
 The system SHALL define a `RemoveHistoryEntry` record sent to the HistoryActor to delete a history entry.
@@ -210,11 +215,12 @@ The system SHALL define a `DownloadDequeued` persistence DTO for the Manager's q
 - **THEN** it SHALL contain `DownloadId` (Guid)
 
 ### Requirement: HistoryRecorded persistence DTO
-The system SHALL define a `HistoryRecorded` persistence DTO for the HistoryActor's record event.
+The system SHALL define a `HistoryRecorded` persistence DTO for the HistoryActor's record event. It SHALL store `RelativePath` instead of absolute `FilePath`.
 
 #### Scenario: HistoryRecorded fields
 - **WHEN** a `HistoryRecorded` event is persisted
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (int), `FilePath` (string?), `FailMessage` (string?), `DownloadTimeSeconds` (int), `CompletedAt` (long)
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (int), `RelativePath` (string?), `FailMessage` (string?), `DownloadTimeSeconds` (int), `CompletedAt` (long)
+- **AND** it SHALL NOT contain `FilePath`
 
 ### Requirement: HistoryRemoved persistence DTO
 The system SHALL define a `HistoryRemoved` persistence DTO for the HistoryActor's delete event.

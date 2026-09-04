@@ -37,18 +37,18 @@ The RuleSetUpdater SHALL query `GET https://api.github.com/repos/{RuleSetReposit
 - **THEN** the actor SHALL log a warning and retain existing community rulesets
 
 ### Requirement: RuleSetUpdater compares local version before downloading
-The RuleSetUpdater SHALL read `data/community/version.txt` and compare with the remote release version. If versions match, the download SHALL be skipped.
+The RuleSetUpdater SHALL read `DataPaths.RuleSetVersion` using `IDataFiles.Exists()` and `IDataFiles.ReadText()` and compare with the remote release version. If versions match, the download SHALL be skipped.
 
 #### Scenario: Version matches — skip download
-- **WHEN** `version.txt` contains `1.0.0` and the latest remote release is `community-rulesets-v1.0.0`
+- **WHEN** `IDataFiles.ReadText(dataPaths.RuleSetVersion)` returns `"1.0.0"` and the latest remote release is `community-rulesets-v1.0.0`
 - **THEN** the actor SHALL skip the download and log at Debug level
 
 #### Scenario: Version differs — download
-- **WHEN** `version.txt` contains `1.0.0` and the latest remote release is `community-rulesets-v1.1.0`
+- **WHEN** `IDataFiles.ReadText(dataPaths.RuleSetVersion)` returns `"1.0.0"` and the latest remote release is `community-rulesets-v1.1.0`
 - **THEN** the actor SHALL download and extract the new version
 
 #### Scenario: No local version file
-- **WHEN** no `version.txt` exists in the community directory (first run)
+- **WHEN** `IDataFiles.Exists(dataPaths.RuleSetVersion)` returns false
 - **THEN** the actor SHALL always download
 
 ### Requirement: RuleSetUpdater downloads ZIP asset from release
@@ -63,26 +63,29 @@ The RuleSetUpdater SHALL download the `community-rulesets.zip` asset from the ma
 - **THEN** the actor SHALL log a warning and retain existing community rulesets
 
 ### Requirement: RuleSetUpdater extracts ZIP atomically
-The RuleSetUpdater SHALL extract downloaded ZIP archives atomically: extract to a temporary directory, swap with the existing community rulesets directory, then delete the old directory. If extraction fails, the existing directory SHALL remain untouched.
+The RuleSetUpdater SHALL extract downloaded ZIP archives atomically using `IDataFiles`: create a temp directory via `IDataFiles.CreateDirectory()` in `DataPaths.Temp`, extract the ZIP there, then call `IDataFiles.ReplaceDirectory()` to swap with `DataPaths.CommunityRuleSets`. If extraction fails, the existing directory SHALL remain untouched.
 
 #### Scenario: Successful extraction
 - **WHEN** a valid ZIP is downloaded
-- **THEN** the actor SHALL extract to a temp directory, swap it with the existing `rulesets/` directory, and delete the old directory
+- **THEN** the actor SHALL call `IDataFiles.CreateDirectory()` to create a temp dir under `DataPaths.Temp`
+- **AND** extract the ZIP to the temp dir
+- **AND** call `IDataFiles.ReplaceDirectory(tempDir, dataPaths.CommunityRuleSets)` to atomically swap
+- **AND** the old contents SHALL be deleted
 
 #### Scenario: Corrupted ZIP
 - **WHEN** a downloaded ZIP is corrupted or incomplete
-- **THEN** the actor SHALL log an error, clean up the temp directory, and retain the existing community rulesets
+- **THEN** the actor SHALL log an error, call `IDataFiles.Remove(tempDir)` to clean up, and retain the existing community rulesets
 
 #### Scenario: Disk full during extraction
 - **WHEN** extraction fails due to disk space
 - **THEN** the actor SHALL log an error and retain the existing community rulesets (no partial state)
 
 ### Requirement: RuleSetUpdater writes version.txt after extraction
-After a successful extraction, the RuleSetUpdater SHALL write the version from the release tag into `data/community/version.txt`.
+After a successful extraction, the RuleSetUpdater SHALL write the version using `IDataFiles.WriteText(dataPaths.RuleSetVersion, version)`.
 
 #### Scenario: Version file written after refresh
 - **WHEN** a ZIP from release `community-rulesets-v1.1.0` is successfully extracted
-- **THEN** `data/community/version.txt` SHALL contain `1.1.0`
+- **THEN** `IDataFiles.WriteText(dataPaths.RuleSetVersion, "1.1.0")` SHALL be called
 
 ### Requirement: RuleSetUpdater sends User-Agent header
 All GitHub API requests SHALL include a `User-Agent` header with value `FunkArr/{version}` where version is the application assembly version.

@@ -97,6 +97,13 @@ The DownloadManager SHALL maintain a persistent state containing two sets of Dow
 - **THEN** the persistent state SHALL contain an ordered list of Queued DownloadIds and a set of Dispatched DownloadIds
 - **AND** no other download data
 
+### Requirement: DownloadManager persistence path
+The DownloadManager SHALL use `DataPaths.Database` for the Akka.Persistence SQLite database path instead of `FunkArrOptions.PersistencePath`.
+
+#### Scenario: Persistence configuration
+- **WHEN** the actor system configures Akka.Persistence
+- **THEN** the SQLite connection string SHALL use `DataPaths.Database` as the database file path
+
 ### Requirement: DownloadManager persistence is T1 event-sourced
 The DownloadManager SHALL persist state changes using Akka.Persistence event sourcing with three event types: `DownloadEnqueued`, `DownloadDispatched`, `DownloadDequeued`.
 

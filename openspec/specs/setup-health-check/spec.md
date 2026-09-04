@@ -38,30 +38,30 @@ The endpoint SHALL perform an HTTP HEAD request to the MediathekViewWeb API base
 - **THEN** the `mediathekViewWeb` check has `"status": "fail"` and a message indicating the service is unreachable
 
 ### Requirement: Data directory check
-The endpoint SHALL verify that the directory at `FunkArrOptions.DataPath` exists and is writable by attempting to create and delete a temporary file.
+The endpoint SHALL verify that the directory at `DataPaths.DataRoot` exists and is writable using `IDataFiles.CanWrite()`.
 
 #### Scenario: Data directory writable
-- **WHEN** the data directory exists and the process can write to it
+- **WHEN** `IDataFiles.CanWrite(dataPaths.DataRoot)` returns true
 - **THEN** the `dataDirectory` check has `"status": "ok"` and includes the resolved path
 
 #### Scenario: Data directory not writable
-- **WHEN** the data directory does not exist or is read-only
-- **THEN** the `dataDirectory` check has `"status": "fail"` and a message with the path and the failure reason
+- **WHEN** `IDataFiles.CanWrite(dataPaths.DataRoot)` returns false
+- **THEN** the `dataDirectory` check has `"status": "fail"` and a message with the path
 
 ### Requirement: Directory checks
-The setup health check SHALL verify both the `complete` and `incomplete` subdirectories under `DownloadPath` instead of the single `DownloadPath` directory.
+The setup health check SHALL verify both `DataPaths.Complete` and `DataPaths.Incomplete` directories using `IDataFiles.CanWrite()`.
 
 #### Scenario: Both directories exist and are writable
-- **WHEN** `GET /api/health/setup` is requested and both `{DownloadPath}/complete` and `{DownloadPath}/incomplete` exist and are writable
-- **THEN** the `downloadDirectory` check SHALL have `"status": "ok"` and report both paths
+- **WHEN** `GET /api/health/setup` is requested and `IDataFiles.CanWrite()` returns true for both `DataPaths.Complete` and `DataPaths.Incomplete`
+- **THEN** the `completeDirectory` and `incompleteDirectory` checks SHALL have `"status": "ok"`
 
 #### Scenario: Complete directory not writable
-- **WHEN** `{DownloadPath}/complete` does not exist or is not writable
-- **THEN** the `downloadDirectory` check SHALL have `"status": "fail"` with a message identifying the complete directory
+- **WHEN** `IDataFiles.CanWrite(dataPaths.Complete)` returns false
+- **THEN** the `completeDirectory` check SHALL have `"status": "fail"` with a message identifying the path
 
 #### Scenario: Incomplete directory not writable
-- **WHEN** `{DownloadPath}/incomplete` does not exist or is not writable
-- **THEN** the `downloadDirectory` check SHALL have `"status": "fail"` with a message identifying the incomplete directory
+- **WHEN** `IDataFiles.CanWrite(dataPaths.Incomplete)` returns false
+- **THEN** the `incompleteDirectory` check SHALL have `"status": "fail"` with a message identifying the path
 
 ### Requirement: Indexer API self-test
 The endpoint SHALL make an internal HTTP request to its own Newznab caps endpoint (`/index/api?t=caps&apikey=<configured-key>`) and verify it returns a valid XML response with status 200.

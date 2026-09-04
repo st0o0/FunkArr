@@ -1,22 +1,18 @@
 ## Requirements
 
-### Requirement: FunkArrOptions exposes local ruleset path
-`FunkArrOptions` SHALL expose a `LocalRuleSetDataPath` computed property returning `Path.Combine(DataPath, "local")`, complementing the existing `RuleSetDataPath` (which returns `Path.Combine(DataPath, "community")`).
+### Requirement: FunkArrOptions exposes data path only
+`FunkArrOptions` SHALL expose only `ApiKey` (string) and `DataPath` (string). The computed path properties `RuleSetDataPath`, `LocalRuleSetDataPath`, and `PersistencePath` are removed — path resolution is handled by `DataPaths`.
 
-#### Scenario: LocalRuleSetDataPath derivation
-- **WHEN** `DataPath` is `"data"`
-- **THEN** `LocalRuleSetDataPath` SHALL return `"data/local"`
-
-#### Scenario: Custom DataPath propagates
-- **WHEN** `DataPath` is `"/app/config"`
-- **THEN** `LocalRuleSetDataPath` SHALL return `"/app/config/local"`
-- **AND** `RuleSetDataPath` SHALL return `"/app/config/community"`
+#### Scenario: FunkArrOptions simplified
+- **WHEN** `FunkArrOptions` is inspected
+- **THEN** it SHALL have `ApiKey` and `DataPath` properties only
+- **AND** it SHALL NOT have `PersistencePath`, `RuleSetDataPath`, or `LocalRuleSetDataPath`
 
 ### Requirement: RuleSetManager scans ruleset directories at startup
-The RuleSetManager (Singleton) SHALL inject `IOptionsMonitor<FunkArrOptions>` and derive directory paths from `FunkArrOptions.RuleSetDataPath` and `FunkArrOptions.LocalRuleSetDataPath` in `PreStart()`. It SHALL scan `{RuleSetDataPath}/rulesets/*.json` and `{LocalRuleSetDataPath}/rulesets/*.json` at startup and activate a RuleSetWorker for each discovered ruleSetId. `ScanRuleSets` becomes a parameterless internal message for triggering re-scans; initialization happens directly in `PreStart()`.
+The RuleSetManager (Singleton) SHALL inject `IDataFiles` and `DataPaths` and use `DataPaths.CommunityRuleSets` and `DataPaths.LocalRuleSets` for directory paths. It SHALL scan using `IDataFiles.ListFiles(directory, "*.json")` at startup and activate a RuleSetWorker for each discovered ruleSetId.
 
 #### Scenario: Startup with community rulesets only
-- **WHEN** the system starts with 5 JSON files in `{RuleSetDataPath}/rulesets/`
+- **WHEN** the system starts with 5 JSON files in `DataPaths.CommunityRuleSets`
 - **THEN** 5 RuleSetWorkers are activated via `LoadRuleSet`, one per file, using the filename (without extension) as ruleSetId
 
 #### Scenario: Startup with community and local rulesets
@@ -24,31 +20,31 @@ The RuleSetManager (Singleton) SHALL inject `IOptionsMonitor<FunkArrOptions>` an
 - **THEN** one `LoadRuleSet` is sent for that ruleSetId, containing both file paths
 
 #### Scenario: Local-only ruleset
-- **WHEN** a ruleSetId exists only in `{LocalRuleSetDataPath}/rulesets/`
+- **WHEN** a ruleSetId exists only in `DataPaths.LocalRuleSets`
 - **THEN** a `LoadRuleSet` is sent for that ruleSetId with only the local file path
 
 #### Scenario: Query detail for known ruleset
 - **WHEN** `QueryRuleSetDetail("tatort")` is received and "tatort" is in KnownRuleSets
-- **THEN** the Manager re-reads the community and/or local JSON files, runs `RuleSetMerger.ExtractIdentity()` and `RuleSetMerger.Build()`, and responds with a `RuleSetDetailResult` containing identity, source metadata (paths, timestamps), and the merged matching config
+- **THEN** the Manager re-reads the community and/or local JSON files using `IDataFiles.ReadText()`, runs `RuleSetMerger.ExtractIdentity()` and `RuleSetMerger.Build()`, and responds with a `RuleSetDetailResult`
 
 #### Scenario: Query detail for unknown ruleset
 - **WHEN** `QueryRuleSetDetail("nonexistent")` is received and the ruleSetId is not in KnownRuleSets
 - **THEN** the Manager responds with `RuleSetNotFound("nonexistent")`
 
 #### Scenario: Query detail when file was deleted after load
-- **WHEN** `QueryRuleSetDetail("tatort")` is received but the JSON file has been deleted since the last scan
+- **WHEN** `QueryRuleSetDetail("tatort")` is received but `IDataFiles.Exists()` returns false for the JSON file
 - **THEN** the Manager responds with `RuleSetNotFound("tatort")` and removes the entry from KnownRuleSets
 
 ### Requirement: RuleSetWorker loads and merges ruleset files
-Each RuleSetWorker (Sharded by ruleSetId) SHALL handle `LoadRuleSet` messages by loading its community and/or local JSON file(s), merging them using the existing resolve logic (community base + local overrides), and producing a MatchingConfig message. The handler SHALL be idempotent — repeated `LoadRuleSet` with the same paths produces the same result.
+Each RuleSetWorker (Sharded by ruleSetId) SHALL handle `LoadRuleSet` messages by loading its community and/or local JSON file(s) using `IDataFiles.ReadText()` after checking `IDataFiles.Exists()`, merging them using the existing resolve logic, and producing a MatchingConfig message.
 
 #### Scenario: Community-only ruleset
 - **WHEN** a RuleSetWorker receives `LoadRuleSet` with only a community JSON path
-- **THEN** it produces a MatchingConfig from that file alone
+- **THEN** it reads the file via `IDataFiles.ReadText()` and produces a MatchingConfig from that file alone
 
 #### Scenario: Community + local merge
 - **WHEN** a RuleSetWorker receives `LoadRuleSet` with both community and local JSON paths
-- **THEN** it merges them (local overrides community rules by ID, local confidence/media override community values) and produces a single MatchingConfig
+- **THEN** it reads both files via `IDataFiles.ReadText()` and merges them (local overrides community)
 
 #### Scenario: Local standalone ruleset
 - **WHEN** the local JSON has `standalone: true`
@@ -60,7 +56,7 @@ Each RuleSetWorker (Sharded by ruleSetId) SHALL handle `LoadRuleSet` messages by
 
 #### Scenario: Re-load with updated file
 - **WHEN** a RuleSetWorker receives a second `LoadRuleSet` for the same ruleSetId with a modified community file
-- **THEN** it SHALL re-read, re-merge, and re-push the updated MatchingConfig and re-register with the resolver
+- **THEN** it SHALL re-read via `IDataFiles.ReadText()`, re-merge, and re-push the updated MatchingConfig and re-register with the resolver
 
 ### Requirement: RuleSetWorker handles removal
 Each RuleSetWorker SHALL handle `RemoveRuleSet` messages by sending a `RemoveMatchingConfig` to MatchMagicManager and a deregistration to RuleSetResolver.
@@ -190,3 +186,44 @@ The `RuleSetMerger.ExtractIdentity` method SHALL return media IDs (tvdbId, imdbI
 
 - **WHEN** a local JSON has `standalone: true` and `"media": { "imdbId": "tt1234567" }`
 - **THEN** `ExtractIdentity` SHALL return ImdbId="tt1234567" from the local-only ruleset
+
+### Requirement: RuleSetMerger parses resolution config from JSON
+The RuleSetMerger SHALL parse an optional `"resolution"` block from RuleSet JSON files. The block SHALL contain: `"strategy"` (string, default "fuzzy"), `"threshold"` (float, default 0.7), `"airdateTolerance"` (int, default 7). The parsed values SHALL be used to construct a `ResolutionConfig` record included in the `MatchingConfig`.
+
+#### Scenario: JSON with resolution block
+- **WHEN** a RuleSet JSON contains `"resolution": {"strategy": "strict", "threshold": 0.95, "airdateTolerance": 3}`
+- **THEN** the resulting MatchingConfig SHALL have Resolution=ResolutionConfig(Strategy="strict", Threshold=0.95, AirdateTolerance=3)
+
+#### Scenario: JSON without resolution block
+- **WHEN** a RuleSet JSON has no `"resolution"` property
+- **THEN** the resulting MatchingConfig SHALL have Resolution=null
+
+#### Scenario: Partial resolution block
+- **WHEN** a RuleSet JSON has `"resolution": {"strategy": "strict"}`
+- **THEN** the resulting MatchingConfig SHALL have Resolution=ResolutionConfig(Strategy="strict", Threshold=0.7, AirdateTolerance=7) with defaults for missing fields
+
+### Requirement: Resolution config merges during community/local overlay
+When merging community and local RuleSet JSON files, the resolution config SHALL follow the same merge semantics as other fields: local overrides community. If the local file specifies a resolution block, it SHALL replace the community resolution block entirely.
+
+#### Scenario: Community has resolution, local does not
+- **WHEN** community JSON has `"resolution": {"strategy": "fuzzy"}` and local JSON has no resolution block
+- **THEN** the merged MatchingConfig SHALL use the community resolution config
+
+#### Scenario: Local overrides community resolution
+- **WHEN** community JSON has `"resolution": {"strategy": "fuzzy"}` and local JSON has `"resolution": {"strategy": "strict"}`
+- **THEN** the merged MatchingConfig SHALL use the local resolution config (strategy="strict")
+
+#### Scenario: Standalone local with resolution
+- **WHEN** local JSON has `standalone: true` and `"resolution": {"strategy": "none"}`
+- **THEN** the merged MatchingConfig SHALL use the local resolution config only
+
+### Requirement: RuleSetWorker includes resolution config in MatchingConfig
+The RuleSetWorker SHALL pass the parsed ResolutionConfig from RuleSetMerger.Build through to the MatchingConfig sent to MatchMagicManager.
+
+#### Scenario: MatchingConfig carries resolution
+- **WHEN** RuleSetMerger.Build produces a MatchingConfig with Resolution set
+- **THEN** the MatchingConfig sent to MatchMagicManager SHALL include the same Resolution value
+
+#### Scenario: MatchingConfig without resolution
+- **WHEN** RuleSetMerger.Build produces a MatchingConfig with Resolution=null
+- **THEN** the MatchingConfig sent to MatchMagicManager SHALL have Resolution=null
