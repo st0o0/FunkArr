@@ -49,7 +49,7 @@ public sealed class DownloadWorkerStateTests
         var state = DownloadWorkerState.Empty
             .Apply(MakeInitialized())
             .Apply(new DownloadStarted(_testId))
-            .Apply(new DownloadSucceeded(_testId, "/downloads/test.mkv", 120, 1234567890));
+            .Apply(new DownloadSucceeded(_testId, 120, 1234567890));
 
         Assert.Equal(WorkerStatus.Completed, state.Status);
     }

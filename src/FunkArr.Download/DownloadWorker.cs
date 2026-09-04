@@ -1,6 +1,5 @@
 using Akka.Actor;
 using Akka.Cluster.Sharding;
-using Akka.Event;
 using Akka.Persistence;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
@@ -14,18 +13,21 @@ public sealed class DownloadWorker : ReceivePersistentActor
 {
     public override string PersistenceId => "download-" + Context.Self.Path.Name;
 
-    private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
     private readonly IActorRef _downloadHistory = Context.GetActor<IDownloadHistoryManager>();
-    private readonly DownloadOptions _downloadOptions;
+    private readonly IFfmpegRunner _ffmpeg;
+    private readonly IDataFiles _dataFiles;
+    private readonly DataPaths _dataPaths;
+    private readonly DownloadOptions _options;
     private DownloadWorkerState _state = DownloadWorkerState.Empty;
     private CancellationTokenSource? _cts;
-    private string? _incompletePath;
-    private string? _outputPath;
 
-    public DownloadWorker(IOptionsMonitor<DownloadOptions> options)
+    public DownloadWorker(IFfmpegRunner ffmpeg, IDataFiles dataFiles, DataPaths dataPaths, IOptions<DownloadOptions> options)
     {
-        _downloadOptions = options.CurrentValue;
+        _ffmpeg = ffmpeg;
+        _dataFiles = dataFiles;
+        _dataPaths = dataPaths;
+        _options = options.Value;
 
         Command<InitDownload>(HandleInit);
         Command<StartDownload>(HandleStart);
@@ -33,7 +35,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         Command<ResetDownload>(HandleReset);
         Command<QueryWorkerStatus>(HandleQueryStatus);
         Command<ProgressUpdate>(HandleProgress);
-        Command<ProcessExited>(HandleExited);
+        Command<FfmpegResult>(HandleFfmpegResult);
 
         Recover<DownloadInitialized>(evt => _state = _state.Apply(evt));
         Recover<DownloadStarted>(evt => _state = _state.Apply(evt));
@@ -63,13 +65,13 @@ public sealed class DownloadWorker : ReceivePersistentActor
             return;
         }
 
-        ComputePaths();
-        Directory.CreateDirectory(_incompletePath!);
+        var paths = ResolvePaths();
+        _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
         Persist(new DownloadStarted(cmd.DownloadId), e =>
         {
             _state = _state.Apply(e);
-            _cts = FfmpegRunner.Run(Self, _state.VideoUrl!, _state.SubtitleUrl, _outputPath!);
+            StartFfmpeg(_state.VideoUrl!, _state.SubtitleUrl, paths.IncompletePath);
         });
     }
 
@@ -112,7 +114,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
             _state.CurrentTimeUs,
             _state.Duration,
             _state.Speed,
-            _outputPath,
             _state.FailMessage));
     }
 
@@ -131,7 +132,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         };
     }
 
-    private void HandleExited(ProcessExited msg)
+    private void HandleFfmpegResult(FfmpegResult msg)
     {
         if (!_state.IsInitialized)
         {
@@ -139,39 +140,36 @@ public sealed class DownloadWorker : ReceivePersistentActor
         }
 
         var downloadId = Guid.Parse(Context.Self.Path.Name);
+        var paths = ResolvePaths();
 
-        if (msg.ExitCode == 0)
+        if (msg.Success)
         {
-            var outputDir = Path.GetDirectoryName(_outputPath!);
-            if (outputDir is not null)
-            {
-                Directory.CreateDirectory(outputDir);
-            }
+            _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.CompletePath)!);
+            _dataFiles.Move(paths.IncompletePath, paths.CompletePath);
 
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var evt = new DownloadSucceeded(
-                downloadId, _outputPath!, msg.ElapsedSeconds, completedAt);
+            var evt = new DownloadSucceeded(downloadId, msg.ElapsedSeconds, completedAt);
 
             Persist(evt, e =>
             {
                 _state = _state.Apply(e);
-                CleanupIncomplete();
+                _dataFiles.Remove(Path.GetDirectoryName(paths.IncompletePath)!);
                 _downloadManager.Tell(new SlotFree(downloadId));
                 _downloadHistory.Tell(new RecordDownload(
                     downloadId, _state.Title!, _state.Category!, _state.Size,
-                    DownloadStatus.Completed, _outputPath!, null,
+                    DownloadStatus.Completed, paths.RelativePath, null,
                     msg.ElapsedSeconds, completedAt));
                 Passivate();
             });
         }
-        else if (_state.SubtitleUrl is not null && IsSubtitleError(msg.ErrorOutput))
+        else if (_state.SubtitleUrl is not null && IsSubtitleError(msg.Error))
         {
             _state = _state with { SubtitleUrl = null };
-            _cts = FfmpegRunner.Run(Self, _state.VideoUrl!, null, _outputPath!);
+            StartFfmpeg(_state.VideoUrl!, null, paths.IncompletePath);
         }
         else
         {
-            var reason = TruncateError(msg.ErrorOutput ?? "FFmpeg exited with code " + msg.ExitCode);
+            var reason = msg.Error ?? "FFmpeg failed";
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var evt = new DownloadFaulted(downloadId, reason);
 
@@ -187,38 +185,16 @@ public sealed class DownloadWorker : ReceivePersistentActor
         }
     }
 
-    private void ComputePaths()
+    private void StartFfmpeg(string videoUrl, string? subtitleUrl, string outputPath)
     {
-        var entityId = Context.Self.Path.Name;
-        _incompletePath = Path.GetFullPath(Path.Combine(_downloadOptions.IncompletePath, entityId));
-
-        var categoryDir = _downloadOptions.ResolveCategoryDir(_state.Category);
-        var outputDir = string.IsNullOrEmpty(categoryDir)
-            ? Path.Combine(_downloadOptions.CompletePath, _state.Title!)
-            : Path.Combine(_downloadOptions.CompletePath, categoryDir, _state.Title!);
-        _outputPath = Path.GetFullPath(Path.Combine(outputDir, _state.Title! + ".mkv"));
+        _cts = new CancellationTokenSource();
+        var self = Self;
+        _ffmpeg.RunAsync(videoUrl, subtitleUrl, outputPath,
+            progress => self.Tell(progress), _cts.Token).PipeTo(self);
     }
 
-    private void CleanupIncomplete()
-    {
-        if (_incompletePath is null)
-        {
-            return;
-        }
-
-        try
-        {
-            if (Directory.Exists(_incompletePath))
-            {
-                Directory.Delete(_incompletePath, recursive: true);
-            }
-        }
-        catch (Exception ex)
-        {
-            _log.Warning("Failed to clean up incomplete directory {Path}: {Error}",
-                _incompletePath, ex.Message);
-        }
-    }
+    private DataPaths.ResolvedDownload ResolvePaths() =>
+        _dataPaths.ResolveDownload(Context.Self.Path.Name, _state.Title!, _state.Category, _options.Categories);
 
     private void CancelRunning()
     {
@@ -235,11 +211,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
 
     private void OnRecoveryCompleted()
     {
-        if (_state.IsInitialized)
-        {
-            ComputePaths();
-        }
-
         switch (_state.Status)
         {
             case WorkerStatus.Downloading:
@@ -258,7 +229,4 @@ public sealed class DownloadWorker : ReceivePersistentActor
         stderr is not null && (
             stderr.Contains("subtitle", StringComparison.OrdinalIgnoreCase) ||
             stderr.Contains("Stream map", StringComparison.OrdinalIgnoreCase));
-
-    private static string TruncateError(string error) =>
-        error.Length > 500 ? error[^500..] : error;
 }

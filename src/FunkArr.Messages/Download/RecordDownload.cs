@@ -6,7 +6,7 @@ public sealed record RecordDownload(
     string Category,
     long Size,
     DownloadStatus Status,
-    string? FilePath,
+    string? RelativePath,
     string? FailMessage,
     int DownloadTimeSeconds,
     long CompletedAt);

@@ -6,7 +6,7 @@ public sealed record HistoryRecorded(
     string Category,
     long Size,
     int Status,
-    string? FilePath,
+    string? RelativePath,
     string? FailMessage,
     int DownloadTimeSeconds,
     long CompletedAt);

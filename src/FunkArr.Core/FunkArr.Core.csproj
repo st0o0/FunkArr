@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <InternalsVisibleTo Include="FunkArr.Download.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FunkArr.Messages\FunkArr.Messages.csproj" />
     <ProjectReference Include="..\FunkArr.Persistence\FunkArr.Persistence.csproj" />
   </ItemGroup>
@@ -14,6 +18,7 @@
     <PackageReference Include="Akka.Streams" />
     <PackageReference Include="Servus" />
     <PackageReference Include="Servus.Akka" />
+    <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>
 
 </Project>

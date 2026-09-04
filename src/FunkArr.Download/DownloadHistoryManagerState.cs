@@ -9,7 +9,7 @@ public sealed record HistoryRecord(
     string Category,
     long Size,
     DownloadStatus Status,
-    string? FilePath,
+    string? RelativePath,
     string? FailMessage,
     int DownloadTimeSeconds,
     long CompletedAt);
@@ -26,7 +26,7 @@ public static class DownloadHistoryManagerStateExtensions
         {
             Records = [.. state.Records, new HistoryRecord(
                 evt.DownloadId, evt.Title, evt.Category, evt.Size,
-                (DownloadStatus)evt.Status, evt.FilePath, evt.FailMessage,
+                (DownloadStatus)evt.Status, evt.RelativePath, evt.FailMessage,
                 evt.DownloadTimeSeconds, evt.CompletedAt)],
         };
 
@@ -59,7 +59,7 @@ public static class DownloadHistoryManagerStateExtensions
         return new HistoryResult(
             paged.Select(r => new HistoryItem(
                 r.DownloadId, r.Title, r.Category, r.Size,
-                r.DownloadTimeSeconds, r.FilePath ?? "", r.Status,
+                r.DownloadTimeSeconds, r.RelativePath ?? "", r.Status,
                 r.FailMessage ?? "", r.CompletedAt))
             .ToArray(),
             totalItems);

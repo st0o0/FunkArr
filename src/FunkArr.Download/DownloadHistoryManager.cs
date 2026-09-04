@@ -30,7 +30,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
         var evt = new HistoryRecorded(
             cmd.DownloadId, cmd.Title, cmd.Category, cmd.Size,
-            (int)cmd.Status, cmd.FilePath, cmd.FailMessage,
+            (int)cmd.Status, cmd.RelativePath, cmd.FailMessage,
             cmd.DownloadTimeSeconds, cmd.CompletedAt);
 
         Persist(evt, e => _state = _state.Apply(e));

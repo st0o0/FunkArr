@@ -10,5 +10,4 @@ public sealed record WorkerStatusResult(
     long CurrentTimeUs,
     int TotalDuration,
     double Speed,
-    string? FilePath,
     string? FailMessage);

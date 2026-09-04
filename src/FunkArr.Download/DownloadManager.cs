@@ -88,7 +88,7 @@ public sealed class DownloadManager : ReceivePersistentActor
             region.Ask<WorkerStatusResult>(new QueryWorkerStatus(id), _fanOutTimeout)
                 .ContinueWith(t => t.IsCompletedSuccessfully ? t.Result : null));
 
-        Task.WhenAll(tasks).PipeTo(self, sender, success: results =>
+        Task.WhenAll(tasks).PipeTo(sender, self, success: results =>
         {
             var items = results
                 .Where(r => r is not null)

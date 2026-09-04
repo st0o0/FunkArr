@@ -5,85 +5,19 @@ namespace FunkArr.Download.Tests;
 public sealed class DownloadOptionsTests
 {
     [Fact]
-    public void ResolveCategoryDir_known_category_returns_name()
+    public void Default_path_is_data_downloads()
     {
-        var opts = new DownloadOptions
-        {
-            Categories = [new DownloadCategory { Name = "sonarr" }],
-        };
+        var opts = new DownloadOptions();
 
-        Assert.Equal("sonarr", opts.ResolveCategoryDir("sonarr"));
+        Assert.Equal("data/downloads", opts.Path);
     }
 
     [Fact]
-    public void ResolveCategoryDir_known_category_with_custom_dir()
+    public void Default_concurrent_downloads_is_three()
     {
-        var opts = new DownloadOptions
-        {
-            Categories = [new DownloadCategory { Name = "dokus", Dir = "dokumentationen" }],
-        };
+        var opts = new DownloadOptions();
 
-        Assert.Equal("dokumentationen", opts.ResolveCategoryDir("dokus"));
-    }
-
-    [Fact]
-    public void ResolveCategoryDir_unknown_category_returns_empty()
-    {
-        var opts = new DownloadOptions
-        {
-            Categories = [new DownloadCategory { Name = "sonarr" }],
-        };
-
-        Assert.Equal("", opts.ResolveCategoryDir("unknown"));
-    }
-
-    [Fact]
-    public void ResolveCategoryDir_empty_category_returns_empty()
-    {
-        var opts = new DownloadOptions
-        {
-            Categories = [new DownloadCategory { Name = "sonarr" }],
-        };
-
-        Assert.Equal("", opts.ResolveCategoryDir(""));
-    }
-
-    [Fact]
-    public void ResolveCategoryDir_null_category_returns_empty()
-    {
-        var opts = new DownloadOptions
-        {
-            Categories = [new DownloadCategory { Name = "sonarr" }],
-        };
-
-        Assert.Equal("", opts.ResolveCategoryDir(null));
-    }
-
-    [Fact]
-    public void ResolveCategoryDir_case_insensitive()
-    {
-        var opts = new DownloadOptions
-        {
-            Categories = [new DownloadCategory { Name = "sonarr" }],
-        };
-
-        Assert.Equal("sonarr", opts.ResolveCategoryDir("Sonarr"));
-    }
-
-    [Fact]
-    public void CompletePath_derives_from_download_path()
-    {
-        var opts = new DownloadOptions { DownloadPath = "/downloads" };
-
-        Assert.Equal(Path.Combine("/downloads", "complete"), opts.CompletePath);
-    }
-
-    [Fact]
-    public void IncompletePath_derives_from_download_path()
-    {
-        var opts = new DownloadOptions { DownloadPath = "/downloads" };
-
-        Assert.Equal(Path.Combine("/downloads", "incomplete"), opts.IncompletePath);
+        Assert.Equal(3, opts.ConcurrentDownloads);
     }
 
     [Fact]

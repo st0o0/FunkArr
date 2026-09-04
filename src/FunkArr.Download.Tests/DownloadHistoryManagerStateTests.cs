@@ -89,7 +89,7 @@ public sealed class DownloadHistoryManagerStateTests
         var result = state.ToHistoryResult(new QueryHistory());
 
         Assert.Single(result.Items);
-        Assert.Equal("", result.Items[0].FilePath);
+        Assert.Equal("", result.Items[0].RelativePath);
         Assert.Equal("Timeout", result.Items[0].FailMessage);
         Assert.Equal(9999999999L, result.Items[0].CompletedAt);
     }

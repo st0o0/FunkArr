@@ -8,7 +8,7 @@ public sealed record HistoryItem(
     string Category,
     long TotalBytes,
     int DownloadTimeSeconds,
-    string FilePath,
+    string RelativePath,
     DownloadStatus Status,
     string FailMessage,
     long CompletedAt);

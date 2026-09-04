@@ -5,6 +5,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FFMpegCore" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FunkArr.Core\FunkArr.Core.csproj" />
   </ItemGroup>
 

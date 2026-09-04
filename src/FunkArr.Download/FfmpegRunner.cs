@@ -1,72 +1,133 @@
 using System.Diagnostics;
-using Akka.Actor;
+using System.Globalization;
+using FFMpegCore;
+using FFMpegCore.Enums;
+using FFMpegCore.Exceptions;
 
 namespace FunkArr.Download;
 
-internal sealed record ProgressUpdate(long TotalSize, long OutTimeUs, double Speed);
-internal sealed record ProcessExited(int ExitCode, string? ErrorOutput, int ElapsedSeconds);
-
-internal static class FfmpegRunner
+internal sealed class FfmpegRunner : IFfmpegRunner
 {
-    public static CancellationTokenSource Run(
-        IActorRef self, string videoUrl, string? subtitleUrl, string outputPath)
+    public async Task<FfmpegResult> RunAsync(
+        string videoUrl, string? subtitleUrl, string outputPath,
+        Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
-        var cts = new CancellationTokenSource();
-        var args = FfmpegArgumentBuilder.Build(videoUrl, subtitleUrl, outputPath);
+        var sw = Stopwatch.StartNew();
+        var progressBlock = new Dictionary<string, string>();
 
-        FfmpegProcess process;
+        var processor = BuildArguments(videoUrl, subtitleUrl, outputPath)
+            .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
+            .CancellableThrough(ct);
+
         try
         {
-            process = FfmpegProcess.Start(args);
+            await processor.ProcessAsynchronously(throwOnError: true);
+            sw.Stop();
+            return new FfmpegResult(true, 0, null, (int)sw.Elapsed.TotalSeconds);
         }
-        catch (Exception ex)
+        catch (FFMpegException ex) when (subtitleUrl is not null && IsSubtitleInputError(ex))
         {
-            self.Tell(new ProcessExited(-1, "Failed to start FFmpeg: " + ex.Message, 0));
-            return cts;
-        }
+            sw.Stop();
+            var retryProcessor = BuildArguments(videoUrl, null, outputPath)
+                .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
+                .CancellableThrough(ct);
 
-        var ct = cts.Token;
-        var sw = Stopwatch.StartNew();
-
-        Task.Run(async () =>
-        {
-            var block = new Dictionary<string, string>();
-
+            var retrySw = Stopwatch.StartNew();
             try
             {
-                while (await process.StandardOutput.ReadLineAsync(ct) is { } line)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    FfmpegProgressParser.AccumulateLine(block, line);
-
-                    if (FfmpegProgressParser.IsBlockComplete(block))
-                    {
-                        var progress = FfmpegProgressParser.Parse(block);
-                        if (progress is not null)
-                        {
-                            self.Tell(progress);
-                        }
-                        block = [];
-                    }
-                }
-
-                var exitCode = await process.WaitForExitAsync(ct);
-                sw.Stop();
-                var stderr = exitCode != 0 ? process.GetStderrOutput() : null;
-                return new ProcessExited(exitCode, stderr, (int)sw.Elapsed.TotalSeconds);
+                await retryProcessor.ProcessAsynchronously(throwOnError: true);
+                retrySw.Stop();
+                return new FfmpegResult(true, 0, null, (int)(sw.Elapsed + retrySw.Elapsed).TotalSeconds);
             }
-            catch (OperationCanceledException)
+            catch (FFMpegException retryEx)
             {
-                process.Kill();
-                sw.Stop();
-                return new ProcessExited(-1, "Cancelled", (int)sw.Elapsed.TotalSeconds);
+                retrySw.Stop();
+                return new FfmpegResult(false, 1, CapStderr(retryEx.FFMpegErrorOutput), (int)(sw.Elapsed + retrySw.Elapsed).TotalSeconds);
             }
-            finally
-            {
-                process.Dispose();
-            }
-        }, ct).PipeTo(self);
-
-        return cts;
+        }
+        catch (FFMpegException ex)
+        {
+            sw.Stop();
+            return new FfmpegResult(false, 1, CapStderr(ex.FFMpegErrorOutput), (int)sw.Elapsed.TotalSeconds);
+        }
+        catch (OperationCanceledException)
+        {
+            sw.Stop();
+            return new FfmpegResult(false, -1, "Cancelled", (int)sw.Elapsed.TotalSeconds);
+        }
     }
+
+    internal static FFMpegArgumentProcessor BuildArguments(
+        string videoUrl, string? subtitleUrl, string outputPath)
+    {
+        var arguments = subtitleUrl is not null
+            ? FFMpegArguments
+                .FromUrlInput(new Uri(videoUrl))
+                .AddUrlInput(new Uri(subtitleUrl))
+                .OutputToFile(outputPath, overwrite: true, options => options
+                    .CopyChannel(Channel.Video)
+                    .CopyChannel(Channel.Audio)
+                    .WithCustomArgument("-c:s srt")
+                    .WithCustomArgument("-metadata:s:s:0 language=deu")
+                    .WithCustomArgument("-progress pipe:1"))
+            : FFMpegArguments
+                .FromUrlInput(new Uri(videoUrl))
+                .OutputToFile(outputPath, overwrite: true, options => options
+                    .WithCopyCodec()
+                    .WithCustomArgument("-progress pipe:1"));
+
+        return arguments;
+    }
+
+    internal static void ParseProgressLine(
+        string line, Dictionary<string, string> block, Action<ProgressUpdate> onProgress)
+    {
+        var eqIndex = line.IndexOf('=');
+        if (eqIndex <= 0)
+        {
+            return;
+        }
+
+        var key = line[..eqIndex].Trim();
+        var value = line[(eqIndex + 1)..].Trim();
+        block[key] = value;
+
+        if (key != "progress")
+        {
+            return;
+        }
+
+        if (block.Count > 0)
+        {
+            var totalSize = GetLong(block, "total_size");
+            var outTimeUs = GetLong(block, "out_time_us");
+            var speed = ParseSpeed(block.GetValueOrDefault("speed"));
+            onProgress(new ProgressUpdate(totalSize, outTimeUs, speed));
+        }
+
+        block.Clear();
+    }
+
+    private static long GetLong(Dictionary<string, string> block, string key) =>
+        block.TryGetValue(key, out var value) && long.TryParse(value, CultureInfo.InvariantCulture, out var result)
+            ? result
+            : 0;
+
+    private static double ParseSpeed(string? value)
+    {
+        if (value is null or "N/A")
+        {
+            return 0.0;
+        }
+
+        var trimmed = value.TrimEnd('x');
+        return double.TryParse(trimmed, CultureInfo.InvariantCulture, out var result) ? result : 0.0;
+    }
+
+    private static bool IsSubtitleInputError(FFMpegException ex) =>
+        ex.FFMpegErrorOutput?.Contains("Error opening input file", StringComparison.OrdinalIgnoreCase) == true ||
+        ex.FFMpegErrorOutput?.Contains("Invalid data found when processing input", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static string CapStderr(string? stderr)
+        => stderr is null or { Length: <= 4096 } ? stderr ?? "" : stderr[^4096..];
 }
