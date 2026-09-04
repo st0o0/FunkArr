@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="max-w-2xl mx-auto">
     <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-6">Setup Guide</h1>
 
     <!-- Step indicators -->
@@ -18,7 +18,7 @@
               ? 'bg-brand-600/15 text-brand-400'
               : 'bg-surface-elevated text-text-muted cursor-default'"
         >
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" :class="i < currentStep ? 'bg-status-ok text-white' : i === currentStep ? 'bg-brand-500 text-white' : 'bg-surface-overlay text-text-muted'">
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" :class="i < currentStep ? 'bg-status-ok text-white' : i === currentStep ? 'bg-brand-500 text-surface-base' : 'bg-surface-overlay text-text-muted'">
             {{ i < currentStep ? '&#x2713;' : i + 1 }}
           </span>
           <span class="hidden sm:inline font-medium">{{ label }}</span>
@@ -31,7 +31,9 @@
     <div v-if="currentStep === 0">
       <h2 class="text-base font-semibold text-text-primary mb-4">System Health Check</h2>
 
-      <div v-if="loading" class="text-text-muted">Running checks...</div>
+      <div v-if="loading" class="space-y-2.5">
+        <SkeletonCard v-for="i in 4" :key="i" />
+      </div>
       <div v-else-if="error" class="text-status-fail mb-4">{{ error }}</div>
 
       <div v-if="health" class="space-y-2.5 mb-6">
@@ -68,14 +70,14 @@
       <div class="flex gap-3">
         <button
           @click="runHealthCheck"
-          class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors"
+          class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]"
         >
           Re-check
         </button>
         <button
           @click="currentStep++"
           :disabled="hasFailures"
-          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
         >
           Next
         </button>
@@ -103,11 +105,11 @@
       </div>
 
       <div class="flex gap-3">
-        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors">Back</button>
+        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]">Back</button>
         <button
           @click="currentStep++"
           :disabled="selectedServices.length === 0"
-          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
         >
           Next
         </button>
@@ -152,18 +154,18 @@
       </div>
 
       <div class="flex gap-3">
-        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors">Back</button>
+        <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]">Back</button>
         <button
           v-if="isLastStep"
           @click="$router.push('/')"
-          class="px-4 py-2 text-sm bg-status-ok text-white rounded-lg hover:brightness-110 transition"
+          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 transition-colors active:scale-[0.98]"
         >
           Done
         </button>
         <button
           v-else
           @click="currentStep++"
-          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 transition-colors"
+          class="px-4 py-2 text-sm bg-brand-600 text-white rounded-lg hover:bg-brand-500 transition-colors active:scale-[0.98]"
         >
           Next
         </button>
@@ -175,6 +177,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { getSetupHealth, type SetupHealthCheck } from '../api/setup'
+import { useToast } from '../composables/useToast'
+
+const { toast } = useToast()
+import SkeletonCard from '../components/SkeletonCard.vue'
 
 const health = ref<SetupHealthCheck | null>(null)
 const loading = ref(true)
@@ -317,6 +323,7 @@ async function runHealthCheck() {
 async function copyToClipboard(text: string) {
   try {
     await navigator.clipboard.writeText(text)
+    toast('Copied to clipboard')
     justCopied.value = text
     setTimeout(() => { justCopied.value = null }, 2000)
   } catch {

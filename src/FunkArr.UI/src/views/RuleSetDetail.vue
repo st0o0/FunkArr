@@ -1,12 +1,12 @@
 <template>
-  <div>
-    <div class="mb-4 text-sm text-text-muted flex items-center gap-1.5">
-      <router-link to="/rulesets" class="hover:text-text-secondary transition-colors">RuleSets</router-link>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      <span class="text-text-secondary">{{ id }}</span>
-    </div>
+  <div class="max-w-4xl mx-auto">
+    <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id }]" />
 
-    <div v-if="loading" class="text-text-muted">Loading...</div>
+    <div v-if="loading" class="space-y-5">
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+    </div>
     <div v-else-if="error" class="text-status-fail">{{ error }}</div>
     <div v-else-if="detail">
       <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-6">{{ detail.identity.topic }}</h1>
@@ -104,19 +104,19 @@
       <div class="flex items-center gap-3">
         <router-link
           :to="`/rulesets/${id}/history`"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors active:scale-[0.98]"
         >
           Scoring History
         </router-link>
         <router-link
           :to="`/rulesets/${id}/edit`"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors active:scale-[0.98]"
         >
           Edit
         </router-link>
         <button
           v-if="detail.source.localPath"
-          class="px-4 py-2 bg-status-fail/10 text-status-fail rounded-lg hover:bg-status-fail/20 text-sm transition-colors border border-status-fail/20"
+          class="px-4 py-2 bg-status-fail/10 text-status-fail rounded-lg hover:bg-status-fail/20 text-sm transition-colors border border-status-fail/20 active:scale-[0.98]"
           @click="showDeleteConfirm = true"
         >
           Delete Local
@@ -127,14 +127,14 @@
         <p class="text-sm text-text-body mb-3">Delete local overlay? This cannot be undone.</p>
         <div class="flex items-center gap-3">
           <button
-            class="px-4 py-2 bg-status-fail text-white rounded-lg hover:bg-status-fail/80 text-sm transition-colors"
+            class="px-4 py-2 bg-status-fail/10 text-status-fail rounded-lg hover:bg-status-fail/20 text-sm transition-colors border border-status-fail/20 active:scale-[0.98]"
             :disabled="deleting"
             @click="handleDelete"
           >
             {{ deleting ? 'Deleting...' : 'Confirm' }}
           </button>
           <button
-            class="px-4 py-2 bg-surface-elevated text-text-body rounded-lg hover:bg-surface-elevated/80 text-sm transition-colors border border-border-default"
+            class="px-4 py-2 bg-surface-elevated text-text-body rounded-lg hover:border-brand-500/40 text-sm transition-colors border border-border-default active:scale-[0.98]"
             :disabled="deleting"
             @click="showDeleteConfirm = false"
           >
@@ -151,6 +151,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getRuleSetDetail, deleteRuleSet, type RuleSetDetail } from '../api/rulesets'
+import { useToast } from '../composables/useToast'
+
+const { toast } = useToast()
+import SkeletonCard from '../components/SkeletonCard.vue'
+import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -181,6 +186,7 @@ async function handleDelete() {
   deleteError.value = null
   try {
     await deleteRuleSet(id)
+    toast('Local overlay deleted')
     const hasCommunity = detail.value?.source.communityPath != null
     if (hasCommunity) {
       detail.value = await getRuleSetDetail(id)
@@ -190,6 +196,7 @@ async function handleDelete() {
     }
   } catch (e) {
     deleteError.value = e instanceof Error ? e.message : 'Failed to delete'
+    toast(deleteError.value ?? 'Delete failed', 'error')
   } finally {
     deleting.value = false
   }

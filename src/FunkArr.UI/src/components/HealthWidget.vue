@@ -6,7 +6,12 @@
     </div>
 
     <div class="p-5">
-      <div v-if="loading && !health" class="text-text-muted text-sm">Checking...</div>
+      <div v-if="loading && !health" class="space-y-2.5">
+        <SkeletonLine width="1/2" />
+        <SkeletonLine width="3/4" />
+        <SkeletonLine width="1/2" />
+        <SkeletonLine width="3/4" />
+      </div>
       <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
 
       <div v-else-if="health" class="space-y-4">
@@ -48,6 +53,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import SkeletonLine from './SkeletonLine.vue'
 import { getSetupHealth, type SetupHealthCheck, type CheckResult } from '../api/setup'
 
 const health = ref<SetupHealthCheck | null>(null)

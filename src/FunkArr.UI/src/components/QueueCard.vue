@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-surface-raised rounded-xl border border-border-default p-4">
+  <div class="bg-surface-raised rounded-lg p-4 hover:-translate-y-px hover:shadow-md transition-all">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
         <h3 class="text-sm font-semibold text-text-primary truncate">{{ item.title }}</h3>
@@ -24,7 +24,7 @@
         </span>
         <button
           @click="$emit('cancel', item.downloadId)"
-          class="p-1.5 text-text-muted hover:text-status-fail hover:bg-surface-elevated transition-colors rounded-md"
+          class="p-1.5 text-status-fail/60 hover:text-status-fail hover:bg-status-fail/10 transition-colors rounded-md"
           title="Cancel"
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -42,7 +42,7 @@
         </div>
         <div class="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
           <div
-            class="h-full bg-brand-500 rounded-full transition-all duration-500"
+            class="h-full bg-brand-500 rounded-full transition-all duration-700 ease-out"
             :style="{ width: `${item.percentage}%` }"
           />
         </div>

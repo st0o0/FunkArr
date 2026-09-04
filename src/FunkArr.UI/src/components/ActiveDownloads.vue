@@ -6,8 +6,11 @@
     </div>
 
     <div class="p-5">
-      <div v-if="activeItems.length === 0 && queuedCount === 0" class="text-text-muted text-sm py-2">
-        No active downloads
+      <div v-if="activeItems.length === 0 && queuedCount === 0" class="py-4 text-center">
+        <svg class="w-6 h-6 mx-auto mb-2 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>
+        </svg>
+        <p class="text-text-muted text-xs">No active downloads</p>
       </div>
 
       <div v-else class="space-y-4">
@@ -18,7 +21,7 @@
           </div>
           <div class="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
             <div
-              class="h-full rounded-full transition-all duration-500"
+              class="h-full rounded-full transition-all duration-700 ease-out"
               :class="item.percentage < 100 ? 'bg-brand-500' : 'bg-status-ok'"
               :style="{ width: `${item.percentage}%` }"
             />

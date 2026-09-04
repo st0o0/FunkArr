@@ -14,17 +14,20 @@
       </select>
     </div>
 
-    <div v-if="loading && !history" class="text-text-muted text-sm">Loading...</div>
+    <SkeletonTable v-if="loading && !history" :rows="5" :columns="6" />
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
 
-    <div v-else-if="history && history.items.length === 0" class="bg-surface-raised rounded-xl border border-border-default p-10 text-center">
-      <p class="text-text-secondary text-sm">No download history yet.</p>
-    </div>
+    <EmptyState
+      v-else-if="history && history.items.length === 0"
+      icon='<circle cx="8" cy="8" r="6"/><path d="M8 4v4l2.5 2.5"/>'
+      title="No download history"
+      description="Completed and failed downloads will appear here."
+    />
 
     <div v-else-if="history">
       <div class="overflow-x-auto rounded-xl border border-border-default">
         <table class="w-full text-sm">
-          <thead>
+          <thead class="sticky top-0 z-10">
             <tr class="bg-surface-raised text-left text-xs text-text-muted border-b border-border-default">
               <th class="px-4 py-3 font-medium">Title</th>
               <th class="px-4 py-3 font-medium">Category</th>
@@ -39,7 +42,7 @@
             <tr
               v-for="item in history.items"
               :key="item.downloadId"
-              class="border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/50 transition-colors"
+              class="border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/60 transition-colors"
             >
               <td class="px-4 py-3 text-text-body max-w-xs truncate">
                 {{ item.title }}
@@ -65,13 +68,13 @@
                   <button
                     v-if="item.status === 'Failed'"
                     @click="handleRetry(item.downloadId)"
-                    class="px-2.5 py-1 text-xs text-brand-400 hover:text-brand-300 hover:bg-brand-900/20 rounded transition-colors"
+                    class="px-2.5 py-1 text-xs text-brand-400 hover:text-brand-300 transition-colors"
                   >
                     Retry
                   </button>
                   <button
                     @click="handleDelete(item.downloadId)"
-                    class="p-1.5 text-text-muted hover:text-status-fail hover:bg-surface-elevated transition-colors rounded-md"
+                    class="p-1.5 text-status-fail/60 hover:text-status-fail hover:bg-status-fail/10 transition-colors rounded-md"
                     title="Delete"
                   >
                     <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -91,14 +94,14 @@
           <button
             :disabled="page <= 1"
             @click="page--"
-            class="px-3 py-1.5 rounded-lg border border-border-default text-text-secondary hover:bg-surface-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            class="px-3 py-1.5 rounded-lg border border-border-default text-text-body hover:border-brand-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
           >
             &larr; Prev
           </button>
           <button
             :disabled="page >= totalPages"
             @click="page++"
-            class="px-3 py-1.5 rounded-lg border border-border-default text-text-secondary hover:bg-surface-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            class="px-3 py-1.5 rounded-lg border border-border-default text-text-body hover:border-brand-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
           >
             Next &rarr;
           </button>
@@ -112,7 +115,12 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getHistory, deleteHistoryItem, retryDownload, type HistoryResponse } from '../api/downloads'
+import SkeletonTable from '../components/SkeletonTable.vue'
+import EmptyState from '../components/EmptyState.vue'
+import { useToast } from '../composables/useToast'
 import { formatSize, formatDuration, formatRelativeDate } from '../utils/format'
+
+const { toast } = useToast()
 
 const route = useRoute()
 const router = useRouter()
@@ -140,13 +148,23 @@ async function fetchData() {
 }
 
 async function handleDelete(id: string) {
-  await deleteHistoryItem(id)
-  await fetchData()
+  try {
+    await deleteHistoryItem(id)
+    toast('Entry deleted')
+    await fetchData()
+  } catch {
+    toast('Failed to delete entry', 'error')
+  }
 }
 
 async function handleRetry(id: string) {
-  await retryDownload(id)
-  await fetchData()
+  try {
+    await retryDownload(id)
+    toast('Retry started')
+    await fetchData()
+  } catch {
+    toast('Failed to retry download', 'error')
+  }
 }
 
 watch(page, (val) => {

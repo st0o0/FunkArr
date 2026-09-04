@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface-base: #0c0f1a;
-  --color-surface-raised: #141829;
-  --color-surface-elevated: #1c2137;
-  --color-surface-overlay: #242a42;
+  --color-surface-base: #16181d;
+  --color-surface-raised: #1e2028;
+  --color-surface-elevated: #272a33;
+  --color-surface-overlay: #31353f;
 
-  --color-border-default: rgba(255 255 255 / 0.08);
-  --color-border-subtle: rgba(255 255 255 / 0.04);
-  --color-border-focus: rgba(99 179 237 / 0.4);
+  --color-border-default: rgba(255 255 255 / 0.07);
+  --color-border-subtle: rgba(255 255 255 / 0.035);
+  --color-border-focus: rgba(251 191 36 / 0.4);
 
-  --color-text-primary: #f0f2f8;
-  --color-text-body: #c8cee0;
-  --color-text-secondary: #8892ab;
-  --color-text-muted: #4e576e;
+  --color-text-primary: #f0f0f0;
+  --color-text-body: #b8bcc6;
+  --color-text-secondary: #8890a2;
+  --color-text-muted: #4a4f5c;
 
-  --color-brand-400: #63b3ed;
-  --color-brand-500: #4299e1;
-  --color-brand-600: #3182ce;
-  --color-brand-700: #2b6cb0;
-  --color-brand-900: #1a365d;
+  --color-brand-300: #fcd34d;
+  --color-brand-400: #fbbf24;
+  --color-brand-500: #f59e0b;
+  --color-brand-600: #d97706;
+  --color-brand-700: #b45309;
+  --color-brand-900: #451a03;
 
   --color-accent-400: #68d391;
   --color-accent-500: #48bb78;
@@ -27,7 +28,7 @@
   --color-status-ok: #48bb78;
   --color-status-warn: #ecc94b;
   --color-status-fail: #fc8181;
-  --color-status-info: #63b3ed;
+  --color-status-info: #fbbf24;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, monospace;
@@ -56,4 +57,20 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255 255 255 / 0.18);
+}
+
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-elevated) 25%,
+    var(--color-surface-overlay) 50%,
+    var(--color-surface-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

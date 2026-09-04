@@ -1,23 +1,14 @@
 <template>
   <div>
-    <!-- Breadcrumb -->
-    <div class="mb-4 text-sm text-text-muted flex items-center gap-1.5">
-      <router-link to="/rulesets" class="hover:text-text-secondary transition-colors">RuleSets</router-link>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      <template v-if="isEditMode">
-        <router-link :to="`/rulesets/${editId}`" class="hover:text-text-secondary transition-colors">{{ editId }}</router-link>
-        <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-        <span class="text-text-secondary">Edit</span>
-      </template>
-      <template v-else>
-        <span class="text-text-secondary">New</span>
-      </template>
-    </div>
+    <AppBreadcrumb :items="breadcrumbItems" />
 
-    <div v-if="loadingDetail" class="text-text-muted text-sm">Loading...</div>
+    <div v-if="loadingDetail" class="space-y-5">
+      <SkeletonCard />
+      <SkeletonCard />
+    </div>
     <div v-else-if="loadError" class="text-status-fail text-sm">{{ loadError }}</div>
 
-    <div v-else class="grid grid-cols-2 gap-6">
+    <div v-else class="grid grid-cols-[1fr_380px] gap-6">
       <!-- Left pane: Builder form -->
       <div class="space-y-5">
         <h1 class="text-2xl font-bold text-text-primary tracking-tight">{{ isEditMode ? 'Edit RuleSet' : 'New RuleSet' }}</h1>
@@ -56,7 +47,7 @@
                     placeholder="Alias"
                     class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
                   />
-                  <button class="text-text-muted hover:text-status-fail text-sm transition-colors" @click="form.aliases.splice(idx, 1)">×</button>
+                  <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click="form.aliases.splice(idx, 1)">×</button>
                 </div>
               </div>
               <button class="text-xs text-brand-400 hover:text-brand-300 mt-1.5 transition-colors" @click="form.aliases.push('')">+ Add Alias</button>
@@ -135,7 +126,7 @@
                   <span class="text-text-muted text-xs">prio {{ rule.priority }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <button class="text-text-muted hover:text-status-fail text-sm transition-colors" @click.stop="form.rules.splice(rIdx, 1)">×</button>
+                  <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click.stop="form.rules.splice(rIdx, 1)">×</button>
                   <svg class="w-4 h-4 text-text-muted transition-transform" :class="rule.expanded ? 'rotate-180' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
                 </div>
               </div>
@@ -211,7 +202,7 @@
                       <input v-model="tp.pattern" type="text" placeholder="regex pattern" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
                       <input v-model.number="tp.captureGroup" type="number" placeholder="grp" class="w-14 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
                     </template>
-                    <button class="text-text-muted hover:text-status-fail text-sm transition-colors" @click="rule.titleRules.splice(tIdx, 1)">×</button>
+                    <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click="rule.titleRules.splice(tIdx, 1)">×</button>
                   </div>
                   <button class="text-xs text-brand-400 hover:text-brand-300 transition-colors" @click="addTitleRule(rule)">+ Add Title Part</button>
                 </div>
@@ -243,7 +234,7 @@
                         <option value="regex">regex</option>
                       </select>
                       <input v-model="cond.value" type="text" placeholder="value" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
-                      <button class="text-text-muted hover:text-status-fail text-xs transition-colors" @click="rule.filters[section].splice(cIdx, 1)">×</button>
+                      <button class="text-status-fail/60 hover:text-status-fail text-xs transition-colors" @click="rule.filters[section].splice(cIdx, 1)">×</button>
                     </div>
                   </div>
                 </div>
@@ -255,7 +246,7 @@
         <!-- Save button -->
         <div class="flex items-center gap-3">
           <button
-            class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors disabled:opacity-50"
+            class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors disabled:opacity-50 active:scale-[0.98]"
             :disabled="saving"
             @click="handleSave"
           >
@@ -263,7 +254,7 @@
           </button>
           <router-link
             :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
-            class="px-4 py-2 bg-surface-elevated text-text-body rounded-lg hover:bg-surface-elevated/80 text-sm transition-colors border border-border-default"
+            class="px-4 py-2 bg-surface-elevated text-text-body rounded-lg hover:border-brand-500/40 text-sm transition-colors border border-border-default active:scale-[0.98]"
           >
             Cancel
           </router-link>
@@ -287,6 +278,11 @@ import {
   type RuleSetWriteRequest, type RuleSetWriteRule, type FilterConditionInput, type TitleRuleInput,
 } from '../api/rulesets'
 import DebuggerPanel from '../components/DebuggerPanel.vue'
+import SkeletonCard from '../components/SkeletonCard.vue'
+import AppBreadcrumb from '../components/AppBreadcrumb.vue'
+import { useToast } from '../composables/useToast'
+
+const { toast } = useToast()
 
 interface FormFilterCondition {
   field: string
@@ -324,6 +320,20 @@ const router = useRouter()
 
 const editId = route.params.id as string | undefined
 const isEditMode = computed(() => !!editId)
+
+const breadcrumbItems = computed(() => {
+  if (isEditMode.value) {
+    return [
+      { label: 'RuleSets', to: '/rulesets' },
+      { label: editId!, to: `/rulesets/${editId}` },
+      { label: 'Edit' },
+    ]
+  }
+  return [
+    { label: 'RuleSets', to: '/rulesets' },
+    { label: 'New' },
+  ]
+})
 
 const loadingDetail = ref(false)
 const loadError = ref<string | null>(null)
@@ -467,13 +477,16 @@ async function handleSave() {
     const data = serializeForm()
     if (isEditMode.value) {
       await updateRuleSet(editId!, data)
+      toast('RuleSet saved')
       router.push(`/rulesets/${editId}`)
     } else {
       await createRuleSet(data)
+      toast('RuleSet saved')
       router.push(`/rulesets/${form.ruleSetId}`)
     }
   } catch (e) {
     saveError.value = e instanceof Error ? e.message : 'Failed to save'
+    toast(saveError.value!, 'error')
   } finally {
     saving.value = false
   }

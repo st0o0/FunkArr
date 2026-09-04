@@ -1,20 +1,37 @@
 ## Purpose
 
-Application shell layout with fixed sidebar navigation, brand wordmark, responsive collapse, and breadcrumb bar for the main content area.
+Application shell layout with collapsible sidebar navigation, brand wordmark, responsive collapse, and breadcrumb bar for the main content area.
 
 ## Requirements
 
 ### Requirement: Sidebar navigation structure
 
-The application layout SHALL use a CSS Grid with a fixed-width sidebar (64px) and fluid main content area. The sidebar SHALL contain the FunkArr wordmark, navigation links, and a version footer.
+The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid main content area. The sidebar SHALL toggle between a collapsed state (56px, icon-only) and an expanded state (200px, icons + labels). The grid template SHALL be `grid-cols-[56px_1fr]` when collapsed and `grid-cols-[200px_1fr]` when expanded. The sidebar SHALL contain the FunkArr wordmark (expanded only), navigation links, and a version footer.
 
-#### Scenario: Desktop layout rendering
-- **WHEN** the viewport is 768px or wider
-- **THEN** the layout renders as a two-column grid with a 64px sidebar on the left and the content area filling the remaining width
+#### Scenario: Collapsed sidebar rendering
+- **WHEN** the sidebar is in collapsed state
+- **THEN** the layout renders as a two-column grid with a 56px sidebar showing only icons and the content area filling the remaining width
+
+#### Scenario: Expanded sidebar rendering
+- **WHEN** the sidebar is in expanded state
+- **THEN** the layout renders as a two-column grid with a 200px sidebar showing icons and labels and the content area filling the remaining width
 
 #### Scenario: Sidebar sections
 - **WHEN** the sidebar renders
-- **THEN** it contains three sections top-to-bottom: brand wordmark, navigation links, version number
+- **THEN** it contains three sections top-to-bottom: brand wordmark (hidden when collapsed), navigation links, version number (hidden when collapsed)
+
+#### Scenario: Sidebar toggle button
+- **WHEN** the sidebar renders
+- **THEN** a toggle button is visible that switches between collapsed and expanded states
+
+#### Scenario: Sidebar width transition
+- **WHEN** the sidebar toggles between collapsed and expanded
+- **THEN** the width animates smoothly via CSS transition (200ms ease)
+
+#### Scenario: Sidebar state persistence
+- **WHEN** the user toggles the sidebar state
+- **THEN** the state is persisted to `localStorage` under key `funkarr-sidebar`
+- **AND** on next page load, the sidebar restores the persisted state
 
 ### Requirement: Sidebar brand wordmark
 
@@ -26,11 +43,11 @@ The sidebar SHALL display "FunkArr" as a text wordmark using the `brand-500` col
 
 ### Requirement: Navigation items
 
-The sidebar SHALL contain five navigation items in order: Dashboard (`/`), Queue (`/queue`), History (`/history`), RuleSets (`/rulesets`), and Setup (`/setup`). Each item SHALL show an icon and label.
+The sidebar SHALL contain five navigation items in order: Dashboard (`/`), Queue (`/queue`), History (`/history`), RuleSets (`/rulesets`), and Setup (`/setup`). Each item SHALL show an icon. Labels SHALL be visible only when the sidebar is expanded.
 
 #### Scenario: Active route indication
 - **WHEN** the current route matches a navigation item
-- **THEN** that item displays a left border in `brand-500` and a background tint of `brand-900/20`, with `text-primary` color
+- **THEN** that item displays a 2px left border in `brand-500` and a background tint of `brand-900/20`, with `text-primary` color
 
 #### Scenario: Inactive route styling
 - **WHEN** the current route does not match a navigation item
@@ -39,6 +56,11 @@ The sidebar SHALL contain five navigation items in order: Dashboard (`/`), Queue
 #### Scenario: Hover state
 - **WHEN** the user hovers over an inactive navigation item
 - **THEN** the item background changes to `surface-elevated` and text changes to `text-body`
+
+#### Scenario: Collapsed icon-only mode
+- **WHEN** the sidebar is collapsed
+- **THEN** each navigation item shows only its icon, centered in the 56px width
+- **AND** a tooltip with the label appears on hover
 
 #### Scenario: Queue navigation icon
 - **WHEN** the Queue navigation item renders
@@ -56,18 +78,6 @@ The RuleSets navigation item SHALL be active for the `/rulesets` route and all n
 - **WHEN** the user navigates to `/rulesets/tagesschau/history`
 - **THEN** the RuleSets navigation item is active
 
-### Requirement: Responsive sidebar collapse
-
-Below 768px viewport width, the sidebar SHALL collapse to 48px width. Navigation labels SHALL be hidden (screen-reader accessible via `sr-only`). Icons remain visible.
-
-#### Scenario: Narrow viewport collapse
-- **WHEN** the viewport width is below 768px
-- **THEN** the sidebar width is 48px and navigation labels are visually hidden
-
-#### Scenario: Labels remain accessible
-- **WHEN** the sidebar is collapsed
-- **THEN** navigation labels are present in the DOM with `sr-only` class for screen readers
-
 ### Requirement: Sidebar theme independence
 
 The sidebar SHALL use `surface-raised` background in both light and dark themes. It does not change appearance when the theme changes.
@@ -78,11 +88,15 @@ The sidebar SHALL use `surface-raised` background in both light and dark themes.
 
 ### Requirement: Main content area
 
-The main content area SHALL have a `surface-base` background, with content constrained to `max-w-7xl` and centered horizontally with padding.
+The main content area SHALL have a `surface-base` background. Content width constraints SHALL be set per-view, not globally. The main area SHALL NOT apply a fixed `max-w-*` class; instead, each view's root element sets its own width constraint.
 
 #### Scenario: Content area rendering
 - **WHEN** any page renders its content
-- **THEN** the content is within a container with `max-w-7xl`, horizontally centered, with `p-6` padding
+- **THEN** the content is within the main area with `p-6` padding and no global max-width constraint
+
+#### Scenario: Per-view width
+- **WHEN** different views render
+- **THEN** each view applies its own max-width class on its root element (or omits it for full-width views)
 
 ### Requirement: Breadcrumb bar
 

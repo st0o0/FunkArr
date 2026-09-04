@@ -30,7 +30,7 @@
         <textarea v-model="manualForm.description" placeholder="Description (optional)" rows="2" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50 resize-none" />
         <input v-model="manualForm.timestamp" type="datetime-local" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-brand-500/50" />
         <button
-          class="w-full px-3 py-1.5 bg-surface-elevated text-text-secondary border border-border-default rounded-lg hover:bg-surface-raised text-sm transition-colors"
+          class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:border-brand-500/40 text-sm transition-colors active:scale-[0.98]"
           @click="addManualCandidate"
         >Add Candidate</button>
       </div>
@@ -47,7 +47,7 @@
             @keyup.enter="doFetch"
           />
           <button
-            class="px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors whitespace-nowrap"
+            class="px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors whitespace-nowrap active:scale-[0.98]"
             :disabled="fetchLoading || !fetchQuery.trim()"
             @click="doFetch"
           >{{ fetchLoading ? 'Searching...' : 'Search' }}</button>
@@ -76,7 +76,7 @@
             </label>
           </div>
           <button
-            class="w-full px-3 py-1.5 bg-surface-elevated text-text-secondary border border-border-default rounded-lg hover:bg-surface-raised text-sm transition-colors"
+            class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:border-brand-500/40 text-sm transition-colors active:scale-[0.98]"
             :disabled="selectedFetchCount === 0"
             @click="addFetchCandidates"
           >Add {{ selectedFetchCount }} Candidate(s)</button>
@@ -89,7 +89,7 @@
     <div v-if="candidates.length > 0" class="mb-3">
       <div class="flex items-center justify-between mb-1">
         <span class="text-xs font-semibold uppercase tracking-wider text-text-muted">Candidates ({{ candidates.length }})</span>
-        <button class="text-xs text-text-muted hover:text-status-fail transition-colors" @click="candidates = []">Clear All</button>
+        <button class="text-xs text-status-fail/60 hover:text-status-fail transition-colors" @click="candidates = []">Clear All</button>
       </div>
       <div class="space-y-1 max-h-32 overflow-y-auto">
         <div
@@ -101,7 +101,7 @@
             <span class="text-text-body truncate">{{ c.title }}</span>
             <span class="text-text-muted ml-2">{{ c.topic }}</span>
           </div>
-          <button class="text-text-muted hover:text-status-fail ml-2 shrink-0" @click="candidates.splice(idx, 1)">
+          <button class="text-status-fail/60 hover:text-status-fail ml-2 shrink-0 transition-colors" @click="candidates.splice(idx, 1)">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
           </button>
         </div>
@@ -112,7 +112,7 @@
     <button
       class="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-3"
       :class="canTest
-        ? 'bg-brand-600 text-white hover:bg-brand-500'
+        ? 'bg-brand-600 text-white hover:bg-brand-500 active:scale-[0.98]'
         : 'bg-surface-elevated text-text-muted cursor-not-allowed'"
       :disabled="!canTest || testing"
       @click="runTest"

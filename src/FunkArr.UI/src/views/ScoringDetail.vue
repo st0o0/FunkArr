@@ -1,16 +1,15 @@
 <template>
-  <div>
-    <div class="mb-4 text-sm text-text-muted flex items-center gap-1.5">
-      <router-link to="/rulesets" class="hover:text-text-secondary transition-colors">RuleSets</router-link>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      <router-link :to="`/rulesets/${id}`" class="hover:text-text-secondary transition-colors">{{ id }}</router-link>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      <router-link :to="`/rulesets/${id}/history`" class="hover:text-text-secondary transition-colors">History</router-link>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      <span class="font-mono text-text-secondary">{{ requestId.substring(0, 8) }}...</span>
-    </div>
+  <div class="max-w-5xl mx-auto">
+    <AppBreadcrumb :items="[
+      { label: 'RuleSets', to: '/rulesets' },
+      { label: id, to: `/rulesets/${id}` },
+      { label: 'History', to: `/rulesets/${id}/history` },
+      { label: requestId.substring(0, 8) + '...' }
+    ]" />
 
-    <div v-if="loading" class="text-text-muted text-sm">Loading...</div>
+    <div v-if="loading" class="space-y-3">
+      <SkeletonCard v-for="i in 3" :key="i" />
+    </div>
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
     <div v-else-if="detail">
       <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-2">Scoring Detail</h1>
@@ -91,6 +90,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getScoringDetail, type ScoringDetail } from '../api/rulesets'
+import SkeletonCard from '../components/SkeletonCard.vue'
+import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 
 const route = useRoute()
 const id = route.params.id as string

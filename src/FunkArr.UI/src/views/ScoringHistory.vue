@@ -1,16 +1,10 @@
 <template>
   <div>
-    <div class="mb-4 text-sm text-text-muted flex items-center gap-1.5">
-      <router-link to="/rulesets" class="hover:text-text-secondary transition-colors">RuleSets</router-link>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      <router-link :to="`/rulesets/${id}`" class="hover:text-text-secondary transition-colors">{{ id }}</router-link>
-      <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      <span class="text-text-secondary">History</span>
-    </div>
+    <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id, to: `/rulesets/${id}` }, { label: 'History' }]" />
 
     <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-5">Scoring History</h1>
 
-    <div v-if="loading" class="text-text-muted text-sm">Loading...</div>
+    <SkeletonTable v-if="loading" :rows="5" :columns="6" />
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
     <div v-else-if="history && history.snapshots.length === 0" class="text-text-muted text-sm">No scoring history.</div>
 
@@ -19,7 +13,7 @@
 
       <div class="overflow-x-auto rounded-xl border border-border-default">
         <table class="w-full text-sm">
-          <thead>
+          <thead class="sticky top-0 z-10">
             <tr class="bg-surface-raised">
               <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Request</th>
               <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Source</th>
@@ -33,7 +27,7 @@
             <tr
               v-for="s in history.snapshots"
               :key="s.requestId"
-              class="border-t border-border-subtle hover:bg-surface-elevated/50 cursor-pointer transition-colors"
+              class="border-t border-border-subtle hover:bg-surface-elevated/60 cursor-pointer transition-colors"
               @click="$router.push(`/rulesets/${id}/history/${s.requestId}`)"
             >
               <td class="px-4 py-2.5 font-mono text-xs text-brand-400">{{ s.requestId.substring(0, 8) }}...</td>
@@ -50,14 +44,14 @@
       <div class="flex gap-3 mt-4">
         <button
           v-if="offset > 0"
-          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors"
+          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]"
           @click="navigate(offset - pageSize)"
         >
           Previous
         </button>
         <button
           v-if="history.snapshots.length === pageSize && offset + pageSize < history.totalCount"
-          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors"
+          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]"
           @click="navigate(offset + pageSize)"
         >
           Next
@@ -71,6 +65,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getScoringHistory, type ScoringHistoryResult } from '../api/rulesets'
+import SkeletonTable from '../components/SkeletonTable.vue'
+import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 
 const route = useRoute()
 const id = route.params.id as string
