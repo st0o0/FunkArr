@@ -2,7 +2,7 @@
 
 ## Project
 
-FunkArr — German public broadcaster media library integration for the *arr
+FunkArr - German public broadcaster media library integration for the *arr
 ecosystem. A .NET service (Docker container) on Akka.NET: searches ARD/ZDF/etc.
 Mediatheken via MediathekViewWeb API, downloads video + subtitles, remuxes to
 MKV via FFmpeg, and exposes Newznab-compatible indexer API (for Sonarr/Radarr/
@@ -23,6 +23,7 @@ src/
 ├── FunkArr.Download/               # Download pipeline, FFmpeg, subtitles, muxing
 ├── FunkArr.RuleSet/                # Ruleset registry, models, GitHub sync, generator
 ├── FunkArr.MatchMagic/             # Match scoring, stats, diagnostics
+├── FunkArr.MetadataResolver/       # TMDB + TVDB metadata resolution
 ├── FunkArr.Messages/               # Commands, queries, responses (all domains)
 ├── FunkArr.Persistence/            # DTOs (extend-only, versioned)
 ├── FunkArr.UI/                     # Vue.js frontend (Vite + Tailwind)
@@ -30,6 +31,7 @@ src/
 ├── FunkArr.Download.Tests/
 ├── FunkArr.RuleSet.Tests/
 ├── FunkArr.MatchMagic.Tests/
+├── FunkArr.MetadataResolver.Tests/
 ├── FunkArr.Api.Tests/
 ├── FunkArr.ArrApi.Tests/
 └── FunkArr.Tests.Shared/           # Shared test infrastructure
@@ -37,10 +39,10 @@ src/
 
 ### Architecture guardrails
 
-- **Domain isolation.** Domain projects (Search, Download, RuleSet, MatchMagic)
-  must not reference each other. Communication only through Messages.
+- **Domain isolation.** Domain projects (Search, Download, RuleSet, MatchMagic,
+  MetadataResolver) must not reference each other. Communication only through Messages.
 - **Adapter projects are thin translators.** ArrApi contains no business logic
-  — it translates between external wire formats (Newznab XML, SABnzbd JSON) and
+  - it translates between external wire formats (Newznab XML, SABnzbd JSON) and
   internal Messages.
 - **Reference direction:** Host → Api/Adapters → Domains → Core → Messages/Persistence.
   Never upward, never cross-domain.
@@ -48,14 +50,14 @@ src/
   and declares Akka/Servus NuGet packages. Domain projects reference only Core.
 - **Two API surfaces.** Newznab XML (indexer for Prowlarr) and SABnzbd JSON
   (download client for Sonarr/Radarr). Both authenticate via `ApiKey` query
-  parameter. These are compatibility adapters — the internal API is modern
+  parameter. These are compatibility adapters - the internal API is modern
   JSON/OpenAPI-first.
 
 ### Actor naming
 
-- `*Manager` — Cluster Singleton
-- `*Worker` — Sharded Entity (ShardRegion)
-- `*Actor` — everything else (local, child, transient)
+- `*Manager` - Cluster Singleton
+- `*Worker` - Sharded Entity (ShardRegion)
+- `*Actor` - everything else (local, child, transient)
 
 ### Persistence
 
@@ -72,20 +74,20 @@ src/
 ### Servus & Servus.Akka usage
 
 Use:
-- **AppBuilder startup** — three setup containers: `IServiceSetupContainer` (DI),
+- **AppBuilder startup** - three setup containers: `IServiceSetupContainer` (DI),
   `ActorSystemSetupContainer` (actors + persistence),
   `ApplicationSetupContainer` (endpoints).
-- **Actor registration** — `WithResolvableActors(b => b.Register<T>("name"))`.
-- **Actor resolution** — `context.GetActor<T>()`, `context.ResolveChildActor<T>()`.
-- **Safe child communication** — `context.GetChild("name")` → `Option<IActorRef>`,
+- **Actor registration** - `WithResolvableActors(b => b.Register<T>("name"))`.
+- **Actor resolution** - `context.GetActor<T>()`, `context.ResolveChildActor<T>()`.
+- **Safe child communication** - `context.GetChild("name")` → `Option<IActorRef>`,
   `context.ChildTell()`, `context.ChildForward()`.
-- **`Option<T>` extensions** — `Match(some, none)` pattern.
-- **Diagnostics** — `ServusTrace.For("category")` for tracing.
+- **`Option<T>` extensions** - `Match(some, none)` pattern.
+- **Diagnostics** - `ServusTrace.For("category")` for tracing.
 
 Do NOT use:
-- `HandlerRegistry` — use `Receive<T>()` directly.
-- `LocalEntityRegion` — use Akka.NET Cluster Sharding.
-- `ActorRef<T>` — use `IActorRef` + `IActorRegistry`.
+- `HandlerRegistry` - use `Receive<T>()` directly.
+- `LocalEntityRegion` - use Akka.NET Cluster Sharding.
+- `ActorRef<T>` - use `IActorRef` + `IActorRegistry`.
 - Concurrency utils (`NamedSemaphoreSlimStore`, etc.).
 
 ## Build & test
@@ -97,7 +99,7 @@ dotnet build FunkArr.slnx
 dotnet format --verify-no-changes                                                          # style check
 ```
 
-Tests are xUnit v3 on Microsoft.Testing.Platform — `dotnet run`, **not** `dotnet test`.
+Tests are xUnit v3 on Microsoft.Testing.Platform - `dotnet run`, **not** `dotnet test`.
 Each domain has its own test project. Run all or target a specific one:
 
 ```powershell
@@ -106,17 +108,18 @@ dotnet run --project FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
 ```
 
 Run the service from `src/FunkArr/` (`dotnet run`). Configuration layers:
-- `appsettings.json` — production defaults.
-- `appsettings.Development.json` — dev overrides.
-- Environment variables — Docker-compose (`FunkArr__ApiKey`, etc.).
+- `appsettings.json` - production defaults.
+- `appsettings.Development.json` - dev overrides.
+- Environment variables - Docker-compose (`FunkArr__ApiKey`, etc.).
 
 ## C# conventions
 
 - `sealed` by default, `record` for messages/DTOs, nullable enabled everywhere.
 - No XML docs. Code speaks through naming.
-- `dotnet format` enforced — run after editing `.cs` files. CI rejects violations.
+- `dotnet format` enforced - run after editing `.cs` files. CI rejects violations.
 - Built-in .NET analyzers only (no StyleCop, no SonarAnalyzer).
 - `.editorconfig` defines all style rules.
+- No em-dashes. Use regular dashes (-) everywhere.
 
 ### Messages
 
@@ -143,7 +146,7 @@ public sealed record StartDownload(string MediaId, DownloadSpec Spec)
 ### Actors
 
 - Inherit `ReceiveActor` directly (no custom base classes).
-- Actors own explicit state records — `sealed record State(...)`.
+- Actors own explicit state records - `sealed record State(...)`.
 - Use `Receive<T>()` for message handling.
 - Single-node Cluster Sharding for entity actors.
 
@@ -157,7 +160,7 @@ ArchUnitNET tests enforce:
 
 ## Git & CI
 
-- **NEVER `git push`** — the user pushes.
+- **NEVER `git push`** - the user pushes.
 - Conventional Commits (commitlint-enforced). Single-line only, no Co-Authored-By.
 - Versioning is release-please. Never edit `<Version>` in `Directory.Build.props`.
 - Central package management: versions in `Directory.Packages.props` only.

@@ -211,9 +211,9 @@ const fixHints: Record<string, string> = {
 }
 
 const services = [
-  { value: 'prowlarr', title: 'Prowlarr', description: 'Indexer Manager — adds FunkArr as a Newznab indexer source' },
-  { value: 'sonarr', title: 'Sonarr', description: 'TV Series — adds FunkArr as a SABnzbd download client' },
-  { value: 'radarr', title: 'Radarr', description: 'Movies — adds FunkArr as a SABnzbd download client' },
+  { value: 'prowlarr', title: 'Prowlarr', description: 'Indexer Manager - adds FunkArr as a Newznab indexer source' },
+  { value: 'sonarr', title: 'Sonarr', description: 'TV Series - adds FunkArr as a SABnzbd download client' },
+  { value: 'radarr', title: 'Radarr', description: 'Movies - adds FunkArr as a SABnzbd download client' },
 ]
 
 interface ConfigField {

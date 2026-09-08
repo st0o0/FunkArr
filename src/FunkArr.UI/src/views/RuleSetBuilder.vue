@@ -58,7 +58,7 @@
                 <input
                   v-model.number="form.tvdbId"
                   type="number"
-                  placeholder="—"
+                  placeholder="-"
                   class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
                 />
               </div>
@@ -76,7 +76,7 @@
                 <input
                   v-model.number="form.tmdbId"
                   type="number"
-                  placeholder="—"
+                  placeholder="-"
                   class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
                 />
               </div>
@@ -156,7 +156,7 @@
                     class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-brand-500/50"
                     @change="onStrategyChange(rule)"
                   >
-                    <option value="">— select —</option>
+                    <option value="">- select -</option>
                     <option value="seasonAndEpisodeNumber">Season & Episode Number</option>
                     <option value="byAbsoluteEpisodeNumber">Absolute Episode Number</option>
                     <option value="itemTitleExact">Title Exact Match</option>

@@ -21,13 +21,13 @@
             <span class="text-text-muted">Topic</span>
             <span class="text-text-body">{{ detail.identity.topic }}</span>
             <span class="text-text-muted">Aliases</span>
-            <span class="text-text-body">{{ detail.identity.aliases.length > 0 ? detail.identity.aliases.join(', ') : '—' }}</span>
+            <span class="text-text-body">{{ detail.identity.aliases.length > 0 ? detail.identity.aliases.join(', ') : '-' }}</span>
             <span class="text-text-muted">TVDB</span>
-            <span class="text-text-body">{{ detail.identity.tvdbId ?? '—' }}</span>
+            <span class="text-text-body">{{ detail.identity.tvdbId ?? '-' }}</span>
             <span class="text-text-muted">IMDB</span>
-            <span class="text-text-body">{{ detail.identity.imdbId ?? '—' }}</span>
+            <span class="text-text-body">{{ detail.identity.imdbId ?? '-' }}</span>
             <span class="text-text-muted">TMDB</span>
-            <span class="text-text-body">{{ detail.identity.tmdbId ?? '—' }}</span>
+            <span class="text-text-body">{{ detail.identity.tmdbId ?? '-' }}</span>
           </div>
         </div>
       </section>
@@ -42,13 +42,13 @@
               {{ detail.source.communityPath }}
               <span v-if="detail.source.communityModified" class="text-text-muted ml-2">({{ formatDate(detail.source.communityModified) }})</span>
             </span>
-            <span v-else class="text-text-muted">—</span>
+            <span v-else class="text-text-muted">-</span>
             <span class="text-text-muted">Local</span>
             <span v-if="detail.source.localPath" class="font-mono text-xs text-text-body">
               {{ detail.source.localPath }}
               <span v-if="detail.source.localModified" class="text-text-muted ml-2">({{ formatDate(detail.source.localModified) }})</span>
             </span>
-            <span v-else class="text-text-muted">—</span>
+            <span v-else class="text-text-muted">-</span>
             <span class="text-text-muted">Mode</span>
             <span class="text-text-body">{{ mergeMode }}</span>
           </div>
