@@ -67,7 +67,9 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchCompleted>();
         Assert.Equal(searchId, result.SearchId);
-        Assert.Single(result.Items);
+        Assert.Equal(2, result.Items.Length);
+        Assert.Contains(result.Items, i => i.Quality == 1080);
+        Assert.Contains(result.Items, i => i.Quality == 720);
     }
 
     [Fact]
@@ -151,8 +153,8 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchCompleted>();
         Assert.Equal(searchId, result.SearchId);
-        Assert.Single(result.Items);
-        Assert.Equal("tt0806910", result.Items[0].ImdbId);
+        Assert.Equal(2, result.Items.Length);
+        Assert.All(result.Items, i => Assert.Equal("tt0806910", i.ImdbId));
     }
 
     [Fact]

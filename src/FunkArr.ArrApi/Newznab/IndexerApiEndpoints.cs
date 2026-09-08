@@ -86,6 +86,12 @@ public static class IndexerApiEndpoints
 
         var title = parts[0];
         var url = parts[1];
+
+        if (url.Length == 0)
+        {
+            return ErrorResult(NewznabError.IncorrectParameter);
+        }
+
         var subtitleUrl = parts.Length > 2 && parts[2].Length > 0 ? parts[2] : null;
         var channel = parts.Length > 3 ? parts[3] : "";
         var duration = parts.Length > 4 ? parts[4] : "0";

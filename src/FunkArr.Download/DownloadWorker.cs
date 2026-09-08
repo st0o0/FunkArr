@@ -36,6 +36,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         Command<QueryWorkerStatus>(HandleQueryStatus);
         Command<ProgressUpdate>(HandleProgress);
         Command<FfmpegResult>(HandleFfmpegResult);
+        Command<Status.Failure>(HandleFailure);
 
         Recover<DownloadInitialized>(evt => _state = _state.Apply(evt));
         Recover<DownloadStarted>(evt => _state = _state.Apply(evt));
@@ -62,6 +63,22 @@ public sealed class DownloadWorker : ReceivePersistentActor
     {
         if (!_state.IsInitialized || _state.Status != WorkerStatus.Initialized)
         {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_state.VideoUrl))
+        {
+            var reason = "Video URL is empty";
+            var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            Persist(new DownloadFaulted(cmd.DownloadId, reason), e =>
+            {
+                _state = _state.Apply(e);
+                _downloadManager.Tell(new SlotFree(cmd.DownloadId));
+                _downloadHistory.Tell(new RecordDownload(
+                    cmd.DownloadId, _state.Title!, _state.Category!, _state.Size,
+                    DownloadStatus.Failed, null, reason, 0, completedAt));
+                Passivate();
+            });
             return;
         }
 
@@ -183,6 +200,28 @@ public sealed class DownloadWorker : ReceivePersistentActor
                 Passivate();
             });
         }
+    }
+
+    private void HandleFailure(Status.Failure failure)
+    {
+        if (!_state.IsInitialized)
+        {
+            return;
+        }
+
+        var downloadId = Guid.Parse(Context.Self.Path.Name);
+        var reason = failure.Cause.Message;
+        var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        Persist(new DownloadFaulted(downloadId, reason), e =>
+        {
+            _state = _state.Apply(e);
+            _downloadManager.Tell(new SlotFree(downloadId));
+            _downloadHistory.Tell(new RecordDownload(
+                downloadId, _state.Title!, _state.Category!, _state.Size,
+                DownloadStatus.Failed, null, reason, 0, completedAt));
+            Passivate();
+        });
     }
 
     private void StartFfmpeg(string videoUrl, string? subtitleUrl, string outputPath)

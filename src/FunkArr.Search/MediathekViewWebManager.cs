@@ -101,10 +101,11 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
     }
 
     internal static long EstimateSize(int duration, string? urlHd, string? urlVideo, string? urlLow) =>
-        duration * (urlHd is not null ? 312_500L : urlVideo is not null ? 187_500L : urlLow is not null ? 100_000L : 0L);
+        duration * (urlHd is not null ? 833_000L : urlVideo is not null ? 420_000L : urlLow is not null ? 100_000L : 0L);
 
     private static readonly JsonSerializerOptions _apiJsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
+        Converters = { new EmptyStringToNullConverter() },
     };
 }

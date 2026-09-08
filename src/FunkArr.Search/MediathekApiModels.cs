@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace FunkArr.Search;
@@ -26,3 +27,17 @@ internal sealed record MediathekApiItem(
     [property: JsonPropertyName("url_video_hd")] string? UrlVideoHd,
     [property: JsonPropertyName("url_subtitle")] string? UrlSubtitle,
     [property: JsonPropertyName("url_website")] string? UrlWebsite);
+
+internal sealed class EmptyStringToNullConverter : JsonConverter<string?>
+{
+    public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType == JsonTokenType.String ? reader.GetString() is { Length: > 0 } s ? s : null : null;
+
+    public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+            writer.WriteNullValue();
+        else
+            writer.WriteStringValue(value);
+    }
+}

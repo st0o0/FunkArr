@@ -28,18 +28,20 @@ public static class TvSearchWorkerStateExtensions
     public static TvSearchWorkerState ApplyRuleSet(this TvSearchWorkerState state, string ruleSetId) =>
         state with { RuleSetId = ruleSetId };
 
-    public static SearchCompleted ToUnscoredResult(this TvSearchWorkerState state) =>
-        new(state.SearchId, MapItems(state, 0.0), state.RawItems.Length);
+    public static SearchCompleted ToUnscoredResult(this TvSearchWorkerState state)
+    {
+        var items = state.RawItems
+            .SelectMany(raw => ToResultItems(state, raw, 0.0, null))
+            .ToArray();
+
+        return new SearchCompleted(state.SearchId, items, items.Length);
+    }
 
     public static SearchCompleted ToScoredResult(
-        this TvSearchWorkerState state, Messages.Scoring.ScoreCompleted scored)
+        this TvSearchWorkerState state, ScoreCompleted scored)
     {
         var items = scored.Results
-            .Select(s =>
-            {
-                var raw = state.RawItems[s.Index];
-                return ToResultItem(state, raw, s.Score, s.Metadata);
-            })
+            .SelectMany(s => ToResultItems(state, state.RawItems[s.Index], s.Score, s.Metadata))
             .OrderByDescending(i => i.Score)
             .ToArray();
 
@@ -47,11 +49,11 @@ public static class TvSearchWorkerStateExtensions
     }
 
     public static SearchCompleted ToScoredResult(
-        this TvSearchWorkerState state, Messages.Scoring.ScoreCompleted scored,
+        this TvSearchWorkerState state, ScoreCompleted scored,
         IReadOnlyDictionary<int, ResolvedEpisode> resolvedEpisodes)
     {
         var items = scored.Results
-            .Select(s =>
+            .SelectMany(s =>
             {
                 var raw = state.RawItems[s.Index];
                 var metadata = s.Metadata;
@@ -61,7 +63,7 @@ public static class TvSearchWorkerStateExtensions
                     metadata = new MetadataSpec(resolved.Season, resolved.Episode, metadata?.AiredAt);
                 }
 
-                return ToResultItem(state, raw, s.Score, metadata,
+                return ToResultItems(state, raw, s.Score, metadata,
                     resolvedEpisodes.TryGetValue(s.Index, out var res) ? res.Confidence : null,
                     resolvedEpisodes.TryGetValue(s.Index, out var resSt) ? resSt.Strategy : null);
             })
@@ -71,39 +73,44 @@ public static class TvSearchWorkerStateExtensions
         return new SearchCompleted(state.SearchId, items, items.Length);
     }
 
-    private static SearchResultItem[] MapItems(TvSearchWorkerState state, double score) =>
-        state.RawItems.Select(raw => ToResultItem(state, raw, score, null)).ToArray();
-
-    private static SearchResultItem ToResultItem(
+    private static SearchResultItem[] ToResultItems(
         TvSearchWorkerState state, MediathekItem raw, double score, MetadataSpec? metadata,
         float? resolutionConfidence = null, string? resolutionStrategy = null)
     {
-        var quality = ResolveQuality(raw);
-        var title = ReleaseTitleBuilder.Build(raw.Topic, raw.Title, metadata, quality, "tv");
+        var variants = VideoQuality.GetVariants(raw);
+        if (variants.Length == 0)
+        {
+            return [];
+        }
 
-        return new SearchResultItem(
-            Title: title,
-            Channel: raw.Channel,
-            Topic: raw.Topic,
-            Url: raw.UrlVideoHd ?? raw.UrlVideo ?? raw.UrlVideoLow ?? "",
-            Duration: raw.Duration,
-            Size: raw.Size,
-            Quality: quality,
-            AiredAt: raw.Timestamp > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
-                : null,
-            Score: score,
-            SubtitleUrl: string.IsNullOrEmpty(raw.UrlSubtitle) ? null : raw.UrlSubtitle,
-            TvdbId: state.TvdbId,
-            ImdbId: state.ImdbId,
-            Season: metadata?.Season,
-            Episode: metadata?.Episode,
-            ResolutionConfidence: resolutionConfidence,
-            ResolutionStrategy: resolutionStrategy);
+        return variants.Select(v =>
+        {
+            var title = ReleaseTitleBuilder.Build(raw.Topic, raw.Title, metadata, v.Quality, "tv");
+
+            return new SearchResultItem(
+                Title: title,
+                Channel: raw.Channel,
+                Topic: raw.Topic,
+                Url: v.Url,
+                Duration: raw.Duration,
+                Size: raw.Size > 0 ? raw.Size : v.EstimatedSize,
+                Quality: v.Quality,
+                AiredAt: raw.Timestamp > 0
+                    ? DateTimeOffset.FromUnixTimeSeconds(raw.Timestamp)
+                    : null,
+                Score: score,
+                SubtitleUrl: string.IsNullOrEmpty(raw.UrlSubtitle) ? null : raw.UrlSubtitle,
+                TvdbId: state.TvdbId,
+                ImdbId: state.ImdbId,
+                Season: metadata?.Season,
+                Episode: metadata?.Episode,
+                ResolutionConfidence: resolutionConfidence,
+                ResolutionStrategy: resolutionStrategy);
+        }).ToArray();
     }
 
     public static int ResolveQuality(MediathekItem item) =>
-        item.UrlVideoHd is not null ? 720 :
-        item.UrlVideo is not null ? 480 :
-        item.UrlVideoLow is not null ? 270 : 0;
+        item.UrlVideoHd is not null ? 1080 :
+        item.UrlVideo is not null ? 720 :
+        item.UrlVideoLow is not null ? 480 : 0;
 }

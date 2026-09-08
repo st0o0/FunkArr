@@ -3,11 +3,11 @@ namespace FunkArr.Search.Tests;
 public sealed class SizeEstimationTests
 {
     [Fact]
-    public void EstimateSize_hd_uses_2_5_mbps()
+    public void EstimateSize_hd_uses_6_6_mbps()
     {
         var size = MediathekViewWebManager.EstimateSize(5400, "hd-url", "sd-url", "low-url");
 
-        Assert.Equal(5400 * 312_500L, size);
+        Assert.Equal(5400 * 833_000L, size);
     }
 
     [Fact]
@@ -15,7 +15,7 @@ public sealed class SizeEstimationTests
     {
         var size = MediathekViewWebManager.EstimateSize(3600, null, "sd-url", "low-url");
 
-        Assert.Equal(3600 * 187_500L, size);
+        Assert.Equal(3600 * 420_000L, size);
     }
 
     [Fact]
@@ -40,6 +40,6 @@ public sealed class SizeEstimationTests
         var size = MediathekViewWebManager.EstimateSize(5400, "hd", "sd", "low");
         var sizeGiB = size / (1024.0 * 1024.0 * 1024.0);
 
-        Assert.InRange(sizeGiB, 1.0, 2.5);
+        Assert.InRange(sizeGiB, 3.5, 5.0);
     }
 }

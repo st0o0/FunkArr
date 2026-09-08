@@ -67,9 +67,10 @@ public sealed class TvSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchCompleted>();
         Assert.Equal(searchId, result.SearchId);
-        Assert.Single(result.Items);
-        Assert.Equal("Tatort.Tatort.Test.GERMAN.720p.WEB.h264-FunkArr", result.Items[0].Title);
-        Assert.Equal(0.95, result.Items[0].Score);
+        Assert.Equal(2, result.Items.Length);
+        Assert.Contains(result.Items, i => i.Title.Contains("1080p") && i.Url == "https://example.com/hd.mp4");
+        Assert.Contains(result.Items, i => i.Title.Contains("720p") && i.Url == "https://example.com/sd.mp4");
+        Assert.All(result.Items, i => Assert.Equal(0.95, i.Score));
     }
 
     [Fact]
@@ -170,8 +171,8 @@ public sealed class TvSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchCompleted>();
         Assert.Equal(searchId, result.SearchId);
-        Assert.Single(result.Items);
-        Assert.Equal(83214, result.Items[0].TvdbId);
+        Assert.Equal(2, result.Items.Length);
+        Assert.All(result.Items, i => Assert.Equal(83214, i.TvdbId));
     }
 
     [Fact]

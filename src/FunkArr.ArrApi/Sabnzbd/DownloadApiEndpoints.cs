@@ -76,9 +76,9 @@ public static class DownloadApiEndpoints
             var nzb = _nzbSerializer.Deserialize(xmlReader) as Nzb;
 
             var videoUrl = Meta("X-FunkArr-Url") ?? Meta("url");
-            if (videoUrl is null)
+            if (string.IsNullOrEmpty(videoUrl))
             {
-                return Results.Json(new { status = false, error = "Invalid NZB format" }, statusCode: 400);
+                return Results.Json(new { status = false, error = "Invalid NZB format: missing video URL" }, statusCode: 400);
             }
 
             var title = Meta("title") ?? "Unknown";
