@@ -1,7 +1,10 @@
 <template>
   <div class="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
     <div class="flex items-center justify-between px-5 py-3.5 border-b border-border-subtle">
-      <h2 class="text-sm font-semibold text-text-primary">Active Downloads</h2>
+      <div class="flex items-center gap-2">
+        <h2 class="text-sm font-semibold text-text-primary">Active Downloads</h2>
+        <span v-if="totalSpeed > 0" class="text-xs text-text-muted tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
+      </div>
       <router-link to="/queue" class="text-xs text-brand-400 hover:text-brand-300 transition-colors">View Queue</router-link>
     </div>
 
@@ -14,9 +17,9 @@
       </div>
 
       <div v-else class="space-y-4">
-        <div v-for="item in activeItems" :key="item.downloadId" class="space-y-2">
+        <div v-for="item in displayItems" :key="item.downloadId" class="space-y-2">
           <div class="flex justify-between text-sm">
-            <span class="text-text-body truncate mr-3 font-medium">{{ item.title }}</span>
+            <ReleaseTitle :title="item.title" compact class="mr-3" />
             <span class="text-text-secondary shrink-0 tabular-nums text-xs">{{ item.percentage }}% &middot; {{ formatSpeed(item.speed) }}</span>
           </div>
           <div class="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
@@ -28,6 +31,9 @@
           </div>
         </div>
 
+        <div v-if="overflowCount > 0" class="text-xs text-brand-400">
+          +{{ overflowCount }} more downloading
+        </div>
         <div v-if="queuedCount > 0" class="text-xs text-text-muted">
           {{ queuedCount }} queued
         </div>
@@ -40,11 +46,16 @@
 import { computed, onUnmounted } from 'vue'
 import { useQueueStream } from '../composables/useQueueStream'
 import { formatSpeed } from '../utils/format'
+import ReleaseTitle from './ReleaseTitle.vue'
 
 const { items, release } = useQueueStream()
 
+const maxDisplay = 3
 const activeItems = computed(() => items.value.filter(i => i.status === 'Processing'))
+const displayItems = computed(() => activeItems.value.slice(0, maxDisplay))
+const overflowCount = computed(() => Math.max(0, activeItems.value.length - maxDisplay))
 const queuedCount = computed(() => items.value.filter(i => i.status === 'Queued').length)
+const totalSpeed = computed(() => activeItems.value.reduce((sum, i) => sum + i.speed, 0))
 
 onUnmounted(release)
 </script>

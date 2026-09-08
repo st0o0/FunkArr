@@ -21,9 +21,23 @@
         <span>{{ new Date(detail.timestamp).toLocaleString() }}</span>
       </div>
 
+      <div class="flex items-center gap-2 mb-4">
+        <button
+          v-for="opt in filterOptions"
+          :key="opt.value"
+          @click="matchFilter = opt.value"
+          class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          :class="matchFilter === opt.value
+            ? 'bg-brand-600 text-white'
+            : 'bg-surface-elevated text-text-secondary hover:text-text-body'"
+        >
+          {{ opt.label }} ({{ opt.count }})
+        </button>
+      </div>
+
       <div class="grid gap-2.5">
         <div
-          v-for="(item, idx) in detail.itemTraces"
+          v-for="(item, idx) in filteredTraces"
           :key="idx"
           class="bg-surface-raised rounded-xl border-l-2 border border-border-default p-4 text-sm"
           :class="item.matched ? 'border-l-status-ok' : 'border-l-surface-elevated'"
@@ -87,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getScoringDetail, type ScoringDetail } from '../api/rulesets'
 import SkeletonCard from '../components/SkeletonCard.vue'
@@ -100,6 +114,24 @@ const requestId = route.params.requestId as string
 const detail = ref<ScoringDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+const matchFilter = ref<'all' | 'matched' | 'unmatched'>('all')
+
+const filteredTraces = computed(() => {
+  if (!detail.value) return []
+  if (matchFilter.value === 'all') return detail.value.itemTraces
+  const wantMatched = matchFilter.value === 'matched'
+  return detail.value.itemTraces.filter(t => t.matched === wantMatched)
+})
+
+const filterOptions = computed(() => {
+  const traces = detail.value?.itemTraces ?? []
+  const matchedCount = traces.filter(t => t.matched).length
+  return [
+    { label: 'All', value: 'all' as const, count: traces.length },
+    { label: 'Matched', value: 'matched' as const, count: matchedCount },
+    { label: 'Unmatched', value: 'unmatched' as const, count: traces.length - matchedCount },
+  ]
+})
 
 onMounted(async () => {
   try {

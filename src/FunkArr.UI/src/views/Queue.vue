@@ -1,6 +1,17 @@
 <template>
   <div class="max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-6">Downloads</h1>
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold text-text-primary tracking-tight">Downloads</h1>
+      <div v-if="groups.length > 0" class="flex items-center gap-3 text-xs">
+        <span class="text-text-muted tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
+        <button
+          @click="toggleAll"
+          class="text-brand-400 hover:text-brand-300 transition-colors"
+        >
+          {{ allExpanded ? 'Collapse All' : 'Expand All' }}
+        </button>
+      </div>
+    </div>
 
     <EmptyState
       v-if="items.length === 0"
@@ -10,10 +21,11 @@
     />
 
     <div v-else class="space-y-3">
-      <QueueCard
-        v-for="item in items"
-        :key="item.downloadId"
-        :item="item"
+      <QueueGroupCard
+        v-for="group in groups"
+        :key="group.series"
+        :group="group"
+        :default-expanded="allExpanded || undefined"
         @cancel="handleCancel"
       />
 
@@ -21,25 +33,29 @@
         {{ items.length }} {{ items.length === 1 ? 'item' : 'items' }}
         &middot; {{ queuedCount }} queued
         &middot; {{ activeCount }} downloading
+        &middot; {{ groups.length }} {{ groups.length === 1 ? 'series' : 'series' }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted } from 'vue'
-import QueueCard from '../components/QueueCard.vue'
-import { useQueueStream } from '../composables/useQueueStream'
+import { ref, onUnmounted } from 'vue'
+import QueueGroupCard from '../components/QueueGroupCard.vue'
+import EmptyState from '../components/EmptyState.vue'
+import { useGroupedQueue } from '../composables/useGroupedQueue'
 import { deleteQueueItem } from '../api/downloads'
 import { useToast } from '../composables/useToast'
+import { formatSpeed } from '../utils/format'
 
 const { toast } = useToast()
-import EmptyState from '../components/EmptyState.vue'
+const { groups, items, activeCount, queuedCount, totalSpeed, release } = useGroupedQueue()
 
-const { items, release } = useQueueStream()
+const allExpanded = ref(false)
 
-const activeCount = computed(() => items.value.filter(i => i.status === 'Processing').length)
-const queuedCount = computed(() => items.value.filter(i => i.status === 'Queued').length)
+function toggleAll() {
+  allExpanded.value = !allExpanded.value
+}
 
 async function handleCancel(id: string) {
   try {

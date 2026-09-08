@@ -7,10 +7,7 @@
         class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body focus:border-border-focus focus:outline-none transition-colors"
       >
         <option value="">All categories</option>
-        <option value="tv">tv</option>
-        <option value="movies">movies</option>
-        <option value="sonarr">sonarr</option>
-        <option value="radarr">radarr</option>
+        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
       </select>
     </div>
 
@@ -44,11 +41,14 @@
               :key="item.downloadId"
               class="border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/60 transition-colors"
             >
-              <td class="px-4 py-3 text-text-body max-w-xs truncate">
-                {{ item.title }}
-                <div v-if="item.failMessage" class="text-xs text-status-fail mt-0.5 truncate" :title="item.failMessage">
-                  {{ item.failMessage }}
-                </div>
+              <td class="px-4 py-3 max-w-xs">
+                <ReleaseTitle :title="item.title" />
+                <details v-if="item.failMessage" class="mt-1 group">
+                  <summary class="text-xs text-status-fail cursor-pointer hover:text-status-fail/80 transition-colors select-none truncate" :title="item.failMessage">
+                    {{ item.failMessage.split('\n')[0].slice(0, 80) }}{{ item.failMessage.length > 80 ? '...' : '' }}
+                  </summary>
+                  <pre class="text-[11px] text-status-fail/80 mt-1 whitespace-pre-wrap font-mono bg-surface-elevated/50 rounded p-2 max-h-32 overflow-y-auto">{{ item.failMessage }}</pre>
+                </details>
               </td>
               <td class="px-4 py-3 text-text-secondary">{{ item.category }}</td>
               <td class="px-4 py-3 text-text-secondary tabular-nums">{{ formatSize(item.totalBytes) }}</td>
@@ -119,6 +119,7 @@ import SkeletonTable from '../components/SkeletonTable.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { useToast } from '../composables/useToast'
 import { formatSize, formatDuration, formatRelativeDate } from '../utils/format'
+import ReleaseTitle from '../components/ReleaseTitle.vue'
 
 const { toast } = useToast()
 
@@ -129,6 +130,7 @@ const history = ref<HistoryResponse | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const selectedCategory = ref('')
+const categories = ref<string[]>([])
 const pageSize = 25
 
 const page = ref(Number(route.query.page) || 1)
@@ -145,6 +147,14 @@ async function fetchData() {
   } finally {
     loading.value = false
   }
+}
+
+async function fetchCategories() {
+  try {
+    const all = await getHistory(0, 1000)
+    const unique = [...new Set(all.items.map(i => i.category).filter(Boolean))].sort()
+    categories.value = unique
+  } catch { /* ignore */ }
 }
 
 async function handleDelete(id: string) {
@@ -177,5 +187,8 @@ watch(selectedCategory, () => {
   fetchData()
 })
 
-onMounted(fetchData)
+onMounted(() => {
+  fetchData()
+  fetchCategories()
+})
 </script>

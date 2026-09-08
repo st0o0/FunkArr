@@ -5,24 +5,36 @@
       <p class="text-sm text-text-secondary mt-1">German public broadcaster media library integration for the *arr ecosystem.</p>
     </div>
 
+    <div class="grid gap-3 grid-cols-3 mb-5">
+      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 text-center">
+        <div class="text-xl font-bold text-text-primary tabular-nums">{{ queuedCount }}</div>
+        <div class="text-xs text-text-muted mt-0.5">queued</div>
+      </div>
+      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 text-center">
+        <div class="text-xl font-bold text-brand-400 tabular-nums">{{ activeCount }}</div>
+        <div class="text-xs text-text-muted mt-0.5">downloading</div>
+      </div>
+      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 text-center">
+        <div class="text-xl font-bold text-text-primary tabular-nums">{{ formatSpeed(totalSpeed) }}</div>
+        <div class="text-xs text-text-muted mt-0.5">total speed</div>
+      </div>
+    </div>
+
     <div class="grid gap-5 mb-6 lg:grid-cols-[1fr_1fr]">
       <HealthWidget />
       <ActiveDownloads />
     </div>
-
-    <router-link
-      to="/rulesets"
-      class="inline-flex items-center gap-2 px-4 py-2 bg-surface-raised border border-border-default rounded-lg hover:border-brand-500/40 hover:bg-surface-elevated text-sm text-text-body transition-colors"
-    >
-      <svg class="w-4 h-4 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M2 4h12M2 8h12M2 12h8"/><circle cx="13" cy="12" r="1.5"/>
-      </svg>
-      View RuleSets
-    </router-link>
   </div>
 </template>
 
 <script setup lang="ts">
+import { onUnmounted } from 'vue'
 import HealthWidget from '../components/HealthWidget.vue'
 import ActiveDownloads from '../components/ActiveDownloads.vue'
+import { useGroupedQueue } from '../composables/useGroupedQueue'
+import { formatSpeed } from '../utils/format'
+
+const { activeCount, queuedCount, totalSpeed, release } = useGroupedQueue()
+
+onUnmounted(release)
 </script>

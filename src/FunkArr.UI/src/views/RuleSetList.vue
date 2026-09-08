@@ -41,7 +41,12 @@
       description="Try a different search term."
     />
 
-    <div v-else class="grid gap-2.5">
+    <div class="text-xs text-text-muted mb-3" v-if="!loading && rulesets.length > 0">
+      {{ filteredRulesets.length }} {{ filteredRulesets.length === 1 ? 'ruleset' : 'rulesets' }}
+      <span v-if="search && filteredRulesets.length !== rulesets.length"> of {{ rulesets.length }}</span>
+    </div>
+
+    <div v-if="!loading && filteredRulesets.length > 0" class="grid gap-2.5">
       <router-link
         v-for="rs in filteredRulesets"
         :key="rs.ruleSetId"
@@ -76,10 +81,14 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const search = ref('')
 
+const sortedRulesets = computed(() =>
+  [...rulesets.value].sort((a, b) => a.topic.localeCompare(b.topic, 'de'))
+)
+
 const filteredRulesets = computed(() => {
   const term = search.value.toLowerCase()
-  if (!term) return rulesets.value
-  return rulesets.value.filter(rs => {
+  if (!term) return sortedRulesets.value
+  return sortedRulesets.value.filter(rs => {
     const haystack = [
       rs.ruleSetId,
       rs.topic,
