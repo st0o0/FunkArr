@@ -1,0 +1,71 @@
+{
+  "topic": "Tierärztin Dr. Mertens",
+  "aliases": [],
+  "media": {
+    "tvdbId": 129981,
+    "imdbId": "tt5765570",
+    "name": "Tierärztin Dr. Mertens",
+    "type": "show"
+  },
+  "confidence": 1,
+  "rules": [
+    {
+      "id": "season-episode",
+      "priority": 10,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "not": [
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Audiodeskription"
+          }
+        ]
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=\\(S)(\\d{2})(?=/E\\d{2}\\))",
+      "episodeRegex": "(?<=\\(S\\d{2}/E)(\\d{2})(?=\\))",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^Folge \\d+: (.+?)\\s*\\(S\\d{2}/E\\d{2}\\)$"
+        }
+      ]
+    },
+    {
+      "id": "title-exact",
+      "priority": 20,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "not": [
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Audiodeskription"
+          }
+        ]
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^Folge \\d+: (.+?)(?:\\s*\\(S\\d{2}/E\\d{2}\\))?$"
+        }
+      ]
+    }
+  ]
+}
