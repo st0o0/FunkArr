@@ -41,4 +41,4 @@ VOLUME /app/data
 VOLUME /media
 ENV ASPNETCORE_URLS=http://+:6969
 EXPOSE 6969
-ENTRYPOINT ["dotnet", "FunkArr.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "umask 000 && exec dotnet FunkArr.dll"]
