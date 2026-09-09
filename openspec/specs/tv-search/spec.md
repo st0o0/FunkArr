@@ -82,7 +82,7 @@ The TvSearchWorker SHALL use the Limit and Offset values from the incoming TvSea
 - **THEN** the MediathekQuery SHALL use Size=25 and Offset=0
 
 ### Requirement: TvSearchWorker episode resolution stage
-After receiving ScoreCompleted, the TvSearchWorker SHALL check if any matched items lack Season/Episode metadata (MetadataSpec.Season is null AND MetadataSpec.Episode is null). If unresolved items exist AND the search has a TvdbId, the worker SHALL construct EpisodeCandidates from the scored items and Ask the MetadataResolver to resolve them. The resolution config SHALL be obtained from the MatchingConfig (if available) or use defaults.
+After receiving ScoreCompleted, the TvSearchWorker SHALL check if any matched items lack Season/Episode metadata (MetadataSpec.Season is null AND MetadataSpec.Episode is null). If unresolved items exist AND the search has a TvdbId, the worker SHALL construct EpisodeCandidates from the scored items and Ask the MetadataResolver to resolve them. The resolution config SHALL use the `ResolutionConfig` record defaults (`new ResolutionConfig()`).
 
 #### Scenario: All items have season/episode from regex
 - **WHEN** all matched ScoredItems have MetadataSpec with Season and Episode set (regex-extracted)

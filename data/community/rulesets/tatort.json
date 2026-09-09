@@ -10,11 +10,6 @@
     "type": "show"
   },
   "confidence": 1,
-  "resolution": {
-    "strategy": "fuzzy",
-    "threshold": 0.5,
-    "airdateTolerance": 14
-  },
   "rules": [
     {
       "id": "title-includes",

@@ -7,7 +7,6 @@ using FunkArr.Messages.MetadataResolver;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
-using Microsoft.Extensions.Options;
 using Servus.Akka;
 
 namespace FunkArr.Search;
@@ -15,7 +14,6 @@ namespace FunkArr.Search;
 public sealed class TvSearchWorker : ReceiveActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly MetadataResolverOptions _resolverDefaults;
 
     private TvSearchWorkerState? _state;
     private ScoreCompleted? _scoredResults;
@@ -26,10 +24,8 @@ public sealed class TvSearchWorker : ReceiveActor
     private readonly IActorRef _ruleSetResolver = Context.GetActor<IRuleSetResolver>();
     private readonly IActorRef _metadataResolver = Context.GetActor<IMetadataResolver>();
 
-    public TvSearchWorker(IOptions<MetadataResolverOptions> resolverOptions)
+    public TvSearchWorker()
     {
-        _resolverDefaults = resolverOptions.Value;
-
         Receive<TvSearchCommand>(cmd =>
         {
             _log.Info("TV search started: Query={Query}, TvdbId={TvdbId}", cmd.Query, cmd.TvdbId);
@@ -190,10 +186,7 @@ public sealed class TvSearchWorker : ReceiveActor
             })
             .ToArray();
 
-        var config = scored.Resolution ?? new ResolutionConfig(
-            _resolverDefaults.DefaultStrategy,
-            _resolverDefaults.DefaultThreshold,
-            _resolverDefaults.DefaultAirdateTolerance);
+        var config = new ResolutionConfig();
 
         _metadataResolver.Ask<IEpisodeResolutionResponse>(
                 new ResolveEpisodes(_state.TvdbId!.Value, _state.Season, config, candidates),

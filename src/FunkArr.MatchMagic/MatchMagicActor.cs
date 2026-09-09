@@ -92,7 +92,7 @@ public sealed class MatchMagicActor : ReceiveActor
         }
         else
         {
-            Sender.Tell(new ScoreCompleted(msg.RequestId, scored, msg.Config.Resolution));
+            Sender.Tell(new ScoreCompleted(msg.RequestId, scored));
 
             var matchedCount = scored.Count(s => s.Matched);
             _historyRegion.Tell(new RecordScoringResult(

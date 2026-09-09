@@ -92,29 +92,6 @@ The RuntimeWindow strategy SHALL compare the candidate's Duration against TVDB e
 - **WHEN** multiple TVDB episodes have similar title matches and one has a matching runtime
 - **THEN** the episode with the matching runtime SHALL be preferred
 
-### Requirement: ResolutionConfig controls strategy behavior
-The resolution behavior SHALL be configurable per-RuleSet via a ResolutionConfig. The config SHALL specify the strategy mode ("fuzzy", "strict", "none"), the similarity threshold, and the airdate tolerance in days.
-
-#### Scenario: Fuzzy strategy (default)
-- **WHEN** ResolutionConfig has Strategy="fuzzy"
-- **THEN** FuzzyTitleMatch threshold SHALL be 0.7 (or the custom Threshold value)
-
-#### Scenario: Strict strategy
-- **WHEN** ResolutionConfig has Strategy="strict"
-- **THEN** FuzzyTitleMatch threshold SHALL be 0.95 (or the custom Threshold value)
-
-#### Scenario: None strategy skips resolution
-- **WHEN** ResolutionConfig has Strategy="none"
-- **THEN** episode resolution SHALL be skipped entirely and items SHALL retain their existing metadata
-
-#### Scenario: Default config when absent
-- **WHEN** a MatchingConfig has no ResolutionConfig
-- **THEN** the system SHALL use defaults: Strategy="fuzzy", Threshold=0.7, AirdateTolerance=7
-
-#### Scenario: Custom threshold
-- **WHEN** ResolutionConfig has Strategy="fuzzy" and Threshold=0.85
-- **THEN** FuzzyTitleMatch SHALL require similarity >= 0.85
-
 ### Requirement: LevenshteinDistance namespace
 The LevenshteinDistance utility SHALL reside in the `FunkArr.MetadataResolver` namespace (renamed from `FunkArr.EpisodeGuide`).
 

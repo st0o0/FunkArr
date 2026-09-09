@@ -70,10 +70,6 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             .Bind(configuration.GetSection("FunkArr:Tvdb"));
 
         services
-            .AddOptions<MetadataResolverOptions>()
-            .Bind(configuration.GetSection("FunkArr:MetadataResolver"));
-
-        services
             .AddOptions<TmdbOptions>()
             .Bind(configuration.GetSection("FunkArr:Tmdb"));
 
