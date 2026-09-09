@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col h-full">
-    <h2 class="text-xs font-semibold uppercase tracking-wider mb-3 text-text-muted">Debugger</h2>
+    <h2 class="text-xs font-semibold uppercase tracking-wider mb-3 text-text-secondary">Debugger</h2>
 
     <!-- Tabs -->
     <div class="flex gap-1 mb-3">
@@ -10,7 +10,7 @@
         class="px-2.5 py-1 text-xs rounded-md transition-colors"
         :class="activeTab === tab
           ? 'bg-surface-elevated text-text-primary'
-          : 'text-text-muted hover:text-text-secondary'"
+          : 'text-text-secondary hover:text-text-body'"
         @click="activeTab = tab"
       >{{ tab }}</button>
     </div>
@@ -57,7 +57,7 @@
 
         <div v-if="fetchResults.length > 0" class="space-y-1">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-text-muted">{{ fetchResults.length }} results</span>
+            <span class="text-xs text-text-secondary">{{ fetchResults.length }} results</span>
             <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="toggleSelectAll">
               {{ allFetchSelected ? 'Deselect All' : 'Select All' }}
             </button>
@@ -71,7 +71,7 @@
               <input type="checkbox" v-model="fetchSelected[idx]" class="mt-0.5" />
               <div class="min-w-0">
                 <div class="text-text-body truncate">{{ item.title }}</div>
-                <div class="text-text-muted">{{ item.channel }} &middot; {{ item.topic }}</div>
+                <div class="text-text-secondary">{{ item.channel }} &middot; {{ item.topic }}</div>
               </div>
             </label>
           </div>
@@ -81,14 +81,14 @@
             @click="addFetchCandidates"
           >Add {{ selectedFetchCount }} Candidate(s)</button>
         </div>
-        <div v-else-if="fetchSearched && !fetchLoading" class="text-text-muted text-xs">No results found</div>
+        <div v-else-if="fetchSearched && !fetchLoading" class="text-text-secondary text-xs">No results found</div>
       </div>
     </div>
 
     <!-- Candidate List -->
     <div v-if="candidates.length > 0" class="mb-3">
       <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-semibold uppercase tracking-wider text-text-muted">Candidates ({{ candidates.length }})</span>
+        <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Candidates ({{ candidates.length }})</span>
         <button class="text-xs text-status-fail/60 hover:text-status-fail transition-colors" @click="candidates = []">Clear All</button>
       </div>
       <div class="space-y-1 max-h-32 overflow-y-auto">
@@ -99,7 +99,7 @@
         >
           <div class="min-w-0">
             <span class="text-text-body truncate">{{ c.title }}</span>
-            <span class="text-text-muted ml-2">{{ c.topic }}</span>
+            <span class="text-text-secondary ml-2">{{ c.topic }}</span>
           </div>
           <button class="text-status-fail/60 hover:text-status-fail ml-2 shrink-0 transition-colors" @click="candidates.splice(idx, 1)">
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
@@ -113,7 +113,7 @@
       class="w-full px-3 py-1.5 rounded-md text-sm transition-colors mb-3 border border-border-default"
       :class="canTest
         ? 'bg-surface-elevated text-text-body hover:bg-surface-overlay'
-        : 'bg-surface-elevated text-text-muted cursor-not-allowed'"
+        : 'bg-surface-elevated text-text-secondary cursor-not-allowed'"
       :disabled="!canTest || testing"
       @click="runTest"
     >{{ testing ? 'Testing...' : 'Test' }}</button>
@@ -123,8 +123,8 @@
     <!-- Results -->
     <div v-if="results" class="flex-1 overflow-y-auto space-y-2">
       <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-semibold uppercase tracking-wider text-text-muted">Results</span>
-        <span class="text-xs text-text-muted">
+        <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Results</span>
+        <span class="text-xs text-text-secondary">
           {{ results.filter(r => r.matched).length }}/{{ results.length }} matched
         </span>
       </div>
@@ -140,10 +140,10 @@
             <span class="font-semibold text-text-body truncate">{{ item.candidateTitle }}</span>
             <span
               class="text-xs px-1.5 py-0.5 rounded shrink-0"
-              :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-muted'"
+              :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
             >{{ item.matched ? 'Matched' : 'No Match' }}</span>
           </div>
-          <div class="text-xs text-text-muted">
+          <div class="text-xs text-text-secondary">
             {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
             {{ Math.floor(item.candidateDuration / 60) }}min
             <template v-if="item.matched">
@@ -155,7 +155,7 @@
 
         <!-- Expanded Trace -->
         <div v-if="expanded[idx]" class="border-t border-border-default px-3 pb-3 pt-2">
-          <div class="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">Rule Pipeline</div>
+          <div class="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Rule Pipeline</div>
           <div class="space-y-2">
             <div
               v-for="(rt, ri) in item.ruleTraces"
@@ -166,7 +166,7 @@
               <!-- Rule Header -->
               <div class="flex items-center gap-2 text-xs mb-1">
                 <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
-                <span class="text-text-muted">prio {{ rt.priority }}</span>
+                <span class="text-text-secondary">prio {{ rt.priority }}</span>
                 <span
                   class="px-1.5 py-0.5 rounded text-[10px] font-medium"
                   :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
@@ -181,10 +181,10 @@
               <!-- Identification Trace -->
               <div v-if="rt.identificationTrace && !isSkipped(rt, item, ri)" class="ml-2 text-xs">
                 <div class="flex items-center gap-2">
-                  <span class="text-text-muted">Identification:</span>
+                  <span class="text-text-secondary">Identification:</span>
                   <span class="font-mono text-text-secondary">{{ rt.identificationTrace.strategy }}</span>
                 </div>
-                <div v-if="!rt.identificationTrace.attempted" class="text-text-muted ml-4">Not attempted</div>
+                <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">Not attempted</div>
                 <div v-else-if="rt.identificationTrace.detail" class="text-status-fail ml-4">{{ rt.identificationTrace.detail }}</div>
                 <div v-else class="ml-4 text-status-ok">
                   <template v-if="item.identification">
@@ -418,12 +418,12 @@ function outcomeBorderClass(outcome: string, skipped: boolean): string {
 }
 
 function outcomeBadgeClass(outcome: string, skipped: boolean): string {
-  if (skipped) return 'bg-surface-elevated text-text-muted'
+  if (skipped) return 'bg-surface-elevated text-text-secondary'
   switch (outcome) {
     case 'matched': return 'bg-status-ok/10 text-status-ok'
     case 'filterFailed': return 'bg-status-fail/10 text-status-fail'
     case 'identificationFailed': return 'bg-amber-500/10 text-amber-500'
-    default: return 'bg-surface-elevated text-text-muted'
+    default: return 'bg-surface-elevated text-text-secondary'
   }
 }
 </script>

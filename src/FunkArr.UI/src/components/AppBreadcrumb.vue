@@ -1,5 +1,5 @@
 <template>
-  <nav class="mb-4 text-sm text-text-muted flex items-center gap-1.5">
+  <nav class="mb-4 text-sm text-text-secondary flex items-center gap-1.5">
     <template v-for="(item, i) in items" :key="i">
       <router-link v-if="item.to" :to="item.to" class="hover:text-text-secondary transition-colors">{{ item.label }}</router-link>
       <span v-else class="text-text-secondary">{{ item.label }}</span>

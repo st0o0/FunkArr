@@ -6,20 +6,20 @@
 
     <SkeletonTable v-if="loading" :rows="5" :columns="6" />
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
-    <div v-else-if="history && history.snapshots.length === 0" class="text-text-muted text-sm">No scoring history.</div>
+    <div v-else-if="history && history.snapshots.length === 0" class="text-text-secondary text-sm">No scoring history.</div>
 
     <div v-else-if="history">
-      <div class="text-sm text-text-muted mb-3 tabular-nums">{{ history.totalCount }} total scoring runs</div>
+      <div class="text-sm text-text-secondary mb-3 tabular-nums">{{ history.totalCount }} total scoring runs</div>
 
       <div class="overflow-x-auto rounded-lg border border-border-default">
         <table class="w-full text-sm">
           <thead class="sticky top-0 z-10">
             <tr class="bg-surface-raised">
-              <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Source</th>
-              <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Query</th>
-              <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">When</th>
-              <th class="text-right px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Candidates</th>
-              <th class="text-right px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Matched</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Source</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Query</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">When</th>
+              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Candidates</th>
+              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Matched</th>
             </tr>
           </thead>
           <tbody class="bg-surface-raised/50">
@@ -31,7 +31,7 @@
             >
               <td class="px-4 py-2.5 text-text-body">{{ s.source }}</td>
               <td class="px-4 py-2.5 text-text-body">{{ s.query }}</td>
-              <td class="px-4 py-2.5 text-text-muted">{{ formatTime(s.timestamp) }}</td>
+              <td class="px-4 py-2.5 text-text-secondary">{{ formatTime(s.timestamp) }}</td>
               <td class="px-4 py-2.5 text-right text-text-body tabular-nums">{{ s.candidateCount }}</td>
               <td class="px-4 py-2.5 text-right text-text-body tabular-nums">{{ s.matchedCount }}</td>
             </tr>

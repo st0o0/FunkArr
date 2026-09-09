@@ -51,8 +51,8 @@
           <div class="min-w-0">
             <div class="text-sm text-text-body">{{ checkLabels[name] ?? name }}</div>
             <div v-if="result.message" class="text-xs text-text-secondary mt-0.5">{{ result.message }}</div>
-            <div v-if="result.path" class="text-xs text-text-muted mt-0.5 font-mono truncate">{{ result.path }}</div>
-            <div v-if="result.version" class="text-xs text-text-muted mt-0.5">Version: {{ result.version }}</div>
+            <div v-if="result.path" class="text-xs text-text-secondary mt-0.5 font-mono truncate">{{ result.path }}</div>
+            <div v-if="result.version" class="text-xs text-text-secondary mt-0.5">Version: {{ result.version }}</div>
             <div v-if="result.status === 'fail'" class="text-xs text-status-fail mt-1">
               {{ fixHints[name] ?? 'Check your configuration and try again.' }}
             </div>
@@ -91,7 +91,7 @@
           <input type="checkbox" v-model="selectedServices" :value="svc.value" class="mt-0.5 accent-brand-500" />
           <div>
             <div class="text-sm text-text-body">{{ svc.title }}</div>
-            <div class="text-xs text-text-muted">{{ svc.description }}</div>
+            <div class="text-xs text-text-secondary">{{ svc.description }}</div>
           </div>
         </label>
       </div>
@@ -120,20 +120,20 @@
               :key="field.label"
               class="border-b border-border-subtle last:border-b-0"
             >
-              <td class="px-4 py-2.5 text-text-muted bg-surface-elevated/30 w-32 text-xs">{{ field.label }}</td>
+              <td class="px-4 py-2.5 text-text-secondary bg-surface-elevated/30 w-32 text-xs">{{ field.label }}</td>
               <td class="px-4 py-2.5 font-mono text-sm text-text-body">
                 <div class="flex items-center gap-2">
                   <span>{{ field.value }}</span>
                   <button
                     v-if="field.copyable"
                     @click="copyToClipboard(field.value)"
-                    class="text-[11px] px-1.5 py-0.5 border border-border-default rounded hover:bg-surface-elevated text-text-muted transition-colors"
+                    class="text-[11px] px-1.5 py-0.5 border border-border-default rounded hover:bg-surface-elevated text-text-secondary transition-colors"
                     :title="'Copy ' + field.label"
                   >
                     {{ justCopied === field.value ? 'Copied' : 'Copy' }}
                   </button>
                 </div>
-                <div v-if="field.note" class="text-xs text-text-muted mt-0.5 font-sans">{{ field.note }}</div>
+                <div v-if="field.note" class="text-xs text-text-secondary mt-0.5 font-sans">{{ field.note }}</div>
               </td>
             </tr>
           </tbody>

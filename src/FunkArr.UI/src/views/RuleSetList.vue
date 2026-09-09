@@ -48,7 +48,7 @@
       description="Try a different search term."
     />
 
-    <div class="text-xs text-text-muted mb-2" v-if="!loading && rulesets.length > 0">
+    <div class="text-xs text-text-secondary mb-2" v-if="!loading && rulesets.length > 0">
       {{ filteredRulesets.length }} {{ filteredRulesets.length === 1 ? 'ruleset' : 'rulesets' }}
       <span v-if="search && filteredRulesets.length !== rulesets.length"> of {{ rulesets.length }}</span>
     </div>
@@ -62,12 +62,12 @@
       >
         <div class="flex items-baseline gap-2 mb-0.5">
           <span class="text-sm font-medium text-text-primary">{{ rs.topic }}</span>
-          <span class="font-mono text-xs text-text-muted">{{ rs.ruleSetId }}</span>
+          <span class="font-mono text-xs text-text-secondary">{{ rs.ruleSetId }}</span>
         </div>
-        <div v-if="rs.aliases.length > 0" class="text-xs text-text-muted mb-0.5">
+        <div v-if="rs.aliases.length > 0" class="text-xs text-text-secondary mb-0.5">
           {{ rs.aliases.join(', ') }}
         </div>
-        <div class="flex gap-2 text-xs text-text-muted">
+        <div class="flex gap-2 text-xs text-text-secondary">
           <span v-if="rs.tvdbId">TVDB {{ rs.tvdbId }}</span>
           <span v-if="rs.imdbId">IMDB {{ rs.imdbId }}</span>
           <span v-if="rs.tmdbId">TMDB {{ rs.tmdbId }}</span>

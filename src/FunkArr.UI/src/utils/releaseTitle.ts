@@ -94,13 +94,45 @@ function parseDate(raw: string, match: RegExpMatchArray, quality: string | null)
 
 function parseFallback(raw: string, quality: string | null): ParsedTitle {
   const germanIdx = raw.indexOf('.GERMAN.')
-  if (germanIdx > 0) {
-    const contentPart = raw.slice(0, germanIdx)
-    const series = dotsToSpaces(contentPart)
-    return { series, season: null, episode: null, date: null, episodeTitle: null, quality, raw }
+  const contentPart = germanIdx > 0 ? raw.slice(0, germanIdx) : raw
+  const text = dotsToSpaces(contentPart)
+
+  const split = splitRepeatedPrefix(text)
+  if (split) {
+    const staffelMatch = split.between?.match(/Staffel\s+(\d+)/i)
+    return {
+      series: split.series,
+      season: staffelMatch ? parseInt(staffelMatch[1], 10) : null,
+      episode: null,
+      date: null,
+      episodeTitle: split.episodeTitle,
+      quality,
+      raw,
+    }
   }
 
-  return { series: dotsToSpaces(raw), season: null, episode: null, date: null, episodeTitle: null, quality, raw }
+  return { series: text, season: null, episode: null, date: null, episodeTitle: null, quality, raw }
+}
+
+function splitRepeatedPrefix(text: string): { series: string; episodeTitle: string; between: string | null } | null {
+  const words = text.split(/\s+/)
+  if (words.length < 4) return null
+
+  const maxPrefixLen = Math.min(Math.floor(words.length / 2), 5)
+  for (let prefixLen = maxPrefixLen; prefixLen >= 2; prefixLen--) {
+    const prefix = words.slice(0, prefixLen)
+    for (let pos = prefixLen; pos <= words.length - prefixLen; pos++) {
+      if (prefix.every((w, i) => w === words[pos + i])) {
+        return {
+          series: prefix.join(' '),
+          episodeTitle: words.slice(pos).join(' '),
+          between: pos > prefixLen ? words.slice(prefixLen, pos).join(' ') : null,
+        }
+      }
+    }
+  }
+
+  return null
 }
 
 function dotsToSpaces(s: string): string {

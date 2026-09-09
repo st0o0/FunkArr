@@ -31,16 +31,25 @@
 
     <div v-else-if="history">
       <div class="overflow-x-auto rounded-lg border border-border-default">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm table-fixed">
+          <colgroup>
+            <col class="w-auto" />
+            <col class="w-16" />
+            <col class="w-24" />
+            <col class="w-20" />
+            <col class="w-24" />
+            <col class="w-36" />
+            <col class="w-20" />
+          </colgroup>
           <thead>
-            <tr class="bg-surface-raised text-left text-xs text-text-muted border-b border-border-default">
+            <tr class="bg-surface-raised text-left text-xs text-text-secondary border-b border-border-default">
               <th class="px-4 py-2.5 font-medium">Title</th>
-              <th class="px-4 py-2.5 font-medium">Category</th>
-              <th class="px-4 py-2.5 font-medium">Size</th>
-              <th class="px-4 py-2.5 font-medium">Duration</th>
-              <th class="px-4 py-2.5 font-medium">Status</th>
-              <th class="px-4 py-2.5 font-medium">Completed</th>
-              <th class="px-4 py-2.5 font-medium w-20"></th>
+              <th class="px-3 py-2.5 font-medium text-center">Quality</th>
+              <th class="px-3 py-2.5 font-medium text-right">Size</th>
+              <th class="px-3 py-2.5 font-medium text-right">Duration</th>
+              <th class="px-3 py-2.5 font-medium">Status</th>
+              <th class="px-3 py-2.5 font-medium">Completed</th>
+              <th class="px-3 py-2.5 font-medium"></th>
             </tr>
           </thead>
           <tbody>
@@ -49,8 +58,8 @@
               :key="item.downloadId"
               class="border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/40 transition-colors"
             >
-              <td class="px-4 py-2.5 max-w-xs">
-                <ReleaseTitle :title="item.title" />
+              <td class="px-4 py-2.5 max-w-0">
+                <ReleaseTitle :title="item.title" hideQuality />
                 <details v-if="item.failMessage" class="mt-1 group">
                   <summary class="text-xs text-status-fail cursor-pointer hover:text-status-fail/80 transition-colors select-none truncate" :title="item.failMessage">
                     {{ item.failMessage.split('\n')[0].slice(0, 80) }}{{ item.failMessage.length > 80 ? '...' : '' }}
@@ -58,10 +67,15 @@
                   <pre class="text-[11px] text-status-fail/80 mt-1 whitespace-pre-wrap font-mono bg-surface-elevated/50 rounded p-2 max-h-32 overflow-y-auto">{{ item.failMessage }}</pre>
                 </details>
               </td>
-              <td class="px-4 py-2.5 text-text-secondary">{{ item.category }}</td>
-              <td class="px-4 py-2.5 text-text-secondary tabular-nums">{{ formatSize(item.totalBytes) }}</td>
-              <td class="px-4 py-2.5 text-text-secondary tabular-nums">{{ formatDuration(item.downloadTimeSeconds) }}</td>
-              <td class="px-4 py-2.5">
+              <td class="px-3 py-2.5 text-center">
+                <span
+                  v-if="getQuality(item.title)"
+                  class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-text-secondary"
+                >{{ getQuality(item.title) }}</span>
+              </td>
+              <td class="px-3 py-2.5 text-text-secondary tabular-nums text-right">{{ formatSize(item.totalBytes) }}</td>
+              <td class="px-3 py-2.5 text-text-secondary tabular-nums text-right">{{ formatDuration(item.downloadTimeSeconds) }}</td>
+              <td class="px-3 py-2.5">
                 <span class="inline-flex items-center gap-1.5 text-xs">
                   <span
                     class="w-1.5 h-1.5 rounded-full"
@@ -70,8 +84,8 @@
                   {{ item.status }}
                 </span>
               </td>
-              <td class="px-4 py-2.5 text-text-muted text-xs" :title="formatRelativeDate(item.completedAt)">{{ formatAbsoluteDate(item.completedAt) }}</td>
-              <td class="px-4 py-2.5 text-right">
+              <td class="px-3 py-2.5 text-text-secondary text-xs tabular-nums" :title="formatRelativeDate(item.completedAt)">{{ formatAbsoluteDate(item.completedAt) }}</td>
+              <td class="px-3 py-2.5 text-right">
                 <div class="flex items-center justify-end gap-1">
                   <button
                     v-if="item.status === 'Failed'"
@@ -82,7 +96,7 @@
                   </button>
                   <button
                     @click="handleDelete(item.downloadId)"
-                    class="p-1 text-text-muted hover:text-status-fail transition-colors rounded"
+                    class="p-1 text-text-secondary hover:text-status-fail transition-colors rounded"
                     title="Delete"
                   >
                     <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -96,7 +110,7 @@
         </table>
       </div>
 
-      <div v-if="totalPages > 1" class="flex items-center justify-between mt-4 text-xs text-text-muted">
+      <div v-if="totalPages > 1" class="flex items-center justify-between mt-4 text-xs text-text-secondary">
         <span class="tabular-nums">{{ rangeStart + 1 }}-{{ Math.min(rangeStart + pageSize, history.totalItems) }} of {{ history.totalItems }}</span>
         <div class="flex gap-1.5">
           <button
@@ -128,6 +142,7 @@ import EmptyState from '../components/EmptyState.vue'
 import { useToast } from '../composables/useToast'
 import { formatSize, formatDuration, formatRelativeDate, formatAbsoluteDate } from '../utils/format'
 import ReleaseTitle from '../components/ReleaseTitle.vue'
+import { parseReleaseName } from '../utils/releaseTitle'
 
 const { toast } = useToast()
 
@@ -151,6 +166,10 @@ const filteredItems = computed(() => {
   const q = searchQuery.value.toLowerCase()
   return history.value.items.filter(i => i.title.toLowerCase().includes(q))
 })
+
+function getQuality(title: string): string | null {
+  return parseReleaseName(title).quality
+}
 
 async function fetchData() {
   loading.value = true

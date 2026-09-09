@@ -3,7 +3,7 @@
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
         <ReleaseTitle :title="item.title" />
-        <div class="flex items-center gap-2 mt-1 text-xs text-text-muted">
+        <div class="flex items-center gap-2 mt-1 text-xs text-text-secondary">
           <span>{{ item.category }}</span>
           <span>&middot;</span>
           <span>{{ formatSize(item.totalBytes) }}</span>
@@ -14,7 +14,7 @@
           class="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-md"
           :class="item.status === 'Processing'
             ? 'bg-surface-elevated text-text-body'
-            : 'bg-surface-elevated text-text-muted'"
+            : 'bg-surface-elevated text-text-secondary'"
         >
           <span
             class="w-1.5 h-1.5 rounded-full"
@@ -24,7 +24,7 @@
         </span>
         <button
           @click="$emit('cancel', item.downloadId)"
-          class="p-1 text-text-muted hover:text-status-fail transition-colors rounded"
+          class="p-1 text-text-secondary hover:text-status-fail transition-colors rounded"
           title="Cancel"
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
@@ -36,7 +36,7 @@
 
     <template v-if="item.status === 'Processing'">
       <div class="mt-2.5">
-        <div class="flex justify-between text-xs text-text-muted mb-1">
+        <div class="flex justify-between text-xs text-text-secondary mb-1">
           <span class="tabular-nums">{{ item.percentage }}%</span>
           <span class="tabular-nums">{{ formatSpeed(item.speed) }}</span>
         </div>
@@ -46,7 +46,7 @@
             :style="{ width: `${item.percentage}%` }"
           />
         </div>
-        <div class="flex justify-between text-xs text-text-muted mt-1">
+        <div class="flex justify-between text-xs text-text-secondary mt-1">
           <span class="tabular-nums">{{ formatSize(item.bytesDownloaded) }} / {{ formatSize(item.totalBytes) }}</span>
           <span>ETA {{ item.eta }}</span>
         </div>

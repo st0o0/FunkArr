@@ -15,11 +15,11 @@
 
         <!-- Identity Section -->
         <section>
-          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-muted">Identity</h2>
-          <p class="text-[11px] text-text-muted mb-2">The Mediathek topic name and external IDs to match this show.</p>
+          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-secondary">Identity</h2>
+          <p class="text-[11px] text-text-secondary mb-2">The Mediathek topic name and external IDs to match this show.</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4 space-y-3">
             <div>
-              <label class="block text-xs text-text-muted mb-1">RuleSet ID</label>
+              <label class="block text-xs text-text-secondary mb-1">RuleSet ID</label>
               <input
                 v-model="form.ruleSetId"
                 :disabled="isEditMode"
@@ -30,7 +30,7 @@
               <div v-if="ruleSetIdError" class="text-status-fail text-xs mt-1">{{ ruleSetIdError }}</div>
             </div>
             <div>
-              <label class="block text-xs text-text-muted mb-1">Topic</label>
+              <label class="block text-xs text-text-secondary mb-1">Topic</label>
               <input
                 v-model="form.topic"
                 type="text"
@@ -39,7 +39,7 @@
               />
             </div>
             <div>
-              <label class="block text-xs text-text-muted mb-1">Aliases</label>
+              <label class="block text-xs text-text-secondary mb-1">Aliases</label>
               <div class="space-y-1.5">
                 <div v-for="(_, idx) in form.aliases" :key="idx" class="flex items-center gap-2">
                   <input
@@ -55,7 +55,7 @@
             </div>
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block text-xs text-text-muted mb-1">TVDB ID</label>
+                <label class="block text-xs text-text-secondary mb-1">TVDB ID</label>
                 <input
                   v-model.number="form.tvdbId"
                   type="number"
@@ -64,7 +64,7 @@
                 />
               </div>
               <div>
-                <label class="block text-xs text-text-muted mb-1">IMDB ID</label>
+                <label class="block text-xs text-text-secondary mb-1">IMDB ID</label>
                 <input
                   v-model="form.imdbId"
                   type="text"
@@ -73,7 +73,7 @@
                 />
               </div>
               <div>
-                <label class="block text-xs text-text-muted mb-1">TMDB ID</label>
+                <label class="block text-xs text-text-secondary mb-1">TMDB ID</label>
                 <input
                   v-model.number="form.tmdbId"
                   type="number"
@@ -87,8 +87,8 @@
 
         <!-- Default Confidence -->
         <section>
-          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-muted">Default Confidence</h2>
-          <p class="text-[11px] text-text-muted mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
+          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-secondary">Default Confidence</h2>
+          <p class="text-[11px] text-text-secondary mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4">
             <input
               v-model.number="form.confidence"
@@ -105,8 +105,8 @@
         <section>
           <div class="flex items-center justify-between mb-2">
             <div>
-              <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">Matching Rules</h2>
-              <p class="text-[11px] text-text-muted mt-0.5">Rules are tried in priority order. First match wins.</p>
+              <h2 class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Matching Rules</h2>
+              <p class="text-[11px] text-text-secondary mt-0.5">Rules are tried in priority order. First match wins.</p>
             </div>
             <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addRule">+ Add Rule</button>
           </div>
@@ -127,12 +127,12 @@
               >
                 <div class="flex items-baseline gap-3">
                   <span class="font-mono text-sm font-medium text-text-primary">{{ rule.id || '(no id)' }}</span>
-                  <span class="text-text-muted text-xs">{{ strategyLabel(rule.strategy) }}</span>
-                  <span class="text-text-muted text-xs">prio {{ rule.priority }}</span>
+                  <span class="text-text-secondary text-xs">{{ strategyLabel(rule.strategy) }}</span>
+                  <span class="text-text-secondary text-xs">prio {{ rule.priority }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click.stop="form.rules.splice(rIdx, 1)">×</button>
-                  <svg class="w-4 h-4 text-text-muted transition-transform" :class="rule.expanded ? 'rotate-180' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+                  <svg class="w-4 h-4 text-text-secondary transition-transform" :class="rule.expanded ? 'rotate-180' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
                 </div>
               </div>
 
@@ -140,22 +140,22 @@
               <div v-if="rule.expanded" class="px-4 pb-4 space-y-3 border-t border-border-default pt-3">
                 <div class="grid grid-cols-3 gap-3">
                   <div>
-                    <label class="block text-xs text-text-muted mb-1">Rule ID</label>
+                    <label class="block text-xs text-text-secondary mb-1">Rule ID</label>
                     <input v-model="rule.id" type="text" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-muted mb-1">Priority</label>
+                    <label class="block text-xs text-text-secondary mb-1">Priority</label>
                     <input v-model.number="rule.priority" type="number" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-muted mb-1">Confidence</label>
+                    <label class="block text-xs text-text-secondary mb-1">Confidence</label>
                     <input v-model.number="rule.confidence" type="number" min="0" max="1" step="0.01" placeholder="default" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                 </div>
 
                 <!-- Strategy picker -->
                 <div>
-                  <label class="block text-xs text-text-muted mb-1">Strategy</label>
+                  <label class="block text-xs text-text-secondary mb-1">Strategy</label>
                   <select
                     v-model="rule.strategy"
                     class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus"
@@ -173,22 +173,22 @@
                 <!-- Strategy-specific fields: RegexCapture -->
                 <div v-if="rule.strategy === 'seasonAndEpisodeNumber' || rule.strategy === 'byAbsoluteEpisodeNumber'" class="space-y-2">
                   <div v-if="rule.strategy === 'seasonAndEpisodeNumber'">
-                    <label class="block text-xs text-text-muted mb-1">Season Regex</label>
+                    <label class="block text-xs text-text-secondary mb-1">Season Regex</label>
                     <input v-model="rule.seasonRegex" type="text" placeholder="(?<=S)(\d{2,4})(?=/E)" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-muted mb-1">Episode Regex</label>
+                    <label class="block text-xs text-text-secondary mb-1">Episode Regex</label>
                     <input v-model="rule.episodeRegex" type="text" placeholder="(?<=E)(\d{2,4})(?=\))" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-muted mb-1">Capture Group (optional)</label>
+                    <label class="block text-xs text-text-secondary mb-1">Capture Group (optional)</label>
                     <input v-model.number="rule.captureGroup" type="number" placeholder="auto" class="w-32 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                 </div>
 
                 <!-- Strategy-specific fields: TitleConstruction -->
                 <div v-if="rule.strategy === 'itemTitleExact' || rule.strategy === 'itemTitleIncludes'" class="space-y-2">
-                  <label class="block text-xs text-text-muted mb-1">Title Rules</label>
+                  <label class="block text-xs text-text-secondary mb-1">Title Rules</label>
                   <div v-for="(tp, tIdx) in rule.titleRules" :key="tIdx" class="flex items-start gap-2 p-2 bg-surface-elevated/50 rounded-lg">
                     <select v-model="tp.type" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
                       <option value="static">static</option>
@@ -214,10 +214,10 @@
 
                 <!-- Filter builder -->
                 <div class="space-y-2">
-                  <label class="block text-xs text-text-muted mb-1">Filters</label>
+                  <label class="block text-xs text-text-secondary mb-1">Filters</label>
                   <div v-for="section in (['all', 'any', 'not'] as const)" :key="section" class="space-y-1">
                     <div class="flex items-center justify-between">
-                      <span class="text-xs font-semibold uppercase tracking-wider text-text-muted">{{ section }}</span>
+                      <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">{{ section }}</span>
                       <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addFilterCondition(rule, section)">+ Add</button>
                     </div>
                     <div v-if="rule.filters[section].length === 0" class="text-text-muted text-xs pl-2">(no conditions)</div>

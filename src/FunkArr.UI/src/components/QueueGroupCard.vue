@@ -14,7 +14,7 @@
         </svg>
         <span class="text-sm text-text-primary truncate">{{ group.series }}</span>
       </div>
-      <div class="flex items-center gap-2 shrink-0 text-xs text-text-muted">
+      <div class="flex items-center gap-2 shrink-0 text-xs text-text-secondary">
         <span v-if="group.activeCount > 0">
           {{ group.activeCount }} downloading
         </span>

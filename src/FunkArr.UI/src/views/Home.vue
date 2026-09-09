@@ -6,15 +6,15 @@
 
     <div class="grid gap-3 grid-cols-3 mb-6">
       <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
-        <div class="text-xs text-text-muted mb-1">Queued</div>
+        <div class="text-xs text-text-secondary mb-1">Queued</div>
         <div class="text-xl font-semibold text-text-primary tabular-nums">{{ queuedCount }}</div>
       </div>
       <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
-        <div class="text-xs text-text-muted mb-1">Downloading</div>
+        <div class="text-xs text-text-secondary mb-1">Downloading</div>
         <div class="text-xl font-semibold text-text-primary tabular-nums">{{ activeCount }}</div>
       </div>
       <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
-        <div class="text-xs text-text-muted mb-1">Speed</div>
+        <div class="text-xs text-text-secondary mb-1">Speed</div>
         <div class="text-xl font-semibold text-text-primary tabular-nums">{{ formatSpeed(totalSpeed) }}</div>
       </div>
     </div>

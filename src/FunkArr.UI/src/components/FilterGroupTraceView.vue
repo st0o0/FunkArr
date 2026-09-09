@@ -1,6 +1,6 @@
 <template>
   <div class="text-xs">
-    <div class="text-text-muted font-medium mb-0.5">{{ group.operator }}
+    <div class="text-text-secondary font-medium mb-0.5">{{ group.operator }}
       <span :class="group.passed ? 'text-status-ok' : 'text-status-fail'">
         {{ group.passed ? '(passed)' : '(failed)' }}
       </span>
@@ -31,9 +31,9 @@
           </template>
           <template v-else>
             <span class="font-mono text-text-secondary">{{ node.field }}</span>
-            <span class="text-text-muted">{{ node.op }}</span>
+            <span class="text-text-secondary">{{ node.op }}</span>
             <span class="font-mono text-text-secondary">{{ node.expectedValue }}</span>
-            <span class="text-text-muted mx-0.5">&rarr;</span>
+            <span class="text-text-secondary mx-0.5">&rarr;</span>
             <span class="font-mono" :class="node.passed ? 'text-status-ok' : 'text-status-fail'">{{ node.actualValue ?? 'null' }}</span>
           </template>
         </template>

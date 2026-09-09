@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between mb-5">
       <h1 class="text-lg font-medium text-text-primary">Downloads</h1>
       <div v-if="groups.length > 0" class="flex items-center gap-3 text-xs">
-        <span class="text-text-muted tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
+        <span class="text-text-secondary tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
         <button
           @click="toggleAll"
           class="text-text-secondary hover:text-text-body transition-colors"
@@ -27,7 +27,7 @@
             <div class="h-full bg-brand-500 rounded-full transition-all duration-700" :style="{ width: `${overallProgress}%` }" />
           </div>
         </div>
-        <span class="text-xs text-text-muted tabular-nums shrink-0">{{ activeCount }} active &middot; {{ queuedCount }} queued</span>
+        <span class="text-xs text-text-secondary tabular-nums shrink-0">{{ activeCount }} active &middot; {{ queuedCount }} queued</span>
       </div>
 
       <template v-for="group in groups" :key="group.series">
@@ -42,7 +42,7 @@
         />
       </template>
 
-      <div class="text-xs text-text-muted pt-1 tabular-nums">
+      <div class="text-xs text-text-secondary pt-1 tabular-nums">
         {{ items.length }} {{ items.length === 1 ? 'item' : 'items' }}
         &middot; {{ queuedCount }} queued
         &middot; {{ activeCount }} downloading

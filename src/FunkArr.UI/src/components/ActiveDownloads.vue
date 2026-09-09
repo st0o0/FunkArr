@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
       <div class="flex items-center gap-2">
         <h2 class="text-sm font-medium text-text-primary">Active Downloads</h2>
-        <span v-if="totalSpeed > 0" class="text-xs text-text-muted tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
+        <span v-if="totalSpeed > 0" class="text-xs text-text-secondary tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
       </div>
       <router-link to="/queue" class="text-xs text-text-secondary hover:text-text-body transition-colors">View All</router-link>
     </div>
@@ -18,7 +18,7 @@
         <div v-for="item in displayItems" :key="item.downloadId" class="space-y-1.5">
           <div class="flex justify-between text-sm">
             <ReleaseTitle :title="item.title" compact class="mr-3" />
-            <span class="text-text-muted shrink-0 tabular-nums text-xs">{{ item.percentage }}% &middot; {{ formatSpeed(item.speed) }}</span>
+            <span class="text-text-secondary shrink-0 tabular-nums text-xs">{{ item.percentage }}% &middot; {{ formatSpeed(item.speed) }}</span>
           </div>
           <div class="h-1 bg-surface-elevated rounded-full overflow-hidden">
             <div
@@ -32,7 +32,7 @@
         <div v-if="overflowCount > 0" class="text-xs text-text-secondary">
           +{{ overflowCount }} more downloading
         </div>
-        <div v-if="queuedCount > 0" class="text-xs text-text-muted">
+        <div v-if="queuedCount > 0" class="text-xs text-text-secondary">
           {{ queuedCount }} queued
         </div>
       </div>

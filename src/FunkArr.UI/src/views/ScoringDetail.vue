@@ -47,14 +47,14 @@
             </span>
             <span
               class="text-xs px-1.5 py-0.5 rounded text-xs"
-              :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-muted'"
+              :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
             >
               {{ item.matched ? 'matched' : 'no match' }}
             </span>
-            <span class="text-text-muted text-xs tabular-nums">score {{ item.score.toFixed(2) }}</span>
+            <span class="text-text-secondary text-xs tabular-nums">score {{ item.score.toFixed(2) }}</span>
           </div>
 
-          <div class="text-xs text-text-muted mb-2">
+          <div class="text-xs text-text-secondary mb-2">
             {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
             {{ Math.floor(item.candidateDuration / 60) }}min &middot;
             {{ item.candidateQuality }}p
@@ -62,7 +62,7 @@
           </div>
 
           <details class="mt-2 group">
-            <summary class="text-xs text-text-muted cursor-pointer hover:text-text-secondary transition-colors select-none">
+            <summary class="text-xs text-text-secondary cursor-pointer hover:text-text-body transition-colors select-none">
               {{ item.ruleTraces.length }} rule trace(s)
             </summary>
             <div class="mt-2 space-y-2">
@@ -78,18 +78,18 @@
               >
                 <div class="flex gap-2 items-center">
                   <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
-                  <span class="text-text-muted">prio {{ rt.priority }}</span>
+                  <span class="text-text-secondary">prio {{ rt.priority }}</span>
                   <span
                     class="font-medium"
                     :class="{
                       'text-status-ok': rt.outcome === 'matched',
                       'text-status-fail': rt.outcome === 'filterFailed',
-                      'text-text-muted': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
+                      'text-text-secondary': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
                     }"
                   >{{ rt.outcome }}</span>
                 </div>
                 <FilterGroupTraceView v-if="rt.filterTrace" :group="rt.filterTrace" class="mt-1" />
-                <div v-if="rt.identificationTrace" class="text-xs text-text-muted mt-1 bg-surface-elevated/50 rounded p-2 space-y-0.5">
+                <div v-if="rt.identificationTrace" class="text-xs text-text-secondary mt-1 bg-surface-elevated/50 rounded p-2 space-y-0.5">
                   <div><span class="text-text-secondary">Strategy:</span> {{ rt.identificationTrace.strategy }}</div>
                   <div><span class="text-text-secondary">Attempted:</span> {{ rt.identificationTrace.attempted }}</div>
                   <div v-if="rt.identificationTrace.detail"><span class="text-text-secondary">Detail:</span> {{ rt.identificationTrace.detail }}</div>
