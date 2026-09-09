@@ -27,6 +27,9 @@ public sealed partial class DataPaths
         DownloadRoot = Path.GetFullPath(downloadOptions.Path);
         Incomplete = Path.Join(DownloadRoot, "incomplete");
         Complete = Path.Join(DownloadRoot, "complete");
+
+        Directory.CreateDirectory(Incomplete);
+        Directory.CreateDirectory(Complete);
     }
 
     public sealed record ResolvedDownload(
@@ -34,8 +37,8 @@ public sealed partial class DataPaths
         string CompletePath,
         string RelativePath);
 
-    public ResolvedDownload ResolveDownload(
-        string entityId, string title, string? category, List<DownloadCategory> categories)
+    public ResolvedDownload ResolveDownload(string entityId, string title, string? category,
+        List<DownloadCategory> categories)
     {
         var categoryDir = ResolveCategoryDir(category, categories);
         var dirName = HasEpisodeIdentifier(title) ? title : $"{title}-{entityId[..8]}";
@@ -51,8 +54,8 @@ public sealed partial class DataPaths
         return new ResolvedDownload(incompletePath, completePath, relativePath);
     }
 
-    internal static bool HasEpisodeIdentifier(string title) =>
-        EpisodePattern().IsMatch(title);
+    internal static bool HasEpisodeIdentifier(string title)
+        => EpisodePattern().IsMatch(title);
 
     private static string ResolveCategoryDir(string? category, List<DownloadCategory> categories)
     {
