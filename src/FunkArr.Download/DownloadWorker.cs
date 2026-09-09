@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Cluster.Sharding;
+using Akka.Event;
 using Akka.Persistence;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
@@ -13,6 +14,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
 {
     public override string PersistenceId => "download-" + Context.Self.Path.Name;
 
+    private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
     private readonly IActorRef _downloadHistory = Context.GetActor<IDownloadHistoryManager>();
     private readonly IFfmpegRunner _ffmpeg;
@@ -68,6 +70,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
 
         if (string.IsNullOrEmpty(_state.VideoUrl))
         {
+            _log.Warning("Download {DownloadId} failed - video URL is empty: {Title}", cmd.DownloadId, _state.Title);
             var reason = "Video URL is empty";
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             Persist(new DownloadFaulted(cmd.DownloadId, reason), e =>
@@ -85,6 +88,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         var paths = ResolvePaths();
         _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
+        _log.Info("Download {DownloadId} started: {Title}", cmd.DownloadId, _state.Title);
         Persist(new DownloadStarted(cmd.DownloadId), e =>
         {
             _state = _state.Apply(e);
@@ -167,6 +171,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var evt = new DownloadSucceeded(downloadId, msg.ElapsedSeconds, completedAt);
 
+            _log.Info("Download {DownloadId} completed in {Elapsed}s: {Title}", downloadId, msg.ElapsedSeconds, _state.Title);
             Persist(evt, e =>
             {
                 _state = _state.Apply(e);
@@ -181,6 +186,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         }
         else if (_state.SubtitleUrl is not null && IsSubtitleError(msg.Error))
         {
+            _log.Warning("Download {DownloadId} subtitle failed, retrying without subtitles: {Title}", downloadId, _state.Title);
             _state = _state with { SubtitleUrl = null };
             StartFfmpeg(_state.VideoUrl!, null, paths.IncompletePath);
         }
@@ -190,6 +196,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var evt = new DownloadFaulted(downloadId, reason);
 
+            _log.Warning("Download {DownloadId} failed: {Reason} - {Title}", downloadId, reason, _state.Title);
             Persist(evt, e =>
             {
                 _state = _state.Apply(e);
@@ -213,6 +220,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         var reason = failure.Cause.Message;
         var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
+        _log.Warning(failure.Cause, "Download {DownloadId} encountered an unhandled failure: {Title}", downloadId, _state.Title);
         Persist(new DownloadFaulted(downloadId, reason), e =>
         {
             _state = _state.Apply(e);

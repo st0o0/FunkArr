@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Cluster.Sharding;
+using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.MetadataResolver;
@@ -12,6 +13,8 @@ namespace FunkArr.Search;
 
 public sealed class TvSearchWorker : ReceiveActor
 {
+    private readonly ILoggingAdapter _log = Context.GetLogger();
+
     private TvSearchWorkerState? _state;
     private ScoreCompleted? _scoredResults;
     private IActorRef? _originalSender;
@@ -25,6 +28,7 @@ public sealed class TvSearchWorker : ReceiveActor
     {
         Receive<TvSearchCommand>(cmd =>
         {
+            _log.Info("TV search started: Query={Query}, TvdbId={TvdbId}", cmd.Query, cmd.TvdbId);
             _state = TvSearchWorkerState.Empty.Apply(cmd);
 
             var hasQuery = !string.IsNullOrWhiteSpace(cmd.Query);
@@ -122,6 +126,7 @@ public sealed class TvSearchWorker : ReceiveActor
                 return;
             }
 
+            _log.Warning("TV search {SearchId} mediathek query failed: {Reason}", _state.SearchId, failed.Reason);
             Sender.Tell(new SearchFailed(_state.SearchId, failed.Reason));
             Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
@@ -133,6 +138,7 @@ public sealed class TvSearchWorker : ReceiveActor
                 return;
             }
 
+            _log.Warning(failure.Cause, "TV search {SearchId} failed", _state.SearchId);
             if (_originalSender is not null && _scoredResults is not null)
             {
                 _originalSender.Tell(_state.ToScoredResult(_scoredResults));

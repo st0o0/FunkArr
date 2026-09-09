@@ -7,11 +7,13 @@ namespace FunkArr.MetadataResolver;
 internal sealed class TmdbResolverActor : ReceiveActor
 {
     private readonly TmdbClient _tmdbClient;
+    private readonly MovieResolver _movieResolver;
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
-    public TmdbResolverActor(TmdbClient tmdbClient)
+    public TmdbResolverActor(TmdbClient tmdbClient, MovieResolver movieResolver)
     {
         _tmdbClient = tmdbClient;
+        _movieResolver = movieResolver;
 
         ReceiveAsync<FetchAndResolveMovie>(Handle);
     }
@@ -20,6 +22,7 @@ internal sealed class TmdbResolverActor : ReceiveActor
     {
         try
         {
+            _log.Info("Fetching TMDB movie TmdbId={TmdbId} ImdbId={ImdbId}", msg.TmdbId, msg.ImdbId);
             TmdbMovie? movie = null;
 
             if (msg.TmdbId is not null)
@@ -38,10 +41,10 @@ internal sealed class TmdbResolverActor : ReceiveActor
             }
 
             var altTitles = await _tmdbClient.GetAlternativeTitlesAsync(movie.Id);
+            var resolved = _movieResolver.Resolve(movie, altTitles, msg.Candidates);
 
-            Context.Parent.Tell(new CacheUpdate("tmdb", movie.Id, movie));
+            Context.Parent.Tell(new MovieCacheUpdate(movie.Id, resolved));
 
-            var resolved = MovieResolver.Resolve(movie, altTitles, msg.Candidates);
             Sender.Tell(new MoviesResolved(resolved));
         }
         catch (Exception ex)

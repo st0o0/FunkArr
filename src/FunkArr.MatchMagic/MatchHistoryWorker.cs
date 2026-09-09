@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Cluster.Sharding;
+using Akka.Event;
 using Akka.Persistence;
 using FunkArr.Core;
 using FunkArr.Messages.Scoring.History;
@@ -10,6 +11,7 @@ namespace FunkArr.MatchMagic;
 
 public sealed class MatchHistoryWorker : ReceivePersistentActor
 {
+    private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<MatchHistoryOptions> _optionsMonitor;
     private MatchHistoryState _state = MatchHistoryState.Empty;
 
@@ -54,7 +56,7 @@ public sealed class MatchHistoryWorker : ReceivePersistentActor
         Command<QueryScoringDetail>(query => Sender.Tell(_state.QueryDetail(query)));
         Command<ReceiveTimeout>(_ => Context.Parent.Tell(new Passivate(PoisonPill.Instance)));
         Command<SaveSnapshotSuccess>(_ => { });
-        Command<SaveSnapshotFailure>(_ => { });
+        Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
     }
 
     protected override void OnReplaySuccess()

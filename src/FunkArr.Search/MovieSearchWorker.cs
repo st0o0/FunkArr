@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Cluster.Sharding;
+using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.MetadataResolver;
@@ -12,6 +13,8 @@ namespace FunkArr.Search;
 
 public sealed class MovieSearchWorker : ReceiveActor
 {
+    private readonly ILoggingAdapter _log = Context.GetLogger();
+
     private MovieSearchWorkerState? _state;
     private ScoreCompleted? _scoredResults;
     private IActorRef? _originalSender;
@@ -26,6 +29,7 @@ public sealed class MovieSearchWorker : ReceiveActor
 
         Receive<MovieSearchCommand>(cmd =>
         {
+            _log.Info("Movie search started: Query={Query}, TmdbId={TmdbId}", cmd.Query, cmd.TmdbId);
             _state = MovieSearchWorkerState.Empty.Apply(cmd);
 
             var hasQuery = !string.IsNullOrWhiteSpace(cmd.Query);
@@ -123,6 +127,7 @@ public sealed class MovieSearchWorker : ReceiveActor
                 return;
             }
 
+            _log.Warning("Movie search {SearchId} mediathek query failed: {Reason}", _state.SearchId, failed.Reason);
             Sender.Tell(new SearchFailed(_state.SearchId, failed.Reason));
             Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
@@ -134,6 +139,7 @@ public sealed class MovieSearchWorker : ReceiveActor
                 return;
             }
 
+            _log.Warning(failure.Cause, "Movie search {SearchId} failed", _state.SearchId);
             if (_originalSender is not null && _scoredResults is not null)
             {
                 _originalSender.Tell(_state.ToScoredResult(_scoredResults));

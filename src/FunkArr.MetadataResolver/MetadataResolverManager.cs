@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Routing;
+using FunkArr.Core;
 using FunkArr.Messages.MetadataResolver;
 
 namespace FunkArr.MetadataResolver;
@@ -8,30 +9,23 @@ namespace FunkArr.MetadataResolver;
 public sealed class MetadataResolverManager : ReceiveActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly TvdbClient _tvdbClient;
-    private readonly TmdbClient _tmdbClient;
     private readonly IActorRef _tvdbPool;
     private readonly IActorRef _tmdbPool;
-    private readonly Dictionary<(string Provider, int Id), CacheEntry> _cache = new();
+    private readonly Dictionary<int, EpisodeCacheEntry> _episodeCache = new();
+    private readonly Dictionary<int, MovieCacheEntry> _movieCache = new();
 
-    public MetadataResolverManager(TvdbClient tvdbClient, TmdbClient tmdbClient)
+    public MetadataResolverManager()
     {
-        _tvdbClient = tvdbClient;
-        _tmdbClient = tmdbClient;
+        _tvdbPool = Context.ResolveChildActor<TvdbResolverActor>("tvdb-pool",
+            props => props.WithRouter(new SmallestMailboxPool(2)));
 
-        _tvdbPool = Context.ActorOf(
-            Props.Create(() => new TvdbResolverActor(tvdbClient))
-                .WithRouter(new SmallestMailboxPool(2)),
-            "tvdb-pool");
-
-        _tmdbPool = Context.ActorOf(
-            Props.Create(() => new TmdbResolverActor(tmdbClient))
-                .WithRouter(new SmallestMailboxPool(2)),
-            "tmdb-pool");
+        _tmdbPool = Context.ResolveChildActor<TmdbResolverActor>("tmdb-pool",
+            props => props.WithRouter(new SmallestMailboxPool(2)));
 
         Receive<ResolveEpisodes>(HandleResolveEpisodes);
         Receive<ResolveMovie>(HandleResolveMovie);
-        Receive<CacheUpdate>(HandleCacheUpdate);
+        Receive<EpisodeCacheUpdate>(HandleEpisodeCacheUpdate);
+        Receive<MovieCacheUpdate>(HandleMovieCacheUpdate);
         Receive<QueryCacheStats>(HandleCacheStats);
     }
 
@@ -43,71 +37,47 @@ public sealed class MetadataResolverManager : ReceiveActor
             return;
         }
 
-        if (!_tvdbClient.IsConfigured)
+        if (_episodeCache.TryGetValue(msg.TvdbId, out var cached) && !cached.IsExpired)
         {
-            Sender.Tell(new EpisodeResolutionFailed("TVDB API key is not configured"));
+            _log.Debug("TVDB cache hit for series {TvdbId}", msg.TvdbId);
+            Sender.Tell(new EpisodesResolved(cached.Resolved));
             return;
         }
 
-        if (_cache.TryGetValue(("tvdb", msg.TvdbId), out var cached) && !cached.IsExpired)
-        {
-            var episodes = (TvdbEpisode[])cached.Data;
-            var filtered = FilterBySeason(episodes, msg.Season);
-            var resolved = EpisodeResolver.Resolve(filtered, msg.Candidates, msg.Config);
-            Sender.Tell(new EpisodesResolved(resolved));
-            return;
-        }
-
+        _log.Debug("TVDB cache miss for series {TvdbId}, fetching", msg.TvdbId);
         _tvdbPool.Tell(new FetchAndResolveEpisodes(msg.TvdbId, msg.Season, msg.Config, msg.Candidates), Sender);
     }
 
     private void HandleResolveMovie(ResolveMovie msg)
     {
-        if (!_tmdbClient.IsConfigured)
-        {
-            Sender.Tell(new MovieResolutionFailed("TMDB API key is not configured"));
-            return;
-        }
-
         var tmdbId = msg.TmdbId;
-        if (tmdbId is not null && _cache.TryGetValue(("tmdb", tmdbId.Value), out var cached) && !cached.IsExpired)
+        if (tmdbId is not null && _movieCache.TryGetValue(tmdbId.Value, out var cached) && !cached.IsExpired)
         {
-            var movie = (TmdbMovie)cached.Data;
-            var resolved = MovieResolver.Resolve(movie, [], msg.Candidates);
-            Sender.Tell(new MoviesResolved(resolved));
+            _log.Debug("TMDB cache hit for movie {TmdbId}", tmdbId);
+            Sender.Tell(new MoviesResolved(cached.Resolved));
             return;
         }
 
+        _log.Debug("TMDB cache miss for movie TmdbId={TmdbId} ImdbId={ImdbId}, fetching", msg.TmdbId, msg.ImdbId);
         _tmdbPool.Tell(new FetchAndResolveMovie(msg.ImdbId, msg.TmdbId, msg.Candidates), Sender);
     }
 
-    private void HandleCacheUpdate(CacheUpdate msg)
+    private void HandleEpisodeCacheUpdate(EpisodeCacheUpdate msg)
     {
-        var ttl = msg.Provider switch
-        {
-            "tvdb" when msg.Data is TvdbEpisode[] episodes => CacheTtl.DetermineShowTtl(episodes),
-            "tmdb" => CacheTtl.Movie,
-            _ => CacheTtl.Default,
-        };
+        var ttl = CacheTtl.DetermineShowTtl(msg.Episodes);
+        _episodeCache[msg.TvdbId] = new EpisodeCacheEntry(msg.Episodes, msg.Resolved, DateTimeOffset.UtcNow, ttl);
+    }
 
-        _cache[(msg.Provider, msg.Id)] = new CacheEntry(msg.Data, DateTimeOffset.UtcNow, ttl, msg.Provider, msg.Id);
+    private void HandleMovieCacheUpdate(MovieCacheUpdate msg)
+    {
+        _movieCache[msg.TmdbId] = new MovieCacheEntry(msg.Resolved, DateTimeOffset.UtcNow, CacheTtl.Movie);
     }
 
     private void HandleCacheStats(QueryCacheStats _)
     {
-        var tvdbCount = _cache.Count(kv => kv.Key.Provider == "tvdb");
-        var tmdbCount = _cache.Count(kv => kv.Key.Provider == "tmdb");
-        var oldest = _cache.Values.MinBy(e => e.FetchedAt)?.FetchedAt;
-        Sender.Tell(new CacheStatsResult(tvdbCount, tmdbCount, oldest));
-    }
-
-    private static TvdbEpisode[] FilterBySeason(TvdbEpisode[] episodes, int? season)
-    {
-        if (season is null)
-        {
-            return episodes;
-        }
-
-        return episodes.Where(e => e.SeasonNumber == season.Value).ToArray();
+        var allEntries = _episodeCache.Values.Select(e => e.FetchedAt)
+            .Concat(_movieCache.Values.Select(e => e.FetchedAt));
+        var oldest = allEntries.Any() ? allEntries.Min() : (DateTimeOffset?)null;
+        Sender.Tell(new CacheStatsResult(_episodeCache.Count, _movieCache.Count, oldest));
     }
 }

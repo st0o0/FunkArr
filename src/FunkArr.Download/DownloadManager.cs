@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Akka.Event;
 using Akka.Persistence;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
@@ -14,6 +15,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     public override string PersistenceId => "download-manager";
 
+    private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
     private readonly int _maxConcurrent;
     private DownloadManagerState _state = DownloadManagerState.Empty;
@@ -42,6 +44,7 @@ public sealed class DownloadManager : ReceivePersistentActor
     {
         var downloadId = Guid.NewGuid();
 
+        _log.Info("Enqueuing download {DownloadId}: {Title}", downloadId, cmd.Title);
         Persist(new DownloadEnqueued(downloadId), e =>
         {
             _state = _state.Apply(e);
@@ -51,6 +54,7 @@ public sealed class DownloadManager : ReceivePersistentActor
                 cmd.Channel, cmd.Duration, cmd.Size, cmd.Category));
 
             Sender.Tell(new DownloadAdded(downloadId));
+            _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
             DispatchNext();
         });
     }
@@ -62,9 +66,11 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
+        _log.Info("Download {DownloadId} slot freed", msg.DownloadId);
         Persist(new DownloadDequeued(msg.DownloadId), e =>
         {
             _state = _state.Apply(e);
+            _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
             DispatchNext();
         });
     }
@@ -166,6 +172,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         foreach (var downloadId in toDispatch)
         {
+            _log.Info("Dispatching download {DownloadId}", downloadId);
             _downloadRegion.Tell(new StartDownload(downloadId));
         }
     }

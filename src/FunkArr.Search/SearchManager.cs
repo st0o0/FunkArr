@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.Search;
 using Servus.Akka;
@@ -11,6 +12,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
 
     private sealed record SearchTimeout(Guid SearchId);
 
+    private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _tvShardRegion;
     private readonly IActorRef _movieShardRegion;
     private readonly TimeSpan _searchTimeout;
@@ -174,6 +176,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             }
         }
 
+        _log.Warning("Search {SearchId} timed out after {Timeout}s", timeout.SearchId, _searchTimeout.TotalSeconds);
         pending.OriginalSender.Tell(new SearchFailed(timeout.SearchId, "Search timed out"));
         _state = _state.RemovePending(timeout.SearchId);
     }

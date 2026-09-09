@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Akka.Event;
 using Akka.Routing;
 using FunkArr.Core;
 using FunkArr.Messages.Scoring;
@@ -8,6 +9,7 @@ namespace FunkArr.MatchMagic;
 
 public sealed class MatchMagicManager : ReceiveActor
 {
+    private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _router;
     private MatchMagicManagerState _state = MatchMagicManagerState.Empty;
 
@@ -28,6 +30,7 @@ public sealed class MatchMagicManager : ReceiveActor
         var config = _state.GetConfig(msg.RuleSetId);
         if (config is null)
         {
+            _log.Debug("No matching config for ruleset {RuleSetId}, returning unscored defaults", msg.RuleSetId);
             var defaults = msg.Candidates.Select((_, i) => new ScoredItem(i, 0.0, false)).ToArray();
             Sender.Tell(new ScoreCompleted(msg.RequestId, defaults));
             return;
