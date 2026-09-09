@@ -153,6 +153,10 @@
         After entering these values, use the <strong>Test</strong> button in {{ currentServiceConfig.title }} to verify the connection works.
       </div>
 
+      <div v-if="currentServiceConfig?.title === 'Sonarr'" class="p-4 bg-surface-elevated border border-border-default rounded-xl text-sm text-text-secondary mb-6">
+        <strong class="text-text-body">Tip:</strong> Shows identified by air date (e.g., Die Sendung mit der Maus, Bibi Blocksberg) need <strong>Series Type: Daily</strong> in Sonarr for automatic import. Set this in each series' edit page.
+      </div>
+
       <div class="flex gap-3">
         <button @click="currentStep--" class="px-4 py-2 text-sm bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]">Back</button>
         <button
@@ -231,6 +235,8 @@ interface ServiceConfig {
 
 const apiKey = computed(() => health.value?.checks.apiKey?.value ?? '<your-api-key>')
 const defaultPort = computed(() => health.value?.setupConnectionInfo?.defaultPort ?? 6969)
+const actualHost = computed(() => window.location.hostname || 'localhost')
+const actualPort = computed(() => window.location.port || defaultPort.value.toString())
 
 function prowlarrConfig(): ServiceConfig {
   return {
@@ -238,7 +244,7 @@ function prowlarrConfig(): ServiceConfig {
     description: 'Add FunkArr as a Custom Newznab indexer in Prowlarr: Settings > Indexers > Add > Newznab.',
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
-      { label: 'URL', value: 'http://<funkarr-host>:<port>', copyable: false, note: 'Replace with your FunkArr address' },
+      { label: 'URL', value: `http://${actualHost.value}:${actualPort.value}`, copyable: true, note: 'Adjust if using a reverse proxy' },
       { label: 'API Path', value: '/index/api', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Categories', value: '5000 (TV), 2000 (Movies)', copyable: false },
@@ -252,9 +258,9 @@ function sonarrConfig(): ServiceConfig {
     description: 'Add FunkArr as a SABnzbd download client in Sonarr: Settings > Download Clients > Add > SABnzbd.',
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
-      { label: 'Host', value: '<funkarr-host>', copyable: false, note: 'Replace with your FunkArr hostname or IP' },
-      { label: 'Port', value: '<funkarr-port>', copyable: false, note: `Replace with your FunkArr port (default: ${defaultPort.value})` },
-      { label: 'URL Base', value: '/download/api', copyable: true },
+      { label: 'Host', value: actualHost.value, copyable: true, note: 'Adjust if using a reverse proxy' },
+      { label: 'Port', value: actualPort.value, copyable: true, note: 'Adjust if using a reverse proxy' },
+      { label: 'URL Base', value: '/download', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Category', value: 'tv', copyable: true },
     ],
@@ -267,9 +273,9 @@ function radarrConfig(): ServiceConfig {
     description: 'Add FunkArr as a SABnzbd download client in Radarr: Settings > Download Clients > Add > SABnzbd.',
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
-      { label: 'Host', value: '<funkarr-host>', copyable: false, note: 'Replace with your FunkArr hostname or IP' },
-      { label: 'Port', value: '<funkarr-port>', copyable: false, note: `Replace with your FunkArr port (default: ${defaultPort.value})` },
-      { label: 'URL Base', value: '/download/api', copyable: true },
+      { label: 'Host', value: actualHost.value, copyable: true, note: 'Adjust if using a reverse proxy' },
+      { label: 'Port', value: actualPort.value, copyable: true, note: 'Adjust if using a reverse proxy' },
+      { label: 'URL Base', value: '/download', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Category', value: 'movies', copyable: true },
     ],
