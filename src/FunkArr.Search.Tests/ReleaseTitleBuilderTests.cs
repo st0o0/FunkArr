@@ -48,15 +48,15 @@ public sealed class ReleaseTitleBuilderTests
     {
         var result = ReleaseTitleBuilder.Build("Polizeiruf 110", "Blutige Fährte", null, 720, "movie");
 
-        Assert.Equal("Polizeiruf.110.Blutige.Faehrte.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("Polizeiruf.110.Blutige.Fährte.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
-    public void UmlautNormalization()
+    public void UmlautsPreserved()
     {
         var result = ReleaseTitleBuilder.Build("Überführung", "Schöne Grüße", null, 720, "tv");
 
-        Assert.Equal("Ueberfuehrung.Schoene.Gruesse.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("Überführung.Schöne.Grüße.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class ReleaseTitleBuilderTests
     {
         var result = ReleaseTitleBuilder.Build("äöüÄÖÜß", "Test", null, 720, "tv");
 
-        Assert.Equal("aeoeueAeOeUess.Test.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("äöüÄÖÜß.Test.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class ReleaseTitleBuilderTests
 
         var result = ReleaseTitleBuilder.Build("Löwenzahn", "Folge 312", metadata, 720, "tv");
 
-        Assert.Equal("Loewenzahn.E312.Folge.312.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("Löwenzahn.S01E312.Folge.312.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
@@ -149,10 +149,76 @@ public sealed class ReleaseTitleBuilderTests
     }
 
     [Fact]
-    public void SzligNormalized()
+    public void SzligPreserved()
     {
         var result = ReleaseTitleBuilder.Build("Straße", "Spaß", null, 720, "tv");
 
-        Assert.Equal("Strasse.Spass.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("Straße.Spaß.GERMAN.720p.WEB.h264-FunkArr", result);
+    }
+
+    [Fact]
+    public void StripTopicFromTitle_PrefixWithColon()
+    {
+        var result = ReleaseTitleBuilder.StripTopicFromTitle("Tatort", "Tatort: Virus");
+
+        Assert.Equal("Virus", result);
+    }
+
+    [Fact]
+    public void StripTopicFromTitle_SuffixWithDash()
+    {
+        var result = ReleaseTitleBuilder.StripTopicFromTitle("Donna Leon", "Die dunkle Stunde - Donna Leon");
+
+        Assert.Equal("Die dunkle Stunde", result);
+    }
+
+    [Fact]
+    public void StripTopicFromTitle_SuffixWithEnDash()
+    {
+        var result = ReleaseTitleBuilder.StripTopicFromTitle("Donna Leon", "Die dunkle Stunde – Donna Leon");
+
+        Assert.Equal("Die dunkle Stunde", result);
+    }
+
+    [Fact]
+    public void StripTopicFromTitle_NoMatch()
+    {
+        var result = ReleaseTitleBuilder.StripTopicFromTitle("Tatort", "Mord am See");
+
+        Assert.Equal("Mord am See", result);
+    }
+
+    [Fact]
+    public void StripTopicFromTitle_WouldLeaveEmpty()
+    {
+        var result = ReleaseTitleBuilder.StripTopicFromTitle("Tatort", "Tatort");
+
+        Assert.Equal("Tatort", result);
+    }
+
+    [Fact]
+    public void StripTopicFromTitle_CaseInsensitive()
+    {
+        var result = ReleaseTitleBuilder.StripTopicFromTitle("tatort", "Tatort: Virus");
+
+        Assert.Equal("Virus", result);
+    }
+
+    [Fact]
+    public void BuildStripsTopicPrefix()
+    {
+        var metadata = new MetadataSpec("01", "05", null);
+
+        var result = ReleaseTitleBuilder.Build("Tatort", "Tatort: Virus", metadata, 1080, "tv");
+
+        Assert.Equal("Tatort.S01E05.Virus.GERMAN.1080p.WEB.h264-FunkArr", result);
+    }
+
+    [Fact]
+    public void BuildStripsTopicSuffix()
+    {
+        var result = ReleaseTitleBuilder.Build("Donna Leon", "Die dunkle Stunde - Donna Leon", null, 1080, "movie");
+
+        Assert.Equal("Donna.Leon.Die.dunkle.Stunde.GERMAN.1080p.WEB.h264-FunkArr", result);
     }
 }

@@ -19,7 +19,7 @@ public static class ReleaseTitleBuilder
             AppendTvIdentifier(parts, metadata);
         }
 
-        parts.Add(Sanitize(title));
+        parts.Add(Sanitize(StripTopicFromTitle(topic, title)));
         parts.Add("GERMAN");
         parts.Add(MapQuality(quality));
         parts.Add("WEB.h264-FunkArr");
@@ -40,7 +40,7 @@ public static class ReleaseTitleBuilder
         }
         else if (metadata.Episode is not null)
         {
-            parts.Add($"E{PadNumber(metadata.Episode)}");
+            parts.Add($"S01E{PadNumber(metadata.Episode)}");
         }
         else if (metadata.AiredAt is not null)
         {
@@ -71,14 +71,44 @@ public static class ReleaseTitleBuilder
         _ => $"{quality}p",
     };
 
+    public static string StripTopicFromTitle(string topic, string title)
+    {
+        if (string.IsNullOrEmpty(topic) || string.IsNullOrEmpty(title))
+        {
+            return title;
+        }
+
+        string[] prefixSeparators = [": ", ": ", " - "];
+        foreach (var sep in prefixSeparators)
+        {
+            var prefix = topic + sep;
+            if (title.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var stripped = title[prefix.Length..].Trim();
+                return stripped.Length > 0 ? stripped : title;
+            }
+        }
+
+        string[] suffixSeparators = [" - ", " – "];
+        foreach (var sep in suffixSeparators)
+        {
+            var suffix = sep + topic;
+            if (title.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                var stripped = title[..^suffix.Length].Trim();
+                return stripped.Length > 0 ? stripped : title;
+            }
+        }
+
+        return title;
+    }
+
     private static string Sanitize(string input)
     {
-        var normalized = NormalizeUmlauts(input);
-
-        var chars = new char[normalized.Length];
+        var chars = new char[input.Length];
         var pos = 0;
 
-        foreach (var c in normalized)
+        foreach (var c in input)
         {
             if (Array.IndexOf(_invalidChars, c) >= 0)
             {
@@ -90,11 +120,6 @@ public static class ReleaseTitleBuilder
 
         return new string(chars, 0, pos);
     }
-
-    private static string NormalizeUmlauts(string input) => input
-        .Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue")
-        .Replace("Ä", "Ae").Replace("Ö", "Oe").Replace("Ü", "Ue")
-        .Replace("ß", "ss");
 
     private static string CollapseDots(string input)
     {
