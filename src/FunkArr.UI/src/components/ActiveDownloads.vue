@@ -14,6 +14,7 @@
           <path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>
         </svg>
         <p class="text-text-muted text-xs">No active downloads</p>
+        <p class="text-text-muted text-[11px] mt-1">Searches from Sonarr or Radarr will appear here</p>
       </div>
 
       <div v-else class="space-y-4">

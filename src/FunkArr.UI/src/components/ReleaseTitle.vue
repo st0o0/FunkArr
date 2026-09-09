@@ -7,6 +7,9 @@
       <span v-if="parsed.season != null" class="text-brand-400 font-mono text-xs shrink-0">
         S{{ pad(parsed.season) }} E{{ pad(parsed.episode!) }}
       </span>
+      <span v-else-if="parsed.date" class="text-brand-400 font-mono text-xs shrink-0">
+        {{ parsed.date }}
+      </span>
       <span v-if="parsed.episodeTitle" class="text-text-secondary text-xs truncate">
         {{ parsed.episodeTitle }}
       </span>
@@ -21,6 +24,14 @@
       <span class="text-brand-400 font-mono shrink-0">S{{ pad(parsed.season) }}E{{ pad(parsed.episode!) }}</span>
       <span v-if="parsed.episodeTitle" class="truncate">{{ parsed.episodeTitle }}</span>
       <span v-if="parsed.quality" class="text-text-muted shrink-0">{{ parsed.quality }}</span>
+    </div>
+    <div v-else-if="parsed.date" class="flex items-center gap-1.5 text-xs text-text-secondary">
+      <span class="text-brand-400 font-mono shrink-0">{{ parsed.date }}</span>
+      <span v-if="parsed.episodeTitle" class="truncate">{{ parsed.episodeTitle }}</span>
+      <span v-if="parsed.quality" class="text-text-muted shrink-0">{{ parsed.quality }}</span>
+    </div>
+    <div v-else-if="parsed.quality" class="flex items-center gap-1.5 text-xs text-text-secondary">
+      <span class="text-text-muted shrink-0">{{ parsed.quality }}</span>
     </div>
   </div>
 </template>
