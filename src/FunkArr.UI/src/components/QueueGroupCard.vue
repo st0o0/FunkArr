@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { QueueGroup } from '../composables/useGroupedQueue'
 import QueueCard from './QueueCard.vue'
 
@@ -60,6 +60,10 @@ defineEmits<{ cancel: [id: string] }>()
 const collapsedLimit = 5
 const expanded = ref(props.defaultExpanded ?? props.group.activeCount > 0)
 const showAll = ref(false)
+
+watch(() => props.defaultExpanded, (val) => {
+  if (val !== undefined) expanded.value = val
+})
 
 const hasMore = computed(() => props.group.items.length > collapsedLimit)
 const visibleItems = computed(() => {

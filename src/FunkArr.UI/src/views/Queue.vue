@@ -21,13 +21,26 @@
     />
 
     <div v-else class="space-y-3">
-      <QueueGroupCard
-        v-for="group in groups"
-        :key="group.series"
-        :group="group"
-        :default-expanded="allExpanded || undefined"
-        @cancel="handleCancel"
-      />
+      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 flex items-center gap-4">
+        <div class="flex-1">
+          <div class="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+            <div class="h-full bg-brand-500 rounded-full transition-all duration-700" :style="{ width: `${overallProgress}%` }" />
+          </div>
+        </div>
+        <span class="text-xs text-text-muted tabular-nums shrink-0">{{ activeCount }} active &middot; {{ queuedCount }} queued</span>
+      </div>
+
+      <template v-for="group in groups" :key="group.series">
+        <div v-if="group.items.length === 1" class="rounded-xl border border-border-default overflow-hidden px-4 py-2.5 bg-surface-raised">
+          <QueueCard :item="group.items[0]" @cancel="handleCancel" />
+        </div>
+        <QueueGroupCard
+          v-else
+          :group="group"
+          :default-expanded="allExpanded || undefined"
+          @cancel="handleCancel"
+        />
+      </template>
 
       <div class="text-xs text-text-muted pt-2 tabular-nums">
         {{ items.length }} {{ items.length === 1 ? 'item' : 'items' }}
@@ -40,8 +53,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import QueueGroupCard from '../components/QueueGroupCard.vue'
+import QueueCard from '../components/QueueCard.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { useGroupedQueue } from '../composables/useGroupedQueue'
 import { deleteQueueItem } from '../api/downloads'
@@ -52,6 +66,12 @@ const { toast } = useToast()
 const { groups, items, activeCount, queuedCount, totalSpeed, release } = useGroupedQueue()
 
 const allExpanded = ref(false)
+
+const overallProgress = computed(() => {
+  if (items.value.length === 0) return 0
+  const total = items.value.reduce((sum, i) => sum + i.percentage, 0)
+  return Math.round(total / items.value.length)
+})
 
 function toggleAll() {
   allExpanded.value = !allExpanded.value

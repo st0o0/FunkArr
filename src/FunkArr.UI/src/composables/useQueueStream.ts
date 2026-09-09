@@ -9,7 +9,11 @@ let eventSource: EventSource | null = null
 let refCount = 0
 
 function connect() {
-  if (eventSource) return
+  if (eventSource && eventSource.readyState !== EventSource.CLOSED) return
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
+  }
 
   eventSource = new EventSource('/api/downloads/queue/stream')
 
@@ -34,6 +38,7 @@ function disconnect() {
     eventSource.close()
     eventSource = null
     connected.value = false
+    items.value = []
   }
 }
 
