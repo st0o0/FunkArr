@@ -1,12 +1,6 @@
 {
   "topic": "Unser Sandmännchen",
   "aliases": [],
-  "media": {
-    "tvdbId": 289772,
-    "imdbId": "tt3168736",
-    "name": "Jan & Henry",
-    "type": "show"
-  },
   "confidence": 1,
   "rules": [
     {

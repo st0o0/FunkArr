@@ -1,12 +1,6 @@
 {
   "topic": "Fernsehfilme und Serien - Serien",
   "aliases": [],
-  "media": {
-    "tvdbId": 299964,
-    "imdbId": "tt4192998",
-    "name": "Occupied - Die Besatzung",
-    "type": "show"
-  },
   "confidence": 1,
   "rules": [
     {
