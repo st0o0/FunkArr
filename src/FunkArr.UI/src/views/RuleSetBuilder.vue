@@ -11,13 +11,13 @@
     <div v-else class="grid grid-cols-[1fr_380px] gap-6">
       <!-- Left pane: Builder form -->
       <div class="space-y-5">
-        <h1 class="text-2xl font-bold text-text-primary tracking-tight">{{ isEditMode ? 'Edit RuleSet' : 'New RuleSet' }}</h1>
+        <h1 class="text-lg font-medium text-text-primary">{{ isEditMode ? 'Edit RuleSet' : 'New RuleSet' }}</h1>
 
         <!-- Identity Section -->
         <section>
-          <h2 class="text-xs font-semibold uppercase tracking-wider mb-1 text-text-muted">Identity</h2>
+          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-muted">Identity</h2>
           <p class="text-[11px] text-text-muted mb-2">The Mediathek topic name and external IDs to match this show.</p>
-          <div class="bg-surface-raised rounded-xl border border-border-default p-4 space-y-3">
+          <div class="bg-surface-raised rounded-lg border border-border-default p-4 space-y-3">
             <div>
               <label class="block text-xs text-text-muted mb-1">RuleSet ID</label>
               <input
@@ -25,7 +25,7 @@
                 :disabled="isEditMode"
                 type="text"
                 placeholder="my-show"
-                class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50 disabled:opacity-50"
+                class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus disabled:opacity-50"
               />
               <div v-if="ruleSetIdError" class="text-status-fail text-xs mt-1">{{ ruleSetIdError }}</div>
             </div>
@@ -35,7 +35,7 @@
                 v-model="form.topic"
                 type="text"
                 placeholder="Show Name"
-                class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
+                class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
               />
             </div>
             <div>
@@ -46,12 +46,12 @@
                     v-model="form.aliases[idx]"
                     type="text"
                     placeholder="Alias"
-                    class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
+                    class="flex-1 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
                   />
                   <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click="form.aliases.splice(idx, 1)">×</button>
                 </div>
               </div>
-              <button class="text-xs text-brand-400 hover:text-brand-300 mt-1.5 transition-colors" @click="form.aliases.push('')">+ Add Alias</button>
+              <button class="text-xs text-text-secondary hover:text-text-body mt-1.5 transition-colors" @click="form.aliases.push('')">+ Add Alias</button>
             </div>
             <div class="grid grid-cols-3 gap-3">
               <div>
@@ -60,7 +60,7 @@
                   v-model.number="form.tvdbId"
                   type="number"
                   placeholder="-"
-                  class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
+                  class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
                 />
               </div>
               <div>
@@ -69,7 +69,7 @@
                   v-model="form.imdbId"
                   type="text"
                   placeholder="tt..."
-                  class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
+                  class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
                 />
               </div>
               <div>
@@ -78,7 +78,7 @@
                   v-model.number="form.tmdbId"
                   type="number"
                   placeholder="-"
-                  class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
+                  class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
                 />
               </div>
             </div>
@@ -87,16 +87,16 @@
 
         <!-- Default Confidence -->
         <section>
-          <h2 class="text-xs font-semibold uppercase tracking-wider mb-1 text-text-muted">Default Confidence</h2>
+          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-muted">Default Confidence</h2>
           <p class="text-[11px] text-text-muted mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
-          <div class="bg-surface-raised rounded-xl border border-border-default p-4">
+          <div class="bg-surface-raised rounded-lg border border-border-default p-4">
             <input
               v-model.number="form.confidence"
               type="number"
               min="0"
               max="1"
               step="0.01"
-              class="w-32 bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-brand-500/50"
+              class="w-32 bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus"
             />
           </div>
         </section>
@@ -108,7 +108,7 @@
               <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">Matching Rules</h2>
               <p class="text-[11px] text-text-muted mt-0.5">Rules are tried in priority order. First match wins.</p>
             </div>
-            <button class="text-xs text-brand-400 hover:text-brand-300 transition-colors" @click="addRule">+ Add Rule</button>
+            <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addRule">+ Add Rule</button>
           </div>
 
           <div v-if="form.rules.length === 0" class="text-text-muted text-sm">No rules defined.</div>
@@ -117,8 +117,8 @@
             <div
               v-for="(rule, rIdx) in form.rules"
               :key="rIdx"
-              class="bg-surface-raised rounded-xl border border-border-default overflow-hidden"
-              :class="rule.expanded ? 'border-l-2 border-l-brand-500/30' : ''"
+              class="bg-surface-raised rounded-lg border border-border-default overflow-hidden"
+              :class="rule.expanded ? '' : ''"
             >
               <!-- Rule header (click to toggle) -->
               <div
@@ -126,7 +126,7 @@
                 @click="rule.expanded = !rule.expanded"
               >
                 <div class="flex items-baseline gap-3">
-                  <span class="font-mono text-sm font-semibold text-brand-400">{{ rule.id || '(no id)' }}</span>
+                  <span class="font-mono text-sm font-medium text-text-primary">{{ rule.id || '(no id)' }}</span>
                   <span class="text-text-muted text-xs">{{ strategyLabel(rule.strategy) }}</span>
                   <span class="text-text-muted text-xs">prio {{ rule.priority }}</span>
                 </div>
@@ -141,15 +141,15 @@
                 <div class="grid grid-cols-3 gap-3">
                   <div>
                     <label class="block text-xs text-text-muted mb-1">Rule ID</label>
-                    <input v-model="rule.id" type="text" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono focus:outline-none focus:border-brand-500/50" />
+                    <input v-model="rule.id" type="text" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
                     <label class="block text-xs text-text-muted mb-1">Priority</label>
-                    <input v-model.number="rule.priority" type="number" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-brand-500/50" />
+                    <input v-model.number="rule.priority" type="number" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
                     <label class="block text-xs text-text-muted mb-1">Confidence</label>
-                    <input v-model.number="rule.confidence" type="number" min="0" max="1" step="0.01" placeholder="default" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+                    <input v-model.number="rule.confidence" type="number" min="0" max="1" step="0.01" placeholder="default" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                 </div>
 
@@ -158,7 +158,7 @@
                   <label class="block text-xs text-text-muted mb-1">Strategy</label>
                   <select
                     v-model="rule.strategy"
-                    class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-brand-500/50"
+                    class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus"
                     @change="onStrategyChange(rule)"
                   >
                     <option value="">- select -</option>
@@ -174,15 +174,15 @@
                 <div v-if="rule.strategy === 'seasonAndEpisodeNumber' || rule.strategy === 'byAbsoluteEpisodeNumber'" class="space-y-2">
                   <div v-if="rule.strategy === 'seasonAndEpisodeNumber'">
                     <label class="block text-xs text-text-muted mb-1">Season Regex</label>
-                    <input v-model="rule.seasonRegex" type="text" placeholder="(?<=S)(\d{2,4})(?=/E)" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+                    <input v-model="rule.seasonRegex" type="text" placeholder="(?<=S)(\d{2,4})(?=/E)" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
                     <label class="block text-xs text-text-muted mb-1">Episode Regex</label>
-                    <input v-model="rule.episodeRegex" type="text" placeholder="(?<=E)(\d{2,4})(?=\))" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+                    <input v-model="rule.episodeRegex" type="text" placeholder="(?<=E)(\d{2,4})(?=\))" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
                     <label class="block text-xs text-text-muted mb-1">Capture Group (optional)</label>
-                    <input v-model.number="rule.captureGroup" type="number" placeholder="auto" class="w-32 bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+                    <input v-model.number="rule.captureGroup" type="number" placeholder="auto" class="w-32 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                 </div>
 
@@ -190,26 +190,26 @@
                 <div v-if="rule.strategy === 'itemTitleExact' || rule.strategy === 'itemTitleIncludes'" class="space-y-2">
                   <label class="block text-xs text-text-muted mb-1">Title Rules</label>
                   <div v-for="(tp, tIdx) in rule.titleRules" :key="tIdx" class="flex items-start gap-2 p-2 bg-surface-elevated/50 rounded-lg">
-                    <select v-model="tp.type" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-brand-500/50">
+                    <select v-model="tp.type" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
                       <option value="static">static</option>
                       <option value="regex">regex</option>
                     </select>
                     <template v-if="tp.type === 'static'">
-                      <input v-model="tp.value" type="text" placeholder="static text" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+                      <input v-model="tp.value" type="text" placeholder="static text" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                     </template>
                     <template v-else>
-                      <select v-model="tp.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-brand-500/50">
+                      <select v-model="tp.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
                         <option value="title">title</option>
                         <option value="topic">topic</option>
                         <option value="channel">channel</option>
                         <option value="description">description</option>
                       </select>
-                      <input v-model="tp.pattern" type="text" placeholder="regex pattern" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
-                      <input v-model.number="tp.captureGroup" type="number" placeholder="grp" class="w-14 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+                      <input v-model="tp.pattern" type="text" placeholder="regex pattern" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
+                      <input v-model.number="tp.captureGroup" type="number" placeholder="grp" class="w-14 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                     </template>
                     <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click="rule.titleRules.splice(tIdx, 1)">×</button>
                   </div>
-                  <button class="text-xs text-brand-400 hover:text-brand-300 transition-colors" @click="addTitleRule(rule)">+ Add Title Part</button>
+                  <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addTitleRule(rule)">+ Add Title Part</button>
                 </div>
 
                 <!-- Filter builder -->
@@ -218,11 +218,11 @@
                   <div v-for="section in (['all', 'any', 'not'] as const)" :key="section" class="space-y-1">
                     <div class="flex items-center justify-between">
                       <span class="text-xs font-semibold uppercase tracking-wider text-text-muted">{{ section }}</span>
-                      <button class="text-xs text-brand-400 hover:text-brand-300 transition-colors" @click="addFilterCondition(rule, section)">+ Add</button>
+                      <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addFilterCondition(rule, section)">+ Add</button>
                     </div>
                     <div v-if="rule.filters[section].length === 0" class="text-text-muted text-xs pl-2">(no conditions)</div>
                     <div v-for="(cond, cIdx) in rule.filters[section]" :key="cIdx" class="flex items-center gap-1.5">
-                      <select v-model="cond.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-brand-500/50">
+                      <select v-model="cond.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
                         <option value="title">title</option>
                         <option value="topic">topic</option>
                         <option value="channel">channel</option>
@@ -230,7 +230,7 @@
                         <option value="duration">duration</option>
                         <option value="timestamp">timestamp</option>
                       </select>
-                      <select v-model="cond.op" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-brand-500/50">
+                      <select v-model="cond.op" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
                         <option value="eq">eq</option>
                         <option value="contains">contains</option>
                         <option value="notContains">notContains</option>
@@ -238,7 +238,7 @@
                         <option value="lessThan">lessThan</option>
                         <option value="regex">regex</option>
                       </select>
-                      <input v-model="cond.value" type="text" placeholder="value" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+                      <input v-model="cond.value" type="text" placeholder="value" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                       <button class="text-status-fail/60 hover:text-status-fail text-xs transition-colors" @click="rule.filters[section].splice(cIdx, 1)">×</button>
                     </div>
                   </div>
@@ -251,7 +251,7 @@
         <!-- Save button -->
         <div class="flex items-center gap-3">
           <button
-            class="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors disabled:opacity-50 active:scale-[0.98]"
+            class="px-3 py-1.5 bg-surface-elevated border border-border-default text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors disabled:opacity-50"
             :disabled="saving"
             @click="handleSave"
           >
@@ -259,7 +259,7 @@
           </button>
           <router-link
             :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
-            class="px-4 py-2 bg-surface-elevated text-text-body rounded-lg hover:border-brand-500/40 text-sm transition-colors border border-border-default active:scale-[0.98]"
+            class="px-3 py-1.5 bg-surface-elevated text-text-secondary rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
           >
             Cancel
           </router-link>

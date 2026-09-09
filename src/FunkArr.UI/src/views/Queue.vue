@@ -1,12 +1,12 @@
 <template>
   <div class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-text-primary tracking-tight">Downloads</h1>
+    <div class="flex items-center justify-between mb-5">
+      <h1 class="text-lg font-medium text-text-primary">Downloads</h1>
       <div v-if="groups.length > 0" class="flex items-center gap-3 text-xs">
         <span class="text-text-muted tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
         <button
           @click="toggleAll"
-          class="text-brand-400 hover:text-brand-300 transition-colors"
+          class="text-text-secondary hover:text-text-body transition-colors"
         >
           {{ allExpanded ? 'Collapse All' : 'Expand All' }}
         </button>
@@ -20,10 +20,10 @@
       description="Downloads appear here when Sonarr or Radarr trigger a search."
     />
 
-    <div v-else class="space-y-3">
-      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 flex items-center gap-4">
+    <div v-else class="space-y-2">
+      <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-2.5 flex items-center gap-4">
         <div class="flex-1">
-          <div class="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
+          <div class="h-1 bg-surface-elevated rounded-full overflow-hidden">
             <div class="h-full bg-brand-500 rounded-full transition-all duration-700" :style="{ width: `${overallProgress}%` }" />
           </div>
         </div>
@@ -31,7 +31,7 @@
       </div>
 
       <template v-for="group in groups" :key="group.series">
-        <div v-if="group.items.length === 1" class="rounded-xl border border-border-default overflow-hidden px-4 py-2.5 bg-surface-raised">
+        <div v-if="group.items.length === 1" class="rounded-lg border border-border-default overflow-hidden px-4 py-2.5 bg-surface-raised">
           <QueueCard :item="group.items[0]" @cancel="handleCancel" />
         </div>
         <QueueGroupCard
@@ -42,11 +42,10 @@
         />
       </template>
 
-      <div class="text-xs text-text-muted pt-2 tabular-nums">
+      <div class="text-xs text-text-muted pt-1 tabular-nums">
         {{ items.length }} {{ items.length === 1 ? 'item' : 'items' }}
         &middot; {{ queuedCount }} queued
         &middot; {{ activeCount }} downloading
-        &middot; {{ groups.length }} {{ groups.length === 1 ? 'series' : 'series' }}
       </div>
     </div>
   </div>

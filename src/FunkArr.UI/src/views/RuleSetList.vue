@@ -1,30 +1,30 @@
 <template>
   <div class="max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-5">RuleSets</h1>
+    <h1 class="text-lg font-medium text-text-primary mb-4">RuleSets</h1>
 
-    <div class="flex items-center gap-3 mb-5">
+    <div class="flex items-center gap-2 mb-4">
       <input
         v-model="search"
         type="text"
         placeholder="Search rulesets..."
-        class="bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted w-full focus:outline-none focus:border-brand-500/50"
+        class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted flex-1 focus:outline-none focus:border-border-focus"
       />
       <select
         v-model="sortBy"
-        class="bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-brand-500/50"
+        class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus"
       >
         <option value="topic">Sort by Name</option>
         <option value="id">Sort by ID</option>
       </select>
       <router-link
         to="/rulesets/new"
-        class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors whitespace-nowrap active:scale-[0.98]"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-elevated border border-border-default text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors whitespace-nowrap"
       >
-        New RuleSet
+        + New
       </router-link>
     </div>
 
-    <div v-if="loading" class="grid gap-2.5">
+    <div v-if="loading" class="grid gap-2">
       <SkeletonCard v-for="i in 3" :key="i" />
     </div>
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
@@ -36,7 +36,7 @@
     >
       <router-link
         to="/rulesets/new"
-        class="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors active:scale-[0.98]"
+        class="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 bg-surface-elevated border border-border-default text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors"
       >
         Create First RuleSet
       </router-link>
@@ -48,26 +48,26 @@
       description="Try a different search term."
     />
 
-    <div class="text-xs text-text-muted mb-3" v-if="!loading && rulesets.length > 0">
+    <div class="text-xs text-text-muted mb-2" v-if="!loading && rulesets.length > 0">
       {{ filteredRulesets.length }} {{ filteredRulesets.length === 1 ? 'ruleset' : 'rulesets' }}
       <span v-if="search && filteredRulesets.length !== rulesets.length"> of {{ rulesets.length }}</span>
     </div>
 
-    <div v-if="!loading && filteredRulesets.length > 0" class="grid gap-2.5">
+    <div v-if="!loading && filteredRulesets.length > 0" class="grid gap-1.5">
       <router-link
         v-for="rs in filteredRulesets"
         :key="rs.ruleSetId"
         :to="`/rulesets/${rs.ruleSetId}`"
-        class="block p-4 bg-surface-raised rounded-lg hover:-translate-y-px hover:shadow-md transition-all"
+        class="block px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:bg-surface-elevated transition-colors"
       >
-        <div class="flex items-baseline gap-3 mb-1">
-          <span class="text-sm font-semibold text-text-primary">{{ rs.topic }}</span>
+        <div class="flex items-baseline gap-2 mb-0.5">
+          <span class="text-sm font-medium text-text-primary">{{ rs.topic }}</span>
           <span class="font-mono text-xs text-text-muted">{{ rs.ruleSetId }}</span>
         </div>
-        <div v-if="rs.aliases.length > 0" class="text-xs text-text-muted mb-1">
-          Aliases: {{ rs.aliases.join(', ') }}
+        <div v-if="rs.aliases.length > 0" class="text-xs text-text-muted mb-0.5">
+          {{ rs.aliases.join(', ') }}
         </div>
-        <div class="flex gap-3 text-xs text-text-muted">
+        <div class="flex gap-2 text-xs text-text-muted">
           <span v-if="rs.tvdbId">TVDB {{ rs.tvdbId }}</span>
           <span v-if="rs.imdbId">IMDB {{ rs.imdbId }}</span>
           <span v-if="rs.tmdbId">TMDB {{ rs.tmdbId }}</span>

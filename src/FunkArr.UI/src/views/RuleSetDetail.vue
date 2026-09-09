@@ -2,38 +2,37 @@
   <div class="max-w-4xl mx-auto">
     <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id }]" />
 
-    <div v-if="loading" class="space-y-5">
+    <div v-if="loading" class="space-y-4">
       <SkeletonCard />
       <SkeletonCard />
       <SkeletonCard />
     </div>
     <div v-else-if="error" class="text-status-fail">{{ error }}</div>
     <div v-else-if="detail">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-text-primary tracking-tight">{{ detail.identity.topic }}</h1>
+      <div class="flex items-center justify-between mb-5">
+        <h1 class="text-lg font-medium text-text-primary">{{ detail.identity.topic }}</h1>
         <div class="flex items-center gap-2">
           <router-link
             :to="`/rulesets/${id}/history`"
-            class="px-3 py-1.5 text-xs bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]"
+            class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors"
           >
             Scoring History
           </router-link>
           <router-link
             :to="`/rulesets/${id}/edit`"
-            class="px-3 py-1.5 text-xs bg-brand-600 text-white rounded-lg hover:bg-brand-500 transition-colors active:scale-[0.98]"
+            class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors"
           >
             Edit
           </router-link>
         </div>
       </div>
 
-      <!-- Identity -->
-      <section class="mb-5">
-        <h2 class="text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">Identity</h2>
-        <div class="bg-surface-raised rounded-xl border border-border-default p-4 text-sm">
+      <section class="mb-4">
+        <h2 class="text-xs font-medium uppercase tracking-wider mb-2 text-text-muted">Identity</h2>
+        <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
             <span class="text-text-muted">RuleSet ID</span>
-            <span class="font-mono text-brand-400">{{ detail.ruleSetId }}</span>
+            <span class="font-mono text-text-secondary">{{ detail.ruleSetId }}</span>
             <span class="text-text-muted">Topic</span>
             <span class="text-text-body">{{ detail.identity.topic }}</span>
             <span class="text-text-muted">Aliases</span>
@@ -48,17 +47,16 @@
         </div>
       </section>
 
-      <!-- Source -->
-      <section class="mb-5">
-        <h2 class="text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">Source</h2>
-        <div class="bg-surface-raised rounded-xl border border-border-default p-4 text-sm">
+      <section class="mb-4">
+        <h2 class="text-xs font-medium uppercase tracking-wider mb-2 text-text-muted">Source</h2>
+        <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="flex items-center gap-3">
             <span
-              class="px-2.5 py-1 rounded-lg text-xs font-medium"
+              class="px-2 py-0.5 rounded text-xs"
               :class="mergeMode === 'merged'
-                ? 'bg-brand-600/15 text-brand-400'
+                ? 'bg-surface-elevated text-text-body'
                 : mergeMode === 'community only'
-                  ? 'bg-status-ok/10 text-status-ok'
+                  ? 'bg-surface-elevated text-status-ok'
                   : 'bg-surface-elevated text-text-secondary'"
             >
               {{ mergeMode === 'community only' ? 'Community' : mergeMode === 'local only' ? 'Local' : 'Community + Local' }}
@@ -70,21 +68,20 @@
         </div>
       </section>
 
-      <!-- Matching Rules -->
-      <section class="mb-6">
-        <h2 class="text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">Matching Rules</h2>
-        <div class="text-sm text-text-muted mb-3">Default confidence: {{ detail.defaultConfidence }}</div>
+      <section class="mb-5">
+        <h2 class="text-xs font-medium uppercase tracking-wider mb-2 text-text-muted">Matching Rules</h2>
+        <div class="text-sm text-text-muted mb-2">Default confidence: {{ detail.defaultConfidence }}</div>
 
         <div v-if="detail.rules.length === 0" class="text-text-muted text-sm">No rules defined.</div>
 
-        <div v-else class="grid gap-2.5">
+        <div v-else class="grid gap-2">
           <div
             v-for="rule in detail.rules"
             :key="rule.id"
-            class="bg-surface-raised rounded-xl border border-border-default p-4 text-sm"
+            class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm"
           >
-            <div class="flex items-baseline gap-3 mb-2">
-              <span class="font-mono font-semibold text-brand-400">{{ rule.id }}</span>
+            <div class="flex items-baseline gap-2 mb-2">
+              <span class="font-mono font-medium text-text-primary">{{ rule.id }}</span>
               <span class="text-text-muted text-xs">prio {{ rule.priority }}</span>
               <span v-if="rule.confidence != null" class="text-text-muted text-xs">conf {{ rule.confidence }}</span>
             </div>
@@ -116,28 +113,28 @@
         </div>
       </section>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <button
           v-if="detail.source.localPath"
-          class="px-4 py-2 bg-status-fail/10 text-status-fail rounded-lg hover:bg-status-fail/20 text-sm transition-colors border border-status-fail/20 active:scale-[0.98]"
+          class="px-3 py-1.5 text-xs text-status-fail border border-border-default rounded-md hover:bg-status-fail/10 transition-colors"
           @click="showDeleteConfirm = true"
         >
           Delete Local
         </button>
       </div>
 
-      <div v-if="showDeleteConfirm" class="mt-4 p-4 bg-surface-raised rounded-xl border border-status-fail/20">
+      <div v-if="showDeleteConfirm" class="mt-3 p-4 bg-surface-raised rounded-lg border border-border-default">
         <p class="text-sm text-text-body mb-3">Delete local overlay? This cannot be undone.</p>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
           <button
-            class="px-4 py-2 bg-status-fail/10 text-status-fail rounded-lg hover:bg-status-fail/20 text-sm transition-colors border border-status-fail/20 active:scale-[0.98]"
+            class="px-3 py-1.5 text-xs text-status-fail border border-border-default rounded-md hover:bg-status-fail/10 transition-colors"
             :disabled="deleting"
             @click="handleDelete"
           >
             {{ deleting ? 'Deleting...' : 'Confirm' }}
           </button>
           <button
-            class="px-4 py-2 bg-surface-elevated text-text-body rounded-lg hover:border-brand-500/40 text-sm transition-colors border border-border-default active:scale-[0.98]"
+            class="px-3 py-1.5 text-xs text-text-secondary border border-border-default rounded-md hover:bg-surface-elevated transition-colors"
             :disabled="deleting"
             @click="showDeleteConfirm = false"
           >

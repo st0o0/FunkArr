@@ -1,26 +1,25 @@
 <template>
   <div>
     <div class="mb-6">
-      <h1 class="text-2xl font-bold text-text-primary tracking-tight">Dashboard</h1>
-      <p class="text-sm text-text-secondary mt-1">German public broadcaster media library integration for the *arr ecosystem.</p>
+      <h1 class="text-lg font-medium text-text-primary">Dashboard</h1>
     </div>
 
-    <div class="grid gap-3 grid-cols-3 mb-5">
-      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 text-center">
-        <div class="text-xl font-bold text-text-primary tabular-nums">{{ queuedCount }}</div>
-        <div class="text-xs text-text-muted mt-0.5">queued</div>
+    <div class="grid gap-3 grid-cols-3 mb-6">
+      <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
+        <div class="text-xs text-text-muted mb-1">Queued</div>
+        <div class="text-xl font-semibold text-text-primary tabular-nums">{{ queuedCount }}</div>
       </div>
-      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 text-center">
-        <div class="text-xl font-bold text-brand-400 tabular-nums">{{ activeCount }}</div>
-        <div class="text-xs text-text-muted mt-0.5">downloading</div>
+      <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
+        <div class="text-xs text-text-muted mb-1">Downloading</div>
+        <div class="text-xl font-semibold text-text-primary tabular-nums">{{ activeCount }}</div>
       </div>
-      <div class="bg-surface-raised rounded-xl border border-border-default px-4 py-3 text-center">
-        <div class="text-xl font-bold text-text-primary tabular-nums">{{ formatSpeed(totalSpeed) }}</div>
-        <div class="text-xs text-text-muted mt-0.5">total speed</div>
+      <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
+        <div class="text-xs text-text-muted mb-1">Speed</div>
+        <div class="text-xl font-semibold text-text-primary tabular-nums">{{ formatSpeed(totalSpeed) }}</div>
       </div>
     </div>
 
-    <div class="grid gap-5 mb-6 lg:grid-cols-[1fr_1fr]">
+    <div class="grid gap-4 lg:grid-cols-2">
       <HealthWidget />
       <ActiveDownloads />
     </div>

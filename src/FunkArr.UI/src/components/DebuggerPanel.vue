@@ -7,30 +7,30 @@
       <button
         v-for="tab in ['Manual', 'Fetch'] as const"
         :key="tab"
-        class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+        class="px-2.5 py-1 text-xs rounded-md transition-colors"
         :class="activeTab === tab
-          ? 'bg-brand-600 text-white'
-          : 'bg-surface-elevated text-text-muted hover:text-text-secondary'"
+          ? 'bg-surface-elevated text-text-primary'
+          : 'text-text-muted hover:text-text-secondary'"
         @click="activeTab = tab"
       >{{ tab }}</button>
     </div>
 
     <!-- Manual Input -->
     <div v-if="activeTab === 'Manual'" class="mb-3">
-      <div class="bg-surface-raised rounded-xl border border-border-default p-3 space-y-2">
-        <input v-model="manualForm.title" placeholder="Title" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+      <div class="bg-surface-raised rounded-lg border border-border-default p-3 space-y-2">
+        <input v-model="manualForm.title" placeholder="Title" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
         <div class="grid grid-cols-2 gap-2">
-          <input v-model="manualForm.topic" placeholder="Topic" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
-          <input v-model="manualForm.channel" placeholder="Channel" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+          <input v-model="manualForm.topic" placeholder="Topic" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
+          <input v-model="manualForm.channel" placeholder="Channel" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <input v-model.number="manualForm.durationMin" type="number" placeholder="Duration (min)" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
-          <input v-model.number="manualForm.quality" type="number" placeholder="Quality" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50" />
+          <input v-model.number="manualForm.durationMin" type="number" placeholder="Duration (min)" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
+          <input v-model.number="manualForm.quality" type="number" placeholder="Quality" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
         </div>
-        <textarea v-model="manualForm.description" placeholder="Description (optional)" rows="2" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50 resize-none" />
-        <input v-model="manualForm.timestamp" type="datetime-local" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-brand-500/50" />
+        <textarea v-model="manualForm.description" placeholder="Description (optional)" rows="2" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus resize-none" />
+        <input v-model="manualForm.timestamp" type="datetime-local" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
         <button
-          class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:border-brand-500/40 text-sm transition-colors active:scale-[0.98]"
+          class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:bg-surface-overlay text-sm transition-colors active:scale-[0.98]"
           @click="addManualCandidate"
         >Add Candidate</button>
       </div>
@@ -38,16 +38,16 @@
 
     <!-- Fetch Input -->
     <div v-if="activeTab === 'Fetch'" class="mb-3">
-      <div class="bg-surface-raised rounded-xl border border-border-default p-3 space-y-2">
+      <div class="bg-surface-raised rounded-lg border border-border-default p-3 space-y-2">
         <div class="flex gap-2">
           <input
             v-model="fetchQuery"
             placeholder="Search MediathekViewWeb..."
-            class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-brand-500/50"
+            class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
             @keyup.enter="doFetch"
           />
           <button
-            class="px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors whitespace-nowrap active:scale-[0.98]"
+            class="px-3 py-1.5 bg-surface-elevated border border-border-default text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors whitespace-nowrap"
             :disabled="fetchLoading || !fetchQuery.trim()"
             @click="doFetch"
           >{{ fetchLoading ? 'Searching...' : 'Search' }}</button>
@@ -58,7 +58,7 @@
         <div v-if="fetchResults.length > 0" class="space-y-1">
           <div class="flex items-center justify-between">
             <span class="text-xs text-text-muted">{{ fetchResults.length }} results</span>
-            <button class="text-xs text-brand-400 hover:text-brand-300 transition-colors" @click="toggleSelectAll">
+            <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="toggleSelectAll">
               {{ allFetchSelected ? 'Deselect All' : 'Select All' }}
             </button>
           </div>
@@ -76,7 +76,7 @@
             </label>
           </div>
           <button
-            class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:border-brand-500/40 text-sm transition-colors active:scale-[0.98]"
+            class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:bg-surface-overlay text-sm transition-colors active:scale-[0.98]"
             :disabled="selectedFetchCount === 0"
             @click="addFetchCandidates"
           >Add {{ selectedFetchCount }} Candidate(s)</button>
@@ -110,9 +110,9 @@
 
     <!-- Test Button -->
     <button
-      class="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors mb-3"
+      class="w-full px-3 py-1.5 rounded-md text-sm transition-colors mb-3 border border-border-default"
       :class="canTest
-        ? 'bg-brand-600 text-white hover:bg-brand-500 active:scale-[0.98]'
+        ? 'bg-surface-elevated text-text-body hover:bg-surface-overlay'
         : 'bg-surface-elevated text-text-muted cursor-not-allowed'"
       :disabled="!canTest || testing"
       @click="runTest"
@@ -132,16 +132,15 @@
       <div
         v-for="(item, idx) in sortedResults"
         :key="idx"
-        class="bg-surface-raised rounded-xl border border-border-default text-sm"
-        :class="item.matched ? 'border-l-4 border-l-status-ok' : 'border-l-4 border-l-border-default'"
+        class="bg-surface-raised rounded-lg border border-border-default text-sm"
       >
         <!-- Result Header -->
         <div class="p-3 cursor-pointer" @click="toggleExpand(idx)">
           <div class="flex items-baseline gap-2 mb-0.5">
             <span class="font-semibold text-text-body truncate">{{ item.candidateTitle }}</span>
             <span
-              class="text-xs px-2 py-0.5 rounded-full font-medium shrink-0"
-              :class="item.matched ? 'bg-status-ok/10 text-status-ok' : 'bg-surface-elevated text-text-muted'"
+              class="text-xs px-1.5 py-0.5 rounded shrink-0"
+              :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-muted'"
             >{{ item.matched ? 'Matched' : 'No Match' }}</span>
           </div>
           <div class="text-xs text-text-muted">
@@ -166,7 +165,7 @@
             >
               <!-- Rule Header -->
               <div class="flex items-center gap-2 text-xs mb-1">
-                <span class="font-mono text-brand-400">{{ rt.ruleId }}</span>
+                <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
                 <span class="text-text-muted">prio {{ rt.priority }}</span>
                 <span
                   class="px-1.5 py-0.5 rounded text-[10px] font-medium"

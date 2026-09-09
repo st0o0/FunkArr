@@ -5,10 +5,9 @@
         <div
           v-for="t in toasts"
           :key="t.id"
-          class="pointer-events-auto flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium backdrop-blur-sm"
+          class="pointer-events-auto flex items-center gap-2 px-3 py-2 rounded-md text-sm bg-surface-overlay border border-border-default"
           :class="variantClass(t.variant)"
         >
-          <span class="shrink-0">{{ variantIcon(t.variant) }}</span>
           <span>{{ t.message }}</span>
         </div>
       </TransitionGroup>
@@ -23,17 +22,9 @@ const { toasts } = useToast()
 
 function variantClass(variant: ToastVariant): string {
   switch (variant) {
-    case 'success': return 'bg-status-ok/90 text-white'
-    case 'error': return 'bg-status-fail/90 text-white'
-    case 'info': return 'bg-brand-500/90 text-surface-base'
-  }
-}
-
-function variantIcon(variant: ToastVariant): string {
-  switch (variant) {
-    case 'success': return '✓'
-    case 'error': return '✗'
-    case 'info': return 'ℹ'
+    case 'success': return 'text-status-ok'
+    case 'error': return 'text-status-fail'
+    case 'info': return 'text-text-body'
   }
 }
 </script>

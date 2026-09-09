@@ -12,7 +12,7 @@
     </div>
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
     <div v-else-if="detail">
-      <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-2">Scoring Detail</h1>
+      <h1 class="text-lg font-medium text-text-primary mb-2">Scoring Detail</h1>
       <div class="text-sm text-text-secondary mb-6 flex items-center gap-3">
         <span>Source: {{ detail.source }}</span>
         <span class="text-text-muted">|</span>
@@ -26,10 +26,10 @@
           v-for="opt in filterOptions"
           :key="opt.value"
           @click="matchFilter = opt.value"
-          class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          class="px-2.5 py-1 rounded-md text-xs transition-colors"
           :class="matchFilter === opt.value
-            ? 'bg-brand-600 text-white'
-            : 'bg-surface-elevated text-text-secondary hover:text-text-body'"
+            ? 'bg-surface-elevated text-text-primary'
+            : 'text-text-secondary hover:text-text-body'"
         >
           {{ opt.label }} ({{ opt.count }})
         </button>
@@ -39,16 +39,15 @@
         <div
           v-for="(item, idx) in filteredTraces"
           :key="idx"
-          class="bg-surface-raised rounded-xl border-l-2 border border-border-default p-4 text-sm"
-          :class="item.matched ? 'border-l-status-ok' : 'border-l-surface-elevated'"
+          class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm"
         >
           <div class="flex items-baseline gap-3 mb-1">
             <span class="font-semibold" :class="item.matched ? 'text-status-ok' : 'text-text-body'">
               {{ item.candidateTitle }}
             </span>
             <span
-              class="text-xs px-2 py-0.5 rounded-full font-medium"
-              :class="item.matched ? 'bg-status-ok/10 text-status-ok' : 'bg-surface-elevated text-text-muted'"
+              class="text-xs px-1.5 py-0.5 rounded text-xs"
+              :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-muted'"
             >
               {{ item.matched ? 'matched' : 'no match' }}
             </span>
@@ -78,7 +77,7 @@
                 }"
               >
                 <div class="flex gap-2 items-center">
-                  <span class="font-mono text-brand-400">{{ rt.ruleId }}</span>
+                  <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
                   <span class="text-text-muted">prio {{ rt.priority }}</span>
                   <span
                     class="font-medium"
