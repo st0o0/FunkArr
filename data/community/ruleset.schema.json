@@ -24,6 +24,7 @@
       "maximum": 1,
       "description": "Default confidence score for rules without their own"
     },
+    "resolution": { "$ref": "#/$defs/resolutionConfig" },
     "rules": {
       "type": "array",
       "items": { "$ref": "#/$defs/rule" },
@@ -41,6 +42,30 @@
     }
   },
   "$defs": {
+    "resolutionConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Per-ruleset metadata resolution settings, overrides global defaults",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["fuzzy", "strict", "none"],
+          "default": "fuzzy"
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7
+        },
+        "airdateTolerance": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 7,
+          "description": "Days of tolerance for airdate-based episode matching"
+        }
+      }
+    },
     "mediaReference": {
       "type": "object",
       "required": ["name"],

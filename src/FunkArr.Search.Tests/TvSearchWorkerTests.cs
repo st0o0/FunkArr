@@ -7,6 +7,7 @@ using FunkArr.Messages.MetadataResolver;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.Search.Tests;
 
@@ -39,7 +40,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void Successful_search_returns_scored_results()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
@@ -77,7 +78,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void Mediathek_failure_returns_search_failed()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
@@ -94,7 +95,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void Scoring_failure_returns_search_failed()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
@@ -120,7 +121,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void RuleSet_not_found_returns_unscored_results()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, "Unknown Show", null, null, null, null, null, null), TestActor);
@@ -145,7 +146,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void TvdbId_only_search_resolves_then_queries_mvw()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, null, null, null, 83214, null, null, null), TestActor);
@@ -179,7 +180,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void TvdbId_only_search_unresolved_returns_empty()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, null, null, null, 99999, null, null, null), TestActor);
@@ -197,7 +198,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void Text_search_carries_tvdbId_through_to_results()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, 83214, null, null, null), TestActor);
@@ -221,7 +222,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void Resolution_triggered_for_matched_items_without_season_episode()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, null, 2026, null, 83214, null, null, null), TestActor);
@@ -267,7 +268,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void Resolution_skipped_when_items_have_season_episode()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, null, 2026, null, 390284, null, null, null), TestActor);
@@ -301,7 +302,7 @@ public sealed class TvSearchWorkerTests : TestKit
     public void Resolution_failure_falls_back_to_unresolved_results()
     {
         var p = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(Options.Create(new MetadataResolverOptions()))));
 
         var searchId = Guid.NewGuid();
         worker.Tell(new TvSearchCommand(searchId, null, 2026, null, 83214, null, null, null), TestActor);
