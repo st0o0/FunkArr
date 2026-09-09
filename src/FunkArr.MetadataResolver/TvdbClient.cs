@@ -8,26 +8,16 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.MetadataResolver;
 
-public sealed class TvdbClient
+public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, ILogger<TvdbClient> log)
 {
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private readonly HttpClient _httpClient;
-    private readonly IOptionsMonitor<TvdbOptions> _options;
-    private readonly ILogger<TvdbClient> _log;
     private string? _token;
 
-    public TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, ILogger<TvdbClient> log)
-    {
-        _httpClient = httpClient;
-        _options = options;
-        _log = log;
-    }
-
-    public bool IsConfigured => !string.IsNullOrEmpty(_options.CurrentValue.ApiKey);
+    public bool IsConfigured => !string.IsNullOrEmpty(options.CurrentValue.ApiKey);
 
     public async Task<TvdbEpisode[]> GetEpisodesAsync(int seriesId, int? seasonFilter)
     {
@@ -45,19 +35,19 @@ public sealed class TvdbClient
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    _log.LogWarning("TVDB token expired for series {SeriesId}, re-authenticating", seriesId);
+                    log.LogWarning("TVDB token expired for series {SeriesId}, re-authenticating", seriesId);
                     _token = null;
                     await EnsureAuthenticated();
                     response = await SendAuthenticated(url);
                     if (!response.IsSuccessStatusCode)
                     {
-                        _log.LogWarning("TVDB request failed after re-auth: {StatusCode} for {Url}", (int)response.StatusCode, url);
+                        log.LogWarning("TVDB request failed after re-auth: {StatusCode} for {Url}", (int)response.StatusCode, url);
                         break;
                     }
                 }
                 else
                 {
-                    _log.LogWarning("TVDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
+                    log.LogWarning("TVDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
                     break;
                 }
             }
@@ -94,28 +84,28 @@ public sealed class TvdbClient
             return;
         }
 
-        var apiKey = _options.CurrentValue.ApiKey;
+        var apiKey = options.CurrentValue.ApiKey;
         if (string.IsNullOrEmpty(apiKey))
         {
             throw new InvalidOperationException("TVDB API key is not configured");
         }
 
         var loginBody = new { apikey = apiKey, pin = "" };
-        var loginResponse = await _httpClient.PostAsJsonAsync("login", loginBody, _jsonOptions);
+        var loginResponse = await httpClient.PostAsJsonAsync("login", loginBody, _jsonOptions);
         loginResponse.EnsureSuccessStatusCode();
 
         var loginResult = await loginResponse.Content.ReadFromJsonAsync<TvdbLoginResponse>(_jsonOptions);
         _token = loginResult?.Data?.Token
             ?? throw new InvalidOperationException("TVDB login did not return a token");
 
-        _log.LogDebug("TVDB authentication successful");
+        log.LogDebug("TVDB authentication successful");
     }
 
     private async Task<HttpResponseMessage> SendAuthenticated(string url)
     {
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
-        return await _httpClient.SendAsync(request);
+        return await httpClient.SendAsync(request);
     }
 }
 

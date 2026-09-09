@@ -7,25 +7,14 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.MetadataResolver;
 
-public sealed class TmdbClient
+public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOptions> options, ILogger<TmdbClient> log)
 {
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private readonly HttpClient _httpClient;
-    private readonly IOptionsMonitor<TmdbOptions> _options;
-    private readonly ILogger<TmdbClient> _log;
-
-    public TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOptions> options, ILogger<TmdbClient> log)
-    {
-        _httpClient = httpClient;
-        _options = options;
-        _log = log;
-    }
-
-    public bool IsConfigured => !string.IsNullOrEmpty(_options.CurrentValue.ApiKey);
+    public bool IsConfigured => !string.IsNullOrEmpty(options.CurrentValue.ApiKey);
 
     public async Task<TmdbMovie?> GetMovieAsync(int tmdbId)
     {
@@ -49,7 +38,7 @@ public sealed class TmdbClient
 
     private string ApiKey()
     {
-        var key = _options.CurrentValue.ApiKey;
+        var key = options.CurrentValue.ApiKey;
         if (string.IsNullOrEmpty(key))
         {
             throw new InvalidOperationException("TMDB API key is not configured");
@@ -60,10 +49,10 @@ public sealed class TmdbClient
 
     private async Task<T?> FetchAsync<T>(string url) where T : class
     {
-        var response = await _httpClient.GetAsync(url);
+        var response = await httpClient.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
-            _log.LogWarning("TMDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
+            log.LogWarning("TMDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
             return null;
         }
 
