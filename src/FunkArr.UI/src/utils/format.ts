@@ -20,6 +20,17 @@ export function formatDuration(seconds: number): string {
   return `${m}m ${String(s).padStart(2, '0')}s`
 }
 
+export function formatAbsoluteDate(isoString: string): string {
+  const date = new Date(isoString)
+  return date.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function formatRelativeDate(isoString: string): string {
   const date = new Date(isoString)
   const now = Date.now()

@@ -2,13 +2,21 @@
   <div>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-text-primary tracking-tight">History</h1>
-      <select
-        v-model="selectedCategory"
-        class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body focus:border-border-focus focus:outline-none transition-colors"
-      >
-        <option value="">All categories</option>
-        <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-      </select>
+      <div class="flex items-center gap-3">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search..."
+          class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted w-48 focus:outline-none focus:border-brand-500/50"
+        />
+        <select
+          v-model="selectedCategory"
+          class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body focus:border-border-focus focus:outline-none transition-colors"
+        >
+          <option value="">All categories</option>
+          <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+        </select>
+      </div>
     </div>
 
     <SkeletonTable v-if="loading && !history" :rows="5" :columns="6" />
@@ -37,7 +45,7 @@
           </thead>
           <tbody class="bg-surface-raised/50">
             <tr
-              v-for="item in history.items"
+              v-for="item in filteredItems"
               :key="item.downloadId"
               class="border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/60 transition-colors"
             >
@@ -62,7 +70,7 @@
                   {{ item.status }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-text-muted text-xs">{{ formatRelativeDate(item.completedAt) }}</td>
+              <td class="px-4 py-3 text-text-muted text-xs" :title="formatRelativeDate(item.completedAt)">{{ formatAbsoluteDate(item.completedAt) }}</td>
               <td class="px-4 py-3 text-right">
                 <div class="flex items-center justify-end gap-1">
                   <button
@@ -118,7 +126,7 @@ import { getHistory, deleteHistoryItem, retryDownload, type HistoryResponse } fr
 import SkeletonTable from '../components/SkeletonTable.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { useToast } from '../composables/useToast'
-import { formatSize, formatDuration, formatRelativeDate } from '../utils/format'
+import { formatSize, formatDuration, formatRelativeDate, formatAbsoluteDate } from '../utils/format'
 import ReleaseTitle from '../components/ReleaseTitle.vue'
 
 const { toast } = useToast()
@@ -130,12 +138,19 @@ const history = ref<HistoryResponse | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const selectedCategory = ref('')
+const searchQuery = ref('')
 const categories = ref<string[]>([])
 const pageSize = 25
 
 const page = ref(Number(route.query.page) || 1)
 const rangeStart = computed(() => (page.value - 1) * pageSize)
 const totalPages = computed(() => history.value ? Math.ceil(history.value.totalItems / pageSize) : 1)
+
+const filteredItems = computed(() => {
+  if (!history.value || !searchQuery.value) return history.value?.items ?? []
+  const q = searchQuery.value.toLowerCase()
+  return history.value.items.filter(i => i.title.toLowerCase().includes(q))
+})
 
 async function fetchData() {
   loading.value = true
