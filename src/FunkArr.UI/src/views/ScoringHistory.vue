@@ -15,7 +15,6 @@
         <table class="w-full text-sm">
           <thead class="sticky top-0 z-10">
             <tr class="bg-surface-raised">
-              <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Request</th>
               <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Source</th>
               <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">Query</th>
               <th class="text-left px-4 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">When</th>
@@ -30,7 +29,6 @@
               class="border-t border-border-subtle hover:bg-surface-elevated/60 cursor-pointer transition-colors"
               @click="$router.push(`/rulesets/${id}/history/${s.requestId}`)"
             >
-              <td class="px-4 py-2.5 font-mono text-xs text-brand-400">{{ s.requestId.substring(0, 8) }}...</td>
               <td class="px-4 py-2.5 text-text-body">{{ s.source }}</td>
               <td class="px-4 py-2.5 text-text-body">{{ s.query }}</td>
               <td class="px-4 py-2.5 text-text-muted">{{ formatTime(s.timestamp) }}</td>

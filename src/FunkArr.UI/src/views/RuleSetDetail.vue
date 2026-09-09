@@ -9,7 +9,23 @@
     </div>
     <div v-else-if="error" class="text-status-fail">{{ error }}</div>
     <div v-else-if="detail">
-      <h1 class="text-2xl font-bold text-text-primary tracking-tight mb-6">{{ detail.identity.topic }}</h1>
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-text-primary tracking-tight">{{ detail.identity.topic }}</h1>
+        <div class="flex items-center gap-2">
+          <router-link
+            :to="`/rulesets/${id}/history`"
+            class="px-3 py-1.5 text-xs bg-surface-elevated border border-border-default rounded-lg hover:border-brand-500/40 text-text-body transition-colors active:scale-[0.98]"
+          >
+            Scoring History
+          </router-link>
+          <router-link
+            :to="`/rulesets/${id}/edit`"
+            class="px-3 py-1.5 text-xs bg-brand-600 text-white rounded-lg hover:bg-brand-500 transition-colors active:scale-[0.98]"
+          >
+            Edit
+          </router-link>
+        </div>
+      </div>
 
       <!-- Identity -->
       <section class="mb-5">
@@ -36,21 +52,20 @@
       <section class="mb-5">
         <h2 class="text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">Source</h2>
         <div class="bg-surface-raised rounded-xl border border-border-default p-4 text-sm">
-          <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-            <span class="text-text-muted">Community</span>
-            <span v-if="detail.source.communityPath" class="font-mono text-xs text-text-body">
-              {{ detail.source.communityPath }}
-              <span v-if="detail.source.communityModified" class="text-text-muted ml-2">({{ formatDate(detail.source.communityModified) }})</span>
+          <div class="flex items-center gap-3">
+            <span
+              class="px-2.5 py-1 rounded-lg text-xs font-medium"
+              :class="mergeMode === 'merged'
+                ? 'bg-brand-600/15 text-brand-400'
+                : mergeMode === 'community only'
+                  ? 'bg-status-ok/10 text-status-ok'
+                  : 'bg-surface-elevated text-text-secondary'"
+            >
+              {{ mergeMode === 'community only' ? 'Community' : mergeMode === 'local only' ? 'Local' : 'Community + Local' }}
             </span>
-            <span v-else class="text-text-muted">-</span>
-            <span class="text-text-muted">Local</span>
-            <span v-if="detail.source.localPath" class="font-mono text-xs text-text-body">
-              {{ detail.source.localPath }}
-              <span v-if="detail.source.localModified" class="text-text-muted ml-2">({{ formatDate(detail.source.localModified) }})</span>
+            <span v-if="detail.source.communityModified" class="text-xs text-text-muted">
+              Updated {{ formatDate(detail.source.communityModified) }}
             </span>
-            <span v-else class="text-text-muted">-</span>
-            <span class="text-text-muted">Mode</span>
-            <span class="text-text-body">{{ mergeMode }}</span>
           </div>
         </div>
       </section>
@@ -102,18 +117,6 @@
       </section>
 
       <div class="flex items-center gap-3">
-        <router-link
-          :to="`/rulesets/${id}/history`"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors active:scale-[0.98]"
-        >
-          Scoring History
-        </router-link>
-        <router-link
-          :to="`/rulesets/${id}/edit`"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors active:scale-[0.98]"
-        >
-          Edit
-        </router-link>
         <button
           v-if="detail.source.localPath"
           class="px-4 py-2 bg-status-fail/10 text-status-fail rounded-lg hover:bg-status-fail/20 text-sm transition-colors border border-status-fail/20 active:scale-[0.98]"

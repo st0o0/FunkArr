@@ -15,7 +15,8 @@
 
         <!-- Identity Section -->
         <section>
-          <h2 class="text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">Identity</h2>
+          <h2 class="text-xs font-semibold uppercase tracking-wider mb-1 text-text-muted">Identity</h2>
+          <p class="text-[11px] text-text-muted mb-2">The Mediathek topic name and external IDs to match this show.</p>
           <div class="bg-surface-raised rounded-xl border border-border-default p-4 space-y-3">
             <div>
               <label class="block text-xs text-text-muted mb-1">RuleSet ID</label>
@@ -86,7 +87,8 @@
 
         <!-- Default Confidence -->
         <section>
-          <h2 class="text-xs font-semibold uppercase tracking-wider mb-2 text-text-muted">Default Confidence</h2>
+          <h2 class="text-xs font-semibold uppercase tracking-wider mb-1 text-text-muted">Default Confidence</h2>
+          <p class="text-[11px] text-text-muted mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
           <div class="bg-surface-raised rounded-xl border border-border-default p-4">
             <input
               v-model.number="form.confidence"
@@ -102,7 +104,10 @@
         <!-- Rules Section -->
         <section>
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">Matching Rules</h2>
+            <div>
+              <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">Matching Rules</h2>
+              <p class="text-[11px] text-text-muted mt-0.5">Rules are tried in priority order. First match wins.</p>
+            </div>
             <button class="text-xs text-brand-400 hover:text-brand-300 transition-colors" @click="addRule">+ Add Rule</button>
           </div>
 
