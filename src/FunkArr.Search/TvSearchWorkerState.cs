@@ -12,7 +12,8 @@ public sealed record TvSearchWorkerState(
     string? RuleSetId,
     int? TvdbId,
     string? ImdbId,
-    int? Season = null)
+    int? Season = null,
+    string? MediaName = null)
 {
     public static readonly TvSearchWorkerState Empty = new(Guid.Empty, [], null, null, null);
 }
@@ -25,8 +26,8 @@ public static class TvSearchWorkerStateExtensions
     public static TvSearchWorkerState Apply(this TvSearchWorkerState state, MediathekQueryCompleted result) =>
         state with { RawItems = result.Items };
 
-    public static TvSearchWorkerState ApplyRuleSet(this TvSearchWorkerState state, string ruleSetId) =>
-        state with { RuleSetId = ruleSetId };
+    public static TvSearchWorkerState ApplyRuleSet(this TvSearchWorkerState state, string ruleSetId, string? mediaName = null) =>
+        state with { RuleSetId = ruleSetId, MediaName = mediaName };
 
     public static SearchCompleted ToUnscoredResult(this TvSearchWorkerState state)
     {
@@ -85,7 +86,7 @@ public static class TvSearchWorkerStateExtensions
 
         return variants.Select(v =>
         {
-            var title = ReleaseTitleBuilder.Build(raw.Topic, raw.Title, metadata, v.Quality, "tv");
+            var title = ReleaseTitleBuilder.Build(state.MediaName ?? raw.Topic, raw.Title, metadata, v.Quality, "tv");
 
             return new SearchResultItem(
                 Title: title,

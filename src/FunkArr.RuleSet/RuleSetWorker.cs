@@ -58,7 +58,8 @@ public sealed class RuleSetWorker : ReceiveActor
         var resolver = Context.GetActor<IRuleSetResolver>();
         resolver.Tell(new RegisterRuleSet(
             msg.RuleSetId, identity.Value.Topic, identity.Value.Aliases,
-            identity.Value.TvdbId, identity.Value.ImdbId, identity.Value.TmdbId));
+            identity.Value.TvdbId, identity.Value.ImdbId, identity.Value.TmdbId,
+            identity.Value.MediaName));
     }
 
     private void HandleRemove(RemoveRuleSet msg)

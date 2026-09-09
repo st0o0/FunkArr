@@ -6,4 +6,5 @@ public sealed record RegisterRuleSet(
     string[] Aliases,
     int? TvdbId = null,
     string? ImdbId = null,
-    int? TmdbId = null);
+    int? TmdbId = null,
+    string? MediaName = null);

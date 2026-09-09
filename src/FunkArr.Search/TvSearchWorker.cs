@@ -84,7 +84,7 @@ public sealed class TvSearchWorker : ReceiveActor
                 return;
             }
 
-            _state = _state.ApplyRuleSet(resolved.RuleSetId);
+            _state = _state.ApplyRuleSet(resolved.RuleSetId, resolved.MediaName);
 
             if (_state.RawItems.Length == 0)
             {

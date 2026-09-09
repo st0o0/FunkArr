@@ -7,11 +7,13 @@ public sealed record RuleSetResolverState(
     ImmutableDictionary<string, string> LookupIndex,
     ImmutableDictionary<string, ImmutableHashSet<string>> EntriesByRuleSetId,
     ImmutableDictionary<string, string> IdIndex,
-    ImmutableDictionary<string, string> TopicByRuleSetId)
+    ImmutableDictionary<string, string> TopicByRuleSetId,
+    ImmutableDictionary<string, string> MediaNameByRuleSetId)
 {
     public static readonly RuleSetResolverState Empty = new(
         ImmutableDictionary.Create<string, string>(StringComparer.OrdinalIgnoreCase),
         ImmutableDictionary<string, ImmutableHashSet<string>>.Empty,
+        ImmutableDictionary<string, string>.Empty,
         ImmutableDictionary<string, string>.Empty,
         ImmutableDictionary<string, string>.Empty);
 }
@@ -37,7 +39,8 @@ public static class RuleSetResolverStateExtensions
             lookupIndex,
             state.EntriesByRuleSetId.Remove(msg.RuleSetId),
             idIndex,
-            state.TopicByRuleSetId.Remove(msg.RuleSetId));
+            state.TopicByRuleSetId.Remove(msg.RuleSetId),
+            state.MediaNameByRuleSetId.Remove(msg.RuleSetId));
     }
 
     public static RuleSetResolverState Apply(this RuleSetResolverState state, RegisterRuleSet msg)
@@ -66,11 +69,16 @@ public static class RuleSetResolverStateExtensions
         idIndex = AddIdEntry(idIndex, "imdb", msg.ImdbId, msg.RuleSetId);
         idIndex = AddIdEntry(idIndex, "tmdb", msg.TmdbId?.ToString(), msg.RuleSetId);
 
+        var mediaNameIndex = msg.MediaName is not null
+            ? state.MediaNameByRuleSetId.SetItem(msg.RuleSetId, msg.MediaName)
+            : state.MediaNameByRuleSetId.Remove(msg.RuleSetId);
+
         return new RuleSetResolverState(
             lookupIndex,
             state.EntriesByRuleSetId.SetItem(msg.RuleSetId, keys),
             idIndex,
-            state.TopicByRuleSetId.SetItem(msg.RuleSetId, msg.Topic));
+            state.TopicByRuleSetId.SetItem(msg.RuleSetId, msg.Topic),
+            mediaNameIndex);
     }
 
     public static object Resolve(this RuleSetResolverState state, ResolveRuleSet msg)
@@ -79,7 +87,8 @@ public static class RuleSetResolverStateExtensions
             state.LookupIndex.TryGetValue(msg.TopicOrAlias, out var ruleSetId))
         {
             var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, msg.TopicOrAlias);
-            return new RuleSetResolved(ruleSetId, topic);
+            var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
+            return new RuleSetResolved(ruleSetId, topic, mediaName);
         }
 
         if (TryResolveById(state, "tvdb", msg.TvdbId?.ToString(), out var byTvdb))
@@ -116,7 +125,8 @@ public static class RuleSetResolverStateExtensions
         }
 
         var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, "");
-        resolved = new RuleSetResolved(ruleSetId, topic);
+        var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
+        resolved = new RuleSetResolved(ruleSetId, topic, mediaName);
         return true;
     }
 

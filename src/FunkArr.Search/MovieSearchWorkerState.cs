@@ -11,7 +11,8 @@ public sealed record MovieSearchWorkerState(
     MediathekItem[] RawItems,
     string? RuleSetId,
     string? ImdbId,
-    int? TmdbId)
+    int? TmdbId,
+    string? MediaName = null)
 {
     public static readonly MovieSearchWorkerState Empty = new(Guid.Empty, [], null, null, null);
 }
@@ -24,8 +25,8 @@ public static class MovieSearchWorkerStateExtensions
     public static MovieSearchWorkerState Apply(this MovieSearchWorkerState state, MediathekQueryCompleted result) =>
         state with { RawItems = result.Items };
 
-    public static MovieSearchWorkerState ApplyRuleSet(this MovieSearchWorkerState state, string ruleSetId) =>
-        state with { RuleSetId = ruleSetId };
+    public static MovieSearchWorkerState ApplyRuleSet(this MovieSearchWorkerState state, string ruleSetId, string? mediaName = null) =>
+        state with { RuleSetId = ruleSetId, MediaName = mediaName };
 
     public static SearchCompleted ToUnscoredResult(this MovieSearchWorkerState state)
     {
@@ -79,7 +80,7 @@ public static class MovieSearchWorkerStateExtensions
 
         return variants.Select(v =>
         {
-            var title = ReleaseTitleBuilder.Build(raw.Topic, raw.Title, metadata, v.Quality, "movie");
+            var title = ReleaseTitleBuilder.Build(state.MediaName ?? raw.Topic, raw.Title, metadata, v.Quality, "movie");
 
             return new SearchResultItem(
                 Title: title,
