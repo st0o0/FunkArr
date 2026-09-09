@@ -9,6 +9,7 @@ using FunkArr.MetadataResolver;
 using FunkArr.RuleSet;
 using FunkArr.Search;
 using LinqToDB;
+using Microsoft.Extensions.Options;
 using Servus.Akka.Startup;
 
 namespace FunkArr.Configuration;
@@ -19,10 +20,24 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
 
     protected override void BuildSystem(AkkaConfigurationBuilder builder, IServiceProvider serviceProvider)
     {
-        var dataPaths = serviceProvider.GetRequiredService<DataPaths>();
-        var dataFiles = serviceProvider.GetRequiredService<IDataFiles>();
-        dataFiles.CreateDirectory(Path.GetDirectoryName(dataPaths.Database)!);
-        var connectionString = $"Data Source={dataPaths.Database}";
+        var postgresOptions = serviceProvider.GetRequiredService<IOptions<PostgresOptions>>().Value;
+
+        string connectionString;
+        string providerName;
+
+        if (!string.IsNullOrEmpty(postgresOptions.Host))
+        {
+            connectionString = postgresOptions.ToConnectionString();
+            providerName = ProviderName.PostgreSQL;
+        }
+        else
+        {
+            var dataPaths = serviceProvider.GetRequiredService<DataPaths>();
+            var dataFiles = serviceProvider.GetRequiredService<IDataFiles>();
+            dataFiles.CreateDirectory(Path.GetDirectoryName(dataPaths.Database)!);
+            connectionString = $"Data Source={dataPaths.Database}";
+            providerName = ProviderName.SQLiteMS;
+        }
 
         builder
             .ConfigureLoggers(loggers =>
@@ -30,7 +45,7 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 loggers.ClearLoggers();
                 loggers.AddLoggerFactory();
             })
-            .WithSqlPersistence(connectionString, ProviderName.SQLiteMS, autoInitialize: true,
+            .WithSqlPersistence(connectionString, providerName, autoInitialize: true,
                 journalBuilder: journal => journal.WithHealthCheck(),
                 snapshotBuilder: snapshot => snapshot.WithHealthCheck())
             .WithActorSystemLivenessCheck()

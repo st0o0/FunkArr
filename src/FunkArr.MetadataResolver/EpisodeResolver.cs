@@ -3,12 +3,14 @@ using FunkArr.Messages.MetadataResolver;
 
 namespace FunkArr.MetadataResolver;
 
-internal static class EpisodeResolver
+public sealed class EpisodeResolver
 {
-    public static ResolvedEpisode[] Resolve(
-        TvdbEpisode[] tvdbEpisodes, EpisodeCandidate[] candidates, ResolutionConfig config)
+    public ResolvedEpisode[] Resolve(TvdbEpisode[] tvdbEpisodes, EpisodeCandidate[] candidates, ResolutionConfig config)
     {
-        if (config.Strategy == "none") return [];
+        if (config.Strategy == "none")
+        {
+            return [];
+        }
 
         var threshold = config.Strategy == "strict" ? 0.95f : config.Threshold;
         var results = new List<ResolvedEpisode>();
@@ -25,8 +27,7 @@ internal static class EpisodeResolver
         return results.ToArray();
     }
 
-    private static ResolvedEpisode? ResolveCandidate(
-        EpisodeCandidate candidate, TvdbEpisode[] episodes, float threshold, int airdateTolerance)
+    private ResolvedEpisode? ResolveCandidate(EpisodeCandidate candidate, TvdbEpisode[] episodes, float threshold, int airdateTolerance)
     {
         if (candidate.ExistingSeason is not null && candidate.ExistingEpisode is not null)
         {
@@ -43,16 +44,10 @@ internal static class EpisodeResolver
         }
 
         var airdateMatch = FindByAirdate(candidate, episodes, airdateTolerance);
-        if (airdateMatch is not null)
-        {
-            return airdateMatch;
-        }
-
-        return null;
+        return airdateMatch;
     }
 
-    private static TvdbEpisode? FindBySeasonEpisode(
-        TvdbEpisode[] episodes, string season, string episode)
+    private static TvdbEpisode? FindBySeasonEpisode(TvdbEpisode[] episodes, string season, string episode)
     {
         if (!int.TryParse(season, CultureInfo.InvariantCulture, out var s) ||
             !int.TryParse(episode, CultureInfo.InvariantCulture, out var e))
@@ -63,8 +58,7 @@ internal static class EpisodeResolver
         return Array.Find(episodes, ep => ep.SeasonNumber == s && ep.Number == e);
     }
 
-    private static ResolvedEpisode? FindByTitle(
-        EpisodeCandidate candidate, TvdbEpisode[] episodes, float threshold)
+    private static ResolvedEpisode? FindByTitle(EpisodeCandidate candidate, TvdbEpisode[] episodes, float threshold)
     {
         TvdbEpisode? bestMatch = null;
         var bestSimilarity = 0f;

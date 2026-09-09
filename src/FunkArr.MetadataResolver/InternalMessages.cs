@@ -13,7 +13,11 @@ internal sealed record FetchAndResolveMovie(
     int? TmdbId,
     MovieCandidate[] Candidates);
 
-internal sealed record CacheUpdate(
-    string Provider,
-    int Id,
-    object Data);
+internal sealed record EpisodeCacheUpdate(
+    int TvdbId,
+    TvdbEpisode[] Episodes,
+    ResolvedEpisode[] Resolved);
+
+internal sealed record MovieCacheUpdate(
+    int TmdbId,
+    MovieResolved[] Resolved);

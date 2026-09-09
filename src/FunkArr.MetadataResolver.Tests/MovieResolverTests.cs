@@ -15,7 +15,7 @@ public sealed class MovieResolverTests
     {
         var candidates = new[] { new MovieCandidate(0, "Fight Club", null, 8340) };
 
-        var results = MovieResolver.Resolve(_fightClub, [], candidates);
+        var results = new MovieResolver().Resolve(_fightClub, [], candidates);
 
         Assert.Single(results);
         Assert.Equal(0, results[0].Index);
@@ -32,7 +32,7 @@ public sealed class MovieResolverTests
     {
         var candidates = new[] { new MovieCandidate(0, "Fight Club 1999", null, 8340) };
 
-        var results = MovieResolver.Resolve(_fightClub, [], candidates);
+        var results = new MovieResolver().Resolve(_fightClub, [], candidates);
 
         Assert.Single(results);
         Assert.True(results[0].Confidence >= 0.5f);
@@ -44,7 +44,7 @@ public sealed class MovieResolverTests
     {
         var candidates = new[] { new MovieCandidate(0, "Clube da Luta", null, 8340) };
 
-        var results = MovieResolver.Resolve(_fightClub, _fightClubAltTitles, candidates);
+        var results = new MovieResolver().Resolve(_fightClub, _fightClubAltTitles, candidates);
 
         Assert.Single(results);
         Assert.Equal("Fight Club", results[0].Title);
@@ -58,7 +58,7 @@ public sealed class MovieResolverTests
         var candidates = new[] { new MovieCandidate(0, "Fight Club", wrongYear, 8340) };
 
         var movie = _fightClub with { ReleaseDate = "2020-01-01" };
-        var results = MovieResolver.Resolve(movie, [], candidates);
+        var results = new MovieResolver().Resolve(movie, [], candidates);
 
         Assert.Empty(results);
     }
@@ -68,7 +68,7 @@ public sealed class MovieResolverTests
     {
         var candidates = new[] { new MovieCandidate(0, "Completely Different Movie", null, 8340) };
 
-        var results = MovieResolver.Resolve(_fightClub, [], candidates);
+        var results = new MovieResolver().Resolve(_fightClub, [], candidates);
 
         Assert.Empty(results);
     }
@@ -79,7 +79,7 @@ public sealed class MovieResolverTests
         var sameYear = new DateTimeOffset(1999, 11, 1, 0, 0, 0, TimeSpan.Zero);
         var candidates = new[] { new MovieCandidate(0, "Fightclub - Der Untergrund", sameYear, 8340) };
 
-        var results = MovieResolver.Resolve(_fightClub, [], candidates);
+        var results = new MovieResolver().Resolve(_fightClub, [], candidates);
 
         Assert.Single(results);
         Assert.Equal("YearMatch", results[0].Strategy);
@@ -92,7 +92,7 @@ public sealed class MovieResolverTests
         var closeYear = new DateTimeOffset(2000, 3, 1, 0, 0, 0, TimeSpan.Zero);
         var candidates = new[] { new MovieCandidate(0, "Fight Club", closeYear, 8340) };
 
-        var results = MovieResolver.Resolve(_fightClub, [], candidates);
+        var results = new MovieResolver().Resolve(_fightClub, [], candidates);
 
         Assert.Single(results);
         Assert.Equal(1999, results[0].Year);
@@ -104,7 +104,7 @@ public sealed class MovieResolverTests
         var movie = _fightClub with { ReleaseDate = null };
         var candidates = new[] { new MovieCandidate(0, "Fight Club", null, 8340) };
 
-        var results = MovieResolver.Resolve(movie, [], candidates);
+        var results = new MovieResolver().Resolve(movie, [], candidates);
 
         Assert.Single(results);
         Assert.Equal(0, results[0].Year);
@@ -120,7 +120,7 @@ public sealed class MovieResolverTests
             new MovieCandidate(2, "Clube da Luta", null, 8340),
         };
 
-        var results = MovieResolver.Resolve(_fightClub, _fightClubAltTitles, candidates);
+        var results = new MovieResolver().Resolve(_fightClub, _fightClubAltTitles, candidates);
 
         Assert.Equal(2, results.Length);
         Assert.Contains(results, r => r.Index == 0);

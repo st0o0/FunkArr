@@ -25,7 +25,7 @@ public sealed class EpisodeResolverTests
                 ExistingSeason: "2026", ExistingEpisode: "01"),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal("2026", results[0].Season);
@@ -42,7 +42,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal("2026", results[0].Season);
@@ -60,7 +60,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(0, "Tatort: Nachtschatten", "Nachtschatten", null, 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal("Nachtschatten", results[0].EpisodeName);
@@ -74,7 +74,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(0, "Könige der Nacht (2026)", null, null, 5280, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal("Könige der Nacht", results[0].EpisodeName);
@@ -89,7 +89,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(0, "Completely Different Title", null, null, 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Empty(results);
     }
@@ -103,7 +103,7 @@ public sealed class EpisodeResolverTests
                 new DateTimeOffset(2026, 1, 2, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal("2026", results[0].Season);
@@ -120,7 +120,7 @@ public sealed class EpisodeResolverTests
                 new DateTimeOffset(2026, 6, 15, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Empty(results);
     }
@@ -133,7 +133,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _none);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _none);
 
         Assert.Empty(results);
     }
@@ -146,7 +146,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(0, "Könige der Nacht (2026)", null, null, 5280, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _strict);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _strict);
 
         Assert.Empty(results);
     }
@@ -160,7 +160,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(1, "Totally Unknown Episode", null, null, 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal(0, results[0].Index);
@@ -175,7 +175,7 @@ public sealed class EpisodeResolverTests
             new EpisodeCandidate(1, "Sashimi Spezial", null, null, 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Equal(2, results.Length);
         Assert.Equal("1", results[0].Episode);
@@ -191,7 +191,7 @@ public sealed class EpisodeResolverTests
                 ExistingSeason: "2026", ExistingEpisode: "1"),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal("Nachtschatten", results[0].EpisodeName);
@@ -206,7 +206,7 @@ public sealed class EpisodeResolverTests
                 new DateTimeOffset(2026, 1, 1, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
         };
 
-        var results = EpisodeResolver.Resolve(_tatortEpisodes, candidates, _fuzzy);
+        var results = new EpisodeResolver().Resolve(_tatortEpisodes, candidates, _fuzzy);
 
         Assert.Single(results);
         Assert.Equal(1.0f, results[0].Confidence);

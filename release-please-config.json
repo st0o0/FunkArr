@@ -22,6 +22,7 @@
         { "type": "test", "hidden": true },
         { "type": "ci", "hidden": true },
         { "type": "build", "hidden": true },
+        { "type": "style", "hidden": true },
         { "type": "deps", "section": "Dependencies" }
       ]
     },
@@ -42,6 +43,7 @@
         { "type": "test", "hidden": true },
         { "type": "ci", "hidden": true },
         { "type": "build", "hidden": true },
+        { "type": "style", "hidden": true },
         { "type": "deps", "section": "Dependencies" }
       ]
     }

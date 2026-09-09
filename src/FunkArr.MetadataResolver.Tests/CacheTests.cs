@@ -1,3 +1,5 @@
+using FunkArr.Messages.MetadataResolver;
+
 namespace FunkArr.MetadataResolver.Tests;
 
 public sealed class CacheTests
@@ -40,19 +42,19 @@ public sealed class CacheTests
     }
 
     [Fact]
-    public void CacheEntry_not_expired_within_ttl()
+    public void EpisodeCacheEntry_not_expired_within_ttl()
     {
-        var entry = new CacheEntry(
-            new object(), DateTimeOffset.UtcNow, TimeSpan.FromHours(12), "tvdb", 1);
+        var entry = new EpisodeCacheEntry(
+            [], [], DateTimeOffset.UtcNow, TimeSpan.FromHours(12));
 
         Assert.False(entry.IsExpired);
     }
 
     [Fact]
-    public void CacheEntry_expired_after_ttl()
+    public void EpisodeCacheEntry_expired_after_ttl()
     {
-        var entry = new CacheEntry(
-            new object(), DateTimeOffset.UtcNow.AddHours(-13), TimeSpan.FromHours(12), "tvdb", 1);
+        var entry = new EpisodeCacheEntry(
+            [], [], DateTimeOffset.UtcNow.AddHours(-13), TimeSpan.FromHours(12));
 
         Assert.True(entry.IsExpired);
     }

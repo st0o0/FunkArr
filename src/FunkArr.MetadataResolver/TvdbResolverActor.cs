@@ -7,11 +7,13 @@ namespace FunkArr.MetadataResolver;
 internal sealed class TvdbResolverActor : ReceiveActor
 {
     private readonly TvdbClient _tvdbClient;
+    private readonly EpisodeResolver _episodeResolver;
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
-    public TvdbResolverActor(TvdbClient tvdbClient)
+    public TvdbResolverActor(TvdbClient tvdbClient, EpisodeResolver episodeResolver)
     {
         _tvdbClient = tvdbClient;
+        _episodeResolver = episodeResolver;
 
         ReceiveAsync<FetchAndResolveEpisodes>(Handle);
     }
@@ -23,13 +25,14 @@ internal sealed class TvdbResolverActor : ReceiveActor
             _log.Info("Fetching TVDB episodes for series {TvdbId}", msg.TvdbId);
             var episodes = await _tvdbClient.GetEpisodesAsync(msg.TvdbId, null);
 
-            Context.Parent.Tell(new CacheUpdate("tvdb", msg.TvdbId, episodes));
-
             var filtered = msg.Season is not null
                 ? episodes.Where(e => e.SeasonNumber == msg.Season.Value).ToArray()
                 : episodes;
 
-            var resolved = EpisodeResolver.Resolve(filtered, msg.Candidates, msg.Config);
+            var resolved = _episodeResolver.Resolve(filtered, msg.Candidates, msg.Config);
+
+            Context.Parent.Tell(new EpisodeCacheUpdate(msg.TvdbId, episodes, resolved));
+
             Sender.Tell(new EpisodesResolved(resolved));
         }
         catch (Exception ex)

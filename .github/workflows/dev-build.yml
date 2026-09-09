@@ -62,6 +62,9 @@ jobs:
           -o ../publish/${{ matrix.rid }}
           -p:Version=0.0.0-pr.${{ github.event.pull_request.number }}.${{ steps.vars.outputs.shortsha }}
 
+      - name: Bundle community rulesets
+        run: cp -r data/community/rulesets publish/${{ matrix.rid }}/data/rulesets/community
+
       - uses: actions/upload-artifact@v7
         with:
           name: publish-${{ matrix.rid }}

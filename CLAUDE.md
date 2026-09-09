@@ -2,8 +2,8 @@
 
 ## Project
 
-FunkArr - German public broadcaster media library integration for the *arr
-ecosystem. A .NET service (Docker container) on Akka.NET: searches ARD/ZDF/etc.
+FunkArr - German-language public broadcaster media library integration for the *arr
+ecosystem. A .NET service (Docker container) on Akka.NET: searches ARD/ZDF/ORF/SRF/etc.
 Mediatheken via MediathekViewWeb API, downloads video + subtitles, remuxes to
 MKV via FFmpeg, and exposes Newznab-compatible indexer API (for Sonarr/Radarr/
 Prowlarr) and SABnzbd-compatible download client API.

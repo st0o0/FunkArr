@@ -8,56 +8,47 @@ services:
       - funkarr-data:/app/data
       - /path/to/media:/media
     environment:
-      # ── API Key ─────────────────────────────────────────────
-      # Default: funkarr-default-api-key (override if desired)
+      # -- API Key --
+      # Used by Prowlarr/Sonarr/Radarr to authenticate requests.
+      # Default: funkarr-default-api-key
       #- FunkArr__ApiKey=funkarr-default-api-key
 
-      # ── Downloads ─────────────────────────────────────────────
-      - FunkArr__Download__DownloadPath=/media/downloads
-      #- FunkArr__Download__TempPath=data/temp
+      # -- Data --
+      # Base path for all persistent data (database, rulesets, temp files).
+      # Default: data (relative to /app inside the container)
+      #- FunkArr__DataPath=data
+
+      # -- Downloads --
+      # Root directory for downloads. Contains incomplete/ and complete/ subdirs.
+      # Default: data/downloads
+      - FunkArr__Download__Path=/media/downloads
+      # Max concurrent downloads. Default: 3
       #- FunkArr__Download__ConcurrentDownloads=3
 
-      # ── Path Mapping ──────────────────────────────────────────
-      # Map internal download path to the path Sonarr/Radarr sees.
-      # Format: internal_path:external_path
-      #- FunkArr__Download__PathMapping=/media/downloads:/data/media/downloads
-
-      # ── RuleSets ────────────────────────────────────────────────
-      # GitHub repository for community rulesets (owner/repo)
+      # -- RuleSets --
+      # GitHub repository for community rulesets (owner/repo). Default: st0o0/funkarr
       #- FunkArr__RuleSet__Repository=st0o0/funkarr
-      # Pin to a specific ruleset version, or "latest"
+      # Pin to a specific ruleset version, or "latest". Default: latest
       #- FunkArr__RuleSet__Version=latest
-      #- FunkArr__RuleSet__Path=data/rulesets
-      #- FunkArr__RuleSet__RefreshIntervalMinutes=60
+      # Enable/disable automatic refresh from GitHub. Default: true
+      #- FunkArr__RuleSet__RefreshEnabled=true
 
-      # ── Match Intelligence ────────────────────────────────────
-      # In-memory match ledger capacity (entries evicted when full)
-      #- FunkArr__MatchLedgerCapacity=10000
+      # -- Metadata Resolution --
+      # TMDB API key for movie/series title resolution (free at themoviedb.org)
+      #- FunkArr__Tmdb__ApiKey=your-tmdb-api-key
+      # TVDB API key for episode guide resolution
+      #- FunkArr__Tvdb__ApiKey=your-tvdb-api-key
 
-      # ── Quality Intelligence ───────────────────────────────────
-      # Enable/disable quality probing (URL pattern + HTTP HEAD + container parsing)
-      #- FunkArr__Quality__Probing=true
-      # Cache TTL for probed quality data (minutes, default 6 hours)
-      #- FunkArr__Quality__CacheTtlMinutes=360
-      # Max cached quality entries (evicts oldest when full)
-      #- FunkArr__Quality__CacheCapacity=50000
-      # Max results to probe per search (limits HEAD requests)
-      #- FunkArr__Search__QualityProbeLimit=30
-      # TMDB API key for movie title resolution (free at themoviedb.org)
-      #- FunkArr__Search__TmdbApiKey=your-tmdb-api-key
-
-      # ── Persistence ───────────────────────────────────────────
-      # Default: SQLite at data/funkarr.db (no extra config needed)
-      #- FunkArr__PersistencePath=data/funkarr.db
-      #
-      # PostgreSQL: set Postgres__Host to enable (auto-detected)
+      # -- Persistence (PostgreSQL) --
+      # Default: SQLite at data/funkarr.db (no extra config needed).
+      # Set Postgres__Host to switch to PostgreSQL.
       #- FunkArr__Postgres__Host=db
       #- FunkArr__Postgres__Port=5432
       #- FunkArr__Postgres__User=funkarr
       #- FunkArr__Postgres__Password=changeme
       #- FunkArr__Postgres__Database=funkarr
 
-  # ── Uncomment for PostgreSQL persistence ───────────────────
+  # -- Uncomment for PostgreSQL persistence --
   # db:
   #   image: postgres:17-alpine
   #   restart: unless-stopped

@@ -2,9 +2,9 @@ using FunkArr.Messages.MetadataResolver;
 
 namespace FunkArr.MetadataResolver;
 
-internal static class MovieResolver
+public sealed class MovieResolver
 {
-    public static MovieResolved[] Resolve(
+    public MovieResolved[] Resolve(
         TmdbMovie movie, string[] alternativeTitles, MovieCandidate[] candidates)
     {
         var year = ParseYear(movie.ReleaseDate);
@@ -26,7 +26,11 @@ internal static class MovieResolver
         MovieCandidate candidate, TmdbMovie movie, string[] altTitles, int? movieYear)
     {
         var allTitles = new List<string>();
-        if (movie.Title is not null) allTitles.Add(movie.Title);
+        if (movie.Title is not null)
+        {
+            allTitles.Add(movie.Title);
+        }
+
         if (movie.OriginalTitle is not null && movie.OriginalTitle != movie.Title)
         {
             allTitles.Add(movie.OriginalTitle);

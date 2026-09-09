@@ -18,7 +18,6 @@ WORKDIR /app
 COPY --from=prep /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --chown=$APP_UID . .
 COPY --from=prep --chown=$APP_UID /data /app/data
-COPY --chown=$APP_UID data/community/rulesets/ /app/data/rulesets/community/
 VOLUME /app/data
 VOLUME /media
 ENV ASPNETCORE_URLS=http://+:6969

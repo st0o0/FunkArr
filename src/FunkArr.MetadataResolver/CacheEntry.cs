@@ -1,13 +1,21 @@
 using System.Globalization;
+using FunkArr.Messages.MetadataResolver;
 
 namespace FunkArr.MetadataResolver;
 
-internal sealed record CacheEntry(
-    object Data,
+internal sealed record EpisodeCacheEntry(
+    TvdbEpisode[] Episodes,
+    ResolvedEpisode[] Resolved,
     DateTimeOffset FetchedAt,
-    TimeSpan Ttl,
-    string Provider,
-    int Id)
+    TimeSpan Ttl)
+{
+    public bool IsExpired => DateTimeOffset.UtcNow - FetchedAt > Ttl;
+}
+
+internal sealed record MovieCacheEntry(
+    MovieResolved[] Resolved,
+    DateTimeOffset FetchedAt,
+    TimeSpan Ttl)
 {
     public bool IsExpired => DateTimeOffset.UtcNow - FetchedAt > Ttl;
 }
@@ -17,7 +25,6 @@ internal static class CacheTtl
     public static readonly TimeSpan ActiveShow = TimeSpan.FromDays(2);
     public static readonly TimeSpan InactiveShow = TimeSpan.FromDays(7);
     public static readonly TimeSpan Movie = TimeSpan.FromDays(30);
-    public static readonly TimeSpan Default = TimeSpan.FromHours(12);
 
     public static TimeSpan DetermineShowTtl(TvdbEpisode[] episodes)
     {

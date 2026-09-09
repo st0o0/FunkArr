@@ -7,8 +7,15 @@ internal static class LevenshteinDistance
         a = Normalize(a);
         b = Normalize(b);
 
-        if (a.Length == 0 && b.Length == 0) return 1.0f;
-        if (a.Length == 0 || b.Length == 0) return 0.0f;
+        if (a.Length == 0 && b.Length == 0)
+        {
+            return 1.0f;
+        }
+
+        if (a.Length == 0 || b.Length == 0)
+        {
+            return 0.0f;
+        }
 
         var maxLen = Math.Max(a.Length, b.Length);
         var distance = Compute(a, b);
@@ -22,7 +29,10 @@ internal static class LevenshteinDistance
         var prev = new int[n + 1];
         var curr = new int[n + 1];
 
-        for (var j = 0; j <= n; j++) prev[j] = j;
+        for (var j = 0; j <= n; j++)
+        {
+            prev[j] = j;
+        }
 
         for (var i = 1; i <= m; i++)
         {

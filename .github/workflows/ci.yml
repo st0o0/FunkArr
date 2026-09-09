@@ -50,7 +50,7 @@ jobs:
           config: .hadolint.yaml
       - name: dotnet format
         working-directory: src
-        run: dotnet format FunkArr.slnx whitespace --verify-no-changes
+        run: dotnet format FunkArr.slnx --verify-no-changes
 
   commitlint:
     runs-on: ubuntu-latest
