@@ -3,21 +3,16 @@
 # CI cross-compiles via `dotnet publish -r <rid>` and passes the
 # published output as build context. No SDK needed here.
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble AS prep
-# hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /data/temp && chown 1654:1654 /data /data/temp
-
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+# hadolint ignore=DL3018
+RUN apk add --no-cache ffmpeg
 LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.description="German public broadcaster media libraries for the *arr ecosystem" \
       org.opencontainers.image.source="https://github.com/st0o0/funkarr" \
       org.opencontainers.image.documentation="https://github.com/st0o0/funkarr#readme"
 WORKDIR /app
-COPY --from=prep /usr/bin/ffmpeg /usr/bin/ffmpeg
 COPY --chown=$APP_UID . .
-COPY --from=prep --chown=$APP_UID /data /app/data
+RUN mkdir -p /app/data/temp && chown $APP_UID:$APP_UID /app/data /app/data/temp
 VOLUME /app/data
 VOLUME /media
 ENV ASPNETCORE_URLS=http://+:6969

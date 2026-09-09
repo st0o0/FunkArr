@@ -31,9 +31,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - rid: linux-x64
+          - rid: linux-musl-x64
             platform: linux/amd64
-          - rid: linux-arm64
+          - rid: linux-musl-arm64
             platform: linux/arm64
     steps:
       - uses: actions/checkout@v7
@@ -101,7 +101,7 @@ jobs:
         id: build-amd64
         with:
           file: Dockerfile
-          context: publish/publish-linux-x64
+          context: publish/publish-linux-musl-x64
           platforms: linux/amd64
           cache-from: type=gha,scope=dev-amd64
           cache-to: type=gha,scope=dev-amd64,mode=max
@@ -112,7 +112,7 @@ jobs:
         id: build-arm64
         with:
           file: Dockerfile
-          context: publish/publish-linux-arm64
+          context: publish/publish-linux-musl-arm64
           platforms: linux/arm64
           cache-from: type=gha,scope=dev-arm64
           cache-to: type=gha,scope=dev-arm64,mode=max

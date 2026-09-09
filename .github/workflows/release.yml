@@ -54,10 +54,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - rid: linux-x64
+          - rid: linux-musl-x64
             platform: linux/amd64
             test: true
-          - rid: linux-arm64
+          - rid: linux-musl-arm64
             platform: linux/arm64
             test: false
     steps:
@@ -127,7 +127,7 @@ jobs:
         id: build-amd64
         with:
           file: Dockerfile
-          context: publish/publish-linux-x64
+          context: publish/publish-linux-musl-x64
           platforms: linux/amd64
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=amd64
@@ -141,7 +141,7 @@ jobs:
         id: build-arm64
         with:
           file: Dockerfile
-          context: publish/publish-linux-arm64
+          context: publish/publish-linux-musl-arm64
           platforms: linux/arm64
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=arm64

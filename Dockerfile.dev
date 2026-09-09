@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Dev Dockerfile — builds from source, not for CI/production.
+# Dev Dockerfile - builds from source, not for CI/production.
 
 FROM node:22-slim AS ui
 WORKDIR /ui
@@ -9,7 +9,7 @@ RUN npm ci
 COPY src/FunkArr.UI/ .
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
 
 COPY src/global.json src/Directory.Build.props src/Directory.Packages.props ./
@@ -23,16 +23,16 @@ COPY src/FunkArr.Search/FunkArr.Search.csproj FunkArr.Search/
 COPY src/FunkArr.Download/FunkArr.Download.csproj FunkArr.Download/
 COPY src/FunkArr.RuleSet/FunkArr.RuleSet.csproj FunkArr.RuleSet/
 COPY src/FunkArr.MatchMagic/FunkArr.MatchMagic.csproj FunkArr.MatchMagic/
+COPY src/FunkArr.MetadataResolver/FunkArr.MetadataResolver.csproj FunkArr.MetadataResolver/
 RUN dotnet restore FunkArr/FunkArr.csproj
 
 COPY src/ .
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
 RUN dotnet publish FunkArr/FunkArr.csproj -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
-# hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+# hadolint ignore=DL3018
+RUN apk add --no-cache ffmpeg
 RUN mkdir -p /app/data/temp && chown 1654:1654 /app/data /app/data/temp
 WORKDIR /app
 COPY --from=build /app/publish .
