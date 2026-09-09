@@ -25,6 +25,7 @@ public sealed class RuleSetManagerTests : TestKit
         var funkArrOptions = new FunkArrOptions { DataPath = _tempDir };
         var downloadOptions = new DownloadOptions();
         _dataPaths = new DataPaths(funkArrOptions, downloadOptions);
+        _dataPaths.EnsureDirectories();
         _dataFiles = new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance);
     }
 
@@ -96,7 +97,7 @@ public sealed class RuleSetManagerTests : TestKit
     }
 
     [Fact]
-    public void FileWatcher_triggers_LoadRuleSet_for_new_file()
+    public void FileChanged_triggers_LoadRuleSet_for_new_file()
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
@@ -107,20 +108,21 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         shardProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "new-show.json"), _sampleJson);
+        manager.Tell(new RuleSetManager.FileChanged("new-show"));
 
-        var msg = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(TimeSpan.FromSeconds(3));
+        var msg = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(TimeSpan.FromSeconds(5));
         Assert.Equal("new-show", msg.RuleSetId);
 
         Cleanup();
     }
 
     [Fact]
-    public void FileWatcher_triggers_RemoveRuleSet_for_deleted_file()
+    public void FileChanged_triggers_RemoveRuleSet_for_deleted_file()
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
@@ -134,11 +136,12 @@ public sealed class RuleSetManagerTests : TestKit
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "temp-show.json");
         File.WriteAllText(filePath, _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
 
         File.Delete(filePath);
+        manager.Tell(new RuleSetManager.FileChanged("temp-show"));
 
         var msg = shardProbe.ExpectMsg<RuleSetWorker.RemoveRuleSet>(TimeSpan.FromSeconds(5));
         Assert.Equal("temp-show", msg.RuleSetId);

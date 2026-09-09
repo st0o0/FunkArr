@@ -49,9 +49,14 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
         });
 
         services.AddSingleton<IFileSystem, FileSystem>();
-        services.AddSingleton(sp => new DataPaths(
-            sp.GetRequiredService<IOptions<FunkArrOptions>>().Value,
-            sp.GetRequiredService<IOptions<DownloadOptions>>().Value));
+        services.AddSingleton(sp =>
+        {
+            var dataPaths = new DataPaths(
+                sp.GetRequiredService<IOptions<FunkArrOptions>>().Value,
+                sp.GetRequiredService<IOptions<DownloadOptions>>().Value);
+            dataPaths.EnsureDirectories();
+            return dataPaths;
+        });
         services.AddSingleton<IDataFiles, DataFiles>();
 
         services.AddOpenApi();

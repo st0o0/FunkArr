@@ -11,7 +11,7 @@ public sealed class RuleSetManager : ReceiveActor
 {
     public sealed record ScanRuleSets;
 
-    private sealed record FileChanged(string RuleSetId);
+    internal sealed record FileChanged(string RuleSetId);
 
     private sealed record FullRescanRequested;
 

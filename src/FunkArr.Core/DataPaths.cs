@@ -27,7 +27,10 @@ public sealed partial class DataPaths
         DownloadRoot = Path.GetFullPath(downloadOptions.Path);
         Incomplete = Path.Join(DownloadRoot, "incomplete");
         Complete = Path.Join(DownloadRoot, "complete");
+    }
 
+    public void EnsureDirectories()
+    {
         Directory.CreateDirectory(Incomplete);
         Directory.CreateDirectory(Complete);
     }
