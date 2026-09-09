@@ -15,36 +15,31 @@ internal sealed class TmdbResolverActor : ReceiveActor
         _tmdbClient = tmdbClient;
         _movieResolver = movieResolver;
 
-        ReceiveAsync<FetchAndResolveMovie>(Handle);
+        ReceiveAsync<ResolveMovie>(Handle);
     }
 
-    private async Task Handle(FetchAndResolveMovie msg)
+    private async Task Handle(ResolveMovie msg)
     {
         try
         {
-            _log.Info("Fetching TMDB movie TmdbId={TmdbId} ImdbId={ImdbId}", msg.TmdbId, msg.ImdbId);
-            TmdbMovie? movie = null;
+            TmdbMovieData? data = null;
 
             if (msg.TmdbId is not null)
             {
-                movie = await _tmdbClient.GetMovieAsync(msg.TmdbId.Value);
+                data = await _tmdbClient.GetMovieDataAsync(msg.TmdbId.Value);
             }
             else if (msg.ImdbId is not null)
             {
-                movie = await _tmdbClient.FindByImdbIdAsync(msg.ImdbId);
+                data = await _tmdbClient.FindByImdbIdAsync(msg.ImdbId);
             }
 
-            if (movie is null)
+            if (data is null)
             {
                 Sender.Tell(new MovieResolutionFailed("Movie not found"));
                 return;
             }
 
-            var altTitles = await _tmdbClient.GetAlternativeTitlesAsync(movie.Id);
-            var resolved = _movieResolver.Resolve(movie, altTitles, msg.Candidates);
-
-            Context.Parent.Tell(new MovieCacheUpdate(movie.Id, resolved));
-
+            var resolved = _movieResolver.Resolve(data.Movie, data.AltTitles, msg.Candidates);
             Sender.Tell(new MoviesResolved(resolved));
         }
         catch (Exception ex)

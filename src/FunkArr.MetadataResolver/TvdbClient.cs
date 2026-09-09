@@ -1,14 +1,16 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.MetadataResolver;
 
-public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, ILogger<TvdbClient> log)
+public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IMemoryCache cache, ILogger<TvdbClient> log)
 {
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -19,7 +21,25 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
 
     public bool IsConfigured => !string.IsNullOrEmpty(options.CurrentValue.ApiKey);
 
-    public async Task<TvdbEpisode[]> GetEpisodesAsync(int seriesId, int? seasonFilter)
+    public async Task<TvdbEpisode[]> GetEpisodesAsync(int seriesId)
+    {
+        var cacheKey = $"tvdb:episodes:{seriesId}";
+        if (cache.TryGetValue(cacheKey, out TvdbEpisode[]? cached))
+        {
+            log.LogDebug("TVDB cache hit for series {SeriesId}", seriesId);
+            return cached!;
+        }
+
+        log.LogDebug("TVDB cache miss for series {SeriesId}, fetching", seriesId);
+        var episodes = await FetchEpisodesAsync(seriesId);
+        var ttl = DetermineShowTtl(episodes);
+        cache.Set(cacheKey, episodes, ttl);
+        return episodes;
+    }
+
+    public int CacheEntryCount => (cache as MemoryCache)?.Count ?? 0;
+
+    private async Task<TvdbEpisode[]> FetchEpisodesAsync(int seriesId)
     {
         await EnsureAuthenticated();
 
@@ -58,13 +78,7 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
                 break;
             }
 
-            foreach (var ep in result.Data.Episodes)
-            {
-                if (seasonFilter is null || ep.SeasonNumber == seasonFilter)
-                {
-                    episodes.Add(ep);
-                }
-            }
+            episodes.AddRange(result.Data.Episodes);
 
             if (string.IsNullOrEmpty(result.Links?.Next))
             {
@@ -75,6 +89,17 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         }
 
         return episodes.ToArray();
+    }
+
+    private static TimeSpan DetermineShowTtl(TvdbEpisode[] episodes)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var hasUpcoming = episodes.Any(e =>
+            e.Aired is not null &&
+            DateOnly.TryParseExact(e.Aired, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var d) &&
+            d > today);
+        return hasUpcoming ? TimeSpan.FromDays(2) : TimeSpan.FromDays(7);
     }
 
     private async Task EnsureAuthenticated()

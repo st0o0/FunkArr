@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -10,7 +11,7 @@ public sealed class TmdbClientTests
     {
         var options = new TmdbOptions { ApiKey = apiKey };
         var monitor = new TestOptionsMonitor<TmdbOptions>(options);
-        return new TmdbClient(new HttpClient(), monitor, NullLogger<TmdbClient>.Instance);
+        return new TmdbClient(new HttpClient(), monitor, new MemoryCache(new MemoryCacheOptions()), NullLogger<TmdbClient>.Instance);
     }
 
     [Fact]
@@ -30,12 +31,12 @@ public sealed class TmdbClientTests
     }
 
     [Fact]
-    public async Task GetMovieAsync_throws_when_not_configured()
+    public async Task GetMovieDataAsync_throws_when_not_configured()
     {
         var client = CreateClient("");
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.GetMovieAsync(550));
+            () => client.GetMovieDataAsync(550));
     }
 
     [Fact]

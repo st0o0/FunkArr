@@ -15,29 +15,31 @@ internal sealed class TvdbResolverActor : ReceiveActor
         _tvdbClient = tvdbClient;
         _episodeResolver = episodeResolver;
 
-        ReceiveAsync<FetchAndResolveEpisodes>(Handle);
+        ReceiveAsync<ResolveEpisodes>(Handle);
     }
 
-    private async Task Handle(FetchAndResolveEpisodes msg)
+    private async Task Handle(ResolveEpisodes msg)
     {
+        if (msg.Config.Strategy == "none")
+        {
+            Sender.Tell(new EpisodesResolved([]));
+            return;
+        }
+
         try
         {
-            _log.Info("Fetching TVDB episodes for series {TvdbId}", msg.TvdbId);
-            var episodes = await _tvdbClient.GetEpisodesAsync(msg.TvdbId, null);
+            var episodes = await _tvdbClient.GetEpisodesAsync(msg.TvdbId);
 
             var filtered = msg.Season is not null
                 ? episodes.Where(e => e.SeasonNumber == msg.Season.Value).ToArray()
                 : episodes;
 
             var resolved = _episodeResolver.Resolve(filtered, msg.Candidates, msg.Config);
-
-            Context.Parent.Tell(new EpisodeCacheUpdate(msg.TvdbId, episodes, resolved));
-
             Sender.Tell(new EpisodesResolved(resolved));
         }
         catch (Exception ex)
         {
-            _log.Warning(ex, "TVDB fetch failed for series {TvdbId}", msg.TvdbId);
+            _log.Warning(ex, "TVDB resolution failed for series {TvdbId}", msg.TvdbId);
             Sender.Tell(new EpisodeResolutionFailed(ex.Message));
         }
     }

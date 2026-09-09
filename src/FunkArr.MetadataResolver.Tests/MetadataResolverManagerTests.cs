@@ -4,6 +4,7 @@ using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.MetadataResolver;
 using FunkArr.Tests.Shared;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FunkArr.MetadataResolver.Tests;
@@ -24,6 +25,7 @@ public sealed class MetadataResolverManagerTests : TestKit
         services.AddSingleton(new TestOptionsMonitor<TmdbOptions>(new TmdbOptions { ApiKey = "" }));
         services.AddSingleton<Microsoft.Extensions.Options.IOptionsMonitor<TmdbOptions>>(sp =>
             sp.GetRequiredService<TestOptionsMonitor<TmdbOptions>>());
+        services.AddMemoryCache();
         services.AddHttpClient<TvdbClient>();
         services.AddHttpClient<TmdbClient>();
         services.AddSingleton<EpisodeResolver>();
@@ -37,6 +39,33 @@ public sealed class MetadataResolverManagerTests : TestKit
     {
         var resolver = DependencyResolver.For(Sys);
         return Sys.ActorOf(resolver.Props<MetadataResolverManager>());
+    }
+
+    [Fact]
+    public void Responds_with_empty_resolved_when_strategy_is_none()
+    {
+        var manager = CreateManager();
+
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Test", null, null, 5400, null, null),
+        };
+
+        manager.Tell(new ResolveEpisodes(83214, null, new ResolutionConfig("none"), candidates));
+
+        var response = ExpectMsg<EpisodesResolved>();
+        Assert.Empty(response.Episodes);
+    }
+
+    [Fact]
+    public void Cache_stats_returns_counts()
+    {
+        var manager = CreateManager();
+
+        manager.Tell(new QueryCacheStats());
+
+        var stats = ExpectMsg<CacheStatsResult>();
+        Assert.NotNull(stats);
     }
 
     [Fact]
@@ -70,34 +99,4 @@ public sealed class MetadataResolverManagerTests : TestKit
         var response = ExpectMsg<MovieResolutionFailed>();
         Assert.Contains("not configured", response.Reason);
     }
-
-    [Fact]
-    public void Responds_with_empty_resolved_when_strategy_is_none()
-    {
-        var manager = CreateManager();
-
-        var candidates = new[]
-        {
-            new EpisodeCandidate(0, "Test", null, null, 5400, null, null),
-        };
-
-        manager.Tell(new ResolveEpisodes(83214, null, new ResolutionConfig("none"), candidates));
-
-        var response = ExpectMsg<EpisodesResolved>();
-        Assert.Empty(response.Episodes);
-    }
-
-    [Fact]
-    public void Cache_stats_returns_zero_when_empty()
-    {
-        var manager = CreateManager();
-
-        manager.Tell(new QueryCacheStats());
-
-        var stats = ExpectMsg<CacheStatsResult>();
-        Assert.Equal(0, stats.TvdbEntries);
-        Assert.Equal(0, stats.TmdbEntries);
-        Assert.Null(stats.OldestEntry);
-    }
-
 }

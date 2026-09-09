@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -10,7 +11,7 @@ public sealed class TvdbClientTests
     {
         var options = new TvdbOptions { ApiKey = apiKey };
         var monitor = new TestOptionsMonitor<TvdbOptions>(options);
-        return new TvdbClient(new HttpClient(), monitor, NullLogger<TvdbClient>.Instance);
+        return new TvdbClient(new HttpClient(), monitor, new MemoryCache(new MemoryCacheOptions()), NullLogger<TvdbClient>.Instance);
     }
 
     [Fact]
@@ -35,7 +36,7 @@ public sealed class TvdbClientTests
         var client = CreateClient("");
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => client.GetEpisodesAsync(83214, null));
+            () => client.GetEpisodesAsync(83214));
     }
 
     private sealed class TestOptionsMonitor<T>(T value) : IOptionsMonitor<T>

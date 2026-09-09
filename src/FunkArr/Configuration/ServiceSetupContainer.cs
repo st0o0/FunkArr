@@ -73,6 +73,8 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             .AddOptions<TmdbOptions>()
             .Bind(configuration.GetSection("FunkArr:Tmdb"));
 
+        services.AddMemoryCache();
+
         services.AddHttpClient<TvdbClient>(client =>
         {
             client.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
