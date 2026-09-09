@@ -1,0 +1,30 @@
+services:
+  funkarr:
+    environment:
+      - FunkArr__Postgres__Host=db
+      - FunkArr__Postgres__Port=5432
+      - FunkArr__Postgres__User=funkarr
+      - FunkArr__Postgres__Password=funkarr-dev
+      - FunkArr__Postgres__Database=funkarr
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: funkarr-db
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: funkarr
+      POSTGRES_USER: funkarr
+      POSTGRES_PASSWORD: funkarr-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U funkarr"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  db-data:
