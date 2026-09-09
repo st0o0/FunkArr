@@ -9,8 +9,11 @@
 
     <PropertyGroup Condition="$(MSBuildProjectName.Contains('Tests'))">
         <IsPackable>false</IsPackable>
-        <IsTestProject>true</IsTestProject>
         <NoWarn>$(NoWarn);xUnit1051</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(MSBuildProjectName.Contains('Tests')) AND !$(MSBuildProjectName.EndsWith('Tests.Shared'))">
+        <IsTestProject>true</IsTestProject>
     </PropertyGroup>
 
 </Project>
