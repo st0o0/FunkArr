@@ -42,13 +42,13 @@ internal sealed class FfmpegRunner : IFfmpegRunner
             catch (FFMpegException retryEx)
             {
                 retrySw.Stop();
-                return new FfmpegResult(false, 1, CapStderr(retryEx.FFMpegErrorOutput), (int)(sw.Elapsed + retrySw.Elapsed).TotalSeconds);
+                return new FfmpegResult(false, 1, ExtractError(retryEx.FFMpegErrorOutput), (int)(sw.Elapsed + retrySw.Elapsed).TotalSeconds);
             }
         }
         catch (FFMpegException ex)
         {
             sw.Stop();
-            return new FfmpegResult(false, 1, CapStderr(ex.FFMpegErrorOutput), (int)sw.Elapsed.TotalSeconds);
+            return new FfmpegResult(false, 1, ExtractError(ex.FFMpegErrorOutput), (int)sw.Elapsed.TotalSeconds);
         }
         catch (OperationCanceledException)
         {
@@ -128,6 +128,36 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         ex.FFMpegErrorOutput?.Contains("Error opening input file", StringComparison.OrdinalIgnoreCase) == true ||
         ex.FFMpegErrorOutput?.Contains("Invalid data found when processing input", StringComparison.OrdinalIgnoreCase) == true;
 
-    private static string CapStderr(string? stderr)
-        => stderr is null or { Length: <= 4096 } ? stderr ?? "" : stderr[^4096..];
+    internal static string ExtractError(string? stderr)
+    {
+        if (string.IsNullOrWhiteSpace(stderr))
+        {
+            return "";
+        }
+
+        var lines = stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        for (var i = lines.Length - 1; i >= 0; i--)
+        {
+            var line = lines[i].Trim();
+            if (line.Contains("HTTP error", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Error opening input", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Server returned", StringComparison.OrdinalIgnoreCase) ||
+                line.Contains("Invalid data found", StringComparison.OrdinalIgnoreCase))
+            {
+                return line;
+            }
+        }
+
+        for (var i = lines.Length - 1; i >= 0; i--)
+        {
+            var line = lines[i].Trim();
+            if (line.Length > 0)
+            {
+                return line;
+            }
+        }
+
+        return "";
+    }
 }

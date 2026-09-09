@@ -256,6 +256,36 @@ public sealed class FfmpegRunnerTests
         Assert.Contains("-metadata:s:s:0 language=deu", args);
     }
 
+    [Fact]
+    public void ExtractError_http_403()
+    {
+        var stderr = "ffmpeg version 6.1.1\nlibavutil 58.29\n[https] HTTP error 403 Forbidden\nError opening input file https://example.com/video.mp4\nError opening input files: Server returned 403 Forbidden (access denied)";
+        var result = FfmpegRunner.ExtractError(stderr);
+        Assert.Equal("Error opening input files: Server returned 403 Forbidden (access denied)", result);
+    }
+
+    [Fact]
+    public void ExtractError_null_returns_empty()
+    {
+        Assert.Equal("", FfmpegRunner.ExtractError(null));
+        Assert.Equal("", FfmpegRunner.ExtractError(""));
+        Assert.Equal("", FfmpegRunner.ExtractError("   "));
+    }
+
+    [Fact]
+    public void ExtractError_unknown_pattern_returns_last_line()
+    {
+        var stderr = "ffmpeg version 6.1.1\nSome unknown error happened";
+        Assert.Equal("Some unknown error happened", FfmpegRunner.ExtractError(stderr));
+    }
+
+    [Fact]
+    public void ExtractError_server_returned()
+    {
+        var stderr = "ffmpeg version 6.1.1\nlots of build info\nServer returned 404 Not Found";
+        Assert.Equal("Server returned 404 Not Found", FfmpegRunner.ExtractError(stderr));
+    }
+
     private static void FeedBlock(
         Dictionary<string, string> block, List<ProgressUpdate> updates, params string[] lines)
     {
