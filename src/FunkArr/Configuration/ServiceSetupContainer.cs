@@ -38,6 +38,10 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             .Bind(configuration.GetSection(DownloadOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<PostgresOptions>()
+            .Bind(configuration.GetSection(PostgresOptions.SectionName));
+
         services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
@@ -58,21 +62,28 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
 
         services
             .AddOptions<TvdbOptions>()
-            .Bind(configuration.GetSection("Tvdb"));
+            .Bind(configuration.GetSection("FunkArr:Tvdb"));
 
         services
             .AddOptions<MetadataResolverOptions>()
-            .Bind(configuration.GetSection("MetadataResolver"));
+            .Bind(configuration.GetSection("FunkArr:MetadataResolver"));
 
         services
             .AddOptions<TmdbOptions>()
-            .Bind(configuration.GetSection("Tmdb"));
+            .Bind(configuration.GetSection("FunkArr:Tmdb"));
 
-        services.AddHttpClient("Tvdb");
-        services.AddSingleton<TvdbClient>();
+        services.AddHttpClient<TvdbClient>(client =>
+        {
+            client.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
+        });
 
-        services.AddHttpClient("Tmdb");
-        services.AddSingleton<TmdbClient>();
+        services.AddHttpClient<TmdbClient>(client =>
+        {
+            client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
+        });
+
+        services.AddSingleton<EpisodeResolver>();
+        services.AddSingleton<MovieResolver>();
 
         services.AddHttpClient("MediathekViewWeb", client =>
         {

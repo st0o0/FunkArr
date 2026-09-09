@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.MetadataResolver.Tests;
@@ -9,8 +10,7 @@ public sealed class TmdbClientTests
     {
         var options = new TmdbOptions { ApiKey = apiKey };
         var monitor = new TestOptionsMonitor<TmdbOptions>(options);
-        var factory = new TestHttpClientFactory();
-        return new TmdbClient(factory, monitor);
+        return new TmdbClient(new HttpClient(), monitor, NullLogger<TmdbClient>.Instance);
     }
 
     [Fact]
@@ -54,8 +54,4 @@ public sealed class TmdbClientTests
         public IDisposable? OnChange(Action<T, string?> listener) => null;
     }
 
-    private sealed class TestHttpClientFactory : IHttpClientFactory
-    {
-        public HttpClient CreateClient(string name) => new();
-    }
 }

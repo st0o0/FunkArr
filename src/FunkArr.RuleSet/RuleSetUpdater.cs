@@ -13,7 +13,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
 
     private static readonly TimeSpan _refreshInterval = TimeSpan.FromMinutes(30);
 
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
     private readonly IOptionsMonitor<RuleSetUpdaterOptions> _optionsMonitor;
@@ -27,7 +27,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
         DataPaths dataPaths,
         IOptionsMonitor<RuleSetUpdaterOptions> optionsMonitor)
     {
-        _httpClient = httpClientFactory.CreateClient("GitHub");
+        _httpClientFactory = httpClientFactory;
         _dataFiles = dataFiles;
         _dataPaths = dataPaths;
         _optionsMonitor = optionsMonitor;
@@ -94,7 +94,8 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
         _log.Info("Updating community rulesets from {OldVersion} to {NewVersion}",
             localVersion ?? "(none)", release.Value.Version);
 
-        var zipBytes = await _httpClient.GetByteArrayAsync(release.Value.AssetUrl);
+        using var downloadClient = _httpClientFactory.CreateClient("GitHub");
+        var zipBytes = await downloadClient.GetByteArrayAsync(release.Value.AssetUrl);
 
         var tempDir = Path.Join(_dataPaths.Temp, $"rulesets-{Guid.NewGuid():N}");
 
@@ -123,7 +124,8 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
         var opts = _optionsMonitor.CurrentValue;
         var url = $"repos/{opts.Repository}/releases";
 
-        using var response = await _httpClient.GetAsync(url);
+        using var client = _httpClientFactory.CreateClient("GitHub");
+        using var response = await client.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
             _log.Warning("GitHub API returned {StatusCode} for {Url}", (int)response.StatusCode, url);

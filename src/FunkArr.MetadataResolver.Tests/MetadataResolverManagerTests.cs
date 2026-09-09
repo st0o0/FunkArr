@@ -1,30 +1,43 @@
 using Akka.Actor;
+using Akka.DependencyInjection;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.MetadataResolver;
 using FunkArr.Tests.Shared;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FunkArr.MetadataResolver.Tests;
 
 public sealed class MetadataResolverManagerTests : TestKit
 {
-    private static TvdbClient CreateUnconfiguredTvdbClient()
+    public MetadataResolverManagerTests()
+        : base(CreateConfig())
     {
-        var factory = new TestHttpClientFactory();
-        var options = new TestOptionsMonitor<TvdbOptions>(new TvdbOptions { ApiKey = "" });
-        return new TvdbClient(factory, options);
     }
 
-    private static TmdbClient CreateUnconfiguredTmdbClient()
+    private static Akka.Actor.Setup.ActorSystemSetup CreateConfig()
     {
-        var factory = new TestHttpClientFactory();
-        var options = new TestOptionsMonitor<TmdbOptions>(new TmdbOptions { ApiKey = "" });
-        return new TmdbClient(factory, options);
+        var services = new ServiceCollection();
+        services.AddSingleton(new TestOptionsMonitor<TvdbOptions>(new TvdbOptions { ApiKey = "" }));
+        services.AddSingleton<Microsoft.Extensions.Options.IOptionsMonitor<TvdbOptions>>(sp =>
+            sp.GetRequiredService<TestOptionsMonitor<TvdbOptions>>());
+        services.AddSingleton(new TestOptionsMonitor<TmdbOptions>(new TmdbOptions { ApiKey = "" }));
+        services.AddSingleton<Microsoft.Extensions.Options.IOptionsMonitor<TmdbOptions>>(sp =>
+            sp.GetRequiredService<TestOptionsMonitor<TmdbOptions>>());
+        services.AddHttpClient<TvdbClient>();
+        services.AddHttpClient<TmdbClient>();
+        services.AddSingleton<EpisodeResolver>();
+        services.AddSingleton<MovieResolver>();
+        var provider = services.BuildServiceProvider();
+
+        return Akka.Actor.Setup.ActorSystemSetup.Create(DependencyResolverSetup.Create(provider));
     }
 
-    private IActorRef CreateManager() =>
-        Sys.ActorOf(Props.Create(() =>
-            new MetadataResolverManager(CreateUnconfiguredTvdbClient(), CreateUnconfiguredTmdbClient())));
+    private IActorRef CreateManager()
+    {
+        var resolver = DependencyResolver.For(Sys);
+        return Sys.ActorOf(resolver.Props<MetadataResolverManager>());
+    }
 
     [Fact]
     public void Responds_with_failure_when_tvdb_not_configured()
@@ -87,8 +100,4 @@ public sealed class MetadataResolverManagerTests : TestKit
         Assert.Null(stats.OldestEntry);
     }
 
-    private sealed class TestHttpClientFactory : IHttpClientFactory
-    {
-        public HttpClient CreateClient(string name) => new();
-    }
 }

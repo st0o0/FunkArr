@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.MetadataResolver;
@@ -16,13 +17,14 @@ public sealed class TvdbClient
 
     private readonly HttpClient _httpClient;
     private readonly IOptionsMonitor<TvdbOptions> _options;
+    private readonly ILogger<TvdbClient> _log;
     private string? _token;
 
-    public TvdbClient(IHttpClientFactory httpClientFactory, IOptionsMonitor<TvdbOptions> options)
+    public TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, ILogger<TvdbClient> log)
     {
-        _httpClient = httpClientFactory.CreateClient("Tvdb");
-        _httpClient.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
+        _httpClient = httpClient;
         _options = options;
+        _log = log;
     }
 
     public bool IsConfigured => !string.IsNullOrEmpty(_options.CurrentValue.ApiKey);
@@ -43,16 +45,19 @@ public sealed class TvdbClient
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
+                    _log.LogWarning("TVDB token expired for series {SeriesId}, re-authenticating", seriesId);
                     _token = null;
                     await EnsureAuthenticated();
                     response = await SendAuthenticated(url);
                     if (!response.IsSuccessStatusCode)
                     {
+                        _log.LogWarning("TVDB request failed after re-auth: {StatusCode} for {Url}", (int)response.StatusCode, url);
                         break;
                     }
                 }
                 else
                 {
+                    _log.LogWarning("TVDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
                     break;
                 }
             }
@@ -102,6 +107,8 @@ public sealed class TvdbClient
         var loginResult = await loginResponse.Content.ReadFromJsonAsync<TvdbLoginResponse>(_jsonOptions);
         _token = loginResult?.Data?.Token
             ?? throw new InvalidOperationException("TVDB login did not return a token");
+
+        _log.LogDebug("TVDB authentication successful");
     }
 
     private async Task<HttpResponseMessage> SendAuthenticated(string url)

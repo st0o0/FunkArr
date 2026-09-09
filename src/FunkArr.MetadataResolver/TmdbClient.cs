@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.MetadataResolver;
@@ -15,12 +16,13 @@ public sealed class TmdbClient
 
     private readonly HttpClient _httpClient;
     private readonly IOptionsMonitor<TmdbOptions> _options;
+    private readonly ILogger<TmdbClient> _log;
 
-    public TmdbClient(IHttpClientFactory httpClientFactory, IOptionsMonitor<TmdbOptions> options)
+    public TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOptions> options, ILogger<TmdbClient> log)
     {
-        _httpClient = httpClientFactory.CreateClient("Tmdb");
-        _httpClient.BaseAddress = new Uri("https://api.themoviedb.org/3/");
+        _httpClient = httpClient;
         _options = options;
+        _log = log;
     }
 
     public bool IsConfigured => !string.IsNullOrEmpty(_options.CurrentValue.ApiKey);
@@ -61,6 +63,7 @@ public sealed class TmdbClient
         var response = await _httpClient.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
+            _log.LogWarning("TMDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
             return null;
         }
 

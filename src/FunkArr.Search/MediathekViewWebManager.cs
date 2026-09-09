@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Akka.Actor;
+using Akka.Event;
 using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Search;
@@ -10,7 +11,8 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private sealed record HttpFailed(string Reason);
 
-    private readonly HttpClient _httpClient;
+    private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly int _maxConcurrent;
     private MediathekViewWebManagerState _state = MediathekViewWebManagerState.Empty;
 
@@ -18,7 +20,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     public MediathekViewWebManager(IHttpClientFactory httpClientFactory, int maxConcurrent = 3)
     {
-        _httpClient = httpClientFactory.CreateClient("MediathekViewWeb");
+        _httpClientFactory = httpClientFactory;
         _maxConcurrent = maxConcurrent;
 
         Receive<QueryMediathek>(HandleQuery);
@@ -30,6 +32,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
     {
         if (!_state.HasCapacity(_maxConcurrent))
         {
+            _log.Debug("At capacity ({MaxConcurrent}), stashing query", _maxConcurrent);
             Stash.Stash();
             return;
         }
@@ -44,12 +47,14 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
         var self = Self;
         var sender = Sender;
 
+        var factory = _httpClientFactory;
         Task.Run(async () =>
         {
             try
             {
+                using var client = factory.CreateClient("MediathekViewWeb");
                 using var content = new StringContent(json, System.Text.Encoding.UTF8, "text/plain");
-                using var response = await _httpClient.PostAsync("", content);
+                using var response = await client.PostAsync("", content);
                 response.EnsureSuccessStatusCode();
 
                 var body = await response.Content.ReadAsStringAsync();
@@ -90,6 +95,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private void HandleHttpFailed(HttpFailed msg)
     {
+        _log.Warning("MediathekViewWeb query failed: {Reason}", msg.Reason);
         Sender.Tell(new MediathekQueryFailed(msg.Reason));
         SlotFreed();
     }
