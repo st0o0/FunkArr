@@ -52,21 +52,26 @@ FunkArr.Core SHALL define a `ReleaseTitleBuilder` static class with a `Build` me
 #### Scenario: Movie without airdate
 
 - **WHEN** Build is called with topic "Polizeiruf 110", title "Blutige Fährte", metadata null, quality 720, category "movie"
-- **THEN** the result SHALL be `Polizeiruf.110.Blutige.Faehrte.GERMAN.720p.WEB.h264-FunkArr`
+- **THEN** the result SHALL be `Polizeiruf.110.Blutige.Fährte.GERMAN.720p.WEB.h264-FunkArr`
 
-### Requirement: Umlaut normalization
+### Requirement: Umlaut preservation
 
-ReleaseTitleBuilder SHALL normalize German umlauts and special characters to ASCII equivalents before formatting.
+ReleaseTitleBuilder SHALL preserve German Umlauts and special characters (ä, ö, ü, Ä, Ö, Ü, ß) as-is in release titles. No ASCII digraph normalization SHALL be applied.
 
-#### Scenario: Standard umlaut replacement
+#### Scenario: Umlauts preserved in title
 
-- **WHEN** a title contains "Überführung"
-- **THEN** it SHALL be normalized to "Ueberfuehrung"
+- **WHEN** Build is called with a topic containing "ö"
+- **THEN** the "ö" SHALL remain as "ö" in the output, not be replaced with "oe"
 
-#### Scenario: All umlaut mappings
+#### Scenario: All German special characters preserved
 
 - **WHEN** a title contains ä, ö, ü, Ä, Ö, Ü, ß
-- **THEN** they SHALL be replaced with ae, oe, ue, Ae, Oe, Ue, ss respectively
+- **THEN** they SHALL appear unchanged in the output (NOT ae, oe, ue, Ae, Oe, Ue, ss)
+
+#### Scenario: Eszett preserved
+
+- **WHEN** Build is called with topic "Straße", title "Spaß"
+- **THEN** the result SHALL be `Straße.Spaß.GERMAN.720p.WEB.h264-FunkArr`
 
 ### Requirement: Special character handling
 
