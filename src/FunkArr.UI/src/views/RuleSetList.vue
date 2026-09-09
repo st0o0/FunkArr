@@ -9,6 +9,13 @@
         placeholder="Search rulesets..."
         class="bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body placeholder-text-muted w-full focus:outline-none focus:border-brand-500/50"
       />
+      <select
+        v-model="sortBy"
+        class="bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-brand-500/50"
+      >
+        <option value="topic">Sort by Name</option>
+        <option value="id">Sort by ID</option>
+      </select>
       <router-link
         to="/rulesets/new"
         class="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-500 text-sm transition-colors whitespace-nowrap active:scale-[0.98]"
@@ -54,8 +61,8 @@
         class="block p-4 bg-surface-raised rounded-lg hover:-translate-y-px hover:shadow-md transition-all"
       >
         <div class="flex items-baseline gap-3 mb-1">
-          <span class="font-mono text-sm font-semibold text-brand-400">{{ rs.ruleSetId }}</span>
-          <span class="text-text-body">{{ rs.topic }}</span>
+          <span class="text-sm font-semibold text-text-primary">{{ rs.topic }}</span>
+          <span class="font-mono text-xs text-text-muted">{{ rs.ruleSetId }}</span>
         </div>
         <div v-if="rs.aliases.length > 0" class="text-xs text-text-muted mb-1">
           Aliases: {{ rs.aliases.join(', ') }}
@@ -80,9 +87,13 @@ const rulesets = ref<RuleSetEntry[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const search = ref('')
+const sortBy = ref<'topic' | 'id'>('topic')
 
 const sortedRulesets = computed(() =>
-  [...rulesets.value].sort((a, b) => a.topic.localeCompare(b.topic, 'de'))
+  [...rulesets.value].sort((a, b) =>
+    sortBy.value === 'id'
+      ? a.ruleSetId.localeCompare(b.ruleSetId)
+      : a.topic.localeCompare(b.topic, 'de'))
 )
 
 const filteredRulesets = computed(() => {
