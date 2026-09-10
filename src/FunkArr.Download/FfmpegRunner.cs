@@ -9,13 +9,13 @@ namespace FunkArr.Download;
 internal sealed class FfmpegRunner : IFfmpegRunner
 {
     public async Task<FfmpegResult> RunAsync(
-        string videoUrl, string? subtitleUrl, string outputPath,
+        string videoUrl, string? subtitlePath, string outputPath,
         Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var progressBlock = new Dictionary<string, string>();
 
-        var processor = BuildArguments(videoUrl, subtitleUrl, outputPath)
+        var processor = BuildArguments(videoUrl, subtitlePath, outputPath)
             .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
             .CancellableThrough(ct);
 
@@ -24,26 +24,6 @@ internal sealed class FfmpegRunner : IFfmpegRunner
             await processor.ProcessAsynchronously(throwOnError: true);
             sw.Stop();
             return new FfmpegResult(true, 0, null, (int)sw.Elapsed.TotalSeconds);
-        }
-        catch (FFMpegException ex) when (subtitleUrl is not null && IsSubtitleInputError(ex))
-        {
-            sw.Stop();
-            var retryProcessor = BuildArguments(videoUrl, null, outputPath)
-                .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
-                .CancellableThrough(ct);
-
-            var retrySw = Stopwatch.StartNew();
-            try
-            {
-                await retryProcessor.ProcessAsynchronously(throwOnError: true);
-                retrySw.Stop();
-                return new FfmpegResult(true, 0, null, (int)(sw.Elapsed + retrySw.Elapsed).TotalSeconds);
-            }
-            catch (FFMpegException retryEx)
-            {
-                retrySw.Stop();
-                return new FfmpegResult(false, 1, ExtractError(retryEx.FFMpegErrorOutput), (int)(sw.Elapsed + retrySw.Elapsed).TotalSeconds);
-            }
         }
         catch (FFMpegException ex)
         {
@@ -58,12 +38,12 @@ internal sealed class FfmpegRunner : IFfmpegRunner
     }
 
     internal static FFMpegArgumentProcessor BuildArguments(
-        string videoUrl, string? subtitleUrl, string outputPath)
+        string videoUrl, string? subtitlePath, string outputPath)
     {
-        var arguments = subtitleUrl is not null
+        var arguments = subtitlePath is not null
             ? FFMpegArguments
                 .FromUrlInput(new Uri(videoUrl))
-                .AddUrlInput(new Uri(subtitleUrl))
+                .AddFileInput(subtitlePath)
                 .OutputToFile(outputPath, overwrite: true, options => options
                     .CopyChannel(Channel.Video)
                     .CopyChannel(Channel.Audio)
@@ -123,10 +103,6 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         var trimmed = value.TrimEnd('x');
         return double.TryParse(trimmed, CultureInfo.InvariantCulture, out var result) ? result : 0.0;
     }
-
-    private static bool IsSubtitleInputError(FFMpegException ex) =>
-        ex.FFMpegErrorOutput?.Contains("Error opening input file", StringComparison.OrdinalIgnoreCase) == true ||
-        ex.FFMpegErrorOutput?.Contains("Invalid data found when processing input", StringComparison.OrdinalIgnoreCase) == true;
 
     internal static string ExtractError(string? stderr)
     {

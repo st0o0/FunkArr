@@ -27,17 +27,15 @@ The DownloadWorker SHALL handle `InitDownload` messages by persisting all downlo
 - **THEN** the Worker SHALL ignore the message
 
 ### Requirement: DownloadWorker handles StartDownload
-The DownloadWorker SHALL handle `StartDownload` as a bare go-signal (DownloadId only, no payload). It SHALL delegate FFmpeg orchestration to `FfmpegRunner.Run` and store the returned `CancellationTokenSource`.
+The DownloadWorker SHALL handle `StartDownload` as a bare go-signal (DownloadId only, no payload). It SHALL delegate media remuxing to `IRemuxer.RunAsync` and store the returned `CancellationTokenSource`.
 
 #### Scenario: Start with persisted subtitle
 - **WHEN** a StartDownload is received and the persisted metadata has a non-null SubtitleUrl
-- **THEN** the Worker SHALL persist a `DownloadStarted` event and call `FfmpegRunner.Run(Self, videoUrl, subtitleUrl, outputPath)`
-- **AND** store the returned `CancellationTokenSource`
+- **THEN** the Worker SHALL persist a `DownloadStarted` event and call `IRemuxer.RunAsync(videoUrl, subtitleUrl, outputPath, onProgress, ct)`
 
 #### Scenario: Start without subtitle
 - **WHEN** a StartDownload is received and the persisted metadata has a null SubtitleUrl
-- **THEN** the Worker SHALL persist a `DownloadStarted` event and call `FfmpegRunner.Run(Self, videoUrl, null, outputPath)`
-- **AND** store the returned `CancellationTokenSource`
+- **THEN** the Worker SHALL persist a `DownloadStarted` event and call `IRemuxer.RunAsync(videoUrl, null, outputPath, onProgress, ct)`
 
 #### Scenario: Start when not initialized
 - **WHEN** a StartDownload is received but no InitDownload has been processed
@@ -94,11 +92,11 @@ The DownloadWorker SHALL send a `RecordDownload` message to the DownloadHistoryA
 - **THEN** the Worker SHALL send `RecordDownload` with DownloadId, Title, Category, Size, Completed status, `RelativePath` (from `DownloadPaths`), DownloadTimeSeconds, and CompletedAt to the HistoryActor
 
 #### Scenario: Failure notification
-- **WHEN** the FFmpeg process exits with a non-zero code (and it's not a retriable subtitle error)
+- **WHEN** the FFmpeg process exits with a non-zero code
 - **THEN** the Worker SHALL send `RecordDownload` with DownloadId, Title, Category, Size, Failed status, FailMessage, null RelativePath, and CompletedAt to the HistoryActor
 
 ### Requirement: DownloadWorker reports completion
-The DownloadWorker SHALL receive `ProcessExited` messages from `FfmpegRunner` and handle success, subtitle-retry, and failure cases.
+The DownloadWorker SHALL receive `ProcessExited` messages from `FfmpegRunner` and handle success and failure cases.
 
 #### Scenario: Successful completion
 - **WHEN** a `ProcessExited` message is received with ExitCode 0
@@ -108,21 +106,14 @@ The DownloadWorker SHALL receive `ProcessExited` messages from `FfmpegRunner` an
 - **AND** passivate
 
 ### Requirement: DownloadWorker reports failure
-The DownloadWorker SHALL handle `ProcessExited` messages with non-zero exit codes by persisting failure or retrying without subtitles.
+The DownloadWorker SHALL handle `ProcessExited` messages with non-zero exit codes by persisting failure.
 
 #### Scenario: FFmpeg failure
-- **WHEN** a `ProcessExited` message is received with a non-zero ExitCode and it is not a subtitle error
+- **WHEN** a `ProcessExited` message is received with a non-zero ExitCode
 - **THEN** the Worker SHALL persist a `DownloadFaulted` event with the ErrorOutput
 - **AND** send `SlotFree(DownloadId)` to the Manager
 - **AND** send `RecordDownload` to the HistoryActor
 - **AND** passivate
-
-### Requirement: DownloadWorker subtitle failure is non-fatal
-The DownloadWorker SHALL proceed without subtitles if the FFmpeg process fails due to a subtitle input error.
-
-#### Scenario: Subtitle download fails
-- **WHEN** a `ProcessExited` message is received with a non-zero ExitCode and the error is a subtitle error and SubtitleUrl is not null
-- **THEN** the Worker SHALL clear SubtitleUrl from state and call `FfmpegRunner.Run(Self, videoUrl, null, outputPath)` to retry without subtitles
 
 ### Requirement: DownloadWorker cancellation
 The DownloadWorker SHALL cancel the `CancellationTokenSource` returned by `FfmpegRunner.Run` to stop an active download.
@@ -165,10 +156,10 @@ The DownloadWorker SHALL recover its full state from persisted events on restart
 - **THEN** it SHALL passivate immediately
 
 ### Requirement: DownloadWorker receives IDataFiles and DataPaths via DI
-The DownloadWorker SHALL receive `IFfmpegRunner`, `IDataFiles`, `DataPaths`, and `IOptions<DownloadOptions>` via constructor injection.
+The DownloadWorker SHALL receive `IRemuxer`, `IDataFiles`, `DataPaths`, and `IOptions<DownloadOptions>` via constructor injection.
 
 #### Scenario: DI injection
 - **WHEN** the DownloadWorker is created
-- **THEN** it SHALL receive `IFfmpegRunner`, `IDataFiles`, `DataPaths`, and `IOptions<DownloadOptions>` via its constructor
+- **THEN** it SHALL receive `IRemuxer`, `IDataFiles`, `DataPaths`, and `IOptions<DownloadOptions>` via its constructor
 - **AND** use `DataPaths.ResolveDownload()` with the options categories for path resolution
 - **AND** use `IDataFiles` for all filesystem operations

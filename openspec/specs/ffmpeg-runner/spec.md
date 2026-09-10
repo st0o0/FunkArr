@@ -11,7 +11,8 @@ The FfmpegRunner SHALL be a static class that encapsulates FFmpeg process lifecy
 
 #### Scenario: Run signature
 - **WHEN** a caller invokes `FfmpegRunner.Run`
-- **THEN** it SHALL accept `IActorRef self`, `string videoUrl`, `string? subtitleUrl`, `string outputPath`
+- **THEN** it SHALL accept `IActorRef self`, `string videoUrl`, `string? subtitlePath`, `string outputPath`
+- **AND** `subtitlePath` SHALL be a local file path (not a URL), or null
 - **AND** return a `CancellationTokenSource` for cancellation control
 
 ### Requirement: FfmpegRunner sends ProgressUpdate messages

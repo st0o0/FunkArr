@@ -270,6 +270,7 @@ export async function testRuleSet(config: TestScoringRequest['config'], candidat
   return res.json()
 }
 
-export function searchMediathek(query: string, limit = 20): Promise<MediathekCandidate[]> {
-  return fetchJson(`/api/mediathek/search?q=${encodeURIComponent(query)}&limit=${limit}`)
+export async function searchMediathek(query: string, limit = 20): Promise<MediathekCandidate[]> {
+  const data = await fetchJson<{ items: MediathekCandidate[] }>(`/api/mediathek/search?q=${encodeURIComponent(query)}&limit=${limit}`)
+  return data.items
 }

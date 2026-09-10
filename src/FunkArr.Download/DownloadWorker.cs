@@ -17,16 +17,16 @@ public sealed class DownloadWorker : ReceivePersistentActor
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
     private readonly IActorRef _downloadHistory = Context.GetActor<IDownloadHistoryManager>();
-    private readonly IFfmpegRunner _ffmpeg;
+    private readonly IRemuxer _remuxer;
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
     private readonly DownloadOptions _options;
     private DownloadWorkerState _state = DownloadWorkerState.Empty;
     private CancellationTokenSource? _cts;
 
-    public DownloadWorker(IFfmpegRunner ffmpeg, IDataFiles dataFiles, DataPaths dataPaths, IOptions<DownloadOptions> options)
+    public DownloadWorker(IRemuxer remuxer, IDataFiles dataFiles, DataPaths dataPaths, IOptions<DownloadOptions> options)
     {
-        _ffmpeg = ffmpeg;
+        _remuxer = remuxer;
         _dataFiles = dataFiles;
         _dataPaths = dataPaths;
         _options = options.Value;
@@ -152,6 +152,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
             BytesDownloaded = msg.TotalSize,
             CurrentTimeUs = msg.OutTimeUs,
             Speed = msg.Speed,
+            Size = Math.Max(_state.Size, msg.TotalSize),
         };
     }
 
@@ -185,12 +186,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
                     msg.ElapsedSeconds, completedAt));
                 Passivate();
             });
-        }
-        else if (_state.SubtitleUrl is not null && IsSubtitleError(msg.Error))
-        {
-            _log.Warning("Download {DownloadId} subtitle failed, retrying without subtitles: {Title}", downloadId, _state.Title);
-            _state = _state with { SubtitleUrl = null };
-            StartFfmpeg(_state.VideoUrl!, null, paths.IncompletePath);
         }
         else
         {
@@ -238,7 +233,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
     {
         _cts = new CancellationTokenSource();
         var self = Self;
-        _ffmpeg.RunAsync(videoUrl, subtitleUrl, outputPath,
+        _remuxer.RunAsync(videoUrl, subtitleUrl, outputPath,
             progress => self.Tell(progress), _cts.Token).PipeTo(self);
     }
 
@@ -273,9 +268,4 @@ public sealed class DownloadWorker : ReceivePersistentActor
     }
 
     protected override void PostStop() => CancelRunning();
-
-    private static bool IsSubtitleError(string? stderr) =>
-        stderr is not null && (
-            stderr.Contains("subtitle", StringComparison.OrdinalIgnoreCase) ||
-            stderr.Contains("Stream map", StringComparison.OrdinalIgnoreCase));
 }

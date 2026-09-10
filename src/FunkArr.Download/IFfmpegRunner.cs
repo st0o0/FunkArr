@@ -7,6 +7,6 @@ public sealed record FfmpegResult(bool Success, int ExitCode, string? Error, int
 public interface IFfmpegRunner
 {
     Task<FfmpegResult> RunAsync(
-        string videoUrl, string? subtitleUrl, string outputPath,
+        string videoUrl, string? subtitlePath, string outputPath,
         Action<ProgressUpdate> onProgress, CancellationToken ct);
 }

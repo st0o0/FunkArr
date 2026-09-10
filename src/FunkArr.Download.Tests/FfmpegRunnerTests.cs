@@ -246,7 +246,7 @@ public sealed class FfmpegRunnerTests
     {
         var processor = FfmpegRunner.BuildArguments(
             "https://example.com/video.mp4",
-            "https://example.com/subs.xml",
+            "/tmp/subtitle.srt",
             "/tmp/out.mkv");
 
         var args = processor.Arguments;
