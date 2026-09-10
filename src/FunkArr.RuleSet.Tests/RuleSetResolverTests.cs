@@ -284,6 +284,34 @@ public sealed class RuleSetResolverTests : TestKit
     }
 
     [Fact]
+    public void QueryAll_includes_media_name()
+    {
+        var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
+
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], MediaName: "Tatort (TV Series)"));
+
+        resolver.Tell(new QueryRegisteredRuleSets());
+        var result = ExpectMsg<RegisteredRuleSetsResult>();
+
+        var entry = Assert.Single(result.Entries);
+        Assert.Equal("Tatort (TV Series)", entry.MediaName);
+    }
+
+    [Fact]
+    public void QueryAll_returns_null_media_name_when_not_resolved()
+    {
+        var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
+
+        resolver.Tell(new RegisterRuleSet("test", "Test", []));
+
+        resolver.Tell(new QueryRegisteredRuleSets());
+        var result = ExpectMsg<RegisteredRuleSetsResult>();
+
+        var entry = Assert.Single(result.Entries);
+        Assert.Null(entry.MediaName);
+    }
+
+    [Fact]
     public void QueryAll_returns_multiple_rulesets()
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));

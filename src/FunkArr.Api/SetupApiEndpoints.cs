@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using Akka.Actor;
+using Akka.Hosting;
 using FunkArr.Api.Models;
 using FunkArr.Core;
+using FunkArr.Messages.MetadataResolver;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -11,6 +14,7 @@ public static class SetupApiEndpoints
 {
     private const string _defaultApiKey = "funkarr-default-api-key";
     private static readonly TimeSpan _httpTimeout = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
 
     public static WebApplication MapSetupApi(this WebApplication app)
     {
@@ -58,7 +62,48 @@ public static class SetupApiEndpoints
             return Results.Ok(new SetupHealthCheck(checks, connectionInfo));
         });
 
+        group.MapGet("/storage", (DataPaths dataPaths) =>
+        {
+            var complete = GetStorageDirectory(dataPaths.Complete);
+            var incomplete = GetStorageDirectory(dataPaths.Incomplete);
+            return Results.Ok(new StorageStatusResponse(complete, incomplete));
+        })
+        .Produces<StorageStatusResponse>();
+
+        group.MapGet("/cache", async (IActorRegistry registry) =>
+        {
+            var resolver = registry.Get<IMetadataResolver>();
+            try
+            {
+                var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout);
+                return Results.Ok(new CacheStatsResponse(
+                    result.TvdbEntries,
+                    result.TmdbEntries,
+                    result.OldestEntry?.ToString("o")));
+            }
+            catch (Exception)
+            {
+                return Results.Problem(statusCode: 504, title: "Gateway Timeout");
+            }
+        })
+        .Produces<CacheStatsResponse>()
+        .ProducesProblem(504);
+
         return app;
+    }
+
+    internal static StorageDirectory GetStorageDirectory(string path)
+    {
+        try
+        {
+            var fullPath = Path.GetFullPath(path);
+            var driveInfo = new DriveInfo(Path.GetPathRoot(fullPath)!);
+            return new StorageDirectory(fullPath, driveInfo.AvailableFreeSpace, driveInfo.TotalSize);
+        }
+        catch
+        {
+            return new StorageDirectory(path, 0, 0);
+        }
     }
 
     internal static CheckResult CheckApiKey(FunkArrOptions options)

@@ -31,6 +31,10 @@ export function formatAbsoluteDate(isoString: string): string {
   })
 }
 
+export function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`
+}
+
 export function formatRelativeDate(isoString: string): string {
   const date = new Date(isoString)
   const now = Date.now()

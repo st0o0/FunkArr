@@ -4,9 +4,19 @@
       <div class="min-w-0 flex-1">
         <ReleaseTitle :title="item.title" />
         <div class="flex items-center gap-2 mt-1 text-xs text-text-secondary">
+          <span v-if="item.channel">{{ item.channel }}</span>
+          <span v-if="item.channel">&middot;</span>
           <span>{{ item.category }}</span>
           <span>&middot;</span>
           <span>{{ formatSize(item.totalBytes) }}</span>
+          <template v-if="item.totalDuration > 0">
+            <span>&middot;</span>
+            <span>{{ formatDuration(item.totalDuration) }}</span>
+          </template>
+          <span
+            v-if="item.hasSubtitles"
+            class="px-1 py-px rounded bg-surface-elevated text-[10px] font-medium"
+          >SUB</span>
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
@@ -57,7 +67,7 @@
 
 <script setup lang="ts">
 import type { QueueItem } from '../api/downloads'
-import { formatSize, formatSpeed } from '../utils/format'
+import { formatSize, formatSpeed, formatDuration } from '../utils/format'
 import ReleaseTitle from './ReleaseTitle.vue'
 
 defineProps<{ item: QueueItem }>()

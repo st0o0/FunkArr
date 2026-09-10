@@ -180,7 +180,8 @@ public static class RuleSetResolverStateExtensions
                 }
             }
 
-            entries.Add(new RegisteredRuleSetEntry(ruleSetId, topic, aliases, tvdbId, imdbId, tmdbId));
+            var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
+            entries.Add(new RegisteredRuleSetEntry(ruleSetId, topic, aliases, tvdbId, imdbId, tmdbId, mediaName));
         }
 
         return new RegisteredRuleSetsResult(entries.ToArray());

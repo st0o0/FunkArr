@@ -6,4 +6,9 @@ public sealed record RuleSetListEntry(
     string[] Aliases,
     int? TvdbId,
     string? ImdbId,
-    int? TmdbId);
+    int? TmdbId,
+    string? MediaName,
+    int RuleCount,
+    string SourceType,
+    string? LastScoringRun,
+    double? MatchRate);

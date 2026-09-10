@@ -92,6 +92,40 @@ public static class QueueApiEndpoints
         .Produces<ApiModels.DownloadHistoryResponse>()
         .ProducesProblem(504);
 
+        group.MapGet("/history/stats", async (IActorRegistry registry) =>
+        {
+            var history = registry.Get<IDownloadHistoryManager>();
+            try
+            {
+                var result = await history.Ask<HistoryStatsResult>(new QueryHistoryStats(), _askTimeout);
+                return Results.Ok(new ApiModels.HistoryStatsResponse(
+                    result.TotalCompleted, result.TotalFailed, result.TotalBytes,
+                    result.AverageDownloadTimeSeconds, result.SuccessRate));
+            }
+            catch (Exception)
+            {
+                return GatewayTimeout();
+            }
+        })
+        .Produces<ApiModels.HistoryStatsResponse>()
+        .ProducesProblem(504);
+
+        group.MapGet("/history/categories", async (IActorRegistry registry) =>
+        {
+            var history = registry.Get<IDownloadHistoryManager>();
+            try
+            {
+                var result = await history.Ask<HistoryCategoriesResult>(new QueryHistoryCategories(), _askTimeout);
+                return Results.Ok(result.Categories);
+            }
+            catch (Exception)
+            {
+                return GatewayTimeout();
+            }
+        })
+        .Produces<string[]>()
+        .ProducesProblem(504);
+
         group.MapDelete("/queue/{id:guid}", async (Guid id, IActorRegistry registry) =>
         {
             var manager = registry.Get<IDownloadManager>();
@@ -145,8 +179,13 @@ public static class QueueApiEndpoints
         return app;
     }
 
-    internal static ApiModels.DownloadQueueResponse ToQueueResponse(QueueResult result) =>
-        new(result.Items.Select(ToQueueItem).ToArray(), result.TotalSlots);
+    internal static ApiModels.DownloadQueueResponse ToQueueResponse(QueueResult result)
+    {
+        var items = result.Items.Select(ToQueueItem).ToArray();
+        var activeCount = result.Items.Count(i => i.Status == DownloadStatus.Processing);
+        var queuedCount = result.Items.Count(i => i.Status == DownloadStatus.Queued);
+        return new ApiModels.DownloadQueueResponse(items, result.TotalSlots, activeCount, queuedCount);
+    }
 
     internal static ApiModels.DownloadQueueItem ToQueueItem(QueueItem item)
     {
@@ -170,7 +209,10 @@ public static class QueueApiEndpoints
             item.DownloadId.ToString(),
             item.Title,
             status,
+            item.Channel,
             item.Category,
+            item.HasSubtitles,
+            item.TotalDuration,
             item.TotalBytes,
             item.BytesDownloaded,
             percentage,

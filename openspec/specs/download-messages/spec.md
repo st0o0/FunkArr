@@ -3,9 +3,7 @@
 ## Purpose
 
 Commands, queries, responses, and status enum for the download domain. All messages live in `FunkArr.Messages.Download`.
-
 ## Requirements
-
 ### Requirement: DownloadStatus enum
 The system SHALL define a `DownloadStatus` enum with values `Queued`, `Processing`, `Completed`, `Failed` in `FunkArr.Messages.Download`.
 
@@ -105,7 +103,7 @@ The system SHALL define a `QueueResult` record containing the current queue stat
 
 #### Scenario: QueueItem fields
 - **WHEN** a QueueItem is inspected
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Status` (DownloadStatus), `TotalBytes` (long), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `Category` (string)
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Status` (DownloadStatus), `TotalBytes` (long), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `Category` (string), `Channel` (string), `HasSubtitles` (bool)
 
 ### Requirement: QueryHistory query
 The system SHALL define a `QueryHistory` record for requesting download history with optional pagination and category filter.
@@ -175,7 +173,7 @@ The system SHALL define a `WorkerStatusResult` record returned by the Worker con
 
 #### Scenario: WorkerStatusResult fields
 - **WHEN** a `WorkerStatusResult` message is created
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (int), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `FailMessage` (string?)
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Category` (string), `Size` (long), `Status` (int), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `FailMessage` (string?), `Channel` (string), `HasSubtitles` (bool)
 - **AND** it SHALL NOT contain `FilePath`
 
 ### Requirement: RecordDownload message
@@ -235,3 +233,4 @@ The system SHALL define an `IDownloadHistoryManager` marker interface for resolv
 #### Scenario: Actor resolution
 - **WHEN** the DownloadHistoryManager needs to be resolved
 - **THEN** it SHALL be resolved via `Context.GetActor<IDownloadHistoryManager>()` or `registry.Get<IDownloadHistoryManager>()`
+

@@ -129,6 +129,8 @@ public sealed class DownloadWorker : ReceivePersistentActor
             Guid.Parse(Context.Self.Path.Name),
             _state.Title!,
             _state.Category!,
+            _state.Channel ?? "",
+            _state.SubtitleUrl is not null,
             _state.Size,
             (int)_state.Status,
             _state.BytesDownloaded,

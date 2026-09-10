@@ -4,6 +4,8 @@ public sealed record WorkerStatusResult(
     Guid DownloadId,
     string Title,
     string Category,
+    string Channel,
+    bool HasSubtitles,
     long Size,
     int Status,
     long BytesDownloaded,

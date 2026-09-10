@@ -11,6 +11,8 @@ public sealed class DownloadApiEndpointTests
             DownloadId: Guid.Parse("aaaaaaaa-0000-0000-0000-000000000001"),
             Title: "Tagesschau 20:00",
             Status: DownloadStatus.Processing,
+            Channel: "ARD",
+            HasSubtitles: true,
             TotalBytes: 245_000_000,
             BytesDownloaded: 176_400_000,
             CurrentTimeUs: 36_000_000,
@@ -21,6 +23,9 @@ public sealed class DownloadApiEndpointTests
         var result = QueueApiEndpoints.ToQueueItem(item);
 
         Assert.Equal("Processing", result.Status);
+        Assert.Equal("ARD", result.Channel);
+        Assert.True(result.HasSubtitles);
+        Assert.Equal(50, result.TotalDuration);
         Assert.Equal(72, result.Percentage);
         Assert.True(result.Speed > 0);
         Assert.NotEqual("00:00:00", result.Eta);
@@ -33,6 +38,8 @@ public sealed class DownloadApiEndpointTests
             DownloadId: Guid.Parse("bbbbbbbb-0000-0000-0000-000000000002"),
             Title: "heute journal",
             Status: DownloadStatus.Queued,
+            Channel: "ZDF",
+            HasSubtitles: false,
             TotalBytes: 180_000_000,
             BytesDownloaded: 0,
             CurrentTimeUs: 0,
@@ -43,6 +50,8 @@ public sealed class DownloadApiEndpointTests
         var result = QueueApiEndpoints.ToQueueItem(item);
 
         Assert.Equal("Queued", result.Status);
+        Assert.Equal("ZDF", result.Channel);
+        Assert.False(result.HasSubtitles);
         Assert.Equal(0, result.Percentage);
         Assert.Equal(0, result.Speed);
         Assert.Equal("00:00:00", result.Eta);
@@ -55,6 +64,8 @@ public sealed class DownloadApiEndpointTests
             DownloadId: Guid.NewGuid(),
             Title: "Test",
             Status: DownloadStatus.Processing,
+            Channel: "ARD",
+            HasSubtitles: false,
             TotalBytes: 100,
             BytesDownloaded: 100,
             CurrentTimeUs: 60_000_000,
@@ -118,6 +129,25 @@ public sealed class DownloadApiEndpointTests
 
         Assert.Empty(response.Items);
         Assert.Equal(5, response.TotalSlots);
+        Assert.Equal(0, response.ActiveCount);
+        Assert.Equal(0, response.QueuedCount);
+    }
+
+    [Fact]
+    public void Queue_response_computes_active_and_queued_counts()
+    {
+        var items = new[]
+        {
+            new QueueItem(Guid.NewGuid(), "A", DownloadStatus.Processing, "ARD", true, 100, 50, 1_000_000, 10, 1.0, "tv"),
+            new QueueItem(Guid.NewGuid(), "B", DownloadStatus.Processing, "ZDF", false, 100, 50, 1_000_000, 10, 1.0, "tv"),
+            new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, 0, 0, 0, 0, "tv"),
+        };
+        var queueResult = new QueueResult(items, 3, 3);
+
+        var response = QueueApiEndpoints.ToQueueResponse(queueResult);
+
+        Assert.Equal(2, response.ActiveCount);
+        Assert.Equal(1, response.QueuedCount);
     }
 
     [Fact]

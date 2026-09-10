@@ -101,6 +101,7 @@ public sealed class DownloadManager : ReceivePersistentActor
                 .Select(r => new QueueItem(
                     r!.DownloadId, r.Title,
                     r.Status == (int)WorkerStatus.Downloading ? DownloadStatus.Processing : DownloadStatus.Queued,
+                    r.Channel, r.HasSubtitles,
                     r.Size, r.BytesDownloaded, r.CurrentTimeUs,
                     r.TotalDuration, r.Speed, r.Category))
                 .ToArray();

@@ -13,6 +13,7 @@ namespace FunkArr.Api;
 public static class RuleSetApiEndpoints
 {
     private static readonly TimeSpan _queryTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
 
     public static WebApplication MapRuleSetApi(this WebApplication app)
     {
@@ -20,13 +21,53 @@ public static class RuleSetApiEndpoints
 
         group.MapGet("/", async (IActorRegistry registry) =>
         {
-            var resolver = await registry.GetAsync<IRuleSetResolver>();
             try
             {
-                var result = await resolver.Ask<RegisteredRuleSetsResult>(
+                var resolver = await registry.GetAsync<IRuleSetResolver>();
+                var manager = await registry.GetAsync<IRuleSetManager>();
+                var historyRegion = await registry.GetAsync<IMatchHistoryRegion>();
+
+                var resolverTask = resolver.Ask<RegisteredRuleSetsResult>(
                     new QueryRegisteredRuleSets(), _queryTimeout);
-                return Results.Ok(result.Entries.Select(e => new ApiModels.RuleSetListEntry(
-                    e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId)).ToArray());
+                var summaryTask = manager.Ask<RuleSetSummaryResult>(
+                    new QueryRuleSetSummaries(), _queryTimeout);
+
+                await Task.WhenAll(resolverTask, summaryTask);
+
+                var entries = resolverTask.Result;
+                var summaries = summaryTask.Result;
+                var summaryMap = summaries.Entries.ToDictionary(s => s.RuleSetId);
+
+                var statsTasks = entries.Entries.Select(async e =>
+                {
+                    try
+                    {
+                        return await historyRegion.Ask<ScoringStatsResult>(
+                            new QueryScoringStats(e.RuleSetId), _statsTimeout);
+                    }
+                    catch
+                    {
+                        return new ScoringStatsResult(null, null);
+                    }
+                }).ToArray();
+
+                var stats = await Task.WhenAll(statsTasks);
+
+                var result = entries.Entries.Select((e, i) =>
+                {
+                    summaryMap.TryGetValue(e.RuleSetId, out var summary);
+                    var stat = stats[i];
+
+                    return new ApiModels.RuleSetListEntry(
+                        e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId,
+                        e.MediaName,
+                        summary?.RuleCount ?? 0,
+                        summary?.SourceType ?? "unknown",
+                        stat.LastRun?.ToString("o"),
+                        stat.MatchRate);
+                }).ToArray();
+
+                return Results.Ok(result);
             }
             catch (Exception)
             {

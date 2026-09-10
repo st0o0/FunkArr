@@ -6,6 +6,8 @@ public sealed record QueueItem(
     Guid DownloadId,
     string Title,
     DownloadStatus Status,
+    string Channel,
+    bool HasSubtitles,
     long TotalBytes,
     long BytesDownloaded,
     long CurrentTimeUs,

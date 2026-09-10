@@ -130,7 +130,7 @@ public sealed class DownloadManagerStateTests
     }
 
     private static QueueItem MakeItem(string title, string category = "tv") =>
-        new(Guid.NewGuid(), title, DownloadStatus.Queued, 1000, 0, 0, 100, 0, category);
+        new(Guid.NewGuid(), title, DownloadStatus.Queued, "", false, 1000, 0, 0, 100, 0, category);
 
     [Fact]
     public void PaginateQueue_returns_all_when_limit_zero()

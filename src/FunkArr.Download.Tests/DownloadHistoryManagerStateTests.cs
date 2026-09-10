@@ -149,4 +149,57 @@ public sealed class DownloadHistoryManagerStateTests
 
         Assert.Single(result.Items);
     }
+
+    [Fact]
+    public void ToHistoryStats_empty_state_returns_zeros()
+    {
+        var result = DownloadHistoryManagerState.Empty.ToHistoryStats();
+
+        Assert.Equal(0, result.TotalCompleted);
+        Assert.Equal(0, result.TotalFailed);
+        Assert.Equal(0L, result.TotalBytes);
+        Assert.Equal(0, result.AverageDownloadTimeSeconds);
+        Assert.Equal(0.0, result.SuccessRate);
+    }
+
+    [Fact]
+    public void ToHistoryStats_computes_aggregates()
+    {
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", "tv", 1_000_000, (int)DownloadStatus.Completed, "/a.mkv", null, 100, 123))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", "tv", 2_000_000, (int)DownloadStatus.Completed, "/b.mkv", null, 200, 456))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "C", "movies", 500_000, (int)DownloadStatus.Failed, null, "Error", 0, 789));
+
+        var result = state.ToHistoryStats();
+
+        Assert.Equal(2, result.TotalCompleted);
+        Assert.Equal(1, result.TotalFailed);
+        Assert.Equal(3_500_000L, result.TotalBytes);
+        Assert.Equal(150, result.AverageDownloadTimeSeconds);
+        Assert.Equal(2.0 / 3.0, result.SuccessRate, 0.001);
+    }
+
+    [Fact]
+    public void ToHistoryCategories_empty_state_returns_empty()
+    {
+        var result = DownloadHistoryManagerState.Empty.ToHistoryCategories();
+
+        Assert.Empty(result.Categories);
+    }
+
+    [Fact]
+    public void ToHistoryCategories_returns_distinct_sorted()
+    {
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", "tv", 1000, (int)DownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", "movies", 1000, (int)DownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "C", "TV", 1000, (int)DownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "D", "tv", 1000, (int)DownloadStatus.Completed, null, null, 100, 123));
+
+        var result = state.ToHistoryCategories();
+
+        Assert.Equal(2, result.Categories.Length);
+        Assert.Equal("movies", result.Categories[0]);
+        Assert.Equal("tv", result.Categories[1]);
+    }
 }

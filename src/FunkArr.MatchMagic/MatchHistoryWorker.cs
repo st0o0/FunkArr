@@ -54,6 +54,7 @@ public sealed class MatchHistoryWorker : ReceivePersistentActor
 
         Command<QueryScoringHistory>(query => Sender.Tell(_state.QueryHistory(query)));
         Command<QueryScoringDetail>(query => Sender.Tell(_state.QueryDetail(query)));
+        Command<QueryScoringStats>(_ => Sender.Tell(_state.ToScoringStats()));
         Command<ReceiveTimeout>(_ => Context.Parent.Tell(new Passivate(PoisonPill.Instance)));
         Command<SaveSnapshotSuccess>(_ => { });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));

@@ -60,17 +60,37 @@
         :to="`/rulesets/${rs.ruleSetId}`"
         class="block px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:bg-surface-elevated transition-colors"
       >
-        <div class="flex items-baseline gap-2 mb-0.5">
-          <span class="text-sm font-medium text-text-primary">{{ rs.topic }}</span>
-          <span class="font-mono text-xs text-text-secondary">{{ rs.ruleSetId }}</span>
+        <div class="flex items-center justify-between mb-0.5">
+          <div class="flex items-baseline gap-2 min-w-0">
+            <span class="text-sm font-medium text-text-primary truncate">{{ rs.topic }}</span>
+            <span class="font-mono text-xs text-text-secondary shrink-0">{{ rs.ruleSetId }}</span>
+          </div>
+          <span
+            class="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ml-2"
+            :class="{
+              'bg-surface-elevated text-text-secondary': rs.sourceType === 'community',
+              'bg-brand-500/10 text-brand-500': rs.sourceType === 'local',
+              'bg-surface-elevated text-text-body': rs.sourceType === 'merged',
+            }"
+          >{{ rs.sourceType }}</span>
         </div>
+        <div v-if="rs.mediaName" class="text-xs text-text-body mb-0.5">{{ rs.mediaName }}</div>
         <div v-if="rs.aliases.length > 0" class="text-xs text-text-secondary mb-0.5">
           {{ rs.aliases.join(', ') }}
         </div>
-        <div class="flex gap-2 text-xs text-text-secondary">
+        <div class="flex items-center gap-3 text-xs text-text-secondary">
+          <span>{{ rs.ruleCount }} {{ rs.ruleCount === 1 ? 'rule' : 'rules' }}</span>
           <span v-if="rs.tvdbId">TVDB {{ rs.tvdbId }}</span>
           <span v-if="rs.imdbId">IMDB {{ rs.imdbId }}</span>
           <span v-if="rs.tmdbId">TMDB {{ rs.tmdbId }}</span>
+          <template v-if="rs.lastScoringRun">
+            <span>&middot;</span>
+            <span>Last scored {{ formatRelativeDate(rs.lastScoringRun) }}</span>
+          </template>
+          <template v-if="rs.matchRate !== null">
+            <span>&middot;</span>
+            <span>{{ formatPercent(rs.matchRate) }} match rate</span>
+          </template>
         </div>
       </router-link>
     </div>
@@ -82,6 +102,7 @@ import { ref, computed, onMounted } from 'vue'
 import { listRuleSets, type RuleSetEntry } from '../api/rulesets'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import EmptyState from '../components/EmptyState.vue'
+import { formatRelativeDate, formatPercent } from '../utils/format'
 
 const rulesets = ref<RuleSetEntry[]>([])
 const loading = ref(true)
@@ -103,6 +124,7 @@ const filteredRulesets = computed(() => {
     const haystack = [
       rs.ruleSetId,
       rs.topic,
+      rs.mediaName ?? '',
       ...rs.aliases,
       rs.tvdbId?.toString() ?? '',
       rs.imdbId ?? '',

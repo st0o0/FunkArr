@@ -83,6 +83,23 @@ public static class MatchHistoryStateExtensions
         return new ScoringHistoryResult(query.RuleSetId, total, page);
     }
 
+    public static ScoringStatsResult ToScoringStats(this MatchHistoryState state)
+    {
+        if (state.Snapshots.Count == 0)
+        {
+            return new ScoringStatsResult(null, null);
+        }
+
+        var lastRun = state.Snapshots[^1].Timestamp;
+
+        var withCandidates = state.Snapshots.Where(s => s.CandidateCount > 0).ToArray();
+        double? matchRate = withCandidates.Length > 0
+            ? withCandidates.Average(s => (double)s.MatchedCount / s.CandidateCount)
+            : null;
+
+        return new ScoringStatsResult(lastRun, matchRate);
+    }
+
     public static object QueryDetail(this MatchHistoryState state, QueryScoringDetail query)
     {
         var snapshot = state.Snapshots.FirstOrDefault(s => s.RequestId == query.RequestId);

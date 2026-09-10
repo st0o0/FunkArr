@@ -2,7 +2,10 @@ export interface QueueItem {
   downloadId: string
   title: string
   status: 'Processing' | 'Queued'
+  channel: string
   category: string
+  hasSubtitles: boolean
+  totalDuration: number
   totalBytes: number
   bytesDownloaded: number
   percentage: number
@@ -13,6 +16,8 @@ export interface QueueItem {
 export interface QueueResponse {
   items: QueueItem[]
   totalSlots: number
+  activeCount: number
+  queuedCount: number
 }
 
 export interface HistoryItem {
@@ -65,4 +70,20 @@ export function deleteHistoryItem(id: string) {
 
 export function retryDownload(id: string) {
   return fetchAction(`/api/downloads/${id}/retry`, 'POST')
+}
+
+export interface HistoryStatsResponse {
+  totalCompleted: number
+  totalFailed: number
+  totalBytes: number
+  averageDownloadTimeSeconds: number
+  successRate: number
+}
+
+export function getHistoryStats(): Promise<HistoryStatsResponse> {
+  return fetchJson('/api/downloads/history/stats')
+}
+
+export function getHistoryCategories(): Promise<string[]> {
+  return fetchJson('/api/downloads/history/categories')
 }

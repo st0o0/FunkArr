@@ -87,4 +87,32 @@ public sealed class SetupHealthCheckTests
 
         Assert.True(result.Status is "ok" or "warn");
     }
+
+    [Fact]
+    public void Storage_directory_returns_data_for_existing_path()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-storage-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var result = SetupApiEndpoints.GetStorageDirectory(tempDir);
+
+            Assert.Equal(Path.GetFullPath(tempDir), result.Path);
+            Assert.True(result.TotalBytes > 0);
+            Assert.True(result.AvailableBytes > 0);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, true);
+        }
+    }
+
+    [Fact]
+    public void Storage_directory_returns_result_for_any_path()
+    {
+        var result = SetupApiEndpoints.GetStorageDirectory("/nonexistent/path/that/does/not/exist");
+
+        Assert.NotNull(result.Path);
+    }
 }

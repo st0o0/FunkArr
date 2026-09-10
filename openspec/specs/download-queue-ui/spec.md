@@ -3,9 +3,7 @@
 ## Purpose
 
 Queue page showing live download status with card layout, progress visualization, and cancel/delete actions. Includes a global SSE composable and a compact dashboard widget.
-
 ## Requirements
-
 ### Requirement: Queue page route
 The application SHALL register a `/queue` route rendering the Queue view.
 
@@ -14,11 +12,23 @@ The application SHALL register a `/queue` route rendering the Queue view.
 - **THEN** the Queue view SHALL render within the AppLayout
 
 ### Requirement: Queue page displays active downloads as cards
-The Queue page SHALL display each active (Processing) download as a card with Level 2 card styling (hover lift effect). Cards SHALL show title, channel, category, size, a progress bar, percentage, download speed, and ETA. Cards SHALL have `hover:-translate-y-px hover:shadow-md transition-all` for interactive feel.
+The Queue page SHALL display each active (Processing) download as a card with Level 2 card styling (hover lift effect). Cards SHALL show title, channel, category, size, a progress bar, percentage, download speed, ETA, subtitle indicator, and video duration. Cards SHALL have `hover:-translate-y-px hover:shadow-md transition-all` for interactive feel.
 
 #### Scenario: Active download card
 - **WHEN** a download has status "Processing"
-- **THEN** the card SHALL display the title as heading, channel and category as metadata, total size formatted in MB/GB, a visual progress bar filled to the current percentage, the percentage as text, speed formatted as MB/s, and ETA as HH:MM:SS
+- **THEN** the card SHALL display the title as heading, channel and category as metadata, total size formatted in MB/GB, a visual progress bar filled to the current percentage, the percentage as text, speed formatted as MB/s, ETA as HH:MM:SS, video duration formatted (e.g., "52 min"), and a subtitle indicator if subtitles are included
+
+#### Scenario: Subtitle indicator present
+- **WHEN** a download has `hasSubtitles` true
+- **THEN** the card SHALL display a "Sub" badge or indicator alongside the metadata
+
+#### Scenario: Subtitle indicator absent
+- **WHEN** a download has `hasSubtitles` false
+- **THEN** the card SHALL NOT display a subtitle indicator
+
+#### Scenario: Duration display
+- **WHEN** a download has `totalDuration` of 3120 seconds
+- **THEN** the card SHALL display "52 min" as the video duration
 
 #### Scenario: Progress bar visualization
 - **WHEN** a download is at 72% progress
@@ -30,11 +40,11 @@ The Queue page SHALL display each active (Processing) download as a card with Le
 - **THEN** the card SHALL translate up by 1px and show a subtle shadow
 
 ### Requirement: Queue page displays queued items as cards
-The Queue page SHALL display each queued (waiting) download as a simpler card showing title, channel, category, and size without progress data.
+The Queue page SHALL display each queued (waiting) download as a simpler card showing title, channel, category, size, and video duration without progress data.
 
 #### Scenario: Queued item card
 - **WHEN** a download has status "Queued"
-- **THEN** the card SHALL display title, channel, category, and size
+- **THEN** the card SHALL display title, channel, category, size, video duration, and subtitle indicator
 - **AND** SHALL NOT display a progress bar, speed, or ETA
 
 ### Requirement: Queue page shows empty state
@@ -76,7 +86,11 @@ The Queue page SHALL display a summary showing total item count, queued count, a
 
 #### Scenario: Summary with items
 - **WHEN** the queue has 3 items (1 active, 2 queued)
-- **THEN** the summary SHALL display "3 items · 2 queued · 1 downloading"
+- **THEN** the summary SHALL display "3 items - 2 queued - 1 downloading"
+
+#### Scenario: Summary uses response counts
+- **WHEN** the SSE stream includes `activeCount` and `queuedCount`
+- **THEN** the summary SHALL use these values directly instead of computing them client-side
 
 ### Requirement: Global SSE composable
 The application SHALL provide a `useQueueStream` composable that connects to the SSE endpoint and exposes reactive queue state.
@@ -116,6 +130,10 @@ The Dashboard page SHALL include a compact "Active Downloads" widget showing act
 - **WHEN** the widget renders
 - **THEN** it SHALL include a "View Queue" link navigating to `/queue`
 
+#### Scenario: Dashboard stat cards show queue split
+- **WHEN** the SSE stream includes `activeCount` and `queuedCount`
+- **THEN** the Dashboard SHALL display separate stat cards for "Active" (showing active/totalSlots) and "Queued" (showing queued count)
+
 ### Requirement: Size formatting
 All size values SHALL be formatted in human-readable units (bytes → KB/MB/GB) with one decimal place.
 
@@ -133,3 +151,4 @@ Download speed SHALL be formatted in human-readable units per second.
 #### Scenario: Speed in MB/s
 - **WHEN** speed is 12900000 bytes/second
 - **THEN** it SHALL display as "12.3 MB/s"
+

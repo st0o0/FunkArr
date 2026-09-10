@@ -16,6 +16,8 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         Command<RecordDownload>(HandleRecord);
         Command<RemoveHistoryEntry>(HandleRemove);
         Command<QueryHistory>(HandleQueryHistory);
+        Command<QueryHistoryStats>(_ => Sender.Tell(_state.ToHistoryStats()));
+        Command<QueryHistoryCategories>(_ => Sender.Tell(_state.ToHistoryCategories()));
 
         Recover<HistoryRecorded>(evt => _state = _state.Apply(evt));
         Recover<HistoryRemoved>(evt => _state = _state.Apply(evt));

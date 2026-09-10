@@ -3,9 +3,7 @@
 ## Purpose
 
 History page showing completed and failed downloads in a table layout with pagination, retry/delete actions, and status indicators.
-
 ## Requirements
-
 ### Requirement: History page route
 The application SHALL register a `/history` route rendering the History view.
 
@@ -92,7 +90,11 @@ Each history row SHALL have a delete action. On successful deletion, a toast not
 - **THEN** an error toast SHALL display the error message
 
 ### Requirement: History page category filter
-The History page SHALL support filtering by category via a dropdown or toggle.
+The History page SHALL support filtering by category via a dropdown populated from the dedicated categories endpoint.
+
+#### Scenario: Category dropdown population
+- **WHEN** the History page mounts
+- **THEN** the system SHALL fetch `GET /api/downloads/history/categories` to populate the category filter dropdown
 
 #### Scenario: Filter by category
 - **WHEN** the user selects category "sonarr" from the filter
@@ -102,6 +104,10 @@ The History page SHALL support filtering by category via a dropdown or toggle.
 #### Scenario: Clear filter
 - **WHEN** the user clears the category filter
 - **THEN** the system SHALL fetch all history items without a category filter
+
+#### Scenario: Categories endpoint failure
+- **WHEN** the categories endpoint returns an error
+- **THEN** the category filter SHALL be hidden
 
 ### Requirement: Duration formatting
 Download duration SHALL be formatted as human-readable time.
@@ -135,3 +141,4 @@ The History page SHALL fetch data on mount and after actions (delete, retry) usi
 #### Scenario: Refetch after action
 - **WHEN** a delete or retry action completes successfully
 - **THEN** the page SHALL refetch the current page of history data
+

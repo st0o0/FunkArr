@@ -39,6 +39,40 @@ public static class DownloadHistoryManagerStateExtensions
     public static bool Contains(this DownloadHistoryManagerState state, Guid downloadId) =>
         state.Records.Any(r => r.DownloadId == downloadId);
 
+    public static HistoryStatsResult ToHistoryStats(this DownloadHistoryManagerState state)
+    {
+        var records = state.Records;
+        if (records.Count == 0)
+        {
+            return new HistoryStatsResult(0, 0, 0, 0, 0.0);
+        }
+
+        var totalCompleted = records.Count(r => r.Status == DownloadStatus.Completed);
+        var totalFailed = records.Count(r => r.Status == DownloadStatus.Failed);
+        var totalBytes = records.Sum(r => r.Size);
+
+        var completedRecords = records.Where(r => r.Status == DownloadStatus.Completed).ToArray();
+        var avgTime = completedRecords.Length > 0
+            ? (int)completedRecords.Average(r => r.DownloadTimeSeconds)
+            : 0;
+
+        var successRate = (double)totalCompleted / records.Count;
+
+        return new HistoryStatsResult(totalCompleted, totalFailed, totalBytes, avgTime, successRate);
+    }
+
+    public static HistoryCategoriesResult ToHistoryCategories(this DownloadHistoryManagerState state)
+    {
+        var categories = state.Records
+            .Select(r => r.Category)
+            .Where(c => !string.IsNullOrEmpty(c))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return new HistoryCategoriesResult(categories);
+    }
+
     public static HistoryResult ToHistoryResult(this DownloadHistoryManagerState state, QueryHistory query)
     {
         IEnumerable<HistoryRecord> filtered = state.Records;

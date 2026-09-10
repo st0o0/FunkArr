@@ -130,6 +130,12 @@ const primaryNav: NavItem[] = [
     icon: '<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>',
   },
   {
+    to: '/search',
+    label: 'Search',
+    exact: false,
+    icon: '<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>',
+  },
+  {
     to: '/queue',
     label: 'Downloads',
     exact: false,

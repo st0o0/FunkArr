@@ -5,6 +5,11 @@ export interface RuleSetEntry {
   tvdbId: number | null
   imdbId: string | null
   tmdbId: number | null
+  mediaName: string | null
+  ruleCount: number
+  sourceType: string
+  lastScoringRun: string | null
+  matchRate: number | null
 }
 
 export interface RuleSetDetailRule {

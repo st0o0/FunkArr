@@ -37,6 +37,7 @@ public sealed class RuleSetManager : ReceiveActor
         Receive<FullRescanRequested>(_ => HandleFullRescanRequested());
         Receive<FlushChanges>(_ => HandleFlush());
         Receive<QueryRuleSetDetail>(HandleQueryDetail);
+        Receive<QueryRuleSetSummaries>(_ => Sender.Tell(_state.ToSummaries(_dataFiles)));
     }
 
     protected override void PreStart()

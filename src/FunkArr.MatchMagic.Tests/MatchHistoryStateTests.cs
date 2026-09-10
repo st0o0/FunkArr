@@ -132,4 +132,43 @@ public sealed class MatchHistoryStateTests
         var result = state.QueryDetail(new QueryScoringDetail("test", Guid.NewGuid()));
         Assert.IsType<ScoringDetailNotFound>(result);
     }
+
+    [Fact]
+    public void ToScoringStats_empty_state_returns_nulls()
+    {
+        var result = MatchHistoryState.Empty.ToScoringStats();
+
+        Assert.Null(result.LastRun);
+        Assert.Null(result.MatchRate);
+    }
+
+    [Fact]
+    public void ToScoringStats_returns_last_run_and_match_rate()
+    {
+        var t1 = DateTimeOffset.UtcNow.AddHours(-2);
+        var t2 = DateTimeOffset.UtcNow.AddHours(-1);
+
+        var state = MatchHistoryState.Empty
+            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", t1, 10, 8, []))
+            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", t2, 10, 6, []));
+
+        var result = state.ToScoringStats();
+
+        Assert.Equal(t2, result.LastRun);
+        Assert.NotNull(result.MatchRate);
+        Assert.Equal(0.7, result.MatchRate!.Value, 0.001);
+    }
+
+    [Fact]
+    public void ToScoringStats_ignores_zero_candidate_snapshots_for_match_rate()
+    {
+        var state = MatchHistoryState.Empty
+            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", DateTimeOffset.UtcNow, 0, 0, []))
+            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", DateTimeOffset.UtcNow, 10, 5, []));
+
+        var result = state.ToScoringStats();
+
+        Assert.NotNull(result.MatchRate);
+        Assert.Equal(0.5, result.MatchRate!.Value, 0.001);
+    }
 }

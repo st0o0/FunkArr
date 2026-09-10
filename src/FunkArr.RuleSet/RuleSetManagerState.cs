@@ -128,6 +128,45 @@ public static class RuleSetManagerStateExtensions
         _ => "?",
     };
 
+    public static RuleSetSummaryResult ToSummaries(this RuleSetManagerState state, IDataFiles dataFiles)
+    {
+        var entries = new List<RuleSetSummaryEntry>();
+
+        foreach (var (ruleSetId, paths) in state.KnownRuleSets)
+        {
+            var sourceType = (paths.CommunityPath, paths.LocalPath) switch
+            {
+                (not null, not null) => "merged",
+                (not null, null) => "community",
+                (null, not null) => "local",
+                _ => "unknown",
+            };
+
+            var ruleCount = 0;
+            try
+            {
+                var communityJson = paths.CommunityPath is not null && dataFiles.Exists(paths.CommunityPath)
+                    ? dataFiles.ReadText(paths.CommunityPath) : null;
+                var localJson = paths.LocalPath is not null && dataFiles.Exists(paths.LocalPath)
+                    ? dataFiles.ReadText(paths.LocalPath) : null;
+
+                var config = RuleSetMerger.Build(ruleSetId, communityJson, localJson);
+                if (config is not null)
+                {
+                    ruleCount = config.Rules.Length;
+                }
+            }
+            catch
+            {
+                // Config load failure - leave ruleCount as 0
+            }
+
+            entries.Add(new RuleSetSummaryEntry(ruleSetId, ruleCount, sourceType));
+        }
+
+        return new RuleSetSummaryResult(entries.ToArray());
+    }
+
     public static RuleSetPaths CheckRuleSetPaths(string ruleSetId, string communityDir, string localDir, IDataFiles dataFiles)
     {
         var communityPath = Path.Combine(communityDir, $"{ruleSetId}.json");

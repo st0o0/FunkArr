@@ -3,6 +3,8 @@ import type { QueueItem, QueueResponse } from '../api/downloads'
 
 const items = ref<QueueItem[]>([])
 const totalSlots = ref(0)
+const activeCount = ref(0)
+const queuedCount = ref(0)
 const connected = ref(false)
 
 let eventSource: EventSource | null = null
@@ -21,6 +23,8 @@ function connect() {
     const data: QueueResponse = JSON.parse(e.data)
     items.value = data.items
     totalSlots.value = data.totalSlots
+    activeCount.value = data.activeCount
+    queuedCount.value = data.queuedCount
     connected.value = true
   })
 
@@ -59,6 +63,8 @@ export function useQueueStream() {
   return {
     items: readonly(items),
     totalSlots: readonly(totalSlots),
+    activeCount: readonly(activeCount),
+    queuedCount: readonly(queuedCount),
     connected: readonly(connected),
     release,
   }

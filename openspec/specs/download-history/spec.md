@@ -3,9 +3,7 @@
 ## Purpose
 
 Cluster Singleton actor serving as a read-side projection for completed and failed downloads. Receives records from Workers and answers history queries.
-
 ## Requirements
-
 ### Requirement: DownloadHistoryManager is a Cluster Singleton
 The DownloadHistoryManager SHALL be registered as a Cluster Singleton actor named "download-history" using `resolver.Props<DownloadHistoryManager>()`.
 
@@ -77,3 +75,26 @@ The DownloadHistoryManager SHALL persist state changes using Akka.Persistence ev
 - **WHEN** the DownloadHistoryManager recovers from a restart
 - **THEN** all previously persisted history records SHALL be restored from the journal
 - **AND** the in-memory history list SHALL be immediately available for queries
+
+### Requirement: DownloadHistoryManager handles QueryHistoryStats
+The DownloadHistoryManager SHALL handle `QueryHistoryStats` messages by computing aggregate statistics from its in-memory state and responding with `HistoryStatsResult`.
+
+#### Scenario: Stats with records
+- **WHEN** a `QueryHistoryStats` message is received and history records exist
+- **THEN** the HistoryManager SHALL respond with `HistoryStatsResult` containing `TotalCompleted` (count of Completed records), `TotalFailed` (count of Failed records), `TotalBytes` (sum of all record sizes), `AverageDownloadTimeSeconds` (average of DownloadTimeSeconds over Completed records), `SuccessRate` (TotalCompleted / total records as double)
+
+#### Scenario: Stats with no records
+- **WHEN** a `QueryHistoryStats` message is received and no history records exist
+- **THEN** the HistoryManager SHALL respond with all values as 0
+
+### Requirement: DownloadHistoryManager handles QueryHistoryCategories
+The DownloadHistoryManager SHALL handle `QueryHistoryCategories` messages by extracting distinct category values from its in-memory state and responding with `HistoryCategoriesResult`.
+
+#### Scenario: Categories from records
+- **WHEN** a `QueryHistoryCategories` message is received
+- **THEN** the HistoryManager SHALL respond with `HistoryCategoriesResult` containing unique category strings sorted alphabetically (case-insensitive deduplication)
+
+#### Scenario: No records
+- **WHEN** a `QueryHistoryCategories` message is received and no history records exist
+- **THEN** the HistoryManager SHALL respond with an empty array
+

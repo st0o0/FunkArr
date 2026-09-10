@@ -136,7 +136,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getHistory, deleteHistoryItem, retryDownload, type HistoryResponse } from '../api/downloads'
+import { getHistory, getHistoryCategories, deleteHistoryItem, retryDownload, type HistoryResponse } from '../api/downloads'
 import SkeletonTable from '../components/SkeletonTable.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { useToast } from '../composables/useToast'
@@ -185,9 +185,7 @@ async function fetchData() {
 
 async function fetchCategories() {
   try {
-    const all = await getHistory(0, 1000)
-    const unique = [...new Set(all.items.map(i => i.category).filter(Boolean))].sort()
-    categories.value = unique
+    categories.value = await getHistoryCategories()
   } catch { /* ignore */ }
 }
 
