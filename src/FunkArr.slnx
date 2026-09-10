@@ -30,6 +30,7 @@
     <Project Path="FunkArr.MatchMagic.Tests/FunkArr.MatchMagic.Tests.csproj" />
     <Project Path="FunkArr.Api.Tests/FunkArr.Api.Tests.csproj" />
     <Project Path="FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj" />
+    <Project Path="FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj" />
   </Folder>
   <Project Path="FunkArr/FunkArr.csproj" />
 </Solution>
