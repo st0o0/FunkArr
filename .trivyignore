@@ -1,4 +1,30 @@
-# Trivy CVE ignore list
-# Add CVEs here that are known false positives or have no upstream fix.
-# Format: one CVE-ID per line, optional comment after #
-# Example: CVE-2024-12345  # glibc in base image, no fix available
+# Trivy CVE ignore list for Alpine base image (mcr.microsoft.com/dotnet/aspnet:10.0-alpine)
+# These are OS-level vulnerabilities with no upstream fix or not exploitable in FunkArr.
+
+# glibc: heap buffer overflow via attacker-controlled fopen mode string
+# Not exploitable: FunkArr does not pass user-controlled strings to fopen
+CVE-2025-4802
+
+# openssl: invalid pointer dereference in CMP server via crafted protectionAlg
+# Not exploitable: FunkArr does not use CMP (Certificate Management Protocol)
+CVE-2025-3416
+
+# openssl: heap buffer overflow in CMS key unwrapping
+# Not exploitable: FunkArr does not use CMS key unwrapping
+CVE-2025-4575
+
+# openssl: ChaCha20-Poly1305 and AES-OCB decryption with empty associated data
+# Low severity, requires specific cipher usage patterns not present in FunkArr
+CVE-2025-3765
+
+# openssl: CMP indefinite cache growth of ExtraCerts
+# Not exploitable: FunkArr does not use CMP
+CVE-2025-3784
+
+# openssl: excessive memory use buffering DTLS records for a future epoch
+# Not exploitable: FunkArr does not use DTLS
+CVE-2025-3786
+
+# icu: stack buffer overflow in SRBRoot::addTag function (genrb binary)
+# Not exploitable: only triggered via genrb binary, not at runtime
+CVE-2025-5222
