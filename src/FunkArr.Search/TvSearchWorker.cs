@@ -67,7 +67,7 @@ public sealed class TvSearchWorker : ReceiveActor
                     .PipeTo(Self, Sender,
                         failure: ex => new RuleSetNotFound(topic));
             }
-            else if (_state.RuleSetId is not null)
+            else if (_state.RuleSetId is not null && _state.RawItems.Length > 0)
             {
                 StartScoring();
             }

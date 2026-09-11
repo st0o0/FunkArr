@@ -14,7 +14,8 @@ internal static partial class TtmlToSrtConverter
         var doc = XDocument.Parse(ttml);
         var paragraphs = doc.Descendants(_tt + "p")
             .Concat(doc.Descendants("p"))
-            .Where(p => p.Attribute("begin") is not null && p.Attribute("end") is not null)
+            .Where(p => p.Attribute("begin") is not null
+                        && (p.Attribute("end") is not null || p.Attribute("dur") is not null))
             .ToList();
 
         var sb = new StringBuilder();
@@ -23,7 +24,9 @@ internal static partial class TtmlToSrtConverter
         foreach (var p in paragraphs)
         {
             var begin = ParseTimestamp(p.Attribute("begin")!.Value);
-            var end = ParseTimestamp(p.Attribute("end")!.Value);
+            var end = p.Attribute("end") is { } endAttr
+                ? ParseTimestamp(endAttr.Value)
+                : begin + ParseTimestamp(p.Attribute("dur")!.Value);
             var text = ExtractText(p);
 
             if (string.IsNullOrWhiteSpace(text))

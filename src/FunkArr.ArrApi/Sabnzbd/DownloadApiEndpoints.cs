@@ -71,9 +71,17 @@ public static class DownloadApiEndpoints
                 return Results.Json(new { status = false, error = "No NZB file uploaded" }, statusCode: 400);
             }
 
-            await using var stream = name.OpenReadStream();
-            using var xmlReader = XmlReader.Create(stream, _xmlSettings);
-            var nzb = _nzbSerializer.Deserialize(xmlReader) as Nzb;
+            Nzb? nzb;
+            try
+            {
+                await using var stream = name.OpenReadStream();
+                using var xmlReader = XmlReader.Create(stream, _xmlSettings);
+                nzb = _nzbSerializer.Deserialize(xmlReader) as Nzb;
+            }
+            catch (Exception)
+            {
+                return Results.Json(new { status = false, error = "Invalid NZB file: not valid XML" }, statusCode: 400);
+            }
 
             var videoUrl = Meta("X-FunkArr-Url") ?? Meta("url");
             if (string.IsNullOrEmpty(videoUrl))

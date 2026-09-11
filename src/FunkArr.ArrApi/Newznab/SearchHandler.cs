@@ -88,10 +88,10 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
         var items = paged.Select(item =>
         {
             var nzbPayload = string.Join('\t',
-                item.Title,
-                item.Url,
-                item.SubtitleUrl ?? "",
-                item.Channel,
+                Strip(item.Title),
+                Strip(item.Url),
+                Strip(item.SubtitleUrl ?? ""),
+                Strip(item.Channel),
                 item.Duration.ToString(),
                 item.Size.ToString(),
                 category == NewznabCategory.Movie ? "movie" : "tv");
@@ -155,4 +155,6 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
 
         return attrs;
     }
+
+    private static string Strip(string value) => value.Replace('\t', ' ');
 }

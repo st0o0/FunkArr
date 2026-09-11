@@ -167,9 +167,20 @@ public sealed class DownloadWorker : ReceivePersistentActor
 
         if (msg.Success)
         {
-            _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.CompletePath)!);
-            _dataFiles.Move(paths.IncompletePath, paths.CompletePath);
+            try
+            {
+                _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.CompletePath)!);
+                _dataFiles.Move(paths.IncompletePath, paths.CompletePath);
+            }
+            catch (Exception ex)
+            {
+                _log.Warning(ex, "Download {DownloadId} move failed: {Title}", downloadId, _state.Title);
+                msg = msg with { Success = false, Error = $"Move failed: {ex.Message}" };
+            }
+        }
 
+        if (msg.Success)
+        {
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var evt = new DownloadSucceeded(downloadId, msg.ElapsedSeconds, completedAt);
 

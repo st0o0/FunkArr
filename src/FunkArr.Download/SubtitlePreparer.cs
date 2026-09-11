@@ -21,7 +21,7 @@ internal sealed class SubtitlePreparer(HttpClient http) : ISubtitlePreparer
         if (string.IsNullOrWhiteSpace(content))
             return null;
 
-        var trimmed = content.TrimStart();
+        var trimmed = content.TrimStart('﻿').TrimStart();
 
         if (trimmed.StartsWith("WEBVTT", StringComparison.Ordinal))
             return WriteFile(outputDirectory, ".vtt", content);
