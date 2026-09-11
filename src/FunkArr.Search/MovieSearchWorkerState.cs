@@ -106,4 +106,5 @@ public static class MovieSearchWorkerStateExtensions
         item.UrlVideoHd is not null ? 1080 :
         item.UrlVideo is not null ? 720 :
         item.UrlVideoLow is not null ? 480 : 0;
+
 }
