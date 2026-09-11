@@ -45,6 +45,10 @@ services:
     environment:
       - FunkArr__ApiKey=your-api-key-here
       - FunkArr__Download__Path=/media/downloads
+      - FunkArr__Download__Categories__0__Name=tv
+      - FunkArr__Download__Categories__0__Dir=tv
+      - FunkArr__Download__Categories__1__Name=movies
+      - FunkArr__Download__Categories__1__Dir=movies
 
 volumes:
   funkarr-data:
@@ -87,13 +91,25 @@ All configuration is via environment variables. Defaults work out of the box - t
 |----------|---------|-------------|
 | `FunkArr__ApiKey` | `funkarr-default-api-key` | API key for Prowlarr/Sonarr/Radarr |
 | `FunkArr__DataPath` | `data` | Base path for database, rulesets, temp files |
+| **Downloads** | | |
 | `FunkArr__Download__Path` | `data/downloads` | Root download directory (contains `incomplete/` and `complete/`) |
 | `FunkArr__Download__ConcurrentDownloads` | `3` | Max parallel downloads |
+| `FunkArr__Download__Categories__0__Name` | — | Category name (e.g. `tv`) - map Sonarr/Radarr categories to subdirectories |
+| `FunkArr__Download__Categories__0__Dir` | — | Subdirectory for this category (e.g. `tv`) |
+| **RuleSets** | | |
 | `FunkArr__RuleSet__Repository` | `st0o0/funkarr` | GitHub repo for community rulesets |
 | `FunkArr__RuleSet__Version` | `latest` | Pin ruleset version or `latest` |
 | `FunkArr__RuleSet__RefreshEnabled` | `true` | Auto-sync rulesets from GitHub |
+| **Metadata** | | |
 | `FunkArr__Tmdb__ApiKey` | _(empty)_ | TMDB API key for movie/series resolution |
 | `FunkArr__Tvdb__ApiKey` | _(empty)_ | TVDB API key for episode guide resolution |
+| **Scoring** | | |
+| `FunkArr__Scoring__PoolSize` | `4` | Parallel scoring workers |
+| **Match History** | | |
+| `FunkArr__MatchHistory__MaxSnapshots` | `100` | Max match history snapshots to retain |
+| `FunkArr__MatchHistory__MaxAgeDays` | `30` | Days before old snapshots are pruned |
+| `FunkArr__MatchHistory__SnapshotInterval` | `20` | Interval between snapshots |
+| **PostgreSQL** | | |
 | `FunkArr__Postgres__Host` | _(empty)_ | PostgreSQL host - set to switch from SQLite to Postgres |
 | `FunkArr__Postgres__Port` | `5432` | PostgreSQL port |
 | `FunkArr__Postgres__User` | _(empty)_ | PostgreSQL user |
@@ -104,22 +120,29 @@ See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste re
 
 ## Build & Test
 
-All commands run from `src/`:
+All commands run from the repo root:
 
 ```powershell
-dotnet build FunkArr.slnx
+dotnet build src/FunkArr.slnx
 ```
 
 Tests use xUnit v3 on Microsoft Testing Platform - run with `dotnet run`, not `dotnet test`:
 
 ```powershell
-dotnet run --project FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
-dotnet run --project FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
-dotnet run --project FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj
-dotnet run --project FunkArr.MatchMagic.Tests/FunkArr.MatchMagic.Tests.csproj
-dotnet run --project FunkArr.MetadataResolver.Tests/FunkArr.MetadataResolver.Tests.csproj
-dotnet run --project FunkArr.Api.Tests/FunkArr.Api.Tests.csproj
-dotnet run --project FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj
+dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
+dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
+dotnet run --project src/FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj
+dotnet run --project src/FunkArr.MatchMagic.Tests/FunkArr.MatchMagic.Tests.csproj
+dotnet run --project src/FunkArr.MetadataResolver.Tests/FunkArr.MetadataResolver.Tests.csproj
+dotnet run --project src/FunkArr.Api.Tests/FunkArr.Api.Tests.csproj
+dotnet run --project src/FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj
+dotnet run --project src/FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj
+```
+
+Format check (CI enforces this):
+
+```powershell
+dotnet format src/FunkArr.slnx --verify-no-changes
 ```
 
 ## Alternatives

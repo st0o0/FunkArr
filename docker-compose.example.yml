@@ -24,6 +24,11 @@ services:
       - FunkArr__Download__Path=/media/downloads
       # Max concurrent downloads. Default: 3
       #- FunkArr__Download__ConcurrentDownloads=3
+      # Download categories - map Sonarr/Radarr categories to subdirectories
+      - FunkArr__Download__Categories__0__Name=tv
+      - FunkArr__Download__Categories__0__Dir=tv
+      - FunkArr__Download__Categories__1__Name=movies
+      - FunkArr__Download__Categories__1__Dir=movies
 
       # -- RuleSets --
       # GitHub repository for community rulesets (owner/repo). Default: st0o0/funkarr
@@ -39,6 +44,18 @@ services:
       # TVDB API key for episode guide resolution
       #- FunkArr__Tvdb__ApiKey=your-tvdb-api-key
 
+      # -- Scoring --
+      # Parallel scoring workers. Default: 4
+      #- FunkArr__Scoring__PoolSize=4
+
+      # -- Match History --
+      # Max match history snapshots to retain. Default: 100
+      #- FunkArr__MatchHistory__MaxSnapshots=100
+      # Days before old snapshots are pruned. Default: 30
+      #- FunkArr__MatchHistory__MaxAgeDays=30
+      # Interval between snapshots. Default: 20
+      #- FunkArr__MatchHistory__SnapshotInterval=20
+
       # -- Persistence (PostgreSQL) --
       # Default: SQLite at data/funkarr.db (no extra config needed).
       # Set Postgres__Host to switch to PostgreSQL.
@@ -47,6 +64,10 @@ services:
       #- FunkArr__Postgres__User=funkarr
       #- FunkArr__Postgres__Password=changeme
       #- FunkArr__Postgres__Database=funkarr
+    # -- Uncomment for PostgreSQL persistence --
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
 
   # -- Uncomment for PostgreSQL persistence --
   # db:
@@ -58,6 +79,11 @@ services:
   #     POSTGRES_DB: funkarr
   #     POSTGRES_USER: funkarr
   #     POSTGRES_PASSWORD: changeme
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U funkarr"]
+  #     interval: 5s
+  #     timeout: 3s
+  #     retries: 5
 
 volumes:
   funkarr-data:
