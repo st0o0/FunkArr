@@ -27,7 +27,7 @@
     <PackageVersion Include="System.IO.Abstractions" Version="22.1.0" />
   </ItemGroup>
   <ItemGroup Label="Transitive pins (security)">
-    <PackageVersion Include="OpenTelemetry.Api" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.18.0" />
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
   </ItemGroup>
   <ItemGroup Label="Testing">
