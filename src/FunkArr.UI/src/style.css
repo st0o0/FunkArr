@@ -1,36 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface-base: #111113;
-  --color-surface-raised: #19191c;
-  --color-surface-elevated: #222225;
-  --color-surface-overlay: #2c2c30;
+  --color-surface-base: #0f0f11;
+  --color-surface-raised: #18181b;
+  --color-surface-elevated: #27272a;
+  --color-surface-overlay: #3f3f46;
 
-  --color-border-default: rgba(255 255 255 / 0.06);
-  --color-border-subtle: rgba(255 255 255 / 0.03);
-  --color-border-focus: rgba(255 255 255 / 0.2);
+  --color-border-default: rgba(255 255 255 / 0.08);
+  --color-border-subtle: rgba(255 255 255 / 0.04);
+  --color-border-focus: rgba(255 255 255 / 0.24);
 
-  --color-text-primary: #ececef;
-  --color-text-body: #a9a9b2;
-  --color-text-secondary: #8e8e96;
-  --color-text-muted: #6e6e76;
+  --color-text-primary: #fafafa;
+  --color-text-body: #a1a1aa;
+  --color-text-secondary: #71717a;
+  --color-text-muted: #52525b;
 
-  --color-brand-300: #fcd34d;
-  --color-brand-400: #fbbf24;
-  --color-brand-500: #f59e0b;
-  --color-brand-600: #d97706;
-  --color-brand-700: #b45309;
-  --color-brand-900: #451a03;
+  --color-accent: #f59e0b;
+  --color-accent-dim: #b45309;
 
-  --color-accent-400: #68d391;
-  --color-accent-500: #48bb78;
+  --color-slate: #64748b;
 
   --color-status-ok: #4ade80;
   --color-status-warn: #fbbf24;
   --color-status-fail: #f87171;
   --color-status-info: #60a5fa;
 
-  --font-sans: -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, monospace;
 }
 

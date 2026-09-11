@@ -11,7 +11,7 @@
     <div class="p-4">
       <div v-if="activeItems.length === 0 && queuedCount === 0" class="py-6 text-center">
         <p class="text-text-muted text-xs">No active downloads</p>
-        <p class="text-text-muted text-[11px] mt-1">Searches from Sonarr or Radarr will appear here</p>
+        <p class="text-text-muted text-xs mt-1">Searches from Sonarr or Radarr will appear here</p>
       </div>
 
       <div v-else class="space-y-3">
@@ -23,7 +23,7 @@
           <div class="h-1 bg-surface-elevated rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-700 ease-out"
-              :class="item.percentage < 100 ? 'bg-brand-500' : 'bg-status-ok'"
+              :class="item.percentage < 100 ? 'bg-accent' : 'bg-status-ok'"
               :style="{ width: `${item.percentage}%` }"
             />
           </div>

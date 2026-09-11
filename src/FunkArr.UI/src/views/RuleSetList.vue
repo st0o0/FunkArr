@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-4xl mx-auto">
+  <div class="max-w-3xl mx-auto">
     <h1 class="text-lg font-medium text-text-primary mb-4">RuleSets</h1>
 
     <div class="flex items-center gap-2 mb-4">
@@ -66,10 +66,10 @@
             <span class="font-mono text-xs text-text-secondary shrink-0">{{ rs.ruleSetId }}</span>
           </div>
           <span
-            class="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 ml-2"
+            class="text-[11px] font-medium px-1.5 py-0.5 rounded shrink-0 ml-2"
             :class="{
               'bg-surface-elevated text-text-secondary': rs.sourceType === 'community',
-              'bg-brand-500/10 text-brand-500': rs.sourceType === 'local',
+              'bg-accent/10 text-accent': rs.sourceType === 'local',
               'bg-surface-elevated text-text-body': rs.sourceType === 'merged',
             }"
           >{{ rs.sourceType }}</span>

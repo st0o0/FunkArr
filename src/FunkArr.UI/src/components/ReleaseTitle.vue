@@ -18,7 +18,7 @@
       </span>
       <span
         v-if="parsed.quality && !hideQuality"
-        class="ml-auto shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-text-secondary"
+        class="ml-auto shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-text-secondary"
       >
         {{ parsed.quality }}
       </span>

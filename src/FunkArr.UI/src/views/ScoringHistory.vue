@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="max-w-3xl mx-auto">
     <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id, to: `/rulesets/${id}` }, { label: 'History' }]" />
 
     <h1 class="text-lg font-medium text-text-primary mb-4">Scoring History</h1>
@@ -15,11 +15,11 @@
         <table class="w-full text-sm">
           <thead class="sticky top-0 z-10">
             <tr class="bg-surface-raised">
-              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Source</th>
-              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Query</th>
-              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">When</th>
-              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Candidates</th>
-              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs uppercase tracking-wider">Matched</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">Source</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">Query</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">When</th>
+              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs">Candidates</th>
+              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs">Matched</th>
             </tr>
           </thead>
           <tbody class="bg-surface-raised/50">

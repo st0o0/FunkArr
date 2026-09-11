@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-4xl mx-auto">
+  <div class="max-w-3xl mx-auto">
     <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id }]" />
 
     <div v-if="loading" class="space-y-4">
@@ -28,7 +28,7 @@
       </div>
 
       <section class="mb-4">
-        <h2 class="text-xs font-medium uppercase tracking-wider mb-2 text-text-muted">Identity</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-secondary">Identity</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
             <span class="text-text-muted">RuleSet ID</span>
@@ -48,7 +48,7 @@
       </section>
 
       <section class="mb-4">
-        <h2 class="text-xs font-medium uppercase tracking-wider mb-2 text-text-muted">Source</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-secondary">Source</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="flex items-center gap-3">
             <span
@@ -69,7 +69,7 @@
       </section>
 
       <section class="mb-5">
-        <h2 class="text-xs font-medium uppercase tracking-wider mb-2 text-text-muted">Matching Rules</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-secondary">Matching Rules</h2>
         <div class="text-sm text-text-muted mb-2">Default confidence: {{ detail.defaultConfidence }}</div>
 
         <div v-if="detail.rules.length === 0" class="text-text-muted text-sm">No rules defined.</div>

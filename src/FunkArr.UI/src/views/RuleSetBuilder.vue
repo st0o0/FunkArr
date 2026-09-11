@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="max-w-5xl mx-auto">
     <AppBreadcrumb :items="breadcrumbItems" />
 
     <div v-if="loadingDetail" class="space-y-5">
@@ -15,8 +15,8 @@
 
         <!-- Identity Section -->
         <section>
-          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-secondary">Identity</h2>
-          <p class="text-[11px] text-text-secondary mb-2">The Mediathek topic name and external IDs to match this show.</p>
+          <h2 class="text-sm font-semibold mb-1 text-text-secondary">Identity</h2>
+          <p class="text-xs text-text-secondary mb-2">The Mediathek topic name and external IDs to match this show.</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4 space-y-3">
             <div>
               <label class="block text-xs text-text-secondary mb-1">RuleSet ID</label>
@@ -87,8 +87,8 @@
 
         <!-- Default Confidence -->
         <section>
-          <h2 class="text-xs font-medium uppercase tracking-wider mb-1 text-text-secondary">Default Confidence</h2>
-          <p class="text-[11px] text-text-secondary mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
+          <h2 class="text-sm font-semibold mb-1 text-text-secondary">Default Confidence</h2>
+          <p class="text-xs text-text-secondary mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4">
             <input
               v-model.number="form.confidence"
@@ -105,8 +105,8 @@
         <section>
           <div class="flex items-center justify-between mb-2">
             <div>
-              <h2 class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Matching Rules</h2>
-              <p class="text-[11px] text-text-secondary mt-0.5">Rules are tried in priority order. First match wins.</p>
+              <h2 class="text-sm font-semibold text-text-secondary">Matching Rules</h2>
+              <p class="text-xs text-text-secondary mt-0.5">Rules are tried in priority order. First match wins.</p>
             </div>
             <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addRule">+ Add Rule</button>
           </div>
@@ -217,7 +217,7 @@
                   <label class="block text-xs text-text-secondary mb-1">Filters</label>
                   <div v-for="section in (['all', 'any', 'not'] as const)" :key="section" class="space-y-1">
                     <div class="flex items-center justify-between">
-                      <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">{{ section }}</span>
+                      <span class="text-sm font-semibold text-text-secondary">{{ section }}</span>
                       <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addFilterCondition(rule, section)">+ Add</button>
                     </div>
                     <div v-if="rule.filters[section].length === 0" class="text-text-muted text-xs pl-2">(no conditions)</div>
@@ -251,7 +251,7 @@
         <!-- Save button -->
         <div class="flex items-center gap-3">
           <button
-            class="px-3 py-1.5 bg-surface-elevated border border-border-default text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors disabled:opacity-50"
+            class="px-3 py-1.5 bg-accent text-black font-medium rounded-md hover:bg-accent-dim text-sm transition-colors disabled:opacity-50"
             :disabled="saving"
             @click="handleSave"
           >

@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-2xl mx-auto">
+  <div class="max-w-3xl mx-auto">
     <h1 class="text-lg font-medium text-text-primary mb-5">Setup Guide</h1>
 
     <div class="flex items-center gap-1 mb-6">
@@ -70,7 +70,7 @@
         <button
           @click="currentStep++"
           :disabled="hasFailures"
-          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md text-text-body hover:bg-surface-overlay disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>
@@ -88,7 +88,7 @@
           class="flex items-start gap-3 p-3 rounded-lg bg-surface-raised border cursor-pointer transition-colors"
           :class="selectedServices.includes(svc.value) ? 'border-border-focus' : 'border-border-default hover:bg-surface-elevated'"
         >
-          <input type="checkbox" v-model="selectedServices" :value="svc.value" class="mt-0.5 accent-brand-500" />
+          <input type="checkbox" v-model="selectedServices" :value="svc.value" class="mt-0.5 accent-accent" />
           <div>
             <div class="text-sm text-text-body">{{ svc.title }}</div>
             <div class="text-xs text-text-secondary">{{ svc.description }}</div>
@@ -101,7 +101,7 @@
         <button
           @click="currentStep++"
           :disabled="selectedServices.length === 0"
-          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md text-text-body hover:bg-surface-overlay disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>
@@ -127,7 +127,7 @@
                   <button
                     v-if="field.copyable"
                     @click="copyToClipboard(field.value)"
-                    class="text-[11px] px-1.5 py-0.5 border border-border-default rounded hover:bg-surface-elevated text-text-secondary transition-colors"
+                    class="text-xs px-1.5 py-0.5 border border-border-default rounded hover:bg-surface-elevated text-text-secondary transition-colors"
                     :title="'Copy ' + field.label"
                   >
                     {{ justCopied === field.value ? 'Copied' : 'Copy' }}
@@ -153,14 +153,14 @@
         <button
           v-if="isLastStep"
           @click="$router.push('/')"
-          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md text-text-body hover:bg-surface-overlay transition-colors"
+          class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim transition-colors"
         >
           Done
         </button>
         <button
           v-else
           @click="currentStep++"
-          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md text-text-body hover:bg-surface-overlay transition-colors"
+          class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim transition-colors"
         >
           Next
         </button>

@@ -1,11 +1,9 @@
 <template>
   <div class="flex flex-col h-full">
-    <h2 class="text-xs font-semibold uppercase tracking-wider mb-3 text-text-secondary">Debugger</h2>
-
     <!-- Tabs -->
     <div class="flex gap-1 mb-3">
       <button
-        v-for="tab in ['Manual', 'Fetch'] as const"
+        v-for="tab in ['Search', 'Test Results'] as const"
         :key="tab"
         class="px-2.5 py-1 text-xs rounded-md transition-colors"
         :class="activeTab === tab
@@ -15,184 +13,140 @@
       >{{ tab }}</button>
     </div>
 
-    <!-- Manual Input -->
-    <div v-if="activeTab === 'Manual'" class="mb-3">
-      <div class="bg-surface-raised rounded-lg border border-border-default p-3 space-y-2">
-        <input v-model="manualForm.title" placeholder="Title" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
-        <div class="grid grid-cols-2 gap-2">
-          <input v-model="manualForm.topic" placeholder="Topic" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
-          <input v-model="manualForm.channel" placeholder="Channel" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <input v-model.number="manualForm.durationMin" type="number" placeholder="Duration (min)" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
-          <input v-model.number="manualForm.quality" type="number" placeholder="Quality" class="bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
-        </div>
-        <textarea v-model="manualForm.description" placeholder="Description (optional)" rows="2" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus resize-none" />
-        <input v-model="manualForm.timestamp" type="datetime-local" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
-        <button
-          class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:bg-surface-overlay text-sm transition-colors active:scale-[0.98]"
-          @click="addManualCandidate"
-        >Add Candidate</button>
-      </div>
-    </div>
-
-    <!-- Fetch Input -->
-    <div v-if="activeTab === 'Fetch'" class="mb-3">
-      <div class="bg-surface-raised rounded-lg border border-border-default p-3 space-y-2">
+    <!-- Search Tab -->
+    <div v-if="activeTab === 'Search'" class="flex flex-col flex-1 min-h-0">
+      <div class="space-y-2 mb-3">
+        <input
+          v-model="searchQuery"
+          placeholder="Search Mediathek..."
+          class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
+          @keyup.enter="doSearch"
+        />
         <div class="flex gap-2">
           <input
-            v-model="fetchQuery"
-            placeholder="Search MediathekViewWeb..."
-            class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
-            @keyup.enter="doFetch"
+            v-model="channelFilter"
+            placeholder="Channel"
+            class="flex-1 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
           />
-          <button
-            class="px-3 py-1.5 bg-surface-elevated border border-border-default text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors whitespace-nowrap"
-            :disabled="fetchLoading || !fetchQuery.trim()"
-            @click="doFetch"
-          >{{ fetchLoading ? 'Searching...' : 'Search' }}</button>
+          <input
+            v-model="topicFilter"
+            placeholder="Topic"
+            class="flex-1 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
+          />
         </div>
-
-        <div v-if="fetchError" class="text-status-fail text-xs">{{ fetchError }}</div>
-
-        <div v-if="fetchResults.length > 0" class="space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-text-secondary">{{ fetchResults.length }} results</span>
-            <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="toggleSelectAll">
-              {{ allFetchSelected ? 'Deselect All' : 'Select All' }}
-            </button>
-          </div>
-          <div class="max-h-40 overflow-y-auto space-y-0.5">
-            <label
-              v-for="(item, idx) in fetchResults"
-              :key="idx"
-              class="flex items-start gap-2 p-1.5 rounded hover:bg-surface-elevated/50 cursor-pointer text-xs"
-            >
-              <input type="checkbox" v-model="fetchSelected[idx]" class="mt-0.5" />
-              <div class="min-w-0">
-                <div class="text-text-body truncate">{{ item.title }}</div>
-                <div class="text-text-secondary">{{ item.channel }} &middot; {{ item.topic }}</div>
-              </div>
-            </label>
-          </div>
-          <button
-            class="w-full px-3 py-1.5 bg-surface-elevated text-text-body border border-border-default rounded-lg hover:bg-surface-overlay text-sm transition-colors active:scale-[0.98]"
-            :disabled="selectedFetchCount === 0"
-            @click="addFetchCandidates"
-          >Add {{ selectedFetchCount }} Candidate(s)</button>
-        </div>
-        <div v-else-if="fetchSearched && !fetchLoading" class="text-text-secondary text-xs">No results found</div>
       </div>
-    </div>
 
-    <!-- Candidate List -->
-    <div v-if="candidates.length > 0" class="mb-3">
-      <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Candidates ({{ candidates.length }})</span>
-        <button class="text-xs text-status-fail/60 hover:text-status-fail transition-colors" @click="candidates = []">Clear All</button>
-      </div>
-      <div class="space-y-1 max-h-32 overflow-y-auto">
-        <div
-          v-for="(c, idx) in candidates"
-          :key="idx"
-          class="flex items-center justify-between bg-surface-raised rounded-lg border border-border-default px-3 py-1.5 text-xs"
-        >
-          <div class="min-w-0">
-            <span class="text-text-body truncate">{{ c.title }}</span>
-            <span class="text-text-secondary ml-2">{{ c.topic }}</span>
-          </div>
-          <button class="text-status-fail/60 hover:text-status-fail ml-2 shrink-0 transition-colors" @click="candidates.splice(idx, 1)">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      <div v-if="searchLoading" class="text-xs text-text-secondary">Searching...</div>
+      <div v-else-if="searchError" class="text-status-fail text-xs">{{ searchError }}</div>
+
+      <div v-if="searchResults.length > 0" class="flex flex-col flex-1 min-h-0">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-text-secondary">{{ searchResults.length }} results - {{ selectedCount }} selected</span>
+          <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="toggleSelectAll">
+            {{ allSelected ? 'Deselect All' : 'Select All' }}
           </button>
         </div>
-      </div>
-    </div>
 
-    <!-- Test Button -->
-    <button
-      class="w-full px-3 py-1.5 rounded-md text-sm transition-colors mb-3 border border-border-default"
-      :class="canTest
-        ? 'bg-surface-elevated text-text-body hover:bg-surface-overlay'
-        : 'bg-surface-elevated text-text-secondary cursor-not-allowed'"
-      :disabled="!canTest || testing"
-      @click="runTest"
-    >{{ testing ? 'Testing...' : 'Test' }}</button>
-
-    <div v-if="testError" class="text-status-fail text-xs mb-3">{{ testError }}</div>
-
-    <!-- Results -->
-    <div v-if="results" class="flex-1 overflow-y-auto space-y-2">
-      <div class="flex items-center justify-between mb-1">
-        <span class="text-xs font-semibold uppercase tracking-wider text-text-secondary">Results</span>
-        <span class="text-xs text-text-secondary">
-          {{ results.filter(r => r.matched).length }}/{{ results.length }} matched
-        </span>
-      </div>
-
-      <div
-        v-for="(item, idx) in sortedResults"
-        :key="idx"
-        class="bg-surface-raised rounded-lg border border-border-default text-sm"
-      >
-        <!-- Result Header -->
-        <div class="p-3 cursor-pointer" @click="toggleExpand(idx)">
-          <div class="flex items-baseline gap-2 mb-0.5">
-            <span class="font-semibold text-text-body truncate">{{ item.candidateTitle }}</span>
-            <span
-              class="text-xs px-1.5 py-0.5 rounded shrink-0"
-              :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
-            >{{ item.matched ? 'Matched' : 'No Match' }}</span>
-          </div>
-          <div class="text-xs text-text-secondary">
-            {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
-            {{ Math.floor(item.candidateDuration / 60) }}min
-            <template v-if="item.matched">
-              &middot; <span class="text-status-ok font-medium">{{ item.matchedRuleId }}</span>
-              &middot; score {{ item.score.toFixed(2) }}
-            </template>
-          </div>
+        <div class="flex-1 overflow-y-auto space-y-0.5 mb-3">
+          <label
+            v-for="(item, idx) in searchResults"
+            :key="idx"
+            class="flex items-start gap-2 p-2 rounded-md hover:bg-surface-elevated/50 cursor-pointer text-xs"
+          >
+            <input type="checkbox" v-model="selected[idx]" class="mt-0.5" />
+            <div class="min-w-0 flex-1">
+              <div class="text-text-body truncate">{{ item.title }}</div>
+              <div class="text-text-secondary">
+                {{ item.channel }} &middot; {{ item.topic }} &middot;
+                {{ Math.floor(item.duration / 60) }}min
+                <span v-if="item.quality > 0"> &middot; {{ item.quality }}p</span>
+              </div>
+            </div>
+          </label>
         </div>
 
-        <!-- Expanded Trace -->
-        <div v-if="expanded[idx]" class="border-t border-border-default px-3 pb-3 pt-2">
-          <div class="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Rule Pipeline</div>
-          <div class="space-y-2">
-            <div
-              v-for="(rt, ri) in item.ruleTraces"
-              :key="ri"
-              class="pl-3 border-l-2"
-              :class="outcomeBorderClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
-            >
-              <!-- Rule Header -->
-              <div class="flex items-center gap-2 text-xs mb-1">
-                <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
-                <span class="text-text-secondary">prio {{ rt.priority }}</span>
-                <span
-                  class="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                  :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
-                >{{ isSkipped(rt, item, ri) ? 'Skipped' : outcomeLabel(rt.outcome) }}</span>
-              </div>
+        <button
+          class="w-full px-3 py-1.5 rounded-md text-sm transition-colors border border-border-default"
+          :class="canTest
+            ? 'bg-accent text-black font-medium hover:bg-accent-dim'
+            : 'bg-surface-elevated text-text-muted cursor-not-allowed'"
+          :disabled="!canTest || testing"
+          @click="runTest"
+        >{{ testing ? 'Testing...' : `Test Rules (${selectedCount})` }}</button>
+      </div>
+      <div v-else-if="hasSearched && !searchLoading" class="text-text-muted text-xs">No results found</div>
+    </div>
 
-              <!-- Filter Trace -->
-              <div v-if="rt.filterTrace && !isSkipped(rt, item, ri)" class="ml-2 mb-1">
-                <FilterGroupTraceView :group="rt.filterTrace" />
-              </div>
+    <!-- Test Results Tab -->
+    <div v-if="activeTab === 'Test Results'" class="flex-1 overflow-y-auto">
+      <div v-if="!results" class="text-text-muted text-xs">Run a search and test rules to see results.</div>
+      <div v-else class="space-y-2">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-text-secondary">
+            {{ results.filter(r => r.matched).length }}/{{ results.length }} matched
+          </span>
+        </div>
 
-              <!-- Identification Trace -->
-              <div v-if="rt.identificationTrace && !isSkipped(rt, item, ri)" class="ml-2 text-xs">
-                <div class="flex items-center gap-2">
-                  <span class="text-text-secondary">Identification:</span>
-                  <span class="font-mono text-text-secondary">{{ rt.identificationTrace.strategy }}</span>
+        <div
+          v-for="(item, idx) in sortedResults"
+          :key="idx"
+          class="bg-surface-raised rounded-lg border border-border-default text-sm"
+        >
+          <div class="p-3 cursor-pointer" @click="toggleExpand(idx)">
+            <div class="flex items-baseline gap-2 mb-0.5">
+              <span class="font-semibold text-text-body truncate">{{ item.candidateTitle }}</span>
+              <span
+                class="text-xs px-1.5 py-0.5 rounded shrink-0"
+                :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
+              >{{ item.matched ? 'Matched' : 'No Match' }}</span>
+            </div>
+            <div class="text-xs text-text-secondary">
+              {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
+              {{ Math.floor(item.candidateDuration / 60) }}min
+              <template v-if="item.matched">
+                &middot; <span class="text-status-ok font-medium">{{ item.matchedRuleId }}</span>
+                &middot; score {{ item.score.toFixed(2) }}
+              </template>
+            </div>
+          </div>
+
+          <div v-if="expanded[idx]" class="border-t border-border-default px-3 pb-3 pt-2">
+            <div class="text-xs font-semibold text-text-secondary mb-2">Rule Pipeline</div>
+            <div class="space-y-2">
+              <div
+                v-for="(rt, ri) in item.ruleTraces"
+                :key="ri"
+                class="pl-3 border-l-2"
+                :class="outcomeBorderClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
+              >
+                <div class="flex items-center gap-2 text-xs mb-1">
+                  <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
+                  <span class="text-text-secondary">prio {{ rt.priority }}</span>
+                  <span
+                    class="px-1.5 py-0.5 rounded text-[11px] font-medium"
+                    :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
+                  >{{ isSkipped(rt, item, ri) ? 'Skipped' : outcomeLabel(rt.outcome) }}</span>
                 </div>
-                <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">Not attempted</div>
-                <div v-else-if="rt.identificationTrace.detail" class="text-status-fail ml-4">{{ rt.identificationTrace.detail }}</div>
-                <div v-else class="ml-4 text-status-ok">
-                  <template v-if="item.identification">
-                    <span v-if="item.identification.season" class="mr-2">Season: <span class="font-mono">{{ item.identification.season }}</span></span>
-                    <span v-if="item.identification.episode" class="mr-2">Episode: <span class="font-mono">{{ item.identification.episode }}</span></span>
-                    <span v-if="item.identification.title">Title: <span class="font-mono">{{ item.identification.title }}</span></span>
-                  </template>
-                  <span v-else>OK</span>
+
+                <div v-if="rt.filterTrace && !isSkipped(rt, item, ri)" class="ml-2 mb-1">
+                  <FilterGroupTraceView :group="rt.filterTrace" />
+                </div>
+
+                <div v-if="rt.identificationTrace && !isSkipped(rt, item, ri)" class="ml-2 text-xs">
+                  <div class="flex items-center gap-2">
+                    <span class="text-text-secondary">Identification:</span>
+                    <span class="font-mono text-text-secondary">{{ rt.identificationTrace.strategy }}</span>
+                  </div>
+                  <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">Not attempted</div>
+                  <div v-else-if="rt.identificationTrace.detail" class="text-status-fail ml-4">{{ rt.identificationTrace.detail }}</div>
+                  <div v-else class="ml-4 text-status-ok">
+                    <template v-if="item.identification">
+                      <span v-if="item.identification.season" class="mr-2">Season: <span class="font-mono">{{ item.identification.season }}</span></span>
+                      <span v-if="item.identification.episode" class="mr-2">Episode: <span class="font-mono">{{ item.identification.episode }}</span></span>
+                      <span v-if="item.identification.title">Title: <span class="font-mono">{{ item.identification.title }}</span></span>
+                    </template>
+                    <span v-else>OK</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -235,98 +189,53 @@ const props = defineProps<{
   }
 }>()
 
-const activeTab = ref<'Manual' | 'Fetch'>('Manual')
+const activeTab = ref<'Search' | 'Test Results'>('Search')
 
-// Manual input
-const manualForm = reactive({
-  title: '',
-  topic: '',
-  channel: '',
-  durationMin: 0,
-  quality: 720,
-  description: '',
-  timestamp: '',
-})
+// Search
+const searchQuery = ref('')
+const channelFilter = ref('')
+const topicFilter = ref('')
+const searchResults = ref<MediathekCandidate[]>([])
+const selected = reactive<Record<number, boolean>>({})
+const searchLoading = ref(false)
+const hasSearched = ref(false)
+const searchError = ref<string | null>(null)
 
-const candidates = ref<TestCandidate[]>([])
-
-function addManualCandidate() {
-  if (!manualForm.title.trim()) return
-  candidates.value.push({
-    title: manualForm.title,
-    topic: manualForm.topic,
-    channel: manualForm.channel,
-    duration: manualForm.durationMin * 60,
-    quality: manualForm.quality,
-    description: manualForm.description || null,
-    timestamp: manualForm.timestamp
-      ? Math.floor(new Date(manualForm.timestamp).getTime() / 1000)
-      : 0,
-  })
-  manualForm.title = ''
-  manualForm.topic = ''
-  manualForm.channel = ''
-  manualForm.durationMin = 0
-  manualForm.quality = 720
-  manualForm.description = ''
-  manualForm.timestamp = ''
-}
-
-// Fetch input
-const fetchQuery = ref('')
-const fetchResults = ref<MediathekCandidate[]>([])
-const fetchSelected = reactive<Record<number, boolean>>({})
-const fetchLoading = ref(false)
-const fetchSearched = ref(false)
-const fetchError = ref<string | null>(null)
-
-const allFetchSelected = computed(() =>
-  fetchResults.value.length > 0 && fetchResults.value.every((_, i) => fetchSelected[i])
+const allSelected = computed(() =>
+  searchResults.value.length > 0 && searchResults.value.every((_, i) => selected[i])
 )
 
-const selectedFetchCount = computed(() =>
-  fetchResults.value.filter((_, i) => fetchSelected[i]).length
+const selectedCount = computed(() =>
+  searchResults.value.filter((_, i) => selected[i]).length
 )
 
 function toggleSelectAll() {
-  const selectAll = !allFetchSelected.value
-  fetchResults.value.forEach((_, i) => { fetchSelected[i] = selectAll })
+  const selectAll = !allSelected.value
+  searchResults.value.forEach((_, i) => { selected[i] = selectAll })
 }
 
-async function doFetch() {
-  if (!fetchQuery.value.trim()) return
-  fetchLoading.value = true
-  fetchError.value = null
-  fetchSearched.value = true
-  try {
-    fetchResults.value = await searchMediathek(fetchQuery.value)
-    Object.keys(fetchSelected).forEach(k => delete fetchSelected[Number(k)])
-    fetchResults.value.forEach((_, i) => { fetchSelected[i] = true })
-  } catch (e) {
-    fetchError.value = e instanceof Error ? e.message : 'Search failed'
-    fetchResults.value = []
-  } finally {
-    fetchLoading.value = false
+async function doSearch() {
+  const q = searchQuery.value.trim()
+  if (!q && !channelFilter.value.trim() && !topicFilter.value.trim()) {
+    searchResults.value = []
+    hasSearched.value = false
+    return
   }
-}
 
-function addFetchCandidates() {
-  fetchResults.value.forEach((item, idx) => {
-    if (fetchSelected[idx]) {
-      candidates.value.push({
-        title: item.title,
-        topic: item.topic,
-        channel: item.channel,
-        duration: item.duration,
-        quality: item.quality,
-        description: item.description,
-        timestamp: item.timestamp,
-      })
-    }
-  })
-  fetchResults.value = []
-  Object.keys(fetchSelected).forEach(k => delete fetchSelected[Number(k)])
-  fetchSearched.value = false
+  searchLoading.value = true
+  searchError.value = null
+  hasSearched.value = true
+
+  try {
+    searchResults.value = await searchMediathek(q || topicFilter.value || channelFilter.value)
+    Object.keys(selected).forEach(k => delete selected[Number(k)])
+    searchResults.value.forEach((_, i) => { selected[i] = true })
+  } catch (e) {
+    searchError.value = e instanceof Error ? e.message : 'Search failed'
+    searchResults.value = []
+  } finally {
+    searchLoading.value = false
+  }
 }
 
 // Testing
@@ -336,7 +245,7 @@ const results = ref<ItemTrace[] | null>(null)
 const expanded = reactive<Record<number, boolean>>({})
 
 const canTest = computed(() =>
-  candidates.value.length > 0 && props.builderState.rules.length > 0
+  selectedCount.value > 0 && props.builderState.rules.length > 0
 )
 
 function hasFilters(filters: { all: unknown[]; any: unknown[]; not: unknown[] }): boolean {
@@ -348,6 +257,18 @@ async function runTest() {
   testing.value = true
   testError.value = null
   Object.keys(expanded).forEach(k => delete expanded[Number(k)])
+
+  const candidates: TestCandidate[] = searchResults.value
+    .filter((_, i) => selected[i])
+    .map(item => ({
+      title: item.title,
+      topic: item.topic,
+      channel: item.channel,
+      duration: item.duration,
+      quality: item.quality,
+      description: item.description,
+      timestamp: item.timestamp,
+    }))
 
   const config = {
     defaultConfidence: props.builderState.confidence,
@@ -369,8 +290,9 @@ async function runTest() {
   }
 
   try {
-    const response = await testRuleSet(config, candidates.value)
+    const response = await testRuleSet(config, candidates)
     results.value = response.itemTraces
+    activeTab.value = 'Test Results'
   } catch (e) {
     testError.value = e instanceof Error ? e.message : 'Test failed'
     results.value = null

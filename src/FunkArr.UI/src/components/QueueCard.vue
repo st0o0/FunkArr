@@ -15,7 +15,7 @@
           </template>
           <span
             v-if="item.hasSubtitles"
-            class="px-1 py-px rounded bg-surface-elevated text-[10px] font-medium"
+            class="px-1 py-px rounded bg-surface-elevated text-[11px] font-medium"
           >SUB</span>
         </div>
       </div>
@@ -28,7 +28,7 @@
         >
           <span
             class="w-1.5 h-1.5 rounded-full"
-            :class="item.status === 'Processing' ? 'bg-brand-500 animate-pulse' : 'bg-text-muted'"
+            :class="item.status === 'Processing' ? 'bg-accent' : 'bg-text-muted'"
           />
           {{ item.status === 'Processing' ? 'Downloading' : 'Queued' }}
         </span>
@@ -52,7 +52,7 @@
         </div>
         <div class="h-1 bg-surface-elevated rounded-full overflow-hidden">
           <div
-            class="h-full bg-brand-500 rounded-full transition-all duration-700 ease-out"
+            class="h-full bg-accent rounded-full transition-all duration-700 ease-out"
             :style="{ width: `${item.percentage}%` }"
           />
         </div>
