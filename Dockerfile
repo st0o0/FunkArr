@@ -3,7 +3,7 @@
 # CI cross-compiles via `dotnet publish -r <rid>` and passes the
 # published output as build context. No SDK needed here.
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-alpine
 # hadolint ignore=DL3018
 RUN apk add --no-cache ffmpeg
 LABEL org.opencontainers.image.title="funkarr" \
