@@ -171,4 +171,73 @@ public sealed class SearchManagerTests : TestKit
         var result = ExpectMsg<SearchFailed>(TimeSpan.FromSeconds(5));
         Assert.Contains("timed out", result.Reason);
     }
+
+    [Fact]
+    public void Fan_out_partial_success_returns_partial_when_other_fails()
+    {
+        var tvProbe = CreateTestProbe();
+        var movieProbe = CreateTestProbe();
+        var gateway = CreateGateway(tvProbe, movieProbe);
+
+        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+
+        var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
+        var movieCmd = movieProbe.ExpectMsg<MovieSearchCommand>();
+
+        var tvItem = new SearchResultItem("TV Show", "ARD", "Topic", "url", 5400, 100, 720, null, 0.9);
+        gateway.Tell(new SearchCompleted(tvCmd.SearchId, [tvItem], 1));
+
+        ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+
+        gateway.Tell(new SearchFailed(movieCmd.SearchId, "Movie search failed"));
+
+        var result = ExpectMsg<SearchCompleted>();
+        Assert.Single(result.Items);
+        Assert.Equal("TV Show", result.Items[0].Title);
+    }
+
+    [Fact]
+    public void Fan_out_both_fail_returns_first_failure()
+    {
+        var tvProbe = CreateTestProbe();
+        var movieProbe = CreateTestProbe();
+        var gateway = CreateGateway(tvProbe, movieProbe);
+
+        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+
+        var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
+        var movieCmd = movieProbe.ExpectMsg<MovieSearchCommand>();
+
+        gateway.Tell(new SearchFailed(tvCmd.SearchId, "TV failed"));
+
+        var result = ExpectMsg<SearchFailed>();
+        Assert.Contains("TV failed", result.Reason);
+
+        gateway.Tell(new SearchFailed(movieCmd.SearchId, "Movie failed"));
+        ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+    }
+
+    [Fact]
+    public void Fan_out_timeout_with_partial_returns_partial()
+    {
+        var tvProbe = CreateTestProbe();
+        var movieProbe = CreateTestProbe();
+        var registry = ActorRegistry.For(Sys);
+        registry.Register<ITvSearchRegion>(tvProbe, overwrite: true);
+        registry.Register<IMovieSearchRegion>(movieProbe, overwrite: true);
+        var gateway = Sys.ActorOf(Props.Create(() =>
+            new SearchManager(TimeSpan.FromMilliseconds(200))));
+
+        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+
+        var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
+        movieProbe.ExpectMsg<MovieSearchCommand>();
+
+        var tvItem = new SearchResultItem("TV Show", "ARD", "Topic", "url", 5400, 100, 720, null, 0.9);
+        gateway.Tell(new SearchCompleted(tvCmd.SearchId, [tvItem], 1));
+
+        var result = ExpectMsg<SearchCompleted>(TimeSpan.FromSeconds(5));
+        Assert.Single(result.Items);
+        Assert.Equal("TV Show", result.Items[0].Title);
+    }
 }

@@ -293,4 +293,24 @@ public sealed class MovieSearchWorkerTests : TestKit
         Assert.Single(result.Items);
         Assert.Null(result.Items[0].ResolutionConfidence);
     }
+
+    [Fact]
+    public void ImdbId_search_with_zero_mvw_results_returns_empty()
+    {
+        var probes = RegisterProbes();
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
+
+        var searchId = Guid.NewGuid();
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", null, "tt0806910", null, null, null), TestActor);
+
+        probes.Resolver.ExpectMsg<ResolveRuleSet>();
+        probes.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
+
+        probes.Mediathek.ExpectMsg<QueryMediathek>();
+        probes.Mediathek.Reply(new MediathekQueryCompleted([], 0));
+
+        var result = ExpectMsg<SearchCompleted>();
+        Assert.Equal(searchId, result.SearchId);
+        Assert.Empty(result.Items);
+    }
 }

@@ -164,4 +164,68 @@ public sealed class TtmlToSrtConverterTests
 
         Assert.Contains("Tom & Jerry <3", srt);
     }
+
+    [Fact]
+    public void Convert_dur_attribute_calculates_end_from_begin_plus_dur()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt xmlns="http://www.w3.org/ns/ttml">
+              <body>
+                <div>
+                  <p begin="00:00:01.000" dur="00:00:02.000">Hello</p>
+                  <p begin="00:00:05.000" dur="00:00:03.000">World</p>
+                </div>
+              </body>
+            </tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("1\n00:00:01,000 --> 00:00:03,000\nHello", srt);
+        Assert.Contains("2\n00:00:05,000 --> 00:00:08,000\nWorld", srt);
+    }
+
+    [Fact]
+    public void Convert_mixed_end_and_dur_attributes()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt xmlns="http://www.w3.org/ns/ttml">
+              <body>
+                <div>
+                  <p begin="00:00:01.000" end="00:00:04.000">With end</p>
+                  <p begin="00:00:05.000" dur="00:00:02.500">With dur</p>
+                  <p begin="00:00:10.000" end="00:00:12.000">Back to end</p>
+                </div>
+              </body>
+            </tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("1\n00:00:01,000 --> 00:00:04,000\nWith end", srt);
+        Assert.Contains("2\n00:00:05,000 --> 00:00:07,500\nWith dur", srt);
+        Assert.Contains("3\n00:00:10,000 --> 00:00:12,000\nBack to end", srt);
+    }
+
+    [Fact]
+    public void Convert_paragraphs_without_end_or_dur_returns_empty()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt xmlns="http://www.w3.org/ns/ttml">
+              <body>
+                <div>
+                  <p begin="00:00:01.000">No end or dur</p>
+                  <p begin="00:00:05.000">Also missing</p>
+                </div>
+              </body>
+            </tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Equal("", srt);
+    }
 }

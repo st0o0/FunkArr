@@ -331,4 +331,24 @@ public sealed class TvSearchWorkerTests : TestKit
         Assert.Null(result.Items[0].Season);
         Assert.Null(result.Items[0].ResolutionConfidence);
     }
+
+    [Fact]
+    public void TvdbId_search_with_zero_mvw_results_returns_empty()
+    {
+        var p = RegisterProbes();
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
+
+        var searchId = Guid.NewGuid();
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", null, null, null, 83214, null, null, null), TestActor);
+
+        p.Resolver.ExpectMsg<ResolveRuleSet>();
+        p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
+
+        p.Mediathek.ExpectMsg<QueryMediathek>();
+        p.Mediathek.Reply(new MediathekQueryCompleted([], 0));
+
+        var result = ExpectMsg<SearchCompleted>();
+        Assert.Equal(searchId, result.SearchId);
+        Assert.Empty(result.Items);
+    }
 }

@@ -187,6 +187,25 @@ public sealed class SearchResultMappingTests
     }
 
     [Fact]
+    public void ToRss_strips_tabs_from_nzb_payload_fields()
+    {
+        var completed = new SearchCompleted(
+            Guid.NewGuid(),
+            [new SearchResultItem(
+                "Title\twith\ttabs", "Chan\tnel", "Topic", "https://example.com/v.mp4",
+                100, 0, 720, null, 1.0)],
+            1);
+
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
+        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(rss.Channel.Items[0].Guid.Value));
+        var parts = decoded.Split('\t');
+
+        Assert.Equal(7, parts.Length);
+        Assert.Equal("Title with tabs", parts[0]);
+        Assert.Equal("Chan nel", parts[3]);
+    }
+
+    [Fact]
     public void ParseInt_parses_valid_integers() =>
         Assert.Equal(5040, IndexerApiEndpoints.ParseInt("5040"));
 
