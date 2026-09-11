@@ -5,70 +5,60 @@ Per-view content width strategy removing the global max-width constraint and let
 ## Requirements
 
 ### Requirement: Remove global content width constraint
-The `AppLayout.vue` main content area SHALL NOT apply a global `max-w-6xl` constraint. The `<slot>` SHALL render within a container that provides only horizontal padding (`px-8`) and vertical padding (`py-6`), without a max-width class.
+The `AppLayout.vue` main content area SHALL NOT apply a global max-width constraint. The `<slot>` SHALL render within a container that provides only horizontal padding (`px-6`) and vertical padding (`py-5`), without a max-width class.
 
 #### Scenario: AppLayout slot has no max-width
 - **WHEN** AppLayout renders its slot content
-- **THEN** the main content wrapper SHALL have `px-8 py-6` but no `max-w-*` or `mx-auto` class
+- **THEN** the main content wrapper SHALL have `px-6 py-5` but no `max-w-*` or `mx-auto` class
 
-### Requirement: Dashboard full-width layout
-The Home (Dashboard) view root element SHALL NOT set a max-width, allowing content to fill the available width.
+### Requirement: Overview full-width layout
+The Overview view root element SHALL NOT set a max-width, allowing the compact status/feed layout to fill the available width up to a natural content limit.
 
-#### Scenario: Dashboard on wide viewport
-- **WHEN** the Dashboard renders on a wide screen
-- **THEN** the grid of widgets SHALL expand to fill the full content area
+#### Scenario: Overview on wide viewport
+- **WHEN** the Overview renders on a wide screen
+- **THEN** the content SHALL use `max-w-3xl mx-auto`
 
-### Requirement: Queue focused width
-The Queue view root element SHALL use `max-w-4xl mx-auto` to center the download cards in a focused column.
+### Requirement: Activity focused width
+The Activity view root element SHALL use `max-w-3xl mx-auto` to constrain the tabbed content.
 
-#### Scenario: Queue view width
-- **WHEN** the Queue view renders
-- **THEN** the content SHALL be constrained to `max-w-4xl` and centered
-
-### Requirement: History full-width table
-The History view root element SHALL NOT set a max-width, allowing the table to use the full available width for its columns.
-
-#### Scenario: History view on wide viewport
-- **WHEN** the History table renders on a wide screen
-- **THEN** the table SHALL expand to fill the available width
+#### Scenario: Activity view width
+- **WHEN** the Activity view renders
+- **THEN** the content SHALL be constrained to `max-w-3xl` and centered
 
 ### Requirement: RuleSet list focused width
-The RuleSetList view root element SHALL use `max-w-4xl mx-auto` to center the list cards.
+The RuleSetList view root element SHALL use `max-w-3xl mx-auto`.
 
 #### Scenario: RuleSetList view width
 - **WHEN** the RuleSetList view renders
-- **THEN** the content SHALL be constrained to `max-w-4xl` and centered
+- **THEN** the content SHALL be constrained to `max-w-3xl` and centered
 
 ### Requirement: RuleSet detail focused width
-The RuleSetDetail view root element SHALL use `max-w-4xl mx-auto`.
+The RuleSetDetail view root element SHALL use `max-w-3xl mx-auto`.
 
 #### Scenario: RuleSetDetail view width
 - **WHEN** the RuleSetDetail view renders
-- **THEN** the content SHALL be constrained to `max-w-4xl` and centered
+- **THEN** the content SHALL be constrained to `max-w-3xl` and centered
 
-### Requirement: RuleSet builder full-width layout
-The RuleSetBuilder view root element SHALL NOT set a max-width. The two-column grid (form + debugger) SHALL use `grid-cols-[1fr_380px]` to give the form panel more space than the debugger.
+### Requirement: RuleSet builder constrained width
+The RuleSetBuilder view root element SHALL use `max-w-5xl mx-auto`. The two-column grid (form + search/test panel) SHALL use `grid-cols-[1fr_380px]`.
 
 #### Scenario: RuleSetBuilder layout
 - **WHEN** the RuleSetBuilder view renders
-- **THEN** the content SHALL fill the available width with an asymmetric grid split
+- **THEN** the content SHALL be constrained to `max-w-5xl` and centered with an asymmetric grid split
 
-### Requirement: Scoring history full-width table
-The ScoringHistory view root element SHALL NOT set a max-width, allowing the scoring table to use the full available width.
+### Requirement: Scoring views focused width
+The ScoringHistory and ScoringDetail views SHALL use `max-w-3xl mx-auto`.
 
-#### Scenario: ScoringHistory view on wide viewport
-- **WHEN** the ScoringHistory table renders
-- **THEN** the table SHALL expand to fill the available width
-
-### Requirement: Scoring detail constrained width
-The ScoringDetail view root element SHALL use `max-w-5xl mx-auto`.
+#### Scenario: ScoringHistory view width
+- **WHEN** the ScoringHistory view renders
+- **THEN** the content SHALL be constrained to `max-w-3xl` and centered
 
 #### Scenario: ScoringDetail view width
 - **WHEN** the ScoringDetail view renders
-- **THEN** the content SHALL be constrained to `max-w-5xl` and centered
+- **THEN** the content SHALL be constrained to `max-w-3xl` and centered
 
 ### Requirement: Setup wizard narrow focus
-The Setup view root element SHALL use `max-w-2xl mx-auto` to create a focused, narrow wizard experience.
+The Setup view root element SHALL use `max-w-2xl mx-auto`.
 
 #### Scenario: Setup wizard width
 - **WHEN** the Setup view renders

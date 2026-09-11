@@ -1,28 +1,28 @@
 ## Purpose
 
-Application shell layout with collapsible sidebar navigation, brand wordmark, responsive collapse, and breadcrumb bar for the main content area.
+Application shell layout with collapsible sidebar navigation, logo mark, and flat navigation for the main content area.
 
 ## Requirements
 
 ### Requirement: Sidebar navigation structure
 
-The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid main content area. The sidebar SHALL toggle between a collapsed state (56px, icon-only) and an expanded state (200px, icons + labels). The grid template SHALL be `grid-cols-[56px_1fr]` when collapsed and `grid-cols-[200px_1fr]` when expanded. The sidebar SHALL contain the FunkArr wordmark (expanded only), navigation links, and a version footer.
+The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid main content area. The sidebar SHALL toggle between a collapsed state (52px, icon-only) and an expanded state (192px, icons + labels). The grid template SHALL be `grid-cols-[52px_1fr]` when collapsed and `grid-cols-[192px_1fr]` when expanded. The sidebar SHALL contain the FunkArr logo mark, navigation links, and a Setup gear icon at the bottom.
 
 #### Scenario: Collapsed sidebar rendering
 - **WHEN** the sidebar is in collapsed state
-- **THEN** the layout renders as a two-column grid with a 56px sidebar showing only icons and the content area filling the remaining width
+- **THEN** the layout renders as a two-column grid with a 52px sidebar showing only icons and the content area filling the remaining width
 
 #### Scenario: Expanded sidebar rendering
 - **WHEN** the sidebar is in expanded state
-- **THEN** the layout renders as a two-column grid with a 200px sidebar showing icons and labels and the content area filling the remaining width
+- **THEN** the layout renders as a two-column grid with a 192px sidebar showing icons and labels and the content area filling the remaining width
 
 #### Scenario: Sidebar sections
 - **WHEN** the sidebar renders
-- **THEN** it contains three sections top-to-bottom: brand wordmark (hidden when collapsed), navigation links, version number (hidden when collapsed)
+- **THEN** it SHALL contain three sections top-to-bottom: logo mark with optional "FunkArr" text, navigation links (flat list, no group headers), and a bottom utility area with Setup gear icon and collapse toggle
 
 #### Scenario: Sidebar toggle button
 - **WHEN** the sidebar renders
-- **THEN** a toggle button is visible that switches between collapsed and expanded states
+- **THEN** a toggle button is visible at the bottom that switches between collapsed and expanded states
 
 #### Scenario: Sidebar width transition
 - **WHEN** the sidebar toggles between collapsed and expanded
@@ -33,79 +33,48 @@ The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid
 - **THEN** the state is persisted to `localStorage` under key `funkarr-sidebar`
 - **AND** on next page load, the sidebar restores the persisted state
 
-### Requirement: Sidebar brand wordmark
-
-The sidebar SHALL display "FunkArr" as a text wordmark using the `brand-500` color, bold weight, and tight tracking.
-
-#### Scenario: Wordmark rendering
-- **WHEN** the sidebar renders
-- **THEN** the wordmark "FunkArr" appears at the top in `brand-500` color with `font-bold` and `tracking-tight`
-
 ### Requirement: Navigation items
 
-The sidebar SHALL contain five navigation items in order: Dashboard (`/`), Queue (`/queue`), History (`/history`), RuleSets (`/rulesets`), and Setup (`/setup`). Each item SHALL show an icon. Labels SHALL be visible only when the sidebar is expanded.
+The sidebar SHALL contain four navigation items in order: Overview (`/`), Activity (`/activity`), RuleSets (`/rulesets`). Setup SHALL be rendered separately at the sidebar bottom as a gear icon. There SHALL be no section group headers ("Media", "System"). Each item SHALL show an icon. Labels SHALL be visible only when the sidebar is expanded.
 
 #### Scenario: Active route indication
 - **WHEN** the current route matches a navigation item
-- **THEN** that item displays a 2px left border in `brand-500` and a background tint of `brand-900/20`, with `text-primary` color
+- **THEN** that item SHALL display with `bg-surface-elevated` background and `text-text-primary` color
 
 #### Scenario: Inactive route styling
 - **WHEN** the current route does not match a navigation item
-- **THEN** that item uses `text-secondary` color with no left border
+- **THEN** that item SHALL use `text-text-secondary` color with hover to `text-text-body`
 
 #### Scenario: Hover state
 - **WHEN** the user hovers over an inactive navigation item
-- **THEN** the item background changes to `surface-elevated` and text changes to `text-body`
+- **THEN** the item background SHALL change to `surface-elevated/50`
 
 #### Scenario: Collapsed icon-only mode
 - **WHEN** the sidebar is collapsed
-- **THEN** each navigation item shows only its icon, centered in the 56px width
-- **AND** a tooltip with the label appears on hover
+- **THEN** each navigation item shows only its icon, centered in the 52px width
+- **AND** a title attribute with the label appears on hover
 
-#### Scenario: Queue navigation icon
-- **WHEN** the Queue navigation item renders
-- **THEN** it SHALL display a download/arrow-down icon
+#### Scenario: Setup gear icon at bottom
+- **WHEN** the sidebar renders
+- **THEN** the Setup item SHALL appear in the bottom utility area separated by a `border-t` from the main nav
+- **AND** it SHALL use a gear/cog icon
 
-#### Scenario: History navigation icon
-- **WHEN** the History navigation item renders
-- **THEN** it SHALL display a clock/history icon
+#### Scenario: No section headers
+- **WHEN** the sidebar renders in expanded mode
+- **THEN** there SHALL be no "Media" or "System" group headers between nav items
 
 ### Requirement: RuleSets route matching
 
-The RuleSets navigation item SHALL be active for the `/rulesets` route and all nested routes (`/rulesets/:id`, `/rulesets/:id/history`, `/rulesets/:id/history/:requestId`).
+The RuleSets navigation item SHALL be active for the `/rulesets` route and all nested routes (`/rulesets/:id`, `/rulesets/:id/edit`, `/rulesets/:id/history`, `/rulesets/:id/history/:requestId`).
 
 #### Scenario: Nested route keeps parent active
 - **WHEN** the user navigates to `/rulesets/tagesschau/history`
 - **THEN** the RuleSets navigation item is active
 
-### Requirement: Sidebar theme independence
-
-The sidebar SHALL use `surface-raised` background in both light and dark themes. It does not change appearance when the theme changes.
-
-#### Scenario: Light mode sidebar
-- **WHEN** the user's system preference is light mode
-- **THEN** the sidebar background remains `surface-raised` (dark)
-
 ### Requirement: Main content area
 
-The main content area SHALL have a `surface-base` background. Content width constraints SHALL be set per-view, not globally. The main area SHALL NOT apply a fixed `max-w-*` class; instead, each view's root element sets its own width constraint.
+The main content area SHALL have a `surface-base` background with `px-6 py-5` padding. Content width constraints SHALL be set per-view, not globally.
 
 #### Scenario: Content area rendering
 - **WHEN** any page renders its content
-- **THEN** the content is within the main area with `p-6` padding and no global max-width constraint
-
-#### Scenario: Per-view width
-- **WHEN** different views render
-- **THEN** each view applies its own max-width class on its root element (or omits it for full-width views)
-
-### Requirement: Breadcrumb bar
-
-The main content area SHALL display a breadcrumb path above the page content for nested routes.
-
-#### Scenario: Top-level route breadcrumb
-- **WHEN** the user is on the Dashboard (`/`)
-- **THEN** no breadcrumb is displayed
-
-#### Scenario: Nested route breadcrumb
-- **WHEN** the user is on `/rulesets/tagesschau`
-- **THEN** a breadcrumb "RuleSets > tagesschau" is displayed above the page content
+- **THEN** the content is within the main area with `px-6 py-5` padding and no global max-width constraint

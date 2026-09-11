@@ -3,11 +3,11 @@
 Vue.js frontend pages for browsing rulesets, viewing ruleset details, and inspecting scoring history and traces.
 ## Requirements
 ### Requirement: Dashboard page
-The Vue frontend SHALL render a dashboard page at route `/`. The page SHALL display the application name "FunkArr" and serve as a landing page. It SHALL include navigation to the rulesets page.
+The Vue frontend SHALL render an Overview page at route `/`. The page SHALL display a compact health status line, a download progress indicator, and a recent activity feed. It SHALL NOT display history stat cards, cache stats, or the previous 8-card stat wall.
 
-#### Scenario: Dashboard renders
+#### Scenario: Overview renders
 - **WHEN** the user navigates to `/`
-- **THEN** the page displays "FunkArr" and a link/navigation to `/rulesets`
+- **THEN** the page displays health status, download progress, and recent activity feed
 
 ### Requirement: RuleSet list page
 The Vue frontend SHALL render a ruleset list page at route `/rulesets`. On mount, the page SHALL fetch `GET /api/rulesets` and display all registered rulesets as cards with Level 2 card styling (`hover:-translate-y-px hover:shadow-md transition-all`). Each card SHALL show the ruleSetId, topic, resolved media name (when available, as a subtitle below or beside the topic), source type badge (community/local/merged with distinct colors), rule count, aliases, media IDs (TVDB, IMDB, TMDB where present), last scoring run (relative time), and match rate (percentage). Each card SHALL link to the detail page at `/rulesets/:id`. The page SHALL include a text search input above the card grid that filters rulesets client-side. The page SHALL include a "New RuleSet" button linking to `/rulesets/new`.
@@ -156,23 +156,19 @@ Each item trace SHALL show: candidate title, topic, channel, duration, quality, 
 - **THEN** the page displays a "not found" message
 
 ### Requirement: RuleSet list presentation
-The ruleset list view SHALL display ruleset entries as Level 2 cards on `surface-raised` background with `rounded-lg`. The ruleset ID SHALL render in `font-mono` with `brand-400` color. Topic text SHALL use `text-body`. Media name SHALL use `text-secondary`. Source badge SHALL use `text-xs` with `rounded-full px-2 py-0.5` and color per source type. Rule count and scoring stats SHALL use `text-secondary text-sm`. Metadata (aliases, external IDs) SHALL use `text-secondary`.
+The ruleset list view SHALL display ruleset entries as cards on `surface-raised` background with `rounded-lg`. The ruleset ID SHALL render in `font-mono` with `text-text-secondary` color (not brand-400). Topic text SHALL use `text-text-body`. Source badge SHALL use `text-xs` with neutral styling. Section headings in the list view SHALL use normal case `text-sm font-semibold text-text-secondary` (not uppercase tracking-widest).
 
 #### Scenario: RuleSet card rendering
 - **WHEN** the ruleset list loads with entries
-- **THEN** each entry renders as a Level 2 card with `surface-raised` background and `rounded-lg`
+- **THEN** each entry renders as a card with `surface-raised` background and `rounded-lg`
 
 #### Scenario: RuleSet ID styling
 - **WHEN** a ruleset card renders
-- **THEN** the ruleset ID appears in `font-mono` with `brand-400` color
-
-#### Scenario: Source badge styling
-- **WHEN** a ruleset card renders with source type
-- **THEN** the badge appears as a pill with `text-xs rounded-full px-2 py-0.5`
+- **THEN** the ruleset ID appears in `font-mono` with `text-text-secondary` color
 
 #### Scenario: Hover state
 - **WHEN** the user hovers over a ruleset card
-- **THEN** the card lifts with `-translate-y-px` and gains a `shadow-md`
+- **THEN** the card background SHALL change to `surface-elevated` via transition
 
 ### Requirement: RuleSet detail layout
 
@@ -188,11 +184,11 @@ The ruleset detail view SHALL use cards with `surface-raised` background for eac
 
 ### Requirement: Scoring history table
 
-The scoring history SHALL render as a table with `surface-elevated` header row, `text-secondary` uppercase column headers, and `surface-raised` data rows. Hover rows SHALL use `surface-elevated` background.
+The scoring history SHALL render as a table with `surface-raised` header row, `text-text-secondary` column headers in normal case `text-xs font-medium` (not uppercase tracking-wider), and `surface-raised` data rows.
 
 #### Scenario: Table header rendering
 - **WHEN** the scoring history table renders
-- **THEN** the header row has `surface-elevated` background with `text-secondary text-xs uppercase tracking-wider`
+- **THEN** the header row has `surface-raised` background with `text-text-secondary text-xs font-medium` in normal case
 
 #### Scenario: Table row interaction
 - **WHEN** the user hovers over a scoring history row
@@ -215,11 +211,15 @@ Scoring detail item traces SHALL use cards with colored left borders: `status-ok
 - **THEN** trace entries display with colored left borders: `status-ok` for matched, `status-fail` for filterFailed, `border-default` for others
 
 ### Requirement: Navigation and layout
-The Vue frontend SHALL use a consistent layout with a sidebar or header navigation. Navigation SHALL include links to Dashboard (`/`) and RuleSets (`/rulesets`). Breadcrumb-style back navigation SHALL be available on detail pages (e.g., "RuleSets > tatort > History > request-id").
+The Vue frontend SHALL use a sidebar layout with flat navigation (no section headers). Navigation SHALL include links to Overview (`/`), Activity (`/activity`), and RuleSets (`/rulesets`). Setup SHALL be accessible via a gear icon at the sidebar bottom. Breadcrumb-style back navigation SHALL be available on detail pages.
 
 #### Scenario: Navigation between pages
 - **WHEN** the user clicks "RuleSets" in the navigation
 - **THEN** the browser navigates to `/rulesets` without a full page reload
+
+#### Scenario: Activity navigation
+- **WHEN** the user clicks "Activity" in the navigation
+- **THEN** the browser navigates to `/activity`
 
 #### Scenario: Breadcrumb on detail page
 - **WHEN** the user is on `/rulesets/tatort`
@@ -252,7 +252,7 @@ The ruleset detail page SHALL include a "Delete Local" button that is only visib
 - **THEN** the API is called, the local file is removed, and the detail page reloads showing community-only data
 
 ### Requirement: Navigation updates
-The sidebar navigation SHALL include links to Dashboard (`/`), RuleSets (`/rulesets`), and the builder page SHALL be accessible via the "New RuleSet" button on the list page and "Edit" button on the detail page. Breadcrumbs on the builder page SHALL show "RuleSets > New" for create or "RuleSets > {id} > Edit" for edit.
+The sidebar navigation SHALL include Overview (`/`), Activity (`/activity`), RuleSets (`/rulesets`) as main nav items. Setup SHALL be a gear icon at the sidebar bottom. The builder page SHALL be accessible via the "New RuleSet" button on the list page and "Edit" button on the detail page.
 
 #### Scenario: Builder breadcrumb on create
 - **WHEN** the user is on `/rulesets/new`
