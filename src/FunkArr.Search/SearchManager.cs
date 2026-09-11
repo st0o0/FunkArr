@@ -39,7 +39,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         switch (cmd.Params)
         {
             case SearchCommand.TvParams tv:
-                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query,
+                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Source, cmd.Query,
                     tv.Season, tv.Episode, tv.TvdbId, tv.ImdbId,
                     cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
@@ -47,7 +47,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                 break;
 
             case SearchCommand.MovieParams movie:
-                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query,
+                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Source, cmd.Query,
                     movie.ImdbId, movie.TmdbId,
                     cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
@@ -74,23 +74,23 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         switch (type)
         {
             case SearchType.Tv:
-                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query,
+                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Source, cmd.Query,
                     null, null, null, null, cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
                     new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
                 break;
 
             case SearchType.Movie:
-                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query,
+                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Source, cmd.Query,
                     null, null, cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
                     new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
                 break;
 
             default:
-                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Query,
+                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Source, cmd.Query,
                     null, null, null, null, cmd.Limit, cmd.Offset));
-                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Query,
+                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Source, cmd.Query,
                     null, null, cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
                     new SearchManagerState.PendingSearch(Sender, SearchType.Both, null, null));

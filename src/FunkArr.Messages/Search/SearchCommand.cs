@@ -1,6 +1,7 @@
 namespace FunkArr.Messages.Search;
 
 public sealed record SearchCommand(
+    string Source,
     string? Query,
     int? Cat,
     int? Limit,

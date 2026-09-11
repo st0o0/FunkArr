@@ -8,19 +8,20 @@ namespace FunkArr.Search;
 
 public sealed record MovieSearchWorkerState(
     Guid SearchId,
+    string Source,
     MediathekItem[] RawItems,
     string? RuleSetId,
     string? ImdbId,
     int? TmdbId,
     string? MediaName = null)
 {
-    public static readonly MovieSearchWorkerState Empty = new(Guid.Empty, [], null, null, null);
+    public static readonly MovieSearchWorkerState Empty = new(Guid.Empty, "", [], null, null, null);
 }
 
 public static class MovieSearchWorkerStateExtensions
 {
     public static MovieSearchWorkerState Apply(this MovieSearchWorkerState state, MovieSearchCommand cmd) =>
-        state with { SearchId = cmd.SearchId, ImdbId = cmd.ImdbId, TmdbId = cmd.TmdbId };
+        state with { SearchId = cmd.SearchId, Source = cmd.Source, ImdbId = cmd.ImdbId, TmdbId = cmd.TmdbId };
 
     public static MovieSearchWorkerState Apply(this MovieSearchWorkerState state, MediathekQueryCompleted result) =>
         state with { RawItems = result.Items };

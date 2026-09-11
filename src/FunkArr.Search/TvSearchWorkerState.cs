@@ -8,6 +8,7 @@ namespace FunkArr.Search;
 
 public sealed record TvSearchWorkerState(
     Guid SearchId,
+    string Source,
     MediathekItem[] RawItems,
     string? RuleSetId,
     int? TvdbId,
@@ -15,13 +16,13 @@ public sealed record TvSearchWorkerState(
     int? Season = null,
     string? MediaName = null)
 {
-    public static readonly TvSearchWorkerState Empty = new(Guid.Empty, [], null, null, null);
+    public static readonly TvSearchWorkerState Empty = new(Guid.Empty, "", [], null, null, null);
 }
 
 public static class TvSearchWorkerStateExtensions
 {
     public static TvSearchWorkerState Apply(this TvSearchWorkerState state, TvSearchCommand cmd) =>
-        state with { SearchId = cmd.SearchId, TvdbId = cmd.TvdbId, ImdbId = cmd.ImdbId, Season = cmd.Season };
+        state with { SearchId = cmd.SearchId, Source = cmd.Source, TvdbId = cmd.TvdbId, ImdbId = cmd.ImdbId, Season = cmd.Season };
 
     public static TvSearchWorkerState Apply(this TvSearchWorkerState state, MediathekQueryCompleted result) =>
         state with { RawItems = result.Items };
@@ -110,7 +111,7 @@ public static class TvSearchWorkerStateExtensions
         }).ToArray();
     }
 
-    public static int ResolveQuality(MediathekItem item) =>
+    public static int ResolveQuality(this MediathekItem item) =>
         item.UrlVideoHd is not null ? 1080 :
         item.UrlVideo is not null ? 720 :
         item.UrlVideoLow is not null ? 480 : 0;

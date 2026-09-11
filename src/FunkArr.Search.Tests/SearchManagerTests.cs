@@ -24,7 +24,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var forwarded = tvProbe.ExpectMsg<TvSearchCommand>();
@@ -41,7 +41,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("Das Boot", null, null, null,
+        gateway.Tell(new SearchCommand("radarr", "Das Boot", null, null, null,
             new SearchCommand.MovieParams(null, null)), TestActor);
 
         var forwarded = movieProbe.ExpectMsg<MovieSearchCommand>();
@@ -57,7 +57,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("test", 5040, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("search", "test", 5040, null, null, null), TestActor);
 
         tvProbe.ExpectMsg<TvSearchCommand>();
         movieProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
@@ -70,7 +70,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("test", 2040, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("search", "test", 2040, null, null, null), TestActor);
 
         movieProbe.ExpectMsg<MovieSearchCommand>();
         tvProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
@@ -83,7 +83,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("test", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
 
         tvProbe.ExpectMsg<TvSearchCommand>();
         movieProbe.ExpectMsg<MovieSearchCommand>();
@@ -96,7 +96,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("test", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
         var movieCmd = movieProbe.ExpectMsg<MovieSearchCommand>();
@@ -123,7 +123,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
@@ -142,7 +142,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<TvSearchCommand>();
@@ -163,7 +163,7 @@ public sealed class SearchManagerTests : TestKit
         var gateway = Sys.ActorOf(Props.Create(() =>
             new SearchManager(TimeSpan.FromMilliseconds(200))));
 
-        gateway.Tell(new SearchCommand("Tatort", null, null, null,
+        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         tvProbe.ExpectMsg<TvSearchCommand>();

@@ -2,6 +2,7 @@ namespace FunkArr.Messages.Search;
 
 public sealed record TvSearchCommand(
     Guid SearchId,
+    string Source,
     string? Query,
     int? Season,
     int? Episode,

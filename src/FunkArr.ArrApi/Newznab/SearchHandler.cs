@@ -34,7 +34,7 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
 
     private static (SearchCommand?, NewznabCategory) BuildTvSearch(IndexerRequest req)
     {
-        var cmd = new SearchCommand(req.Q, null,
+        var cmd = new SearchCommand("sonarr", req.Q, null,
             IndexerApiEndpoints.CapLimit(req.Limit), req.Offset,
             new SearchCommand.TvParams(
                 IndexerApiEndpoints.ParseInt(req.Season),
@@ -47,7 +47,7 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
 
     private static (SearchCommand?, NewznabCategory) BuildMovieSearch(IndexerRequest req)
     {
-        var cmd = new SearchCommand(req.Q, null,
+        var cmd = new SearchCommand("radarr", req.Q, null,
             IndexerApiEndpoints.CapLimit(req.Limit), req.Offset,
             new SearchCommand.MovieParams(req.ImdbId, IndexerApiEndpoints.ParseInt(req.TmdbId)));
 
@@ -58,7 +58,7 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
     {
         var cat = IndexerApiEndpoints.ParseInt(req.Cat);
         var category = NewznabCategory.FromCat(cat) ?? NewznabCategory.Tv;
-        var cmd = new SearchCommand(req.Q, cat, IndexerApiEndpoints.CapLimit(req.Limit), req.Offset, null);
+        var cmd = new SearchCommand("search", req.Q, cat, IndexerApiEndpoints.CapLimit(req.Limit), req.Offset, null);
         return (cmd, category);
     }
 
