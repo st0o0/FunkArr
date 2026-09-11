@@ -17,7 +17,6 @@ public sealed class TvSearchWorker : ReceiveActor
 
     private TvSearchWorkerState? _state;
     private ScoreCompleted? _scoredResults;
-    private IActorRef? _originalSender;
 
     private readonly IActorRef _mediathekManager = Context.GetActor<IMediathekManager>();
     private readonly IActorRef _matchMagicManager = Context.GetActor<IMatchMagicManager>();
@@ -43,7 +42,8 @@ public sealed class TvSearchWorker : ReceiveActor
                 _ruleSetResolver.Ask<IRuleSetResponse>(
                         new ResolveRuleSet(null, cmd.TvdbId, cmd.ImdbId),
                         TimeSpan.FromSeconds(5))
-                    .PipeTo(Self, Sender);
+                    .PipeTo(Self, Sender,
+                        failure: ex => new RuleSetNotFound(cmd.Query ?? ""));
             }
             else
             {
@@ -64,7 +64,8 @@ public sealed class TvSearchWorker : ReceiveActor
             if (topic is not null && _state.RuleSetId is null)
             {
                 _ruleSetResolver.Ask<IRuleSetResponse>(new ResolveRuleSet(topic), TimeSpan.FromSeconds(5))
-                    .PipeTo(Self, Sender);
+                    .PipeTo(Self, Sender,
+                        failure: ex => new RuleSetNotFound(topic));
             }
             else if (_state.RuleSetId is not null)
             {
@@ -116,6 +117,7 @@ public sealed class TvSearchWorker : ReceiveActor
         });
 
         Receive<ScoreCompleted>(HandleScoreCompleted);
+        Receive<ScoringFailed>(HandleScoringFailed);
         Receive<EpisodesResolved>(HandleEpisodesResolved);
         Receive<EpisodeResolutionFailed>(HandleEpisodeResolutionFailed);
 
@@ -126,29 +128,8 @@ public sealed class TvSearchWorker : ReceiveActor
                 return;
             }
 
-            _log.Warning("TV search {SearchId} mediathek query failed: {Reason}", _state.SearchId, failed.Reason);
+            _log.Warning(failed.Cause, "TV search {SearchId} mediathek query failed: {Reason}", _state.SearchId, failed.Reason);
             Sender.Tell(new SearchFailed(_state.SearchId, failed.Reason));
-            Context.Parent.Tell(new Passivate(PoisonPill.Instance));
-        });
-
-        Receive<Status.Failure>(failure =>
-        {
-            if (_state is null)
-            {
-                return;
-            }
-
-            _log.Warning(failure.Cause, "TV search {SearchId} failed", _state.SearchId);
-            if (_originalSender is not null && _scoredResults is not null)
-            {
-                _originalSender.Tell(_state.ToScoredResult(_scoredResults));
-                _originalSender = null;
-                _scoredResults = null;
-                Context.Parent.Tell(new Passivate(PoisonPill.Instance));
-                return;
-            }
-
-            Sender.Tell(new SearchFailed(_state.SearchId, failure.Cause.Message));
             Context.Parent.Tell(new Passivate(PoisonPill.Instance));
         });
     }
@@ -172,7 +153,6 @@ public sealed class TvSearchWorker : ReceiveActor
         }
 
         _scoredResults = scored;
-        _originalSender = Sender;
 
         var candidates = scored.Results
             .Where(s => s is { Matched: true, Metadata: not null })
@@ -191,32 +171,43 @@ public sealed class TvSearchWorker : ReceiveActor
         _metadataResolver.Ask<IEpisodeResolutionResponse>(
                 new ResolveEpisodes(_state.TvdbId!.Value, _state.Season, config, candidates),
                 TimeSpan.FromSeconds(10))
-            .PipeTo(Self);
+            .PipeTo(Self, Sender,
+                failure: ex => new EpisodeResolutionFailed(ex));
+    }
+
+    private void HandleScoringFailed(ScoringFailed failed)
+    {
+        if (_state is null)
+        {
+            return;
+        }
+
+        _log.Warning(failed.Cause, "TV search {SearchId} scoring failed: {Reason}", _state.SearchId, failed.Reason);
+        Sender.Tell(new SearchFailed(_state.SearchId, failed.Reason));
+        Context.Parent.Tell(new Passivate(PoisonPill.Instance));
     }
 
     private void HandleEpisodesResolved(EpisodesResolved resolved)
     {
-        if (_state is null || _scoredResults is null || _originalSender is null)
+        if (_state is null || _scoredResults is null)
         {
             return;
         }
 
         var resolvedMap = resolved.Episodes.ToDictionary(e => e.Index);
-        _originalSender.Tell(_state.ToScoredResult(_scoredResults, resolvedMap));
-        _originalSender = null;
+        Sender.Tell(_state.ToScoredResult(_scoredResults, resolvedMap));
         _scoredResults = null;
         Context.Parent.Tell(new Passivate(PoisonPill.Instance));
     }
 
     private void HandleEpisodeResolutionFailed(EpisodeResolutionFailed _)
     {
-        if (_state is null || _scoredResults is null || _originalSender is null)
+        if (_state is null || _scoredResults is null)
         {
             return;
         }
 
-        _originalSender.Tell(_state.ToScoredResult(_scoredResults));
-        _originalSender = null;
+        Sender.Tell(_state.ToScoredResult(_scoredResults));
         _scoredResults = null;
         Context.Parent.Tell(new Passivate(PoisonPill.Instance));
     }
@@ -240,7 +231,8 @@ public sealed class TvSearchWorker : ReceiveActor
             DurationMax: null);
 
         _mediathekManager.Ask<IMediathekResponse>(msg, TimeSpan.FromSeconds(15))
-            .PipeTo(Self, Sender);
+            .PipeTo(Self, Sender,
+                failure: ex => new MediathekQueryFailed(ex));
     }
 
     private void StartScoring()
@@ -251,15 +243,15 @@ public sealed class TvSearchWorker : ReceiveActor
         }
 
         var candidates = _state.RawItems.Select(item => new ScoreCandidate(
-            item.Title, item.Topic, item.Channel, item.Duration,
-            TvSearchWorkerStateExtensions.ResolveQuality(item),
+            item.Title, item.Topic, item.Channel, item.Duration, item.ResolveQuality(),
             item.Description, item.Timestamp)).ToArray();
 
         var requestId = Guid.NewGuid();
-        var origin = new ScoringOrigin("sonarr", _state.RawItems[0].Topic);
-        _matchMagicManager.Ask<ScoreCompleted>(
+        var origin = new ScoringOrigin(_state.Source, _state.RawItems[0].Topic);
+        _matchMagicManager.Ask<IScoringResponse>(
                 new ScoreItems(requestId, _state.RuleSetId!, origin, candidates),
                 TimeSpan.FromSeconds(10))
-            .PipeTo(Self, Sender);
+            .PipeTo(Self, Sender,
+                failure: ex => new ScoringFailed(ex));
     }
 }

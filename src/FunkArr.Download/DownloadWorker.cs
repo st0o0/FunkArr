@@ -38,7 +38,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
         Command<QueryWorkerStatus>(HandleQueryStatus);
         Command<ProgressUpdate>(HandleProgress);
         Command<FfmpegResult>(HandleFfmpegResult);
-        Command<Status.Failure>(HandleFailure);
 
         Recover<DownloadInitialized>(evt => _state = _state.Apply(evt));
         Recover<DownloadStarted>(evt => _state = _state.Apply(evt));
@@ -206,35 +205,13 @@ public sealed class DownloadWorker : ReceivePersistentActor
         }
     }
 
-    private void HandleFailure(Status.Failure failure)
-    {
-        if (!_state.IsInitialized)
-        {
-            return;
-        }
-
-        var downloadId = Guid.Parse(Context.Self.Path.Name);
-        var reason = failure.Cause.Message;
-        var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-        _log.Warning(failure.Cause, "Download {DownloadId} encountered an unhandled failure: {Title}", downloadId, _state.Title);
-        Persist(new DownloadFaulted(downloadId, reason), e =>
-        {
-            _state = _state.Apply(e);
-            _downloadManager.Tell(new SlotFree(downloadId));
-            _downloadHistory.Tell(new RecordDownload(
-                downloadId, _state.Title!, _state.Category!, _state.Size,
-                DownloadStatus.Failed, null, reason, 0, completedAt));
-            Passivate();
-        });
-    }
-
     private void StartFfmpeg(string videoUrl, string? subtitleUrl, string outputPath)
     {
         _cts = new CancellationTokenSource();
         var self = Self;
         _remuxer.RunAsync(videoUrl, subtitleUrl, outputPath,
-            progress => self.Tell(progress), _cts.Token).PipeTo(self);
+            progress => self.Tell(progress), _cts.Token)
+            .PipeTo(self, failure: ex => new FfmpegResult(false, -1, ex.Message, 0));
     }
 
     private DataPaths.ResolvedDownload ResolvePaths() =>

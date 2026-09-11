@@ -45,7 +45,7 @@ internal sealed class TmdbResolverActor : ReceiveActor
         catch (Exception ex)
         {
             _log.Warning(ex, "TMDB resolution failed");
-            Sender.Tell(new MovieResolutionFailed(ex.Message));
+            Sender.Tell(new MovieResolutionFailed(ex));
         }
     }
 }

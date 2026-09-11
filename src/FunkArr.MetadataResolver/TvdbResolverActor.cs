@@ -40,7 +40,7 @@ internal sealed class TvdbResolverActor : ReceiveActor
         catch (Exception ex)
         {
             _log.Warning(ex, "TVDB resolution failed for series {TvdbId}", msg.TvdbId);
-            Sender.Tell(new EpisodeResolutionFailed(ex.Message));
+            Sender.Tell(new EpisodeResolutionFailed(ex));
         }
     }
 }
