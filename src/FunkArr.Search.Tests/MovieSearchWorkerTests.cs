@@ -43,7 +43,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, "Das Boot", null, null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", "Das Boot", null, null, null, null), TestActor);
 
         var mediathekQuery = probes.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Contains("title", mediathekQuery.Fields[0].Fields);
@@ -80,7 +80,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, null, null, null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", null, null, null, null, null), TestActor);
 
         var query = probes.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Empty(query.Fields);
@@ -99,7 +99,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, "Unknown Movie", null, null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", "Unknown Movie", null, null, null, null), TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new MediathekQueryCompleted(
@@ -125,7 +125,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, null, "tt0806910", null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", null, "tt0806910", null, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
         Assert.Null(resolveRequest.TopicOrAlias);
@@ -165,7 +165,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, null, null, 550, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", null, null, 550, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
         Assert.Equal(550, resolveRequest.TmdbId);
@@ -202,7 +202,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, null, "tt9999999", null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", null, "tt9999999", null, null, null), TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
         probes.Resolver.Reply(new RuleSetNotFound(""));
@@ -220,7 +220,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new MovieSearchCommand(searchId, "Das Boot", "tt1234567", null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(searchId, "radarr", "Das Boot", "tt1234567", null, null, null), TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new MediathekQueryCompleted(
@@ -244,7 +244,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
-        worker.Tell(new MovieSearchCommand(Guid.NewGuid(), "Das Boot", null, null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(Guid.NewGuid(), "radarr", "Das Boot", null, null, null, null), TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new MediathekQueryCompleted(
@@ -271,7 +271,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
-        worker.Tell(new MovieSearchCommand(Guid.NewGuid(), null, "tt1234567", null, null, null), TestActor);
+        worker.Tell(new MovieSearchCommand(Guid.NewGuid(), "radarr", null, "tt1234567", null, null, null), TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
         probes.Resolver.Reply(new RuleSetResolved("das-boot", "Das Boot"));

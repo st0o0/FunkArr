@@ -42,7 +42,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", "Tatort", null, null, null, null, null, null), TestActor);
 
         var mediathekQuery = p.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Equal("topic", mediathekQuery.Fields[0].Fields[0]);
@@ -80,7 +80,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", "Tatort", null, null, null, null, null, null), TestActor);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
         p.Mediathek.Reply(new MediathekQueryFailed("Connection refused"));
@@ -97,7 +97,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", "Tatort", null, null, null, null, null, null), TestActor);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
         p.Mediathek.Reply(new MediathekQueryCompleted(
@@ -109,7 +109,7 @@ public sealed class TvSearchWorkerTests : TestKit
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
 
         p.MatchMagic.ExpectMsg<ScoreItems>();
-        p.MatchMagic.Reply(new Status.Failure(new Exception("Scoring error")));
+        p.MatchMagic.Reply(new ScoringFailed("Scoring error"));
 
         var result = ExpectMsg<SearchFailed>();
         Assert.Equal(searchId, result.SearchId);
@@ -123,7 +123,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Unknown Show", null, null, null, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", "Unknown Show", null, null, null, null, null, null), TestActor);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
         p.Mediathek.Reply(new MediathekQueryCompleted(
@@ -148,7 +148,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, null, null, null, 83214, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", null, null, null, 83214, null, null, null), TestActor);
 
         var resolveRequest = p.Resolver.ExpectMsg<ResolveRuleSet>();
         Assert.Null(resolveRequest.TopicOrAlias);
@@ -182,7 +182,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, null, null, null, 99999, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", null, null, null, 99999, null, null, null), TestActor);
 
         p.Resolver.ExpectMsg<ResolveRuleSet>();
         p.Resolver.Reply(new RuleSetNotFound(""));
@@ -200,7 +200,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, "Tatort", null, null, 83214, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", "Tatort", null, null, 83214, null, null, null), TestActor);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
         p.Mediathek.Reply(new MediathekQueryCompleted(
@@ -224,7 +224,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, null, 2026, null, 83214, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", null, 2026, null, 83214, null, null, null), TestActor);
 
         p.Resolver.ExpectMsg<ResolveRuleSet>();
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
@@ -270,7 +270,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, null, 2026, null, 390284, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", null, 2026, null, 390284, null, null, null), TestActor);
 
         p.Resolver.ExpectMsg<ResolveRuleSet>();
         p.Resolver.Reply(new RuleSetResolved("zdf-magazin-royale", "ZDF Magazin Royale"));
@@ -304,7 +304,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new TvSearchCommand(searchId, null, 2026, null, 83214, null, null, null), TestActor);
+        worker.Tell(new TvSearchCommand(searchId, "sonarr", null, 2026, null, 83214, null, null, null), TestActor);
 
         p.Resolver.ExpectMsg<ResolveRuleSet>();
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
