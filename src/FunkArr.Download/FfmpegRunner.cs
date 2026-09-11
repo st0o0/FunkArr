@@ -48,6 +48,7 @@ internal sealed class FfmpegRunner : IFfmpegRunner
                     .CopyChannel(Channel.Video)
                     .CopyChannel(Channel.Audio)
                     .WithCustomArgument("-c:s srt")
+                    .WithCustomArgument("-disposition:s:0 0")
                     .WithCustomArgument("-metadata:s:s:0 language=deu")
                     .WithCustomArgument("-progress pipe:1"))
             : FFMpegArguments

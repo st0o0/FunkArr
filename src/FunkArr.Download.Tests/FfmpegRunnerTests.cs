@@ -253,6 +253,7 @@ public sealed class FfmpegRunnerTests
 
         Assert.Contains("-progress pipe:1", args);
         Assert.Contains("-c:s srt", args);
+        Assert.Contains("-disposition:s:0 0", args);
         Assert.Contains("-metadata:s:s:0 language=deu", args);
     }
 
