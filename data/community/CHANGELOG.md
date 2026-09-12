@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.2.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.1.0...rulesets-v0.2.0) (2026-09-12)
+
+
+### New Rulesets
+
+* **community:** add 10 movie rulesets ([887cd88](https://github.com/st0o0/FunkArr/commit/887cd8833108c4cd8aad91e4226ca0626e3ae4c8))
+
+
+### Ruleset Fixes
+
+* **community:** add missing TVDB/IMDB IDs to 8 rulesets ([9854f62](https://github.com/st0o0/FunkArr/commit/9854f62e6096adead7a0d03b7e794bd35b279e5c))
+* **community:** make media and media.type required in schema ([e3bbc35](https://github.com/st0o0/FunkArr/commit/e3bbc3565eef4e06aad5da43fd3322c987e1c53e))
+* **community:** merge duplicate Frühling rulesets (film.json into fruehling.json) ([d38a3ce](https://github.com/st0o0/FunkArr/commit/d38a3ce1ea94b013b1cf5b2669295045f1283dcb))
+* **community:** remove generic fernsehfilme-und-serien-serien category ruleset ([e930c9b](https://github.com/st0o0/FunkArr/commit/e930c9b1f5391676f2b35b63fe635e0559c2dd0b))
+* **community:** remove wrong Checker Julian/Can aliases from Checker Tobi ruleset ([6be810d](https://github.com/st0o0/FunkArr/commit/6be810d52255e0df4ab6a2f0abd14b90b75e5eb4))
+
+
+### Documentation
+
+* add community rulesets catalog and generation script ([e92cc58](https://github.com/st0o0/FunkArr/commit/e92cc58d0c184f879aaeb166e3e5066762f09c92))
+
 ## [0.1.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.1.0...rulesets-v0.1.0) (2026-09-12)
 
 
