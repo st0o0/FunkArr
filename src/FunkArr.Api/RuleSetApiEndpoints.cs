@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Core;
@@ -6,18 +8,22 @@ using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.Extensions.DependencyInjection;
 using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
 
-public static class RuleSetApiEndpoints
+public static partial class RuleSetApiEndpoints
 {
     private static readonly TimeSpan _queryTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan _testTimeout = TimeSpan.FromSeconds(15);
+    private static readonly Regex _ruleSetIdPattern = RuleSetIdRegex();
 
     public static WebApplication MapRuleSetApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/rulesets");
+        var group = app.MapGroup("/api/rulesets").WithTags("Rulesets");
 
         group.MapGet("/", async (IActorRegistry registry) =>
         {
@@ -74,6 +80,9 @@ public static class RuleSetApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .CacheOutput("RuleSetList")
+        .WithSummary("List all rulesets")
+        .WithDescription("Returns all registered rulesets with rule counts, source type, and scoring stats.")
         .Produces<ApiModels.RuleSetListEntry[]>()
         .ProducesProblem(504);
 
@@ -96,6 +105,8 @@ public static class RuleSetApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .WithSummary("Get ruleset details")
+        .WithDescription("Returns full ruleset configuration including identity, source info, and all matching rules.")
         .Produces<ApiModels.RuleSetDetail>()
         .ProducesProblem(404)
         .ProducesProblem(504);
@@ -114,6 +125,8 @@ public static class RuleSetApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .WithSummary("Get scoring history")
+        .WithDescription("Returns paginated scoring history for a ruleset.")
         .Produces<ApiModels.ScoringHistory>()
         .ProducesProblem(504);
 
@@ -136,8 +149,56 @@ public static class RuleSetApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .WithSummary("Get scoring detail")
+        .WithDescription("Returns detailed scoring trace for a specific scoring request, including per-item and per-rule traces.")
         .Produces<ApiModels.ScoringDetail>()
         .ProducesProblem(404)
+        .ProducesProblem(504);
+
+        group.MapPost("/", HandleCreate)
+            .WithSummary("Create local ruleset");
+        group.MapPut("/{id}", HandleUpdate)
+            .WithSummary("Update ruleset");
+        group.MapDelete("/{id}", HandleDelete)
+            .WithSummary("Delete local ruleset");
+        group.MapGet("/{id}/raw", HandleGetRaw)
+            .WithSummary("Get raw ruleset JSON");
+
+        group.MapPost("/test", async (JsonElement body, IActorRegistry registry) =>
+        {
+            var request = RuleSetTestRequestParser.Parse(body);
+            if (request is null)
+            {
+                return Results.BadRequest(new { error = "Invalid request body" });
+            }
+
+            var (config, candidates) = request.Value;
+
+            var manager = await registry.GetAsync<IMatchMagicManager>();
+            try
+            {
+                var result = await manager.Ask<IScoringResponse>(
+                    new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout);
+
+                return result switch
+                {
+                    TestScoreCompleted completed => Results.Ok(new
+                    {
+                        itemTraces = completed.ItemTraces
+                            .Select(ToItemTraceModel).ToArray(),
+                    }),
+                    _ => Results.Problem(statusCode: 504, title: "Gateway Timeout"),
+                };
+            }
+            catch (Exception)
+            {
+                return Results.Problem(statusCode: 504, title: "Gateway Timeout");
+            }
+        })
+        .WithSummary("Test ruleset scoring")
+        .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration. Returns per-item traces.")
+        .Produces<object>()
+        .ProducesProblem(400)
         .ProducesProblem(504);
 
         return app;
@@ -145,6 +206,95 @@ public static class RuleSetApiEndpoints
 
     private static IResult GatewayTimeout() =>
         Results.Problem(statusCode: 504, title: "Gateway Timeout");
+
+    private static async Task EvictRuleSetCache(IOutputCacheStore cache) =>
+        await cache.EvictByTagAsync("rulesets", default);
+
+    private static async Task<IResult> HandleCreate(JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache)
+    {
+        if (!body.TryGetProperty("ruleSetId", out var idEl) || idEl.ValueKind != JsonValueKind.String)
+        {
+            return Results.BadRequest(new { error = "ruleSetId is required" });
+        }
+
+        var ruleSetId = idEl.GetString()!;
+        if (!_ruleSetIdPattern.IsMatch(ruleSetId))
+        {
+            return Results.BadRequest(new { error = "ruleSetId must be kebab-case (lowercase letters, numbers, hyphens)" });
+        }
+
+        if (!body.TryGetProperty("topic", out var topicEl) || topicEl.ValueKind != JsonValueKind.String ||
+            string.IsNullOrWhiteSpace(topicEl.GetString()))
+        {
+            return Results.BadRequest(new { error = "topic is required" });
+        }
+
+        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{ruleSetId}.json");
+        if (dataFiles.Exists(localPath))
+        {
+            return Results.Conflict(new { error = $"Local ruleset '{ruleSetId}' already exists" });
+        }
+
+        var json = body.GetRawText();
+        dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
+        dataFiles.WriteAtomic(localPath, json);
+
+        await EvictRuleSetCache(cache);
+        return Results.Created($"/api/rulesets/{ruleSetId}", new { ruleSetId });
+    }
+
+    private static async Task<IResult> HandleUpdate(string id, JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache)
+    {
+        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
+        var communityPath = Path.Join(dataPaths.CommunityRuleSets, $"{id}.json");
+
+        if (!dataFiles.Exists(localPath) && !dataFiles.Exists(communityPath))
+        {
+            return Results.NotFound();
+        }
+
+        var json = body.GetRawText();
+        dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
+        dataFiles.WriteAtomic(localPath, json);
+
+        await EvictRuleSetCache(cache);
+        return Results.Ok();
+    }
+
+    private static IResult HandleGetRaw(string id, IDataFiles dataFiles, DataPaths dataPaths)
+    {
+        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
+        var communityPath = Path.Join(dataPaths.CommunityRuleSets, $"{id}.json");
+
+        if (dataFiles.Exists(localPath))
+        {
+            var json = dataFiles.ReadText(localPath);
+            return Results.Content(json, "application/json");
+        }
+
+        if (dataFiles.Exists(communityPath))
+        {
+            var json = dataFiles.ReadText(communityPath);
+            return Results.Content(json, "application/json");
+        }
+
+        return Results.NotFound();
+    }
+
+    private static async Task<IResult> HandleDelete(string id, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache)
+    {
+        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
+
+        if (!dataFiles.Exists(localPath))
+        {
+            return Results.NotFound();
+        }
+
+        dataFiles.Remove(localPath);
+
+        await EvictRuleSetCache(cache);
+        return Results.Ok();
+    }
 
     private static ApiModels.RuleSetDetail ToDetailModel(RuleSetDetailResult msg) =>
         new(msg.RuleSetId,
@@ -191,4 +341,7 @@ public static class RuleSetApiEndpoints
             msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
                 n.Field, n.Op, n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,
                 n.Group is not null ? ToFilterGroupModel(n.Group) : null)).ToArray());
+
+    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.Compiled)]
+    private static partial Regex RuleSetIdRegex();
 }

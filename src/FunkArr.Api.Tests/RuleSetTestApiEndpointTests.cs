@@ -6,12 +6,12 @@ namespace FunkArr.Api.Tests;
 public sealed class RuleSetTestApiEndpointTests
 {
     [Fact]
-    public void MapRuleSetTestApi_registers_test_endpoint()
+    public void MapRuleSetApi_registers_test_endpoint()
     {
         var builder = WebApplication.CreateBuilder();
         var app = builder.Build();
 
-        app.MapRuleSetTestApi();
+        app.MapRuleSetApi();
 
         var endpoints = app as IEndpointRouteBuilder;
         var dataSource = endpoints.DataSources;

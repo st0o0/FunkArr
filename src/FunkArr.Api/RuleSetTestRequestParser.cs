@@ -1,68 +1,11 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using Akka.Actor;
-using Akka.Hosting;
-using FunkArr.Core;
 using FunkArr.Messages.Scoring;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
 
-public static class RuleSetTestApiEndpoints
+internal static class RuleSetTestRequestParser
 {
-    private static readonly TimeSpan _testTimeout = TimeSpan.FromSeconds(15);
-
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
-
-    public static WebApplication MapRuleSetTestApi(this WebApplication app)
-    {
-        var group = app.MapGroup("/api/rulesets");
-
-        group.MapPost("/test", async (JsonElement body, IActorRegistry registry) =>
-        {
-            var request = ParseTestRequest(body);
-            if (request is null)
-            {
-                return Results.BadRequest(new { error = "Invalid request body" });
-            }
-
-            var (config, candidates) = request.Value;
-
-            var manager = await registry.GetAsync<IMatchMagicManager>();
-            try
-            {
-                var result = await manager.Ask<IScoringResponse>(
-                    new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout);
-
-                return result switch
-                {
-                    TestScoreCompleted completed => Results.Ok(new
-                    {
-                        itemTraces = completed.ItemTraces
-                            .Select(RuleSetApiEndpoints.ToItemTraceModel).ToArray(),
-                    }),
-                    _ => Results.Problem(statusCode: 504, title: "Gateway Timeout"),
-                };
-            }
-            catch (Exception)
-            {
-                return Results.Problem(statusCode: 504, title: "Gateway Timeout");
-            }
-        })
-        .Produces<object>()
-        .ProducesProblem(400)
-        .ProducesProblem(504);
-
-        return app;
-    }
-
-    private static (MatchingConfig Config, ScoreCandidate[] Candidates)? ParseTestRequest(JsonElement body)
+    internal static (MatchingConfig Config, ScoreCandidate[] Candidates)? Parse(JsonElement body)
     {
         if (!body.TryGetProperty("config", out var configEl) ||
             !body.TryGetProperty("candidates", out var candidatesEl))
