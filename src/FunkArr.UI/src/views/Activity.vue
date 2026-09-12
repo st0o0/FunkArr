@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-3xl mx-auto">
     <div class="flex items-center justify-between mb-5">
-      <h1 class="text-lg font-semibold text-text-primary">Activity</h1>
+      <h1 class="text-xl font-semibold text-text-primary tracking-tight">Activity</h1>
       <div class="flex items-center gap-3 text-xs">
         <span v-if="totalSpeed > 0" class="text-text-secondary tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
         <input

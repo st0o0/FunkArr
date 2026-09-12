@@ -1,9 +1,14 @@
 <template>
   <div :title="parsed.raw" class="min-w-0">
     <div class="truncate" :class="compact ? 'text-sm' : 'text-sm font-medium'" >
-      <span class="text-text-primary">{{ parsed.series }}</span>
+      <span class="text-text-primary font-medium">{{ parsed.series }}</span>
     </div>
-    <div v-if="!compact && hasSecondLine" class="flex items-center gap-1.5 mt-0.5 min-w-0">
+    <div v-if="compact && (parsed.season != null || parsed.quality)" class="flex items-center gap-1.5 text-xs text-text-secondary">
+      <span v-if="parsed.season != null && parsed.episode != null" class="font-mono shrink-0">S{{ pad(parsed.season) }}E{{ pad(parsed.episode) }}</span>
+      <span v-if="parsed.episodeTitle" class="truncate">{{ parsed.episodeTitle }}</span>
+      <span v-if="parsed.quality" class="shrink-0">{{ parsed.quality }}</span>
+    </div>
+    <div v-else-if="!compact && hasSecondLine" class="flex items-center gap-1.5 mt-0.5 min-w-0">
       <span v-if="parsed.season != null && parsed.episode != null" class="text-text-secondary font-mono text-xs shrink-0">
         S{{ pad(parsed.season) }} E{{ pad(parsed.episode) }}
       </span>

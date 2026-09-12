@@ -25,12 +25,12 @@
         >
           <button
             @click="navigate"
-            class="w-full flex items-center rounded-md text-[13px] transition-colors"
+            class="w-full flex items-center rounded-md text-sm transition-colors"
             :class="[
-              collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5',
+              collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-2',
               isRouteActive(item, isActive, isExactActive)
-                ? 'bg-surface-elevated text-text-primary'
-                : 'text-text-secondary hover:bg-surface-elevated/50 hover:text-text-body'
+                ? 'bg-surface-elevated text-text-primary border-l-2 border-accent'
+                : 'text-text-body hover:bg-surface-elevated/50 hover:text-text-primary border-l-2 border-transparent'
             ]"
             :title="collapsed ? item.label : undefined"
           >

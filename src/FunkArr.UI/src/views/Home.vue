@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-3xl mx-auto">
     <div class="mb-5">
-      <h1 class="text-lg font-semibold text-text-primary">Overview</h1>
+      <h1 class="text-xl font-semibold text-text-primary tracking-tight">Overview</h1>
     </div>
 
     <!-- Status line: health + storage -->
@@ -56,7 +56,7 @@
     <!-- Recent activity feed -->
     <div class="bg-surface-raised rounded-lg border border-border-default overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
-        <h2 class="text-sm font-semibold text-text-primary">Recent</h2>
+        <h2 class="text-sm font-medium text-text-primary">Recent</h2>
         <router-link to="/activity" class="text-xs text-text-secondary hover:text-text-body transition-colors">View all</router-link>
       </div>
       <div v-if="recentItems.length === 0" class="px-4 py-6 text-center">
@@ -66,7 +66,7 @@
         <div
           v-for="item in recentItems"
           :key="item.downloadId"
-          class="flex items-center gap-3 px-4 py-2.5 border-b border-border-subtle last:border-b-0"
+          class="flex items-center gap-3 px-4 py-3 border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/30 transition-colors"
         >
           <span
             class="w-1.5 h-1.5 rounded-full shrink-0"

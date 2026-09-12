@@ -1,6 +1,6 @@
 <template>
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-lg font-medium text-text-primary mb-5">Setup Guide</h1>
+    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-5">Setup Guide</h1>
 
     <div class="flex items-center gap-1 mb-6">
       <div

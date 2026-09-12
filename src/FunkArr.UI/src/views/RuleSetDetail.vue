@@ -10,7 +10,7 @@
     <div v-else-if="error" class="text-status-fail">{{ error }}</div>
     <div v-else-if="detail">
       <div class="flex items-center justify-between mb-5">
-        <h1 class="text-lg font-medium text-text-primary">{{ detail.identity.topic }}</h1>
+        <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ detail.identity.topic }}</h1>
         <div class="flex items-center gap-2">
           <router-link
             :to="`/rulesets/${id}/history`"
@@ -31,17 +31,17 @@
         <h2 class="text-sm font-semibold mb-2 text-text-secondary">Identity</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-            <span class="text-text-muted">RuleSet ID</span>
+            <span class="text-text-secondary">RuleSet ID</span>
             <span class="font-mono text-text-secondary">{{ detail.ruleSetId }}</span>
-            <span class="text-text-muted">Topic</span>
+            <span class="text-text-secondary">Topic</span>
             <span class="text-text-body">{{ detail.identity.topic }}</span>
-            <span class="text-text-muted">Aliases</span>
+            <span class="text-text-secondary">Aliases</span>
             <span class="text-text-body">{{ detail.identity.aliases.length > 0 ? detail.identity.aliases.join(', ') : '-' }}</span>
-            <span class="text-text-muted">TVDB</span>
+            <span class="text-text-secondary">TVDB</span>
             <span class="text-text-body">{{ detail.identity.tvdbId ?? '-' }}</span>
-            <span class="text-text-muted">IMDB</span>
+            <span class="text-text-secondary">IMDB</span>
             <span class="text-text-body">{{ detail.identity.imdbId ?? '-' }}</span>
-            <span class="text-text-muted">TMDB</span>
+            <span class="text-text-secondary">TMDB</span>
             <span class="text-text-body">{{ detail.identity.tmdbId ?? '-' }}</span>
           </div>
         </div>
@@ -86,26 +86,26 @@
               <span v-if="rule.confidence != null" class="text-text-muted text-xs">conf {{ rule.confidence }}</span>
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-              <span class="text-text-muted">Strategy</span>
+              <span class="text-text-secondary">Strategy</span>
               <span class="text-text-body">{{ rule.strategy }}</span>
               <template v-if="rule.seasonPattern">
-                <span class="text-text-muted">Season</span>
+                <span class="text-text-secondary">Season</span>
                 <span class="font-mono text-text-body">{{ rule.seasonPattern }}</span>
               </template>
               <template v-if="rule.episodePattern">
-                <span class="text-text-muted">Episode</span>
+                <span class="text-text-secondary">Episode</span>
                 <span class="font-mono text-text-body">{{ rule.episodePattern }}</span>
               </template>
               <template v-if="rule.matchMode">
-                <span class="text-text-muted">Match Mode</span>
+                <span class="text-text-secondary">Match Mode</span>
                 <span class="text-text-body">{{ rule.matchMode }}</span>
               </template>
               <template v-if="rule.titleParts && rule.titleParts.length > 0">
-                <span class="text-text-muted">Title Parts</span>
+                <span class="text-text-secondary">Title Parts</span>
                 <span class="text-text-body">{{ rule.titleParts.join(' + ') }}</span>
               </template>
               <template v-if="rule.filterSummary">
-                <span class="text-text-muted">Filters</span>
+                <span class="text-text-secondary">Filters</span>
                 <span class="text-text-body">{{ rule.filterSummary }}</span>
               </template>
             </div>
