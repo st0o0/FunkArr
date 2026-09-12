@@ -15,10 +15,10 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
 
         if (cmd is null)
         {
-            return IndexerApiEndpoints.EmptyResult(req.Offset ?? 0);
+            return NewznabApiEndpoints.EmptyResult(req.Offset ?? 0);
         }
 
-        return await AskAndFormat(cmd, req.Offset ?? 0, req.Limit ?? IndexerApiEndpoints.DefaultLimit, category);
+        return await AskAndFormat(cmd, req.Offset ?? 0, req.Limit ?? NewznabApiEndpoints.DefaultLimit, category);
     }
 
     private (SearchCommand? Cmd, NewznabCategory Category) BuildCommand(IndexerRequest req)
@@ -35,11 +35,11 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
     private static (SearchCommand?, NewznabCategory) BuildTvSearch(IndexerRequest req)
     {
         var cmd = new SearchCommand("sonarr", req.Q, null,
-            IndexerApiEndpoints.CapLimit(req.Limit), req.Offset,
+            NewznabApiEndpoints.CapLimit(req.Limit), req.Offset,
             new SearchCommand.TvParams(
-                IndexerApiEndpoints.ParseInt(req.Season),
-                IndexerApiEndpoints.ParseInt(req.Ep),
-                IndexerApiEndpoints.ParseInt(req.TvdbId),
+                NewznabApiEndpoints.ParseInt(req.Season),
+                NewznabApiEndpoints.ParseInt(req.Ep),
+                NewznabApiEndpoints.ParseInt(req.TvdbId),
                 req.ImdbId));
 
         return (cmd, NewznabCategory.Tv);
@@ -48,17 +48,17 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
     private static (SearchCommand?, NewznabCategory) BuildMovieSearch(IndexerRequest req)
     {
         var cmd = new SearchCommand("radarr", req.Q, null,
-            IndexerApiEndpoints.CapLimit(req.Limit), req.Offset,
-            new SearchCommand.MovieParams(req.ImdbId, IndexerApiEndpoints.ParseInt(req.TmdbId)));
+            NewznabApiEndpoints.CapLimit(req.Limit), req.Offset,
+            new SearchCommand.MovieParams(req.ImdbId, NewznabApiEndpoints.ParseInt(req.TmdbId)));
 
         return (cmd, NewznabCategory.Movie);
     }
 
     private static (SearchCommand?, NewznabCategory) BuildGeneralSearch(IndexerRequest req)
     {
-        var cat = IndexerApiEndpoints.ParseInt(req.Cat);
+        var cat = NewznabApiEndpoints.ParseInt(req.Cat);
         var category = NewznabCategory.FromCat(cat) ?? NewznabCategory.Tv;
-        var cmd = new SearchCommand("search", req.Q, cat, IndexerApiEndpoints.CapLimit(req.Limit), req.Offset, null);
+        var cmd = new SearchCommand("search", req.Q, cat, NewznabApiEndpoints.CapLimit(req.Limit), req.Offset, null);
         return (cmd, category);
     }
 
@@ -69,15 +69,15 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
             var response = await gateway.Ask<ISearchResponse>(cmd, _searchTimeout);
             return response switch
             {
-                SearchCompleted completed => IndexerApiEndpoints.XmlResult(
-                    IndexerApiEndpoints.Serialize(this.ToRss(completed, offset, limit, category))),
-                SearchFailed failed => IndexerApiEndpoints.ErrorResult(NewznabError.UnknownError(failed.Reason)),
-                _ => IndexerApiEndpoints.ErrorResult(NewznabError.UnknownError("Unexpected response")),
+                SearchCompleted completed => NewznabApiEndpoints.XmlResult(
+                    NewznabApiEndpoints.Serialize(this.ToRss(completed, offset, limit, category))),
+                SearchFailed failed => NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError(failed.Reason)),
+                _ => NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError("Unexpected response")),
             };
         }
         catch (Exception)
         {
-            return IndexerApiEndpoints.ErrorResult(NewznabError.UnknownError("Search timed out"));
+            return NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError("Search timed out"));
         }
     }
 

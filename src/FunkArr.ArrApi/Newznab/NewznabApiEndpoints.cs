@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace FunkArr.ArrApi.Newznab;
 
-public static class IndexerApiEndpoints
+public static class NewznabApiEndpoints
 {
     private static readonly XmlSerializerNamespaces _namespaces = new(
         [new XmlQualifiedName("newznab", NewznabNamespace.Uri)]);
@@ -17,9 +17,10 @@ public static class IndexerApiEndpoints
     internal const int MaxLimit = 500;
     internal const int DefaultLimit = 100;
 
-    public static WebApplication MapIndexerApi(this WebApplication app)
+    public static WebApplication MapNewznabApi(this WebApplication app)
     {
         var group = app.MapGroup("/index/api")
+            .WithTags("Newznab")
             .AddEndpointFilter(new ApiKeyEndpointFilter(
                 () => ErrorResult(NewznabError.InvalidApiKey)));
 

@@ -34,7 +34,7 @@ public sealed class NzbRoundTripTests
     }
 
     private static string GenerateNzb(string title, string url) =>
-        IndexerApiEndpoints.Serialize(new Nzb
+        NewznabApiEndpoints.Serialize(new Nzb
         {
             Head = new NzbHead
             {

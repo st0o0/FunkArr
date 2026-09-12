@@ -9,7 +9,7 @@ public sealed class NewznabXmlTests
     [Fact]
     public void Caps_xml_contains_required_elements()
     {
-        var xml = IndexerApiEndpoints.Serialize(new Caps());
+        var xml = NewznabApiEndpoints.Serialize(new Caps());
         var doc = XDocument.Parse(xml);
         var root = doc.Root!;
 
@@ -24,7 +24,7 @@ public sealed class NewznabXmlTests
     [Fact]
     public void Caps_declares_server_element()
     {
-        var xml = IndexerApiEndpoints.Serialize(new Caps());
+        var xml = NewznabApiEndpoints.Serialize(new Caps());
         var doc = XDocument.Parse(xml);
         var server = doc.Root!.Element("server")!;
 
@@ -34,7 +34,7 @@ public sealed class NewznabXmlTests
     [Fact]
     public void Caps_declares_search_types()
     {
-        var xml = IndexerApiEndpoints.Serialize(new Caps());
+        var xml = NewznabApiEndpoints.Serialize(new Caps());
         var doc = XDocument.Parse(xml);
         var searching = doc.Root!.Element("searching")!;
 
@@ -61,7 +61,7 @@ public sealed class NewznabXmlTests
     [Fact]
     public void Caps_categories_declares_tv_and_movies()
     {
-        var xml = IndexerApiEndpoints.Serialize(new Caps());
+        var xml = NewznabApiEndpoints.Serialize(new Caps());
         var doc = XDocument.Parse(xml);
         var categories = doc.Root!.Element("categories")!.Elements("category").ToList();
 
@@ -82,7 +82,7 @@ public sealed class NewznabXmlTests
     [Fact]
     public void Caps_limits()
     {
-        var xml = IndexerApiEndpoints.Serialize(new Caps());
+        var xml = NewznabApiEndpoints.Serialize(new Caps());
         var doc = XDocument.Parse(xml);
         var limits = doc.Root!.Element("limits")!;
 
@@ -93,7 +93,7 @@ public sealed class NewznabXmlTests
     [Fact]
     public void Empty_rss_has_correct_structure()
     {
-        var xml = IndexerApiEndpoints.Serialize(new Rss
+        var xml = NewznabApiEndpoints.Serialize(new Rss
         {
             Channel = new Channel
             {
@@ -147,7 +147,7 @@ public sealed class NewznabXmlTests
             },
         };
 
-        var xml = IndexerApiEndpoints.Serialize(rss);
+        var xml = NewznabApiEndpoints.Serialize(rss);
         var doc = XDocument.Parse(xml);
         var items = doc.Root!.Element("channel")!.Elements("item").ToList();
 

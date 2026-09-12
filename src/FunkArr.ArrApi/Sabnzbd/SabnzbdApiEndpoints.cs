@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.ArrApi.Sabnzbd;
 
-public static class DownloadApiEndpoints
+public static class SabnzbdApiEndpoints
 {
     private static readonly XmlSerializer _nzbSerializer = new(typeof(Nzb));
     private static readonly XmlReaderSettings _xmlSettings = new()
@@ -20,9 +20,10 @@ public static class DownloadApiEndpoints
     };
     private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
 
-    public static WebApplication MapDownloadApi(this WebApplication app)
+    public static WebApplication MapSabnzbdApi(this WebApplication app)
     {
         var group = app.MapGroup("/download/api")
+            .WithTags("SABnzbd")
             .AddEndpointFilter(new ApiKeyEndpointFilter(
                 () => Results.Json(new { status = false, error = "API Key Incorrect" }, statusCode: 403)));
 

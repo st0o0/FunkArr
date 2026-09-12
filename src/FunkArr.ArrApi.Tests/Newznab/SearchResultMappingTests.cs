@@ -71,7 +71,7 @@ public sealed class SearchResultMappingTests
             1);
 
         var rss = _handler.ToRss(completed, 5, 100, NewznabCategory.Tv);
-        var xml = IndexerApiEndpoints.Serialize(rss);
+        var xml = NewznabApiEndpoints.Serialize(rss);
 
         Assert.Contains("<title>Test</title>", xml);
         Assert.Contains("offset=\"5\"", xml);
@@ -207,13 +207,13 @@ public sealed class SearchResultMappingTests
 
     [Fact]
     public void ParseInt_parses_valid_integers() =>
-        Assert.Equal(5040, IndexerApiEndpoints.ParseInt("5040"));
+        Assert.Equal(5040, NewznabApiEndpoints.ParseInt("5040"));
 
     [Fact]
     public void ParseInt_returns_null_for_invalid() =>
-        Assert.Null(IndexerApiEndpoints.ParseInt("abc"));
+        Assert.Null(NewznabApiEndpoints.ParseInt("abc"));
 
     [Fact]
     public void ParseInt_returns_null_for_null() =>
-        Assert.Null(IndexerApiEndpoints.ParseInt(null));
+        Assert.Null(NewznabApiEndpoints.ParseInt(null));
 }

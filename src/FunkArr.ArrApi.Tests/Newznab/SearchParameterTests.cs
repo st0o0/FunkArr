@@ -17,7 +17,7 @@ public sealed class SearchParameterTests
                 Items = [],
             },
         };
-        var xml = IndexerApiEndpoints.Serialize(rss);
+        var xml = NewznabApiEndpoints.Serialize(rss);
         var doc = XDocument.Parse(xml);
 
         XNamespace ns = NewznabNamespace.Uri;
@@ -38,7 +38,7 @@ public sealed class SearchParameterTests
                 Items = [],
             },
         };
-        var xml = IndexerApiEndpoints.Serialize(rss);
+        var xml = NewznabApiEndpoints.Serialize(rss);
         var doc = XDocument.Parse(xml);
 
         XNamespace ns = NewznabNamespace.Uri;
