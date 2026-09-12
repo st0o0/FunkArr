@@ -1,6 +1,6 @@
 {
   "topic": "Frühling",
-  "aliases": [],
+  "aliases": ["Film"],
   "media": {
     "tvdbId": 289363,
     "imdbId": "tt7887026",
@@ -44,6 +44,32 @@
           "type": "regex",
           "field": "title",
           "pattern": "(.*)"
+        }
+      ]
+    },
+    {
+      "id": "title-from-film",
+      "priority": 40,
+      "filters": {
+        "all": [
+          {
+            "field": "topic",
+            "op": "eq",
+            "value": "Film"
+          },
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "50"
+          }
+        ]
+      },
+      "strategy": "itemTitleExact",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "Frühling - (.*)"
         }
       ]
     }

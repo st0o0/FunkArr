@@ -1,6 +1,6 @@
 # Community Rulesets Catalog
 
-**71** community rulesets: **61** shows, **10** movies.
+**70** community rulesets: **60** shows, **10** movies.
 
 ## Shows
 
@@ -29,8 +29,7 @@
 | falsch, aber anders lustig | - | - | 1 |
 | Fernsehfilme und Serien | - | - | 1 |
 | Feuer & Flamme | [tt7995922](https://www.imdb.com/title/tt7995922/) | - | 1 |
-| Frühling | [tt7887026](https://www.imdb.com/title/tt7887026/) | - | 1 |
-| Frühling | [tt7887026](https://www.imdb.com/title/tt7887026/) | - | 2 |
+| Frühling | [tt7887026](https://www.imdb.com/title/tt7887026/) | - | 3 |
 | Heute Show | [tt1441143](https://www.imdb.com/title/tt1441143/) | - | 1 |
 | Hubert und/ohne Staller | - | - | 1 |
 | In aller Freundschaft | [tt0178142](https://www.imdb.com/title/tt0178142/) | - | 2 |
