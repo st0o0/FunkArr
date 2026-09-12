@@ -2,55 +2,62 @@
   <div class="max-w-3xl mx-auto">
     <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-4">RuleSets</h1>
 
-    <div class="flex items-center gap-2 mb-3">
-      <input
-        v-model="search"
-        type="text"
-        placeholder="Search rulesets..."
-        class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted flex-1 focus:outline-none focus:border-border-focus"
-      />
-      <select
-        v-model="sortBy"
-        class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus"
-      >
-        <option value="topic">Sort by Name</option>
-        <option value="id">Sort by ID</option>
-      </select>
-      <router-link
-        to="/rulesets/new"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-elevated border border-border-default text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors whitespace-nowrap"
-      >
-        + New
-      </router-link>
-    </div>
-
-    <div v-if="!loading && rulesets.length > 0" class="flex items-center gap-4 mb-3">
-      <div class="flex items-center gap-1">
-        <button
-          v-for="tab in typeTabs"
-          :key="tab.value"
-          class="px-2.5 py-1 text-xs rounded-md transition-colors"
-          :class="typeFilter === tab.value
-            ? 'bg-accent/15 text-accent font-medium'
-            : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
-          @click="typeFilter = tab.value"
+    <div class="bg-surface-raised rounded-lg border border-border-default p-3 mb-4 space-y-3">
+      <div class="flex items-center gap-2">
+        <div class="relative flex-1">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>
+          </svg>
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Search rulesets..."
+            class="w-full bg-surface-elevated border border-border-default rounded-md pl-8 pr-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
+          />
+        </div>
+        <select
+          v-model="sortBy"
+          class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus"
         >
-          {{ tab.label }} ({{ tab.count }})
-        </button>
+          <option value="topic">Sort by Name</option>
+          <option value="id">Sort by ID</option>
+        </select>
+        <router-link
+          to="/rulesets/new"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-surface-base font-medium rounded-md hover:bg-accent/90 text-sm transition-colors whitespace-nowrap"
+        >
+          + New
+        </router-link>
       </div>
-      <span class="text-border-default">|</span>
-      <div class="flex items-center gap-1">
-        <button
-          v-for="tab in sourceTabs"
-          :key="tab.value"
-          class="px-2.5 py-1 text-xs rounded-md transition-colors"
-          :class="sourceFilter === tab.value
-            ? 'bg-accent/15 text-accent font-medium'
-            : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
-          @click="sourceFilter = tab.value"
-        >
-          {{ tab.label }} ({{ tab.count }})
-        </button>
+
+      <div v-if="!loading && rulesets.length > 0" class="flex items-center gap-4">
+        <div class="flex items-center gap-1">
+          <button
+            v-for="tab in typeTabs"
+            :key="tab.value"
+            class="px-2.5 py-1 text-xs rounded-md transition-colors"
+            :class="typeFilter === tab.value
+              ? 'bg-accent/15 text-accent font-medium'
+              : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
+            @click="typeFilter = tab.value"
+          >
+            {{ tab.label }} ({{ tab.count }})
+          </button>
+        </div>
+        <span class="text-text-muted">|</span>
+        <div class="flex items-center gap-1">
+          <button
+            v-for="tab in sourceTabs"
+            :key="tab.value"
+            class="px-2.5 py-1 text-xs rounded-md transition-colors"
+            :class="sourceFilter === tab.value
+              ? 'bg-accent/15 text-accent font-medium'
+              : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
+            @click="sourceFilter = tab.value"
+          >
+            {{ tab.label }} ({{ tab.count }})
+          </button>
+        </div>
       </div>
     </div>
 
