@@ -75,11 +75,10 @@
         class="block px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:bg-surface-elevated transition-colors"
       >
         <div class="flex items-center justify-between mb-0.5">
-          <div class="flex items-baseline gap-2 min-w-0">
-            <span class="text-sm font-medium text-text-primary truncate">{{ rs.topic }}</span>
-            <span class="font-mono text-xs text-text-secondary shrink-0">{{ rs.ruleSetId }}</span>
+          <div class="min-w-0">
+            <span class="text-sm font-medium text-text-primary truncate block">{{ rs.mediaName || rs.topic }}</span>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0 ml-2">
+          <div class="flex items-center gap-1.5 shrink-0 ml-3">
             <span
               class="text-[11px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated"
               :class="resolvedMediaType(rs) === 'movie' ? 'text-text-body' : 'text-text-secondary'"
@@ -94,15 +93,17 @@
             >{{ rs.sourceType }}</span>
           </div>
         </div>
-        <div v-if="rs.mediaName" class="text-xs text-text-body mb-0.5">{{ rs.mediaName }}</div>
-        <div v-if="rs.aliases.length > 0" class="text-xs text-text-secondary mb-0.5">
+        <div v-if="rs.mediaName && rs.mediaName !== rs.topic" class="text-xs text-text-secondary mb-0.5">
+          {{ rs.topic }}
+        </div>
+        <div v-if="rs.aliases.length > 0" class="text-xs text-text-muted mb-0.5">
           {{ rs.aliases.join(', ') }}
         </div>
-        <div class="flex items-center gap-3 text-xs text-text-secondary">
-          <span>{{ rs.ruleCount }} {{ rs.ruleCount === 1 ? 'rule' : 'rules' }}</span>
-          <span v-if="rs.tvdbId">TVDB {{ rs.tvdbId }}</span>
-          <span v-if="rs.imdbId">IMDB {{ rs.imdbId }}</span>
-          <span v-if="rs.tmdbId">TMDB {{ rs.tmdbId }}</span>
+        <div class="flex items-center gap-2 text-xs text-text-muted mt-1">
+          <span class="text-text-secondary">{{ rs.ruleCount }} {{ rs.ruleCount === 1 ? 'rule' : 'rules' }}</span>
+          <span v-if="rs.imdbId" class="font-mono">{{ rs.imdbId }}</span>
+          <span v-if="rs.tvdbId" class="font-mono">{{ rs.tvdbId }}</span>
+          <span v-if="rs.tmdbId" class="font-mono">{{ rs.tmdbId }}</span>
           <template v-if="rs.lastScoringRun">
             <span>&middot;</span>
             <span>Last scored {{ formatRelativeDate(rs.lastScoringRun) }}</span>

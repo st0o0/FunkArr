@@ -4,63 +4,66 @@
       <h1 class="text-xl font-semibold text-text-primary tracking-tight">Overview</h1>
     </div>
 
-    <!-- Status line: health + storage -->
-    <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 mb-3">
-      <div class="flex items-center justify-between">
-        <router-link to="/setup" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <span
-            class="w-2 h-2 rounded-full shrink-0"
-            :class="healthDotClass"
+    <!-- Stats row -->
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <router-link to="/setup" class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 hover:bg-surface-elevated/50 transition-colors">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="w-2 h-2 rounded-full shrink-0" :class="healthDotClass" />
+          <span class="text-xs text-text-secondary">System</span>
+        </div>
+        <span class="text-lg font-semibold text-text-primary tabular-nums">{{ healthLabel }}</span>
+      </router-link>
+
+      <router-link to="/activity/history" class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 hover:bg-surface-elevated/50 transition-colors">
+        <div class="text-xs text-text-secondary mb-1">Recent Downloads</div>
+        <span class="text-lg font-semibold text-text-primary tabular-nums">{{ recentItems.length }}</span>
+      </router-link>
+
+      <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
+        <div class="text-xs text-text-secondary mb-1">Storage</div>
+        <div class="flex items-baseline gap-1.5">
+          <span class="text-lg font-semibold text-text-primary tabular-nums">{{ storage ? formatSize(storageUsed) : '—' }}</span>
+          <span v-if="storage" class="text-xs text-text-muted">/ {{ formatSize(storage.completeDirectory.totalBytes) }}</span>
+        </div>
+        <div v-if="storage" class="mt-2 h-1 rounded-full bg-surface-elevated overflow-hidden">
+          <div
+            class="h-full rounded-full transition-all"
+            :class="storagePercent > 90 ? 'bg-status-warn' : 'bg-accent'"
+            :style="{ width: `${Math.min(storagePercent, 100)}%` }"
           />
-          <span class="text-sm text-text-body">{{ healthLabel }}</span>
-        </router-link>
-        <div v-if="storage" class="flex items-center gap-3">
-          <div class="w-24 h-1.5 rounded-full bg-surface-elevated overflow-hidden">
-            <div
-              class="h-full rounded-full transition-all"
-              :class="storagePercent > 90 ? 'bg-status-warn' : 'bg-accent'"
-              :style="{ width: `${Math.min(storagePercent, 100)}%` }"
-            />
-          </div>
-          <span class="text-xs text-text-secondary tabular-nums">
-            {{ formatSize(storageUsed) }} / {{ formatSize(storage.completeDirectory.totalBytes) }}
-          </span>
         </div>
       </div>
     </div>
 
-    <!-- Queue progress line -->
-    <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 mb-4">
-      <div v-if="activeCount > 0 || queuedCount > 0" class="space-y-2">
+    <!-- Queue progress (only when active) -->
+    <div v-if="activeCount > 0 || queuedCount > 0" class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 mb-4">
+      <div class="space-y-2">
         <div class="flex items-center justify-between text-sm">
           <span class="text-text-body">
-            {{ activeCount }} downloading
-            <span class="text-text-secondary">- {{ queuedCount }} queued</span>
-            <span v-if="totalSpeed > 0" class="text-text-secondary"> - {{ formatSpeed(totalSpeed) }}</span>
+            <span class="text-text-primary font-medium">{{ activeCount }}</span> downloading
+            <span class="text-text-secondary"> · {{ queuedCount }} queued</span>
+            <span v-if="totalSpeed > 0" class="text-text-secondary"> · {{ formatSpeed(totalSpeed) }}</span>
           </span>
-          <router-link to="/activity" class="text-xs text-text-secondary hover:text-text-body transition-colors">View all</router-link>
+          <router-link to="/activity" class="text-xs text-accent hover:text-accent/80 transition-colors">View</router-link>
         </div>
-        <div class="h-1 bg-surface-elevated rounded-full overflow-hidden">
+        <div class="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
           <div
             class="h-full bg-accent rounded-full transition-all duration-700"
             :style="{ width: `${overallProgress}%` }"
           />
         </div>
       </div>
-      <div v-else class="flex items-center justify-between">
-        <span class="text-sm text-text-muted">No active downloads</span>
-        <router-link to="/activity" class="text-xs text-text-secondary hover:text-text-body transition-colors">Activity</router-link>
-      </div>
     </div>
 
     <!-- Recent activity feed -->
     <div class="bg-surface-raised rounded-lg border border-border-default overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
-        <h2 class="text-sm font-medium text-text-primary">Recent</h2>
-        <router-link to="/activity" class="text-xs text-text-secondary hover:text-text-body transition-colors">View all</router-link>
+        <h2 class="text-sm font-medium text-text-primary">Recent Activity</h2>
+        <router-link to="/activity/history" class="text-xs text-accent hover:text-accent/80 transition-colors">View all</router-link>
       </div>
-      <div v-if="recentItems.length === 0" class="px-4 py-6 text-center">
+      <div v-if="recentItems.length === 0" class="px-4 py-8 text-center">
         <p class="text-sm text-text-muted">No recent activity</p>
+        <p class="text-xs text-text-muted mt-1">Downloads appear when Sonarr or Radarr trigger a search</p>
       </div>
       <div v-else>
         <div
@@ -75,10 +78,10 @@
           <div class="min-w-0 flex-1">
             <ReleaseTitle :title="item.title" compact />
           </div>
-          <span
-            class="text-xs text-text-muted shrink-0 tabular-nums"
-            :title="item.status === 'Failed' && item.failMessage ? item.failMessage : undefined"
-          >{{ formatRelativeDate(item.completedAt) }}</span>
+          <div class="flex items-center gap-3 shrink-0">
+            <span v-if="item.totalBytes > 0" class="text-xs text-text-muted tabular-nums">{{ formatSize(item.totalBytes) }}</span>
+            <span class="text-xs text-text-secondary tabular-nums">{{ formatRelativeDate(item.completedAt) }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -125,13 +128,13 @@ const healthDotClass = computed(() => {
 })
 
 const healthLabel = computed(() => {
-  if (!health.value) return 'Loading...'
+  if (!health.value) return '...'
   const checks = Object.values(health.value.checks)
   const failCount = checks.filter(c => c.status === 'fail').length
   const warnCount = checks.filter(c => c.status === 'warn').length
-  if (failCount > 0) return `${failCount} ${failCount === 1 ? 'failure' : 'failures'}`
+  if (failCount > 0) return `${failCount} ${failCount === 1 ? 'issue' : 'issues'}`
   if (warnCount > 0) return `${warnCount} ${warnCount === 1 ? 'warning' : 'warnings'}`
-  return 'System healthy'
+  return 'Healthy'
 })
 
 function handleVisibilityChange() {

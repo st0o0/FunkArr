@@ -30,19 +30,19 @@
       <section class="mb-4">
         <h2 class="text-sm font-semibold mb-2 text-text-secondary">Identity</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
-          <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+          <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
             <span class="text-text-secondary">RuleSet ID</span>
-            <span class="font-mono text-text-secondary">{{ detail.ruleSetId }}</span>
+            <span class="font-mono text-text-body">{{ detail.ruleSetId }}</span>
             <span class="text-text-secondary">Topic</span>
-            <span class="text-text-body">{{ detail.identity.topic }}</span>
+            <span class="text-text-primary font-medium">{{ detail.identity.topic }}</span>
             <span class="text-text-secondary">Aliases</span>
             <span class="text-text-body">{{ detail.identity.aliases.length > 0 ? detail.identity.aliases.join(', ') : '-' }}</span>
             <span class="text-text-secondary">TVDB</span>
-            <span class="text-text-body">{{ detail.identity.tvdbId ?? '-' }}</span>
+            <span class="font-mono text-text-body">{{ detail.identity.tvdbId ?? '-' }}</span>
             <span class="text-text-secondary">IMDB</span>
-            <span class="text-text-body">{{ detail.identity.imdbId ?? '-' }}</span>
+            <span class="font-mono text-text-body">{{ detail.identity.imdbId ?? '-' }}</span>
             <span class="text-text-secondary">TMDB</span>
-            <span class="text-text-body">{{ detail.identity.tmdbId ?? '-' }}</span>
+            <span class="font-mono text-text-body">{{ detail.identity.tmdbId ?? '-' }}</span>
           </div>
         </div>
       </section>
@@ -80,14 +80,17 @@
             :key="rule.id"
             class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm"
           >
-            <div class="flex items-baseline gap-2 mb-2">
-              <span class="font-mono font-medium text-text-primary">{{ rule.id }}</span>
-              <span class="text-text-muted text-xs">prio {{ rule.priority }}</span>
-              <span v-if="rule.confidence != null" class="text-text-muted text-xs">conf {{ rule.confidence }}</span>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-baseline gap-2">
+                <span class="font-mono font-medium text-text-primary">{{ rule.id }}</span>
+                <span class="text-[11px] px-1.5 py-0.5 rounded bg-surface-elevated text-text-body">{{ rule.strategy }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-xs text-text-muted">
+                <span>prio {{ rule.priority }}</span>
+                <span v-if="rule.confidence != null">conf {{ rule.confidence }}</span>
+              </div>
             </div>
-            <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
-              <span class="text-text-secondary">Strategy</span>
-              <span class="text-text-body">{{ rule.strategy }}</span>
+            <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs">
               <template v-if="rule.seasonPattern">
                 <span class="text-text-secondary">Season</span>
                 <span class="font-mono text-text-body">{{ rule.seasonPattern }}</span>
