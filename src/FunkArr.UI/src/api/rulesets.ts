@@ -6,6 +6,7 @@ export interface RuleSetEntry {
   imdbId: string | null
   tmdbId: number | null
   mediaName: string | null
+  mediaType: string | null
   ruleCount: number
   sourceType: string
   lastScoringRun: string | null

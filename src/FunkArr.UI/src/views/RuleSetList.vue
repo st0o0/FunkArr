@@ -1,8 +1,8 @@
 <template>
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-lg font-medium text-text-primary mb-4">RuleSets</h1>
+    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-4">RuleSets</h1>
 
-    <div class="flex items-center gap-2 mb-4">
+    <div class="flex items-center gap-2 mb-3">
       <input
         v-model="search"
         type="text"
@@ -22,6 +22,20 @@
       >
         + New
       </router-link>
+    </div>
+
+    <div v-if="!loading && rulesets.length > 0" class="flex items-center gap-1 mb-3">
+      <button
+        v-for="tab in typeTabs"
+        :key="tab.value"
+        class="px-2.5 py-1 text-xs rounded-md transition-colors"
+        :class="typeFilter === tab.value
+          ? 'bg-accent/15 text-accent font-medium'
+          : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
+        @click="typeFilter = tab.value"
+      >
+        {{ tab.label }} ({{ tab.count }})
+      </button>
     </div>
 
     <div v-if="loading" class="grid gap-2">
@@ -45,12 +59,12 @@
       v-else-if="filteredRulesets.length === 0"
       icon='<circle cx="8" cy="8" r="5"/><path d="M11.5 11.5L14 14"/>'
       title="No matching rulesets"
-      description="Try a different search term."
+      description="Try a different search term or filter."
     />
 
     <div class="text-xs text-text-secondary mb-2" v-if="!loading && rulesets.length > 0">
       {{ filteredRulesets.length }} {{ filteredRulesets.length === 1 ? 'ruleset' : 'rulesets' }}
-      <span v-if="search && filteredRulesets.length !== rulesets.length"> of {{ rulesets.length }}</span>
+      <span v-if="filteredRulesets.length !== rulesets.length"> of {{ rulesets.length }}</span>
     </div>
 
     <div v-if="!loading && filteredRulesets.length > 0" class="grid gap-1.5">
@@ -58,21 +72,30 @@
         v-for="rs in filteredRulesets"
         :key="rs.ruleSetId"
         :to="`/rulesets/${rs.ruleSetId}`"
-        class="block px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:bg-surface-elevated transition-colors"
+        class="block px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:bg-surface-elevated transition-colors border-l-2"
+        :class="resolvedMediaType(rs) === 'movie' ? 'border-l-purple-500/50' : 'border-l-accent/30'"
       >
         <div class="flex items-center justify-between mb-0.5">
           <div class="flex items-baseline gap-2 min-w-0">
             <span class="text-sm font-medium text-text-primary truncate">{{ rs.topic }}</span>
             <span class="font-mono text-xs text-text-secondary shrink-0">{{ rs.ruleSetId }}</span>
           </div>
-          <span
-            class="text-[11px] font-medium px-1.5 py-0.5 rounded shrink-0 ml-2"
-            :class="{
-              'bg-surface-elevated text-text-secondary': rs.sourceType === 'community',
-              'bg-accent/10 text-accent': rs.sourceType === 'local',
-              'bg-surface-elevated text-text-body': rs.sourceType === 'merged',
-            }"
-          >{{ rs.sourceType }}</span>
+          <div class="flex items-center gap-1.5 shrink-0 ml-2">
+            <span
+              class="text-[11px] font-medium px-1.5 py-0.5 rounded"
+              :class="resolvedMediaType(rs) === 'movie'
+                ? 'bg-purple-500/10 text-purple-400'
+                : 'bg-surface-elevated text-text-muted'"
+            >{{ resolvedMediaType(rs) }}</span>
+            <span
+              class="text-[11px] font-medium px-1.5 py-0.5 rounded"
+              :class="{
+                'bg-surface-elevated text-text-secondary': rs.sourceType === 'community',
+                'bg-accent/10 text-accent': rs.sourceType === 'local',
+                'bg-surface-elevated text-text-body': rs.sourceType === 'merged',
+              }"
+            >{{ rs.sourceType }}</span>
+          </div>
         </div>
         <div v-if="rs.mediaName" class="text-xs text-text-body mb-0.5">{{ rs.mediaName }}</div>
         <div v-if="rs.aliases.length > 0" class="text-xs text-text-secondary mb-0.5">
@@ -109,6 +132,22 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const search = ref('')
 const sortBy = ref<'topic' | 'id'>('topic')
+const typeFilter = ref<'all' | 'show' | 'movie'>('all')
+
+function resolvedMediaType(rs: RuleSetEntry): string {
+  return rs.mediaType || 'show'
+}
+
+const typeTabs = computed(() => {
+  const all = rulesets.value.length
+  const movies = rulesets.value.filter(rs => resolvedMediaType(rs) === 'movie').length
+  const shows = all - movies
+  return [
+    { label: 'All', value: 'all' as const, count: all },
+    { label: 'Shows', value: 'show' as const, count: shows },
+    { label: 'Movies', value: 'movie' as const, count: movies },
+  ]
+})
 
 const sortedRulesets = computed(() =>
   [...rulesets.value].sort((a, b) =>
@@ -118,20 +157,29 @@ const sortedRulesets = computed(() =>
 )
 
 const filteredRulesets = computed(() => {
+  let result = sortedRulesets.value
+
+  if (typeFilter.value !== 'all') {
+    result = result.filter(rs => resolvedMediaType(rs) === typeFilter.value)
+  }
+
   const term = search.value.toLowerCase()
-  if (!term) return sortedRulesets.value
-  return sortedRulesets.value.filter(rs => {
-    const haystack = [
-      rs.ruleSetId,
-      rs.topic,
-      rs.mediaName ?? '',
-      ...rs.aliases,
-      rs.tvdbId?.toString() ?? '',
-      rs.imdbId ?? '',
-      rs.tmdbId?.toString() ?? '',
-    ].join(' ').toLowerCase()
-    return haystack.includes(term)
-  })
+  if (term) {
+    result = result.filter(rs => {
+      const haystack = [
+        rs.ruleSetId,
+        rs.topic,
+        rs.mediaName ?? '',
+        ...rs.aliases,
+        rs.tvdbId?.toString() ?? '',
+        rs.imdbId ?? '',
+        rs.tmdbId?.toString() ?? '',
+      ].join(' ').toLowerCase()
+      return haystack.includes(term)
+    })
+  }
+
+  return result
 })
 
 onMounted(async () => {
