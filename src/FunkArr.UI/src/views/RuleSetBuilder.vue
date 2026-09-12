@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-5xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <AppBreadcrumb :items="breadcrumbItems" />
 
     <div v-if="loadingDetail" class="space-y-5">
@@ -8,7 +8,7 @@
     </div>
     <div v-else-if="loadError" class="text-status-fail text-sm">{{ loadError }}</div>
 
-    <div v-else class="grid grid-cols-[1fr_340px] gap-6">
+    <div v-else class="grid grid-cols-[1fr_420px] gap-6">
       <!-- Left pane: Builder form -->
       <div class="space-y-4">
         <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ isEditMode ? 'Edit RuleSet' : 'New RuleSet' }}</h1>
