@@ -24,18 +24,34 @@
       </router-link>
     </div>
 
-    <div v-if="!loading && rulesets.length > 0" class="flex items-center gap-1 mb-3">
-      <button
-        v-for="tab in typeTabs"
-        :key="tab.value"
-        class="px-2.5 py-1 text-xs rounded-md transition-colors"
-        :class="typeFilter === tab.value
-          ? 'bg-accent/15 text-accent font-medium'
-          : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
-        @click="typeFilter = tab.value"
-      >
-        {{ tab.label }} ({{ tab.count }})
-      </button>
+    <div v-if="!loading && rulesets.length > 0" class="flex items-center gap-4 mb-3">
+      <div class="flex items-center gap-1">
+        <button
+          v-for="tab in typeTabs"
+          :key="tab.value"
+          class="px-2.5 py-1 text-xs rounded-md transition-colors"
+          :class="typeFilter === tab.value
+            ? 'bg-accent/15 text-accent font-medium'
+            : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
+          @click="typeFilter = tab.value"
+        >
+          {{ tab.label }} ({{ tab.count }})
+        </button>
+      </div>
+      <span class="text-border-default">|</span>
+      <div class="flex items-center gap-1">
+        <button
+          v-for="tab in sourceTabs"
+          :key="tab.value"
+          class="px-2.5 py-1 text-xs rounded-md transition-colors"
+          :class="sourceFilter === tab.value
+            ? 'bg-accent/15 text-accent font-medium'
+            : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
+          @click="sourceFilter = tab.value"
+        >
+          {{ tab.label }} ({{ tab.count }})
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="grid gap-2">
@@ -130,6 +146,7 @@ const error = ref<string | null>(null)
 const search = ref('')
 const sortBy = ref<'topic' | 'id'>('topic')
 const typeFilter = ref<'all' | 'show' | 'movie'>('all')
+const sourceFilter = ref<'all' | 'community' | 'local'>('all')
 
 function resolvedMediaType(rs: RuleSetEntry): string {
   return rs.mediaType || 'show'
@@ -146,6 +163,16 @@ const typeTabs = computed(() => {
   ]
 })
 
+const sourceTabs = computed(() => {
+  const community = rulesets.value.filter(rs => rs.sourceType === 'community').length
+  const local = rulesets.value.filter(rs => rs.sourceType === 'local' || rs.sourceType === 'merged').length
+  return [
+    { label: 'All Sources', value: 'all' as const, count: rulesets.value.length },
+    { label: 'Community', value: 'community' as const, count: community },
+    { label: 'Local', value: 'local' as const, count: local },
+  ]
+})
+
 const sortedRulesets = computed(() =>
   [...rulesets.value].sort((a, b) =>
     sortBy.value === 'id'
@@ -158,6 +185,12 @@ const filteredRulesets = computed(() => {
 
   if (typeFilter.value !== 'all') {
     result = result.filter(rs => resolvedMediaType(rs) === typeFilter.value)
+  }
+
+  if (sourceFilter.value === 'community') {
+    result = result.filter(rs => rs.sourceType === 'community')
+  } else if (sourceFilter.value === 'local') {
+    result = result.filter(rs => rs.sourceType === 'local' || rs.sourceType === 'merged')
   }
 
   const term = search.value.toLowerCase()
