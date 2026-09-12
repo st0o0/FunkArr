@@ -269,7 +269,7 @@
 
       <!-- Right pane: Debugger -->
       <div class="sticky top-5 self-start">
-        <div class="bg-surface-raised rounded-lg border border-border-default p-3 max-h-[calc(100vh-60px)] overflow-y-auto">
+        <div class="bg-surface-raised rounded-lg border border-border-default p-3">
           <DebuggerPanel :builder-state="debuggerState" />
         </div>
       </div>

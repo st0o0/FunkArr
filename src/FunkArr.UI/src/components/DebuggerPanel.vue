@@ -47,7 +47,7 @@
           </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto space-y-0.5 mb-3">
+        <div class="max-h-[50vh] overflow-y-auto space-y-0.5 mb-3">
           <label
             v-for="(item, idx) in searchResults"
             :key="idx"
