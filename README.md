@@ -21,7 +21,7 @@ No Usenet account needed. No torrents. Just direct downloads from public media l
 
 - **Newznab indexer API** - add FunkArr in Prowlarr or directly in Sonarr/Radarr as an indexer
 - **SABnzbd download client API** - add it as a SABnzbd download client in Sonarr/Radarr
-- **Community rulesets** - map messy Mediathek titles to structured season/episode format, auto-synced from GitHub
+- **Community rulesets** - map messy Mediathek titles to structured season/episode format, auto-synced from GitHub ([browse catalog](data/community/CATALOG.md))
 - **RuleSet builder** - create and test rulesets with a visual editor and debugger in the web UI
 - **Metadata resolution** - resolves series and movies via TMDB and TVDB for accurate matching
 - **Match intelligence** - tracks which mappings worked so results improve over time
