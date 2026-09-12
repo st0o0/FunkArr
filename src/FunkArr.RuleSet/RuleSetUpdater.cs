@@ -87,7 +87,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
 
         if (release.Value.AssetUrl is null)
         {
-            _log.Warning("Release {Tag} has no community-rulesets.zip asset", release.Value.Tag);
+            _log.Warning("Release {Tag} has no rulesets.zip asset", release.Value.Tag);
             return;
         }
 
@@ -107,7 +107,9 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
             await using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
             await archive.ExtractToDirectoryAsync(tempDir);
 
-            _dataFiles.ReplaceDirectory(tempDir, rulesetsDir);
+            var extractedRulesets = Path.Join(tempDir, "rulesets");
+            var sourceDir = Directory.Exists(extractedRulesets) ? extractedRulesets : tempDir;
+            _dataFiles.ReplaceDirectory(sourceDir, rulesetsDir);
             _dataFiles.WriteText(versionFile, release.Value.Version);
 
             _log.Info("Community rulesets updated to version {Version}", release.Value.Version);
@@ -115,6 +117,9 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
         catch (Exception ex)
         {
             _log.Error(ex, "Failed to extract community rulesets");
+        }
+        finally
+        {
             _dataFiles.Remove(tempDir);
         }
     }
@@ -147,12 +152,12 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
             }
 
             var tag = tagEl.GetString();
-            if (tag is null || !tag.StartsWith("community-rulesets-v", StringComparison.Ordinal))
+            if (tag is null || !tag.StartsWith("rulesets-v", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            var version = tag["community-rulesets-v".Length..];
+            var version = tag["rulesets-v".Length..];
 
             if (opts.Version != "latest" && version != opts.Version)
             {
@@ -165,7 +170,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
                 foreach (var asset in assets.EnumerateArray())
                 {
                     if (asset.TryGetProperty("name", out var nameEl) &&
-                        nameEl.GetString() == "community-rulesets.zip" &&
+                        nameEl.GetString() == "rulesets.zip" &&
                         asset.TryGetProperty("browser_download_url", out var urlEl))
                     {
                         assetUrl = urlEl.GetString();
