@@ -124,7 +124,7 @@ The internal API SHALL use its own response model records in `FunkArr.Api/Models
 - **THEN** `percentage` SHALL be 0, `speed` SHALL be 0, `eta` SHALL be "00:00:00"
 
 ### Requirement: Endpoint registration
-The download API endpoints SHALL be registered via a `MapDownloadInternalApi` extension method on `WebApplication`, called from `ApplicationSetupContainer`.
+The download API endpoints SHALL be registered in a `DownloadsApiEndpoints` class via a `MapDownloadsApi` extension method on `WebApplication`, called from `ApplicationSetupContainer`.
 
 #### Scenario: Endpoint group path
 - **WHEN** the download internal API is registered
@@ -152,21 +152,4 @@ The system SHALL respond to `GET /api/downloads/history/categories` with distinc
 - **WHEN** the DownloadHistoryManager does not respond within the ask timeout
 - **THEN** the response SHALL be HTTP 504 Gateway Timeout
 
-### Requirement: Storage status endpoint
-The system SHALL respond to `GET /api/health/storage` with disk space information using `DriveInfo` for the configured complete and incomplete directory paths.
-
-#### Scenario: Successful response
-- **WHEN** `GET /api/health/storage` is requested
-- **THEN** the response SHALL be JSON with `completeDirectory` and `incompleteDirectory` objects containing `path`, `availableBytes`, `totalBytes`
-
-### Requirement: Cache stats endpoint
-The system SHALL respond to `GET /api/health/cache` with TMDB/TVDB cache statistics by sending `QueryCacheStats` to the MetadataResolverManager.
-
-#### Scenario: Successful response
-- **WHEN** `GET /api/health/cache` is requested
-- **THEN** the response SHALL be JSON with `tvdbEntries`, `tmdbEntries`, `oldestEntry`
-
-#### Scenario: Actor timeout
-- **WHEN** the MetadataResolverManager does not respond within the ask timeout
-- **THEN** the response SHALL be HTTP 504 Gateway Timeout
 

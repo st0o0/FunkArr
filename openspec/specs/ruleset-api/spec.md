@@ -62,12 +62,16 @@ The system SHALL expose `GET /api/rulesets/{id}/history/{requestId}` with full s
 - **WHEN** the MatchHistoryWorker does not respond within the timeout
 - **THEN** the response is 504 with a Problem Details body containing title "Gateway Timeout"
 
-### Requirement: API endpoint group and routing
-All ruleset API endpoints SHALL be registered under a `/api/rulesets` route group in `FunkArr.Api`. The Api project SHALL expose a `MapRuleSetApi(this WebApplication app)` extension method following the same pattern as `MapIndexerApi` and `MapDownloadApi`. The method SHALL register both read endpoints (GET list, GET detail, GET history, GET scoring detail) and write endpoints (POST create, PUT update, DELETE remove). The method SHALL also register the ad-hoc test endpoint (`POST /api/rulesets/test`) and the MediathekViewWeb proxy endpoint (`GET /api/mediathek/search`) under a separate `/api/mediathek` route group via a `MapMediathekApi(this WebApplication app)` extension method.
+### Requirement: Endpoint file structure
+All ruleset API endpoints (`GET /api/rulesets`, `GET /api/rulesets/{id}`, `GET /api/rulesets/{id}/history`, `GET /api/rulesets/{id}/history/{requestId}`, `POST /api/rulesets`, `PUT /api/rulesets/{id}`, `DELETE /api/rulesets/{id}`, `GET /api/rulesets/{id}/raw`, `POST /api/rulesets/test`) SHALL be registered in a single `RuleSetApiEndpoints` class with one `MapRuleSetApi()` extension method and one `MapGroup("/api/rulesets").WithTags("Rulesets")` call.
+
+#### Scenario: Single route group registration
+- **WHEN** the application starts
+- **THEN** all `/api/rulesets` endpoints SHALL be registered through a single `MapGroup` call in `RuleSetApiEndpoints.MapRuleSetApi()`
 
 #### Scenario: Endpoint registration
 - **WHEN** `ApplicationSetupContainer.SetupApplication` runs
-- **THEN** `app.MapRuleSetApi()` is called to register all ruleset read and write endpoints
+- **THEN** `app.MapRuleSetApi()` is called to register all ruleset read, write, and test endpoints
 - **AND** `app.MapMediathekApi()` is called to register the mediathek proxy endpoints
 
 #### Scenario: No authentication on internal API
@@ -77,4 +81,11 @@ All ruleset API endpoints SHALL be registered under a `/api/rulesets` route grou
 #### Scenario: Test endpoint is under rulesets group
 - **WHEN** `POST /api/rulesets/test` is called
 - **THEN** the request is routed to the ad-hoc scoring test handler
+
+### Requirement: Test request parsing extraction
+The JSON parsing logic for the test scoring endpoint (`ParseTestRequest`, `ParseRules`, `ParseIdentification`, `ParseTitleRules`, `ParseFilterSpec`, `ParseFilterNodes`, `ParseFilterCondition`, `ParseFilterField`, `ParseFilterOp`, `ParseCandidates`) SHALL reside in a separate `RuleSetTestRequestParser` static class.
+
+#### Scenario: Parser class independence
+- **WHEN** the test endpoint receives a request body
+- **THEN** it SHALL delegate JSON parsing to `RuleSetTestRequestParser.Parse()` and receive a parsed result or null
 

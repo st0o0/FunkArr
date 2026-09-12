@@ -222,9 +222,8 @@ The system SHALL support `o=json` query parameter on all Newznab endpoints to re
 - **WHEN** `o` parameter is absent or set to `xml`
 - **THEN** the response SHALL be `application/xml` as before
 
-### Requirement: IndexerApiEndpoints resolves dependencies via DI
-
-`MapIndexerApi` SHALL be a parameterless extension method on `WebApplication`. The endpoint handler SHALL resolve `IActorRegistry` and `IOptions<FunkArrOptions>` via Minimal API DI parameter injection instead of receiving them as closure-captured values.
+### Requirement: NewznabApiEndpoints resolves dependencies via DI
+`MapNewznabApi` SHALL be a parameterless extension method on `WebApplication`. The endpoint handler SHALL resolve `IActorRegistry` and `IOptions<FunkArrOptions>` via Minimal API DI parameter injection instead of receiving them as closure-captured values.
 
 #### Scenario: Endpoint resolves actor registry from DI
 

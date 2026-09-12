@@ -5,14 +5,14 @@ Backend self-check endpoint for operational readiness verification. Checks API k
 ## Requirements
 
 ### Requirement: Setup health check endpoint
-The system SHALL expose `GET /api/health/setup` that returns a JSON object with the results of all operational readiness checks. The endpoint SHALL have no authentication. All checks SHALL run concurrently via `Task.WhenAll` to minimize response time.
+The system SHALL expose `GET /api/system/setup` that returns a JSON object with the results of all operational readiness checks. The endpoint SHALL have no authentication. All checks SHALL run concurrently via `Task.WhenAll` to minimize response time. The endpoint SHALL be registered under the OpenAPI tag `"System"`.
 
 #### Scenario: All checks pass
-- **WHEN** `GET /api/health/setup` is requested and all prerequisites are met
+- **WHEN** `GET /api/system/setup` is requested and all prerequisites are met
 - **THEN** the response status is 200 and every check entry has `"status": "ok"`
 
 #### Scenario: Endpoint responds without authentication
-- **WHEN** `GET /api/health/setup` is requested without an API key
+- **WHEN** `GET /api/system/setup` is requested without an API key
 - **THEN** the response status is 200 (not 401 or 403)
 
 ### Requirement: API key configuration check
@@ -52,7 +52,7 @@ The endpoint SHALL verify that the directory at `DataPaths.DataRoot` exists and 
 The setup health check SHALL verify both `DataPaths.Complete` and `DataPaths.Incomplete` directories using `IDataFiles.CanWrite()`.
 
 #### Scenario: Both directories exist and are writable
-- **WHEN** `GET /api/health/setup` is requested and `IDataFiles.CanWrite()` returns true for both `DataPaths.Complete` and `DataPaths.Incomplete`
+- **WHEN** `GET /api/system/setup` is requested and `IDataFiles.CanWrite()` returns true for both `DataPaths.Complete` and `DataPaths.Incomplete`
 - **THEN** the `completeDirectory` and `incompleteDirectory` checks SHALL have `"status": "ok"`
 
 #### Scenario: Complete directory not writable
@@ -100,9 +100,23 @@ The endpoint SHALL check whether `ffmpeg` is available on the system PATH by att
 The response SHALL be a JSON object with a top-level `checks` object containing named check results, and a `connectionInfo` object with the values needed by the setup guide. Each check SHALL have `status` (`"ok"`, `"warn"`, or `"fail"`), an optional `message`, and check-specific fields.
 
 #### Scenario: Response includes connection info
-- **WHEN** `GET /api/health/setup` is requested
+- **WHEN** `GET /api/system/setup` is requested
 - **THEN** the response includes `connectionInfo` with `indexerApiPath` (`"/index/api"`), `downloadApiPath` (`"/download/api"`), and `defaultPort` (`5000`)
 
 #### Scenario: Response shape
-- **WHEN** `GET /api/health/setup` is requested
+- **WHEN** `GET /api/system/setup` is requested
 - **THEN** the response matches the structure `{ "checks": { "<name>": { "status": "ok"|"warn"|"fail", "message?": "...", ... } }, "connectionInfo": { ... } }`
+
+### Requirement: Storage status endpoint
+The system SHALL expose `GET /api/system/storage` that returns storage directory information. The endpoint SHALL be registered under the OpenAPI tag `"System"`.
+
+#### Scenario: Storage status response
+- **WHEN** `GET /api/system/storage` is requested
+- **THEN** the response is 200 with JSON containing complete and incomplete directory info
+
+### Requirement: Cache stats endpoint
+The system SHALL expose `GET /api/system/cache` that returns metadata cache statistics. The endpoint SHALL be registered under the OpenAPI tag `"System"`.
+
+#### Scenario: Cache stats response
+- **WHEN** `GET /api/system/cache` is requested
+- **THEN** the response is 200 with JSON containing TVDB entries, TMDB entries, and oldest entry timestamp
