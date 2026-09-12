@@ -79,8 +79,8 @@
             <ReleaseTitle :title="item.title" compact />
           </div>
           <div class="flex items-center gap-3 shrink-0">
-            <span v-if="item.totalBytes > 0" class="text-xs text-text-muted tabular-nums">{{ formatSize(item.totalBytes) }}</span>
-            <span class="text-xs text-text-secondary tabular-nums">{{ formatRelativeDate(item.completedAt) }}</span>
+            <span v-if="item.totalBytes > 0" class="text-xs text-text-secondary tabular-nums">{{ formatSize(item.totalBytes) }}</span>
+            <span class="text-xs text-text-body tabular-nums">{{ formatRelativeDate(item.completedAt) }}</span>
           </div>
         </div>
       </div>

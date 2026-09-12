@@ -80,30 +80,29 @@
           </div>
           <div class="flex items-center gap-1.5 shrink-0 ml-3">
             <span
-              class="text-[11px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated"
-              :class="resolvedMediaType(rs) === 'movie' ? 'text-text-body' : 'text-text-secondary'"
+              class="text-[11px] font-medium px-1.5 py-0.5 rounded bg-surface-overlay/60 text-text-body"
             >{{ resolvedMediaType(rs) }}</span>
             <span
               class="text-[11px] font-medium px-1.5 py-0.5 rounded"
               :class="{
-                'bg-surface-elevated text-text-secondary': rs.sourceType === 'community',
-                'bg-accent/10 text-accent': rs.sourceType === 'local',
-                'bg-surface-elevated text-text-body': rs.sourceType === 'merged',
+                'bg-surface-overlay/60 text-text-body': rs.sourceType === 'community',
+                'bg-accent/15 text-accent': rs.sourceType === 'local',
+                'bg-surface-overlay/60 text-text-primary': rs.sourceType === 'merged',
               }"
             >{{ rs.sourceType }}</span>
           </div>
         </div>
-        <div v-if="rs.mediaName && rs.mediaName !== rs.topic" class="text-xs text-text-secondary mb-0.5">
+        <div v-if="rs.mediaName && rs.mediaName !== rs.topic" class="text-xs text-text-body mb-0.5">
           {{ rs.topic }}
         </div>
-        <div v-if="rs.aliases.length > 0" class="text-xs text-text-muted mb-0.5">
+        <div v-if="rs.aliases.length > 0" class="text-xs text-text-secondary mb-0.5">
           {{ rs.aliases.join(', ') }}
         </div>
-        <div class="flex items-center gap-2 text-xs text-text-muted mt-1">
-          <span class="text-text-secondary">{{ rs.ruleCount }} {{ rs.ruleCount === 1 ? 'rule' : 'rules' }}</span>
-          <span v-if="rs.imdbId" class="font-mono">{{ rs.imdbId }}</span>
-          <span v-if="rs.tvdbId" class="font-mono">{{ rs.tvdbId }}</span>
-          <span v-if="rs.tmdbId" class="font-mono">{{ rs.tmdbId }}</span>
+        <div class="flex items-center gap-2 text-xs text-text-secondary mt-1">
+          <span class="text-text-body">{{ rs.ruleCount }} {{ rs.ruleCount === 1 ? 'rule' : 'rules' }}</span>
+          <span v-if="rs.imdbId"><span class="text-text-muted">IMDB</span> {{ rs.imdbId }}</span>
+          <span v-if="rs.tvdbId"><span class="text-text-muted">TVDB</span> {{ rs.tvdbId }}</span>
+          <span v-if="rs.tmdbId"><span class="text-text-muted">TMDB</span> {{ rs.tmdbId }}</span>
           <template v-if="rs.lastScoringRun">
             <span>&middot;</span>
             <span>Last scored {{ formatRelativeDate(rs.lastScoringRun) }}</span>

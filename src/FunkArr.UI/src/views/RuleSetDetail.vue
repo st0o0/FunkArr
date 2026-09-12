@@ -61,7 +61,7 @@
             >
               {{ mergeMode === 'community only' ? 'Community' : mergeMode === 'local only' ? 'Local' : 'Community + Local' }}
             </span>
-            <span v-if="detail.source.communityModified" class="text-xs text-text-muted">
+            <span v-if="detail.source.communityModified" class="text-xs text-text-secondary">
               Updated {{ formatDate(detail.source.communityModified) }}
             </span>
           </div>
@@ -70,9 +70,9 @@
 
       <section class="mb-5">
         <h2 class="text-sm font-semibold mb-2 text-text-secondary">Matching Rules</h2>
-        <div class="text-sm text-text-muted mb-2">Default confidence: {{ detail.defaultConfidence }}</div>
+        <div class="text-sm text-text-secondary mb-2">Default confidence: {{ detail.defaultConfidence }}</div>
 
-        <div v-if="detail.rules.length === 0" class="text-text-muted text-sm">No rules defined.</div>
+        <div v-if="detail.rules.length === 0" class="text-text-secondary text-sm">No rules defined.</div>
 
         <div v-else class="grid gap-2">
           <div
@@ -85,7 +85,7 @@
                 <span class="font-mono font-medium text-text-primary">{{ rule.id }}</span>
                 <span class="text-[11px] px-1.5 py-0.5 rounded bg-surface-elevated text-text-body">{{ rule.strategy }}</span>
               </div>
-              <div class="flex items-center gap-2 text-xs text-text-muted">
+              <div class="flex items-center gap-2 text-xs text-text-secondary">
                 <span>prio {{ rule.priority }}</span>
                 <span v-if="rule.confidence != null">conf {{ rule.confidence }}</span>
               </div>
