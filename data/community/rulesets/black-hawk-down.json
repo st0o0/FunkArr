@@ -1,0 +1,35 @@
+{
+  "topic": "Spielfilm-Highlights",
+  "aliases": [
+    "Black Hawk Down"
+  ],
+  "media": {
+    "imdbId": "tt0265086",
+    "tmdbId": 855,
+    "name": "Black Hawk Down",
+    "type": "movie"
+  },
+  "confidence": 0.8,
+  "rules": [
+    {
+      "id": "title-match",
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "topic",
+            "op": "contains",
+            "value": "Spielfilm"
+          }
+        ]
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "static",
+          "value": "Black Hawk Down"
+        }
+      ]
+    }
+  ]
+}

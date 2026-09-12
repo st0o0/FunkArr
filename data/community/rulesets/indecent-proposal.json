@@ -1,0 +1,35 @@
+{
+  "topic": "Spielfilm",
+  "aliases": [
+    "Ein unmoralisches Angebot"
+  ],
+  "media": {
+    "imdbId": "tt0107211",
+    "tmdbId": 8202,
+    "name": "Indecent Proposal",
+    "type": "movie"
+  },
+  "confidence": 0.8,
+  "rules": [
+    {
+      "id": "title-match",
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "topic",
+            "op": "contains",
+            "value": "Spielfilm"
+          }
+        ]
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "static",
+          "value": "Ein unmoralisches Angebot"
+        }
+      ]
+    }
+  ]
+}

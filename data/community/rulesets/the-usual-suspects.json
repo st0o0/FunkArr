@@ -1,0 +1,35 @@
+{
+  "topic": "Filme in der ARD",
+  "aliases": [
+    "Die üblichen Verdächtigen"
+  ],
+  "media": {
+    "imdbId": "tt0114814",
+    "tmdbId": 629,
+    "name": "The Usual Suspects",
+    "type": "movie"
+  },
+  "confidence": 0.8,
+  "rules": [
+    {
+      "id": "title-match",
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "topic",
+            "op": "contains",
+            "value": "Filme"
+          }
+        ]
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "static",
+          "value": "Die üblichen Verdächtigen"
+        }
+      ]
+    }
+  ]
+}

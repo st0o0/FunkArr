@@ -1,0 +1,35 @@
+{
+  "topic": "Spielfilm",
+  "aliases": [
+    "Thirteen Days"
+  ],
+  "media": {
+    "imdbId": "tt0146309",
+    "tmdbId": 11895,
+    "name": "Thirteen Days",
+    "type": "movie"
+  },
+  "confidence": 0.8,
+  "rules": [
+    {
+      "id": "title-match",
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "topic",
+            "op": "contains",
+            "value": "Spielfilm"
+          }
+        ]
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "static",
+          "value": "Thirteen Days"
+        }
+      ]
+    }
+  ]
+}
