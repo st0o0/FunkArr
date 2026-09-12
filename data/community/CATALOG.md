@@ -1,6 +1,6 @@
 # Community Rulesets Catalog
 
-**70** community rulesets: **60** shows, **10** movies.
+**69** community rulesets: **59** shows, **10** movies.
 
 ## Shows
 
@@ -27,7 +27,6 @@
 | Elefant, Tiger & Co. | - | - | 1 |
 | Extra 3 | [tt0073989](https://www.imdb.com/title/tt0073989/) | - | 1 |
 | falsch, aber anders lustig | - | - | 1 |
-| Fernsehfilme und Serien | - | - | 1 |
 | Feuer & Flamme | [tt7995922](https://www.imdb.com/title/tt7995922/) | - | 1 |
 | Frühling | [tt7887026](https://www.imdb.com/title/tt7887026/) | - | 3 |
 | Heute Show | [tt1441143](https://www.imdb.com/title/tt1441143/) | - | 1 |
