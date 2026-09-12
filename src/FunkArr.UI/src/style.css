@@ -1,29 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface-base: #0f0f11;
-  --color-surface-raised: #18181b;
-  --color-surface-elevated: #27272a;
-  --color-surface-overlay: #3f3f46;
+  --color-surface-base: #13141b;
+  --color-surface-raised: #1b1c25;
+  --color-surface-elevated: #272837;
+  --color-surface-overlay: #343648;
 
-  --color-border-default: rgba(255 255 255 / 0.08);
-  --color-border-subtle: rgba(255 255 255 / 0.04);
-  --color-border-focus: rgba(255 255 255 / 0.24);
+  --color-border-default: rgba(255 255 255 / 0.10);
+  --color-border-subtle: rgba(255 255 255 / 0.06);
+  --color-border-focus: rgba(224 170 80 / 0.40);
 
-  --color-text-primary: #fafafa;
-  --color-text-body: #b4b4bd;
-  --color-text-secondary: #8b8b96;
-  --color-text-muted: #65656f;
+  --color-text-primary: #ededf0;
+  --color-text-body: #b0b2c0;
+  --color-text-secondary: #8688a0;
+  --color-text-muted: #5c5e78;
 
-  --color-accent: #f59e0b;
-  --color-accent-dim: #b45309;
+  --color-accent: #e09830;
+  --color-accent-dim: #9a6820;
 
   --color-slate: #64748b;
 
   --color-status-ok: #4ade80;
-  --color-status-warn: #fbbf24;
-  --color-status-fail: #f87171;
-  --color-status-info: #60a5fa;
+  --color-status-warn: #f0c040;
+  --color-status-fail: #ef6b6b;
+  --color-status-info: #6098e0;
 
   --font-sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, monospace;
@@ -46,12 +46,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255 255 255 / 0.08);
+  background: rgba(255 255 255 / 0.10);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255 255 255 / 0.14);
+  background: rgba(255 255 255 / 0.16);
 }
 
 .skeleton-line {

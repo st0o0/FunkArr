@@ -72,8 +72,7 @@
         v-for="rs in filteredRulesets"
         :key="rs.ruleSetId"
         :to="`/rulesets/${rs.ruleSetId}`"
-        class="block px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:bg-surface-elevated transition-colors border-l-2"
-        :class="resolvedMediaType(rs) === 'movie' ? 'border-l-purple-500/50' : 'border-l-accent/30'"
+        class="block px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:bg-surface-elevated transition-colors"
       >
         <div class="flex items-center justify-between mb-0.5">
           <div class="flex items-baseline gap-2 min-w-0">
@@ -82,10 +81,8 @@
           </div>
           <div class="flex items-center gap-1.5 shrink-0 ml-2">
             <span
-              class="text-[11px] font-medium px-1.5 py-0.5 rounded"
-              :class="resolvedMediaType(rs) === 'movie'
-                ? 'bg-purple-500/10 text-purple-400'
-                : 'bg-surface-elevated text-text-muted'"
+              class="text-[11px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated"
+              :class="resolvedMediaType(rs) === 'movie' ? 'text-text-body' : 'text-text-secondary'"
             >{{ resolvedMediaType(rs) }}</span>
             <span
               class="text-[11px] font-medium px-1.5 py-0.5 rounded"
