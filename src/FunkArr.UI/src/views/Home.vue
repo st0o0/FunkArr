@@ -23,7 +23,7 @@
         <div class="text-xs text-text-secondary mb-1">Storage</div>
         <div class="flex items-baseline gap-1.5">
           <span class="text-lg font-semibold text-text-primary tabular-nums">{{ storage ? formatSize(storageUsed) : '—' }}</span>
-          <span v-if="storage" class="text-xs text-text-muted">/ {{ formatSize(storage.completeDirectory.totalBytes) }}</span>
+          <span v-if="storage" class="text-xs text-text-secondary">/ {{ formatSize(storage.completeDirectory.totalBytes) }}</span>
         </div>
         <div v-if="storage" class="mt-2 h-1 rounded-full bg-surface-elevated overflow-hidden">
           <div
@@ -62,7 +62,7 @@
         <router-link to="/activity/history" class="text-xs text-accent hover:text-accent/80 transition-colors">View all</router-link>
       </div>
       <div v-if="recentItems.length === 0" class="px-4 py-8 text-center">
-        <p class="text-sm text-text-muted">No recent activity</p>
+        <p class="text-sm text-text-secondary">No recent activity</p>
         <p class="text-xs text-text-muted mt-1">Downloads appear when Sonarr or Radarr trigger a search</p>
       </div>
       <div v-else>

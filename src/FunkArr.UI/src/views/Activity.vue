@@ -27,7 +27,7 @@
         <span
           v-if="tab.count > 0"
           class="ml-1 tabular-nums"
-          :class="activeTab === tab.id ? 'text-text-body' : 'text-text-muted'"
+          :class="activeTab === tab.id ? 'text-text-body' : 'text-text-secondary'"
         >{{ tab.count }}</span>
       </button>
     </div>
@@ -176,7 +176,7 @@
                     <button
                       v-if="item.status === 'Failed'"
                       @click="handleRetry(item.downloadId)"
-                      class="px-2 py-1 text-xs text-text-secondary hover:text-text-body transition-colors"
+                      class="px-2 py-1 text-xs text-text-secondary hover:text-text-body border border-border-default rounded transition-colors"
                     >
                       Retry
                     </button>

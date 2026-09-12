@@ -100,7 +100,7 @@
 
     <!-- Test Results Tab -->
     <div v-if="activeTab === 'Test Results'" class="flex-1 overflow-y-auto">
-      <div v-if="!results" class="text-text-muted text-xs">Run a search and test rules to see results.</div>
+      <div v-if="!results" class="text-text-secondary text-xs text-center py-4">Run a search and test rules to see results.</div>
       <div v-else class="space-y-2">
         <div class="flex items-center justify-between mb-1">
           <span class="text-xs text-text-secondary">

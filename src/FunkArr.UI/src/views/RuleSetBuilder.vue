@@ -15,7 +15,7 @@
 
         <!-- Identity Section -->
         <section>
-          <h2 class="text-sm font-semibold mb-1 text-text-secondary">Identity</h2>
+          <h2 class="text-sm font-semibold mb-1 text-text-body">Identity</h2>
           <p class="text-xs text-text-secondary mb-2">The Mediathek topic name and external IDs to match this show.</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4 space-y-3">
             <div>
@@ -87,7 +87,7 @@
 
         <!-- Default Confidence -->
         <section>
-          <h2 class="text-sm font-semibold mb-1 text-text-secondary">Default Confidence</h2>
+          <h2 class="text-sm font-semibold mb-1 text-text-body">Default Confidence</h2>
           <p class="text-xs text-text-secondary mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4">
             <input
@@ -105,13 +105,13 @@
         <section>
           <div class="flex items-center justify-between mb-2">
             <div>
-              <h2 class="text-sm font-semibold text-text-secondary">Matching Rules</h2>
+              <h2 class="text-sm font-semibold text-text-body">Matching Rules</h2>
               <p class="text-xs text-text-secondary mt-0.5">Rules are tried in priority order. First match wins.</p>
             </div>
             <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addRule">+ Add Rule</button>
           </div>
 
-          <div v-if="form.rules.length === 0" class="text-text-muted text-sm">No rules defined.</div>
+          <div v-if="form.rules.length === 0" class="text-text-secondary text-sm">No rules defined.</div>
 
           <div v-else class="space-y-2.5">
             <div
@@ -217,10 +217,10 @@
                   <label class="block text-xs text-text-body mb-1 font-medium">Filters</label>
                   <div v-for="section in (['all', 'any', 'not'] as const)" :key="section" class="space-y-1">
                     <div class="flex items-center justify-between">
-                      <span class="text-sm font-semibold text-text-secondary">{{ section }}</span>
+                      <span class="text-sm font-semibold text-text-body">{{ section }}</span>
                       <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addFilterCondition(rule, section)">+ Add</button>
                     </div>
-                    <div v-if="rule.filters[section].length === 0" class="text-text-muted text-xs pl-2">(no conditions)</div>
+                    <div v-if="rule.filters[section].length === 0" class="text-text-secondary text-xs pl-2">(no conditions)</div>
                     <div v-for="(cond, cIdx) in rule.filters[section]" :key="cIdx" class="flex items-center gap-1.5">
                       <select v-model="cond.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
                         <option value="title">title</option>
@@ -259,7 +259,7 @@
           </button>
           <router-link
             :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
-            class="px-3 py-1.5 bg-surface-elevated text-text-secondary rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
+            class="px-3 py-1.5 bg-surface-elevated text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
           >
             Cancel
           </router-link>

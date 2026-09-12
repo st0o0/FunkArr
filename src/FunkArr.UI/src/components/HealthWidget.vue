@@ -2,7 +2,7 @@
   <div class="bg-surface-raised rounded-lg border border-border-default">
     <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
       <h2 class="text-sm font-medium text-text-primary">System Health</h2>
-      <router-link to="/setup" class="text-xs text-text-secondary hover:text-text-body transition-colors">Setup</router-link>
+      <router-link to="/setup" class="text-xs text-accent hover:text-accent/80 transition-colors">Setup</router-link>
     </div>
 
     <div class="p-4">

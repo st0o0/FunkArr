@@ -5,12 +5,12 @@
         <h2 class="text-sm font-medium text-text-primary">Active Downloads</h2>
         <span v-if="totalSpeed > 0" class="text-xs text-text-secondary tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
       </div>
-      <router-link to="/queue" class="text-xs text-text-secondary hover:text-text-body transition-colors">View All</router-link>
+      <router-link to="/queue" class="text-xs text-accent hover:text-accent/80 transition-colors">View All</router-link>
     </div>
 
     <div class="p-4">
       <div v-if="activeItems.length === 0 && queuedCount === 0" class="py-6 text-center">
-        <p class="text-text-muted text-xs">No active downloads</p>
+        <p class="text-text-secondary text-xs">No active downloads</p>
         <p class="text-text-muted text-xs mt-1">Searches from Sonarr or Radarr will appear here</p>
       </div>
 

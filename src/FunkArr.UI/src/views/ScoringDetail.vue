@@ -12,7 +12,7 @@
     </div>
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
     <div v-else-if="detail">
-      <h1 class="text-lg font-medium text-text-primary mb-2">Scoring Detail</h1>
+      <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-2">Scoring Detail</h1>
       <div class="text-sm text-text-secondary mb-6 flex items-center gap-3">
         <span>Source: {{ detail.source }}</span>
         <span class="text-text-muted">|</span>

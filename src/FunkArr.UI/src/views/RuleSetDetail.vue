@@ -14,13 +14,13 @@
         <div class="flex items-center gap-2">
           <router-link
             :to="`/rulesets/${id}/history`"
-            class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors"
+            class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           >
             Scoring History
           </router-link>
           <router-link
             :to="`/rulesets/${id}/edit`"
-            class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors"
+            class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           >
             Edit
           </router-link>
@@ -28,7 +28,7 @@
       </div>
 
       <section class="mb-4">
-        <h2 class="text-sm font-semibold mb-2 text-text-secondary">Identity</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-body">Identity</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
             <span class="text-text-secondary">RuleSet ID</span>
@@ -48,7 +48,7 @@
       </section>
 
       <section class="mb-4">
-        <h2 class="text-sm font-semibold mb-2 text-text-secondary">Source</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-body">Source</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="flex items-center gap-3">
             <span
@@ -69,7 +69,7 @@
       </section>
 
       <section class="mb-5">
-        <h2 class="text-sm font-semibold mb-2 text-text-secondary">Matching Rules</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-body">Matching Rules</h2>
         <div class="text-sm text-text-secondary mb-2">Default confidence: {{ detail.defaultConfidence }}</div>
 
         <div v-if="detail.rules.length === 0" class="text-text-secondary text-sm">No rules defined.</div>

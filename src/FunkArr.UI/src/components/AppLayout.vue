@@ -49,7 +49,7 @@
               collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5',
               isActive
                 ? 'bg-surface-elevated text-text-primary'
-                : 'text-text-muted hover:bg-surface-elevated/50 hover:text-text-secondary'
+                : 'text-text-secondary hover:bg-surface-elevated/50 hover:text-text-body'
             ]"
             :title="collapsed ? 'Setup' : undefined"
           >
@@ -61,7 +61,7 @@
         </router-link>
         <button
           @click="toggle"
-          class="w-full flex items-center rounded-md text-text-muted hover:text-text-secondary hover:bg-surface-elevated/50 transition-colors"
+          class="w-full flex items-center rounded-md text-text-secondary hover:text-text-body hover:bg-surface-elevated/50 transition-colors"
           :class="collapsed ? 'justify-center py-2' : 'gap-2.5 px-2.5 py-1.5'"
           :title="collapsed ? 'Expand' : 'Collapse'"
         >

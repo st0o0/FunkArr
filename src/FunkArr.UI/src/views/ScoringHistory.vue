@@ -2,7 +2,7 @@
   <div class="max-w-3xl mx-auto">
     <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id, to: `/rulesets/${id}` }, { label: 'History' }]" />
 
-    <h1 class="text-lg font-medium text-text-primary mb-4">Scoring History</h1>
+    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-4">Scoring History</h1>
 
     <SkeletonTable v-if="loading" :rows="5" :columns="6" />
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
@@ -42,14 +42,14 @@
       <div class="flex gap-3 mt-4">
         <button
           v-if="offset > 0"
-          class="px-2.5 py-1 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors"
+          class="px-2.5 py-1 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           @click="navigate(offset - pageSize)"
         >
           Previous
         </button>
         <button
           v-if="history.snapshots.length === pageSize && offset + pageSize < history.totalCount"
-          class="px-2.5 py-1 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors"
+          class="px-2.5 py-1 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           @click="navigate(offset + pageSize)"
         >
           Next

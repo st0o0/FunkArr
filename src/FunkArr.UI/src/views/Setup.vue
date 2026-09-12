@@ -63,7 +63,7 @@
       <div class="flex gap-2">
         <button
           @click="runHealthCheck"
-          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors"
+          class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
         >
           Re-check
         </button>
@@ -97,7 +97,7 @@
       </div>
 
       <div class="flex gap-2">
-        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors">Back</button>
+        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors">Back</button>
         <button
           @click="currentStep++"
           :disabled="selectedServices.length === 0"
@@ -149,7 +149,7 @@
       </div>
 
       <div class="flex gap-2">
-        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-secondary transition-colors">Back</button>
+        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors">Back</button>
         <button
           v-if="isLastStep"
           @click="$router.push('/')"
