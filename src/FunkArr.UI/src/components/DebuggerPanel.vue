@@ -1,80 +1,101 @@
 <template>
   <div class="flex flex-col">
     <!-- Tabs -->
-    <div class="flex gap-1 mb-3">
+    <div class="flex border-b border-border-subtle mb-3">
       <button
         v-for="tab in ['Search', 'Test Results'] as const"
         :key="tab"
-        class="px-2.5 py-1 text-xs rounded-md transition-colors"
+        class="px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px"
         :class="activeTab === tab
-          ? 'bg-surface-elevated text-text-primary'
-          : 'text-text-secondary hover:text-text-body'"
+          ? 'border-accent text-text-primary'
+          : 'border-transparent text-text-secondary hover:text-text-body'"
         @click="activeTab = tab"
       >{{ tab }}</button>
     </div>
 
     <!-- Search Tab -->
-    <div v-if="activeTab === 'Search'" class="flex flex-col flex-1 min-h-0">
-      <div class="space-y-2 mb-3">
-        <input
-          v-model="searchQuery"
-          placeholder="Search Mediathek..."
-          class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
-          @keyup.enter="doSearch"
-        />
-        <div class="flex gap-2">
+    <div v-if="activeTab === 'Search'" class="flex flex-col">
+      <div class="space-y-2">
+        <div class="flex gap-1.5">
+          <div class="relative flex-1">
+            <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>
+            </svg>
+            <input
+              v-model="searchQuery"
+              placeholder="Search Mediathek..."
+              class="w-full bg-surface-elevated border border-border-default rounded-md pl-7 pr-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
+              @keyup.enter="doSearch"
+            />
+          </div>
+          <button
+            class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors shrink-0"
+            :class="searchQuery.trim()
+              ? 'bg-accent text-surface-base hover:bg-accent/90'
+              : 'bg-surface-elevated text-text-muted cursor-not-allowed'"
+            :disabled="!searchQuery.trim() || searchLoading"
+            @click="doSearch"
+          >{{ searchLoading ? '...' : 'Search' }}</button>
+        </div>
+        <div class="flex gap-1.5">
           <input
             v-model="channelFilter"
             placeholder="Channel"
-            class="flex-1 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
+            class="flex-1 bg-surface-elevated border border-border-default rounded-md px-2.5 py-1 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
           />
           <input
             v-model="topicFilter"
             placeholder="Topic"
-            class="flex-1 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
+            class="flex-1 bg-surface-elevated border border-border-default rounded-md px-2.5 py-1 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
           />
         </div>
       </div>
 
-      <div v-if="searchLoading" class="text-xs text-text-secondary">Searching...</div>
-      <div v-else-if="searchError" class="text-status-fail text-xs">{{ searchError }}</div>
+      <div v-if="searchError" class="text-status-fail text-xs mt-3">{{ searchError }}</div>
 
-      <div v-if="searchResults.length > 0" class="flex flex-col flex-1 min-h-0">
+      <div v-if="searchResults.length > 0" class="mt-3">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-text-secondary">{{ searchResults.length }} results - {{ selectedCount }} selected</span>
-          <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="toggleSelectAll">
+          <span class="text-xs text-text-body">{{ searchResults.length }} results · {{ selectedCount }} selected</span>
+          <button class="text-xs text-accent hover:text-accent/80 transition-colors" @click="toggleSelectAll">
             {{ allSelected ? 'Deselect All' : 'Select All' }}
           </button>
         </div>
 
-        <div class="max-h-[50vh] overflow-y-auto space-y-0.5 mb-3">
+        <div class="max-h-[45vh] overflow-y-auto space-y-0.5 mb-3">
           <label
             v-for="(item, idx) in searchResults"
             :key="idx"
             class="flex items-start gap-2 p-2 rounded-md hover:bg-surface-elevated/50 cursor-pointer text-xs"
           >
-            <input type="checkbox" v-model="selected[idx]" class="mt-0.5" />
+            <input type="checkbox" v-model="selected[idx]" class="mt-0.5 accent-accent" />
             <div class="min-w-0 flex-1">
-              <div class="text-text-body truncate">{{ item.title }}</div>
+              <div class="text-text-primary truncate font-medium">{{ item.title }}</div>
               <div class="text-text-secondary">
-                {{ item.channel }} &middot; {{ item.topic }} &middot;
+                {{ item.channel }} · {{ item.topic }} ·
                 {{ Math.floor(item.duration / 60) }}min
-                <span v-if="item.quality > 0"> &middot; {{ item.quality }}p</span>
+                <span v-if="item.quality > 0"> · {{ item.quality }}p</span>
               </div>
             </div>
           </label>
         </div>
 
         <button
-          class="w-full px-3 py-1.5 rounded-md text-sm transition-colors border border-border-default"
+          class="w-full px-3 py-1.5 rounded-md text-sm transition-colors"
           :class="canTest
-            ? 'bg-accent text-black font-medium hover:bg-accent-dim'
-            : 'bg-surface-elevated text-text-muted cursor-not-allowed'"
+            ? 'bg-accent text-surface-base font-medium hover:bg-accent/90'
+            : 'bg-surface-elevated text-text-muted cursor-not-allowed border border-border-default'"
           :disabled="!canTest || testing"
           @click="runTest"
         >{{ testing ? 'Testing...' : `Test Rules (${selectedCount})` }}</button>
       </div>
-      <div v-else-if="hasSearched && !searchLoading" class="text-text-muted text-xs">No results found</div>
+
+      <div v-else-if="hasSearched && !searchLoading" class="mt-3 text-center py-4">
+        <p class="text-text-secondary text-xs">No results found</p>
+      </div>
+
+      <div v-else-if="!hasSearched && !searchLoading" class="mt-3 text-center py-4">
+        <p class="text-text-muted text-xs">Search the Mediathek to find test candidates</p>
+      </div>
     </div>
 
     <!-- Test Results Tab -->
