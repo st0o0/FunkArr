@@ -29,10 +29,30 @@ jobs:
         env:
           JSON: ${{ needs.release-please.outputs.json }}
         run: |
-          echo "app=$(echo "$JSON" | jq -r '.".--release_created" // "false"')" >> "$GITHUB_OUTPUT"
-          echo "app-version=$(echo "$JSON" | jq -r '.".--version" // ""')" >> "$GITHUB_OUTPUT"
-          echo "rulesets=$(echo "$JSON" | jq -r '."data/community--release_created" // "false"')" >> "$GITHUB_OUTPUT"
-          echo "rulesets-tag=$(echo "$JSON" | jq -r '."data/community--tag_name" // ""')" >> "$GITHUB_OUTPUT"
+          released_paths=$(echo "$JSON" | jq -r '.paths_released // "[]"' | jq -r '.[]')
+
+          app=false
+          app_version=""
+          rulesets=false
+          rulesets_tag=""
+
+          for p in $released_paths; do
+            case "$p" in
+              ".")
+                app=true
+                app_version=$(echo "$JSON" | jq -r '.[".--version"] // .version // ""')
+                ;;
+              "data/community")
+                rulesets=true
+                rulesets_tag=$(echo "$JSON" | jq -r '.["data/community--tag_name"] // .tag_name // ""')
+                ;;
+            esac
+          done
+
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "app-version=$app_version" >> "$GITHUB_OUTPUT"
+          echo "rulesets=$rulesets" >> "$GITHUB_OUTPUT"
+          echo "rulesets-tag=$rulesets_tag" >> "$GITHUB_OUTPUT"
 
   docker:
     needs: releases
