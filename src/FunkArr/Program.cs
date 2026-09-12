@@ -16,6 +16,10 @@ try
     var runner = AppBuilder.Create(builder, b => b.Build())
         .WithSetup<LoggingSetupContainer>()
         .WithSetup<ServiceSetupContainer>()
+        .WithSetup<DownloadSetupContainer>()
+        .WithSetup<MetadataSetupContainer>()
+        .WithSetup<MediathekSetupContainer>()
+        .WithSetup<RuleSetSetupContainer>()
         .WithSetup<AkkaSetupContainer>()
         .WithSetup<ApplicationSetupContainer>()
         .Build();

@@ -1,6 +1,4 @@
 using FunkArr.Api;
-using FunkArr.ArrApi.Newznab;
-using FunkArr.ArrApi.Sabnzbd;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
@@ -13,9 +11,18 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
     protected override void SetupApplication(WebApplication app)
     {
         app.MapOpenApi();
-        app.MapScalarApiReference();
+        app.MapScalarApiReference(options =>
+        {
+            options.Title = "FunkArr API";
+            options.ForceThemeMode = ThemeMode.Dark;
+            options.TagSorter = TagSorter.Alpha;
+            options.DefaultOpenAllTags = true;
+            options.HideModels = true;
+            options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        });
 
         app.UseStaticFiles();
+        app.UseOutputCache();
 
         app.MapHealthChecks("/healthz", new HealthCheckOptions
         {
@@ -26,16 +33,11 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
                 [HealthStatus.Unhealthy] = 503,
             },
         });
-        app.MapGet("/alive", () => Results.Ok("Alive"));
+        app.MapGet("/alive", () => Results.Ok("Alive"))
+            .WithTags("Health")
+            .WithSummary("Liveness probe");
 
-        app.MapRuleSetApi();
-        app.MapRuleSetWriteApi();
-        app.MapRuleSetTestApi();
-        app.MapMediathekApi();
-        app.MapSetupApi();
-        app.MapQueueApi();
-        app.MapIndexerApi();
-        app.MapDownloadApi();
+        app.MapSystemApi();
 
         app.MapFallbackToFile("index.html");
     }
