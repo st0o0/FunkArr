@@ -10,15 +10,59 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  release-please:
+    uses: st0o0/github-workflows/.github/workflows/release-please.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
+
+  releases:
+    needs: release-please
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.map.outputs.app }}
+      app-version: ${{ steps.map.outputs.app-version }}
+      rulesets: ${{ steps.map.outputs.rulesets }}
+      rulesets-tag: ${{ steps.map.outputs.rulesets-tag }}
+    steps:
+      - id: map
+        env:
+          JSON: ${{ needs.release-please.outputs.json }}
+        run: |
+          echo "app=$(echo "$JSON" | jq -r '.".--release_created" // "false"')" >> "$GITHUB_OUTPUT"
+          echo "app-version=$(echo "$JSON" | jq -r '.".--version" // ""')" >> "$GITHUB_OUTPUT"
+          echo "rulesets=$(echo "$JSON" | jq -r '."data/community--release_created" // "false"')" >> "$GITHUB_OUTPUT"
+          echo "rulesets-tag=$(echo "$JSON" | jq -r '."data/community--tag_name" // ""')" >> "$GITHUB_OUTPUT"
+
+  docker:
+    needs: releases
+    if: needs.releases.outputs.app == 'true'
     uses: st0o0/github-workflows/.github/workflows/dotnet-release-docker.yml@main
     with:
+      version: ${{ needs.releases.outputs.app-version }}
       image-name: ghcr.io/st0o0/funkarr
       image-description: "German public broadcaster media libraries for the *arr ecosystem"
       solution-file: FunkArr.slnx
       publish-project: FunkArr/FunkArr.csproj
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
       packages: write
       id-token: write
+
+  rulesets:
+    needs: releases
+    if: needs.releases.outputs.rulesets == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Package rulesets
+        run: |
+          cd data/community
+          zip -r ../../rulesets.zip rulesets/ ruleset.schema.json
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.releases.outputs.rulesets-tag }}
+        run: gh release upload "$TAG" rulesets.zip --clobber
