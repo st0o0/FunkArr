@@ -4,7 +4,7 @@
   "title": "FunkArr Ruleset",
   "description": "Schema for FunkArr community and local ruleset files",
   "type": "object",
-  "required": ["topic", "rules"],
+  "required": ["topic", "media", "rules"],
   "additionalProperties": false,
   "properties": {
     "topic": {
@@ -43,7 +43,7 @@
   "$defs": {
     "mediaReference": {
       "type": "object",
-      "required": ["name"],
+      "required": ["name", "type"],
       "additionalProperties": false,
       "properties": {
         "tvdbId": { "type": "integer" },

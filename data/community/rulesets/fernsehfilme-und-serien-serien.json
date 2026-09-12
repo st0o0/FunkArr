@@ -1,6 +1,10 @@
 {
   "topic": "Fernsehfilme und Serien - Serien",
   "aliases": [],
+  "media": {
+    "name": "Fernsehfilme und Serien",
+    "type": "show"
+  },
   "confidence": 1,
   "rules": [
     {

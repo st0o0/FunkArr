@@ -1,6 +1,10 @@
 {
   "topic": "Unser Sandmännchen",
   "aliases": [],
+  "media": {
+    "name": "Unser Sandmännchen",
+    "type": "show"
+  },
   "confidence": 1,
   "rules": [
     {
