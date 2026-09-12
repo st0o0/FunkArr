@@ -7,4 +7,5 @@ public sealed record RegisterRuleSet(
     int? TvdbId = null,
     string? ImdbId = null,
     int? TmdbId = null,
-    string? MediaName = null);
+    string? MediaName = null,
+    string? MediaType = null);

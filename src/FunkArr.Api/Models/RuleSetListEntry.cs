@@ -8,6 +8,7 @@ public sealed record RuleSetListEntry(
     string? ImdbId,
     int? TmdbId,
     string? MediaName,
+    string? MediaType,
     int RuleCount,
     string SourceType,
     string? LastScoringRun,

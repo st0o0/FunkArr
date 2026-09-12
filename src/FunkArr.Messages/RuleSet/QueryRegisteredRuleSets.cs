@@ -9,6 +9,7 @@ public sealed record RegisteredRuleSetEntry(
     int? TvdbId,
     string? ImdbId,
     int? TmdbId,
-    string? MediaName);
+    string? MediaName,
+    string? MediaType);
 
 public sealed record RegisteredRuleSetsResult(RegisteredRuleSetEntry[] Entries) : IRuleSetResponse;

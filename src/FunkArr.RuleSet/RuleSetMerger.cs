@@ -48,7 +48,7 @@ public static class RuleSetMerger
         return new MatchingConfig(ruleSetId, confidence, rules);
     }
 
-    public static (string Topic, string[] Aliases, int? TvdbId, string? ImdbId, int? TmdbId, string? MediaName)? ExtractIdentity(
+    public static (string Topic, string[] Aliases, int? TvdbId, string? ImdbId, int? TmdbId, string? MediaName, string? MediaType)? ExtractIdentity(
         string? communityJson, string? localJson)
     {
         var community = communityJson is not null
@@ -66,7 +66,7 @@ public static class RuleSetMerger
 
         var aliases = resolved.Aliases?.ToArray() ?? [];
         var media = resolved.Media;
-        return (resolved.Topic, aliases, media?.TvdbId, media?.ImdbId, media?.TmdbId, media?.Name);
+        return (resolved.Topic, aliases, media?.TvdbId, media?.ImdbId, media?.TmdbId, media?.Name, media?.Type);
     }
 
     private static RawRuleSet? Resolve(RawRuleSet? community, RawRuleSet? local)
@@ -402,6 +402,7 @@ public static class RuleSetMerger
         public string? ImdbId { get; set; }
         public int? TmdbId { get; set; }
         public string? Name { get; set; }
+        public string? Type { get; set; }
     }
 
     private sealed class RawRule
