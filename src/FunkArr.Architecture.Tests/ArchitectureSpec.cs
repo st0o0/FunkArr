@@ -1,5 +1,4 @@
 using ArchUnitNET.Domain;
-using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnitV3;
 using Xunit;
@@ -36,8 +35,8 @@ public sealed class ArchitectureSpec
                 _arrApiAssembly)
             .Build();
 
-    private static IObjectProvider<IType> InAssembly(Assembly assembly) =>
-        Types().That().ResideInAssembly(assembly);
+    private static IObjectProvider<IType> InAssembly(Assembly assembly)
+        => Types().That().ResideInAssembly(assembly);
 
     private static readonly IObjectProvider<IType> _messagesLayer = InAssembly(_messagesAssembly);
     private static readonly IObjectProvider<IType> _persistenceLayer = InAssembly(_persistenceAssembly);
