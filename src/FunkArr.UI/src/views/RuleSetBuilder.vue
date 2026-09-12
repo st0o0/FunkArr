@@ -8,9 +8,9 @@
     </div>
     <div v-else-if="loadError" class="text-status-fail text-sm">{{ loadError }}</div>
 
-    <div v-else class="grid grid-cols-[1fr_380px] gap-6">
+    <div v-else class="grid grid-cols-[1fr_340px] gap-6">
       <!-- Left pane: Builder form -->
-      <div class="space-y-5">
+      <div class="space-y-4">
         <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ isEditMode ? 'Edit RuleSet' : 'New RuleSet' }}</h1>
 
         <!-- Identity Section -->
@@ -268,8 +268,10 @@
       </div>
 
       <!-- Right pane: Debugger -->
-      <div class="overflow-y-auto">
-        <DebuggerPanel :builder-state="debuggerState" />
+      <div class="sticky top-5 self-start">
+        <div class="bg-surface-raised rounded-lg border border-border-default p-3 max-h-[calc(100vh-60px)] overflow-y-auto">
+          <DebuggerPanel :builder-state="debuggerState" />
+        </div>
       </div>
     </div>
   </div>

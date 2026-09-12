@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col">
     <!-- Tabs -->
     <div class="flex gap-1 mb-3">
       <button
