@@ -20,7 +20,7 @@ public sealed class DownloadApiEndpointTests
             Speed: 1.0,
             Category: "tv");
 
-        var result = QueueApiEndpoints.ToQueueItem(item);
+        var result = DownloadsApiEndpoints.ToQueueItem(item);
 
         Assert.Equal("Processing", result.Status);
         Assert.Equal("ARD", result.Channel);
@@ -47,7 +47,7 @@ public sealed class DownloadApiEndpointTests
             Speed: 0,
             Category: "tv");
 
-        var result = QueueApiEndpoints.ToQueueItem(item);
+        var result = DownloadsApiEndpoints.ToQueueItem(item);
 
         Assert.Equal("Queued", result.Status);
         Assert.Equal("ZDF", result.Channel);
@@ -73,7 +73,7 @@ public sealed class DownloadApiEndpointTests
             Speed: 1.0,
             Category: "tv");
 
-        var result = QueueApiEndpoints.ToQueueItem(item);
+        var result = DownloadsApiEndpoints.ToQueueItem(item);
 
         Assert.True(result.Percentage <= 100);
     }
@@ -92,7 +92,7 @@ public sealed class DownloadApiEndpointTests
             FailMessage: "",
             CompletedAt: 1725300000);
 
-        var result = QueueApiEndpoints.ToHistoryItem(item);
+        var result = DownloadsApiEndpoints.ToHistoryItem(item);
 
         Assert.Equal("Completed", result.Status);
         Assert.Equal("/downloads/tagesschau.mkv", result.RelativePath);
@@ -113,7 +113,7 @@ public sealed class DownloadApiEndpointTests
             FailMessage: "FFmpeg exited with code 1",
             CompletedAt: 1725300000);
 
-        var result = QueueApiEndpoints.ToHistoryItem(item);
+        var result = DownloadsApiEndpoints.ToHistoryItem(item);
 
         Assert.Equal("Failed", result.Status);
         Assert.Null(result.RelativePath);
@@ -125,7 +125,7 @@ public sealed class DownloadApiEndpointTests
     {
         var queueResult = new QueueResult([], 5, 0);
 
-        var response = QueueApiEndpoints.ToQueueResponse(queueResult);
+        var response = DownloadsApiEndpoints.ToQueueResponse(queueResult);
 
         Assert.Empty(response.Items);
         Assert.Equal(5, response.TotalSlots);
@@ -144,7 +144,7 @@ public sealed class DownloadApiEndpointTests
         };
         var queueResult = new QueueResult(items, 3, 3);
 
-        var response = QueueApiEndpoints.ToQueueResponse(queueResult);
+        var response = DownloadsApiEndpoints.ToQueueResponse(queueResult);
 
         Assert.Equal(2, response.ActiveCount);
         Assert.Equal(1, response.QueuedCount);
@@ -164,7 +164,7 @@ public sealed class DownloadApiEndpointTests
             FailMessage: "",
             CompletedAt: 1725300000);
 
-        var result = QueueApiEndpoints.ToHistoryItem(item);
+        var result = DownloadsApiEndpoints.ToHistoryItem(item);
 
         Assert.Contains("T", result.CompletedAt);
         Assert.True(DateTimeOffset.TryParse(result.CompletedAt, out _));

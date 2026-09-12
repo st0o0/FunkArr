@@ -9,15 +9,15 @@ using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
 
-public static class QueueApiEndpoints
+public static class DownloadsApiEndpoints
 {
     private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _sseInterval = TimeSpan.FromSeconds(3);
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
 
-    public static WebApplication MapQueueApi(this WebApplication app)
+    public static WebApplication MapDownloadsApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/downloads");
+        var group = app.MapGroup("/api/downloads").WithTags("Downloads");
 
         group.MapGet("/queue", async (IActorRegistry registry) =>
         {
@@ -32,6 +32,7 @@ public static class QueueApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .WithSummary("Get download queue")
         .Produces<ApiModels.DownloadQueueResponse>()
         .ProducesProblem(504);
 
@@ -73,7 +74,9 @@ public static class QueueApiEndpoints
                     break;
                 }
             }
-        });
+        })
+        .WithSummary("Stream download queue (SSE)")
+        .ExcludeFromDescription();
 
         group.MapGet("/history", async (int? start, int? limit, string? category, IActorRegistry registry) =>
         {
@@ -89,6 +92,7 @@ public static class QueueApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .WithSummary("Get download history")
         .Produces<ApiModels.DownloadHistoryResponse>()
         .ProducesProblem(504);
 
@@ -107,6 +111,7 @@ public static class QueueApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .WithSummary("Get download statistics")
         .Produces<ApiModels.HistoryStatsResponse>()
         .ProducesProblem(504);
 
@@ -123,6 +128,7 @@ public static class QueueApiEndpoints
                 return GatewayTimeout();
             }
         })
+        .WithSummary("List download categories")
         .Produces<string[]>()
         .ProducesProblem(504);
 
@@ -140,7 +146,8 @@ public static class QueueApiEndpoints
             {
                 return GatewayTimeout();
             }
-        });
+        })
+        .WithSummary("Cancel download");
 
         group.MapDelete("/history/{id:guid}", async (Guid id, IActorRegistry registry) =>
         {
@@ -156,7 +163,8 @@ public static class QueueApiEndpoints
             {
                 return GatewayTimeout();
             }
-        });
+        })
+        .WithSummary("Delete history entry");
 
         group.MapPost("/{id:guid}/retry", async (Guid id, IActorRegistry registry) =>
         {
@@ -174,7 +182,8 @@ public static class QueueApiEndpoints
             {
                 return GatewayTimeout();
             }
-        });
+        })
+        .WithSummary("Retry failed download");
 
         return app;
     }

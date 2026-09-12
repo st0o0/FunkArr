@@ -19,7 +19,7 @@ export interface SetupHealthCheck {
 }
 
 export async function getSetupHealth(): Promise<SetupHealthCheck> {
-  const res = await fetch('/api/health/setup')
+  const res = await fetch('/api/system/setup')
   if (!res.ok) {
     throw new Error(`${res.status} ${res.statusText}`)
   }
@@ -52,9 +52,9 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 export function getStorageStatus(): Promise<StorageStatusResponse> {
-  return fetchJson('/api/health/storage')
+  return fetchJson('/api/system/storage')
 }
 
 export function getCacheStats(): Promise<CacheStatsResponse> {
-  return fetchJson('/api/health/cache')
+  return fetchJson('/api/system/cache')
 }

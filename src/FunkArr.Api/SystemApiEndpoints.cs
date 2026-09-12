@@ -10,15 +10,15 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.Api;
 
-public static class SetupApiEndpoints
+public static class SystemApiEndpoints
 {
     private const string _defaultApiKey = "funkarr-default-api-key";
     private static readonly TimeSpan _httpTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
 
-    public static WebApplication MapSetupApi(this WebApplication app)
+    public static WebApplication MapSystemApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/health");
+        var group = app.MapGroup("/api/system").WithTags("System");
 
         group.MapGet("/setup", async (
             IOptionsMonitor<FunkArrOptions> options,
@@ -60,7 +60,8 @@ public static class SetupApiEndpoints
                 DefaultPort: port);
 
             return Results.Ok(new SetupHealthCheck(checks, connectionInfo));
-        });
+        })
+        .WithSummary("Run setup checks");
 
         group.MapGet("/storage", (DataPaths dataPaths) =>
         {
@@ -68,6 +69,7 @@ public static class SetupApiEndpoints
             var incomplete = GetStorageDirectory(dataPaths.Incomplete);
             return Results.Ok(new StorageStatusResponse(complete, incomplete));
         })
+        .WithSummary("Get storage status")
         .Produces<StorageStatusResponse>();
 
         group.MapGet("/cache", async (IActorRegistry registry) =>
@@ -86,6 +88,7 @@ public static class SetupApiEndpoints
                 return Results.Problem(statusCode: 504, title: "Gateway Timeout");
             }
         })
+        .WithSummary("Get metadata cache stats")
         .Produces<CacheStatsResponse>()
         .ProducesProblem(504);
 

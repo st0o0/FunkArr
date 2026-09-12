@@ -11,7 +11,7 @@ public sealed class SetupHealthCheckTests
     {
         var options = new FunkArrOptions { ApiKey = "my-secret-key" };
 
-        var result = SetupApiEndpoints.CheckApiKey(options);
+        var result = SystemApiEndpoints.CheckApiKey(options);
 
         Assert.Equal("ok", result.Status);
         Assert.Equal("my-secret-key", result.Value);
@@ -23,7 +23,7 @@ public sealed class SetupHealthCheckTests
     {
         var options = new FunkArrOptions();
 
-        var result = SetupApiEndpoints.CheckApiKey(options);
+        var result = SystemApiEndpoints.CheckApiKey(options);
 
         Assert.Equal("warn", result.Status);
         Assert.Contains("default", result.Message);
@@ -35,7 +35,7 @@ public sealed class SetupHealthCheckTests
     {
         var options = new FunkArrOptions { ApiKey = "abcdef" };
 
-        var result = SetupApiEndpoints.CheckApiKey(options);
+        var result = SystemApiEndpoints.CheckApiKey(options);
 
         Assert.Equal("***def", result.Masked);
     }
@@ -45,7 +45,7 @@ public sealed class SetupHealthCheckTests
     {
         var options = new FunkArrOptions { ApiKey = "ab" };
 
-        var result = SetupApiEndpoints.CheckApiKey(options);
+        var result = SystemApiEndpoints.CheckApiKey(options);
 
         Assert.Equal("ab", result.Masked);
     }
@@ -59,7 +59,7 @@ public sealed class SetupHealthCheckTests
 
         try
         {
-            var result = SetupApiEndpoints.CheckDirectory(tempDir, dataFiles);
+            var result = SystemApiEndpoints.CheckDirectory(tempDir, dataFiles);
 
             Assert.Equal("ok", result.Status);
             Assert.Equal(Path.GetFullPath(tempDir), result.Path);
@@ -75,7 +75,7 @@ public sealed class SetupHealthCheckTests
     {
         var dataFiles = new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance);
 
-        var result = SetupApiEndpoints.CheckDirectory("/nonexistent/path/that/does/not/exist", dataFiles);
+        var result = SystemApiEndpoints.CheckDirectory("/nonexistent/path/that/does/not/exist", dataFiles);
 
         Assert.Equal("fail", result.Status);
     }
@@ -83,7 +83,7 @@ public sealed class SetupHealthCheckTests
     [Fact]
     public async Task Ffmpeg_check_returns_result()
     {
-        var result = await SetupApiEndpoints.CheckFfmpeg();
+        var result = await SystemApiEndpoints.CheckFfmpeg();
 
         Assert.True(result.Status is "ok" or "warn");
     }
@@ -96,7 +96,7 @@ public sealed class SetupHealthCheckTests
 
         try
         {
-            var result = SetupApiEndpoints.GetStorageDirectory(tempDir);
+            var result = SystemApiEndpoints.GetStorageDirectory(tempDir);
 
             Assert.Equal(Path.GetFullPath(tempDir), result.Path);
             Assert.True(result.TotalBytes > 0);
@@ -111,7 +111,7 @@ public sealed class SetupHealthCheckTests
     [Fact]
     public void Storage_directory_returns_result_for_any_path()
     {
-        var result = SetupApiEndpoints.GetStorageDirectory("/nonexistent/path/that/does/not/exist");
+        var result = SystemApiEndpoints.GetStorageDirectory("/nonexistent/path/that/does/not/exist");
 
         Assert.NotNull(result.Path);
     }

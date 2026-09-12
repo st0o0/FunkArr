@@ -13,7 +13,7 @@ public static class MediathekApiEndpoints
 
     public static WebApplication MapMediathekApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/mediathek");
+        var group = app.MapGroup("/api/mediathek").WithTags("Mediathek");
 
         group.MapGet("/search", async (
             string? q,
@@ -81,6 +81,8 @@ public static class MediathekApiEndpoints
                 return Results.Problem(statusCode: 504, title: "Gateway Timeout");
             }
         })
+        .WithSummary("Search Mediathek")
+        .WithDescription("Searches MediathekViewWeb for media items by title, channel, or topic.")
         .Produces<MediathekSearchResponse>()
         .ProducesProblem(400)
         .ProducesProblem(502)
