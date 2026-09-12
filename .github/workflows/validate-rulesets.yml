@@ -4,10 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'data/**'
+      - 'data/community/rulesets/**'
+      - 'data/community/ruleset.schema.json'
   pull_request:
     paths:
-      - 'data/**'
+      - 'data/community/rulesets/**'
+      - 'data/community/ruleset.schema.json'
 
 permissions:
   contents: read
