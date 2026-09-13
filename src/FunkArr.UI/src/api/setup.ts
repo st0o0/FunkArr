@@ -43,6 +43,11 @@ export interface CacheStatsResponse {
   oldestEntry: string | null
 }
 
+export interface VersionResponse {
+  appVersion: string
+  communityRulesetVersion: string | null
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
   if (!res.ok) {
@@ -57,4 +62,8 @@ export function getStorageStatus(): Promise<StorageStatusResponse> {
 
 export function getCacheStats(): Promise<CacheStatsResponse> {
   return fetchJson('/api/system/cache')
+}
+
+export function getSystemVersion(): Promise<VersionResponse> {
+  return fetchJson('/api/system/version')
 }

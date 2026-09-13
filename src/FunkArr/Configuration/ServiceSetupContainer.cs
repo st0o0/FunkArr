@@ -43,6 +43,8 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
         {
             options.AddPolicy("RuleSetList", builder =>
                 builder.Expire(TimeSpan.FromSeconds(30)).Tag("rulesets"));
+            options.AddPolicy("SystemVersion", builder =>
+                builder.Expire(TimeSpan.FromSeconds(60)));
         });
 
         services.AddHealthChecks();

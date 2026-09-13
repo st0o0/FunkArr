@@ -74,6 +74,9 @@
           </svg>
           <span v-if="!collapsed" class="text-xs">Collapse</span>
         </button>
+        <div v-if="!collapsed && rulesetVersion" class="px-2.5 pb-1 pt-0.5">
+          <span class="text-[11px] text-text-muted">Rulesets v{{ rulesetVersion }}</span>
+        </div>
       </div>
     </aside>
 
@@ -88,14 +91,21 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { getSystemVersion } from '../api/setup'
 
 const route = useRoute()
 
 const collapsed = ref(false)
+const rulesetVersion = ref<string | null>(null)
 
-onMounted(() => {
+onMounted(async () => {
   const stored = localStorage.getItem('funkarr-sidebar')
   if (stored === 'collapsed') collapsed.value = true
+
+  try {
+    const version = await getSystemVersion()
+    rulesetVersion.value = version.communityRulesetVersion
+  } catch { /* version display is best-effort */ }
 })
 
 function toggle() {

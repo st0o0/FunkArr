@@ -25,7 +25,7 @@ public static partial class RuleSetApiEndpoints
     {
         var group = app.MapGroup("/api/rulesets").WithTags("Rulesets");
 
-        group.MapGet("/", async (IActorRegistry registry) =>
+        group.MapGet("/", async (IActorRegistry registry, IDataFiles dataFiles, DataPaths dataPaths) =>
         {
             try
             {
@@ -73,7 +73,11 @@ public static partial class RuleSetApiEndpoints
                         stat.MatchRate);
                 }).ToArray();
 
-                return Results.Ok(result);
+                var communityVersion = dataFiles.Exists(dataPaths.RuleSetVersion)
+                    ? dataFiles.ReadText(dataPaths.RuleSetVersion).Trim()
+                    : null;
+
+                return Results.Ok(new ApiModels.RuleSetListResponse(communityVersion, result));
             }
             catch (Exception)
             {
@@ -82,8 +86,8 @@ public static partial class RuleSetApiEndpoints
         })
         .CacheOutput("RuleSetList")
         .WithSummary("List all rulesets")
-        .WithDescription("Returns all registered rulesets with rule counts, source type, and scoring stats.")
-        .Produces<ApiModels.RuleSetListEntry[]>()
+        .WithDescription("Returns all registered rulesets with community version and rule counts, source type, and scoring stats.")
+        .Produces<ApiModels.RuleSetListResponse>()
         .ProducesProblem(504);
 
         group.MapGet("/{id}", async (string id, IActorRegistry registry) =>

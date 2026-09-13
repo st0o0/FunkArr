@@ -207,7 +207,12 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json()
 }
 
-export function listRuleSets(): Promise<RuleSetEntry[]> {
+export interface RuleSetListResponse {
+  communityVersion: string | null
+  rulesets: RuleSetEntry[]
+}
+
+export function listRuleSets(): Promise<RuleSetListResponse> {
   return fetchJson('/api/rulesets')
 }
 

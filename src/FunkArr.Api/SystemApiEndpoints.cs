@@ -63,6 +63,17 @@ public static class SystemApiEndpoints
         })
         .WithSummary("Run setup checks");
 
+        group.MapGet("/version", (DataPaths dataPaths, IDataFiles dataFiles) =>
+        {
+            var appVersion = typeof(SystemApiEndpoints).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+            var communityVersion = dataFiles.Exists(dataPaths.RuleSetVersion)
+                ? dataFiles.ReadText(dataPaths.RuleSetVersion).Trim()
+                : null;
+            return Results.Ok(new VersionResponse(appVersion, communityVersion));
+        })
+        .WithSummary("Get application and ruleset version")
+        .Produces<VersionResponse>();
+
         group.MapGet("/storage", (DataPaths dataPaths) =>
         {
             var complete = GetStorageDirectory(dataPaths.Complete);

@@ -1,6 +1,9 @@
 <template>
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-4">RuleSets</h1>
+    <div class="flex items-baseline gap-2 mb-4">
+      <h1 class="text-xl font-semibold text-text-primary tracking-tight">RuleSets</h1>
+      <span v-if="communityVersion" class="text-xs text-text-secondary">v{{ communityVersion }}</span>
+    </div>
 
     <div class="bg-surface-raised rounded-lg border border-border-default p-3 mb-4 space-y-3">
       <div class="flex items-center gap-2">
@@ -148,6 +151,7 @@ import EmptyState from '../components/EmptyState.vue'
 import { formatRelativeDate, formatPercent } from '../utils/format'
 
 const rulesets = ref<RuleSetEntry[]>([])
+const communityVersion = ref<string | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const search = ref('')
@@ -221,7 +225,9 @@ const filteredRulesets = computed(() => {
 
 onMounted(async () => {
   try {
-    rulesets.value = await listRuleSets()
+    const response = await listRuleSets()
+    rulesets.value = response.rulesets
+    communityVersion.value = response.communityVersion
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load rulesets'
   } finally {
