@@ -74,8 +74,13 @@
           </svg>
           <span v-if="!collapsed" class="text-xs">Collapse</span>
         </button>
-        <div v-if="!collapsed && rulesetVersion" class="px-2.5 pb-1 pt-0.5">
-          <span class="text-[11px] text-text-muted">Rulesets v{{ rulesetVersion }}</span>
+        <div v-if="!collapsed && (appVersion || rulesetVersion)" class="grid grid-cols-[auto_1fr] gap-x-1.5 px-2.5 pb-1 pt-0.5 text-[11px] text-text-muted tabular-nums">
+          <template v-if="appVersion">
+            <span>App</span><span>v{{ appVersion }}</span>
+          </template>
+          <template v-if="rulesetVersion">
+            <span>Rulesets</span><span>v{{ rulesetVersion }}</span>
+          </template>
         </div>
       </div>
     </aside>
@@ -96,6 +101,7 @@ import { getSystemVersion } from '../api/setup'
 const route = useRoute()
 
 const collapsed = ref(false)
+const appVersion = ref<string | null>(null)
 const rulesetVersion = ref<string | null>(null)
 
 onMounted(async () => {
@@ -104,6 +110,7 @@ onMounted(async () => {
 
   try {
     const version = await getSystemVersion()
+    appVersion.value = version.appVersion
     rulesetVersion.value = version.communityRulesetVersion
   } catch { /* version display is best-effort */ }
 })
