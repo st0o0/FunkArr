@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.3](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.2...funkarr-v0.1.3) (2026-09-13)
+
+
+### Features
+
+* migrate to modular workflows and pnpm ([72aaa1f](https://github.com/st0o0/FunkArr/commit/72aaa1fdd3658f65b5a348a29986a4b759ef36f7))
+* migrate to multi-stage Dockerfile ([dc5e04e](https://github.com/st0o0/FunkArr/commit/dc5e04e6e7a9323a2460b571e7aba01226ea33ec))
+
+
+### Bug Fixes
+
+* update compose to use unified Dockerfile ([6ba4328](https://github.com/st0o0/FunkArr/commit/6ba4328838acbb55a66f4572d110396c53bba810))
+* update pnpm lockfile ([f7b6fd8](https://github.com/st0o0/FunkArr/commit/f7b6fd8fd027c1bfc39d48031b4ac3ea7f2a5287))
+
+
+### Refactoring
+
+* rename ui job to frontend ([3cbd01c](https://github.com/st0o0/FunkArr/commit/3cbd01c389bdcf25481fcc45e032573055460247))
+* use renamed frontend-ci workflow ([fbc4a7b](https://github.com/st0o0/FunkArr/commit/fbc4a7b8af45b298df79a47caf451f7c86a60ece))
+
 ## [0.1.2](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.1...funkarr-v0.1.2) (2026-09-13)
 
 
