@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.2.0...rulesets-v0.3.0) (2026-09-13)
+
+
+### New Rulesets
+
+* bundle ruleset version in Docker image to skip redundant update on startup ([83c40b4](https://github.com/st0o0/FunkArr/commit/83c40b402e6b7413ec5862bd0dda1752bb992c03))
+
 ## [0.2.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.1.0...rulesets-v0.2.0) (2026-09-12)
 
 
