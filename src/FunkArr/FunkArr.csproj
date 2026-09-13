@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\FunkArr.UI\dist\**" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot" />
+    <Content Include="..\FunkArr.UI\dist\**" Condition="Exists('..\FunkArr.UI\dist\index.html')" CopyToOutputDirectory="PreserveNewest" LinkBase="wwwroot" />
   </ItemGroup>
 
   <ItemGroup>

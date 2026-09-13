@@ -54,16 +54,37 @@ jobs:
           echo "rulesets=$rulesets" >> "$GITHUB_OUTPUT"
           echo "rulesets-tag=$rulesets_tag" >> "$GITHUB_OUTPUT"
 
-  docker:
+  ui:
     needs: releases
     if: needs.releases.outputs.app == 'true'
-    uses: st0o0/github-workflows/.github/workflows/dotnet-release-docker.yml@main
+    uses: st0o0/github-workflows/.github/workflows/pnpm-build.yml@main
+    with:
+      project-path: src/FunkArr.UI
+    permissions:
+      contents: read
+
+  dotnet:
+    needs: releases
+    if: needs.releases.outputs.app == 'true'
+    uses: st0o0/github-workflows/.github/workflows/dotnet-build.yml@main
+    with:
+      version: ${{ needs.releases.outputs.app-version }}
+      solution-file: FunkArr.slnx
+      publish-project: FunkArr/FunkArr.csproj
+    permissions:
+      contents: read
+
+  docker:
+    needs: [releases, ui, dotnet]
+    if: needs.releases.outputs.app == 'true'
+    uses: st0o0/github-workflows/.github/workflows/docker-release.yml@main
     with:
       version: ${{ needs.releases.outputs.app-version }}
       image-name: ghcr.io/st0o0/funkarr
       image-description: "German public broadcaster media libraries for the *arr ecosystem"
-      solution-file: FunkArr.slnx
-      publish-project: FunkArr/FunkArr.csproj
+      platforms: linux/amd64,linux/arm64,linux/arm/v7
+      build-contexts: |
+        ui=ui-dist
     permissions:
       contents: read
       packages: write

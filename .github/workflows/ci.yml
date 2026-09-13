@@ -11,6 +11,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  ui:
+    uses: st0o0/github-workflows/.github/workflows/pnpm-ci.yml@main
+    with:
+      project-path: src/FunkArr.UI
+      lint: false
+      typecheck: false
+
   dotnet:
     uses: st0o0/github-workflows/.github/workflows/dotnet-ci.yml@main
     with:

@@ -12,6 +12,7 @@ LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.documentation="https://github.com/st0o0/funkarr#readme"
 WORKDIR /app
 COPY --chown=$APP_UID . .
+COPY --chown=$APP_UID --from=ui / wwwroot/
 RUN mkdir -p /app/data/temp && chown $APP_UID:$APP_UID /app/data /app/data/temp
 VOLUME /app/data
 VOLUME /media

@@ -15,13 +15,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gate:
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'dev-build') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: dev
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        run: |
+          SHA=$(cut -c1-7 <<< '${{ github.event.pull_request.head.sha }}')
+          echo "version=0.0.0-pr.${{ github.event.pull_request.number }}.${SHA}" >> "$GITHUB_OUTPUT"
+
+  ui:
+    needs: gate
+    uses: st0o0/github-workflows/.github/workflows/pnpm-build.yml@main
+    with:
+      project-path: src/FunkArr.UI
+
+  dotnet:
+    needs: gate
+    uses: st0o0/github-workflows/.github/workflows/dotnet-build.yml@main
+    with:
+      version: ${{ needs.gate.outputs.version }}
+      solution-file: FunkArr.slnx
+      publish-project: FunkArr/FunkArr.csproj
+      rids: '["linux-x64"]'
+      test: false
+
   docker:
-    uses: st0o0/github-workflows/.github/workflows/dotnet-dev-build.yml@main
+    needs: [ui, dotnet]
+    uses: st0o0/github-workflows/.github/workflows/docker-dev.yml@main
     with:
       image-name: ghcr.io/st0o0/funkarr
       image-description: "Dev build of funkarr"
-      publish-project: FunkArr/FunkArr.csproj
+      build-contexts: |
+        ui=ui-dist
     permissions:
-      contents: read
       packages: write
       pull-requests: write
