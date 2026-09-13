@@ -17,20 +17,22 @@ public sealed class RuleSetManager : ReceiveActor
 
     private sealed record FlushChanges;
 
-    private static readonly TimeSpan _debounceWindow = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan _defaultDebounceWindow = TimeSpan.FromSeconds(2);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
+    private readonly TimeSpan _debounceWindow;
     private RuleSetManagerState _state = RuleSetManagerState.Empty;
     private IFileSystemWatcher? _communityWatcher;
     private IFileSystemWatcher? _localWatcher;
     private ICancelable? _flushSchedule;
 
-    public RuleSetManager(IDataFiles dataFiles, DataPaths dataPaths)
+    public RuleSetManager(IDataFiles dataFiles, DataPaths dataPaths, TimeSpan? debounceWindow = null)
     {
         _dataFiles = dataFiles;
         _dataPaths = dataPaths;
+        _debounceWindow = debounceWindow ?? _defaultDebounceWindow;
 
         Receive<ScanRuleSets>(_ => HandleScan());
         Receive<FileChanged>(HandleFileChanged);

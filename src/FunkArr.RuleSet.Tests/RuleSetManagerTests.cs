@@ -108,7 +108,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IMatchMagicManager>(matchMagicProbe);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
         shardProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
         AwaitCondition(() => _dataFiles.Watchers.Count >= 1);
@@ -138,7 +138,7 @@ public sealed class RuleSetManagerTests : TestKit
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "temp-show.json");
         File.WriteAllText(filePath, _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
         AwaitCondition(() => _dataFiles.Watchers.Count >= 1);

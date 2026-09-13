@@ -21,8 +21,10 @@ public sealed class TestFileSystemWatcher : IFileSystemWatcher
     public event FileSystemEventHandler? Created;
     public event FileSystemEventHandler? Changed;
     public event FileSystemEventHandler? Deleted;
+#pragma warning disable CS0067
     public event RenamedEventHandler? Renamed;
     public event ErrorEventHandler? Error;
+#pragma warning restore CS0067
 
     public void SimulateCreated(string fullPath) =>
         Created?.Invoke(this, new FileSystemEventArgs(WatcherChangeTypes.Created, System.IO.Path.GetDirectoryName(fullPath)!, System.IO.Path.GetFileName(fullPath)));
