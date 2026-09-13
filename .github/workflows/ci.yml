@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   ui:
-    uses: st0o0/github-workflows/.github/workflows/pnpm-ci.yml@main
+    uses: st0o0/github-workflows/.github/workflows/frontend-ci.yml@main
     with:
       project-path: src/FunkArr.UI
       lint: false
