@@ -1,12 +1,10 @@
 ## Purpose
 
 Application shell layout with collapsible sidebar navigation, logo mark, and flat navigation for the main content area.
-
 ## Requirements
-
 ### Requirement: Sidebar navigation structure
 
-The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid main content area. The sidebar SHALL toggle between a collapsed state (52px, icon-only) and an expanded state (192px, icons + labels). The grid template SHALL be `grid-cols-[52px_1fr]` when collapsed and `grid-cols-[192px_1fr]` when expanded. The sidebar SHALL contain the FunkArr logo mark, navigation links, and a Setup gear icon at the bottom.
+The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid main content area. The sidebar SHALL toggle between a collapsed state (52px, icon-only) and an expanded state (192px, icons + labels). The grid template SHALL be `grid-cols-[52px_1fr]` when collapsed and `grid-cols-[192px_1fr]` when expanded. The sidebar SHALL contain the FunkArr logo mark, navigation links, a Setup gear icon, a collapse toggle, and a community ruleset version indicator at the bottom.
 
 #### Scenario: Collapsed sidebar rendering
 - **WHEN** the sidebar is in collapsed state
@@ -17,8 +15,8 @@ The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid
 - **THEN** the layout renders as a two-column grid with a 192px sidebar showing icons and labels and the content area filling the remaining width
 
 #### Scenario: Sidebar sections
-- **WHEN** the sidebar renders
-- **THEN** it SHALL contain three sections top-to-bottom: logo mark with optional "FunkArr" text, navigation links (flat list, no group headers), and a bottom utility area with Setup gear icon and collapse toggle
+- **WHEN** the sidebar renders in expanded state
+- **THEN** it SHALL contain sections top-to-bottom: logo mark with "FunkArr" text, navigation links, and a bottom utility area with Setup gear icon, collapse toggle, and community ruleset version text
 
 #### Scenario: Sidebar toggle button
 - **WHEN** the sidebar renders
@@ -78,3 +76,4 @@ The main content area SHALL have a `surface-base` background with `px-6 py-5` pa
 #### Scenario: Content area rendering
 - **WHEN** any page renders its content
 - **THEN** the content is within the main area with `px-6 py-5` padding and no global max-width constraint
+
