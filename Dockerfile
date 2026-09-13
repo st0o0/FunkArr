@@ -3,9 +3,9 @@
 # CI cross-compiles via `dotnet publish -r <rid>` and passes the
 # published output as build context. No SDK needed here.
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
-# hadolint ignore=DL3018
-RUN apk add --no-cache ffmpeg
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.description="German public broadcaster media libraries for the *arr ecosystem" \
       org.opencontainers.image.source="https://github.com/st0o0/funkarr" \

@@ -9,7 +9,7 @@ RUN npm ci
 COPY src/FunkArr.UI/ .
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 WORKDIR /src
 
 COPY src/global.json src/Directory.Build.props src/Directory.Packages.props ./
@@ -30,9 +30,9 @@ COPY src/ .
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
 RUN dotnet publish FunkArr/FunkArr.csproj -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
-# hadolint ignore=DL3018
-RUN apk add --no-cache ffmpeg
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /app/data/temp && chown 1654:1654 /app/data /app/data/temp
 WORKDIR /app
 COPY --from=build /app/publish .
