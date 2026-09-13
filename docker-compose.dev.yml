@@ -1,9 +1,7 @@
 services:
   funkarr:
     container_name: funkarr
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
+    build: .
     ports:
       - "6969:6969"
     volumes:
