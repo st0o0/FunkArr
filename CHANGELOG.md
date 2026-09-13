@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.1](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.0...funkarr-v0.1.1) (2026-09-13)
+
+
+### Features
+
+* add global.json with SDK roll-forward and MTP runner ([e36e45a](https://github.com/st0o0/FunkArr/commit/e36e45ab5fa0d1c569ee85f8e7601d07c6107543))
+* bundle ruleset version in Docker image to skip redundant update on startup ([83c40b4](https://github.com/st0o0/FunkArr/commit/83c40b402e6b7413ec5862bd0dda1752bb992c03))
+
+
+### Bug Fixes
+
+* make RuleSetManager debounce window configurable for tests ([66f4c7e](https://github.com/st0o0/FunkArr/commit/66f4c7e4916d88aaeddc80792df07d96005036f1))
+* switch Docker base images from alpine to noble for glibc compatibility ([33572f1](https://github.com/st0o0/FunkArr/commit/33572f18f382b0664d9f6064463f5618054b55c9))
+
 ## [0.1.0](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.0...funkarr-v0.1.0) (2026-09-12)
 
 
