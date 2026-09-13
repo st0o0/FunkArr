@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ui:
+  frontend:
     uses: st0o0/github-workflows/.github/workflows/frontend-ci.yml@main
     with:
       project-path: src/FunkArr.UI
