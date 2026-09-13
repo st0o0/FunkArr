@@ -1,7 +1,34 @@
 # syntax=docker/dockerfile:1
 
-# CI cross-compiles via `dotnet publish -r <rid>` and passes the
-# published output as build context. No SDK needed here.
+FROM --platform=$BUILDPLATFORM node:22-slim AS ui
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /ui
+COPY src/FunkArr.UI/package.json src/FunkArr.UI/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY src/FunkArr.UI/ .
+RUN pnpm run build
+
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
+ARG TARGETARCH
+WORKDIR /src
+
+COPY src/global.json src/Directory.Build.props src/Directory.Packages.props ./
+COPY src/FunkArr/FunkArr.csproj FunkArr/
+COPY src/FunkArr.Core/FunkArr.Core.csproj FunkArr.Core/
+COPY src/FunkArr.Messages/FunkArr.Messages.csproj FunkArr.Messages/
+COPY src/FunkArr.Persistence/FunkArr.Persistence.csproj FunkArr.Persistence/
+COPY src/FunkArr.Api/FunkArr.Api.csproj FunkArr.Api/
+COPY src/FunkArr.ArrApi/FunkArr.ArrApi.csproj FunkArr.ArrApi/
+COPY src/FunkArr.Search/FunkArr.Search.csproj FunkArr.Search/
+COPY src/FunkArr.Download/FunkArr.Download.csproj FunkArr.Download/
+COPY src/FunkArr.RuleSet/FunkArr.RuleSet.csproj FunkArr.RuleSet/
+COPY src/FunkArr.MatchMagic/FunkArr.MatchMagic.csproj FunkArr.MatchMagic/
+COPY src/FunkArr.MetadataResolver/FunkArr.MetadataResolver.csproj FunkArr.MetadataResolver/
+RUN dotnet restore FunkArr/FunkArr.csproj -a ${TARGETARCH}
+
+COPY src/ .
+COPY --from=ui /ui/dist/ FunkArr/wwwroot/
+RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
 # hadolint ignore=DL3008
@@ -10,12 +37,13 @@ LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.description="German public broadcaster media libraries for the *arr ecosystem" \
       org.opencontainers.image.source="https://github.com/st0o0/funkarr" \
       org.opencontainers.image.documentation="https://github.com/st0o0/funkarr#readme"
+RUN mkdir -p /app/data/temp && chown 1654:1654 /app/data /app/data/temp
 WORKDIR /app
-COPY --chown=$APP_UID . .
-COPY --chown=$APP_UID --from=ui / wwwroot/
-RUN mkdir -p /app/data/temp && chown $APP_UID:$APP_UID /app/data /app/data/temp
+COPY --from=build /app/publish .
+COPY data/community/rulesets/ /app/data/rulesets/community/
+COPY data/community/version.txt /app/data/rulesets/version.txt
 VOLUME /app/data
 VOLUME /media
 ENV ASPNETCORE_URLS=http://+:6969
 EXPOSE 6969
-ENTRYPOINT ["dotnet", "FunkArr.dll"]
+ENTRYPOINT ["/bin/sh", "-c", "umask 000 && exec dotnet FunkArr.dll"]
