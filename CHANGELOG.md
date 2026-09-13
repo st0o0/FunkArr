@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.1...funkarr-v0.1.2) (2026-09-13)
+
+
+### Bug Fixes
+
+* register Newznab API endpoint mapping ([1d1821c](https://github.com/st0o0/FunkArr/commit/1d1821c3688f0dca5729f02f3f288b5782f56a64))
+
 ## [0.1.1](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.0...funkarr-v0.1.1) (2026-09-13)
 
 
