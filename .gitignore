@@ -58,4 +58,7 @@ docs/.vitepress/cache/
 docs/public/likec4-views.js
 docs/package-lock.json
 
+# Generated catalog (built dynamically by VitePress)
+data/community/CATALOG.md
+
 src/FunkArr/data/funkarr.db
