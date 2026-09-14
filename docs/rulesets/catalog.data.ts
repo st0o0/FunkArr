@@ -7,6 +7,7 @@ export interface RulesetEntry {
   imdbId?: string
   tmdbId?: string
   ruleCount: number
+  confidence: number
 }
 
 export interface CatalogData {
@@ -30,7 +31,8 @@ export default {
         type: (json.media?.type ?? 'show') as 'show' | 'movie',
         imdbId: json.media?.imdbId,
         tmdbId: json.media?.tmdbId,
-        ruleCount: json.rules?.length ?? 0
+        ruleCount: json.rules?.length ?? 0,
+        confidence: json.confidence ?? 0
       }
     })
 
