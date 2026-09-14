@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.4](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.3...funkarr-v0.1.4) (2026-09-14)
+
+
+### Features
+
+* display community ruleset version in sidebar and RuleSets page ([8a60501](https://github.com/st0o0/FunkArr/commit/8a605012159c75b5f3ec5869272db28f58d0c747))
+
+
+### Bug Fixes
+
+* align version display in sidebar, show app and ruleset version with grid layout ([c9e4f3e](https://github.com/st0o0/FunkArr/commit/c9e4f3e4e59f5d50b558bfc12ad9d4e87349c062))
+
 ## [0.1.3](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.2...funkarr-v0.1.3) (2026-09-13)
 
 
