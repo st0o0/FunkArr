@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.5](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.4...funkarr-v0.1.5) (2026-09-15)
+
+
+### Features
+
+* add live matching preview to ruleset builder ([e237d40](https://github.com/st0o0/FunkArr/commit/e237d40b9d81db19533ce2d473c712b584d23020))
+* add ruleset schema validation and community export ([d266e93](https://github.com/st0o0/FunkArr/commit/d266e938f5b9827cf735e97abc61dbfe8ad466fe))
+* add VitePress docs site with dynamic ruleset catalog ([671fe2c](https://github.com/st0o0/FunkArr/commit/671fe2cd5e158b909ae0d939409e1cc4451c11e2))
+
+
+### Bug Fixes
+
+* add id-token permission for cosign signing in dev builds ([260b0ff](https://github.com/st0o0/FunkArr/commit/260b0ffb15a8cd0d43b28414278926a13af00c2d))
+* strip ruleSetId from body before schema validation ([4ea3897](https://github.com/st0o0/FunkArr/commit/4ea3897caa726e9c8052c5b158ce753081476ebb))
+
+
+### Documentation
+
+* expand configuration reference and add confidence score to catalog ([b70dcbc](https://github.com/st0o0/FunkArr/commit/b70dcbc092434907af4306d736dadb12afc54c71))
+
 ## [0.1.4](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.3...funkarr-v0.1.4) (2026-09-14)
 
 
