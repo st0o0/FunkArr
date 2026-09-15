@@ -214,6 +214,26 @@ public static partial class RuleSetApiEndpoints
     private static IResult GatewayTimeout() =>
         Results.Problem(statusCode: 504, title: "Gateway Timeout");
 
+    private static string StripProperty(JsonElement body, string propertyName)
+    {
+        using var ms = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true }))
+        {
+            writer.WriteStartObject();
+            foreach (var prop in body.EnumerateObject())
+            {
+                if (!prop.Name.Equals(propertyName, StringComparison.Ordinal))
+                {
+                    prop.WriteTo(writer);
+                }
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return System.Text.Encoding.UTF8.GetString(ms.ToArray());
+    }
+
     private static async Task EvictRuleSetCache(IOutputCacheStore cache) =>
         await cache.EvictByTagAsync("rulesets", default);
 
@@ -242,7 +262,7 @@ public static partial class RuleSetApiEndpoints
             return Results.Conflict(new { error = $"Local ruleset '{ruleSetId}' already exists" });
         }
 
-        var json = body.GetRawText();
+        var json = StripProperty(body, "ruleSetId");
         var validationErrors = validator.Validate(json);
         if (validationErrors.Count > 0)
         {
