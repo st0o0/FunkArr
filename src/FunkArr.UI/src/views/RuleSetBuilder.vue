@@ -281,7 +281,7 @@
       <!-- Right pane: Debugger -->
       <div class="sticky top-5 self-start">
         <div class="bg-surface-raised rounded-lg border border-border-default p-3">
-          <DebuggerPanel :builder-state="debuggerState" />
+          <LiveMatchPreview :topic="form.topic" :builder-state="debuggerState" />
         </div>
       </div>
     </div>
@@ -296,7 +296,7 @@ import {
   type RuleSetWriteRequest, type RuleSetWriteRule, type FilterConditionInput, type TitleRuleInput,
   type ValidationError,
 } from '../api/rulesets'
-import DebuggerPanel from '../components/DebuggerPanel.vue'
+import LiveMatchPreview from '../components/LiveMatchPreview.vue'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 import { useToast } from '../composables/useToast'
