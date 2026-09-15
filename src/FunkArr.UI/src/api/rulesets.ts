@@ -232,15 +232,37 @@ export function getScoringDetail(id: string, requestId: string): Promise<Scoring
   return fetchJson(`/api/rulesets/${encodeURIComponent(id)}/history/${encodeURIComponent(requestId)}`)
 }
 
+export interface ValidationError {
+  field: string
+  message: string
+}
+
+export class ValidationFailedError extends Error {
+  readonly errors: ValidationError[]
+  constructor(errors: ValidationError[]) {
+    super('Validation failed')
+    this.errors = errors
+  }
+}
+
+async function throwIfNotOk(res: Response): Promise<void> {
+  if (res.ok) return
+  if (res.status === 422) {
+    const body = await res.json()
+    if (body.errors) {
+      throw new ValidationFailedError(body.errors)
+    }
+  }
+  throw new Error(`${res.status} ${res.statusText}`)
+}
+
 export async function createRuleSet(data: RuleSetWriteRequest): Promise<{ ruleSetId: string }> {
   const res = await fetch('/api/rulesets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}`)
-  }
+  await throwIfNotOk(res)
   return res.json()
 }
 
@@ -250,9 +272,7 @@ export async function updateRuleSet(id: string, data: RuleSetWriteRequest): Prom
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
-  if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}`)
-  }
+  await throwIfNotOk(res)
 }
 
 export async function deleteRuleSet(id: string): Promise<void> {
@@ -279,4 +299,24 @@ export async function testRuleSet(config: TestScoringRequest['config'], candidat
 export async function searchMediathek(query: string, limit = 20): Promise<MediathekCandidate[]> {
   const data = await fetchJson<{ items: MediathekCandidate[] }>(`/api/mediathek/search?q=${encodeURIComponent(query)}&limit=${limit}`)
   return data.items
+}
+
+export async function exportRuleSet(id: string): Promise<void> {
+  const res = await fetch(`/api/rulesets/${encodeURIComponent(id)}/export`)
+  if (!res.ok) {
+    if (res.status === 422) {
+      const body = await res.json()
+      if (body.errors) {
+        throw new ValidationFailedError(body.errors)
+      }
+    }
+    throw new Error(res.status === 404 ? 'No local ruleset found to export' : `${res.status} ${res.statusText}`)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${id}.json`
+  a.click()
+  URL.revokeObjectURL(url)
 }

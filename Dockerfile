@@ -27,6 +27,7 @@ COPY src/FunkArr.MetadataResolver/FunkArr.MetadataResolver.csproj FunkArr.Metada
 RUN dotnet restore FunkArr/FunkArr.csproj -a ${TARGETARCH}
 
 COPY src/ .
+COPY data/community/ruleset.schema.json /data/community/ruleset.schema.json
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
 RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/publish
 

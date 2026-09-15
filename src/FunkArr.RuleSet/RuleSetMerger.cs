@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using FunkArr.Messages.Scoring;
 using FilterNode = FunkArr.Messages.Scoring.FilterNode;
@@ -67,6 +68,38 @@ public static class RuleSetMerger
         var aliases = resolved.Aliases?.ToArray() ?? [];
         var media = resolved.Media;
         return (resolved.Topic, aliases, media?.TvdbId, media?.ImdbId, media?.TmdbId, media?.Name, media?.Type);
+    }
+
+    private static readonly JsonSerializerOptions _exportOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true,
+    };
+
+    public static string? ResolveToJson(string? communityJson, string? localJson)
+    {
+        var community = communityJson is not null
+            ? JsonSerializer.Deserialize<RawRuleSet>(communityJson, _jsonOptions)
+            : null;
+        var local = localJson is not null
+            ? JsonSerializer.Deserialize<RawRuleSet>(localJson, _jsonOptions)
+            : null;
+
+        var resolved = Resolve(community, local);
+        if (resolved is null)
+        {
+            return null;
+        }
+
+        var node = JsonSerializer.SerializeToNode(resolved, _exportOptions);
+        if (node is JsonObject obj)
+        {
+            obj.Remove("standalone");
+            obj.Remove("disable");
+        }
+
+        return node?.ToJsonString(_exportOptions);
     }
 
     private static RawRuleSet? Resolve(RawRuleSet? community, RawRuleSet? local)

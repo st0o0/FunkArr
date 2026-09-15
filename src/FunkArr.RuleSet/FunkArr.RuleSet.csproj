@@ -4,4 +4,12 @@
     <ProjectReference Include="..\FunkArr.Core\FunkArr.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\data\community\ruleset.schema.json" Link="ruleset.schema.json" />
+  </ItemGroup>
+
 </Project>

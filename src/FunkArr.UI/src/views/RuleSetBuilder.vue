@@ -13,6 +13,17 @@
       <div class="space-y-4">
         <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ isEditMode ? 'Edit RuleSet' : 'New RuleSet' }}</h1>
 
+        <div v-if="validationErrors.length > 0" class="bg-status-fail/10 border border-status-fail/30 rounded-lg p-4">
+          <p class="text-sm font-medium text-status-fail mb-2">{{ validationErrors.length }} validation error{{ validationErrors.length > 1 ? 's' : '' }}:</p>
+          <ul class="space-y-1">
+            <li v-for="(err, idx) in validationErrors" :key="idx" class="text-sm text-text-body">
+              <span class="font-mono text-xs text-text-secondary">{{ err.field }}</span>
+              <span class="mx-1 text-text-muted">—</span>
+              <span>{{ err.message }}</span>
+            </li>
+          </ul>
+        </div>
+
         <!-- Identity Section -->
         <section>
           <h2 class="text-sm font-semibold mb-1 text-text-body">Identity</h2>
@@ -281,8 +292,9 @@
 import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  getRuleSetRaw, createRuleSet, updateRuleSet,
+  getRuleSetRaw, createRuleSet, updateRuleSet, ValidationFailedError,
   type RuleSetWriteRequest, type RuleSetWriteRule, type FilterConditionInput, type TitleRuleInput,
+  type ValidationError,
 } from '../api/rulesets'
 import DebuggerPanel from '../components/DebuggerPanel.vue'
 import SkeletonCard from '../components/SkeletonCard.vue'
@@ -346,6 +358,7 @@ const loadingDetail = ref(false)
 const loadError = ref<string | null>(null)
 const saving = ref(false)
 const saveError = ref<string | null>(null)
+const validationErrors = ref<ValidationError[]>([])
 
 const form = reactive({
   ruleSetId: '',
@@ -465,6 +478,7 @@ function serializeForm(): RuleSetWriteRequest {
 
 async function handleSave() {
   saveError.value = null
+  validationErrors.value = []
 
   if (!isEditMode.value && !form.ruleSetId) {
     saveError.value = 'RuleSet ID is required'
@@ -492,7 +506,12 @@ async function handleSave() {
       router.push(`/rulesets/${form.ruleSetId}`)
     }
   } catch (e) {
-    saveError.value = e instanceof Error ? e.message : 'Failed to save'
+    if (e instanceof ValidationFailedError) {
+      validationErrors.value = e.errors
+      saveError.value = `${e.errors.length} validation error${e.errors.length > 1 ? 's' : ''} found`
+    } else {
+      saveError.value = e instanceof Error ? e.message : 'Failed to save'
+    }
     toast(saveError.value!, 'error')
   } finally {
     saving.value = false

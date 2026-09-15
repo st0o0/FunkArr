@@ -119,6 +119,14 @@
       <div class="flex items-center gap-2">
         <button
           v-if="detail.source.localPath"
+          class="px-3 py-1.5 text-xs text-text-body border border-border-default rounded-md hover:bg-surface-elevated transition-colors"
+          :disabled="exporting"
+          @click="handleExport"
+        >
+          {{ exporting ? 'Exporting...' : 'Export for Community' }}
+        </button>
+        <button
+          v-if="detail.source.localPath"
           class="px-3 py-1.5 text-xs text-status-fail border border-border-default rounded-md hover:bg-status-fail/10 transition-colors"
           @click="showDeleteConfirm = true"
         >
@@ -153,7 +161,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getRuleSetDetail, deleteRuleSet, type RuleSetDetail } from '../api/rulesets'
+import { getRuleSetDetail, deleteRuleSet, exportRuleSet, ValidationFailedError, type RuleSetDetail } from '../api/rulesets'
 import { useToast } from '../composables/useToast'
 
 const { toast } = useToast()
@@ -170,6 +178,7 @@ const error = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
 const deleteError = ref<string | null>(null)
+const exporting = ref(false)
 
 const mergeMode = computed(() => {
   if (!detail.value) return ''
@@ -182,6 +191,23 @@ const mergeMode = computed(() => {
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleString()
+}
+
+async function handleExport() {
+  exporting.value = true
+  try {
+    await exportRuleSet(id)
+    toast('Exported successfully')
+  } catch (e) {
+    if (e instanceof ValidationFailedError) {
+      const msgs = e.errors.map(err => `${err.field}: ${err.message}`).join('\n')
+      toast(`Export failed — validation errors:\n${msgs}`, 'error')
+    } else {
+      toast(e instanceof Error ? e.message : 'Export failed', 'error')
+    }
+  } finally {
+    exporting.value = false
+  }
 }
 
 async function handleDelete() {

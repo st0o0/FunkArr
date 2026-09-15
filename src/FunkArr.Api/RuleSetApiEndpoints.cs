@@ -168,6 +168,9 @@ public static partial class RuleSetApiEndpoints
         group.MapGet("/{id}/raw", HandleGetRaw)
             .WithSummary("Get raw ruleset JSON");
 
+        group.MapGet("/{id}/export", HandleExport)
+            .WithSummary("Export ruleset for community contribution");
+
         group.MapPost("/test", async (JsonElement body, IActorRegistry registry) =>
         {
             var request = RuleSetTestRequestParser.Parse(body);
@@ -214,7 +217,7 @@ public static partial class RuleSetApiEndpoints
     private static async Task EvictRuleSetCache(IOutputCacheStore cache) =>
         await cache.EvictByTagAsync("rulesets", default);
 
-    private static async Task<IResult> HandleCreate(JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache)
+    private static async Task<IResult> HandleCreate(JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
     {
         if (!body.TryGetProperty("ruleSetId", out var idEl) || idEl.ValueKind != JsonValueKind.String)
         {
@@ -240,6 +243,12 @@ public static partial class RuleSetApiEndpoints
         }
 
         var json = body.GetRawText();
+        var validationErrors = validator.Validate(json);
+        if (validationErrors.Count > 0)
+        {
+            return Results.UnprocessableEntity(new { errors = validationErrors });
+        }
+
         dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
         dataFiles.WriteAtomic(localPath, json);
 
@@ -247,7 +256,7 @@ public static partial class RuleSetApiEndpoints
         return Results.Created($"/api/rulesets/{ruleSetId}", new { ruleSetId });
     }
 
-    private static async Task<IResult> HandleUpdate(string id, JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache)
+    private static async Task<IResult> HandleUpdate(string id, JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
     {
         var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
         var communityPath = Path.Join(dataPaths.CommunityRuleSets, $"{id}.json");
@@ -258,6 +267,12 @@ public static partial class RuleSetApiEndpoints
         }
 
         var json = body.GetRawText();
+        var validationErrors = validator.Validate(json);
+        if (validationErrors.Count > 0)
+        {
+            return Results.UnprocessableEntity(new { errors = validationErrors });
+        }
+
         dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
         dataFiles.WriteAtomic(localPath, json);
 
@@ -298,6 +313,24 @@ public static partial class RuleSetApiEndpoints
 
         await EvictRuleSetCache(cache);
         return Results.Ok();
+    }
+
+    private static IResult HandleExport(string id, IRuleSetExporter exporter, HttpContext httpContext)
+    {
+        var result = exporter.Export(id);
+
+        if (result.Error is not null)
+        {
+            return Results.NotFound(new { error = result.Error });
+        }
+
+        if (result.Errors is { Count: > 0 })
+        {
+            return Results.UnprocessableEntity(new { errors = result.Errors });
+        }
+
+        httpContext.Response.Headers.ContentDisposition = $"attachment; filename=\"{id}.json\"";
+        return Results.Content(result.Json!, "application/json");
     }
 
     private static ApiModels.RuleSetDetail ToDetailModel(RuleSetDetailResult msg) =>
