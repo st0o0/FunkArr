@@ -2,86 +2,41 @@
 
 ## Purpose
 
-Dual-tab right pane for the RuleSet builder providing Mediathek search with candidate selection and test result display, replacing the previous manual/fetch debugger tabs.
+Live preview right pane for the RuleSet builder providing topic-driven auto-fetch of Mediathek candidates with live match results and on-demand full server-side test.
 
 ## Requirements
 
 ### Requirement: Builder right pane dual tabs
 
-The RuleSetBuilder right pane SHALL display two tabs: "Search" and "Test Results". The Search tab SHALL be the default. The existing DebuggerPanel's manual candidate input SHALL be removed; candidates are sourced exclusively from Mediathek search results.
+The RuleSetBuilder right pane SHALL display a single live preview panel instead of the previous Search and Test Results tabs. The panel SHALL show auto-fetched Mediathek candidates with live match results. A "Full Test" button SHALL be available for server-side pipeline validation.
 
-#### Scenario: Default tab on mount
+#### Scenario: Default state on mount
 - **WHEN** the RuleSetBuilder page loads
-- **THEN** the right pane SHALL display the Search tab
+- **THEN** the right pane SHALL display the live preview panel with an empty state prompting the user to enter a Topic
 
-#### Scenario: Tab switching
-- **WHEN** the user clicks "Test Results"
-- **THEN** the Test Results panel SHALL render and the Search panel SHALL be hidden
+#### Scenario: Auto-fetch replaces manual search
+- **WHEN** the user enters a Topic
+- **THEN** candidates are fetched automatically without the user needing to type a search query or click a search button
 
 ### Requirement: Search tab Mediathek search
 
-The Search tab SHALL display a search input field and optional filter inputs for channel and topic. Typing in the search input SHALL trigger a debounced (400ms) API call to `GET /api/mediathek/search`. Results SHALL display as a scrollable list of candidate cards.
+The manual search input, channel/topic filters, and explicit search button are replaced by topic-driven auto-fetch. The search query is derived from the Topic field in the builder form. Results are cached and displayed as a live match list instead of a selectable candidate list.
 
-#### Scenario: Search for candidates
-- **WHEN** the user types "tatort" in the search input
-- **THEN** after 400ms the system SHALL call `GET /api/mediathek/search?q=tatort&limit=20`
+#### Scenario: Topic-driven fetch
+- **WHEN** the user sets Topic to "Tatort" in the identity section
+- **THEN** after 800ms the system SHALL call `GET /api/mediathek/search?q=Tatort&limit=30`
 
-#### Scenario: Search with filters
-- **WHEN** the user types "tatort" with channel filter "ARD"
-- **THEN** the API call SHALL include `channel=ARD`
-
-#### Scenario: Search results display
-- **WHEN** the API returns 15 candidates
-- **THEN** each candidate SHALL display title, topic, channel, duration, and quality
-
-#### Scenario: No results
-- **WHEN** the API returns zero results
-- **THEN** the panel SHALL show "No results found"
-
-#### Scenario: Search error
-- **WHEN** the API returns an error
-- **THEN** the panel SHALL show the error message
+#### Scenario: Results displayed as match list
+- **WHEN** candidates are fetched
+- **THEN** each candidate SHALL display title, topic, channel, duration, and its live match state against current rules
 
 ### Requirement: Candidate selection
 
-Each search result card SHALL have a checkbox to select it as a test candidate. A "Select All" toggle SHALL be available above the results list. Selected candidate count SHALL be displayed.
+Candidate selection checkboxes and "Select All" toggle are removed. All fetched candidates are automatically used for matching.
 
-#### Scenario: Select individual candidate
-- **WHEN** the user checks a candidate's checkbox
-- **THEN** the candidate is added to the test candidate set
-
-#### Scenario: Deselect candidate
-- **WHEN** the user unchecks a selected candidate's checkbox
-- **THEN** the candidate is removed from the test candidate set
-
-#### Scenario: Select all
-- **WHEN** the user clicks "Select All"
-- **THEN** all displayed search results SHALL be selected
-
-#### Scenario: Selected count display
-- **WHEN** the user has selected 5 of 15 results
-- **THEN** the panel SHALL display "5 selected"
-
-### Requirement: Test execution from search
-
-The Search tab SHALL include a "Test Rules" button that sends the current builder form state and selected candidates to `POST /api/rulesets/test`. The button SHALL be disabled when no candidates are selected or no rules are defined. On completion, the view SHALL automatically switch to the Test Results tab.
-
-#### Scenario: Run test
-- **WHEN** the user has selected 5 candidates and has rules defined and clicks "Test Rules"
-- **THEN** the builder form state SHALL be serialized as a matching config, combined with the selected candidates, and sent to `POST /api/rulesets/test`
-- **AND** after the response arrives, the view SHALL switch to the Test Results tab
-
-#### Scenario: Test button disabled without candidates
-- **WHEN** no candidates are selected
-- **THEN** the "Test Rules" button SHALL be disabled
-
-#### Scenario: Test button disabled without rules
-- **WHEN** no rules are defined in the builder form
-- **THEN** the "Test Rules" button SHALL be disabled
-
-#### Scenario: Loading state during test
-- **WHEN** the test request is in flight
-- **THEN** the "Test Rules" button SHALL show a loading indicator and be non-clickable
+#### Scenario: All candidates used
+- **WHEN** 30 candidates are fetched
+- **THEN** all 30 are matched against the current rules without manual selection
 
 ### Requirement: Test Results tab display
 

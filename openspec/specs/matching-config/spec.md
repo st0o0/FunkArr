@@ -1,43 +1,47 @@
 ## Requirements
 
 ### Requirement: FilterField enum
-The system SHALL define a `FilterField` enum in FunkArr.Messages with values: Title, Topic, Channel, Description, Duration, Timestamp. All filter conditions MUST reference fields via this enum.
+The system SHALL define a `FilterField` enum in FunkArr.Messages with values: Title, Topic, Channel, Description, Duration, Timestamp. All filter conditions MUST reference fields via this enum. The enum SHALL have `[JsonConverter(typeof(JsonStringEnumConverter<FilterField>))]` with camelCase naming for automatic deserialization from JSON ruleset files.
 
 #### Scenario: Filter condition uses enum field
 - **WHEN** a FilterCondition is created with `FilterField.Duration`
 - **THEN** the Field property is the enum value, not a string
 
+#### Scenario: Deserialize filter field from JSON
+- **WHEN** a ruleset JSON contains `"field": "title"`
+- **THEN** it deserializes to `FilterField.Title` without manual switch logic
+
 ### Requirement: FilterOp enum in Messages
-The system SHALL define a `FilterOp` enum in FunkArr.Messages with values: Eq, Contains, NotContains, GreaterThan, LessThan, Regex. The existing FilterOp in FunkArr.MatchMagic SHALL be removed.
+The system SHALL define a `FilterOp` enum in FunkArr.Messages with values: Eq, Contains, NotContains, GreaterThan, LessThan, Regex. The enum SHALL have `[JsonConverter(typeof(JsonStringEnumConverter<FilterOp>))]` with camelCase naming for automatic deserialization from JSON ruleset files.
 
 #### Scenario: FilterOp lives in Messages namespace
 - **WHEN** FunkArr.Messages is compiled
 - **THEN** it contains `FunkArr.Messages.Scoring.FilterOp` with all six values
 
-### Requirement: IdentificationStrategy enum with three strategies
-The system SHALL define an `IdentificationStrategy` enum with three values: RegexCapture, TitleConstruction, AirdateExtraction.
+#### Scenario: Deserialize filter op from JSON
+- **WHEN** a ruleset JSON contains `"op": "greaterThan"`
+- **THEN** it deserializes to `FilterOp.GreaterThan` without manual switch logic
 
-#### Scenario: RegexCapture covers season+episode and absolute episode
-- **WHEN** a MatchingRule uses `IdentificationStrategy.RegexCapture` with only EpisodePattern set (SeasonPattern is null)
-- **THEN** the rule identifies by absolute episode number only
+### Requirement: IdentificationStrategy enum
+The `IdentificationStrategy` enum SHALL have 5 members with `[JsonPropertyName]` attributes matching the JSON ruleset schema strings:
+- `SeasonAndEpisodeNumber` (`"seasonAndEpisodeNumber"`)
+- `AbsoluteEpisodeNumber` (`"byAbsoluteEpisodeNumber"`)
+- `TitleExact` (`"itemTitleExact"`)
+- `TitleIncludes` (`"itemTitleIncludes"`)
+- `AirdateExtraction` (`"itemTitleEqualsAirdate"`)
 
-#### Scenario: RegexCapture with both patterns
-- **WHEN** a MatchingRule uses `IdentificationStrategy.RegexCapture` with both SeasonPattern and EpisodePattern set
-- **THEN** the rule identifies by season and episode number
+The enum SHALL have `[JsonConverter(typeof(JsonStringEnumConverter<IdentificationStrategy>))]` for automatic deserialization from JSON ruleset files.
 
-### Requirement: TitleMatchMode enum
-The system SHALL define a `TitleMatchMode` enum with values: Exact, Contains. This enum MUST be used with `IdentificationStrategy.TitleConstruction` to specify the comparison mode.
+#### Scenario: Deserialize strategy from JSON
+- **WHEN** a ruleset JSON contains `"strategy": "seasonAndEpisodeNumber"`
+- **THEN** it deserializes to `IdentificationStrategy.SeasonAndEpisodeNumber` without manual switch logic
 
-#### Scenario: TitleConstruction with Exact mode
-- **WHEN** a MatchingRule uses TitleConstruction with `TitleMatchMode.Exact`
-- **THEN** the constructed title must equal the item title exactly (case-insensitive)
-
-#### Scenario: TitleConstruction with Contains mode
-- **WHEN** a MatchingRule uses TitleConstruction with `TitleMatchMode.Contains`
-- **THEN** the constructed title must be contained within the item title (case-insensitive, umlaut-normalized)
+#### Scenario: All 5 strategies have JsonPropertyName
+- **WHEN** the enum is inspected
+- **THEN** each member has a `[JsonPropertyName]` matching the JSON schema string
 
 ### Requirement: TitlePartType enum
-The system SHALL define a `TitlePartType` enum with values: Static, Regex.
+The system SHALL define a `TitlePartType` enum with values: Static, Regex. The enum SHALL have `[JsonConverter(typeof(JsonStringEnumConverter<TitlePartType>))]` with camelCase naming for automatic deserialization from JSON ruleset files.
 
 #### Scenario: Static title part
 - **WHEN** a TitlePart has `TitlePartType.Static`
@@ -46,6 +50,10 @@ The system SHALL define a `TitlePartType` enum with values: Static, Regex.
 #### Scenario: Regex title part
 - **WHEN** a TitlePart has `TitlePartType.Regex`
 - **THEN** its Pattern and Field properties are used to capture text from the media item
+
+#### Scenario: Deserialize title part type from JSON
+- **WHEN** a ruleset JSON contains `"type": "regex"`
+- **THEN** it deserializes to `TitlePartType.Regex` without manual switch logic
 
 ### Requirement: FilterCondition record
 The system SHALL define `FilterCondition(FilterField Field, FilterOp Op, string Value)` as a sealed record in FunkArr.Messages.
@@ -81,19 +89,23 @@ The system SHALL define `TitlePart(TitlePartType Type, string? Value, string? Pa
 - **THEN** it captures text from the specified field using the regex pattern and contributes it to the constructed title
 
 ### Requirement: IdentificationSpec record
-The system SHALL define `IdentificationSpec(IdentificationStrategy Strategy, string? SeasonPattern, string? EpisodePattern, int? CaptureGroup, TitleMatchMode? MatchMode, TitlePart[]? TitleParts)` as a sealed record.
+The system SHALL define `IdentificationSpec(IdentificationStrategy Strategy, string? SeasonPattern, string? EpisodePattern, int? CaptureGroup, TitlePart[]? TitleParts)` as a sealed record. The record SHALL NOT have a `MatchMode` parameter — the strategy enum alone determines matching behavior.
 
-#### Scenario: RegexCapture spec
-- **WHEN** Strategy is RegexCapture
-- **THEN** SeasonPattern and/or EpisodePattern MUST be set; MatchMode and TitleParts are ignored
+#### Scenario: SeasonAndEpisodeNumber spec
+- **WHEN** Strategy is SeasonAndEpisodeNumber
+- **THEN** SeasonPattern and EpisodePattern MUST be set; TitleParts are ignored
 
-#### Scenario: TitleConstruction spec
-- **WHEN** Strategy is TitleConstruction
-- **THEN** MatchMode and TitleParts MUST be set; SeasonPattern and EpisodePattern are ignored
+#### Scenario: TitleExact spec
+- **WHEN** Strategy is TitleExact
+- **THEN** TitleParts MUST be set; SeasonPattern and EpisodePattern are ignored
 
 #### Scenario: AirdateExtraction spec
 - **WHEN** Strategy is AirdateExtraction
 - **THEN** no additional properties are required; the strategy uses hardcoded German date parsing
+
+#### Scenario: IdentificationSpec has no MatchMode
+- **WHEN** `IdentificationSpec` is inspected
+- **THEN** it has parameters: Strategy, SeasonPattern, EpisodePattern, CaptureGroup, TitleParts — no MatchMode
 
 ### Requirement: MatchingRule record
 The system SHALL define `MatchingRule(string Id, int Priority, float? Confidence, FilterSpec? Filters, IdentificationSpec Identification)` as a sealed record.
@@ -116,3 +128,14 @@ The system SHALL define `MatchingConfig(string RuleSetId, float DefaultConfidenc
 #### Scenario: Default confidence applies
 - **WHEN** a MatchingRule has null Confidence
 - **THEN** the MatchingConfig's DefaultConfidence is used for that rule's match result
+
+### Requirement: RuleSetMerger uses typed enums
+The `RuleSetMerger` internal classes (`RawRule`, `RawTitleRule`) SHALL use enum-typed properties instead of strings for `Strategy`, `Field`, `Op`, and `Type`. The manual `ParseFilterField`, `ParseFilterOp` switch methods SHALL be removed.
+
+#### Scenario: RawRule.Strategy is enum
+- **WHEN** `RawRule` is inspected
+- **THEN** `Strategy` is `IdentificationStrategy?` not `string`
+
+#### Scenario: No ParseFilterField method
+- **WHEN** `RuleSetMerger` is inspected
+- **THEN** no methods named ParseFilterField or ParseFilterOp exist

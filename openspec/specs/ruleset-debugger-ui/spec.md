@@ -5,15 +5,23 @@ Vue.js live debugger panel with Regex101-style rule pipeline trace visualization
 ## Requirements
 
 ### Requirement: Debugger panel
-The right pane of the builder page SHALL display a dual-tab panel with "Search" and "Test Results" tabs instead of the previous "Manual" and "Fetch" tabs. The manual candidate input mode SHALL be removed. Candidates are sourced exclusively from Mediathek search results via the Search tab.
+The right pane of the builder page SHALL display a live preview panel instead of the previous dual-tab panel. The panel SHALL show auto-fetched candidates with live client-side match results by default. When the user runs a Full Test, the panel SHALL switch to showing server-side pipeline results with the existing trace visualization. All labels, headings, and status text SHALL use `$t()` translation calls.
 
-#### Scenario: Panel renders in split pane
-- **WHEN** the builder page loads
-- **THEN** the search + test panel is visible on the right side with "Search" as the default tab
+#### Scenario: Panel renders live preview
+- **WHEN** the builder page loads and Topic is set
+- **THEN** the panel shows fetched candidates with live match indicators
 
-#### Scenario: Tab switching
-- **WHEN** the user clicks the "Test Results" tab
-- **THEN** the test results display is shown and the search panel is hidden
+#### Scenario: Panel switches to full test results
+- **WHEN** the user clicks "Full Test" and results return
+- **THEN** the panel shows server-side results with expandable rule pipeline traces
+
+#### Scenario: Return to live preview
+- **WHEN** the user edits a rule after viewing full test results
+- **THEN** the panel returns to live preview mode with updated client-side matches
+
+#### Scenario: Translated labels in German
+- **WHEN** the locale is `de` and the debugger panel renders
+- **THEN** labels display German translations (e.g., "Vollständiger Test" instead of "Full Test", "Live-Vorschau" instead of "Live Preview")
 
 ### Requirement: Manual candidate input
 **This requirement is removed.** Candidates are sourced from Mediathek search results instead of manual entry.
@@ -50,19 +58,23 @@ The Search tab SHALL include a "Test Rules" button that sends the current builde
 - **THEN** the Test Rules button is disabled
 
 ### Requirement: Results display
-After a test completes, the Test Results tab SHALL display the results as a list of candidate cards sorted with matched candidates first. Each card SHALL show candidate title, topic, channel, and duration, plus the match result badge.
+After a full test completes, the panel SHALL display results as a list of candidate cards sorted with matched candidates first. Each card SHALL show candidate title, topic, channel, and duration, plus the match result badge. Badge labels ("Matched", "No Match") SHALL use translation keys. This requirement is unchanged from the current behavior but now applies only to full test results, not to the live preview.
 
 #### Scenario: Display matched candidate
-- **WHEN** a candidate matched rule "regex-se" with score 0.95
+- **WHEN** a full test candidate matched rule "regex-se" with score 0.95
 - **THEN** the card shows a green "Matched" badge, rule ID "regex-se", and score 0.95
 
 #### Scenario: Display unmatched candidate
-- **WHEN** a candidate did not match any rule
+- **WHEN** a full test candidate did not match any rule
 - **THEN** the card shows a gray "No Match" badge
 
 #### Scenario: Sort order
-- **WHEN** 3 of 10 candidates matched
+- **WHEN** 3 of 10 candidates matched in full test
 - **THEN** the 3 matched candidates appear first, followed by 7 unmatched
+
+#### Scenario: German badge labels
+- **WHEN** the locale is `de`
+- **THEN** badges read "Treffer" and "Kein Treffer" instead of "Matched" and "No Match"
 
 ### Requirement: Rule pipeline trace
 Each result candidate card SHALL be expandable to show the full rule pipeline trace. The expanded view SHALL show each rule evaluated in priority order. For each rule, the trace SHALL display: rule ID, priority, and outcome (Matched, FilterFailed, IdentificationFailed) with color-coded badges (green for Matched, red for FilterFailed, amber for IdentificationFailed, gray for skipped).
@@ -142,3 +154,14 @@ The frontend SHALL expose API client functions: `testRuleSet(config, candidates)
 #### Scenario: Search function sends GET
 - **WHEN** `searchMediathek("tatort", 20)` is called
 - **THEN** a GET request is sent to `/api/mediathek/search?q=tatort&limit=20`
+
+### Requirement: Live preview mode indicator
+The panel SHALL clearly indicate whether it is showing live client-side preview results or full server-side test results. The indicator text SHALL use translation keys.
+
+#### Scenario: Live preview mode
+- **WHEN** the panel shows client-side match results
+- **THEN** a subtle label "Live Preview" is visible and a disclaimer "Run Full Test for accurate scoring" is shown
+
+#### Scenario: Full test mode
+- **WHEN** the panel shows server-side test results
+- **THEN** a label "Full Test Results" is visible with no disclaimer
