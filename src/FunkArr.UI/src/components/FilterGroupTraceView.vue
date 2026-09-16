@@ -2,7 +2,7 @@
   <div class="text-xs">
     <div class="text-text-secondary font-medium mb-0.5">{{ group.operator }}
       <span :class="group.passed ? 'text-status-ok' : 'text-status-fail'">
-        {{ group.passed ? '(passed)' : '(failed)' }}
+        {{ group.passed ? $t('filter.passed') : $t('filter.failed') }}
       </span>
     </div>
     <div class="ml-2 space-y-0.5">
@@ -27,7 +27,7 @@
             <span class="text-text-muted font-mono">{{ node.field }}</span>
             <span class="text-text-muted">{{ node.op }}</span>
             <span class="text-text-muted font-mono">{{ node.expectedValue }}</span>
-            <span class="text-text-muted italic ml-1">Skipped</span>
+            <span class="text-text-muted italic ml-1">{{ $t('filter.skipped') }}</span>
           </template>
           <template v-else>
             <span class="font-mono text-text-secondary">{{ node.field }}</span>

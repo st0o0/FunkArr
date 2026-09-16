@@ -16,10 +16,10 @@
       </div>
       <div class="flex items-center gap-2 shrink-0 text-xs text-text-secondary">
         <span v-if="group.activeCount > 0">
-          {{ group.activeCount }} downloading
+          {{ group.activeCount }} {{ $t('home.downloading') }}
         </span>
         <span v-if="group.queuedCount > 0">
-          {{ group.queuedCount }} queued
+          {{ group.queuedCount }} {{ $t('home.queued') }}
         </span>
       </div>
     </button>
@@ -39,7 +39,7 @@
         @click="showAll = !showAll"
         class="w-full px-4 py-2 text-xs text-text-secondary hover:text-text-body hover:bg-surface-elevated transition-colors"
       >
-        {{ showAll ? 'Show less' : `+${group.items.length - collapsedLimit} more` }}
+        {{ showAll ? $t('queue.showLess') : $t('queue.more', { count: group.items.length - collapsedLimit }) }}
       </button>
     </div>
   </div>

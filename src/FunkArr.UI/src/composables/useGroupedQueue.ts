@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { useQueueStream } from './useQueueStream'
 import type { QueueItem } from '../api/downloads'
+import { QueueStatus } from '../api/enums'
 import { parseReleaseName } from '../utils/releaseTitle'
 
 export interface QueueGroup {
@@ -30,8 +31,8 @@ export function useGroupedQueue() {
 
     const result: QueueGroup[] = []
     for (const [series, groupItems] of map) {
-      const activeCount = groupItems.filter(i => i.status === 'Processing').length
-      const queuedCount = groupItems.filter(i => i.status === 'Queued').length
+      const activeCount = groupItems.filter(i => i.status === QueueStatus.Processing).length
+      const queuedCount = groupItems.filter(i => i.status === QueueStatus.Queued).length
       const totalBytes = groupItems.reduce((sum, i) => sum + i.totalBytes, 0)
       result.push({ series, items: groupItems, activeCount, queuedCount, totalBytes })
     }

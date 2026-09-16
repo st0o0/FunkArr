@@ -10,20 +10,20 @@ function tmdbLink(id: string, type: string) {
 }
 </script>
 
-# Community-Regelwerk-Katalog
+# Community Rulesets Catalog
 
-**{{ data.shows.length + data.movies.length }}** Community-Regelwerke: **{{ data.shows.length }}** Serien, **{{ data.movies.length }}** Filme.
+**{{ data.shows.length + data.movies.length }}** community rulesets: **{{ data.shows.length }}** shows, **{{ data.movies.length }}** movies.
 
-## Serien
+## Shows
 
 <table>
 <thead>
 <tr>
-<th>Serie</th>
+<th>Show</th>
 <th>IMDB ID</th>
 <th>TMDB ID</th>
-<th style="text-align: right">Anzahl Regeln</th>
-<th style="text-align: right">Konfidenz</th>
+<th style="text-align: right">Rule Count</th>
+<th style="text-align: right">Confidence</th>
 </tr>
 </thead>
 <tbody>
@@ -37,16 +37,16 @@ function tmdbLink(id: string, type: string) {
 </tbody>
 </table>
 
-## Filme
+## Movies
 
 <table>
 <thead>
 <tr>
-<th>Film</th>
+<th>Movie</th>
 <th>IMDB ID</th>
 <th>TMDB ID</th>
-<th style="text-align: right">Anzahl Regeln</th>
-<th style="text-align: right">Konfidenz</th>
+<th style="text-align: right">Rule Count</th>
+<th style="text-align: right">Confidence</th>
 </tr>
 </thead>
 <tbody>

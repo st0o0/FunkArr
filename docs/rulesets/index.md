@@ -1,16 +1,16 @@
-# Rulesets
+# Regelwerke
 
-Mediathek titles are messy — "Tatort" episodes might appear as "Tatort: Der letzte Schrei" with no season or episode number. Rulesets map these titles to structured season/episode format so Sonarr can match them.
+Mediathek-Titel sind chaotisch — „Tatort"-Episoden erscheinen z.B. als „Tatort: Der letzte Schrei" ohne Staffel- oder Episodennummer. Regelwerke ordnen diese Titel einem strukturierten Staffel-/Episodenformat zu, damit Sonarr sie zuordnen kann.
 
-## How it works
+## Funktionsweise
 
-A ruleset is a JSON file that defines rules for a specific show or movie. Each rule matches Mediathek entries by topic and title patterns and extracts season/episode information.
+Ein Regelwerk ist eine JSON-Datei, die Regeln für eine bestimmte Sendung oder einen Film definiert. Jede Regel gleicht Mediathek-Einträge anhand von Thema und Titelmustern ab und extrahiert Staffel-/Episodeninformationen.
 
-FunkArr loads rulesets from two sources:
+FunkArr lädt Regelwerke aus zwei Quellen:
 
-1. **Community rulesets** — auto-synced from GitHub releases, covering the most popular shows and movies. See the [catalog](./catalog) for the full list.
-2. **Local rulesets** — created in the web UI's RuleSet builder, stored in your data directory. Local rules override community rules for the same show.
+1. **Community-Regelwerke** — automatisch von GitHub-Releases synchronisiert, decken die beliebtesten Sendungen und Filme ab. Siehe den [Katalog](./catalog) für die vollständige Liste.
+2. **Lokale Regelwerke** — im Regelwerk-Builder der Web-Oberfläche erstellt, in deinem Datenverzeichnis gespeichert. Lokale Regeln überschreiben Community-Regeln für dieselbe Sendung.
 
-## Auto-updates
+## Automatische Updates
 
-The community rulesets are checked for new versions every 30 minutes. When a new release is published on GitHub, FunkArr downloads and applies the update automatically. You can pin a specific version via `FunkArr__RuleSet__Version` if needed.
+Die Community-Regelwerke werden alle 30 Minuten auf neue Versionen geprüft. Wenn ein neues Release auf GitHub veröffentlicht wird, lädt FunkArr das Update automatisch herunter und wendet es an. Du kannst bei Bedarf eine bestimmte Version über `FunkArr__RuleSet__Version` festlegen.

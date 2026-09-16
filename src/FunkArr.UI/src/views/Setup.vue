@@ -1,6 +1,6 @@
 <template>
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-5">Setup Guide</h1>
+    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-5">{{ $t('setup.title') }}</h1>
 
     <div class="flex items-center gap-1 mb-6">
       <div
@@ -27,7 +27,7 @@
     </div>
 
     <div v-if="currentStep === 0">
-      <h2 class="text-sm font-medium text-text-primary mb-3">System Health Check</h2>
+      <h2 class="text-sm font-medium text-text-primary mb-3">{{ $t('setup.systemHealthCheck') }}</h2>
 
       <div v-if="loading" class="space-y-2">
         <SkeletonCard v-for="i in 4" :key="i" />
@@ -43,18 +43,18 @@
           <span
             class="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
             :class="{
-              'bg-status-ok': result.status === 'ok',
-              'bg-status-warn': result.status === 'warn',
-              'bg-status-fail': result.status === 'fail',
+              'bg-status-ok': result.status === CheckStatus.Ok,
+              'bg-status-warn': result.status === CheckStatus.Warn,
+              'bg-status-fail': result.status === CheckStatus.Fail,
             }"
           />
           <div class="min-w-0">
-            <div class="text-sm text-text-body">{{ checkLabels[name] ?? name }}</div>
+            <div class="text-sm text-text-body">{{ getCheckLabel(name as string) }}</div>
             <div v-if="result.message" class="text-xs text-text-secondary mt-0.5">{{ result.message }}</div>
             <div v-if="result.path" class="text-xs text-text-secondary mt-0.5 font-mono truncate">{{ result.path }}</div>
-            <div v-if="result.version" class="text-xs text-text-secondary mt-0.5">Version: {{ result.version }}</div>
-            <div v-if="result.status === 'fail'" class="text-xs text-status-fail mt-1">
-              {{ fixHints[name] ?? 'Check your configuration and try again.' }}
+            <div v-if="result.version" class="text-xs text-text-secondary mt-0.5">{{ $t('setup.version') }}: {{ result.version }}</div>
+            <div v-if="result.status === CheckStatus.Fail" class="text-xs text-status-fail mt-1">
+              {{ getFixHint(name as string) }}
             </div>
           </div>
         </div>
@@ -65,21 +65,21 @@
           @click="runHealthCheck"
           class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
         >
-          Re-check
+          {{ $t('setup.recheck') }}
         </button>
         <button
           @click="currentStep++"
           :disabled="hasFailures"
           class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          Next
+          {{ $t('setup.next') }}
         </button>
       </div>
     </div>
 
     <div v-else-if="currentStep === 1">
-      <h2 class="text-sm font-medium text-text-primary mb-3">Select Services to Configure</h2>
-      <p class="text-text-secondary text-sm mb-4">Choose which *arr applications you want to set up with FunkArr.</p>
+      <h2 class="text-sm font-medium text-text-primary mb-3">{{ $t('setup.selectServices') }}</h2>
+      <p class="text-text-secondary text-sm mb-4">{{ $t('setup.selectServicesHint') }}</p>
 
       <div class="space-y-2 mb-5">
         <label
@@ -97,19 +97,19 @@
       </div>
 
       <div class="flex gap-2">
-        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors">Back</button>
+        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors">{{ $t('setup.back') }}</button>
         <button
           @click="currentStep++"
           :disabled="selectedServices.length === 0"
           class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
-          Next
+          {{ $t('setup.next') }}
         </button>
       </div>
     </div>
 
     <div v-else-if="currentServiceConfig">
-      <h2 class="text-sm font-medium text-text-primary mb-1">Configure {{ currentServiceConfig.title }}</h2>
+      <h2 class="text-sm font-medium text-text-primary mb-1">{{ $t('setup.configureService', { service: currentServiceConfig.title }) }}</h2>
       <p class="text-text-secondary text-sm mb-4">{{ currentServiceConfig.description }}</p>
 
       <div class="bg-surface-raised rounded-lg border border-border-default overflow-hidden mb-4">
@@ -128,9 +128,9 @@
                     v-if="field.copyable"
                     @click="copyToClipboard(field.value)"
                     class="text-xs px-1.5 py-0.5 border border-border-default rounded hover:bg-surface-elevated text-text-secondary transition-colors"
-                    :title="'Copy ' + field.label"
+                    :title="`${$t('setup.copy')} ${field.label}`"
                   >
-                    {{ justCopied === field.value ? 'Copied' : 'Copy' }}
+                    {{ justCopied === field.value ? $t('setup.copied') : $t('setup.copy') }}
                   </button>
                 </div>
                 <div v-if="field.note" class="text-xs text-text-secondary mt-0.5 font-sans">{{ field.note }}</div>
@@ -140,29 +140,27 @@
         </table>
       </div>
 
-      <div class="p-3 bg-surface-elevated border border-border-default rounded-lg text-xs text-text-secondary mb-4">
-        After entering these values, use the <strong class="text-text-body">Test</strong> button in {{ currentServiceConfig.title }} to verify the connection works.
+      <div class="p-3 bg-surface-elevated border border-border-default rounded-lg text-xs text-text-secondary mb-4" v-html="$t('setup.testConnectionHint', { service: currentServiceConfig.title })">
       </div>
 
-      <div v-if="currentServiceConfig?.title === 'Sonarr'" class="p-3 bg-surface-elevated border border-border-default rounded-lg text-xs text-text-secondary mb-4">
-        <strong class="text-text-body">Tip:</strong> Shows identified by air date (e.g., Die Sendung mit der Maus, Bibi Blocksberg) need <strong class="text-text-body">Series Type: Daily</strong> in Sonarr for automatic import.
+      <div v-if="currentServiceConfig?.title === 'Sonarr'" class="p-3 bg-surface-elevated border border-border-default rounded-lg text-xs text-text-secondary mb-4" v-html="$t('setup.sonarrDailyTip')">
       </div>
 
       <div class="flex gap-2">
-        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors">Back</button>
+        <button @click="currentStep--" class="px-3 py-1.5 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors">{{ $t('setup.back') }}</button>
         <button
           v-if="isLastStep"
           @click="$router.push('/')"
           class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim transition-colors"
         >
-          Done
+          {{ $t('setup.done') }}
         </button>
         <button
           v-else
           @click="currentStep++"
           class="px-3 py-1.5 text-sm bg-accent text-black font-medium rounded-md hover:bg-accent-dim transition-colors"
         >
-          Next
+          {{ $t('setup.next') }}
         </button>
       </div>
     </div>
@@ -171,9 +169,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getSetupHealth, type SetupHealthCheck } from '../api/setup'
+import { CheckStatus } from '../api/enums'
 import { useToast } from '../composables/useToast'
 
+const { t } = useI18n()
 const { toast } = useToast()
 import SkeletonCard from '../components/SkeletonCard.vue'
 
@@ -184,32 +185,42 @@ const currentStep = ref(0)
 const selectedServices = ref<string[]>([])
 const justCopied = ref<string | null>(null)
 
-const checkLabels: Record<string, string> = {
-  apiKey: 'API Key',
-  mediathekViewWeb: 'MediathekViewWeb',
-  dataDirectory: 'Data Directory',
-  completeDirectory: 'Complete Directory',
-  incompleteDirectory: 'Incomplete Directory',
-  indexerApi: 'Indexer API',
-  downloadApi: 'Download API',
-  ffmpeg: 'FFmpeg',
+const healthLabelKeys: Record<string, string> = {
+  apiKey: 'health.apiKey',
+  mediathekViewWeb: 'health.mediathekViewWeb',
+  dataDirectory: 'health.dataDirectory',
+  completeDirectory: 'health.completeDirectory',
+  incompleteDirectory: 'health.incompleteDirectory',
+  indexerApi: 'health.indexerApi',
+  downloadApi: 'health.downloadApi',
+  ffmpeg: 'health.ffmpeg',
 }
 
-const fixHints: Record<string, string> = {
-  apiKey: 'Set FunkArr__ApiKey environment variable or update appsettings.json.',
-  mediathekViewWeb: 'Check your internet connection. MediathekViewWeb must be reachable.',
-  dataDirectory: 'Ensure the data directory exists and is writable. Set FunkArr__DataPath if needed.',
-  completeDirectory: 'Ensure the complete download directory exists and is writable.',
-  incompleteDirectory: 'Ensure the incomplete download directory exists and is writable.',
-  indexerApi: 'The Newznab indexer endpoint is not responding. Check application logs.',
-  downloadApi: 'The SABnzbd download endpoint is not responding. Check application logs.',
+function getCheckLabel(name: string): string {
+  const key = healthLabelKeys[name]
+  return key ? t(key) : name
 }
 
-const services = [
-  { value: 'prowlarr', title: 'Prowlarr', description: 'Indexer Manager - adds FunkArr as a Newznab indexer source' },
-  { value: 'sonarr', title: 'Sonarr', description: 'TV Series - adds FunkArr as a SABnzbd download client' },
-  { value: 'radarr', title: 'Radarr', description: 'Movies - adds FunkArr as a SABnzbd download client' },
-]
+const fixHintKeys: Record<string, string> = {
+  apiKey: 'setup.fixApiKey',
+  mediathekViewWeb: 'setup.fixMediathekViewWeb',
+  dataDirectory: 'setup.fixDataDirectory',
+  completeDirectory: 'setup.fixCompleteDirectory',
+  incompleteDirectory: 'setup.fixIncompleteDirectory',
+  indexerApi: 'setup.fixIndexerApi',
+  downloadApi: 'setup.fixDownloadApi',
+}
+
+function getFixHint(name: string): string {
+  const key = fixHintKeys[name]
+  return key ? t(key) : t('setup.fixDefault')
+}
+
+const services = computed(() => [
+  { value: 'prowlarr', title: 'Prowlarr', description: t('setup.prowlarrDescription') },
+  { value: 'sonarr', title: 'Sonarr', description: t('setup.sonarrDescription') },
+  { value: 'radarr', title: 'Radarr', description: t('setup.radarrDescription') },
+])
 
 interface ConfigField {
   label: string
@@ -232,10 +243,10 @@ const actualPort = computed(() => window.location.port || defaultPort.value.toSt
 function prowlarrConfig(): ServiceConfig {
   return {
     title: 'Prowlarr',
-    description: 'Add FunkArr as a Custom Newznab indexer in Prowlarr: Settings > Indexers > Add > Newznab.',
+    description: t('setup.prowlarrConfigDescription'),
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
-      { label: 'URL', value: `http://${actualHost.value}:${actualPort.value}`, copyable: true, note: 'Adjust if using a reverse proxy' },
+      { label: 'URL', value: `http://${actualHost.value}:${actualPort.value}`, copyable: true, note: t('setup.adjustProxy') },
       { label: 'API Path', value: '/index/api', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Categories', value: '5000 (TV), 2000 (Movies)', copyable: false },
@@ -246,11 +257,11 @@ function prowlarrConfig(): ServiceConfig {
 function sonarrConfig(): ServiceConfig {
   return {
     title: 'Sonarr',
-    description: 'Add FunkArr as a SABnzbd download client in Sonarr: Settings > Download Clients > Add > SABnzbd.',
+    description: t('setup.sonarrConfigDescription'),
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
-      { label: 'Host', value: actualHost.value, copyable: true, note: 'Adjust if using a reverse proxy' },
-      { label: 'Port', value: actualPort.value, copyable: true, note: 'Adjust if using a reverse proxy' },
+      { label: 'Host', value: actualHost.value, copyable: true, note: t('setup.adjustProxy') },
+      { label: 'Port', value: actualPort.value, copyable: true, note: t('setup.adjustProxy') },
       { label: 'URL Base', value: '/download', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Category', value: 'tv', copyable: true },
@@ -261,11 +272,11 @@ function sonarrConfig(): ServiceConfig {
 function radarrConfig(): ServiceConfig {
   return {
     title: 'Radarr',
-    description: 'Add FunkArr as a SABnzbd download client in Radarr: Settings > Download Clients > Add > SABnzbd.',
+    description: t('setup.radarrConfigDescription'),
     fields: [
       { label: 'Name', value: 'FunkArr', copyable: true },
-      { label: 'Host', value: actualHost.value, copyable: true, note: 'Adjust if using a reverse proxy' },
-      { label: 'Port', value: actualPort.value, copyable: true, note: 'Adjust if using a reverse proxy' },
+      { label: 'Host', value: actualHost.value, copyable: true, note: t('setup.adjustProxy') },
+      { label: 'Port', value: actualPort.value, copyable: true, note: t('setup.adjustProxy') },
       { label: 'URL Base', value: '/download', copyable: true },
       { label: 'API Key', value: apiKey.value, copyable: true },
       { label: 'Category', value: 'movies', copyable: true },
@@ -286,7 +297,7 @@ const activeServiceSteps = computed(() =>
 )
 
 const stepLabels = computed(() => {
-  const labels = ['Health Check', 'Services']
+  const labels = [t('setup.healthCheck'), t('setup.services')]
   for (const config of activeServiceSteps.value) {
     labels.push(config.title)
   }
@@ -302,7 +313,7 @@ const isLastStep = computed(() => currentStep.value === stepLabels.value.length 
 
 const hasFailures = computed(() => {
   if (!health.value) return true
-  return Object.values(health.value.checks).some((c) => c.status === 'fail')
+  return Object.values(health.value.checks).some((c) => c.status === CheckStatus.Fail)
 })
 
 async function runHealthCheck() {
@@ -320,7 +331,7 @@ async function runHealthCheck() {
 async function copyToClipboard(text: string) {
   try {
     await navigator.clipboard.writeText(text)
-    toast('Copied to clipboard')
+    toast(t('setup.copiedToClipboard'))
     justCopied.value = text
     setTimeout(() => { justCopied.value = null }, 2000)
   } catch {

@@ -1,6 +1,6 @@
 <template>
   <div class="max-w-3xl mx-auto">
-    <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id }]" />
+    <AppBreadcrumb :items="[{ label: $t('rulesets.title'), to: '/rulesets' }, { label: id }]" />
 
     <div v-if="loading" class="space-y-4">
       <SkeletonCard />
@@ -16,39 +16,39 @@
             :to="`/rulesets/${id}/history`"
             class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           >
-            Scoring History
+            {{ $t('detail.scoringHistory') }}
           </router-link>
           <router-link
             :to="`/rulesets/${id}/edit`"
             class="px-2.5 py-1 text-xs bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           >
-            Edit
+            {{ $t('detail.edit') }}
           </router-link>
         </div>
       </div>
 
       <section class="mb-4">
-        <h2 class="text-sm font-semibold mb-2 text-text-body">Identity</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-body">{{ $t('detail.identity') }}</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-            <span class="text-text-secondary">RuleSet ID</span>
+            <span class="text-text-secondary">{{ $t('detail.ruleSetId') }}</span>
             <span class="font-mono text-text-body">{{ detail.ruleSetId }}</span>
-            <span class="text-text-secondary">Topic</span>
+            <span class="text-text-secondary">{{ $t('detail.topic') }}</span>
             <span class="text-text-primary font-medium">{{ detail.identity.topic }}</span>
-            <span class="text-text-secondary">Aliases</span>
+            <span class="text-text-secondary">{{ $t('detail.aliases') }}</span>
             <span class="text-text-body">{{ detail.identity.aliases.length > 0 ? detail.identity.aliases.join(', ') : '-' }}</span>
-            <span class="text-text-secondary">TVDB</span>
+            <span class="text-text-secondary">{{ $t('detail.tvdb') }}</span>
             <span class="font-mono text-text-body">{{ detail.identity.tvdbId ?? '-' }}</span>
-            <span class="text-text-secondary">IMDB</span>
+            <span class="text-text-secondary">{{ $t('detail.imdb') }}</span>
             <span class="font-mono text-text-body">{{ detail.identity.imdbId ?? '-' }}</span>
-            <span class="text-text-secondary">TMDB</span>
+            <span class="text-text-secondary">{{ $t('detail.tmdb') }}</span>
             <span class="font-mono text-text-body">{{ detail.identity.tmdbId ?? '-' }}</span>
           </div>
         </div>
       </section>
 
       <section class="mb-4">
-        <h2 class="text-sm font-semibold mb-2 text-text-body">Source</h2>
+        <h2 class="text-sm font-semibold mb-2 text-text-body">{{ $t('detail.source') }}</h2>
         <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
           <div class="flex items-center gap-3">
             <span
@@ -59,20 +59,20 @@
                   ? 'bg-surface-elevated text-status-ok'
                   : 'bg-surface-elevated text-text-secondary'"
             >
-              {{ mergeMode === 'community only' ? 'Community' : mergeMode === 'local only' ? 'Local' : 'Community + Local' }}
+              {{ mergeMode === 'community only' ? $t('detail.communityLabel') : mergeMode === 'local only' ? $t('detail.localLabel') : $t('detail.communityLocalLabel') }}
             </span>
             <span v-if="detail.source.communityModified" class="text-xs text-text-secondary">
-              Updated {{ formatDate(detail.source.communityModified) }}
+              {{ $t('detail.updated', { date: formatDate(detail.source.communityModified) }) }}
             </span>
           </div>
         </div>
       </section>
 
       <section class="mb-5">
-        <h2 class="text-sm font-semibold mb-2 text-text-body">Matching Rules</h2>
-        <div class="text-sm text-text-secondary mb-2">Default confidence: {{ detail.defaultConfidence }}</div>
+        <h2 class="text-sm font-semibold mb-2 text-text-body">{{ $t('detail.matchingRules') }}</h2>
+        <div class="text-sm text-text-secondary mb-2">{{ $t('detail.defaultConfidence') }}: {{ detail.defaultConfidence }}</div>
 
-        <div v-if="detail.rules.length === 0" class="text-text-secondary text-sm">No rules defined.</div>
+        <div v-if="detail.rules.length === 0" class="text-text-secondary text-sm">{{ $t('detail.noRulesDefined') }}</div>
 
         <div v-else class="grid gap-2">
           <div
@@ -92,23 +92,23 @@
             </div>
             <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs">
               <template v-if="rule.seasonPattern">
-                <span class="text-text-secondary">Season</span>
+                <span class="text-text-secondary">{{ $t('detail.season') }}</span>
                 <span class="font-mono text-text-body">{{ rule.seasonPattern }}</span>
               </template>
               <template v-if="rule.episodePattern">
-                <span class="text-text-secondary">Episode</span>
+                <span class="text-text-secondary">{{ $t('detail.episode') }}</span>
                 <span class="font-mono text-text-body">{{ rule.episodePattern }}</span>
               </template>
               <template v-if="rule.matchMode">
-                <span class="text-text-secondary">Match Mode</span>
+                <span class="text-text-secondary">{{ $t('detail.matchMode') }}</span>
                 <span class="text-text-body">{{ rule.matchMode }}</span>
               </template>
               <template v-if="rule.titleParts && rule.titleParts.length > 0">
-                <span class="text-text-secondary">Title Parts</span>
+                <span class="text-text-secondary">{{ $t('detail.titleParts') }}</span>
                 <span class="text-text-body">{{ rule.titleParts.join(' + ') }}</span>
               </template>
               <template v-if="rule.filterSummary">
-                <span class="text-text-secondary">Filters</span>
+                <span class="text-text-secondary">{{ $t('detail.filters') }}</span>
                 <span class="text-text-body">{{ rule.filterSummary }}</span>
               </template>
             </div>
@@ -123,33 +123,33 @@
           :disabled="exporting"
           @click="handleExport"
         >
-          {{ exporting ? 'Exporting...' : 'Export for Community' }}
+          {{ exporting ? $t('detail.exporting') : $t('detail.exportForCommunity') }}
         </button>
         <button
           v-if="detail.source.localPath"
           class="px-3 py-1.5 text-xs text-status-fail border border-border-default rounded-md hover:bg-status-fail/10 transition-colors"
           @click="showDeleteConfirm = true"
         >
-          Delete Local
+          {{ $t('detail.deleteLocal') }}
         </button>
       </div>
 
       <div v-if="showDeleteConfirm" class="mt-3 p-4 bg-surface-raised rounded-lg border border-border-default">
-        <p class="text-sm text-text-body mb-3">Delete local overlay? This cannot be undone.</p>
+        <p class="text-sm text-text-body mb-3">{{ $t('detail.deleteConfirm') }}</p>
         <div class="flex items-center gap-2">
           <button
             class="px-3 py-1.5 text-xs text-status-fail border border-border-default rounded-md hover:bg-status-fail/10 transition-colors"
             :disabled="deleting"
             @click="handleDelete"
           >
-            {{ deleting ? 'Deleting...' : 'Confirm' }}
+            {{ deleting ? $t('detail.deleting') : $t('detail.confirm') }}
           </button>
           <button
             class="px-3 py-1.5 text-xs text-text-secondary border border-border-default rounded-md hover:bg-surface-elevated transition-colors"
             :disabled="deleting"
             @click="showDeleteConfirm = false"
           >
-            Cancel
+            {{ $t('detail.cancel') }}
           </button>
         </div>
         <div v-if="deleteError" class="text-status-fail text-sm mt-2">{{ deleteError }}</div>
@@ -161,9 +161,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getRuleSetDetail, deleteRuleSet, exportRuleSet, ValidationFailedError, type RuleSetDetail } from '../api/rulesets'
 import { useToast } from '../composables/useToast'
 
+const { t } = useI18n()
 const { toast } = useToast()
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
@@ -197,13 +199,13 @@ async function handleExport() {
   exporting.value = true
   try {
     await exportRuleSet(id)
-    toast('Exported successfully')
+    toast(t('detail.exportedSuccessfully'))
   } catch (e) {
     if (e instanceof ValidationFailedError) {
       const msgs = e.errors.map(err => `${err.field}: ${err.message}`).join('\n')
-      toast(`Export failed — validation errors:\n${msgs}`, 'error')
+      toast(`${t('detail.exportValidationFailed')}\n${msgs}`, 'error')
     } else {
-      toast(e instanceof Error ? e.message : 'Export failed', 'error')
+      toast(e instanceof Error ? e.message : t('detail.exportFailed'), 'error')
     }
   } finally {
     exporting.value = false
@@ -215,7 +217,7 @@ async function handleDelete() {
   deleteError.value = null
   try {
     await deleteRuleSet(id)
-    toast('Local overlay deleted')
+    toast(t('detail.localOverlayDeleted'))
     const hasCommunity = detail.value?.source.communityPath != null
     if (hasCommunity) {
       detail.value = await getRuleSetDetail(id)
@@ -224,8 +226,8 @@ async function handleDelete() {
       router.push('/rulesets')
     }
   } catch (e) {
-    deleteError.value = e instanceof Error ? e.message : 'Failed to delete'
-    toast(deleteError.value ?? 'Delete failed', 'error')
+    deleteError.value = e instanceof Error ? e.message : t('detail.failedToDelete')
+    toast(deleteError.value ?? t('detail.deleteFailed'), 'error')
   } finally {
     deleting.value = false
   }

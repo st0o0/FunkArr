@@ -1,4 +1,4 @@
-# Erste Schritte
+# Getting Started
 
 ## Docker Compose
 
@@ -29,21 +29,21 @@ volumes:
 docker compose up -d
 ```
 
-Die Web-Oberfläche ist unter `http://localhost:8080` erreichbar.
+The web UI is available at `http://localhost:8080`.
 
-## Einrichtung in Prowlarr / Sonarr / Radarr
+## Setup in Prowlarr / Sonarr / Radarr
 
-### Indexer (Prowlarr oder Sonarr/Radarr)
+### Indexer (Prowlarr or Sonarr/Radarr)
 
-1. Neuen Indexer vom Typ **Newznab** hinzufügen
+1. Add a new indexer of type **Newznab**
 2. URL: `http://funkarr:6969/index/api`
-3. API Key: der Wert, den du für `FunkArr__ApiKey` gesetzt hast
-4. Testen und speichern
+3. API Key: the value you set for `FunkArr__ApiKey`
+4. Test and save
 
 ### Download Client (Sonarr / Radarr)
 
-1. Neuen Download Client vom Typ **SABnzbd** hinzufügen
+1. Add a new download client of type **SABnzbd**
 2. Host: `funkarr`, Port: `6969`
 3. URL Base: `/download/api`
-4. API Key: der Wert, den du für `FunkArr__ApiKey` gesetzt hast
-5. Testen und speichern
+4. API Key: the value you set for `FunkArr__ApiKey`
+5. Test and save

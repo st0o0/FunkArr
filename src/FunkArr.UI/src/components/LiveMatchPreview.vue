@@ -4,13 +4,13 @@
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-2">
         <span class="text-xs font-medium" :class="mode === 'live' ? 'text-text-secondary' : 'text-accent'">
-          {{ mode === 'live' ? 'Live Preview' : 'Full Test Results' }}
+          {{ mode === 'live' ? $t('preview.livePreview') : $t('preview.fullTestResults') }}
         </span>
         <span v-if="mode === 'live' && total > 0" class="text-xs text-text-body">
-          {{ matchedCount }} / {{ total }} matched
+          {{ $t('preview.matchedCount', { matched: matchedCount, total }) }}
         </span>
         <span v-if="mode === 'fullTest' && fullTestResults" class="text-xs text-text-body">
-          {{ fullTestResults.filter(r => r.matched).length }} / {{ fullTestResults.length }} matched
+          {{ $t('preview.matchedCount', { matched: fullTestResults.filter(r => r.matched).length, total: fullTestResults.length }) }}
         </span>
       </div>
       <button
@@ -18,34 +18,34 @@
         class="text-xs text-text-secondary hover:text-text-body transition-colors"
         :disabled="fetchLoading"
         @click="refresh"
-      >{{ fetchLoading ? '...' : '↻ Refresh' }}</button>
+      >{{ fetchLoading ? '...' : '↻ ' + $t('preview.refresh') }}</button>
     </div>
 
     <!-- Fetch loading -->
     <div v-if="fetchLoading" class="text-center py-8">
-      <div class="text-text-muted text-xs">Fetching candidates...</div>
+      <div class="text-text-muted text-xs">{{ $t('preview.fetchingCandidates') }}</div>
     </div>
 
     <!-- Fetch error -->
     <div v-else-if="fetchError" class="text-center py-4">
       <p class="text-status-fail text-xs mb-2">{{ fetchError }}</p>
-      <button class="text-xs text-accent hover:text-accent/80 transition-colors" @click="refresh">Retry</button>
+      <button class="text-xs text-accent hover:text-accent/80 transition-colors" @click="refresh">{{ $t('preview.retry') }}</button>
     </div>
 
     <!-- No topic -->
     <div v-else-if="!topic.trim()" class="text-center py-8">
-      <p class="text-text-muted text-xs">Enter a Topic to fetch candidates</p>
+      <p class="text-text-muted text-xs">{{ $t('preview.enterTopic') }}</p>
     </div>
 
     <!-- No candidates -->
     <div v-else-if="candidates.length === 0 && !fetchLoading" class="text-center py-8">
-      <p class="text-text-muted text-xs">No candidates found for "{{ topic }}"</p>
+      <p class="text-text-muted text-xs">{{ $t('preview.noCandidatesFound', { topic }) }}</p>
     </div>
 
     <!-- Live Preview Mode -->
     <template v-else-if="mode === 'live'">
       <div v-if="rules.length === 0" class="text-center py-4 mb-2">
-        <p class="text-text-muted text-xs">Add rules to see matches</p>
+        <p class="text-text-muted text-xs">{{ $t('preview.addRulesToSeeMatches') }}</p>
       </div>
 
       <div class="max-h-[55vh] overflow-y-auto space-y-1 mb-3">
@@ -62,7 +62,7 @@
             <span
               class="px-1.5 py-0.5 rounded text-[11px] shrink-0"
               :class="item.matchedRuleId ? 'bg-status-ok/10 text-status-ok' : 'bg-surface-elevated text-text-secondary'"
-            >{{ item.matchedRuleId ? 'Matched' : 'No Match' }}</span>
+            >{{ item.matchedRuleId ? $t('preview.matched') : $t('preview.noMatch') }}</span>
           </div>
           <div class="text-text-secondary">
             {{ item.candidate.channel }} &middot; {{ item.candidate.topic }} &middot;
@@ -86,7 +86,7 @@
         </div>
       </div>
 
-      <div class="text-[11px] text-text-muted mb-2">Preview only — run Full Test for accurate scoring</div>
+      <div class="text-[11px] text-text-muted mb-2">{{ $t('preview.previewDisclaimer') }}</div>
 
       <button
         class="w-full px-3 py-1.5 rounded-md text-sm transition-colors"
@@ -95,7 +95,7 @@
           : 'bg-surface-elevated text-text-muted cursor-not-allowed border border-border-default'"
         :disabled="candidates.length === 0 || rules.length === 0 || testing"
         @click="runFullTest"
-      >{{ testing ? 'Testing...' : `Full Test (${candidates.length})` }}</button>
+      >{{ testing ? $t('preview.testing') : $t('preview.fullTestButton', { count: candidates.length }) }}</button>
     </template>
 
     <!-- Full Test Results Mode -->
@@ -112,7 +112,7 @@
               <span
                 class="text-xs px-1.5 py-0.5 rounded shrink-0"
                 :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
-              >{{ item.matched ? 'Matched' : 'No Match' }}</span>
+              >{{ item.matched ? $t('preview.matched') : $t('preview.noMatch') }}</span>
             </div>
             <div class="text-xs text-text-secondary">
               {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
@@ -125,7 +125,7 @@
           </div>
 
           <div v-if="expanded[idx]" class="border-t border-border-default px-3 pb-3 pt-2">
-            <div class="text-xs font-semibold text-text-secondary mb-2">Rule Pipeline</div>
+            <div class="text-xs font-semibold text-text-secondary mb-2">{{ $t('preview.rulePipeline') }}</div>
             <div class="space-y-2">
               <div
                 v-for="(rt, ri) in item.ruleTraces"
@@ -139,7 +139,7 @@
                   <span
                     class="px-1.5 py-0.5 rounded text-[11px] font-medium"
                     :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
-                  >{{ isSkipped(rt, item, ri) ? 'Skipped' : outcomeLabel(rt.outcome) }}</span>
+                  >{{ isSkipped(rt, item, ri) ? $t('preview.skipped') : outcomeLabel(rt.outcome) }}</span>
                 </div>
 
                 <div v-if="rt.filterTrace && !isSkipped(rt, item, ri)" class="ml-2 mb-1">
@@ -148,18 +148,18 @@
 
                 <div v-if="rt.identificationTrace && !isSkipped(rt, item, ri)" class="ml-2 text-xs">
                   <div class="flex items-center gap-2">
-                    <span class="text-text-secondary">Identification:</span>
+                    <span class="text-text-secondary">{{ $t('preview.identification') }}:</span>
                     <span class="font-mono text-text-secondary">{{ rt.identificationTrace.strategy }}</span>
                   </div>
-                  <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">Not attempted</div>
+                  <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">{{ $t('preview.notAttempted') }}</div>
                   <div v-else-if="rt.identificationTrace.detail" class="text-status-fail ml-4">{{ rt.identificationTrace.detail }}</div>
                   <div v-else class="ml-4 text-status-ok">
                     <template v-if="item.identification">
-                      <span v-if="item.identification.season" class="mr-2">Season: <span class="font-mono">{{ item.identification.season }}</span></span>
-                      <span v-if="item.identification.episode" class="mr-2">Episode: <span class="font-mono">{{ item.identification.episode }}</span></span>
+                      <span v-if="item.identification.season" class="mr-2">{{ $t('detail.season') }}: <span class="font-mono">{{ item.identification.season }}</span></span>
+                      <span v-if="item.identification.episode" class="mr-2">{{ $t('detail.episode') }}: <span class="font-mono">{{ item.identification.episode }}</span></span>
                       <span v-if="item.identification.title">Title: <span class="font-mono">{{ item.identification.title }}</span></span>
                     </template>
-                    <span v-else>OK</span>
+                    <span v-else>{{ $t('preview.ok') }}</span>
                   </div>
                 </div>
               </div>
@@ -171,7 +171,7 @@
       <button
         class="w-full px-3 py-1.5 rounded-md text-sm transition-colors bg-surface-elevated text-text-body border border-border-default hover:bg-surface-overlay"
         @click="mode = 'live'"
-      >Back to Live Preview</button>
+      >{{ $t('preview.backToLivePreview') }}</button>
     </template>
 
     <div v-if="testError" class="text-status-fail text-xs mt-2">{{ testError }}</div>
@@ -180,6 +180,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, toRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   testRuleSet,
   type TestCandidate,
@@ -188,6 +189,8 @@ import {
 import { useMediathekAutoFetch } from '../composables/useMediathekAutoFetch'
 import { useRulesetMatcher } from '../composables/useRulesetMatcher'
 import FilterGroupTraceView from './FilterGroupTraceView.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   topic: string
@@ -273,17 +276,20 @@ async function runFullTest() {
     rules: props.builderState.rules.map(r => ({
       id: r.id,
       priority: r.priority,
-      confidence: r.confidence,
+      confidence: r.confidence ?? undefined,
       strategy: r.strategy,
-      seasonRegex: r.seasonRegex || null,
-      episodeRegex: r.episodeRegex || null,
-      captureGroup: r.captureGroup,
+      seasonRegex: r.seasonRegex || undefined,
+      episodeRegex: r.episodeRegex || undefined,
+      captureGroup: r.captureGroup ?? undefined,
       filters: hasFilters(r.filters) ? {
         all: r.filters.all.length > 0 ? r.filters.all : undefined,
         any: r.filters.any.length > 0 ? r.filters.any : undefined,
         not: r.filters.not.length > 0 ? r.filters.not : undefined,
-      } : null,
-      titleRules: r.titleRules.length > 0 ? r.titleRules : null,
+      } : undefined,
+      titleRules: r.titleRules.length > 0 ? r.titleRules.map(tr => ({
+        ...tr,
+        captureGroup: tr.captureGroup ?? undefined,
+      })) : undefined,
     })),
   }
 
@@ -310,9 +316,9 @@ function isSkipped(_rt: ItemTrace['ruleTraces'][0], item: ItemTrace, ri: number)
 
 function outcomeLabel(outcome: string): string {
   switch (outcome) {
-    case 'matched': return 'Matched'
-    case 'filterFailed': return 'Filter Failed'
-    case 'identificationFailed': return 'ID Failed'
+    case 'matched': return t('preview.matched')
+    case 'filterFailed': return t('preview.filterFailed')
+    case 'identificationFailed': return t('preview.idFailed')
     default: return outcome
   }
 }

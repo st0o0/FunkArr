@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
+import { i18n } from './i18n'
 import './style.css'
 
 const router = createRouter({
@@ -27,4 +28,4 @@ router.afterEach((to) => {
   document.title = title ? `${title} - FunkArr` : 'FunkArr'
 })
 
-createApp(App).use(router).mount('#app')
+createApp(App).use(i18n).use(router).mount('#app')

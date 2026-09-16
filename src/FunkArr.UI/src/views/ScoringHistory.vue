@@ -1,25 +1,25 @@
 <template>
   <div class="max-w-3xl mx-auto">
-    <AppBreadcrumb :items="[{ label: 'RuleSets', to: '/rulesets' }, { label: id, to: `/rulesets/${id}` }, { label: 'History' }]" />
+    <AppBreadcrumb :items="[{ label: $t('rulesets.title'), to: '/rulesets' }, { label: id, to: `/rulesets/${id}` }, { label: $t('scoring.historyTitle') }]" />
 
-    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-4">Scoring History</h1>
+    <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-4">{{ $t('scoring.historyTitle') }}</h1>
 
     <SkeletonTable v-if="loading" :rows="5" :columns="6" />
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
-    <div v-else-if="history && history.snapshots.length === 0" class="text-text-secondary text-sm">No scoring history.</div>
+    <div v-else-if="history && history.snapshots.length === 0" class="text-text-secondary text-sm">{{ $t('scoring.noHistory') }}</div>
 
     <div v-else-if="history">
-      <div class="text-sm text-text-secondary mb-3 tabular-nums">{{ history.totalCount }} total scoring runs</div>
+      <div class="text-sm text-text-secondary mb-3 tabular-nums">{{ $t('scoring.totalRuns', { count: history.totalCount }) }}</div>
 
       <div class="overflow-x-auto rounded-lg border border-border-default">
         <table class="w-full text-sm">
           <thead class="sticky top-0 z-10">
             <tr class="bg-surface-raised">
-              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">Source</th>
-              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">Query</th>
-              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">When</th>
-              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs">Candidates</th>
-              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs">Matched</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">{{ $t('scoring.sourceColumn') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">{{ $t('scoring.queryColumn') }}</th>
+              <th class="text-left px-4 py-3 font-medium text-text-secondary text-xs">{{ $t('scoring.whenColumn') }}</th>
+              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs">{{ $t('scoring.candidatesColumn') }}</th>
+              <th class="text-right px-4 py-3 font-medium text-text-secondary text-xs">{{ $t('scoring.matchedColumn') }}</th>
             </tr>
           </thead>
           <tbody class="bg-surface-raised/50">
@@ -45,14 +45,14 @@
           class="px-2.5 py-1 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           @click="navigate(offset - pageSize)"
         >
-          Previous
+          {{ $t('scoring.previous') }}
         </button>
         <button
           v-if="history.snapshots.length === pageSize && offset + pageSize < history.totalCount"
           class="px-2.5 py-1 text-sm bg-surface-elevated border border-border-default rounded-md hover:bg-surface-overlay text-text-body transition-colors"
           @click="navigate(offset + pageSize)"
         >
-          Next
+          {{ $t('scoring.nextPage') }}
         </button>
       </div>
     </div>

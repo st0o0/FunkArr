@@ -3,14 +3,14 @@
     <!-- Tabs -->
     <div class="flex border-b border-border-subtle mb-3">
       <button
-        v-for="tab in ['Search', 'Test Results'] as const"
-        :key="tab"
+        v-for="tab in tabs"
+        :key="tab.id"
         class="px-3 py-2 text-xs font-medium transition-colors border-b-2 -mb-px"
-        :class="activeTab === tab
+        :class="activeTab === tab.id
           ? 'border-accent text-text-primary'
           : 'border-transparent text-text-secondary hover:text-text-body'"
-        @click="activeTab = tab"
-      >{{ tab }}</button>
+        @click="activeTab = tab.id"
+      >{{ tab.label }}</button>
     </div>
 
     <!-- Search Tab -->
@@ -23,7 +23,7 @@
             </svg>
             <input
               v-model="searchQuery"
-              placeholder="Search Mediathek..."
+              :placeholder="$t('debugger.searchPlaceholder')"
               class="w-full bg-surface-elevated border border-border-default rounded-md pl-7 pr-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
               @keyup.enter="doSearch"
             />
@@ -35,17 +35,17 @@
               : 'bg-surface-elevated text-text-muted cursor-not-allowed'"
             :disabled="!searchQuery.trim() || searchLoading"
             @click="doSearch"
-          >{{ searchLoading ? '...' : 'Search' }}</button>
+          >{{ searchLoading ? '...' : $t('debugger.search') }}</button>
         </div>
         <div class="flex gap-1.5">
           <input
             v-model="channelFilter"
-            placeholder="Channel"
+            :placeholder="$t('debugger.channel')"
             class="flex-1 bg-surface-elevated border border-border-default rounded-md px-2.5 py-1 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
           />
           <input
             v-model="topicFilter"
-            placeholder="Topic"
+            :placeholder="$t('debugger.topicFilter')"
             class="flex-1 bg-surface-elevated border border-border-default rounded-md px-2.5 py-1 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
           />
         </div>
@@ -55,9 +55,9 @@
 
       <div v-if="searchResults.length > 0" class="mt-3">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-text-body">{{ searchResults.length }} results · {{ selectedCount }} selected</span>
+          <span class="text-xs text-text-body">{{ searchResults.length }} {{ $t('debugger.results') }} · {{ selectedCount }} {{ $t('debugger.selected') }}</span>
           <button class="text-xs text-accent hover:text-accent/80 transition-colors" @click="toggleSelectAll">
-            {{ allSelected ? 'Deselect All' : 'Select All' }}
+            {{ allSelected ? $t('debugger.deselectAll') : $t('debugger.selectAll') }}
           </button>
         </div>
 
@@ -86,25 +86,25 @@
             : 'bg-surface-elevated text-text-muted cursor-not-allowed border border-border-default'"
           :disabled="!canTest || testing"
           @click="runTest"
-        >{{ testing ? 'Testing...' : `Test Rules (${selectedCount})` }}</button>
+        >{{ testing ? $t('preview.testing') : $t('debugger.testRules', { count: selectedCount }) }}</button>
       </div>
 
       <div v-else-if="hasSearched && !searchLoading" class="mt-3 text-center py-4">
-        <p class="text-text-secondary text-xs">No results found</p>
+        <p class="text-text-secondary text-xs">{{ $t('debugger.noResults') }}</p>
       </div>
 
       <div v-else-if="!hasSearched && !searchLoading" class="mt-3 text-center py-4">
-        <p class="text-text-muted text-xs">Search the Mediathek to find test candidates</p>
+        <p class="text-text-muted text-xs">{{ $t('debugger.searchHint') }}</p>
       </div>
     </div>
 
     <!-- Test Results Tab -->
     <div v-if="activeTab === 'Test Results'" class="flex-1 overflow-y-auto">
-      <div v-if="!results" class="text-text-secondary text-xs text-center py-4">Run a search and test rules to see results.</div>
+      <div v-if="!results" class="text-text-secondary text-xs text-center py-4">{{ $t('debugger.runTestHint') }}</div>
       <div v-else class="space-y-2">
         <div class="flex items-center justify-between mb-1">
           <span class="text-xs text-text-secondary">
-            {{ results.filter(r => r.matched).length }}/{{ results.length }} matched
+            {{ $t('preview.matchedCount', { matched: results.filter(r => r.matched).length, total: results.length }) }}
           </span>
         </div>
 
@@ -119,7 +119,7 @@
               <span
                 class="text-xs px-1.5 py-0.5 rounded shrink-0"
                 :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
-              >{{ item.matched ? 'Matched' : 'No Match' }}</span>
+              >{{ item.matched ? $t('preview.matched') : $t('preview.noMatch') }}</span>
             </div>
             <div class="text-xs text-text-secondary">
               {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
@@ -132,7 +132,7 @@
           </div>
 
           <div v-if="expanded[idx]" class="border-t border-border-default px-3 pb-3 pt-2">
-            <div class="text-xs font-semibold text-text-secondary mb-2">Rule Pipeline</div>
+            <div class="text-xs font-semibold text-text-secondary mb-2">{{ $t('preview.rulePipeline') }}</div>
             <div class="space-y-2">
               <div
                 v-for="(rt, ri) in item.ruleTraces"
@@ -146,7 +146,7 @@
                   <span
                     class="px-1.5 py-0.5 rounded text-[11px] font-medium"
                     :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
-                  >{{ isSkipped(rt, item, ri) ? 'Skipped' : outcomeLabel(rt.outcome) }}</span>
+                  >{{ isSkipped(rt, item, ri) ? $t('preview.skipped') : outcomeLabel(rt.outcome) }}</span>
                 </div>
 
                 <div v-if="rt.filterTrace && !isSkipped(rt, item, ri)" class="ml-2 mb-1">
@@ -155,18 +155,18 @@
 
                 <div v-if="rt.identificationTrace && !isSkipped(rt, item, ri)" class="ml-2 text-xs">
                   <div class="flex items-center gap-2">
-                    <span class="text-text-secondary">Identification:</span>
+                    <span class="text-text-secondary">{{ $t('preview.identification') }}:</span>
                     <span class="font-mono text-text-secondary">{{ rt.identificationTrace.strategy }}</span>
                   </div>
-                  <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">Not attempted</div>
+                  <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">{{ $t('preview.notAttempted') }}</div>
                   <div v-else-if="rt.identificationTrace.detail" class="text-status-fail ml-4">{{ rt.identificationTrace.detail }}</div>
                   <div v-else class="ml-4 text-status-ok">
                     <template v-if="item.identification">
-                      <span v-if="item.identification.season" class="mr-2">Season: <span class="font-mono">{{ item.identification.season }}</span></span>
-                      <span v-if="item.identification.episode" class="mr-2">Episode: <span class="font-mono">{{ item.identification.episode }}</span></span>
+                      <span v-if="item.identification.season" class="mr-2">{{ $t('detail.season') }}: <span class="font-mono">{{ item.identification.season }}</span></span>
+                      <span v-if="item.identification.episode" class="mr-2">{{ $t('detail.episode') }}: <span class="font-mono">{{ item.identification.episode }}</span></span>
                       <span v-if="item.identification.title">Title: <span class="font-mono">{{ item.identification.title }}</span></span>
                     </template>
-                    <span v-else>OK</span>
+                    <span v-else>{{ $t('preview.ok') }}</span>
                   </div>
                 </div>
               </div>
@@ -180,6 +180,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   testRuleSet,
   searchMediathek,
@@ -188,6 +189,8 @@ import {
   type MediathekCandidate,
 } from '../api/rulesets'
 import FilterGroupTraceView from './FilterGroupTraceView.vue'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   builderState: {
@@ -209,6 +212,11 @@ const props = defineProps<{
     }[]
   }
 }>()
+
+const tabs = computed(() => [
+  { id: 'Search' as const, label: t('debugger.searchTab') },
+  { id: 'Test Results' as const, label: t('debugger.testResultsTab') },
+])
 
 const activeTab = ref<'Search' | 'Test Results'>('Search')
 
@@ -296,17 +304,20 @@ async function runTest() {
     rules: props.builderState.rules.map(r => ({
       id: r.id,
       priority: r.priority,
-      confidence: r.confidence,
+      confidence: r.confidence ?? undefined,
       strategy: r.strategy,
-      seasonRegex: r.seasonRegex || null,
-      episodeRegex: r.episodeRegex || null,
-      captureGroup: r.captureGroup,
+      seasonRegex: r.seasonRegex || undefined,
+      episodeRegex: r.episodeRegex || undefined,
+      captureGroup: r.captureGroup ?? undefined,
       filters: hasFilters(r.filters) ? {
         all: r.filters.all.length > 0 ? r.filters.all : undefined,
         any: r.filters.any.length > 0 ? r.filters.any : undefined,
         not: r.filters.not.length > 0 ? r.filters.not : undefined,
-      } : null,
-      titleRules: r.titleRules.length > 0 ? r.titleRules : null,
+      } : undefined,
+      titleRules: r.titleRules.length > 0 ? r.titleRules.map(tr => ({
+        ...tr,
+        captureGroup: tr.captureGroup ?? undefined,
+      })) : undefined,
     })),
   }
 
@@ -343,9 +354,9 @@ function isSkipped(_rt: ItemTrace['ruleTraces'][0], item: ItemTrace, ri: number)
 
 function outcomeLabel(outcome: string): string {
   switch (outcome) {
-    case 'matched': return 'Matched'
-    case 'filterFailed': return 'Filter Failed'
-    case 'identificationFailed': return 'ID Failed'
+    case 'matched': return t('preview.matched')
+    case 'filterFailed': return t('preview.filterFailed')
+    case 'identificationFailed': return t('preview.idFailed')
     default: return outcome
   }
 }

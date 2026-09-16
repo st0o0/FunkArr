@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "overview": "Überblick",
+    "activity": "Aktivität",
+    "rulesets": "Regelwärk",
+    "setup": "Iirichtig",
+    "collapse": "Zuechlape",
+    "expand": "Ufchlape"
+  },
+  "home": {
+    "title": "Überblick",
+    "healthy": "Aues tipptopp",
+    "issueCount": "{count} Problem | {count} Problem",
+    "warningCount": "{count} Warnig | {count} Warnige",
+    "noRecentActivity": "Nüt los gsi",
+    "noRecentActivityHint": "Downloads chöme, wenn Sonarr oder Radarr e Suechi starte"
+  },
+  "activity": {
+    "title": "Aktivität",
+    "noActiveDownloads": "Kei aktive Downloads",
+    "noActiveDownloadsHint": "Downloads erschyne da, wenn Sonarr oder Radarr e Suechi starte.",
+    "noQueuedDownloads": "Nüt ir Warteschlange",
+    "noQueuedDownloadsHint": "Wartendi Downloads erschyne da.",
+    "noDownloadHistory": "Ke Verlouf vorhande",
+    "noDownloadHistoryHint": "Fertigi u fäugeschlageni Downloads erschyne da.",
+    "downloadCancelled": "Download abbroche",
+    "failedToCancel": "Download abbreche het nid funktioniert",
+    "entryDeleted": "Iitrag glöscht",
+    "failedToDelete": "Lösche het nid funktioniert",
+    "retryStarted": "Nomou gstartet",
+    "failedToRetry": "Nomou probiere het nid funktioniert"
+  },
+  "setup": {
+    "title": "Iirichtig",
+    "copiedToClipboard": "I d Zwüscheablag kopiert",
+    "fixDefault": "Lueg dini Konfiguration a u probier's nomou."
+  },
+  "rulesets": {
+    "title": "Regelwärk",
+    "noRulesetsRegistered": "Kei Regelwärk vorhande",
+    "noRulesetsHint": "Regelwärk definiere, wie Mediathek-Iiträg zu Episode zuegordnet wärde.",
+    "createFirst": "Erschts Regelwärk erstelle",
+    "noMatchingRulesets": "Nüt gfunge",
+    "noMatchingHint": "Probier en angere Suechbegriff oder Filter."
+  },
+  "detail": {
+    "exportedSuccessfully": "Export het klappt",
+    "deleteConfirm": "Lokali Überschriibig lösche? Das geit nümm zrügg.",
+    "localOverlayDeleted": "Lokali Überschriibig glöscht",
+    "failedToDelete": "Lösche het nid funktioniert",
+    "deleteFailed": "Lösche het nid funktioniert"
+  },
+  "builder": {
+    "newRuleSet": "Neus Regelwärk",
+    "editRuleSet": "Regelwärk bearbeite",
+    "save": "Speichere",
+    "saving": "Speichere...",
+    "ruleSetSaved": "Regelwärk gspeicheret",
+    "failedToSave": "Speichere het nid funktioniert",
+    "ruleSetIdRequired": "Regelwärk-ID isch Pflicht",
+    "topicRequired": "Thema isch Pflicht",
+    "noRulesDefined": "Kei Regle definiert."
+  },
+  "preview": {
+    "enterTopic": "Gib es Thema ii, damit Kandidate glade wärde",
+    "noCandidatesFound": "Nüt gfunge für \"{topic}\"",
+    "addRulesToSeeMatches": "Regle hinzuefüege, de gsehsch Treffer",
+    "previewDisclaimer": "Nur Vorschou — für genaui Ergebnis en vollständige Test starte",
+    "matched": "Treffer",
+    "noMatch": "Ke Treffer"
+  },
+  "downloads": {
+    "noActiveDownloads": "Kei aktive Downloads",
+    "noActiveDownloadsHint": "Suechi vo Sonarr oder Radarr erschyne da"
+  },
+  "common": {
+    "loading": "Lade..."
+  }
+}

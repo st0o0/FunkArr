@@ -1,13 +1,13 @@
 <template>
   <div class="max-w-3xl mx-auto">
     <div class="flex items-center justify-between mb-5">
-      <h1 class="text-xl font-semibold text-text-primary tracking-tight">Activity</h1>
+      <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ $t('activity.title') }}</h1>
       <div class="flex items-center gap-3 text-xs">
         <span v-if="totalSpeed > 0" class="text-text-secondary tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search..."
+          :placeholder="$t('activity.search')"
           class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted w-40 focus:outline-none focus:border-border-focus"
         />
       </div>
@@ -37,8 +37,8 @@
       <EmptyState
         v-if="activeItems.length === 0"
         icon='<path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>'
-        title="No active downloads"
-        description="Downloads appear here when Sonarr or Radarr trigger a search."
+        :title="$t('activity.noActiveDownloads')"
+        :description="$t('activity.noActiveDownloadsHint')"
       />
       <div v-else class="space-y-2">
         <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-2.5 flex items-center gap-4">
@@ -47,7 +47,7 @@
               <div class="h-full bg-accent rounded-full transition-all duration-700" :style="{ width: `${overallProgress}%` }" />
             </div>
           </div>
-          <span class="text-xs text-text-secondary tabular-nums shrink-0">{{ activeItems.length }} active</span>
+          <span class="text-xs text-text-secondary tabular-nums shrink-0">{{ activeItems.length }} {{ $t('activity.active').toLowerCase() }}</span>
         </div>
         <template v-for="group in activeGroups" :key="group.series">
           <div v-if="group.items.length === 1" class="rounded-lg border border-border-default overflow-hidden px-4 py-2.5 bg-surface-raised">
@@ -63,8 +63,8 @@
       <EmptyState
         v-if="queuedItems.length === 0"
         icon='<path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>'
-        title="No queued downloads"
-        description="Items waiting to download will appear here."
+        :title="$t('activity.noQueuedDownloads')"
+        :description="$t('activity.noQueuedDownloadsHint')"
       />
       <div v-else class="space-y-1.5">
         <div
@@ -83,7 +83,7 @@
           <button
             @click="handleCancel(item.downloadId)"
             class="p-1 text-text-secondary hover:text-status-fail transition-colors rounded shrink-0 ml-3"
-            title="Cancel"
+            :title="$t('queue.cancel')"
           >
             <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
               <path d="M4 4l8 8M12 4l-8 8" />
@@ -100,7 +100,7 @@
           v-model="selectedCategory"
           class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:border-border-focus focus:outline-none transition-colors"
         >
-          <option value="">All categories</option>
+          <option value="">{{ $t('activity.allCategories') }}</option>
           <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
         </select>
       </div>
@@ -111,8 +111,8 @@
       <EmptyState
         v-else-if="history && history.items.length === 0"
         icon='<circle cx="8" cy="8" r="6"/><path d="M8 4v4l2.5 2.5"/>'
-        title="No download history"
-        description="Completed and failed downloads will appear here."
+        :title="$t('activity.noDownloadHistory')"
+        :description="$t('activity.noDownloadHistoryHint')"
       />
 
       <div v-else-if="history">
@@ -129,12 +129,12 @@
             </colgroup>
             <thead>
               <tr class="bg-surface-raised text-left text-xs text-text-secondary border-b border-border-default">
-                <th class="px-4 py-2.5 font-medium">Title</th>
-                <th class="px-3 py-2.5 font-medium text-center">Quality</th>
-                <th class="px-3 py-2.5 font-medium text-right">Size</th>
-                <th class="px-3 py-2.5 font-medium text-right">Duration</th>
-                <th class="px-3 py-2.5 font-medium">Status</th>
-                <th class="px-3 py-2.5 font-medium">Completed</th>
+                <th class="px-4 py-2.5 font-medium">{{ $t('activity.title_column') }}</th>
+                <th class="px-3 py-2.5 font-medium text-center">{{ $t('activity.quality') }}</th>
+                <th class="px-3 py-2.5 font-medium text-right">{{ $t('activity.size') }}</th>
+                <th class="px-3 py-2.5 font-medium text-right">{{ $t('activity.duration') }}</th>
+                <th class="px-3 py-2.5 font-medium">{{ $t('activity.status') }}</th>
+                <th class="px-3 py-2.5 font-medium">{{ $t('activity.completed') }}</th>
                 <th class="px-3 py-2.5 font-medium"></th>
               </tr>
             </thead>
@@ -165,20 +165,20 @@
                   <span class="inline-flex items-center gap-1.5 text-xs">
                     <span
                       class="w-1.5 h-1.5 rounded-full"
-                      :class="item.status === 'Completed' ? 'bg-status-ok' : 'bg-status-fail'"
+                      :class="item.status === HistoryStatus.Completed ? 'bg-status-ok' : 'bg-status-fail'"
                     />
-                    {{ item.status }}
+                    {{ item.status === HistoryStatus.Completed ? 'Completed' : 'Failed' }}
                   </span>
                 </td>
                 <td class="px-3 py-2.5 text-text-secondary text-xs tabular-nums" :title="formatRelativeDate(item.completedAt)">{{ formatAbsoluteDate(item.completedAt) }}</td>
                 <td class="px-3 py-2.5 text-right">
                   <div class="flex items-center justify-end gap-1">
                     <button
-                      v-if="item.status === 'Failed'"
+                      v-if="item.status === HistoryStatus.Failed"
                       @click="handleRetry(item.downloadId)"
                       class="px-2 py-1 text-xs text-text-secondary hover:text-text-body border border-border-default rounded transition-colors"
                     >
-                      Retry
+                      {{ $t('activity.retry') }}
                     </button>
                     <button
                       @click="handleDeleteHistory(item.downloadId)"
@@ -197,21 +197,21 @@
         </div>
 
         <div v-if="totalPages > 1" class="flex items-center justify-between mt-4 text-xs text-text-secondary">
-          <span class="tabular-nums">{{ rangeStart + 1 }}-{{ Math.min(rangeStart + pageSize, history.totalItems) }} of {{ history.totalItems }}</span>
+          <span class="tabular-nums">{{ rangeStart + 1 }}-{{ Math.min(rangeStart + pageSize, history.totalItems) }} {{ $t('common.of') }} {{ history.totalItems }}</span>
           <div class="flex gap-1.5">
             <button
               :disabled="page <= 1"
               @click="page--"
               class="px-2.5 py-1 rounded-md border border-border-default text-text-secondary hover:bg-surface-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              Prev
+              {{ $t('activity.prev') }}
             </button>
             <button
               :disabled="page >= totalPages"
               @click="page++"
               class="px-2.5 py-1 rounded-md border border-border-default text-text-secondary hover:bg-surface-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              {{ $t('activity.next') }}
             </button>
           </div>
         </div>
@@ -222,6 +222,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useGroupedQueue, type QueueGroup } from '../composables/useGroupedQueue'
 import { getHistory, getHistoryCategories, deleteQueueItem, deleteHistoryItem, retryDownload, type HistoryResponse } from '../api/downloads'
 import QueueGroupCard from '../components/QueueGroupCard.vue'
@@ -232,20 +233,22 @@ import ReleaseTitle from '../components/ReleaseTitle.vue'
 import { useToast } from '../composables/useToast'
 import { formatSpeed, formatSize, formatDuration, formatRelativeDate, formatAbsoluteDate } from '../utils/format'
 import { parseReleaseName } from '../utils/releaseTitle'
+import { QueueStatus, HistoryStatus } from '../api/enums'
 
+const { t } = useI18n()
 const { toast } = useToast()
 const { groups, items, activeCount, queuedCount, totalSpeed, release } = useGroupedQueue()
 
 const activeTab = ref<'active' | 'queued' | 'history'>('active')
 const searchQuery = ref('')
 
-const activeItems = computed(() => items.value.filter(i => i.status === 'Processing'))
-const queuedItems = computed(() => items.value.filter(i => i.status === 'Queued'))
+const activeItems = computed(() => items.value.filter(i => i.status === QueueStatus.Processing))
+const queuedItems = computed(() => items.value.filter(i => i.status === QueueStatus.Queued))
 
 const activeGroups = computed<QueueGroup[]>(() =>
   groups.value.filter(g => g.activeCount > 0).map(g => ({
     ...g,
-    items: g.items.filter(i => i.status === 'Processing'),
+    items: g.items.filter(i => i.status === QueueStatus.Processing),
   }))
 )
 
@@ -256,17 +259,17 @@ const overallProgress = computed(() => {
 })
 
 const tabs = computed(() => [
-  { id: 'active' as const, label: 'Active', count: activeCount.value },
-  { id: 'queued' as const, label: 'Queued', count: queuedCount.value },
-  { id: 'history' as const, label: 'History', count: 0 },
+  { id: 'active' as const, label: t('activity.active'), count: activeCount.value },
+  { id: 'queued' as const, label: t('activity.queuedTab'), count: queuedCount.value },
+  { id: 'history' as const, label: t('activity.history'), count: 0 },
 ])
 
 async function handleCancel(id: string) {
   try {
     await deleteQueueItem(id)
-    toast('Download cancelled')
+    toast(t('activity.downloadCancelled'))
   } catch {
-    toast('Failed to cancel download', 'error')
+    toast(t('activity.failedToCancel'), 'error')
   }
 }
 
@@ -312,20 +315,20 @@ async function fetchCategories() {
 async function handleDeleteHistory(id: string) {
   try {
     await deleteHistoryItem(id)
-    toast('Entry deleted')
+    toast(t('activity.entryDeleted'))
     await fetchHistory()
   } catch {
-    toast('Failed to delete entry', 'error')
+    toast(t('activity.failedToDelete'), 'error')
   }
 }
 
 async function handleRetry(id: string) {
   try {
     await retryDownload(id)
-    toast('Retry started')
+    toast(t('activity.retryStarted'))
     await fetchHistory()
   } catch {
-    toast('Failed to retry download', 'error')
+    toast(t('activity.failedToRetry'), 'error')
   }
 }
 

@@ -1,0 +1,79 @@
+{
+  "nav": {
+    "overview": "Übersicht",
+    "activity": "Aktivität",
+    "rulesets": "Regelwerke",
+    "setup": "Einrichtung",
+    "collapse": "Zsammklappen",
+    "expand": "Aufklappen"
+  },
+  "home": {
+    "title": "Übersicht",
+    "healthy": "Passt eh",
+    "issueCount": "{count} Problem | {count} Probleme",
+    "warningCount": "{count} Warnung | {count} Warnungen",
+    "noRecentActivity": "Nix los grad",
+    "noRecentActivityHint": "Downloads kommen, wenn Sonarr oder Radarr a Suche starten"
+  },
+  "activity": {
+    "title": "Aktivität",
+    "noActiveDownloads": "Ka Download aktiv",
+    "noActiveDownloadsHint": "Downloads tauchen auf, wenn Sonarr oder Radarr a Suche starten.",
+    "noQueuedDownloads": "Nix in da Warteschlange",
+    "noQueuedDownloadsHint": "Wartende Downloads scheinen do auf.",
+    "noDownloadHistory": "Kein Verlauf vorhanden",
+    "noDownloadHistoryHint": "Fertige und fehlgschlagene Downloads scheinen do auf.",
+    "downloadCancelled": "Download obbrochen",
+    "failedToCancel": "Download obbrechen hot ned funktioniert",
+    "entryDeleted": "Eintrag glöscht",
+    "failedToDelete": "Löschen hot ned funktioniert",
+    "retryStarted": "Nochmal gestartet",
+    "failedToRetry": "Wiederholen hot ned funktioniert"
+  },
+  "setup": {
+    "title": "Einrichtung",
+    "copiedToClipboard": "In die Zwischenablage kopiert",
+    "fixDefault": "Schau da dei Konfiguration an und probier's nochmal."
+  },
+  "rulesets": {
+    "title": "Regelwerke",
+    "noRulesetsRegistered": "Ka Regelwerk vorhanden",
+    "noRulesetsHint": "Regelwerke definieren, wie Mediathek-Einträge zu Episoden zuagordnet wern.",
+    "createFirst": "Erstes Regelwerk erstellen",
+    "noMatchingRulesets": "Nix gfunden",
+    "noMatchingHint": "Probier an anderen Suchbegriff oder Filter."
+  },
+  "detail": {
+    "exportedSuccessfully": "Export hot passt",
+    "deleteConfirm": "Lokale Überschreibung löschen? Des geht nimmer z'ruck.",
+    "localOverlayDeleted": "Lokale Überschreibung glöscht",
+    "failedToDelete": "Löschen hot ned funktioniert",
+    "deleteFailed": "Löschen hot ned funktioniert"
+  },
+  "builder": {
+    "newRuleSet": "Neues Regelwerk",
+    "editRuleSet": "Regelwerk bearbeiten",
+    "save": "Speichern",
+    "saving": "Speichere...",
+    "ruleSetSaved": "Regelwerk gspeichert",
+    "failedToSave": "Speichern hot ned funktioniert",
+    "ruleSetIdRequired": "Regelwerk-ID is Pflicht",
+    "topicRequired": "Thema is Pflicht",
+    "noRulesDefined": "Ka Regeln definiert."
+  },
+  "preview": {
+    "enterTopic": "Gib a Thema ein, damit Kandidaten gladen wern",
+    "noCandidatesFound": "Nix gfunden für \"{topic}\"",
+    "addRulesToSeeMatches": "Regeln hinzufügen, dann siagst Treffer",
+    "previewDisclaimer": "Nur Vorschau — für genaue Ergebnisse an vollständigen Test starten",
+    "matched": "Treffer",
+    "noMatch": "Ka Treffer"
+  },
+  "downloads": {
+    "noActiveDownloads": "Ka aktive Downloads",
+    "noActiveDownloadsHint": "Suchen von Sonarr oder Radarr scheinen do auf"
+  },
+  "common": {
+    "loading": "Laden..."
+  }
+}

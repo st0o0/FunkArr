@@ -11,10 +11,10 @@
     <div v-else class="grid grid-cols-[1fr_420px] gap-6">
       <!-- Left pane: Builder form -->
       <div class="space-y-4">
-        <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ isEditMode ? 'Edit RuleSet' : 'New RuleSet' }}</h1>
+        <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ isEditMode ? $t('builder.editRuleSet') : $t('builder.newRuleSet') }}</h1>
 
         <div v-if="validationErrors.length > 0" class="bg-status-fail/10 border border-status-fail/30 rounded-lg p-4">
-          <p class="text-sm font-medium text-status-fail mb-2">{{ validationErrors.length }} validation error{{ validationErrors.length > 1 ? 's' : '' }}:</p>
+          <p class="text-sm font-medium text-status-fail mb-2">{{ $t('builder.validationErrorCount', { count: validationErrors.length }) }}:</p>
           <ul class="space-y-1">
             <li v-for="(err, idx) in validationErrors" :key="idx" class="text-sm text-text-body">
               <span class="font-mono text-xs text-text-secondary">{{ err.field }}</span>
@@ -26,47 +26,70 @@
 
         <!-- Identity Section -->
         <section>
-          <h2 class="text-sm font-semibold mb-1 text-text-body">Identity</h2>
-          <p class="text-xs text-text-secondary mb-2">The Mediathek topic name and external IDs to match this show.</p>
+          <h2 class="text-sm font-semibold mb-1 text-text-body">{{ $t('builder.identity') }}</h2>
+          <p class="text-xs text-text-secondary mb-2">{{ $t('builder.identityDescription') }}</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4 space-y-3">
             <div>
-              <label class="block text-xs text-text-body mb-1 font-medium">RuleSet ID</label>
+              <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.ruleSetId') }}</label>
               <input
                 v-model="form.ruleSetId"
                 :disabled="isEditMode"
                 type="text"
-                placeholder="my-show"
+                :placeholder="$t('builder.ruleSetIdPlaceholder')"
                 class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus disabled:opacity-50"
               />
               <div v-if="ruleSetIdError" class="text-status-fail text-xs mt-1">{{ ruleSetIdError }}</div>
             </div>
             <div>
-              <label class="block text-xs text-text-body mb-1 font-medium">Topic</label>
+              <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.topic') }}</label>
               <input
                 v-model="form.topic"
                 type="text"
-                placeholder="Show Name"
+                :placeholder="$t('builder.topicPlaceholder')"
                 class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
               />
             </div>
             <div>
-              <label class="block text-xs text-text-body mb-1 font-medium">Aliases</label>
+              <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.aliasLabel') }}</label>
               <div class="space-y-1.5">
                 <div v-for="(_, idx) in form.aliases" :key="idx" class="flex items-center gap-2">
                   <input
                     v-model="form.aliases[idx]"
                     type="text"
-                    placeholder="Alias"
+                    :placeholder="$t('builder.aliasPlaceholder')"
                     class="flex-1 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
                   />
                   <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click="form.aliases.splice(idx, 1)">×</button>
                 </div>
               </div>
-              <button class="text-xs text-text-secondary hover:text-text-body mt-1.5 transition-colors" @click="form.aliases.push('')">+ Add Alias</button>
+              <button class="text-xs text-text-secondary hover:text-text-body mt-1.5 transition-colors" @click="form.aliases.push('')">{{ $t('builder.addAlias') }}</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.mediaType') }}</label>
+                <select
+                  v-model="form.mediaType"
+                  class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus"
+                >
+                  <option value="show">{{ $t('builder.show') }}</option>
+                  <option value="movie">{{ $t('builder.movie') }}</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.mediaName') }}</label>
+                <input
+                  v-model="form.mediaName"
+                  type="text"
+                  :placeholder="$t('builder.mediaNamePlaceholder')"
+                  class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus"
+                  @input="mediaNameEdited = true"
+                />
+                <p class="text-xs text-text-muted mt-0.5">{{ $t('builder.mediaNameHint') }}</p>
+              </div>
             </div>
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block text-xs text-text-body mb-1 font-medium">TVDB ID</label>
+                <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.tvdbId') }}</label>
                 <input
                   v-model.number="form.tvdbId"
                   type="number"
@@ -75,7 +98,7 @@
                 />
               </div>
               <div>
-                <label class="block text-xs text-text-body mb-1 font-medium">IMDB ID</label>
+                <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.imdbId') }}</label>
                 <input
                   v-model="form.imdbId"
                   type="text"
@@ -84,7 +107,7 @@
                 />
               </div>
               <div>
-                <label class="block text-xs text-text-body mb-1 font-medium">TMDB ID</label>
+                <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.tmdbId') }}</label>
                 <input
                   v-model.number="form.tmdbId"
                   type="number"
@@ -98,8 +121,8 @@
 
         <!-- Default Confidence -->
         <section>
-          <h2 class="text-sm font-semibold mb-1 text-text-body">Default Confidence</h2>
-          <p class="text-xs text-text-secondary mb-2">How confident matched results are (0.0-1.0). Higher = stricter matching.</p>
+          <h2 class="text-sm font-semibold mb-1 text-text-body">{{ $t('builder.defaultConfidence') }}</h2>
+          <p class="text-xs text-text-secondary mb-2">{{ $t('builder.defaultConfidenceDescription') }}</p>
           <div class="bg-surface-raised rounded-lg border border-border-default p-4">
             <input
               v-model.number="form.confidence"
@@ -116,13 +139,13 @@
         <section>
           <div class="flex items-center justify-between mb-2">
             <div>
-              <h2 class="text-sm font-semibold text-text-body">Matching Rules</h2>
-              <p class="text-xs text-text-secondary mt-0.5">Rules are tried in priority order. First match wins.</p>
+              <h2 class="text-sm font-semibold text-text-body">{{ $t('builder.matchingRules') }}</h2>
+              <p class="text-xs text-text-secondary mt-0.5">{{ $t('builder.matchingRulesDescription') }}</p>
             </div>
-            <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addRule">+ Add Rule</button>
+            <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addRule">{{ $t('builder.addRule') }}</button>
           </div>
 
-          <div v-if="form.rules.length === 0" class="text-text-secondary text-sm">No rules defined.</div>
+          <div v-if="form.rules.length === 0" class="text-text-secondary text-sm">{{ $t('builder.noRulesDefined') }}</div>
 
           <div v-else class="space-y-2.5">
             <div
@@ -137,7 +160,7 @@
                 @click="rule.expanded = !rule.expanded"
               >
                 <div class="flex items-baseline gap-3">
-                  <span class="font-mono text-sm font-medium text-text-primary">{{ rule.id || '(no id)' }}</span>
+                  <span class="font-mono text-sm font-medium text-text-primary">{{ rule.id || $t('builder.noId') }}</span>
                   <span class="text-text-secondary text-xs">{{ strategyLabel(rule.strategy) }}</span>
                   <span class="text-text-secondary text-xs">prio {{ rule.priority }}</span>
                 </div>
@@ -151,59 +174,59 @@
               <div v-if="rule.expanded" class="px-4 pb-4 space-y-3 border-t border-border-default pt-3">
                 <div class="grid grid-cols-3 gap-3">
                   <div>
-                    <label class="block text-xs text-text-body mb-1 font-medium">Rule ID</label>
+                    <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.ruleId') }}</label>
                     <input v-model="rule.id" type="text" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-body mb-1 font-medium">Priority</label>
+                    <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.priority') }}</label>
                     <input v-model.number="rule.priority" type="number" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-body mb-1 font-medium">Confidence</label>
+                    <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.confidence') }}</label>
                     <input v-model.number="rule.confidence" type="number" min="0" max="1" step="0.01" placeholder="default" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                 </div>
 
                 <!-- Strategy picker -->
                 <div>
-                  <label class="block text-xs text-text-body mb-1 font-medium">Strategy</label>
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.strategy') }}</label>
                   <select
                     v-model="rule.strategy"
                     class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus"
                     @change="onStrategyChange(rule)"
                   >
-                    <option value="">- select -</option>
-                    <option value="seasonAndEpisodeNumber">Season & Episode Number</option>
-                    <option value="byAbsoluteEpisodeNumber">Absolute Episode Number</option>
-                    <option value="itemTitleExact">Title Exact Match</option>
-                    <option value="itemTitleIncludes">Title Includes</option>
-                    <option value="itemTitleEqualsAirdate">Title Equals Airdate</option>
+                    <option value="">{{ $t('builder.selectStrategy') }}</option>
+                    <option value="seasonAndEpisodeNumber">{{ $t('builder.seasonEpisodeNumber') }}</option>
+                    <option value="byAbsoluteEpisodeNumber">{{ $t('builder.absoluteEpisodeNumber') }}</option>
+                    <option value="itemTitleExact">{{ $t('builder.titleExactMatch') }}</option>
+                    <option value="itemTitleIncludes">{{ $t('builder.titleIncludes') }}</option>
+                    <option value="itemTitleEqualsAirdate">{{ $t('builder.titleEqualsAirdate') }}</option>
                   </select>
                 </div>
 
                 <!-- Strategy-specific fields: RegexCapture -->
                 <div v-if="rule.strategy === 'seasonAndEpisodeNumber' || rule.strategy === 'byAbsoluteEpisodeNumber'" class="space-y-2">
                   <div v-if="rule.strategy === 'seasonAndEpisodeNumber'">
-                    <label class="block text-xs text-text-body mb-1 font-medium">Season Regex</label>
+                    <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.seasonRegex') }}</label>
                     <input v-model="rule.seasonRegex" type="text" placeholder="(?<=S)(\d{2,4})(?=/E)" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-body mb-1 font-medium">Episode Regex</label>
+                    <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.episodeRegex') }}</label>
                     <input v-model="rule.episodeRegex" type="text" placeholder="(?<=E)(\d{2,4})(?=\))" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                   <div>
-                    <label class="block text-xs text-text-body mb-1 font-medium">Capture Group (optional)</label>
+                    <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.captureGroup') }}</label>
                     <input v-model.number="rule.captureGroup" type="number" placeholder="auto" class="w-32 bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
                 </div>
 
                 <!-- Strategy-specific fields: TitleConstruction -->
                 <div v-if="rule.strategy === 'itemTitleExact' || rule.strategy === 'itemTitleIncludes'" class="space-y-2">
-                  <label class="block text-xs text-text-body mb-1 font-medium">Title Rules</label>
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.titleRules') }}</label>
                   <div v-for="(tp, tIdx) in rule.titleRules" :key="tIdx" class="flex items-start gap-2 p-2 bg-surface-elevated/50 rounded-lg">
                     <select v-model="tp.type" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                      <option value="static">static</option>
-                      <option value="regex">regex</option>
+                      <option value="static">{{ $t('builder.titlePartStatic') }}</option>
+                      <option value="regex">{{ $t('builder.titlePartRegex') }}</option>
                     </select>
                     <template v-if="tp.type === 'static'">
                       <input v-model="tp.value" type="text" placeholder="static text" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
@@ -220,18 +243,18 @@
                     </template>
                     <button class="text-status-fail/60 hover:text-status-fail text-sm transition-colors" @click="rule.titleRules.splice(tIdx, 1)">×</button>
                   </div>
-                  <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addTitleRule(rule)">+ Add Title Part</button>
+                  <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addTitleRule(rule)">{{ $t('builder.addTitlePart') }}</button>
                 </div>
 
                 <!-- Filter builder -->
                 <div class="space-y-2">
-                  <label class="block text-xs text-text-body mb-1 font-medium">Filters</label>
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.filtersLabel') }}</label>
                   <div v-for="section in (['all', 'any', 'not'] as const)" :key="section" class="space-y-1">
                     <div class="flex items-center justify-between">
                       <span class="text-sm font-semibold text-text-body">{{ section }}</span>
-                      <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addFilterCondition(rule, section)">+ Add</button>
+                      <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addFilterCondition(rule, section)">{{ $t('builder.addFilter') }}</button>
                     </div>
-                    <div v-if="rule.filters[section].length === 0" class="text-text-secondary text-xs pl-2">(no conditions)</div>
+                    <div v-if="rule.filters[section].length === 0" class="text-text-secondary text-xs pl-2">{{ $t('builder.noConditions') }}</div>
                     <div v-for="(cond, cIdx) in rule.filters[section]" :key="cIdx" class="flex items-center gap-1.5">
                       <select v-model="cond.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
                         <option value="title">title</option>
@@ -266,13 +289,13 @@
             :disabled="saving"
             @click="handleSave"
           >
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? $t('builder.saving') : $t('builder.save') }}
           </button>
           <router-link
             :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
             class="px-3 py-1.5 bg-surface-elevated text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
           >
-            Cancel
+            {{ $t('builder.cancelButton') }}
           </router-link>
         </div>
         <div v-if="saveError" class="text-status-fail text-sm">{{ saveError }}</div>
@@ -289,8 +312,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   getRuleSetRaw, createRuleSet, updateRuleSet, ValidationFailedError,
   type RuleSetWriteRequest, type RuleSetWriteRule, type FilterConditionInput, type TitleRuleInput,
@@ -301,6 +325,7 @@ import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 import { useToast } from '../composables/useToast'
 
+const { t } = useI18n()
 const { toast } = useToast()
 
 interface FormFilterCondition {
@@ -343,14 +368,14 @@ const isEditMode = computed(() => !!editId)
 const breadcrumbItems = computed(() => {
   if (isEditMode.value) {
     return [
-      { label: 'RuleSets', to: '/rulesets' },
+      { label: t('rulesets.title'), to: '/rulesets' },
       { label: editId!, to: `/rulesets/${editId}` },
-      { label: 'Edit' },
+      { label: t('detail.edit') },
     ]
   }
   return [
-    { label: 'RuleSets', to: '/rulesets' },
-    { label: 'New' },
+    { label: t('rulesets.title'), to: '/rulesets' },
+    { label: t('builder.newRuleSet') },
   ]
 })
 
@@ -364,6 +389,8 @@ const form = reactive({
   ruleSetId: '',
   topic: '',
   aliases: [] as string[],
+  mediaType: 'show',
+  mediaName: '',
   tvdbId: null as number | null,
   imdbId: '',
   tmdbId: null as number | null,
@@ -373,9 +400,18 @@ const form = reactive({
   rules: [] as FormRule[],
 })
 
+const mediaNameEdited = ref(false)
+const isCommunitySource = ref(false)
+
+watch(() => form.topic, (newTopic) => {
+  if (!mediaNameEdited.value) {
+    form.mediaName = newTopic
+  }
+})
+
 const ruleSetIdError = computed(() => {
   if (!form.ruleSetId && !isEditMode.value) return ''
-  if (form.ruleSetId && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.ruleSetId)) return 'Must be kebab-case (lowercase, numbers, hyphens)'
+  if (form.ruleSetId && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(form.ruleSetId)) return t('builder.ruleSetIdKebabError')
   return ''
 })
 
@@ -420,11 +456,11 @@ function addFilterCondition(rule: FormRule, section: 'all' | 'any' | 'not') {
 
 function strategyLabel(strategy: string): string {
   switch (strategy) {
-    case 'seasonAndEpisodeNumber': return 'Season & Episode'
-    case 'byAbsoluteEpisodeNumber': return 'Absolute Episode'
-    case 'itemTitleExact': return 'Title Exact'
-    case 'itemTitleIncludes': return 'Title Includes'
-    case 'itemTitleEqualsAirdate': return 'Airdate'
+    case 'seasonAndEpisodeNumber': return t('builder.seasonEpisodeNumber')
+    case 'byAbsoluteEpisodeNumber': return t('builder.absoluteEpisodeNumber')
+    case 'itemTitleExact': return t('builder.titleExactMatch')
+    case 'itemTitleIncludes': return t('builder.titleIncludes')
+    case 'itemTitleEqualsAirdate': return t('builder.titleEqualsAirdate')
     default: return strategy || '(none)'
   }
 }
@@ -437,43 +473,53 @@ function serializeForm(): RuleSetWriteRequest {
     if (r.filters.not.length > 0) (filters as any).not = r.filters.not.map(c => ({ field: c.field, op: c.op, value: c.value } as FilterConditionInput))
     const hasFilters = r.filters.all.length > 0 || r.filters.any.length > 0 || r.filters.not.length > 0
 
-    const titleRules: TitleRuleInput[] | null = r.titleRules.length > 0
-      ? r.titleRules.map(tp => ({
-          type: tp.type,
-          field: tp.type === 'regex' ? tp.field : undefined,
-          pattern: tp.type === 'regex' ? tp.pattern : undefined,
-          captureGroup: tp.type === 'regex' ? tp.captureGroup : undefined,
-          value: tp.type === 'static' ? tp.value : undefined,
-        } as TitleRuleInput))
-      : null
+    const titleRules: TitleRuleInput[] | undefined = r.titleRules.length > 0
+      ? r.titleRules.map(tp => {
+          const rule: TitleRuleInput = { type: tp.type }
+          if (tp.type === 'regex') {
+            if (tp.field) rule.field = tp.field
+            if (tp.pattern) rule.pattern = tp.pattern
+            if (tp.captureGroup != null) rule.captureGroup = tp.captureGroup
+          } else {
+            if (tp.value) rule.value = tp.value
+          }
+          return rule
+        })
+      : undefined
 
-    return {
+    const rule: RuleSetWriteRule = {
       id: r.id,
       priority: r.priority,
-      confidence: r.confidence,
       strategy: r.strategy,
-      seasonRegex: r.seasonRegex || null,
-      episodeRegex: r.episodeRegex || null,
-      captureGroup: r.captureGroup,
-      filters: hasFilters ? filters : null,
-      titleRules,
     }
+    if (r.confidence != null) rule.confidence = r.confidence
+    if (r.seasonRegex) rule.seasonRegex = r.seasonRegex
+    if (r.episodeRegex) rule.episodeRegex = r.episodeRegex
+    if (r.captureGroup != null) rule.captureGroup = r.captureGroup
+    if (hasFilters) rule.filters = filters
+    if (titleRules) rule.titleRules = titleRules
+    return rule
   })
 
-  const media = (form.tvdbId || form.imdbId || form.tmdbId)
-    ? { tvdbId: form.tvdbId, imdbId: form.imdbId || null, tmdbId: form.tmdbId }
-    : undefined
+  const media: RuleSetWriteRequest['media'] = {
+    name: form.mediaName || form.topic,
+    type: form.mediaType,
+  }
+  if (form.tvdbId) media.tvdbId = form.tvdbId
+  if (form.imdbId) media.imdbId = form.imdbId
+  if (form.tmdbId) media.tmdbId = form.tmdbId
 
-  return {
-    ruleSetId: isEditMode.value ? undefined : form.ruleSetId,
+  const result: RuleSetWriteRequest = {
     topic: form.topic,
     aliases: form.aliases.filter(a => a.trim() !== ''),
     media,
     confidence: form.confidence,
-    standalone: form.standalone || undefined,
-    disable: form.disable.length > 0 ? form.disable : undefined,
     rules,
   }
+  if (!isEditMode.value) result.ruleSetId = form.ruleSetId
+  if (isEditMode.value && isCommunitySource.value) result.standalone = true
+  if (form.disable.length > 0) result.disable = form.disable
+  return result
 }
 
 async function handleSave() {
@@ -481,7 +527,7 @@ async function handleSave() {
   validationErrors.value = []
 
   if (!isEditMode.value && !form.ruleSetId) {
-    saveError.value = 'RuleSet ID is required'
+    saveError.value = t('builder.ruleSetIdRequired')
     return
   }
   if (ruleSetIdError.value) {
@@ -489,7 +535,7 @@ async function handleSave() {
     return
   }
   if (!form.topic.trim()) {
-    saveError.value = 'Topic is required'
+    saveError.value = t('builder.topicRequired')
     return
   }
 
@@ -498,19 +544,19 @@ async function handleSave() {
     const data = serializeForm()
     if (isEditMode.value) {
       await updateRuleSet(editId!, data)
-      toast('RuleSet saved')
+      toast(t('builder.ruleSetSaved'))
       router.push(`/rulesets/${editId}`)
     } else {
       await createRuleSet(data)
-      toast('RuleSet saved')
+      toast(t('builder.ruleSetSaved'))
       router.push(`/rulesets/${form.ruleSetId}`)
     }
   } catch (e) {
     if (e instanceof ValidationFailedError) {
       validationErrors.value = e.errors
-      saveError.value = `${e.errors.length} validation error${e.errors.length > 1 ? 's' : ''} found`
+      saveError.value = t('builder.validationErrorCount', { count: e.errors.length })
     } else {
-      saveError.value = e instanceof Error ? e.message : 'Failed to save'
+      saveError.value = e instanceof Error ? e.message : t('builder.failedToSave')
     }
     toast(saveError.value!, 'error')
   } finally {
@@ -527,6 +573,10 @@ onMounted(async () => {
     form.ruleSetId = editId
     form.topic = raw.topic || ''
     form.aliases = raw.aliases ? [...raw.aliases] : []
+    form.mediaType = raw.media?.type ?? 'show'
+    form.mediaName = raw.media?.name ?? raw.topic ?? ''
+    mediaNameEdited.value = (raw.media?.name ?? '') !== (raw.topic ?? '')
+    isCommunitySource.value = !raw.standalone
     form.tvdbId = raw.media?.tvdbId ?? null
     form.imdbId = raw.media?.imdbId ?? ''
     form.tmdbId = raw.media?.tmdbId ?? null

@@ -51,19 +51,30 @@
                 ? 'bg-surface-elevated text-text-primary'
                 : 'text-text-secondary hover:bg-surface-elevated/50 hover:text-text-body'
             ]"
-            :title="collapsed ? 'Setup' : undefined"
+            :title="collapsed ? $t('nav.setup') : undefined"
           >
             <svg class="w-4 h-4 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
             </svg>
-            <span v-if="!collapsed" class="truncate">Setup</span>
+            <span v-if="!collapsed" class="truncate">{{ $t('nav.setup') }}</span>
           </button>
         </router-link>
+        <select
+          v-if="!collapsed"
+          :value="locale"
+          @change="changeLocale(($event.target as HTMLSelectElement).value)"
+          class="w-full bg-surface-elevated border border-border-default rounded-md px-2 py-1 text-xs text-text-body focus:outline-none focus:border-border-focus"
+        >
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+          <option value="de-AT">Österreichisch</option>
+          <option value="de-CH">Schwizerdütsch</option>
+        </select>
         <button
           @click="toggle"
           class="w-full flex items-center rounded-md text-text-secondary hover:text-text-body hover:bg-surface-elevated/50 transition-colors"
           :class="collapsed ? 'justify-center py-2' : 'gap-2.5 px-2.5 py-1.5'"
-          :title="collapsed ? 'Expand' : 'Collapse'"
+          :title="collapsed ? $t('nav.expand') : $t('nav.collapse')"
         >
           <svg
             class="w-4 h-4 transition-transform duration-200"
@@ -72,14 +83,14 @@
           >
             <path d="M10 4l-4 4 4 4" />
           </svg>
-          <span v-if="!collapsed" class="text-xs">Collapse</span>
+          <span v-if="!collapsed" class="text-xs">{{ $t('nav.collapse') }}</span>
         </button>
         <div v-if="!collapsed && (appVersion || rulesetVersion)" class="grid grid-cols-[auto_1fr] gap-x-1.5 px-2.5 pb-1 pt-0.5 text-[11px] text-text-muted tabular-nums">
           <template v-if="appVersion">
-            <span>App</span><span>v{{ appVersion }}</span>
+            <span>{{ $t('common.app') }}</span><span>v{{ appVersion }}</span>
           </template>
           <template v-if="rulesetVersion">
-            <span>Rulesets</span><span>v{{ rulesetVersion }}</span>
+            <span>{{ $t('common.rulesetVersion') }}</span><span>v{{ rulesetVersion }}</span>
           </template>
         </div>
       </div>
@@ -94,11 +105,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { setLocale } from '../i18n'
 import { getSystemVersion } from '../api/setup'
 
 const route = useRoute()
+const { t, locale } = useI18n()
+
+function changeLocale(val: string) {
+  setLocale(val)
+}
 
 const collapsed = ref(false)
 const appVersion = ref<string | null>(null)
@@ -127,26 +145,26 @@ interface NavItem {
   icon: string
 }
 
-const navItems: NavItem[] = [
+const navItems = computed<NavItem[]>(() => [
   {
     to: '/',
-    label: 'Overview',
+    label: t('nav.overview'),
     exact: true,
     icon: '<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>',
   },
   {
     to: '/activity',
-    label: 'Activity',
+    label: t('nav.activity'),
     exact: false,
     icon: '<path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>',
   },
   {
     to: '/rulesets',
-    label: 'RuleSets',
+    label: t('nav.rulesets'),
     exact: false,
     icon: '<path d="M2 4h12M2 8h12M2 12h8"/><circle cx="13" cy="12" r="1.5"/>',
   },
-]
+])
 
 function isRouteActive(item: NavItem, isActive: boolean, isExactActive: boolean): boolean {
   if (item.exact) return isExactActive

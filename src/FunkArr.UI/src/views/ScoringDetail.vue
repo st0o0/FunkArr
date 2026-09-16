@@ -1,9 +1,9 @@
 <template>
   <div class="max-w-5xl mx-auto">
     <AppBreadcrumb :items="[
-      { label: 'RuleSets', to: '/rulesets' },
+      { label: $t('rulesets.title'), to: '/rulesets' },
       { label: id, to: `/rulesets/${id}` },
-      { label: 'History', to: `/rulesets/${id}/history` },
+      { label: $t('scoring.historyTitle'), to: `/rulesets/${id}/history` },
       { label: requestId.substring(0, 8) + '...' }
     ]" />
 
@@ -12,11 +12,11 @@
     </div>
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
     <div v-else-if="detail">
-      <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-2">Scoring Detail</h1>
+      <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-2">{{ $t('scoring.detailTitle') }}</h1>
       <div class="text-sm text-text-secondary mb-6 flex items-center gap-3">
-        <span>Source: {{ detail.source }}</span>
+        <span>{{ $t('scoring.sourceColumn') }}: {{ detail.source }}</span>
         <span class="text-text-muted">|</span>
-        <span>Query: {{ detail.query }}</span>
+        <span>{{ $t('scoring.queryColumn') }}: {{ detail.query }}</span>
         <span class="text-text-muted">|</span>
         <span>{{ new Date(detail.timestamp).toLocaleString() }}</span>
       </div>
@@ -49,7 +49,7 @@
               class="text-xs px-1.5 py-0.5 rounded text-xs"
               :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
             >
-              {{ item.matched ? 'matched' : 'no match' }}
+              {{ item.matched ? $t('preview.matched') : $t('preview.noMatch') }}
             </span>
             <span class="text-text-secondary text-xs tabular-nums">score {{ item.score.toFixed(2) }}</span>
           </div>
@@ -63,7 +63,7 @@
 
           <details class="mt-2 group">
             <summary class="text-xs text-text-secondary cursor-pointer hover:text-text-body transition-colors select-none">
-              {{ item.ruleTraces.length }} rule trace(s)
+              {{ $t('scoring.ruleTraces', { count: item.ruleTraces.length }) }}
             </summary>
             <div class="mt-2 space-y-2">
               <div
@@ -86,11 +86,11 @@
                       'text-status-fail': rt.outcome === 'filterFailed',
                       'text-text-secondary': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
                     }"
-                  >{{ rt.outcome }}</span>
+                  >{{ outcomeLabel(rt.outcome) }}</span>
                 </div>
                 <FilterGroupTraceView v-if="rt.filterTrace" :group="rt.filterTrace" class="mt-1" />
                 <div v-if="rt.identificationTrace" class="text-xs text-text-secondary mt-1 bg-surface-elevated/50 rounded p-2 space-y-0.5">
-                  <div><span class="text-text-secondary">Strategy:</span> {{ rt.identificationTrace.strategy }}</div>
+                  <div><span class="text-text-secondary">{{ $t('preview.identification') }}:</span> {{ rt.identificationTrace.strategy }}</div>
                   <div><span class="text-text-secondary">Attempted:</span> {{ rt.identificationTrace.attempted }}</div>
                   <div v-if="rt.identificationTrace.detail"><span class="text-text-secondary">Detail:</span> {{ rt.identificationTrace.detail }}</div>
                 </div>
@@ -106,10 +106,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getScoringDetail, type ScoringDetail } from '../api/rulesets'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 import FilterGroupTraceView from '../components/FilterGroupTraceView.vue'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const id = route.params.id as string
@@ -131,11 +134,20 @@ const filterOptions = computed(() => {
   const traces = detail.value?.itemTraces ?? []
   const matchedCount = traces.filter(t => t.matched).length
   return [
-    { label: 'All', value: 'all' as const, count: traces.length },
-    { label: 'Matched', value: 'matched' as const, count: matchedCount },
-    { label: 'Unmatched', value: 'unmatched' as const, count: traces.length - matchedCount },
+    { label: t('scoring.allFilter'), value: 'all' as const, count: traces.length },
+    { label: t('scoring.matchedFilter'), value: 'matched' as const, count: matchedCount },
+    { label: t('scoring.unmatchedFilter'), value: 'unmatched' as const, count: traces.length - matchedCount },
   ]
 })
+
+function outcomeLabel(outcome: string): string {
+  switch (outcome) {
+    case 'matched': return t('preview.matched')
+    case 'filterFailed': return t('preview.filterFailed')
+    case 'identificationFailed': return t('preview.idFailed')
+    default: return outcome
+  }
+}
 
 onMounted(async () => {
   try {

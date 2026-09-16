@@ -22,20 +22,20 @@
       <div class="flex items-center gap-2 shrink-0">
         <span
           class="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-md"
-          :class="item.status === 'Processing'
+          :class="item.status === QueueStatus.Processing
             ? 'bg-surface-elevated text-text-body'
             : 'bg-surface-elevated text-text-secondary'"
         >
           <span
             class="w-1.5 h-1.5 rounded-full"
-            :class="item.status === 'Processing' ? 'bg-accent' : 'bg-text-muted'"
+            :class="item.status === QueueStatus.Processing ? 'bg-accent' : 'bg-text-muted'"
           />
-          {{ item.status === 'Processing' ? 'Downloading' : 'Queued' }}
+          {{ item.status === QueueStatus.Processing ? $t('queue.downloading') : $t('queue.queuedStatus') }}
         </span>
         <button
           @click="$emit('cancel', item.downloadId)"
           class="p-1 text-text-secondary hover:text-status-fail transition-colors rounded"
-          title="Cancel"
+          :title="$t('queue.cancel')"
         >
           <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
             <path d="M4 4l8 8M12 4l-8 8" />
@@ -44,7 +44,7 @@
       </div>
     </div>
 
-    <template v-if="item.status === 'Processing'">
+    <template v-if="item.status === QueueStatus.Processing">
       <div class="mt-2.5">
         <div class="flex justify-between text-xs text-text-secondary mb-1">
           <span class="tabular-nums">{{ item.percentage }}%</span>
@@ -67,6 +67,7 @@
 
 <script setup lang="ts">
 import type { QueueItem } from '../api/downloads'
+import { QueueStatus } from '../api/enums'
 import { formatSize, formatSpeed, formatDuration } from '../utils/format'
 import ReleaseTitle from './ReleaseTitle.vue'
 

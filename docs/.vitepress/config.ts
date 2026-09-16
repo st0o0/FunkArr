@@ -3,34 +3,77 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   base: '/funkarr/',
   title: 'FunkArr',
-  description: 'German public broadcaster Mediathek integration for the *arr ecosystem',
   head: [
     ['link', { rel: 'icon', href: '/funkarr/logo.svg' }]
   ],
+  locales: {
+    root: {
+      label: 'Deutsch',
+      lang: 'de',
+      description: 'Integration für deutsche öffentlich-rechtliche Mediatheken im *arr-Ökosystem',
+      themeConfig: {
+        nav: [
+          { text: 'Anleitung', link: '/getting-started' },
+          { text: 'Konfiguration', link: '/configuration' },
+          { text: 'Regelwerke', link: '/rulesets/' }
+        ],
+        sidebar: [
+          {
+            text: 'Anleitung',
+            items: [
+              { text: 'Erste Schritte', link: '/getting-started' },
+              { text: 'Konfiguration', link: '/configuration' }
+            ]
+          },
+          {
+            text: 'Regelwerke',
+            items: [
+              { text: 'Übersicht', link: '/rulesets/' },
+              { text: 'Community-Katalog', link: '/rulesets/catalog' },
+              { text: 'Eigene Regelwerke', link: '/rulesets/custom' },
+              { text: 'Feld-Referenz', link: '/rulesets/field-reference' },
+              { text: 'Strategien', link: '/rulesets/strategies' },
+              { text: 'Filter', link: '/rulesets/filters' }
+            ]
+          }
+        ],
+      }
+    },
+    en: {
+      label: 'English',
+      lang: 'en',
+      description: 'German public broadcaster Mediathek integration for the *arr ecosystem',
+      themeConfig: {
+        nav: [
+          { text: 'Guide', link: '/en/getting-started' },
+          { text: 'Config', link: '/en/configuration' },
+          { text: 'Rulesets', link: '/en/rulesets/' }
+        ],
+        sidebar: [
+          {
+            text: 'Guide',
+            items: [
+              { text: 'Getting Started', link: '/en/getting-started' },
+              { text: 'Configuration', link: '/en/configuration' }
+            ]
+          },
+          {
+            text: 'Rulesets',
+            items: [
+              { text: 'Overview', link: '/en/rulesets/' },
+              { text: 'Community Catalog', link: '/en/rulesets/catalog' },
+              { text: 'Custom Rulesets', link: '/en/rulesets/custom' },
+              { text: 'Field Reference', link: '/en/rulesets/field-reference' },
+              { text: 'Strategies', link: '/en/rulesets/strategies' },
+              { text: 'Filters', link: '/en/rulesets/filters' }
+            ]
+          }
+        ],
+      }
+    }
+  },
   themeConfig: {
     logo: '/logo.svg',
-    nav: [
-      { text: 'Guide', link: '/getting-started' },
-      { text: 'Config', link: '/configuration' },
-      { text: 'Rulesets', link: '/rulesets/' }
-    ],
-    sidebar: [
-      {
-        text: 'Guide',
-        items: [
-          { text: 'Getting Started', link: '/getting-started' },
-          { text: 'Configuration', link: '/configuration' }
-        ]
-      },
-      {
-        text: 'Rulesets',
-        items: [
-          { text: 'Overview', link: '/rulesets/' },
-          { text: 'Community Catalog', link: '/rulesets/catalog' },
-          { text: 'Custom Rulesets', link: '/rulesets/custom' }
-        ]
-      }
-    ],
     socialLinks: [
       { icon: 'github', link: 'https://github.com/st0o0/funkarr' }
     ],
