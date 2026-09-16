@@ -23,7 +23,6 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
         services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         });
 
         services.AddSingleton<IFileSystem, FileSystem>();

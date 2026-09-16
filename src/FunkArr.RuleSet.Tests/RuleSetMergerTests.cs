@@ -145,19 +145,19 @@ public sealed class RuleSetMergerTests
     }
 
     [Fact]
-    public void Build_maps_seasonAndEpisodeNumber_to_RegexCapture()
+    public void Build_maps_seasonAndEpisodeNumber_to_SeasonAndEpisodeNumber()
     {
         var config = RuleSetMerger.Build("test", _communityJson, null);
 
         Assert.NotNull(config);
         var rule = config.Rules.First(r => r.Id == "season-ep");
-        Assert.Equal(IdentificationStrategy.RegexCapture, rule.Identification.Strategy);
+        Assert.Equal(IdentificationStrategy.SeasonAndEpisodeNumber, rule.Identification.Strategy);
         Assert.Equal("S(\\d+)", rule.Identification.SeasonPattern);
         Assert.Equal("E(\\d+)", rule.Identification.EpisodePattern);
     }
 
     [Fact]
-    public void Build_maps_byAbsoluteEpisodeNumber_to_RegexCapture_without_season()
+    public void Build_maps_byAbsoluteEpisodeNumber_to_AbsoluteEpisodeNumber()
     {
         var json = """
             {
@@ -177,13 +177,13 @@ public sealed class RuleSetMergerTests
 
         Assert.NotNull(config);
         Assert.Single(config.Rules);
-        Assert.Equal(IdentificationStrategy.RegexCapture, config.Rules[0].Identification.Strategy);
+        Assert.Equal(IdentificationStrategy.AbsoluteEpisodeNumber, config.Rules[0].Identification.Strategy);
         Assert.Null(config.Rules[0].Identification.SeasonPattern);
         Assert.NotNull(config.Rules[0].Identification.EpisodePattern);
     }
 
     [Fact]
-    public void Build_maps_itemTitleExact_to_TitleConstruction_exact()
+    public void Build_maps_itemTitleExact_to_TitleExact()
     {
         var json = """
             {
@@ -205,13 +205,12 @@ public sealed class RuleSetMergerTests
 
         Assert.NotNull(config);
         var rule = config.Rules[0];
-        Assert.Equal(IdentificationStrategy.TitleConstruction, rule.Identification.Strategy);
-        Assert.Equal(TitleMatchMode.Exact, rule.Identification.MatchMode);
+        Assert.Equal(IdentificationStrategy.TitleExact, rule.Identification.Strategy);
         Assert.NotNull(rule.Identification.TitleParts);
     }
 
     [Fact]
-    public void Build_maps_itemTitleIncludes_to_TitleConstruction_contains()
+    public void Build_maps_itemTitleIncludes_to_TitleIncludes()
     {
         var json = """
             {
@@ -232,7 +231,7 @@ public sealed class RuleSetMergerTests
         var config = RuleSetMerger.Build("test", json, null);
 
         Assert.NotNull(config);
-        Assert.Equal(TitleMatchMode.Contains, config.Rules[0].Identification.MatchMode);
+        Assert.Equal(IdentificationStrategy.TitleIncludes, config.Rules[0].Identification.Strategy);
     }
 
     [Fact]
@@ -432,6 +431,82 @@ public sealed class RuleSetMergerTests
         Assert.Null(identity.Value.TvdbId);
         Assert.Null(identity.Value.ImdbId);
         Assert.Null(identity.Value.TmdbId);
+    }
+
+    [Fact]
+    public void ExtractIdentity_merge_preserves_media_name_and_type()
+    {
+        var communityJson = """
+            {
+              "topic": "Tatort",
+              "media": { "tvdbId": 83214, "name": "Tatort", "type": "show" },
+              "rules": []
+            }
+            """;
+        var localJson = """
+            {
+              "topic": "Tatort",
+              "media": { "tvdbId": 99999 },
+              "rules": []
+            }
+            """;
+
+        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
+
+        Assert.NotNull(identity);
+        Assert.Equal(99999, identity.Value.TvdbId);
+        Assert.Equal("Tatort", identity.Value.MediaName);
+        Assert.Equal("show", identity.Value.MediaType);
+    }
+
+    [Fact]
+    public void ExtractIdentity_local_overrides_media_name_and_type()
+    {
+        var communityJson = """
+            {
+              "topic": "Spielfilm",
+              "media": { "name": "Apocalypse Now", "type": "movie" },
+              "rules": []
+            }
+            """;
+        var localJson = """
+            {
+              "topic": "Spielfilm",
+              "media": { "name": "Apocalypse Now - Final Cut", "type": "movie" },
+              "rules": []
+            }
+            """;
+
+        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
+
+        Assert.NotNull(identity);
+        Assert.Equal("Apocalypse Now - Final Cut", identity.Value.MediaName);
+        Assert.Equal("movie", identity.Value.MediaType);
+    }
+
+    [Fact]
+    public void ResolveToJson_merge_preserves_media_name_and_type()
+    {
+        var communityJson = """
+            {
+              "topic": "Tatort",
+              "media": { "tvdbId": 83214, "name": "Tatort", "type": "show" },
+              "rules": []
+            }
+            """;
+        var localJson = """
+            {
+              "topic": "Tatort",
+              "media": { "tvdbId": 99999 },
+              "rules": []
+            }
+            """;
+
+        var json = RuleSetMerger.ResolveToJson(communityJson, localJson);
+
+        Assert.NotNull(json);
+        Assert.Contains("\"name\": \"Tatort\"", json);
+        Assert.Contains("\"type\": \"show\"", json);
     }
 
     [Fact]

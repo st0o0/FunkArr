@@ -6,9 +6,9 @@ export interface RuleSetEntry {
   imdbId: string | null
   tmdbId: number | null
   mediaName: string | null
-  mediaType: string | null
+  mediaType: number | null
   ruleCount: number
-  sourceType: string
+  sourceType: number
   lastScoringRun: string | null
   matchRate: number | null
 }
@@ -127,9 +127,11 @@ export interface RuleSetWriteRequest {
   topic: string
   aliases?: string[]
   media?: {
-    tvdbId?: number | null
-    imdbId?: string | null
-    tmdbId?: number | null
+    name: string
+    type: string
+    tvdbId?: number
+    imdbId?: string
+    tmdbId?: number
   }
   confidence?: number
   standalone?: boolean
@@ -140,17 +142,17 @@ export interface RuleSetWriteRequest {
 export interface RuleSetWriteRule {
   id: string
   priority: number
-  confidence?: number | null
+  confidence?: number
   strategy: string
-  seasonRegex?: string | null
-  episodeRegex?: string | null
-  captureGroup?: number | null
+  seasonRegex?: string
+  episodeRegex?: string
+  captureGroup?: number
   filters?: {
     all?: FilterConditionInput[]
     any?: FilterConditionInput[]
     not?: FilterConditionInput[]
-  } | null
-  titleRules?: TitleRuleInput[] | null
+  }
+  titleRules?: TitleRuleInput[]
 }
 
 export interface FilterConditionInput {
@@ -161,10 +163,10 @@ export interface FilterConditionInput {
 
 export interface TitleRuleInput {
   type: string
-  field?: string | null
-  pattern?: string | null
-  captureGroup?: number | null
-  value?: string | null
+  field?: string
+  pattern?: string
+  captureGroup?: number
+  value?: string
 }
 
 export interface TestScoringRequest {

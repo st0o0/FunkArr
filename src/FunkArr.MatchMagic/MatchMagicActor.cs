@@ -323,8 +323,10 @@ public sealed class MatchMagicActor : ReceiveActor
     private static (bool success, IdentificationTrace trace, TracedIdentification? identification)
         IdentifyTraced(IdentificationSpec spec, ScoreCandidate candidate) => spec.Strategy switch
         {
-            IdentificationStrategy.RegexCapture => IdentifyRegexCaptureTraced(spec, candidate),
-            IdentificationStrategy.TitleConstruction => IdentifyTitleConstructionTraced(spec, candidate),
+            IdentificationStrategy.SeasonAndEpisodeNumber => IdentifyRegexCaptureTraced(spec, candidate),
+            IdentificationStrategy.AbsoluteEpisodeNumber => IdentifyRegexCaptureTraced(spec, candidate),
+            IdentificationStrategy.TitleExact => IdentifyTitleConstructionTraced(spec, candidate, exact: true),
+            IdentificationStrategy.TitleIncludes => IdentifyTitleConstructionTraced(spec, candidate, exact: false),
             IdentificationStrategy.AirdateExtraction => IdentifyAirdateTraced(candidate),
             _ => (false, new IdentificationTrace(null, false, "unknown strategy"), null),
         };
@@ -332,6 +334,7 @@ public sealed class MatchMagicActor : ReceiveActor
     private static (bool, IdentificationTrace, TracedIdentification?) IdentifyRegexCaptureTraced(
         IdentificationSpec spec, ScoreCandidate candidate)
     {
+        var strategyName = spec.Strategy.ToString();
         string? season = null;
 
         if (spec.SeasonPattern is not null)
@@ -340,7 +343,7 @@ public sealed class MatchMagicActor : ReceiveActor
             if (season is null)
             {
                 return (false,
-                    new IdentificationTrace("RegexCapture", true, "season pattern did not match"),
+                    new IdentificationTrace(strategyName, true, "season pattern did not match"),
                     null);
             }
         }
@@ -348,7 +351,7 @@ public sealed class MatchMagicActor : ReceiveActor
         if (spec.EpisodePattern is null)
         {
             return (false,
-                new IdentificationTrace("RegexCapture", true, "no episode pattern configured"),
+                new IdentificationTrace(strategyName, true, "no episode pattern configured"),
                 null);
         }
 
@@ -356,22 +359,24 @@ public sealed class MatchMagicActor : ReceiveActor
         if (episode is null)
         {
             return (false,
-                new IdentificationTrace("RegexCapture", true, "episode pattern did not match"),
+                new IdentificationTrace(strategyName, true, "episode pattern did not match"),
                 null);
         }
 
         return (true,
-            new IdentificationTrace("RegexCapture", true, null),
+            new IdentificationTrace(strategyName, true, null),
             new TracedIdentification(season, episode, null));
     }
 
     private static (bool, IdentificationTrace, TracedIdentification?) IdentifyTitleConstructionTraced(
-        IdentificationSpec spec, ScoreCandidate candidate)
+        IdentificationSpec spec, ScoreCandidate candidate, bool exact = true)
     {
+        var strategyName = spec.Strategy.ToString();
+
         if (spec.TitleParts is not { Length: > 0 })
         {
             return (false,
-                new IdentificationTrace("TitleConstruction", true, "no title parts configured"),
+                new IdentificationTrace(strategyName, true, "no title parts configured"),
                 null);
         }
 
@@ -379,30 +384,24 @@ public sealed class MatchMagicActor : ReceiveActor
         if (constructedTitle is null)
         {
             return (false,
-                new IdentificationTrace("TitleConstruction", true, "title part regex did not match"),
+                new IdentificationTrace(strategyName, true, "title part regex did not match"),
                 null);
         }
 
-        var mode = spec.MatchMode ?? TitleMatchMode.Exact;
-
-        var matched = mode switch
-        {
-            TitleMatchMode.Exact => string.Equals(constructedTitle, candidate.Title,
-                StringComparison.OrdinalIgnoreCase),
-            TitleMatchMode.Contains => NormalizeUmlauts(candidate.Title)
-                .Contains(NormalizeUmlauts(constructedTitle), StringComparison.OrdinalIgnoreCase),
-            _ => false,
-        };
+        var matched = exact
+            ? string.Equals(constructedTitle, candidate.Title, StringComparison.OrdinalIgnoreCase)
+            : NormalizeUmlauts(candidate.Title)
+                .Contains(NormalizeUmlauts(constructedTitle), StringComparison.OrdinalIgnoreCase);
 
         if (!matched)
         {
             return (false,
-                new IdentificationTrace("TitleConstruction", true, "title does not match constructed title"),
+                new IdentificationTrace(strategyName, true, "title does not match constructed title"),
                 null);
         }
 
         return (true,
-            new IdentificationTrace("TitleConstruction", true, null),
+            new IdentificationTrace(strategyName, true, null),
             new TracedIdentification(null, null, constructedTitle));
     }
 

@@ -1,7 +1,9 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Hosting;
+using FunkArr.Api.Extensions;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
@@ -20,6 +22,13 @@ public static partial class RuleSetApiEndpoints
     private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _testTimeout = TimeSpan.FromSeconds(15);
     private static readonly Regex _ruleSetIdPattern = RuleSetIdRegex();
+
+    private static readonly JsonSerializerOptions _diskJsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true,
+    };
 
     public static WebApplication MapRuleSetApi(this WebApplication app)
     {
@@ -66,10 +75,10 @@ public static partial class RuleSetApiEndpoints
 
                     return new ApiModels.RuleSetListEntry(
                         e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId,
-                        e.MediaName, e.MediaType,
+                        e.MediaName, e.MediaType.ToApiMediaType(),
                         summary?.RuleCount ?? 0,
-                        summary?.SourceType ?? "unknown",
-                        stat.LastRun?.ToString("o"),
+                        (summary?.SourceType).ToApi(),
+                        stat.LastRun,
                         stat.MatchRate);
                 }).ToArray();
 
@@ -81,7 +90,7 @@ public static partial class RuleSetApiEndpoints
             }
             catch (Exception)
             {
-                return GatewayTimeout();
+                return ApiResults.GatewayTimeout();
             }
         })
         .CacheOutput("RuleSetList")
@@ -99,14 +108,14 @@ public static partial class RuleSetApiEndpoints
                     new QueryRuleSetDetail(id), _queryTimeout);
                 return result switch
                 {
-                    RuleSetDetailResult detail => Results.Ok(ToDetailModel(detail)),
+                    RuleSetDetailResult detail => Results.Ok(detail.ToApi()),
                     RuleSetNotFound => Results.NotFound(),
-                    _ => GatewayTimeout(),
+                    _ => ApiResults.GatewayTimeout(),
                 };
             }
             catch (Exception)
             {
-                return GatewayTimeout();
+                return ApiResults.GatewayTimeout();
             }
         })
         .WithSummary("Get ruleset details")
@@ -122,11 +131,11 @@ public static partial class RuleSetApiEndpoints
             {
                 var result = await historyRegion.Ask<ScoringHistoryResult>(
                     new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout);
-                return Results.Ok(ToHistoryModel(result));
+                return Results.Ok(result.ToApi());
             }
             catch (Exception)
             {
-                return GatewayTimeout();
+                return ApiResults.GatewayTimeout();
             }
         })
         .WithSummary("Get scoring history")
@@ -143,14 +152,14 @@ public static partial class RuleSetApiEndpoints
                     new QueryScoringDetail(id, requestId), _queryTimeout);
                 return result switch
                 {
-                    ScoringDetailResult detail => Results.Ok(ToScoringDetailModel(detail)),
+                    ScoringDetailResult detail => Results.Ok(detail.ToApi()),
                     ScoringDetailNotFound => Results.NotFound(),
-                    _ => GatewayTimeout(),
+                    _ => ApiResults.GatewayTimeout(),
                 };
             }
             catch (Exception)
             {
-                return GatewayTimeout();
+                return ApiResults.GatewayTimeout();
             }
         })
         .WithSummary("Get scoring detail")
@@ -160,26 +169,29 @@ public static partial class RuleSetApiEndpoints
         .ProducesProblem(504);
 
         group.MapPost("/", HandleCreate)
-            .WithSummary("Create local ruleset");
+            .WithSummary("Create local ruleset")
+            .Produces<ApiModels.CreatedRuleSetResponse>(201)
+            .ProducesProblem(400)
+            .ProducesProblem(409)
+            .ProducesProblem(422);
         group.MapPut("/{id}", HandleUpdate)
-            .WithSummary("Update ruleset");
+            .WithSummary("Update ruleset")
+            .Produces(200)
+            .ProducesProblem(404)
+            .ProducesProblem(422);
         group.MapDelete("/{id}", HandleDelete)
-            .WithSummary("Delete local ruleset");
+            .WithSummary("Delete local ruleset")
+            .Produces(200)
+            .ProducesProblem(404);
         group.MapGet("/{id}/raw", HandleGetRaw)
             .WithSummary("Get raw ruleset JSON");
 
         group.MapGet("/{id}/export", HandleExport)
             .WithSummary("Export ruleset for community contribution");
 
-        group.MapPost("/test", async (JsonElement body, IActorRegistry registry) =>
+        group.MapPost("/test", async (ApiModels.TestScoreRequest request, IActorRegistry registry) =>
         {
-            var request = RuleSetTestRequestParser.Parse(body);
-            if (request is null)
-            {
-                return Results.BadRequest(new { error = "Invalid request body" });
-            }
-
-            var (config, candidates) = request.Value;
+            var (config, candidates) = request.ToMessage();
 
             var manager = await registry.GetAsync<IMatchMagicManager>();
             try
@@ -189,94 +201,61 @@ public static partial class RuleSetApiEndpoints
 
                 return result switch
                 {
-                    TestScoreCompleted completed => Results.Ok(new
-                    {
-                        itemTraces = completed.ItemTraces
-                            .Select(ToItemTraceModel).ToArray(),
-                    }),
-                    _ => Results.Problem(statusCode: 504, title: "Gateway Timeout"),
+                    TestScoreCompleted completed => Results.Ok(new ApiModels.TestScoreResponse(
+                        completed.ItemTraces.Select(t => t.ToApi()).ToArray())),
+                    _ => ApiResults.GatewayTimeout(),
                 };
             }
             catch (Exception)
             {
-                return Results.Problem(statusCode: 504, title: "Gateway Timeout");
+                return ApiResults.GatewayTimeout();
             }
         })
         .WithSummary("Test ruleset scoring")
         .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration. Returns per-item traces.")
-        .Produces<object>()
+        .Produces<ApiModels.TestScoreResponse>()
         .ProducesProblem(400)
         .ProducesProblem(504);
 
         return app;
     }
 
-    private static IResult GatewayTimeout() =>
-        Results.Problem(statusCode: 504, title: "Gateway Timeout");
-
-    private static string StripProperty(JsonElement body, string propertyName)
-    {
-        using var ms = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(ms, new JsonWriterOptions { Indented = true }))
-        {
-            writer.WriteStartObject();
-            foreach (var prop in body.EnumerateObject())
-            {
-                if (!prop.Name.Equals(propertyName, StringComparison.Ordinal))
-                {
-                    prop.WriteTo(writer);
-                }
-            }
-
-            writer.WriteEndObject();
-        }
-
-        return System.Text.Encoding.UTF8.GetString(ms.ToArray());
-    }
-
     private static async Task EvictRuleSetCache(IOutputCacheStore cache) =>
         await cache.EvictByTagAsync("rulesets", default);
 
-    private static async Task<IResult> HandleCreate(JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
+    private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
     {
-        if (!body.TryGetProperty("ruleSetId", out var idEl) || idEl.ValueKind != JsonValueKind.String)
+        if (string.IsNullOrWhiteSpace(request.RuleSetId))
         {
-            return Results.BadRequest(new { error = "ruleSetId is required" });
+            return Results.BadRequest(new ApiModels.ErrorResponse("ruleSetId is required"));
         }
 
-        var ruleSetId = idEl.GetString()!;
-        if (!_ruleSetIdPattern.IsMatch(ruleSetId))
+        if (!_ruleSetIdPattern.IsMatch(request.RuleSetId))
         {
-            return Results.BadRequest(new { error = "ruleSetId must be kebab-case (lowercase letters, numbers, hyphens)" });
+            return Results.BadRequest(new ApiModels.ErrorResponse("ruleSetId must be kebab-case (lowercase letters, numbers, hyphens)"));
         }
 
-        if (!body.TryGetProperty("topic", out var topicEl) || topicEl.ValueKind != JsonValueKind.String ||
-            string.IsNullOrWhiteSpace(topicEl.GetString()))
-        {
-            return Results.BadRequest(new { error = "topic is required" });
-        }
-
-        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{ruleSetId}.json");
+        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{request.RuleSetId}.json");
         if (dataFiles.Exists(localPath))
         {
-            return Results.Conflict(new { error = $"Local ruleset '{ruleSetId}' already exists" });
+            return Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists"));
         }
 
-        var json = StripProperty(body, "ruleSetId");
+        var json = SerializeForDisk(request);
         var validationErrors = validator.Validate(json);
         if (validationErrors.Count > 0)
         {
-            return Results.UnprocessableEntity(new { errors = validationErrors });
+            return Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(validationErrors));
         }
 
         dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
         dataFiles.WriteAtomic(localPath, json);
 
         await EvictRuleSetCache(cache);
-        return Results.Created($"/api/rulesets/{ruleSetId}", new { ruleSetId });
+        return Results.Created($"/api/rulesets/{request.RuleSetId}", new ApiModels.CreatedRuleSetResponse(request.RuleSetId));
     }
 
-    private static async Task<IResult> HandleUpdate(string id, JsonElement body, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
+    private static async Task<IResult> HandleUpdate(string id, ApiModels.UpdateRuleSetRequest request, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
     {
         var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
         var communityPath = Path.Join(dataPaths.CommunityRuleSets, $"{id}.json");
@@ -286,11 +265,11 @@ public static partial class RuleSetApiEndpoints
             return Results.NotFound();
         }
 
-        var json = body.GetRawText();
+        var json = SerializeForDisk(request);
         var validationErrors = validator.Validate(json);
         if (validationErrors.Count > 0)
         {
-            return Results.UnprocessableEntity(new { errors = validationErrors });
+            return Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(validationErrors));
         }
 
         dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
@@ -299,6 +278,30 @@ public static partial class RuleSetApiEndpoints
         await EvictRuleSetCache(cache);
         return Results.Ok();
     }
+
+    private static string SerializeForDisk(ApiModels.CreateRuleSetRequest request) =>
+        JsonSerializer.Serialize(new
+        {
+            request.Topic,
+            request.Aliases,
+            request.Media,
+            request.Confidence,
+            request.Rules,
+            request.Standalone,
+            request.Disable,
+        }, _diskJsonOptions);
+
+    private static string SerializeForDisk(ApiModels.UpdateRuleSetRequest request) =>
+        JsonSerializer.Serialize(new
+        {
+            request.Topic,
+            request.Aliases,
+            request.Media,
+            request.Confidence,
+            request.Rules,
+            request.Standalone,
+            request.Disable,
+        }, _diskJsonOptions);
 
     private static IResult HandleGetRaw(string id, IDataFiles dataFiles, DataPaths dataPaths)
     {
@@ -341,63 +344,17 @@ public static partial class RuleSetApiEndpoints
 
         if (result.Error is not null)
         {
-            return Results.NotFound(new { error = result.Error });
+            return Results.NotFound(new ApiModels.ErrorResponse(result.Error));
         }
 
         if (result.Errors is { Count: > 0 })
         {
-            return Results.UnprocessableEntity(new { errors = result.Errors });
+            return Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(result.Errors));
         }
 
         httpContext.Response.Headers.ContentDisposition = $"attachment; filename=\"{id}.json\"";
         return Results.Content(result.Json!, "application/json");
     }
-
-    private static ApiModels.RuleSetDetail ToDetailModel(RuleSetDetailResult msg) =>
-        new(msg.RuleSetId,
-            new ApiModels.RuleSetDetail.RuleSetIdentity(
-                msg.Identity.Topic, msg.Identity.Aliases,
-                msg.Identity.TvdbId, msg.Identity.ImdbId, msg.Identity.TmdbId),
-            new ApiModels.RuleSetDetail.RuleSetSource(
-                msg.Source.CommunityPath, msg.Source.LocalPath,
-                msg.Source.CommunityModified, msg.Source.LocalModified),
-            msg.DefaultConfidence,
-            msg.Rules.Select(r => new ApiModels.RuleSetDetailRule(
-                r.Id, r.Priority, r.Confidence, r.Strategy,
-                r.FilterSummary, r.SeasonPattern, r.EpisodePattern,
-                r.MatchMode, r.TitleParts)).ToArray());
-
-    private static ApiModels.ScoringHistory ToHistoryModel(ScoringHistoryResult msg) =>
-        new(msg.RuleSetId, msg.TotalCount,
-            msg.Snapshots.Select(s => new ApiModels.ScoringSnapshotSummary(
-                s.RequestId, s.Source, s.Query, s.Timestamp,
-                s.CandidateCount, s.MatchedCount)).ToArray());
-
-    private static ApiModels.ScoringDetail ToScoringDetailModel(ScoringDetailResult msg) =>
-        new(msg.RequestId, msg.Source, msg.Query, msg.Timestamp,
-            msg.ItemTraces.Select(ToItemTraceModel).ToArray());
-
-    internal static ApiModels.ItemTrace ToItemTraceModel(ItemTrace msg) =>
-        new(msg.CandidateTitle, msg.CandidateTopic, msg.CandidateChannel,
-            msg.CandidateDuration, msg.CandidateQuality, msg.CandidateDescription,
-            msg.CandidateTimestamp, msg.Matched, msg.Score, msg.MatchedRuleId,
-            msg.Identification is not null
-                ? new ApiModels.TracedIdentification(msg.Identification.Season, msg.Identification.Episode, msg.Identification.Title)
-                : null,
-            msg.RuleTraces.Select(ToRuleTraceModel).ToArray());
-
-    internal static ApiModels.RuleTrace ToRuleTraceModel(RuleTrace msg) =>
-        new(msg.RuleId, msg.Priority, (ApiModels.RuleOutcome)msg.Outcome,
-            msg.FilterTrace is not null ? ToFilterGroupModel(msg.FilterTrace) : null,
-            msg.IdentificationTrace is not null
-                ? new ApiModels.IdentificationTrace(msg.IdentificationTrace.Strategy, msg.IdentificationTrace.Attempted, msg.IdentificationTrace.Detail)
-                : null);
-
-    internal static ApiModels.FilterGroupTrace ToFilterGroupModel(FilterGroupTrace msg) =>
-        new(msg.Operator, msg.Passed,
-            msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
-                n.Field, n.Op, n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,
-                n.Group is not null ? ToFilterGroupModel(n.Group) : null)).ToArray());
 
     [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.Compiled)]
     private static partial Regex RuleSetIdRegex();

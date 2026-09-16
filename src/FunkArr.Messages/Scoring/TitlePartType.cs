@@ -1,7 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace FunkArr.Messages.Scoring;
 
+[JsonConverter(typeof(JsonStringEnumConverter<TitlePartType>))]
 public enum TitlePartType
 {
-    Static,
-    Regex,
+    [JsonStringEnumMemberName("static")] Static,
+    [JsonStringEnumMemberName("regex")] Regex,
 }

@@ -85,7 +85,7 @@ public static class SystemApiEndpoints
 
         group.MapGet("/cache", async (IActorRegistry registry) =>
         {
-            var resolver = registry.Get<IMetadataResolver>();
+            var resolver = await registry.GetAsync<IMetadataResolver>();
             try
             {
                 var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout);
@@ -96,7 +96,7 @@ public static class SystemApiEndpoints
             }
             catch (Exception)
             {
-                return Results.Problem(statusCode: 504, title: "Gateway Timeout");
+                return ApiResults.GatewayTimeout();
             }
         })
         .WithSummary("Get metadata cache stats")
@@ -129,8 +129,8 @@ public static class SystemApiEndpoints
             : key;
 
         return isDefault
-            ? new CheckResult("warn", "API key is still the default — change it for security", Value: key, Masked: masked)
-            : new CheckResult("ok", Value: key, Masked: masked);
+            ? new CheckResult(CheckStatus.Warn, "API key is still the default — change it for security", Value: key, Masked: masked)
+            : new CheckResult(CheckStatus.Ok, Value: key, Masked: masked);
     }
 
     private static async Task<CheckResult> CheckMediathekViewWeb(IHttpClientFactory factory)
@@ -156,8 +156,8 @@ public static class SystemApiEndpoints
     {
         var fullPath = Path.GetFullPath(path);
         return dataFiles.CanWrite(fullPath)
-            ? new CheckResult("ok", Path: fullPath)
-            : new CheckResult("fail", $"Directory not writable or does not exist: {fullPath}", Path: fullPath);
+            ? new CheckResult(CheckStatus.Ok, Path: fullPath)
+            : new CheckResult(CheckStatus.Fail, $"Directory not writable or does not exist: {fullPath}", Path: fullPath);
     }
 
     private static async Task<CheckResult> CheckSelfEndpoint(
@@ -205,7 +205,7 @@ public static class SystemApiEndpoints
                 var version = output.Contains("version")
                     ? output.Split(' ').SkipWhile(s => s != "version").Skip(1).FirstOrDefault() ?? "unknown"
                     : "unknown";
-                return new CheckResult("ok", Version: version);
+                return new CheckResult(CheckStatus.Ok, Version: version);
             }
 
             return CheckResult.Warn("FFmpeg not working correctly — needed for downloads");

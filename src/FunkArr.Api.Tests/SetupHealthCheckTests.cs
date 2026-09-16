@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using FunkArr.Api.Models;
 using FunkArr.Core;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -13,7 +14,7 @@ public sealed class SetupHealthCheckTests
 
         var result = SystemApiEndpoints.CheckApiKey(options);
 
-        Assert.Equal("ok", result.Status);
+        Assert.Equal(CheckStatus.Ok, result.Status);
         Assert.Equal("my-secret-key", result.Value);
         Assert.Equal("**********key", result.Masked);
     }
@@ -25,7 +26,7 @@ public sealed class SetupHealthCheckTests
 
         var result = SystemApiEndpoints.CheckApiKey(options);
 
-        Assert.Equal("warn", result.Status);
+        Assert.Equal(CheckStatus.Warn, result.Status);
         Assert.Contains("default", result.Message);
         Assert.Equal("funkarr-default-api-key", result.Value);
     }
@@ -61,7 +62,7 @@ public sealed class SetupHealthCheckTests
         {
             var result = SystemApiEndpoints.CheckDirectory(tempDir, dataFiles);
 
-            Assert.Equal("ok", result.Status);
+            Assert.Equal(CheckStatus.Ok, result.Status);
             Assert.Equal(Path.GetFullPath(tempDir), result.Path);
         }
         finally
@@ -77,7 +78,7 @@ public sealed class SetupHealthCheckTests
 
         var result = SystemApiEndpoints.CheckDirectory("/nonexistent/path/that/does/not/exist", dataFiles);
 
-        Assert.Equal("fail", result.Status);
+        Assert.Equal(CheckStatus.Fail, result.Status);
     }
 
     [Fact]
@@ -85,7 +86,7 @@ public sealed class SetupHealthCheckTests
     {
         var result = await SystemApiEndpoints.CheckFfmpeg();
 
-        Assert.True(result.Status is "ok" or "warn");
+        Assert.True(result.Status is CheckStatus.Ok or CheckStatus.Warn);
     }
 
     [Fact]

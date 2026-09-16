@@ -1,5 +1,11 @@
 namespace FunkArr.Api.Models;
 
+public enum HistoryStatus
+{
+    Completed,
+    Failed,
+}
+
 public sealed record DownloadHistoryResponse(
     DownloadHistoryItem[] Items,
     int TotalItems);
@@ -11,6 +17,6 @@ public sealed record DownloadHistoryItem(
     long TotalBytes,
     int DownloadTimeSeconds,
     string? RelativePath,
-    string Status,
+    HistoryStatus Status,
     string? FailMessage,
-    string CompletedAt);
+    DateTimeOffset CompletedAt);

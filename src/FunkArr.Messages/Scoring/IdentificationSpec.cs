@@ -5,5 +5,4 @@ public sealed record IdentificationSpec(
     string? SeasonPattern = null,
     string? EpisodePattern = null,
     int? CaptureGroup = null,
-    TitleMatchMode? MatchMode = null,
     TitlePart[]? TitleParts = null);

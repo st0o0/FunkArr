@@ -1,3 +1,4 @@
+using FunkArr.Api.Extensions;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -21,7 +22,7 @@ public sealed class MediathekApiEndpointTests
     }
 
     [Fact]
-    public void ToSearchResult_maps_all_fields()
+    public void ToApi_maps_all_fields()
     {
         var item = new MediathekItem(
             Channel: "ARD",
@@ -37,7 +38,7 @@ public sealed class MediathekApiEndpointTests
             UrlSubtitle: "https://example.com/sub.srt",
             UrlWebsite: "https://example.com/page");
 
-        var result = MediathekApiEndpoints.ToSearchResult(item);
+        var result = item.ToApi();
 
         Assert.Equal("Tagesschau 20:00", result.Title);
         Assert.Equal("Tagesschau", result.Topic);
@@ -53,7 +54,7 @@ public sealed class MediathekApiEndpointTests
     }
 
     [Fact]
-    public void ToSearchResult_flags_false_when_no_urls()
+    public void ToApi_flags_false_when_no_urls()
     {
         var item = new MediathekItem(
             Channel: "ZDF",
@@ -69,7 +70,7 @@ public sealed class MediathekApiEndpointTests
             UrlSubtitle: null,
             UrlWebsite: null);
 
-        var result = MediathekApiEndpoints.ToSearchResult(item);
+        var result = item.ToApi();
 
         Assert.Equal(480, result.Quality);
         Assert.False(result.HasSubtitles);
@@ -85,9 +86,9 @@ public sealed class MediathekApiEndpointTests
         var low = new MediathekItem("", "", "", null, 0, 0, 0, "x", null, null, null, null);
         var none = new MediathekItem("", "", "", null, 0, 0, 0, null, null, null, null, null);
 
-        Assert.Equal(1080, MediathekApiEndpoints.EstimateQuality(hd));
-        Assert.Equal(720, MediathekApiEndpoints.EstimateQuality(med));
-        Assert.Equal(480, MediathekApiEndpoints.EstimateQuality(low));
-        Assert.Equal(0, MediathekApiEndpoints.EstimateQuality(none));
+        Assert.Equal(1080, MediathekMappingExtensions.EstimateQuality(hd));
+        Assert.Equal(720, MediathekMappingExtensions.EstimateQuality(med));
+        Assert.Equal(480, MediathekMappingExtensions.EstimateQuality(low));
+        Assert.Equal(0, MediathekMappingExtensions.EstimateQuality(none));
     }
 }

@@ -1,7 +1,7 @@
 export interface QueueItem {
   downloadId: string
   title: string
-  status: 'Processing' | 'Queued'
+  status: number
   channel: string
   category: string
   hasSubtitles: boolean
@@ -27,7 +27,7 @@ export interface HistoryItem {
   totalBytes: number
   downloadTimeSeconds: number
   filePath: string | null
-  status: 'Completed' | 'Failed'
+  status: number
   failMessage: string | null
   completedAt: string
 }

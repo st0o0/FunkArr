@@ -166,6 +166,8 @@ public static class RuleSetMerger
             TvdbId = local.TvdbId ?? community.TvdbId,
             ImdbId = local.ImdbId ?? community.ImdbId,
             TmdbId = local.TmdbId ?? community.TmdbId,
+            Name = local.Name ?? community.Name,
+            Type = local.Type ?? community.Type,
         };
     }
 
@@ -271,34 +273,57 @@ public static class RuleSetMerger
         return results.ToArray();
     }
 
-    private static IdentificationSpec? TransformIdentification(RawRule raw) => raw.Strategy switch
+    private static IdentificationSpec? TransformIdentification(RawRule raw)
     {
-        "seasonAndEpisodeNumber" => new IdentificationSpec(
-            IdentificationStrategy.RegexCapture,
-            SeasonPattern: raw.SeasonRegex,
-            EpisodePattern: raw.EpisodeRegex,
-            CaptureGroup: raw.CaptureGroup),
+        if (!TryParseStrategy(raw.Strategy, out var strategy))
+        {
+            return null;
+        }
 
-        "byAbsoluteEpisodeNumber" => new IdentificationSpec(
-            IdentificationStrategy.RegexCapture,
-            EpisodePattern: raw.EpisodeRegex,
-            CaptureGroup: raw.CaptureGroup),
+        return strategy switch
+        {
+            IdentificationStrategy.SeasonAndEpisodeNumber => new IdentificationSpec(
+                IdentificationStrategy.SeasonAndEpisodeNumber,
+                SeasonPattern: raw.SeasonRegex,
+                EpisodePattern: raw.EpisodeRegex,
+                CaptureGroup: raw.CaptureGroup),
 
-        "itemTitleExact" => new IdentificationSpec(
-            IdentificationStrategy.TitleConstruction,
-            MatchMode: TitleMatchMode.Exact,
-            TitleParts: TransformTitleRules(raw.TitleRules)),
+            IdentificationStrategy.AbsoluteEpisodeNumber => new IdentificationSpec(
+                IdentificationStrategy.AbsoluteEpisodeNumber,
+                EpisodePattern: raw.EpisodeRegex,
+                CaptureGroup: raw.CaptureGroup),
 
-        "itemTitleIncludes" => new IdentificationSpec(
-            IdentificationStrategy.TitleConstruction,
-            MatchMode: TitleMatchMode.Contains,
-            TitleParts: TransformTitleRules(raw.TitleRules)),
+            IdentificationStrategy.TitleExact => new IdentificationSpec(
+                IdentificationStrategy.TitleExact,
+                TitleParts: TransformTitleRules(raw.TitleRules)),
 
-        "itemTitleEqualsAirdate" => new IdentificationSpec(
-            IdentificationStrategy.AirdateExtraction),
+            IdentificationStrategy.TitleIncludes => new IdentificationSpec(
+                IdentificationStrategy.TitleIncludes,
+                TitleParts: TransformTitleRules(raw.TitleRules)),
 
-        _ => null,
-    };
+            IdentificationStrategy.AirdateExtraction => new IdentificationSpec(
+                IdentificationStrategy.AirdateExtraction),
+
+            _ => null,
+        };
+    }
+
+    private static bool TryParseStrategy(string? value, out IdentificationStrategy strategy)
+    {
+        strategy = default;
+        if (value is null) return false;
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes($"\"{value}\"");
+        try
+        {
+            strategy = JsonSerializer.Deserialize<IdentificationStrategy>(bytes, _jsonOptions);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
 
     private static TitlePart[]? TransformTitleRules(List<RawTitleRule>? titleRules)
     {
@@ -310,29 +335,20 @@ public static class RuleSetMerger
         var parts = new List<TitlePart>();
         foreach (var raw in titleRules)
         {
-            var type = raw.Type switch
-            {
-                "static" => TitlePartType.Static,
-                "regex" => TitlePartType.Regex,
-                _ => (TitlePartType?)null,
-            };
-
-            if (type is null)
+            if (raw.Type is null)
             {
                 continue;
             }
 
-            var field = raw.Field is not null ? ParseFilterField(raw.Field) : null;
-
             parts.Add(new TitlePart(
-                type.Value,
+                raw.Type.Value,
                 Value: raw.Value,
                 Pattern: raw.Pattern,
-                Field: field,
+                Field: raw.Field,
                 CaptureGroup: raw.CaptureGroup));
         }
 
-        return parts.ToArray();
+        return parts.Count > 0 ? parts.ToArray() : null;
     }
 
     private static FilterSpec TransformFilterGroup(RawFilterGroup raw)
@@ -385,8 +401,8 @@ public static class RuleSetMerger
             return null;
         }
 
-        var field = ParseFilterField(fieldEl.GetString());
-        var op = ParseFilterOp(opEl.GetString());
+        var field = fieldEl.Deserialize<FilterField?>(_jsonOptions);
+        var op = opEl.Deserialize<FilterOp?>(_jsonOptions);
 
         if (field is null || op is null)
         {
@@ -395,28 +411,6 @@ public static class RuleSetMerger
 
         return new FilterCondition(field.Value, op.Value, valueEl.GetString() ?? "");
     }
-
-    private static FilterField? ParseFilterField(string? value) => value switch
-    {
-        "title" => FilterField.Title,
-        "topic" => FilterField.Topic,
-        "channel" => FilterField.Channel,
-        "description" => FilterField.Description,
-        "duration" => FilterField.Duration,
-        "timestamp" => FilterField.Timestamp,
-        _ => null,
-    };
-
-    private static FilterOp? ParseFilterOp(string? value) => value switch
-    {
-        "eq" => FilterOp.Eq,
-        "contains" => FilterOp.Contains,
-        "notContains" => FilterOp.NotContains,
-        "greaterThan" => FilterOp.GreaterThan,
-        "lessThan" => FilterOp.LessThan,
-        "regex" => FilterOp.Regex,
-        _ => null,
-    };
 
     private sealed class RawRuleSet
     {
@@ -443,7 +437,7 @@ public static class RuleSetMerger
         public string Id { get; set; } = "";
         public int Priority { get; set; }
         public float? Confidence { get; set; }
-        public string Strategy { get; set; } = "";
+        public string? Strategy { get; set; }
         public RawFilterGroup? Filters { get; set; }
         public string? SeasonRegex { get; set; }
         public string? EpisodeRegex { get; set; }
@@ -460,8 +454,8 @@ public static class RuleSetMerger
 
     private sealed class RawTitleRule
     {
-        public string Type { get; set; } = "";
-        public string? Field { get; set; }
+        public TitlePartType? Type { get; set; }
+        public FilterField? Field { get; set; }
         public string? Pattern { get; set; }
         public int? CaptureGroup { get; set; }
         public string? Value { get; set; }

@@ -78,10 +78,17 @@ public static class RuleSetManagerStateExtensions
             SummarizeFilters(r.Filters),
             r.Identification.SeasonPattern,
             r.Identification.EpisodePattern,
-            r.Identification.MatchMode?.ToString(),
+            MatchModeFromStrategy(r.Identification.Strategy),
             r.Identification.TitleParts?.Select(FormatTitlePart).ToArray()
         )).ToArray();
     }
+
+    private static string? MatchModeFromStrategy(IdentificationStrategy strategy) => strategy switch
+    {
+        IdentificationStrategy.TitleExact => "Exact",
+        IdentificationStrategy.TitleIncludes => "Contains",
+        _ => null,
+    };
 
     private static string? SummarizeFilters(FilterSpec? spec)
     {

@@ -1,5 +1,5 @@
 export interface CheckResult {
-  status: 'ok' | 'warn' | 'fail'
+  status: number
   message?: string
   value?: string
   masked?: string

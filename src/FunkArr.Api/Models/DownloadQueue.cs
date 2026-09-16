@@ -1,5 +1,11 @@
 namespace FunkArr.Api.Models;
 
+public enum QueueStatus
+{
+    Processing,
+    Queued,
+}
+
 public sealed record DownloadQueueResponse(
     DownloadQueueItem[] Items,
     int TotalSlots,
@@ -9,7 +15,7 @@ public sealed record DownloadQueueResponse(
 public sealed record DownloadQueueItem(
     string DownloadId,
     string Title,
-    string Status,
+    QueueStatus Status,
     string Channel,
     string Category,
     bool HasSubtitles,

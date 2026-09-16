@@ -80,7 +80,7 @@ public sealed class ScoringRecordedSerializerTests
                             new FilterNodeTrace("Channel", "Eq", "ARD", "ARD", true, false, null),
                             new FilterNodeTrace("Duration", "GreaterThan", "30", "90", true, false, null)
                         ]),
-                        IdentificationTrace: new IdentificationTrace("RegexCapture", true, null))
+                        IdentificationTrace: new IdentificationTrace("SeasonAndEpisodeNumber", true, null))
                 ])
         ]);
 }

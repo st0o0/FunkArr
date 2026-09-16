@@ -163,8 +163,7 @@ public sealed class MatchMagicActorTests : TestKit
     {
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(All: [Condition(FilterField.Title, FilterOp.Contains, "GOLDENE")]),
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -213,7 +212,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void RegexCapture_season_and_episode()
     {
         var rule = new MatchingRule("r1", 0, 0.95f, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonPattern: @"(?<=S)(\d{2,4})(?=/E)",
                 EpisodePattern: @"(?<=E)(\d{2,4})(?=\))"));
 
@@ -226,7 +225,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void RegexCapture_season_and_episode_no_match()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonPattern: @"(?<=S)(\d{2,4})",
                 EpisodePattern: @"(?<=E)(\d{2,4})"));
 
@@ -238,7 +237,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void RegexCapture_absolute_episode_only()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.AbsoluteEpisodeNumber,
                 EpisodePattern: @"Folge\s*(\d+)"));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Löwenzahn - Folge 312"));
@@ -250,7 +249,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void RegexCapture_absolute_episode_no_match()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.AbsoluteEpisodeNumber,
                 EpisodePattern: @"Folge\s*(\d+)"));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -261,7 +260,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void RegexCapture_explicit_capture_group()
     {
         var rule = new MatchingRule("r1", 0, 0.9f, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonPattern: @"(S)(\d{2})",
                 EpisodePattern: @"(E)(\d{2})",
                 CaptureGroup: 2));
@@ -274,8 +273,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_exact_match()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -286,8 +284,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_exact_no_match()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [new TitlePart(TitlePartType.Static, Value: "Schwarzer Freitag")]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -298,8 +295,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_static_and_regex_parts()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [
                     new TitlePart(TitlePartType.Static, Value: "Folge 42"),
                 ]));
@@ -312,8 +308,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_chain_with_static_separator()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [
                     new TitlePart(TitlePartType.Regex, Pattern: @"^(\w+):", Field: FilterField.Title, CaptureGroup: 1),
                     new TitlePart(TitlePartType.Static, Value: " & "),
@@ -331,8 +326,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_regex_extraction_fails_returns_no_match()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [
                     new TitlePart(TitlePartType.Regex, Pattern: @"NOMATCH_(\d+)", Field: FilterField.Title),
                 ]));
@@ -345,8 +339,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_contains_mode()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Contains,
+            new IdentificationSpec(IdentificationStrategy.TitleIncludes,
                 TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @":\s*(.+)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -357,8 +350,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_contains_no_match()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Contains,
+            new IdentificationSpec(IdentificationStrategy.TitleIncludes,
                 TitleParts: [new TitlePart(TitlePartType.Static, Value: "Schwarzer Freitag")]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -369,8 +361,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void TitleConstruction_contains_umlaut_normalized()
     {
         var rule = new MatchingRule("r1", 0, null, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Contains,
+            new IdentificationSpec(IdentificationStrategy.TitleIncludes,
                 TitleParts: [new TitlePart(TitlePartType.Static, Value: "Löwenzähn")]));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Löwenzähn - Folge 312"));
@@ -422,13 +413,12 @@ public sealed class MatchMagicActorTests : TestKit
     public void Priority_ordering_lower_wins()
     {
         var rule0 = new MatchingRule("r0", 0, 0.95f, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonPattern: @"(?<=S)(\d{2,4})(?=/E)",
                 EpisodePattern: @"(?<=E)(\d{2,4})(?=\))"));
 
         var rule1 = new MatchingRule("r1", 10, 0.7f, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.5f, rule0, rule1), Candidate(title: "Tatort (S01/E05)"));
@@ -440,13 +430,12 @@ public sealed class MatchMagicActorTests : TestKit
     public void Priority_fallback_to_higher()
     {
         var rule0 = new MatchingRule("r0", 0, 0.95f, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonPattern: @"(?<=S)(\d{2,4})(?=/E)",
                 EpisodePattern: @"(?<=E)(\d{2,4})(?=\))"));
 
         var rule1 = new MatchingRule("r1", 10, 0.7f, null,
-            new IdentificationSpec(IdentificationStrategy.TitleConstruction,
-                MatchMode: TitleMatchMode.Exact,
+            new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.5f, rule0, rule1), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -603,7 +592,7 @@ public sealed class MatchMagicActorTests : TestKit
     public void Trace_multiple_rules_shows_fallthrough()
     {
         var rule0 = new MatchingRule("season-ep", 0, 0.95f, null,
-            new IdentificationSpec(IdentificationStrategy.RegexCapture,
+            new IdentificationSpec(IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonPattern: @"(?<=S)(\d{2,4})",
                 EpisodePattern: @"(?<=E)(\d{2,4})"));
 

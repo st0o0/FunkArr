@@ -1,5 +1,19 @@
 namespace FunkArr.Api.Models;
 
+public enum SourceType
+{
+    Community,
+    Local,
+    Merged,
+    Unknown,
+}
+
+public enum MediaType
+{
+    Show,
+    Movie,
+}
+
 public sealed record RuleSetListEntry(
     string RuleSetId,
     string Topic,
@@ -8,8 +22,8 @@ public sealed record RuleSetListEntry(
     string? ImdbId,
     int? TmdbId,
     string? MediaName,
-    string? MediaType,
+    MediaType? MediaType,
     int RuleCount,
-    string SourceType,
-    string? LastScoringRun,
+    SourceType SourceType,
+    DateTimeOffset? LastScoringRun,
     double? MatchRate);
