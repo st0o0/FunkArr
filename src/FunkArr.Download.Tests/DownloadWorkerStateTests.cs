@@ -1,4 +1,3 @@
-using FunkArr.Download;
 using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download.Tests;

@@ -1,5 +1,3 @@
-using FunkArr.Download;
-
 namespace FunkArr.Download.Tests;
 
 public sealed class FfmpegRunnerTests
