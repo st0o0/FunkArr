@@ -22,8 +22,8 @@ COPY src/FunkArr.ArrApi/FunkArr.ArrApi.csproj FunkArr.ArrApi/
 COPY src/FunkArr.Search/FunkArr.Search.csproj FunkArr.Search/
 COPY src/FunkArr.Download/FunkArr.Download.csproj FunkArr.Download/
 COPY src/FunkArr.RuleSet/FunkArr.RuleSet.csproj FunkArr.RuleSet/
-COPY src/FunkArr.MatchMagic/FunkArr.MatchMagic.csproj FunkArr.MatchMagic/
-COPY src/FunkArr.MetadataResolver/FunkArr.MetadataResolver.csproj FunkArr.MetadataResolver/
+COPY src/FunkArr.Scoring/FunkArr.Scoring.csproj FunkArr.Scoring/
+COPY src/FunkArr.Enrichment/FunkArr.Enrichment.csproj FunkArr.Enrichment/
 RUN dotnet restore FunkArr/FunkArr.csproj -a ${TARGETARCH}
 
 COPY src/ .

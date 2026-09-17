@@ -34,6 +34,7 @@ src/
   FunkArr.Enrichment.Tests/
   FunkArr.Api.Tests/
   FunkArr.ArrApi.Tests/
+  FunkArr.Architecture.Tests/     # ArchUnit conventions
   FunkArr.Tests.Shared/           # Shared test infrastructure
 ```
 
