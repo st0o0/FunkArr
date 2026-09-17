@@ -7,6 +7,7 @@ using FunkArr.Core;
 using FunkArr.Messages.Download;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.ArrApi.Sabnzbd;
@@ -39,7 +40,7 @@ public static class SabnzbdApiEndpoints
 
             return (req.Mode ?? "") switch
             {
-                "version" => Results.Json(new { version = "4.3.3" }),
+                "version" => Results.Json(new { version = SabnzbdConstants.Version }),
                 "get_config" => ConfigResult(opts, dataPaths),
                 "fullstatus" => await FullStatusResult(manager, dataPaths.Complete),
                 "queue" when req.Name == "delete" && !string.IsNullOrEmpty(req.Value) =>
@@ -60,7 +61,8 @@ public static class SabnzbdApiEndpoints
         group.MapPost("/", async (
             [AsParameters] DownloadPostRequest req,
             IFormFile? name,
-            IActorRegistry registry) =>
+            IActorRegistry registry,
+            ILoggerFactory loggerFactory) =>
         {
             if ((req.Mode ?? "") != "addfile")
             {
@@ -79,23 +81,24 @@ public static class SabnzbdApiEndpoints
                 using var xmlReader = XmlReader.Create(stream, _xmlSettings);
                 nzb = _nzbSerializer.Deserialize(xmlReader) as Nzb;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                loggerFactory.CreateLogger(nameof(SabnzbdApiEndpoints)).LogWarning(ex, "Failed to parse NZB file");
                 return Results.Json(new { status = false, error = "Invalid NZB file: not valid XML" }, statusCode: 400);
             }
 
-            var videoUrl = Meta("X-FunkArr-Url") ?? Meta("url");
+            var videoUrl = Meta(FunkArrHeaders.Url) ?? Meta("url");
             if (string.IsNullOrEmpty(videoUrl))
             {
                 return Results.Json(new { status = false, error = "Invalid NZB format: missing video URL" }, statusCode: 400);
             }
 
             var title = Meta("title") ?? "Unknown";
-            var subtitleUrl = Meta("X-FunkArr-SubtitleUrl");
-            var channel = Meta("X-FunkArr-Channel") ?? "";
-            _ = int.TryParse(Meta("X-FunkArr-Duration"), out var duration);
-            _ = long.TryParse(Meta("X-FunkArr-Size"), out var size);
-            var category = req.Cat ?? Meta("X-FunkArr-Category") ?? "";
+            var subtitleUrl = Meta(FunkArrHeaders.SubtitleUrl);
+            var channel = Meta(FunkArrHeaders.Channel) ?? "";
+            _ = int.TryParse(Meta(FunkArrHeaders.Duration), out var duration);
+            _ = long.TryParse(Meta(FunkArrHeaders.Size), out var size);
+            var category = req.Cat ?? Meta(FunkArrHeaders.Category) ?? "";
 
             var manager = await registry.GetAsync<IDownloadManager>();
             var addCmd = new AddDownload(title, videoUrl, subtitleUrl, channel, duration, size, category);

@@ -94,7 +94,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
         _log.Info("Updating community rulesets from {OldVersion} to {NewVersion}",
             localVersion ?? "(none)", release.Value.Version);
 
-        using var downloadClient = _httpClientFactory.CreateClient("GitHub");
+        using var downloadClient = _httpClientFactory.CreateClient(HttpClientNames.GitHub);
         var zipBytes = await downloadClient.GetByteArrayAsync(release.Value.AssetUrl);
 
         var tempDir = Path.Join(_dataPaths.Temp, $"rulesets-{Guid.NewGuid():N}");
@@ -129,7 +129,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
         var opts = _optionsMonitor.CurrentValue;
         var url = $"repos/{opts.Repository}/releases";
 
-        using var client = _httpClientFactory.CreateClient("GitHub");
+        using var client = _httpClientFactory.CreateClient(HttpClientNames.GitHub);
         using var response = await client.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {

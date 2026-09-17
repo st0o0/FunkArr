@@ -20,8 +20,8 @@ public sealed class RuleSetSetupContainer : ApplicationSetupContainer<WebApplica
             .ValidateOnStart();
 
         services
-            .AddOptions<MatchHistoryOptions>()
-            .Bind(configuration.GetSection(MatchHistoryOptions.SectionName))
+            .AddOptions<ScoringHistoryOptions>()
+            .Bind(configuration.GetSection(ScoringHistoryOptions.SectionName))
             .ValidateOnStart();
 
         services.AddSingleton<IRuleSetValidator, RuleSetValidator>();

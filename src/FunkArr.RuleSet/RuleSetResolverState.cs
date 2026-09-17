@@ -89,7 +89,7 @@ public static class RuleSetResolverStateExtensions
             mediaTypeIndex);
     }
 
-    public static object Resolve(this RuleSetResolverState state, ResolveRuleSet msg)
+    public static ResolveRuleSetResponse Resolve(this RuleSetResolverState state, ResolveRuleSet msg)
     {
         if (msg.TopicOrAlias is not null &&
             state.LookupIndex.TryGetValue(msg.TopicOrAlias, out var ruleSetId))
@@ -114,7 +114,7 @@ public static class RuleSetResolverStateExtensions
             return byTmdb;
         }
 
-        return new RuleSetNotFound(msg.TopicOrAlias ?? "");
+        return new RuleSetFailed(new RuleSetNotFoundException(msg.TopicOrAlias ?? ""));
     }
 
     private static bool TryResolveById(

@@ -28,6 +28,6 @@ internal static class VideoQuality
         return variants.ToArray();
     }
 
-    private static long EstimateSize(int durationSeconds, long bytesPerSecond) =>
-        durationSeconds * bytesPerSecond;
+    private static long EstimateSize(int durationSeconds, long bytesPerSecond)
+        => durationSeconds * bytesPerSecond;
 }

@@ -12,4 +12,4 @@ public sealed record RegisteredRuleSetEntry(
     string? MediaName,
     string? MediaType);
 
-public sealed record RegisteredRuleSetsResult(RegisteredRuleSetEntry[] Entries) : IRuleSetResponse;
+public sealed record RegisteredRuleSetsResult(RegisteredRuleSetEntry[] Entries);

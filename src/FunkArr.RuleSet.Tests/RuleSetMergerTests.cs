@@ -1,4 +1,3 @@
-using FunkArr.Messages.MetadataResolver;
 using FunkArr.Messages.Scoring;
 
 namespace FunkArr.RuleSet.Tests;

@@ -1,5 +1,5 @@
 using System.Collections.Immutable;
-using System.Text;
+using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
@@ -74,68 +74,57 @@ public static class RuleSetManagerStateExtensions
             r.Id,
             r.Priority,
             r.Confidence,
-            r.Identification.Strategy.ToString(),
-            SummarizeFilters(r.Filters),
+            r.Identification.Strategy,
             r.Identification.SeasonPattern,
             r.Identification.EpisodePattern,
-            MatchModeFromStrategy(r.Identification.Strategy),
-            r.Identification.TitleParts?.Select(FormatTitlePart).ToArray()
+            r.Identification.CaptureGroup,
+            MapFilters(r.Filters),
+            MapTitleRules(r.Identification.TitleParts)
         )).ToArray();
     }
 
-    private static string? MatchModeFromStrategy(IdentificationStrategy strategy) => strategy switch
-    {
-        IdentificationStrategy.TitleExact => "Exact",
-        IdentificationStrategy.TitleIncludes => "Contains",
-        _ => null,
-    };
-
-    private static string? SummarizeFilters(FilterSpec? spec)
+    private static FilterGroupOutput? MapFilters(FilterSpec? spec)
     {
         if (spec is null)
         {
             return null;
         }
 
-        var sb = new StringBuilder();
-        AppendGroup(sb, "all", spec.All);
-        AppendGroup(sb, "any", spec.Any);
-        AppendGroup(sb, "not", spec.Not);
-        return sb.Length > 0 ? sb.ToString() : null;
+        var all = MapConditions(spec.All);
+        var any = MapConditions(spec.Any);
+        var not = MapConditions(spec.Not);
+
+        return all is null && any is null && not is null ? null : new FilterGroupOutput(all, any, not);
     }
 
-    private static void AppendGroup(StringBuilder sb, string label, FilterNode[]? nodes)
+    private static FilterConditionOutput[]? MapConditions(FilterNode[]? nodes)
     {
         if (nodes is null)
         {
-            return;
+            return null;
         }
 
-        if (sb.Length > 0)
-        {
-            sb.Append("; ");
-        }
+        var results = nodes
+            .OfType<FilterNode.ConditionNode>()
+            .Select(c => new FilterConditionOutput(c.Condition.Field, c.Condition.Op, c.Condition.Value))
+            .ToArray();
 
-        sb.Append(label).Append(": ");
-        sb.Append(string.Join(", ", nodes.Select(FormatNode)));
+        return results.Length > 0 ? results : null;
     }
 
-    private static string FormatNode(FilterNode node) => node switch
+    private static TitleRuleOutput[]? MapTitleRules(TitlePart[]? parts)
     {
-        FilterNode.ConditionNode c =>
-            $"{c.Condition.Field.ToString().ToLowerInvariant()} {c.Condition.Op.ToString().ToLowerInvariant()} '{c.Condition.Value}'",
-        FilterNode.GroupNode g => $"({SummarizeFilters(g.Group)})",
-        _ => "?",
-    };
+        if (parts is null or { Length: 0 })
+        {
+            return null;
+        }
 
-    private static string FormatTitlePart(TitlePart part) => part.Type switch
-    {
-        TitlePartType.Static => $"static: '{part.Value}'",
-        TitlePartType.Regex => $"regex: {part.Field?.ToString().ToLowerInvariant()} /{part.Pattern}/",
-        _ => "?",
-    };
+        return parts
+            .Select(p => new TitleRuleOutput(p.Type, p.Field, p.Pattern, p.CaptureGroup, p.Value))
+            .ToArray();
+    }
 
-    public static RuleSetSummaryResult ToSummaries(this RuleSetManagerState state, IDataFiles dataFiles)
+    public static RuleSetSummaryResult ToSummaries(this RuleSetManagerState state, IDataFiles dataFiles, ILoggingAdapter? log = null)
     {
         var entries = new List<RuleSetSummaryEntry>();
 
@@ -163,9 +152,10 @@ public static class RuleSetManagerStateExtensions
                     ruleCount = config.Rules.Length;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Config load failure - leave ruleCount as 0
+                if (log is not null)
+                    log.Warning("Failed to load ruleset config for {RuleSetId}: {Error}", ruleSetId, ex.Message);
             }
 
             entries.Add(new RuleSetSummaryEntry(ruleSetId, ruleCount, sourceType));

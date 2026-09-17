@@ -3,7 +3,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Models;
 using FunkArr.Core;
-using FunkArr.Messages.MetadataResolver;
+using FunkArr.Messages.Enrichment;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -18,7 +18,9 @@ public static class SystemApiEndpoints
 
     public static WebApplication MapSystemApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/system").WithTags("System");
+        var group = app.MapGroup("/api/system")
+            .WithTags("System")
+            .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapGet("/setup", async (
             IOptionsMonitor<FunkArrOptions> options,
@@ -85,19 +87,12 @@ public static class SystemApiEndpoints
 
         group.MapGet("/cache", async (IActorRegistry registry) =>
         {
-            var resolver = await registry.GetAsync<IMetadataResolver>();
-            try
-            {
-                var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout);
-                return Results.Ok(new CacheStatsResponse(
-                    result.TvdbEntries,
-                    result.TmdbEntries,
-                    result.OldestEntry?.ToString("o")));
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var resolver = await registry.GetAsync<IEnrichmentManager>();
+            var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout);
+            return Results.Ok(new CacheStatsResponse(
+                result.TvdbEntries,
+                result.TmdbEntries,
+                result.OldestEntry?.ToString("o")));
         })
         .WithSummary("Get metadata cache stats")
         .Produces<CacheStatsResponse>()

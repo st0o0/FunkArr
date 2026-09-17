@@ -32,66 +32,61 @@ public static partial class RuleSetApiEndpoints
 
     public static WebApplication MapRuleSetApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/rulesets").WithTags("Rulesets");
+        var group = app.MapGroup("/api/rulesets")
+            .WithTags("Rulesets")
+            .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapGet("/", async (IActorRegistry registry, IDataFiles dataFiles, DataPaths dataPaths) =>
         {
-            try
+            var resolver = await registry.GetAsync<IRuleSetResolver>();
+            var manager = await registry.GetAsync<IRuleSetManager>();
+            var historyRegion = await registry.GetAsync<IScoringHistoryRegion>();
+
+            var resolverTask = resolver.Ask<RegisteredRuleSetsResult>(
+                new QueryRegisteredRuleSets(), _queryTimeout);
+            var summaryTask = manager.Ask<RuleSetSummaryResult>(
+                new QueryRuleSetSummaries(), _queryTimeout);
+
+            await Task.WhenAll(resolverTask, summaryTask);
+
+            var entries = resolverTask.Result;
+            var summaries = summaryTask.Result;
+            var summaryMap = summaries.Entries.ToDictionary(s => s.RuleSetId);
+
+            var statsTasks = entries.Entries.Select(async e =>
             {
-                var resolver = await registry.GetAsync<IRuleSetResolver>();
-                var manager = await registry.GetAsync<IRuleSetManager>();
-                var historyRegion = await registry.GetAsync<IMatchHistoryRegion>();
-
-                var resolverTask = resolver.Ask<RegisteredRuleSetsResult>(
-                    new QueryRegisteredRuleSets(), _queryTimeout);
-                var summaryTask = manager.Ask<RuleSetSummaryResult>(
-                    new QueryRuleSetSummaries(), _queryTimeout);
-
-                await Task.WhenAll(resolverTask, summaryTask);
-
-                var entries = resolverTask.Result;
-                var summaries = summaryTask.Result;
-                var summaryMap = summaries.Entries.ToDictionary(s => s.RuleSetId);
-
-                var statsTasks = entries.Entries.Select(async e =>
+                try
                 {
-                    try
-                    {
-                        return await historyRegion.Ask<ScoringStatsResult>(
-                            new QueryScoringStats(e.RuleSetId), _statsTimeout);
-                    }
-                    catch
-                    {
-                        return new ScoringStatsResult(null, null);
-                    }
-                }).ToArray();
-
-                var stats = await Task.WhenAll(statsTasks);
-
-                var result = entries.Entries.Select((e, i) =>
+                    return await historyRegion.Ask<ScoringStatsResult>(
+                        new QueryScoringStats(e.RuleSetId), _statsTimeout);
+                }
+                catch
                 {
-                    summaryMap.TryGetValue(e.RuleSetId, out var summary);
-                    var stat = stats[i];
+                    return new ScoringStatsResult(null, null);
+                }
+            }).ToArray();
 
-                    return new ApiModels.RuleSetListEntry(
-                        e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId,
-                        e.MediaName, e.MediaType.ToApiMediaType(),
-                        summary?.RuleCount ?? 0,
-                        (summary?.SourceType).ToApi(),
-                        stat.LastRun,
-                        stat.MatchRate);
-                }).ToArray();
+            var stats = await Task.WhenAll(statsTasks);
 
-                var communityVersion = dataFiles.Exists(dataPaths.RuleSetVersion)
-                    ? dataFiles.ReadText(dataPaths.RuleSetVersion).Trim()
-                    : null;
-
-                return Results.Ok(new ApiModels.RuleSetListResponse(communityVersion, result));
-            }
-            catch (Exception)
+            var result = entries.Entries.Select((e, i) =>
             {
-                return ApiResults.GatewayTimeout();
-            }
+                summaryMap.TryGetValue(e.RuleSetId, out var summary);
+                var stat = stats[i];
+
+                return new ApiModels.RuleSetListEntry(
+                    e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId,
+                    e.MediaName, e.MediaType.ToApiMediaType(),
+                    summary?.RuleCount ?? 0,
+                    (summary?.SourceType).ToApi(),
+                    stat.LastRun,
+                    stat.MatchRate);
+            }).ToArray();
+
+            var communityVersion = dataFiles.Exists(dataPaths.RuleSetVersion)
+                ? dataFiles.ReadText(dataPaths.RuleSetVersion).Trim()
+                : null;
+
+            return Results.Ok(new ApiModels.RuleSetListResponse(communityVersion, result));
         })
         .CacheOutput("RuleSetList")
         .WithSummary("List all rulesets")
@@ -102,21 +97,14 @@ public static partial class RuleSetApiEndpoints
         group.MapGet("/{id}", async (string id, IActorRegistry registry) =>
         {
             var manager = await registry.GetAsync<IRuleSetManager>();
-            try
+            var result = await manager.Ask<RuleSetDetailResponse>(
+                new QueryRuleSetDetail(id), _queryTimeout);
+            return result switch
             {
-                var result = await manager.Ask<IRuleSetResponse>(
-                    new QueryRuleSetDetail(id), _queryTimeout);
-                return result switch
-                {
-                    RuleSetDetailResult detail => Results.Ok(detail.ToApi()),
-                    RuleSetNotFound => Results.NotFound(),
-                    _ => ApiResults.GatewayTimeout(),
-                };
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+                RuleSetDetailResult detail => Results.Ok(detail.ToApi()),
+                RuleSetDetailFailed => Results.NotFound(),
+                _ => ApiResults.GatewayTimeout(),
+            };
         })
         .WithSummary("Get ruleset details")
         .WithDescription("Returns full ruleset configuration including identity, source info, and all matching rules.")
@@ -126,17 +114,10 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}/history", async (string id, int? offset, int? limit, IActorRegistry registry) =>
         {
-            var historyRegion = await registry.GetAsync<IMatchHistoryRegion>();
-            try
-            {
-                var result = await historyRegion.Ask<ScoringHistoryResult>(
-                    new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout);
-                return Results.Ok(result.ToApi());
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var historyRegion = await registry.GetAsync<IScoringHistoryRegion>();
+            var result = await historyRegion.Ask<ScoringHistoryResult>(
+                new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout);
+            return Results.Ok(result.ToApi());
         })
         .WithSummary("Get scoring history")
         .WithDescription("Returns paginated scoring history for a ruleset.")
@@ -145,22 +126,15 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}/history/{requestId:guid}", async (string id, Guid requestId, IActorRegistry registry) =>
         {
-            var historyRegion = await registry.GetAsync<IMatchHistoryRegion>();
-            try
+            var historyRegion = await registry.GetAsync<IScoringHistoryRegion>();
+            var result = await historyRegion.Ask<ScoringDetailResponse>(
+                new QueryScoringDetail(id, requestId), _queryTimeout);
+            return result switch
             {
-                var result = await historyRegion.Ask<IScoringResponse>(
-                    new QueryScoringDetail(id, requestId), _queryTimeout);
-                return result switch
-                {
-                    ScoringDetailResult detail => Results.Ok(detail.ToApi()),
-                    ScoringDetailNotFound => Results.NotFound(),
-                    _ => ApiResults.GatewayTimeout(),
-                };
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+                ScoringDetailResult detail => Results.Ok(detail.ToApi()),
+                ScoringDetailFailed => Results.NotFound(),
+                _ => ApiResults.GatewayTimeout(),
+            };
         })
         .WithSummary("Get scoring detail")
         .WithDescription("Returns detailed scoring trace for a specific scoring request, including per-item and per-rule traces.")
@@ -193,23 +167,16 @@ public static partial class RuleSetApiEndpoints
         {
             var (config, candidates) = request.ToMessage();
 
-            var manager = await registry.GetAsync<IMatchMagicManager>();
-            try
-            {
-                var result = await manager.Ask<IScoringResponse>(
-                    new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout);
+            var manager = await registry.GetAsync<IScoringManager>();
+            var result = await manager.Ask<TestScoreItemsResponse>(
+                new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout);
 
-                return result switch
-                {
-                    TestScoreCompleted completed => Results.Ok(new ApiModels.TestScoreResponse(
-                        completed.ItemTraces.Select(t => t.ToApi()).ToArray())),
-                    _ => ApiResults.GatewayTimeout(),
-                };
-            }
-            catch (Exception)
+            return result switch
             {
-                return ApiResults.GatewayTimeout();
-            }
+                TestScoreCompleted completed => Results.Ok(new ApiModels.TestScoreResponse(
+                    completed.ItemTraces.Select(t => t.ToApi()).ToArray())),
+                _ => ApiResults.GatewayTimeout(),
+            };
         })
         .WithSummary("Test ruleset scoring")
         .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration. Returns per-item traces.")

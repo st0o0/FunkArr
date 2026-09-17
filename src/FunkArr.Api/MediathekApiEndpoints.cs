@@ -15,7 +15,9 @@ public static class MediathekApiEndpoints
 
     public static WebApplication MapMediathekApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/mediathek").WithTags("Mediathek");
+        var group = app.MapGroup("/api/mediathek")
+            .WithTags("Mediathek")
+            .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapGet("/search", async (
             string? q,
@@ -54,34 +56,27 @@ public static class MediathekApiEndpoints
             }
 
             var manager = await registry.GetAsync<IMediathekManager>();
-            try
-            {
-                var query = new QueryMediathek(
-                    fields.ToArray(),
-                    SortBy: sortBy,
-                    SortOrder: sortOrder,
-                    Future: false,
-                    Offset: actualOffset,
-                    Size: actualLimit,
-                    DurationMin: durationMin,
-                    DurationMax: durationMax);
+            var query = new QueryMediathek(
+                fields.ToArray(),
+                SortBy: sortBy,
+                SortOrder: sortOrder,
+                Future: false,
+                Offset: actualOffset,
+                Size: actualLimit,
+                DurationMin: durationMin,
+                DurationMax: durationMax);
 
-                var result = await manager.Ask<IMediathekResponse>(query, _queryTimeout);
-                return result switch
-                {
-                    MediathekQueryCompleted completed => Results.Ok(
-                        new ApiModels.MediathekSearchResponse(
-                            completed.Items.Select(i => i.ToApi()).ToArray(),
-                            completed.Total)),
-                    MediathekQueryFailed failed => Results.Problem(
-                        statusCode: 502, title: "MediathekViewWeb Error", detail: failed.Reason),
-                    _ => ApiResults.GatewayTimeout(),
-                };
-            }
-            catch (Exception)
+            var result = await manager.Ask<QueryMediathekResponse>(query, _queryTimeout);
+            return result switch
             {
-                return ApiResults.GatewayTimeout();
-            }
+                QueryMediathekCompleted completed => Results.Ok(
+                    new ApiModels.MediathekSearchResponse(
+                        completed.Items.Select(i => i.ToApi()).ToArray(),
+                        completed.Total)),
+                QueryMediathekFailed failed => Results.Problem(
+                    statusCode: 502, title: "MediathekViewWeb Error", detail: failed.Cause.Message),
+                _ => ApiResults.GatewayTimeout(),
+            };
         })
         .WithSummary("Search Mediathek")
         .WithDescription("Searches MediathekViewWeb for media items by title, channel, or topic.")

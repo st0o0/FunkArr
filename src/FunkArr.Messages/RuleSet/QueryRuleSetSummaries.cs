@@ -7,4 +7,4 @@ public sealed record RuleSetSummaryEntry(
     int RuleCount,
     string SourceType);
 
-public sealed record RuleSetSummaryResult(RuleSetSummaryEntry[] Entries) : IRuleSetResponse;
+public sealed record RuleSetSummaryResult(RuleSetSummaryEntry[] Entries);

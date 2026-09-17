@@ -14,3 +14,14 @@ public sealed record SearchCommand(
 
     public sealed record MovieParams(string? ImdbId, int? TmdbId) : ISearchParams;
 }
+
+public abstract record SearchCommandResponse;
+
+public sealed record SearchCommandCompleted(
+    Guid SearchId,
+    SearchResultItem[] Items,
+    int Total) : SearchCommandResponse;
+
+public sealed record SearchCommandFailed(
+    Guid SearchId,
+    Exception Cause) : SearchCommandResponse;

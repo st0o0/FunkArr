@@ -18,20 +18,15 @@ public static class DownloadsApiEndpoints
 
     public static WebApplication MapDownloadsApi(this WebApplication app)
     {
-        var group = app.MapGroup("/api/downloads").WithTags("Downloads");
+        var group = app.MapGroup("/api/downloads")
+            .WithTags("Downloads")
+            .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapGet("/queue", async (IActorRegistry registry) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            try
-            {
-                var result = await manager.Ask<QueueResult>(new QueryQueue(), _askTimeout);
-                return Results.Ok(result.ToApi());
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var result = await manager.Ask<QueueResult>(new QueryQueue(), _askTimeout);
+            return Results.Ok(result.ToApi());
         })
         .WithSummary("Get download queue")
         .Produces<ApiModels.DownloadQueueResponse>()
@@ -82,16 +77,9 @@ public static class DownloadsApiEndpoints
         group.MapGet("/history", async (int? start, int? limit, string? category, IActorRegistry registry) =>
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
-            try
-            {
-                var result = await history.Ask<HistoryResult>(
-                    new QueryHistory(start ?? 0, limit ?? 25, category), _askTimeout);
-                return Results.Ok(result.ToApi());
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var result = await history.Ask<HistoryResult>(
+                new QueryHistory(start ?? 0, limit ?? 25, category), _askTimeout);
+            return Results.Ok(result.ToApi());
         })
         .WithSummary("Get download history")
         .Produces<ApiModels.DownloadHistoryResponse>()
@@ -100,17 +88,10 @@ public static class DownloadsApiEndpoints
         group.MapGet("/history/stats", async (IActorRegistry registry) =>
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
-            try
-            {
-                var result = await history.Ask<HistoryStatsResult>(new QueryHistoryStats(), _askTimeout);
-                return Results.Ok(new ApiModels.HistoryStatsResponse(
-                    result.TotalCompleted, result.TotalFailed, result.TotalBytes,
-                    result.AverageDownloadTimeSeconds, result.SuccessRate));
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var result = await history.Ask<HistoryStatsResult>(new QueryHistoryStats(), _askTimeout);
+            return Results.Ok(new ApiModels.HistoryStatsResponse(
+                result.TotalCompleted, result.TotalFailed, result.TotalBytes,
+                result.AverageDownloadTimeSeconds, result.SuccessRate));
         })
         .WithSummary("Get download statistics")
         .Produces<ApiModels.HistoryStatsResponse>()
@@ -119,15 +100,8 @@ public static class DownloadsApiEndpoints
         group.MapGet("/history/categories", async (IActorRegistry registry) =>
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
-            try
-            {
-                var result = await history.Ask<HistoryCategoriesResult>(new QueryHistoryCategories(), _askTimeout);
-                return Results.Ok(result.Categories);
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var result = await history.Ask<HistoryCategoriesResult>(new QueryHistoryCategories(), _askTimeout);
+            return Results.Ok(result.Categories);
         })
         .WithSummary("List download categories")
         .Produces<string[]>()
@@ -136,17 +110,10 @@ public static class DownloadsApiEndpoints
         group.MapDelete("/queue/{id:guid}", async (Guid id, IActorRegistry registry) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            try
-            {
-                var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(id), _askTimeout);
-                return result.Success
-                    ? Results.Ok(new ApiModels.OperationResult(true))
-                    : Results.NotFound(new ApiModels.OperationResult(false, result.Error));
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(id), _askTimeout);
+            return result.Success
+                ? Results.Ok(new ApiModels.OperationResult(true))
+                : Results.NotFound(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Cancel download")
         .Produces<ApiModels.OperationResult>()
@@ -155,17 +122,10 @@ public static class DownloadsApiEndpoints
         group.MapDelete("/history/{id:guid}", async (Guid id, IActorRegistry registry) =>
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
-            try
-            {
-                var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(id), _askTimeout);
-                return result.Success
-                    ? Results.Ok(new ApiModels.OperationResult(true))
-                    : Results.NotFound(new ApiModels.OperationResult(false, result.Error));
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(id), _askTimeout);
+            return result.Success
+                ? Results.Ok(new ApiModels.OperationResult(true))
+                : Results.NotFound(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Delete history entry")
         .Produces<ApiModels.OperationResult>()
@@ -175,18 +135,11 @@ public static class DownloadsApiEndpoints
         {
             var manager = await registry.GetAsync<IDownloadManager>();
             var history = await registry.GetAsync<IDownloadHistoryManager>();
-            try
-            {
-                history.Tell(new RemoveHistoryEntry(id));
-                var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(id), _askTimeout);
-                return result.Success
-                    ? Results.Ok(new ApiModels.OperationResult(true))
-                    : Results.BadRequest(new ApiModels.OperationResult(false, result.Error));
-            }
-            catch (Exception)
-            {
-                return ApiResults.GatewayTimeout();
-            }
+            history.Tell(new RemoveHistoryEntry(id));
+            var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(id), _askTimeout);
+            return result.Success
+                ? Results.Ok(new ApiModels.OperationResult(true))
+                : Results.BadRequest(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Retry failed download")
         .Produces<ApiModels.OperationResult>()

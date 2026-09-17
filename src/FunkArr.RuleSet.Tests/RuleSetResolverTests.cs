@@ -39,9 +39,10 @@ public sealed class RuleSetResolverTests : TestKit
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
         resolver.Tell(new ResolveRuleSet("Unknown Show"));
-        var result = ExpectMsg<RuleSetNotFound>();
+        var result = ExpectMsg<RuleSetFailed>();
 
-        Assert.Equal("Unknown Show", result.TopicOrAlias);
+        var notFound = Assert.IsType<RuleSetNotFoundException>(result.Cause);
+        Assert.Equal("Unknown Show", notFound.TopicOrAlias);
     }
 
     [Fact]
@@ -53,7 +54,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("test-show", "Test Show", ["New Alias"]));
 
         resolver.Tell(new ResolveRuleSet("Old Alias"));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
 
         resolver.Tell(new ResolveRuleSet("New Alias"));
         var result = ExpectMsg<RuleSetResolved>();
@@ -111,10 +112,10 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("test-show"));
 
         resolver.Tell(new ResolveRuleSet("Test Show"));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
 
         resolver.Tell(new ResolveRuleSet("Test Alias"));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
     }
 
     [Fact]
@@ -125,7 +126,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("nonexistent"));
 
         resolver.Tell(new ResolveRuleSet("anything"));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
     }
 
     [Fact]
@@ -139,7 +140,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("show-a"));
 
         resolver.Tell(new ResolveRuleSet("Show A"));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
 
         resolver.Tell(new ResolveRuleSet("Show B"));
         Assert.Equal("show-b", ExpectMsg<RuleSetResolved>().RuleSetId);
@@ -206,7 +207,7 @@ public sealed class RuleSetResolverTests : TestKit
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
         resolver.Tell(new ResolveRuleSet(null, TvdbId: 99999));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
     }
 
     [Fact]
@@ -218,7 +219,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], TvdbId: 99999));
 
         resolver.Tell(new ResolveRuleSet(null, TvdbId: 83214));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
 
         resolver.Tell(new ResolveRuleSet(null, TvdbId: 99999));
         Assert.Equal("tatort", ExpectMsg<RuleSetResolved>().RuleSetId);
@@ -234,10 +235,10 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("tatort"));
 
         resolver.Tell(new ResolveRuleSet(null, TvdbId: 83214));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
 
         resolver.Tell(new ResolveRuleSet(null, ImdbId: "tt0806910"));
-        ExpectMsg<RuleSetNotFound>();
+        ExpectMsg<RuleSetFailed>();
     }
 
     [Fact]

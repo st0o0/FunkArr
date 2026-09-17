@@ -1,15 +1,17 @@
+using System.Net.Mime;
 using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
+using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Search;
 
 public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 {
-    private sealed record HttpCompleted(MediathekQueryCompleted Result);
+    private sealed record HttpCompleted(QueryMediathekCompleted Result);
 
-    private sealed record HttpFailed(string Reason);
+    private sealed record HttpFailed(Exception Cause);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IHttpClientFactory _httpClientFactory;
@@ -52,8 +54,8 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
         {
             try
             {
-                using var client = factory.CreateClient("MediathekViewWeb");
-                using var content = new StringContent(json, System.Text.Encoding.UTF8, "text/plain");
+                using var client = factory.CreateClient(HttpClientNames.MediathekViewWeb);
+                using var content = new StringContent(json, System.Text.Encoding.UTF8, MediaTypeNames.Text.Plain);
                 using var response = await client.PostAsync("", content);
                 response.EnsureSuccessStatusCode();
 
@@ -78,11 +80,11 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
                 var total = apiResponse?.Result?.QueryInfo?.TotalResults ?? items.Length;
 
-                return new HttpCompleted(new MediathekQueryCompleted(items, total)) as object;
+                return new HttpCompleted(new QueryMediathekCompleted(items, total)) as object;
             }
             catch (Exception ex)
             {
-                return new HttpFailed(ex.Message);
+                return new HttpFailed(ex);
             }
         }).PipeTo(self, sender);
     }
@@ -95,8 +97,8 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private void HandleHttpFailed(HttpFailed msg)
     {
-        _log.Warning("MediathekViewWeb query failed: {Reason}", msg.Reason);
-        Sender.Tell(new MediathekQueryFailed(msg.Reason));
+        _log.Warning(msg.Cause, "MediathekViewWeb query failed");
+        Sender.Tell(new QueryMediathekFailed(msg.Cause));
         SlotFreed();
     }
 

@@ -9,8 +9,8 @@
     <Project Path="FunkArr.Search/FunkArr.Search.csproj" />
     <Project Path="FunkArr.Download/FunkArr.Download.csproj" />
     <Project Path="FunkArr.RuleSet/FunkArr.RuleSet.csproj" />
-    <Project Path="FunkArr.MetadataResolver/FunkArr.MetadataResolver.csproj" />
-    <Project Path="FunkArr.MatchMagic/FunkArr.MatchMagic.csproj" />
+    <Project Path="FunkArr.Enrichment/FunkArr.Enrichment.csproj" />
+    <Project Path="FunkArr.Scoring/FunkArr.Scoring.csproj" />
   </Folder>
   <Folder Name="/Adapters/">
     <Project Path="FunkArr.Api/FunkArr.Api.csproj" />
@@ -26,8 +26,8 @@
     <Project Path="FunkArr.Search.Tests/FunkArr.Search.Tests.csproj" />
     <Project Path="FunkArr.Download.Tests/FunkArr.Download.Tests.csproj" />
     <Project Path="FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj" />
-    <Project Path="FunkArr.MetadataResolver.Tests/FunkArr.MetadataResolver.Tests.csproj" />
-    <Project Path="FunkArr.MatchMagic.Tests/FunkArr.MatchMagic.Tests.csproj" />
+    <Project Path="FunkArr.Enrichment.Tests/FunkArr.Enrichment.Tests.csproj" />
+    <Project Path="FunkArr.Scoring.Tests/FunkArr.Scoring.Tests.csproj" />
     <Project Path="FunkArr.Api.Tests/FunkArr.Api.Tests.csproj" />
     <Project Path="FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj" />
     <Project Path="FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj" />

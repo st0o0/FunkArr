@@ -52,7 +52,7 @@ public sealed class RuleSetWorker : ReceiveActor
             return;
         }
 
-        var matchMagicManager = Context.GetActor<IMatchMagicManager>();
+        var matchMagicManager = Context.GetActor<IScoringManager>();
         matchMagicManager.Tell(config);
 
         var resolver = Context.GetActor<IRuleSetResolver>();
@@ -64,7 +64,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleRemove(RemoveRuleSet msg)
     {
-        var matchMagicManager = Context.GetActor<IMatchMagicManager>();
+        var matchMagicManager = Context.GetActor<IScoringManager>();
         matchMagicManager.Tell(new RemoveMatchingConfig(msg.RuleSetId));
 
         var resolver = Context.GetActor<IRuleSetResolver>();

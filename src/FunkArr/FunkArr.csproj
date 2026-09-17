@@ -15,8 +15,8 @@
     <ProjectReference Include="..\FunkArr.Search\FunkArr.Search.csproj" />
     <ProjectReference Include="..\FunkArr.Download\FunkArr.Download.csproj" />
     <ProjectReference Include="..\FunkArr.RuleSet\FunkArr.RuleSet.csproj" />
-    <ProjectReference Include="..\FunkArr.MatchMagic\FunkArr.MatchMagic.csproj" />
-    <ProjectReference Include="..\FunkArr.MetadataResolver\FunkArr.MetadataResolver.csproj" />
+    <ProjectReference Include="..\FunkArr.Scoring\FunkArr.Scoring.csproj" />
+    <ProjectReference Include="..\FunkArr.Enrichment\FunkArr.Enrichment.csproj" />
   </ItemGroup>
 
   <ItemGroup>

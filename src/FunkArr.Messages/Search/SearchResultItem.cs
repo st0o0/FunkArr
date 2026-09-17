@@ -1,3 +1,5 @@
+using FunkArr.Messages.Enrichment;
+
 namespace FunkArr.Messages.Search;
 
 public sealed record SearchResultItem(
@@ -16,5 +18,5 @@ public sealed record SearchResultItem(
     int? TmdbId = null,
     string? Season = null,
     string? Episode = null,
-    float? ResolutionConfidence = null,
-    string? ResolutionStrategy = null);
+    float? MatchConfidence = null,
+    MatchMethod? MatchMethod = null);

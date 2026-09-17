@@ -4,9 +4,9 @@ using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
 using FunkArr.Core;
 using FunkArr.Download;
-using FunkArr.MatchMagic;
-using FunkArr.MetadataResolver;
+using FunkArr.Enrichment;
 using FunkArr.RuleSet;
+using FunkArr.Scoring;
 using FunkArr.Search;
 using LinqToDB;
 using Microsoft.Extensions.Options;
@@ -72,10 +72,10 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => resolver.Props<DownloadManager>())
             .WithSingleton<IDownloadHistoryManager>("download-history",
                 (_, _, resolver) => resolver.Props<DownloadHistoryManager>())
-            .WithSingleton<IMatchMagicManager>("match-magic-manager",
-                (_, _, resolver) => resolver.Props<MatchMagicManager>())
-            .WithSingleton<IMetadataResolver>("metadata-resolver",
-                (_, _, resolver) => resolver.Props<MetadataResolverManager>())
+            .WithSingleton<IScoringManager>("scoring-manager",
+                (_, _, resolver) => resolver.Props<ScoringManager>())
+            .WithSingleton<IEnrichmentManager>("enrichment-manager",
+                (_, _, resolver) => resolver.Props<EnrichmentManager>())
             .WithShardRegion<ITvSearchRegion>("tv-search",
                 (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
                 new ShardMessageExtractor(),
@@ -92,8 +92,8 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
-            .WithShardRegion<IMatchHistoryRegion>("match-history",
-                (_, _, resolver) => entityId => resolver.Props<MatchHistoryWorker>(entityId),
+            .WithShardRegion<IScoringHistoryRegion>("scoring-history",
+                (_, _, resolver) => entityId => resolver.Props<ScoringHistoryWorker>(entityId),
                 new ShardMessageExtractor(),
                 new ShardOptions());
     }

@@ -1,3 +1,5 @@
+using FunkArr.Messages.Scoring;
+
 namespace FunkArr.Api.Models;
 
 public sealed record RuleSetDetail(
@@ -25,9 +27,9 @@ public sealed record RuleSetDetailRule(
     string Id,
     int Priority,
     float? Confidence,
-    string Strategy,
-    string? FilterSummary,
-    string? SeasonPattern,
-    string? EpisodePattern,
-    string? MatchMode,
-    string[]? TitleParts);
+    IdentificationStrategy Strategy,
+    string? SeasonRegex,
+    string? EpisodeRegex,
+    int? CaptureGroup,
+    FilterGroupOutput? Filters,
+    TitleRuleOutput[]? TitleRules);

@@ -22,16 +22,16 @@ src/
   FunkArr.Search/                 # MediathekViewWeb query + fetch
   FunkArr.Download/               # Download pipeline, FFmpeg, subtitles, muxing
   FunkArr.RuleSet/                # Ruleset registry, models, GitHub sync, generator
-  FunkArr.MatchMagic/             # Match scoring, stats, diagnostics
-  FunkArr.MetadataResolver/       # TMDB + TVDB metadata resolution
+  FunkArr.Scoring/                # Match scoring, stats, diagnostics
+  FunkArr.Enrichment/             # TMDB + TVDB metadata enrichment
   FunkArr.Messages/               # Commands, queries, responses (all domains)
   FunkArr.Persistence/            # DTOs (extend-only, versioned)
   FunkArr.UI/                     # Vue.js frontend (Vite + Tailwind)
   FunkArr.Search.Tests/
   FunkArr.Download.Tests/
   FunkArr.RuleSet.Tests/
-  FunkArr.MatchMagic.Tests/
-  FunkArr.MetadataResolver.Tests/
+  FunkArr.Scoring.Tests/
+  FunkArr.Enrichment.Tests/
   FunkArr.Api.Tests/
   FunkArr.ArrApi.Tests/
   FunkArr.Tests.Shared/           # Shared test infrastructure
@@ -54,6 +54,14 @@ dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
 ```
 
 Run the service via `docker-compose.dev.yml`, never `dotnet run`.
+
+## Message naming convention
+
+- Commands: `VerbNoun` (e.g. `SearchSeries`, `AddDownload`). Response: `abstract record VerbNounResponse` with `VerbNounCompleted` / `VerbNounFailed`. Command + responses in one file.
+- Queries: `QueryNoun` (e.g. `QueryRuleSetDetail`). Response: `abstract record NounResponse` with `NounResult` / `NounFailed`. Query + responses in one file.
+- Events: Past-tense (e.g. `ScoringRecorded`), in `FunkArr.Persistence/Events/`.
+- Config: Noun, fire-and-forget (e.g. `MatchingConfig`).
+- No domain-wide response interfaces — each command/query has its own response type.
 
 ## Workflow
 

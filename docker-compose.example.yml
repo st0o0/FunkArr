@@ -48,13 +48,13 @@ services:
       # Parallel scoring workers. Default: 4
       #- FunkArr__Scoring__PoolSize=4
 
-      # -- Match History --
-      # Max match history snapshots to retain. Default: 100
-      #- FunkArr__MatchHistory__MaxSnapshots=100
+      # -- Scoring History --
+      # Max scoring history snapshots to retain. Default: 100
+      #- FunkArr__ScoringHistory__MaxSnapshots=100
       # Days before old snapshots are pruned. Default: 30
-      #- FunkArr__MatchHistory__MaxAgeDays=30
+      #- FunkArr__ScoringHistory__MaxAgeDays=30
       # Interval between snapshots. Default: 20
-      #- FunkArr__MatchHistory__SnapshotInterval=20
+      #- FunkArr__ScoringHistory__SnapshotInterval=20
 
       # -- Persistence (PostgreSQL) --
       # Default: SQLite at data/funkarr.db (no extra config needed).

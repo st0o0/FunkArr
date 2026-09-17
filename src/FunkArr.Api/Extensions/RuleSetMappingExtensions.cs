@@ -17,8 +17,8 @@ internal static class RuleSetMappingExtensions
             msg.DefaultConfidence,
             msg.Rules.Select(r => new ApiModels.RuleSetDetailRule(
                 r.Id, r.Priority, r.Confidence, r.Strategy,
-                r.FilterSummary, r.SeasonPattern, r.EpisodePattern,
-                r.MatchMode, r.TitleParts)).ToArray());
+                r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
+                r.Filters, r.TitleRules)).ToArray());
 
     internal static ApiModels.ScoringHistory ToApi(this ScoringHistoryResult msg) =>
         new(msg.RuleSetId, msg.TotalCount,

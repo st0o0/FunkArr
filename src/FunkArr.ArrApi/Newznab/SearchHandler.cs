@@ -2,10 +2,11 @@ using Akka.Actor;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Messages.Search;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace FunkArr.ArrApi.Newznab;
 
-internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string apiKey)
+internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string apiKey, ILogger<SearchHandler> logger)
 {
     private static readonly TimeSpan _searchTimeout = TimeSpan.FromSeconds(30);
 
@@ -66,22 +67,23 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
     {
         try
         {
-            var response = await gateway.Ask<ISearchResponse>(cmd, _searchTimeout);
+            var response = await gateway.Ask<SearchCommandResponse>(cmd, _searchTimeout);
             return response switch
             {
-                SearchCompleted completed => NewznabApiEndpoints.XmlResult(
+                SearchCommandCompleted completed => NewznabApiEndpoints.XmlResult(
                     NewznabApiEndpoints.Serialize(this.ToRss(completed, offset, limit, category))),
-                SearchFailed failed => NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError(failed.Reason)),
+                SearchCommandFailed failed => NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError(failed.Cause.Message)),
                 _ => NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError("Unexpected response")),
             };
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Search failed for {SearchType} query {Query}", cmd.Source, cmd.Query);
             return NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError("Search timed out"));
         }
     }
 
-    internal Rss ToRss(SearchCompleted completed, int offset, int limit, NewznabCategory category)
+    internal Rss ToRss(SearchCommandCompleted completed, int offset, int limit, NewznabCategory category)
     {
         var paged = completed.Items.Take(limit);
 

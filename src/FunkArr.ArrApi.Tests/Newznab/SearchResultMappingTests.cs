@@ -2,16 +2,17 @@ using System.Text;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Messages.Search;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 
 public sealed class SearchResultMappingTests
 {
-    private static readonly SearchHandler _handler = new(null!, "http://localhost:6969", "test-key");
+    private static readonly SearchHandler _handler = new(null!, "http://localhost:6969", "test-key", NullLogger<SearchHandler>.Instance);
     [Fact]
     public void ToRss_maps_search_completed_to_rss()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [
                 new SearchResultItem(
@@ -37,7 +38,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_maps_sd_quality()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Test", "ZDF", "Topic", "url", 3600, 500000, 480, null, 0.5)],
             1);
@@ -51,7 +52,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_encodes_nzb_id_as_base64()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Title", "CH", "Topic", "https://example.com/v.mp4", 100, 0, 720, null, 1.0)],
             1);
@@ -65,7 +66,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_serializes_to_valid_xml()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)],
             1);
@@ -81,7 +82,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_emits_tvdbid_attribute()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
                 TvdbId: 83214)],
@@ -96,7 +97,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_emits_imdb_attribute_not_imdbid()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
                 ImdbId: "tt0806910")],
@@ -112,7 +113,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_emits_tmdbid_attribute()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 7200, 100, 720, null, 0.9,
                 TmdbId: 2116)],
@@ -127,7 +128,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_omits_id_attributes_when_null()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)],
             1);
@@ -143,7 +144,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_movie_search_uses_movie_categories_hd()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Film", "ARD", "Film", "url", 5400, 1200000000, 720, null, 0.9)],
             1);
@@ -157,7 +158,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_movie_search_uses_movie_categories_sd()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem("Film", "ZDF", "Film", "url", 3600, 500000, 480, null, 0.5)],
             1);
@@ -189,7 +190,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_strips_tabs_from_nzb_payload_fields()
     {
-        var completed = new SearchCompleted(
+        var completed = new SearchCommandCompleted(
             Guid.NewGuid(),
             [new SearchResultItem(
                 "Title\twith\ttabs", "Chan\tnel", "Topic", "https://example.com/v.mp4",

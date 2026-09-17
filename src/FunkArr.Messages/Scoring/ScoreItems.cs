@@ -5,3 +5,11 @@ public sealed record ScoreItems(
     string RuleSetId,
     ScoringOrigin Origin,
     ScoreCandidate[] Candidates);
+
+public abstract record ScoreItemsResponse;
+
+public sealed record ScoreCompleted(
+    Guid RequestId,
+    ScoredItem[] Results) : ScoreItemsResponse;
+
+public sealed record ScoringFailed(Exception Cause) : ScoreItemsResponse;

@@ -3,6 +3,7 @@ using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Scoring.History;
 using Servus.Akka;
 
 namespace FunkArr.RuleSet;
@@ -39,7 +40,8 @@ public sealed class RuleSetManager : ReceiveActor
         Receive<FullRescanRequested>(_ => HandleFullRescanRequested());
         Receive<FlushChanges>(_ => HandleFlush());
         Receive<QueryRuleSetDetail>(HandleQueryDetail);
-        Receive<QueryRuleSetSummaries>(_ => Sender.Tell(_state.ToSummaries(_dataFiles)));
+        Receive<QueryRuleSetSummaries>(_ => Sender.Tell(_state.ToSummaries(_dataFiles, _log)));
+        ReceiveAsync<QueryRuleSetListWithStats>(_ => HandleQueryListWithStats());
     }
 
     protected override void PreStart()
@@ -139,12 +141,7 @@ public sealed class RuleSetManager : ReceiveActor
             }
         }
 
-        _state = _state with
-        {
-            KnownRuleSets = current,
-            FullRescanRequested = false,
-            PendingIds = _state.PendingIds.Clear(),
-        };
+        _state = new RuleSetManagerState(KnownRuleSets: current, FullRescanRequested: false, PendingIds: _state.PendingIds.Clear());
 
         if (added > 0 || updated > 0 || removed > 0)
         {
@@ -207,11 +204,46 @@ public sealed class RuleSetManager : ReceiveActor
         if (result is null)
         {
             _state = _state with { KnownRuleSets = _state.KnownRuleSets.Remove(msg.RuleSetId) };
-            Sender.Tell(new RuleSetNotFound(msg.RuleSetId));
+            Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(msg.RuleSetId)));
             return;
         }
 
         Sender.Tell(result);
+    }
+
+    private async Task HandleQueryListWithStats()
+    {
+        var summaries = _state.ToSummaries(_dataFiles, _log);
+        var summaryMap = summaries.Entries.ToDictionary(s => s.RuleSetId);
+        var historyRegion = Context.GetActor<IScoringHistoryRegion>();
+        var statsTimeout = TimeSpan.FromSeconds(3);
+
+        var statsTasks = summaryMap.Keys.Select(async ruleSetId =>
+        {
+            try
+            {
+                var stats = await historyRegion.Ask<ScoringStatsResult>(
+                    new QueryScoringStats(ruleSetId), statsTimeout);
+                return (RuleSetId: ruleSetId, Stats: stats);
+            }
+            catch
+            {
+                return (RuleSetId: ruleSetId, Stats: new ScoringStatsResult(null, null));
+            }
+        }).ToArray();
+
+        var results = await Task.WhenAll(statsTasks);
+        var statsMap = results.ToDictionary(r => r.RuleSetId, r => r.Stats);
+
+        var entries = summaryMap.Select(kv =>
+        {
+            statsMap.TryGetValue(kv.Key, out var stats);
+            return new RuleSetListWithStatsEntry(
+                kv.Key, kv.Value.RuleCount, kv.Value.SourceType,
+                stats?.LastRun, stats?.MatchRate);
+        }).ToArray();
+
+        Sender.Tell(new RuleSetListWithStatsResult(entries));
     }
 
     private System.Collections.Immutable.ImmutableDictionary<string, RuleSetPaths> ScanDirectories()

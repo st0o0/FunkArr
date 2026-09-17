@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Search;
@@ -94,7 +95,7 @@ internal sealed class MediathekQueryBuilder
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
     };
 
     private sealed record QueryEntry(string[] Fields, string Query);

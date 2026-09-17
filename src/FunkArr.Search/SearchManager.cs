@@ -27,8 +27,10 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         _searchTimeout = searchTimeout ?? TimeSpan.FromSeconds(30);
 
         Receive<SearchCommand>(HandleSearch);
-        Receive<SearchCompleted>(HandleSearchCompleted);
-        Receive<SearchFailed>(HandleSearchFailed);
+        Receive<SearchSeriesCompleted>(msg => HandleCompleted(msg.SearchId, msg.Items, msg.Total));
+        Receive<SearchMovieCompleted>(msg => HandleCompleted(msg.SearchId, msg.Items, msg.Total));
+        Receive<SearchSeriesFailed>(msg => HandleFailed(msg.SearchId, msg.Cause));
+        Receive<SearchMovieFailed>(msg => HandleFailed(msg.SearchId, msg.Cause));
         Receive<SearchTimeout>(HandleTimeout);
     }
 
@@ -39,7 +41,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         switch (cmd.Params)
         {
             case SearchCommand.TvParams tv:
-                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Source, cmd.Query,
+                _tvShardRegion.Tell(new SearchSeries(searchId, cmd.Source, cmd.Query,
                     tv.Season, tv.Episode, tv.TvdbId, tv.ImdbId,
                     cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
@@ -47,7 +49,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                 break;
 
             case SearchCommand.MovieParams movie:
-                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Source, cmd.Query,
+                _movieShardRegion.Tell(new SearchMovie(searchId, cmd.Source, cmd.Query,
                     movie.ImdbId, movie.TmdbId,
                     cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
@@ -74,23 +76,23 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         switch (type)
         {
             case SearchType.Tv:
-                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Source, cmd.Query,
+                _tvShardRegion.Tell(new SearchSeries(searchId, cmd.Source, cmd.Query,
                     null, null, null, null, cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
                     new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
                 break;
 
             case SearchType.Movie:
-                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Source, cmd.Query,
+                _movieShardRegion.Tell(new SearchMovie(searchId, cmd.Source, cmd.Query,
                     null, null, cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
                     new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
                 break;
 
             default:
-                _tvShardRegion.Tell(new TvSearchCommand(searchId, cmd.Source, cmd.Query,
+                _tvShardRegion.Tell(new SearchSeries(searchId, cmd.Source, cmd.Query,
                     null, null, null, null, cmd.Limit, cmd.Offset));
-                _movieShardRegion.Tell(new MovieSearchCommand(searchId, cmd.Source, cmd.Query,
+                _movieShardRegion.Tell(new SearchMovie(searchId, cmd.Source, cmd.Query,
                     null, null, cmd.Limit, cmd.Offset));
                 _state = _state.AddPending(searchId,
                     new SearchManagerState.PendingSearch(Sender, SearchType.Both, null, null));
@@ -98,20 +100,22 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         }
     }
 
-    private void HandleSearchCompleted(SearchCompleted completed)
+    private void HandleCompleted(Guid searchId, SearchResultItem[] items, int total)
     {
-        var pending = _state.TryGetPending(completed.SearchId);
+        var pending = _state.TryGetPending(searchId);
         if (pending is null)
         {
             return;
         }
+
+        var completed = new SearchCommandCompleted(searchId, items, total);
 
         switch (pending.Type)
         {
             case SearchType.Tv:
             case SearchType.Movie:
                 pending.OriginalSender.Tell(completed);
-                _state = _state.RemovePending(completed.SearchId);
+                _state = _state.RemovePending(searchId);
                 break;
 
             case SearchType.Both:
@@ -122,21 +126,21 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                 if (updated.TvResult is not null && updated.MovieResult is not null)
                 {
                     var merged = SearchManagerStateExtensions.MergeResults(
-                        completed.SearchId, updated.TvResult, updated.MovieResult);
+                        searchId, updated.TvResult, updated.MovieResult);
                     pending.OriginalSender.Tell(merged);
-                    _state = _state.RemovePending(completed.SearchId);
+                    _state = _state.RemovePending(searchId);
                 }
                 else
                 {
-                    _state = _state.UpdatePending(completed.SearchId, updated);
+                    _state = _state.UpdatePending(searchId, updated);
                 }
                 break;
         }
     }
 
-    private void HandleSearchFailed(SearchFailed failed)
+    private void HandleFailed(Guid searchId, Exception cause)
     {
-        var pending = _state.TryGetPending(failed.SearchId);
+        var pending = _state.TryGetPending(searchId);
         if (pending is null)
         {
             return;
@@ -148,13 +152,13 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             if (partial is not null)
             {
                 pending.OriginalSender.Tell(partial);
-                _state = _state.RemovePending(failed.SearchId);
+                _state = _state.RemovePending(searchId);
                 return;
             }
         }
 
-        pending.OriginalSender.Tell(failed);
-        _state = _state.RemovePending(failed.SearchId);
+        pending.OriginalSender.Tell(new SearchCommandFailed(searchId, cause));
+        _state = _state.RemovePending(searchId);
     }
 
     private void HandleTimeout(SearchTimeout timeout)
@@ -177,7 +181,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         }
 
         _log.Warning("Search {SearchId} timed out after {Timeout}s", timeout.SearchId, _searchTimeout.TotalSeconds);
-        pending.OriginalSender.Tell(new SearchFailed(timeout.SearchId, "Search timed out"));
+        pending.OriginalSender.Tell(new SearchCommandFailed(timeout.SearchId, new TimeoutException("Search timed out")));
         _state = _state.RemovePending(timeout.SearchId);
     }
 

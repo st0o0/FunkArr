@@ -4,6 +4,8 @@ using Akka.Hosting;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Scoring;
+using FunkArr.Messages.Scoring.History;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -49,12 +51,12 @@ public sealed class RuleSetManagerTests : TestKit
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
-        var matchMagicProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
 
         var registry = ActorRegistry.For(Sys);
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IMatchMagicManager>(matchMagicProbe);
+        registry.Register<IScoringManager>(scoringProbe);
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
@@ -76,12 +78,12 @@ public sealed class RuleSetManagerTests : TestKit
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
-        var matchMagicProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
 
         var registry = ActorRegistry.For(Sys);
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IMatchMagicManager>(matchMagicProbe);
+        registry.Register<IScoringManager>(scoringProbe);
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
         File.WriteAllText(Path.Combine(_dataPaths.LocalRuleSets, "show-a.json"), _sampleJson);
@@ -101,12 +103,12 @@ public sealed class RuleSetManagerTests : TestKit
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
-        var matchMagicProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
 
         var registry = ActorRegistry.For(Sys);
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IMatchMagicManager>(matchMagicProbe);
+        registry.Register<IScoringManager>(scoringProbe);
 
         Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
@@ -128,12 +130,12 @@ public sealed class RuleSetManagerTests : TestKit
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
-        var matchMagicProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
 
         var registry = ActorRegistry.For(Sys);
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IMatchMagicManager>(matchMagicProbe);
+        registry.Register<IScoringManager>(scoringProbe);
 
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "temp-show.json");
         File.WriteAllText(filePath, _sampleJson);
@@ -157,12 +159,12 @@ public sealed class RuleSetManagerTests : TestKit
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
-        var matchMagicProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
 
         var registry = ActorRegistry.For(Sys);
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IMatchMagicManager>(matchMagicProbe);
+        registry.Register<IScoringManager>(scoringProbe);
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "test-show.json"), _sampleJson);
 
@@ -177,7 +179,7 @@ public sealed class RuleSetManagerTests : TestKit
         Assert.Equal(0.9f, result.DefaultConfidence);
         Assert.Single(result.Rules);
         Assert.Equal("airdate", result.Rules[0].Id);
-        Assert.Equal("AirdateExtraction", result.Rules[0].Strategy);
+        Assert.Equal(IdentificationStrategy.AirdateExtraction, result.Rules[0].Strategy);
         Assert.NotNull(result.Source.CommunityPath);
         Assert.Null(result.Source.LocalPath);
 
@@ -189,19 +191,20 @@ public sealed class RuleSetManagerTests : TestKit
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
-        var matchMagicProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
 
         var registry = ActorRegistry.For(Sys);
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IMatchMagicManager>(matchMagicProbe);
+        registry.Register<IScoringManager>(scoringProbe);
 
         var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
 
         manager.Tell(new QueryRuleSetDetail("nonexistent"));
-        var result = ExpectMsg<RuleSetNotFound>();
+        var result = ExpectMsg<RuleSetDetailFailed>();
 
-        Assert.Equal("nonexistent", result.TopicOrAlias);
+        var notFound = Assert.IsType<RuleSetNotFoundException>(result.Cause);
+        Assert.Equal("nonexistent", notFound.TopicOrAlias);
 
         Cleanup();
     }
@@ -211,12 +214,12 @@ public sealed class RuleSetManagerTests : TestKit
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
-        var matchMagicProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
 
         var registry = ActorRegistry.For(Sys);
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IMatchMagicManager>(matchMagicProbe);
+        registry.Register<IScoringManager>(scoringProbe);
 
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "deleted-show.json");
         File.WriteAllText(filePath, _sampleJson);
@@ -227,9 +230,87 @@ public sealed class RuleSetManagerTests : TestKit
         File.Delete(filePath);
 
         manager.Tell(new QueryRuleSetDetail("deleted-show"));
-        var result = ExpectMsg<RuleSetNotFound>();
+        var result = ExpectMsg<RuleSetDetailFailed>();
 
-        Assert.Equal("deleted-show", result.TopicOrAlias);
+        var notFound = Assert.IsType<RuleSetNotFoundException>(result.Cause);
+        Assert.Equal("deleted-show", notFound.TopicOrAlias);
+
+        Cleanup();
+    }
+
+    [Fact]
+    public void QueryRuleSetListWithStats_returns_combined_entries_with_stats()
+    {
+        var shardProbe = CreateTestProbe();
+        var resolverProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
+        var historyProbe = CreateTestProbe();
+
+        var registry = ActorRegistry.For(Sys);
+        registry.Register<IRuleSetRegion>(shardProbe);
+        registry.Register<IRuleSetResolver>(resolverProbe);
+        registry.Register<IScoringManager>(scoringProbe);
+        registry.Register<IScoringHistoryRegion>(historyProbe);
+
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
+
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
+        shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
+
+        manager.Tell(new QueryRuleSetListWithStats());
+
+        var lastRun = new DateTimeOffset(2026, 9, 15, 12, 0, 0, TimeSpan.Zero);
+        for (var i = 0; i < 2; i++)
+        {
+            var statsQuery = historyProbe.ExpectMsg<QueryScoringStats>();
+            var stats = statsQuery.RuleSetId == "show-a"
+                ? new ScoringStatsResult(lastRun, 0.85)
+                : new ScoringStatsResult(null, null);
+            historyProbe.Reply(stats);
+        }
+
+        var result = ExpectMsg<RuleSetListWithStatsResult>();
+        Assert.Equal(2, result.Entries.Length);
+
+        var entryWithStats = result.Entries.First(e => e.LastRun is not null);
+        Assert.Equal(lastRun, entryWithStats.LastRun);
+        Assert.Equal(0.85, entryWithStats.MatchRate);
+
+        var entryWithoutStats = result.Entries.First(e => e.LastRun is null);
+        Assert.Null(entryWithoutStats.MatchRate);
+
+        Cleanup();
+    }
+
+    [Fact]
+    public void QueryRuleSetListWithStats_returns_null_stats_on_timeout()
+    {
+        var shardProbe = CreateTestProbe();
+        var resolverProbe = CreateTestProbe();
+        var scoringProbe = CreateTestProbe();
+        var historyProbe = CreateTestProbe();
+
+        var registry = ActorRegistry.For(Sys);
+        registry.Register<IRuleSetRegion>(shardProbe);
+        registry.Register<IRuleSetResolver>(resolverProbe);
+        registry.Register<IScoringManager>(scoringProbe);
+        registry.Register<IScoringHistoryRegion>(historyProbe);
+
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
+
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
+
+        manager.Tell(new QueryRuleSetListWithStats());
+
+        historyProbe.ExpectMsg<QueryScoringStats>();
+
+        var result = ExpectMsg<RuleSetListWithStatsResult>(TimeSpan.FromSeconds(10));
+        Assert.Single(result.Entries);
+        Assert.Null(result.Entries[0].LastRun);
+        Assert.Null(result.Entries[0].MatchRate);
 
         Cleanup();
     }

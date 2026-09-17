@@ -1,3 +1,4 @@
+using System.Net.Mime;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
@@ -6,11 +7,14 @@ using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 namespace FunkArr.ArrApi.Newznab;
 
 public static class NewznabApiEndpoints
 {
+    private const string ApplicationNzb = "application/x-nzb";
+
     private static readonly XmlSerializerNamespaces _namespaces = new(
         [new XmlQualifiedName("newznab", NewznabNamespace.Uri)]);
 
@@ -24,7 +28,7 @@ public static class NewznabApiEndpoints
             .AddEndpointFilter(new ApiKeyEndpointFilter(
                 () => ErrorResult(NewznabError.InvalidApiKey)));
 
-        group.MapGet("/", async ([AsParameters] IndexerRequest req, IActorRegistry registry, HttpContext ctx) =>
+        group.MapGet("/", async ([AsParameters] IndexerRequest req, IActorRegistry registry, HttpContext ctx, ILogger<SearchHandler> searchLogger) =>
         {
             return (req.T ?? "") switch
             {
@@ -33,7 +37,8 @@ public static class NewznabApiEndpoints
                     await new SearchHandler(
                         await registry.GetAsync<ISearchManager>(),
                         $"{ctx.Request.Scheme}://{ctx.Request.Host}",
-                        ctx.Request.Query["apikey"].FirstOrDefault() ?? "").Handle(req),
+                        ctx.Request.Query["apikey"].FirstOrDefault() ?? "",
+                        searchLogger).Handle(req),
                 "get" => NzbGetResult(req.Id),
                 _ => ErrorResult(NewznabError.NoSuchFunction),
             };
@@ -102,20 +107,20 @@ public static class NewznabApiEndpoints
         var metas = new List<NzbMeta>
         {
             new() { Type = "title", Value = title },
-            new() { Type = "X-FunkArr-Url", Value = url },
-            new() { Type = "X-FunkArr-Channel", Value = channel },
-            new() { Type = "X-FunkArr-Duration", Value = duration },
-            new() { Type = "X-FunkArr-Size", Value = size },
+            new() { Type = FunkArrHeaders.Url, Value = url },
+            new() { Type = FunkArrHeaders.Channel, Value = channel },
+            new() { Type = FunkArrHeaders.Duration, Value = duration },
+            new() { Type = FunkArrHeaders.Size, Value = size },
         };
 
         if (subtitleUrl is not null)
         {
-            metas.Add(new NzbMeta { Type = "X-FunkArr-SubtitleUrl", Value = subtitleUrl });
+            metas.Add(new NzbMeta { Type = FunkArrHeaders.SubtitleUrl, Value = subtitleUrl });
         }
 
         if (category is not null)
         {
-            metas.Add(new NzbMeta { Type = "X-FunkArr-Category", Value = category });
+            metas.Add(new NzbMeta { Type = FunkArrHeaders.Category, Value = category });
         }
 
         var nzb = new Nzb
@@ -125,12 +130,12 @@ public static class NewznabApiEndpoints
 
         return Results.File(
             Encoding.UTF8.GetBytes(Serialize(nzb)),
-            "application/x-nzb",
+            ApplicationNzb,
             $"funkarr-{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}.nzb");
     }
 
     internal static IResult ErrorResult(NewznabError error) =>
-        Results.Content(Serialize(error), "application/xml", Encoding.UTF8, error.Code switch
+        Results.Content(Serialize(error), MediaTypeNames.Application.Xml, Encoding.UTF8, error.Code switch
         {
             100 => 403,
             _ => 400,
@@ -156,5 +161,5 @@ public static class NewznabApiEndpoints
     }
 
     internal static IResult XmlResult(string xml) =>
-        Results.Content(xml, "application/xml", Encoding.UTF8);
+        Results.Content(xml, MediaTypeNames.Application.Xml, Encoding.UTF8);
 }

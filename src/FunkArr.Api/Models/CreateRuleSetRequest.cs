@@ -8,4 +8,4 @@ public sealed record CreateRuleSetRequest(
     string[]? Aliases = null,
     float? Confidence = null,
     bool? Standalone = null,
-    string[]? Disable = null);
+    string[]? Disable = null) : IRuleSetBody;

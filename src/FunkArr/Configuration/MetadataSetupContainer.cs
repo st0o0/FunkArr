@@ -1,5 +1,5 @@
 using FunkArr.Core;
-using FunkArr.MetadataResolver;
+using FunkArr.Enrichment;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
@@ -21,14 +21,16 @@ public sealed class MetadataSetupContainer : IServiceSetupContainer
         services.AddHttpClient<TvdbClient>(client =>
         {
             client.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
-        });
+        })
+        .AddStandardResilienceHandler();
 
         services.AddHttpClient<TmdbClient>(client =>
         {
             client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
-        });
+        })
+        .AddStandardResilienceHandler();
 
-        services.AddSingleton<EpisodeResolver>();
-        services.AddSingleton<MovieResolver>();
+        services.AddSingleton<EpisodeEnricher>();
+        services.AddSingleton<MovieEnricher>();
     }
 }
