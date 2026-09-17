@@ -12,6 +12,21 @@
     {
       "id": "airdate",
       "priority": 0,
+      "strategy": "itemTitleEqualsAirdate",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "21"
+          }
+        ]
+      }
+    },
+    {
+      "id": "title-exact",
+      "priority": 10,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
@@ -21,12 +36,11 @@
           }
         ]
       },
-      "strategy": "itemTitleEqualsAirdate",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "\\b\\d{2}\\.\\d{2}\\.\\d{4}\\b"
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
         }
       ]
     }

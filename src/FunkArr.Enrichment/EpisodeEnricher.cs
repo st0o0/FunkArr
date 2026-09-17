@@ -5,8 +5,8 @@ namespace FunkArr.Enrichment;
 
 public static class EpisodeEnricher
 {
-    private const float DefaultThreshold = 0.7f;
-    private const int DefaultAirdateTolerance = 7;
+    private const float _defaultThreshold = 0.7f;
+    private const int _defaultAirdateTolerance = 7;
 
     public static EnrichedEpisode[] Resolve(TvdbEpisode[] tvdbEpisodes, EpisodeCandidate[] candidates)
     {
@@ -34,13 +34,13 @@ public static class EpisodeEnricher
                 tvdbMatch?.Name ?? "", 1.0f, MatchMethod.RegexExtracted);
         }
 
-        var titleMatch = FindByTitle(candidate, episodes, DefaultThreshold);
+        var titleMatch = FindByTitle(candidate, episodes, _defaultThreshold);
         if (titleMatch is not null)
         {
             return titleMatch;
         }
 
-        var airdateMatch = FindByAirdate(candidate, episodes, DefaultAirdateTolerance);
+        var airdateMatch = FindByAirdate(candidate, episodes, _defaultAirdateTolerance);
         return airdateMatch;
     }
 

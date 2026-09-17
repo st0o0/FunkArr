@@ -14,6 +14,7 @@
     {
       "id": "title-exact",
       "priority": 0,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
@@ -28,7 +29,6 @@
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",

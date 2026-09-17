@@ -12,6 +12,7 @@
     {
       "id": "season-episode",
       "priority": 10,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -19,29 +20,15 @@
             "op": "greaterThan",
             "value": "35"
           }
-        ],
-        "not": [
-          {
-            "field": "title",
-            "op": "contains",
-            "value": "Audiodeskription"
-          }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=\\(S)(\\d{2})(?=/E\\d{2}\\))",
-      "episodeRegex": "(?<=\\(S\\d{2}/E)(\\d{2})(?=\\))",
-      "titleRules": [
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "^Folge \\d+: (.+?)\\s*\\(S\\d{2}/E\\d{2}\\)$"
-        }
-      ]
+      "episodeRegex": "(?<=\\(S\\d{2}/E)(\\d{2})(?=\\))"
     },
     {
       "id": "title-exact",
       "priority": 20,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
@@ -49,16 +36,8 @@
             "op": "greaterThan",
             "value": "35"
           }
-        ],
-        "not": [
-          {
-            "field": "title",
-            "op": "contains",
-            "value": "Audiodeskription"
-          }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",

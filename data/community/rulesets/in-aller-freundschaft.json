@@ -12,47 +12,42 @@
     {
       "id": "season-episode",
       "priority": 10,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
-          }
-        ],
-        "not": [
+          },
           {
             "field": "topic",
-            "op": "contains",
-            "value": "jungen Ärzte"
+            "op": "eq",
+            "value": "In aller Freundschaft"
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))"
     },
     {
       "id": "title-exact",
       "priority": 20,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
             "value": "35"
-          }
-        ],
-        "not": [
+          },
           {
             "field": "topic",
-            "op": "contains",
-            "value": "jungen Ärzte"
+            "op": "eq",
+            "value": "In aller Freundschaft"
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",

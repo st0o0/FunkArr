@@ -11,6 +11,7 @@
     {
       "id": "airdate",
       "priority": 0,
+      "strategy": "itemTitleEqualsAirdate",
       "filters": {
         "all": [
           {
@@ -19,13 +20,12 @@
             "value": "35"
           }
         ]
-      },
-      "strategy": "itemTitleEqualsAirdate",
-      "titleRules": []
+      }
     },
     {
       "id": "title-includes",
       "priority": 10,
+      "strategy": "itemTitleIncludes",
       "filters": {
         "all": [
           {
@@ -35,7 +35,6 @@
           }
         ]
       },
-      "strategy": "itemTitleIncludes",
       "titleRules": [
         {
           "type": "regex",

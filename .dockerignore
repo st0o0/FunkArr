@@ -17,3 +17,4 @@ docker-compose*.yml
 **/*.Tests/
 **/*.Tests.Shared/
 **/node_modules
+**/dist

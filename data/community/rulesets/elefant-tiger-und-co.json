@@ -11,6 +11,7 @@
     {
       "id": "title-includes",
       "priority": 0,
+      "strategy": "itemTitleIncludes",
       "filters": {
         "all": [
           {
@@ -20,18 +21,61 @@
           }
         ]
       },
-      "strategy": "itemTitleIncludes",
       "titleRules": [
         {
           "type": "static",
           "field": "title",
-          "pattern": "\\((\\d+)\\)$",
+          "pattern": "\\((\\d+)\\)(?:\\s*\\([^)]*\\))*$",
           "value": "("
         },
         {
           "type": "regex",
           "field": "title",
-          "pattern": "\\((\\d+)\\)$"
+          "pattern": "\\((\\d+)\\)(?:\\s*\\([^)]*\\))*$"
+        },
+        {
+          "type": "static",
+          "field": "title",
+          "value": ")"
+        }
+      ]
+    },
+    {
+      "id": "title-includes-gs",
+      "priority": 10,
+      "strategy": "itemTitleIncludes",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "20"
+          }
+        ],
+        "any": [
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Gebärdensprache"
+          },
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Audiodeskription"
+          }
+        ]
+      },
+      "titleRules": [
+        {
+          "type": "static",
+          "field": "title",
+          "pattern": "\\((\\d+)\\)(?:\\s*\\([^)]*\\))*$",
+          "value": "("
+        },
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "\\((\\d+)\\)(?:\\s*\\([^)]*\\))*$"
         },
         {
           "type": "static",

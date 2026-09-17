@@ -1,6 +1,8 @@
 {
   "topic": "Frühling",
-  "aliases": ["Film"],
+  "aliases": [
+    "Film"
+  ],
   "media": {
     "tvdbId": 289363,
     "imdbId": "tt7887026",
@@ -12,43 +14,32 @@
     {
       "id": "season-episode",
       "priority": 5,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
             "value": "50"
-          },
-          {
-            "field": "topic",
-            "op": "eq",
-            "value": "Frühling"
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=\\(S)(\\d{2,4})(?=/E)",
-      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))"
     },
     {
       "id": "title-exact",
       "priority": 20,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
             "value": "50"
-          },
-          {
-            "field": "topic",
-            "op": "eq",
-            "value": "Frühling"
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
@@ -60,12 +51,13 @@
     {
       "id": "title-from-film",
       "priority": 40,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
-            "field": "topic",
-            "op": "eq",
-            "value": "Film"
+            "field": "title",
+            "op": "contains",
+            "value": "Frühling"
           },
           {
             "field": "duration",
@@ -74,7 +66,6 @@
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",

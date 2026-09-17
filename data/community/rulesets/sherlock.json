@@ -11,6 +11,7 @@
     {
       "id": "season-episode",
       "priority": 0,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -42,10 +43,8 @@
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))"
     }
   ]
 }

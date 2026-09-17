@@ -12,6 +12,7 @@
     {
       "id": "season-episode",
       "priority": 0,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -21,14 +22,13 @@
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=\\(S)(\\d{2,4})(?=/E)",
-      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))"
     },
     {
       "id": "title-exact",
       "priority": 10,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
@@ -38,7 +38,6 @@
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
@@ -48,8 +47,9 @@
       ]
     },
     {
-      "id": "title-exact-p20",
+      "id": "title-exact-p10",
       "priority": 20,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
@@ -59,7 +59,6 @@
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",

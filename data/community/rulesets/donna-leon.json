@@ -12,6 +12,7 @@
     {
       "id": "title-exact",
       "priority": 0,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
@@ -21,7 +22,6 @@
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
@@ -33,6 +33,7 @@
     {
       "id": "title-includes",
       "priority": 1,
+      "strategy": "itemTitleIncludes",
       "filters": {
         "all": [
           {
@@ -42,7 +43,6 @@
           }
         ]
       },
-      "strategy": "itemTitleIncludes",
       "titleRules": [
         {
           "type": "regex",
@@ -54,6 +54,7 @@
     {
       "id": "season-episode",
       "priority": 10,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -63,10 +64,86 @@
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))"
+    },
+    {
+      "id": "absolute-episode",
+      "priority": 20,
+      "strategy": "byAbsoluteEpisodeNumber",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "63"
+          }
+        ]
+      },
+      "episodeRegex": "\\((\\d{1,3})\\)"
+    },
+    {
+      "id": "title-includes-colon",
+      "priority": 30,
+      "strategy": "itemTitleIncludes",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "63"
+          }
+        ]
+      },
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(?<=Donna Leon:\\s*)(.+?)(?:\\s*\\(|$)"
+        }
+      ]
+    },
+    {
+      "id": "title-includes-dash",
+      "priority": 31,
+      "strategy": "itemTitleIncludes",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "63"
+          }
+        ]
+      },
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(?<=Donna Leon\\s*-\\s*)(.+?)(?:\\s*\\(|$)"
+        }
+      ]
+    },
+    {
+      "id": "title-includes-num",
+      "priority": 32,
+      "strategy": "itemTitleIncludes",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "63"
+          }
+        ]
+      },
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(?<=Donna Leon\\s*\\(\\d+\\)\\s*[–-]\\s*)(.+?)(?:\\s*\\(|$)"
+        }
+      ]
     }
   ]
 }

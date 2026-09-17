@@ -12,40 +12,32 @@
     {
       "id": "airdate",
       "priority": 0,
+      "strategy": "itemTitleEqualsAirdate",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
-            "value": "34"
+            "value": "28"
           }
         ]
-      },
-      "strategy": "itemTitleEqualsAirdate",
-      "titleRules": [
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "\\d{1,2}\\.\\s\\w+\\s\\d{4}"
-        }
-      ]
+      }
     },
     {
       "id": "season-episode",
       "priority": 1,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
-            "value": "34"
+            "value": "28"
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))"
     }
   ]
 }

@@ -12,6 +12,7 @@
     {
       "id": "season-episode",
       "priority": 10,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -26,14 +27,13 @@
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))"
     },
     {
       "id": "season-episode-p11",
       "priority": 11,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -48,37 +48,34 @@
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=Staffel\\s)(\\d{1,4})(?=, Folge\\s\\d{1,4})",
-      "episodeRegex": "(?<=Folge\\s)(\\d{1,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=Folge\\s)(\\d{1,4})(?=\\))"
     },
     {
       "id": "season-episode-p30",
       "priority": 30,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
             "value": "31"
-          },
-          {
-            "field": "topic",
-            "op": "eq",
-            "value": "Der Schwarm"
           },
           {
             "field": "title",
             "op": "regex",
             "value": "^(?!.*Staffel).*"
+          },
+          {
+            "field": "topic",
+            "op": "eq",
+            "value": "Der Schwarm"
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "S01",
-      "episodeRegex": "^Folge\\s+(\\d+)(?:\\s+\\(.*\\))?$",
-      "titleRules": []
+      "episodeRegex": "^Folge\\s+(\\d+)(?:\\s+\\(.*\\))?$"
     }
   ]
 }

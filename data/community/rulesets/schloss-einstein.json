@@ -12,6 +12,7 @@
     {
       "id": "absolute-episode",
       "priority": 0,
+      "strategy": "byAbsoluteEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -21,13 +22,12 @@
           }
         ]
       },
-      "strategy": "byAbsoluteEpisodeNumber",
-      "episodeRegex": "\\((\\d{3,5})\\)",
-      "titleRules": []
+      "episodeRegex": "\\((\\d{3,5})\\)"
     },
     {
       "id": "absolute-episode-prefix",
       "priority": 1,
+      "strategy": "byAbsoluteEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -37,13 +37,12 @@
           }
         ]
       },
-      "strategy": "byAbsoluteEpisodeNumber",
-      "episodeRegex": "^(\\d{3,5})\\.",
-      "titleRules": []
+      "episodeRegex": "^(\\d{3,5})\\."
     },
     {
-      "id": "absolute-episode-folge",
+      "id": "absolute-episode-p1",
       "priority": 2,
+      "strategy": "byAbsoluteEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -53,9 +52,7 @@
           }
         ]
       },
-      "strategy": "byAbsoluteEpisodeNumber",
-      "episodeRegex": "\\(Folge (\\d{3,5})\\)",
-      "titleRules": []
+      "episodeRegex": "\\(Folge (\\d{3,5})\\)"
     }
   ]
 }

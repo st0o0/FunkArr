@@ -13,16 +13,16 @@
     {
       "id": "title-exact",
       "priority": 0,
+      "strategy": "itemTitleExact",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
-            "value": "60"
+            "value": "45"
           }
         ]
       },
-      "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
@@ -34,16 +34,16 @@
     {
       "id": "title-includes",
       "priority": 1,
+      "strategy": "itemTitleIncludes",
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
-            "value": "60"
+            "value": "45"
           }
         ]
       },
-      "strategy": "itemTitleIncludes",
       "titleRules": [
         {
           "type": "regex",

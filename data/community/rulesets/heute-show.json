@@ -4,7 +4,7 @@
   "media": {
     "tvdbId": 234791,
     "imdbId": "tt1441143",
-    "name": "Heute Show",
+    "name": "heute-show",
     "type": "show"
   },
   "confidence": 1,
@@ -12,6 +12,21 @@
     {
       "id": "airdate",
       "priority": 0,
+      "strategy": "itemTitleEqualsAirdate",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "25"
+          }
+        ]
+      }
+    },
+    {
+      "id": "title-includes",
+      "priority": 10,
+      "strategy": "itemTitleIncludes",
       "filters": {
         "all": [
           {
@@ -21,12 +36,11 @@
           }
         ]
       },
-      "strategy": "itemTitleEqualsAirdate",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^heute-show vom (\\d{1,2}\\. \\w+ \\d{4})"
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
         }
       ]
     }

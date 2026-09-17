@@ -11,6 +11,7 @@
     {
       "id": "season-episode",
       "priority": 0,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -20,14 +21,13 @@
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=\\(S)(\\d{2,4})(?=/E)",
-      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))"
     },
     {
       "id": "airdate",
       "priority": 10,
+      "strategy": "itemTitleEqualsAirdate",
       "filters": {
         "all": [
           {
@@ -36,9 +36,7 @@
             "value": "55"
           }
         ]
-      },
-      "strategy": "itemTitleEqualsAirdate",
-      "titleRules": []
+      }
     }
   ]
 }

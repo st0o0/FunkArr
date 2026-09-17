@@ -12,6 +12,7 @@
     {
       "id": "absolute-episode",
       "priority": 0,
+      "strategy": "byAbsoluteEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -21,13 +22,12 @@
           }
         ]
       },
-      "strategy": "byAbsoluteEpisodeNumber",
-      "episodeRegex": "Episode\\s(\\d+)",
-      "titleRules": []
+      "episodeRegex": "Episode\\s(\\d+)"
     },
     {
       "id": "absolute-episode-p1",
       "priority": 1,
+      "strategy": "byAbsoluteEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -37,9 +37,37 @@
           }
         ]
       },
+      "episodeRegex": "\\((\\d+)\\)"
+    },
+    {
+      "id": "absolute-episode-folge",
+      "priority": 2,
       "strategy": "byAbsoluteEpisodeNumber",
-      "episodeRegex": "\\((\\d+)\\)",
-      "titleRules": []
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ]
+      },
+      "episodeRegex": "(?:^|\\b)Folge\\s+(\\d+)"
+    },
+    {
+      "id": "absolute-episode-teil",
+      "priority": 3,
+      "strategy": "byAbsoluteEpisodeNumber",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ]
+      },
+      "episodeRegex": "Teil\\s+(\\d+)"
     }
   ]
 }

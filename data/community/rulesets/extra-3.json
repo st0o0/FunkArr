@@ -4,7 +4,7 @@
   "media": {
     "tvdbId": 255986,
     "imdbId": "tt0073989",
-    "name": "Extra 3",
+    "name": "extra 3",
     "type": "show"
   },
   "confidence": 1,
@@ -12,6 +12,7 @@
     {
       "id": "airdate",
       "priority": 0,
+      "strategy": "itemTitleEqualsAirdate",
       "filters": {
         "all": [
           {
@@ -20,15 +21,7 @@
             "value": "25"
           }
         ]
-      },
-      "strategy": "itemTitleEqualsAirdate",
-      "titleRules": [
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "\\b\\d{2}\\.\\d{2}\\.\\d{4}\\b"
-        }
-      ]
+      }
     }
   ]
 }

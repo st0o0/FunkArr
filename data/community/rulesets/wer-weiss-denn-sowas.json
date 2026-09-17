@@ -11,6 +11,7 @@
     {
       "id": "absolute-episode",
       "priority": 0,
+      "strategy": "byAbsoluteEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -20,13 +21,26 @@
           }
         ]
       },
-      "strategy": "byAbsoluteEpisodeNumber",
-      "episodeRegex": "\\((\\d{1,5})\\)",
-      "titleRules": []
+      "episodeRegex": "\\((\\d{1,5})\\)"
     },
     {
       "id": "airdate",
       "priority": 10,
+      "strategy": "itemTitleEqualsAirdate",
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "31"
+          }
+        ]
+      }
+    },
+    {
+      "id": "title-includes",
+      "priority": 20,
+      "strategy": "itemTitleIncludes",
       "filters": {
         "all": [
           {
@@ -36,8 +50,13 @@
           }
         ]
       },
-      "strategy": "itemTitleEqualsAirdate",
-      "titleRules": []
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?(?:\\s*\\|.*)?$"
+        }
+      ]
     }
   ]
 }

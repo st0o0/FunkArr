@@ -4,7 +4,7 @@
   "media": {
     "tvdbId": 255982,
     "imdbId": "tt0131157",
-    "name": "Aktenzeichen XY ... ungelöst",
+    "name": "Aktenzeichen XY... Ungelöst",
     "type": "show"
   },
   "confidence": 1,
@@ -12,6 +12,7 @@
     {
       "id": "season-episode",
       "priority": 0,
+      "strategy": "seasonAndEpisodeNumber",
       "filters": {
         "all": [
           {
@@ -26,14 +27,13 @@
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
       "seasonRegex": "(?<=\\(S)(\\d{4})(?=/E)",
-      "episodeRegex": "(?<=/E)(\\d{1,4})(?=\\))",
-      "titleRules": []
+      "episodeRegex": "(?<=/E)(\\d{1,4})(?=\\))"
     },
     {
       "id": "airdate",
       "priority": 10,
+      "strategy": "itemTitleEqualsAirdate",
       "filters": {
         "all": [
           {
@@ -47,19 +47,12 @@
             "value": "Aktenzeichen"
           }
         ]
-      },
-      "strategy": "itemTitleEqualsAirdate",
-      "titleRules": [
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "(\\d{1,2}\\.\\d{1,2}\\.\\d{4})"
-        }
-      ]
+      }
     },
     {
-      "id": "airdate-p20",
+      "id": "airdate-p1",
       "priority": 20,
+      "strategy": "itemTitleEqualsAirdate",
       "filters": {
         "all": [
           {
@@ -73,15 +66,7 @@
             "value": "Aktenzeichen"
           }
         ]
-      },
-      "strategy": "itemTitleEqualsAirdate",
-      "titleRules": [
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "(\\d{1,2}\\.\\s*(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\\s*\\d{4})"
-        }
-      ]
+      }
     }
   ]
 }
