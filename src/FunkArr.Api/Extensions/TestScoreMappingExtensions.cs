@@ -7,14 +7,14 @@ internal static class TestScoreMappingExtensions
 {
     internal static (MatchingConfig Config, ScoreCandidate[] Candidates) ToMessage(this TestScoreRequest request)
     {
-        var rules = request.Rules
+        var rules = (request.Rules ?? [])
             .Select(r => r.ToMessage())
             .Where(r => r is not null)
             .Select(r => r!)
             .ToArray();
 
         var config = new MatchingConfig("test", request.DefaultConfidence, rules);
-        var candidates = request.Candidates.Select(c => c.ToMessage()).ToArray();
+        var candidates = (request.Candidates ?? []).Select(c => c.ToMessage()).ToArray();
 
         return (config, candidates);
     }
