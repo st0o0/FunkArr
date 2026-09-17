@@ -10,7 +10,9 @@ internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner 
         try
         {
             if (subtitleUrl is not null)
+            {
                 subtitlePath = await subtitlePreparer.PrepareAsync(subtitleUrl, Path.GetDirectoryName(outputPath)!, ct);
+            }
 
             return await ffmpeg.RunAsync(videoUrl, subtitlePath, outputPath, onProgress, ct);
         }
@@ -18,8 +20,14 @@ internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner 
         {
             if (subtitlePath is not null)
             {
-                try { File.Delete(subtitlePath); }
-                catch { /* cleanup is best-effort */ }
+                try
+                {
+                    File.Delete(subtitlePath);
+                }
+                catch
+                {
+                    /* cleanup is best-effort */
+                }
             }
         }
     }

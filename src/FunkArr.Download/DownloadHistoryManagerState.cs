@@ -22,19 +22,13 @@ public sealed record DownloadHistoryManagerState(IReadOnlyList<HistoryRecord> Re
 public static class DownloadHistoryManagerStateExtensions
 {
     public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, HistoryRecorded evt) =>
-        state with
-        {
-            Records = [.. state.Records, new HistoryRecord(
-                evt.DownloadId, evt.Title, evt.Category, evt.Size,
-                (DownloadStatus)evt.Status, evt.RelativePath, evt.FailMessage,
-                evt.DownloadTimeSeconds, evt.CompletedAt)],
-        };
+        new(Records: [.. state.Records, new HistoryRecord(
+            evt.DownloadId, evt.Title, evt.Category, evt.Size,
+            (DownloadStatus)evt.Status, evt.RelativePath, evt.FailMessage,
+            evt.DownloadTimeSeconds, evt.CompletedAt)]);
 
     public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, HistoryRemoved evt) =>
-        state with
-        {
-            Records = state.Records.Where(r => r.DownloadId != evt.DownloadId).ToArray(),
-        };
+        new(Records: state.Records.Where(r => r.DownloadId != evt.DownloadId).ToArray());
 
     public static bool Contains(this DownloadHistoryManagerState state, Guid downloadId) =>
         state.Records.Any(r => r.DownloadId == downloadId);
