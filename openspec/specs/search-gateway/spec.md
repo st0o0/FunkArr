@@ -1,8 +1,8 @@
 ## ADDED Requirements
 
-### Requirement: SearchGatewayManager routes search requests by type
+### Requirement: SearchManager routes search requests by type
 
-The SearchGatewayManager SHALL be a Cluster Singleton actor that receives search requests and routes them to the correct shard region based on the search type. It SHALL receive a unified `SearchCommand` and determine routing by pattern matching on `Params` (ISearchParams). It SHALL forward Limit and Offset from the incoming command to the worker commands.
+The SearchManager SHALL be a Cluster Singleton actor that receives search requests and routes them to the correct shard region based on the search type. It SHALL receive a unified `SearchCommand` and determine routing by pattern matching on `Params` (ISearchParams). It SHALL forward Limit and Offset from the incoming command to the worker commands.
 
 - `Params is TvParams` → TvSearch ShardRegion
 - `Params is MovieParams` → MovieSearch ShardRegion
@@ -35,9 +35,9 @@ The SearchGatewayManager SHALL be a Cluster Singleton actor that receives search
 - **WHEN** a SearchCommand with Params=null, no matching Cat, and Limit=100 is received
 - **THEN** the Gateway SHALL send to both TvSearch and MovieSearch shard regions, each with the original Limit and Offset values
 
-### Requirement: SearchGatewayManager manages sender correlation
+### Requirement: SearchManager manages sender correlation
 
-The Gateway SHALL maintain a `Dictionary<SearchId, PendingSearch>` in its state to correlate worker responses back to the original sender. No `IActorRef` fields in messages.
+The SearchManager SHALL maintain a `Dictionary<SearchId, PendingSearch>` in its state to correlate worker responses back to the original sender. No `IActorRef` fields in messages.
 
 #### Scenario: Single search response forwarding
 
@@ -54,9 +54,9 @@ The Gateway SHALL maintain a `Dictionary<SearchId, PendingSearch>` in its state 
 - **WHEN** only one of two expected results arrives before the search timeout
 - **THEN** the Gateway SHALL respond with whatever results arrived, Tell the OriginalSender, and remove the PendingSearch entry
 
-### Requirement: SearchGatewayManager handles search failures
+### Requirement: SearchManager handles search failures
 
-The Gateway SHALL handle SearchFailed messages and timeouts gracefully.
+The SearchManager SHALL handle SearchFailed messages and timeouts gracefully.
 
 #### Scenario: Worker responds with SearchFailed
 

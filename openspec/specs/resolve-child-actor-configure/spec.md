@@ -25,5 +25,5 @@ The system SHALL provide an `IActorContext.ResolveChildActor<TActor>` extension 
 The `ResolveChildActor` overload SHALL be defined as a static extension method in `FunkArr.Core` under a namespace accessible to all domain projects. It SHALL reference `Akka.DependencyInjection.DependencyResolver` which is transitively available via `Akka.Hosting`.
 
 #### Scenario: Domain project uses the extension
-- **WHEN** `FunkArr.MetadataResolver` calls `Context.ResolveChildActor<TvdbResolverActor>("tvdb-pool", props => props.WithRouter(...))`
-- **THEN** the call compiles and resolves because FunkArr.Core provides the extension and MetadataResolver references Core
+- **WHEN** `FunkArr.Enrichment` calls `Context.ResolveChildActor<TvdbEnrichmentActor>("tvdb-pool", props => props.WithRouter(...))`
+- **THEN** the call compiles and resolves because FunkArr.Core provides the extension and Enrichment references Core

@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Defines the ScoringEngine static class in FunkArr.MatchMagic that contains all scoring logic extracted from MatchMagicActor: filter evaluation, identification strategies, title construction, regex capture, German date extraction, umlaut normalization, and metadata building. Pure computation with no Akka.NET dependencies.
+Defines the ScoringEngine static class in FunkArr.Scoring that contains all scoring logic extracted from ScoringActor: filter evaluation, identification strategies, title construction, regex capture, German date extraction, umlaut normalization, and metadata building. Pure computation with no Akka.NET dependencies.
 
 ## Requirements
 
 ### Requirement: ScoringEngine is a pure static class
 
-The `ScoringEngine` SHALL be a `static class` in `FunkArr.MatchMagic` with no Akka.NET dependencies. It SHALL contain all scoring logic currently in `MatchMagicActor`: filter evaluation, identification strategies, title construction, regex capture, German date extraction, umlaut normalization, and metadata building.
+The `ScoringEngine` SHALL be a `static class` in `FunkArr.Scoring` with no Akka.NET dependencies. It SHALL contain all scoring logic currently in `ScoringActor`: filter evaluation, identification strategies, title construction, regex capture, German date extraction, umlaut normalization, and metadata building.
 
 #### Scenario: No Akka dependency
 
@@ -41,7 +41,7 @@ The `ScoringEngine` SHALL expose one public static method `Score` that accepts t
 
 ### Requirement: ScoringEngine filter evaluation produces traces
 
-The `ScoringEngine` SHALL evaluate filter groups (All, Any, Not) with short-circuit semantics and produce `FilterGroupTrace` records. All filter evaluation logic from `MatchMagicActor` SHALL be preserved identically.
+The `ScoringEngine` SHALL evaluate filter groups (All, Any, Not) with short-circuit semantics and produce `FilterGroupTrace` records. All filter evaluation logic from `ScoringActor` SHALL be preserved identically.
 
 #### Scenario: All group short-circuits on failure
 
@@ -60,7 +60,7 @@ The `ScoringEngine` SHALL support all five identification strategies: SeasonAndE
 #### Scenario: All strategies preserved
 
 - **WHEN** the ScoringEngine identification method is called
-- **THEN** it SHALL handle all five `IdentificationStrategy` enum values identically to the current `MatchMagicActor` implementation
+- **THEN** it SHALL handle all five `IdentificationStrategy` enum values identically to the current `ScoringActor` implementation
 
 ### Requirement: ScoringEngine uses 100ms regex timeout
 

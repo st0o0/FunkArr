@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
-### Requirement: MatchMagicManager is a singleton scoring actor
+### Requirement: ScoringManager is a singleton scoring actor
 
-The MatchMagicManager SHALL be a Cluster Singleton actor that holds loaded RuleSets in memory and accepts scoring requests. It SHALL resolve the MatchHistory ShardRegion at startup and include it in ExecuteScoring messages to pool workers.
+The ScoringManager SHALL be a Cluster Singleton actor that holds loaded RuleSets in memory and accepts scoring requests. It SHALL resolve the ScoringHistory ShardRegion at startup and include it in ExecuteScoring messages to pool workers.
 
-The MatchMagicActor QueryDetail handler SHALL return a typed response instead of `object`. It SHALL use a discriminated response type that covers the possible query detail result shapes.
+The ScoringActor QueryDetail handler SHALL return a typed response instead of `object`. It SHALL use a discriminated response type that covers the possible query detail result shapes.
 
 #### Scenario: Score items with loaded RuleSet
 
@@ -18,10 +18,10 @@ The MatchMagicActor QueryDetail handler SHALL return a typed response instead of
 
 #### Scenario: QueryDetail returns typed response
 
-- **WHEN** a QueryDetail message is handled by the MatchMagicActor
+- **WHEN** a QueryDetail message is handled by the ScoringActor
 - **THEN** it SHALL respond with a typed record (not `object`) that the caller can pattern-match on
 
-### Requirement: MatchMagicManager manages RuleSet state
+### Requirement: ScoringManager manages RuleSet state
 
 The Manager SHALL maintain a `Dictionary<string, RuleSet>` of loaded RuleSets and support loading/unloading.
 
@@ -35,11 +35,11 @@ The Manager SHALL maintain a `Dictionary<string, RuleSet>` of loaded RuleSets an
 - **WHEN** an UnloadRuleSet message with an id is received
 - **THEN** the Manager SHALL remove the RuleSet from state
 
-### Requirement: MatchMagicManager wraps pure logic without Akka dependency in MatchMagic library
+### Requirement: ScoringManager wraps pure logic without Akka dependency in Scoring library
 
-The existing MatchMagic library (RuleSet, Rule, Filter, FilterGroup, etc.) SHALL remain pure — no Akka references. The Manager actor is the only bridge between the actor system and the pure evaluation logic.
+The existing Scoring library (RuleSet, Rule, Filter, FilterGroup, etc.) SHALL remain pure — no Akka references. The Manager actor is the only bridge between the actor system and the pure evaluation logic.
 
 #### Scenario: Pure library independence
 
-- **WHEN** the FunkArr.MatchMagic project is compiled
+- **WHEN** the FunkArr.Scoring project is compiled
 - **THEN** it SHALL have no dependency on Akka.NET packages

@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Movie search pipeline orchestration — the MovieSearchWorker coordinates Mediathek queries, RuleSet resolution, MatchMagic scoring, and movie enrichment using Become-based phases and Ask+PipeTo communication.
+
+## Requirements
 
 ### Requirement: MovieSearchWorker is a sharded entity
 
@@ -11,52 +15,72 @@ The MovieSearchWorker SHALL be a sharded entity using SearchId (Guid) as the sha
 
 ### Requirement: MovieSearchWorker orchestrates search pipeline
 
-The MovieSearchWorker SHALL use Become-based phase transitions to process the search pipeline. The worker SHALL capture the original Sender as `ReplyTo` in state when the MovieSearch command arrives. All replies SHALL use `ReplyTo.Tell(...)` instead of `Sender.Tell(...)`. All `PipeTo` calls SHALL omit the Sender parameter.
+The MovieSearchWorker SHALL use Become-based phase transitions and Ask+PipeTo for all inter-actor communication. The worker SHALL NOT implement IWithTimers. The worker SHALL capture the original Sender as `ReplyTo` in state when the SearchMovie command arrives. All replies SHALL use `_state.ReplyTo.Tell(...)`. All outgoing messages SHALL use `Ask<XxxResponse>(request, timeout).PipeTo(Self, failure: ex => new XxxFailed(ex))`. The PipeTo failure lambda SHALL map Ask timeouts and transport errors to the domain-owned Failed record type. Each Become state SHALL handle exactly two message types: XxxCompleted and XxxFailed. The worker SHALL NOT define any private timeout record types. The worker SHALL NOT use Timers.StartSingleTimer or Timers.Cancel.
 
 #### Scenario: Successful movie search with query text
 
-- **WHEN** the worker receives a MovieSearch with Query="Das Boot"
-- **THEN** it SHALL capture ReplyTo from Sender, Become the querying phase, build a MediathekQuery with title+topic search and duration minimum of 3600 seconds, Ask the MediathekViewWebManager, then transition through RuleSet resolution and scoring phases, and Tell ReplyTo with a SearchCompleted containing scored items
+- **WHEN** the worker receives a SearchMovie with Query="Das Boot"
+- **THEN** it SHALL call _state.Init(cmd, Sender), call _state.TryGetMediathekQuery to get the query message, Ask the MediathekViewWebManager with a 15-second timeout, PipeTo Self with failure mapped to QueryMediathekFailed, and Become(Querying)
 
 #### Scenario: ImdbId-only movie search
 
-- **WHEN** the worker receives a MovieSearch with Query=null and ImdbId="tt0806910"
-- **THEN** it SHALL capture ReplyTo, Become the resolving phase, Ask the RuleSetResolver with ResolveRuleSet(null, ImdbId: "tt0806910"), use the resolved topic to query Mediathek
+- **WHEN** the worker receives a SearchMovie with Query=null and ImdbId="tt0806910"
+- **THEN** it SHALL call _state.Init(cmd, Sender), call _state.TryGetRuleSetRequest to get a ResolveRuleSet message, Ask the RuleSetResolver with a 5-second timeout, PipeTo Self with failure mapped to RuleSetFailed, and Become(ResolvingRuleSet)
 
 #### Scenario: ID-only search with no matching ruleset
 
-- **WHEN** the worker receives a MovieSearch with Query=null and ImdbId="tt9999999" and no ruleset maps that ID
-- **THEN** the worker SHALL receive a RuleSetFailed containing a RuleSetNotFoundException and Tell ReplyTo with SearchCompleted(SearchId, Items: [], Total: 0)
+- **WHEN** the RuleSetResolver responds with RuleSetFailed (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with _state.ToSearchCompleted()
 
 #### Scenario: Become-based phase transitions
 
 - **WHEN** the worker transitions between pipeline phases
-- **THEN** it SHALL use Become to switch handler sets so that each phase only handles messages relevant to that phase
+- **THEN** it SHALL use Become to switch handler sets so that each phase handles exactly XxxCompleted and XxxFailed messages
 
-#### Scenario: ScoredResults stored in state
+#### Scenario: Scoring phase transition
 
-- **WHEN** scoring completes and enrichment is needed
-- **THEN** the worker SHALL store ScoredResults in state (not as a separate mutable field) before transitioning to the enriching phase
+- **WHEN** scoring is needed after RuleSet resolution or query completion
+- **THEN** the worker SHALL call _state.TryGetScoringRequest, Ask the ScoringManager with a 10-second timeout, PipeTo Self with failure mapped to ScoringFailed, and Become(Scoring)
 
-#### Scenario: No query and no IDs
+#### Scenario: Enrichment phase transition
 
-- **WHEN** the worker receives a MovieSearchCommand with Query=null and ImdbId=null and TmdbId=null
-- **THEN** the worker SHALL Tell the Sender with SearchFailed(SearchId, "Movie search requires a query or media ID")
+- **WHEN** ScoreCompleted is received and _state.TryGetEnrichmentRequest returns true
+- **THEN** the worker SHALL call _state.Apply(scored), Ask the EnrichmentManager with a 10-second timeout, PipeTo Self with failure mapped to EnrichMoviesFailed, and Become(Enriching)
 
-#### Scenario: Text search carries IDs through to results
+#### Scenario: Scoring completes without enrichment needed
 
-- **WHEN** the worker receives a MovieSearchCommand with Query="Das Boot" and ImdbId="tt1234567"
-- **THEN** the worker SHALL use the text-based flow and set ImdbId="tt1234567" on each SearchResultItem
+- **WHEN** ScoreCompleted is received and _state.TryGetEnrichmentRequest returns false
+- **THEN** the worker SHALL call _state.Apply(scored) and Reply with _state.ToSearchCompleted()
+
+#### Scenario: Enrichment succeeds
+
+- **WHEN** EnrichMoviesCompleted is received
+- **THEN** the worker SHALL call _state.Apply(enriched) and Reply with _state.ToSearchCompleted()
+
+#### Scenario: Enrichment fails
+
+- **WHEN** EnrichMoviesFailed is received (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with _state.ToSearchCompleted() using existing metadata
 
 #### Scenario: MediathekViewWeb query fails
 
-- **WHEN** the MediathekViewWebManager Ask times out or returns an error
-- **THEN** the worker SHALL Tell the Sender with a SearchFailed and passivate
+- **WHEN** QueryMediathekFailed is received (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with SearchMovieFailed(SearchId, cause)
 
 #### Scenario: MatchMagic scoring fails
 
-- **WHEN** the MatchMagicManager Ask times out or returns an error
-- **THEN** the worker SHALL Tell the Sender with a SearchFailed and passivate
+- **WHEN** ScoringFailed is received (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with SearchMovieFailed(SearchId, cause)
+
+#### Scenario: No query and no IDs
+
+- **WHEN** the worker receives a SearchMovie with Query=null and ImdbId=null and TmdbId=null
+- **THEN** the worker SHALL Reply with SearchMovieFailed(SearchId, cause)
+
+#### Scenario: Text search carries IDs through to results
+
+- **WHEN** the worker receives a SearchMovie with Query="Das Boot" and ImdbId="tt1234567"
+- **THEN** the state's BaseIdentity SHALL include ImdbId="tt1234567", which flows into all EnrichedItems and SearchResultItems
 
 ### Requirement: MovieSearchWorker builds movie-specific queries
 
@@ -93,37 +117,27 @@ The MovieSearchWorker SHALL use the Limit and Offset values from the incoming Mo
 
 ### Requirement: MovieSearchWorker movie resolution stage
 
-After receiving ScoreCompleted, the MovieSearchWorker SHALL check if the search has an ImdbId or TmdbId. If so, the worker SHALL construct MovieCandidates from the matched scored items and Ask the MetadataResolver to resolve the movie identity. On success, the worker SHALL enrich the SearchResultItems with validated title, year, and resolution metadata before calling ToScoredResult.
+After receiving ScoreCompleted, the MovieSearchWorker SHALL call _state.Apply(scored) and then _state.TryGetEnrichmentRequest. The state SHALL decide if enrichment is needed based on whether matched items exist and ImdbId/TmdbId is available. The worker SHALL NOT contain enrichment decision logic.
 
 #### Scenario: Movie resolution with TMDB ID
 
-- **WHEN** a movie search with TmdbId=550 produces matched items
-- **THEN** the worker SHALL construct MovieCandidates and Ask MetadataResolver with ResolveMovie(TmdbId=550, ...)
+- **WHEN** scored items include matched entries and TmdbId=550 is set
+- **THEN** _state.TryGetEnrichmentRequest SHALL return true with an EnrichMovies(ImdbId, TmdbId=550, candidates) message
 
 #### Scenario: Movie resolution with IMDB ID
 
-- **WHEN** a movie search with ImdbId="tt0806910" produces matched items
-- **THEN** the worker SHALL construct MovieCandidates and Ask MetadataResolver with ResolveMovie(ImdbId="tt0806910", ...)
+- **WHEN** scored items include matched entries and ImdbId="tt0806910" is set
+- **THEN** _state.TryGetEnrichmentRequest SHALL return true with an EnrichMovies(ImdbId="tt0806910", TmdbId, candidates) message
 
 #### Scenario: No movie ID available
 
-- **WHEN** a movie search has no ImdbId and no TmdbId (query-only search)
-- **THEN** the worker SHALL skip movie resolution
+- **WHEN** both ImdbId and TmdbId are null
+- **THEN** _state.TryGetEnrichmentRequest SHALL return false
 
-#### Scenario: Resolution succeeds
+#### Scenario: No matched items
 
-- **WHEN** the MetadataResolver responds with MoviesResolved
-- **THEN** the worker SHALL enrich the release title with validated year and title, and set ResolutionConfidence/ResolutionStrategy on the SearchResultItem
-
-#### Scenario: Resolution fails
-
-- **WHEN** the MetadataResolver responds with MovieResolutionFailed
-- **THEN** the worker SHALL proceed with ToScoredResult using existing metadata (graceful fallback)
-
-#### Scenario: Resolution times out
-
-- **WHEN** the MetadataResolver Ask times out
-- **THEN** the worker SHALL proceed with ToScoredResult using existing metadata
+- **WHEN** scored items have no matched entries (all Matched=false)
+- **THEN** _state.TryGetEnrichmentRequest SHALL return false
 
 ### Requirement: MovieSearchWorker uses IMetadataResolver
 

@@ -8,7 +8,7 @@ Defines the query messages for match history: paginated history listing, detail 
 
 ### Requirement: QueryScoringHistory returns paginated summary list
 
-The MatchHistoryWorker SHALL respond to QueryScoringHistory messages with a paginated list of scoring request summaries, ordered newest-first, without item-level trace data.
+The ScoringHistoryWorker SHALL respond to QueryScoringHistory messages with a paginated list of scoring request summaries, ordered newest-first, without item-level trace data.
 
 #### Scenario: Query first page
 
@@ -41,7 +41,7 @@ The ScoringSnapshotSummary SHALL contain RequestId (Guid), Source (string), Quer
 
 ### Requirement: QueryScoringDetail returns full trace for a single request
 
-The MatchHistoryWorker SHALL respond to QueryScoringDetail messages with the full scoring trace for a specific RequestId.
+The ScoringHistoryWorker SHALL respond to QueryScoringDetail messages with the full scoring trace for a specific RequestId.
 
 #### Scenario: Detail for existing request
 

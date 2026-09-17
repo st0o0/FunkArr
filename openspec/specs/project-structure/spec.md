@@ -10,7 +10,7 @@ and NuGet dependencies. Enforces domain isolation via layered references.
 ### Requirement: Host project
 `FunkArr` SHALL use `Microsoft.NET.Sdk.Web` with `OutputType: Exe`. It SHALL
 reference all domain, adapter, and infrastructure projects: Core, Api, ArrApi,
-Search, Download, RuleSet, MatchMagic, Messages, Persistence.
+Search, Download, RuleSet, Scoring, Enrichment, Messages, Persistence.
 
 #### Scenario: Host references all projects
 - **WHEN** the host project is built
@@ -44,7 +44,7 @@ any domain project.
 - **THEN** it has zero NuGet package references and zero project references
 
 ### Requirement: Domain projects
-`FunkArr.Search`, `FunkArr.Download`, `FunkArr.RuleSet`, and `FunkArr.MatchMagic`
+`FunkArr.Search`, `FunkArr.Download`, `FunkArr.RuleSet`, `FunkArr.Scoring`, and `FunkArr.Enrichment`
 SHALL each use `Microsoft.NET.Sdk` and reference only `FunkArr.Core`.
 No domain project SHALL reference another domain project.
 
@@ -66,7 +66,8 @@ No domain project SHALL reference another domain project.
 ### Requirement: Test projects
 Each domain and adapter project SHALL have a corresponding test project:
 `FunkArr.Search.Tests`, `FunkArr.Download.Tests`, `FunkArr.RuleSet.Tests`,
-`FunkArr.MatchMagic.Tests`, `FunkArr.Api.Tests`, `FunkArr.ArrApi.Tests`.
+`FunkArr.Scoring.Tests`, `FunkArr.Enrichment.Tests`, `FunkArr.Api.Tests`, `FunkArr.ArrApi.Tests`.
+`FunkArr.Architecture.Tests` SHALL enforce cross-cutting conventions.
 Each test project SHALL reference its domain project and `FunkArr.Tests.Shared`.
 `FunkArr.Tests.Shared` SHALL reference `FunkArr.Core`.
 

@@ -1,8 +1,10 @@
 # matchmagic-data-model
 
+> **⚠️ STALE**: This spec predates the domain rename. The Scoring domain is now **Scoring** (`FunkArr.Scoring`). Many type names have changed: `MediaItem` → no longer exists (search uses `ScoreCandidate`), `MatchResult` → `ScoredItem`, `EpisodeIdentification` → `IdentificationSpec`, `Rule` → `MatchingRule`, `FilterGroup` → `FilterSpec`. The RuleSet JSON schema concepts remain valid but the C# record names are outdated. See actual types in `FunkArr.Messages/Scoring/`.
+
 ## Purpose
 
-Defines the core data model records and enums for the MatchMagic domain: rulesets, rules, filters, media items, match results, and quality variants.
+Defines the core data model records and enums for the Scoring domain: rulesets, rules, filters, candidates, scored items, and quality variants.
 
 ## Requirements
 

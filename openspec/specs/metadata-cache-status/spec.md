@@ -4,14 +4,14 @@
 TBD - created by archiving change dashboard-richness. Update Purpose after archive.
 ## Requirements
 ### Requirement: Cache stats endpoint
-The system SHALL respond to `GET /api/health/cache` with TMDB and TVDB cache statistics from the MetadataResolverManager.
+The system SHALL respond to `GET /api/health/cache` with TMDB and TVDB cache statistics from the EnrichmentManager.
 
 #### Scenario: Cache stats available
 - **WHEN** `GET /api/health/cache` is requested
 - **THEN** the response SHALL be JSON with `tvdbEntries` (int), `tmdbEntries` (int), `oldestEntry` (ISO 8601 string or null)
 
 #### Scenario: Actor timeout
-- **WHEN** the MetadataResolverManager does not respond within 10 seconds
+- **WHEN** the EnrichmentManager does not respond within 10 seconds
 - **THEN** the response SHALL be HTTP 504 Gateway Timeout
 
 ### Requirement: Dashboard cache info

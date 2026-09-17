@@ -93,8 +93,8 @@ The RuntimeWindow method SHALL compare the candidate's Duration against TVDB epi
 - **THEN** the episode with the matching runtime SHALL be preferred
 
 ### Requirement: LevenshteinDistance namespace
-The LevenshteinDistance utility SHALL reside in the `FunkArr.MetadataResolver` namespace (renamed from `FunkArr.EpisodeGuide`).
+The LevenshteinDistance utility SHALL reside in the `FunkArr.Enrichment` namespace.
 
 #### Scenario: Namespace
 - **WHEN** LevenshteinDistance is referenced
-- **THEN** it SHALL be in the `FunkArr.MetadataResolver` namespace
+- **THEN** it SHALL be in the `FunkArr.Enrichment` namespace

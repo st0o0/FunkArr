@@ -1,25 +1,25 @@
 ## Purpose
 
-Message types for episode enrichment communication between Search and MetadataResolver domains.
+Message types for episode enrichment communication between Search and Enrichment domains.
 
 ## Requirements
 
 ### Requirement: MatchMethod enum
-FunkArr.Messages.MetadataResolver SHALL define a `MatchMethod` enum with values: `RegexExtracted`, `TitleMatch`, `AirdateMatch`, `YearMatch`. This enum replaces all string-based strategy labels.
+FunkArr.Messages.Enrichment SHALL define a `MatchMethod` enum with values: `RegexExtracted`, `TitleMatch`, `AirdateMatch`, `YearMatch`. This enum replaces all string-based strategy labels.
 
 #### Scenario: MatchMethod values
 - **WHEN** `MatchMethod` is inspected
 - **THEN** it SHALL contain exactly: RegexExtracted, TitleMatch, AirdateMatch, YearMatch
 
 ### Requirement: IEnrichmentResult marker interface
-FunkArr.Messages.MetadataResolver SHALL define an `IEnrichmentResult` interface with properties: `int Index`, `float Confidence`, `MatchMethod Method`. Both `EnrichedEpisode` and `EnrichedMovie` SHALL implement this interface.
+FunkArr.Messages.Enrichment SHALL define an `IEnrichmentResult` interface with properties: `int Index`, `float Confidence`, `MatchMethod Method`. Both `EnrichedEpisode` and `EnrichedMovie` SHALL implement this interface.
 
 #### Scenario: Common enrichment result properties
 - **WHEN** an IEnrichmentResult is received
 - **THEN** it SHALL expose Index, Confidence, and Method regardless of whether it is an episode or movie enrichment
 
 ### Requirement: ResolveEpisodes request message
-FunkArr.Messages.MetadataResolver SHALL define an `EnrichEpisodes` sealed record containing: TvdbId (int), Season (int?), Candidates (EpisodeCandidate[]). This message SHALL be sent from TvSearchWorker to MetadataResolver.
+FunkArr.Messages.Enrichment SHALL define an `EnrichEpisodes` sealed record containing: TvdbId (int), Season (int?), Candidates (EpisodeCandidate[]). This message SHALL be sent from TvSearchWorker to EnrichmentManager.
 
 #### Scenario: EnrichEpisodes with season filter
 - **WHEN** a TV search for Tatort season 2026 produces matched items
@@ -30,7 +30,7 @@ FunkArr.Messages.MetadataResolver SHALL define an `EnrichEpisodes` sealed record
 - **THEN** `EnrichEpisodes` SHALL have Season=null and the resolver SHALL consider all seasons
 
 ### Requirement: EpisodeCandidate record
-FunkArr.Messages.MetadataResolver SHALL define an `EpisodeCandidate` sealed record containing: Index (int), Title (string), ConstructedTitle (string?), AiredAt (DateTimeOffset?), Duration (int), ExistingSeason (string?), ExistingEpisode (string?). The Index field SHALL correspond to the original ScoredItem index for result correlation.
+FunkArr.Messages.Enrichment SHALL define an `EpisodeCandidate` sealed record containing: Index (int), Title (string), ConstructedTitle (string?), AiredAt (DateTimeOffset?), Duration (int), ExistingSeason (string?), ExistingEpisode (string?). The Index field SHALL correspond to the original ScoredItem index for result correlation.
 
 #### Scenario: Candidate from title-construction match
 - **WHEN** a Mediathek item "Roomservice" matches via TitleConstruction with constructed title "Roomservice"
@@ -45,7 +45,7 @@ FunkArr.Messages.MetadataResolver SHALL define an `EpisodeCandidate` sealed reco
 - **THEN** the EpisodeCandidate SHALL have AiredAt set to the corresponding DateTimeOffset
 
 ### Requirement: ResolvedEpisode record
-FunkArr.Messages.MetadataResolver SHALL define an `EnrichedEpisode` sealed record containing: Index (int), Season (string), Episode (string), EpisodeName (string), Confidence (float), Method (MatchMethod). The Index field SHALL match the EpisodeCandidate.Index for correlation. EnrichedEpisode SHALL implement IEnrichmentResult.
+FunkArr.Messages.Enrichment SHALL define an `EnrichedEpisode` sealed record containing: Index (int), Season (string), Episode (string), EpisodeName (string), Confidence (float), Method (MatchMethod). The Index field SHALL match the EpisodeCandidate.Index for correlation. EnrichedEpisode SHALL implement IEnrichmentResult.
 
 #### Scenario: Enriched via title match
 - **WHEN** "Roomservice" is matched to a TVDB episode
@@ -56,7 +56,7 @@ FunkArr.Messages.MetadataResolver SHALL define an `EnrichedEpisode` sealed recor
 - **THEN** the EnrichedEpisode SHALL have Season="2026", Episode="01", Confidence=1.0, Method=MatchMethod.RegexExtracted
 
 ### Requirement: EpisodesResolved response message
-FunkArr.Messages.MetadataResolver SHALL define an `EpisodesEnriched` sealed record containing: Episodes (EnrichedEpisode[]). It SHALL extend `EpisodeEnrichmentResponse`.
+FunkArr.Messages.Enrichment SHALL define an `EpisodesEnriched` sealed record containing: Episodes (EnrichedEpisode[]). It SHALL extend `EpisodeEnrichmentResponse`.
 
 #### Scenario: Successful enrichment
 - **WHEN** 5 out of 10 candidates are enriched to TVDB episodes
@@ -67,22 +67,22 @@ FunkArr.Messages.MetadataResolver SHALL define an `EpisodesEnriched` sealed reco
 - **THEN** EpisodesEnriched SHALL contain an empty array
 
 ### Requirement: EpisodeResolutionFailed response message
-FunkArr.Messages.MetadataResolver SHALL define an `EpisodeEnrichmentFailed` sealed record containing: Cause (Exception). It SHALL extend `EpisodeEnrichmentResponse`.
+FunkArr.Messages.Enrichment SHALL define an `EpisodeEnrichmentFailed` sealed record containing: Cause (Exception). It SHALL extend `EpisodeEnrichmentResponse`.
 
 #### Scenario: TVDB unavailable
 - **WHEN** the TVDB API is unreachable
 - **THEN** EpisodeEnrichmentFailed SHALL contain Cause describing the error
 
 ### Requirement: IEpisodeEnrichmentResponse marker interface
-FunkArr.Messages.MetadataResolver SHALL define an `abstract record EpisodeEnrichmentResponse` as the base for all episode enrichment responses, replacing the `IEpisodeEnrichmentResponse` marker interface. `EpisodesEnriched` and `EpisodeEnrichmentFailed` SHALL extend `EpisodeEnrichmentResponse`.
+FunkArr.Messages.Enrichment SHALL define an `abstract record EpisodeEnrichmentResponse` as the base for all episode enrichment responses, replacing the `IEpisodeEnrichmentResponse` marker interface. `EpisodesEnriched` and `EpisodeEnrichmentFailed` SHALL extend `EpisodeEnrichmentResponse`.
 
 #### Scenario: Response type discrimination
 - **WHEN** the TvSearchWorker receives an `EpisodeEnrichmentResponse`
 - **THEN** it SHALL pattern-match on `EpisodesEnriched` or `EpisodeEnrichmentFailed`
 
-### Requirement: IMetadataResolver marker interface
-FunkArr.Core SHALL define an `IMetadataResolver` marker interface for actor resolution via `Context.GetActor<IMetadataResolver>()`.
+### Requirement: IEnrichmentManager marker interface
+FunkArr.Core SHALL define an `IEnrichmentManager` marker interface for actor resolution via `Context.GetActor<IEnrichmentManager>()`.
 
 #### Scenario: Marker interface in Core
 - **WHEN** FunkArr.Core is compiled
-- **THEN** it SHALL contain `IMetadataResolver` as a public interface with no members
+- **THEN** it SHALL contain `IEnrichmentManager` as a public interface with no members

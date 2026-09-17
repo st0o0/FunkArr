@@ -45,8 +45,8 @@ The `RuleSetManager` SHALL handle `QueryRuleSetSummaries` messages by responding
 - **WHEN** a ruleset config cannot be loaded or parsed
 - **THEN** `RuleCount` SHALL be 0
 
-### Requirement: MatchHistoryWorker provides scoring stats
-The `MatchHistoryWorker` SHALL handle `QueryScoringStats` messages by responding with `ScoringStatsResult` containing the latest scoring run timestamp and average match rate.
+### Requirement: ScoringHistoryWorker provides scoring stats
+The `ScoringHistoryWorker` SHALL handle `QueryScoringStats` messages by responding with `ScoringStatsResult` containing the latest scoring run timestamp and average match rate.
 
 #### Scenario: Stats with scoring history
 - **WHEN** `QueryScoringStats` is received for a ruleset with scoring snapshots
@@ -64,7 +64,7 @@ The `RuleSetListEntry` API model SHALL include `MediaName` (string?), `MediaType
 - **THEN** the API response SHALL include all enrichment fields populated, including `mediaType`
 
 #### Scenario: Missing scoring stats
-- **WHEN** the MatchHistory worker times out for a ruleset
+- **WHEN** the ScoringHistory worker times out for a ruleset
 - **THEN** `LastScoringRun` and `MatchRate` SHALL be `null` in the response
 
 #### Scenario: MediaType in list response

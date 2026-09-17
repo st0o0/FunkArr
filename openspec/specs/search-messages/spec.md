@@ -42,39 +42,49 @@ FunkArr.Messages SHALL define a `SearchCommand` record as the single public comm
 - **WHEN** a general search is initiated
 - **THEN** `SearchCommand` SHALL have `Params` set to null
 
+### Requirement: SearchRequest abstract base record
+
+FunkArr.Messages SHALL define an `abstract record SearchRequest` as the base for all search command messages. It SHALL contain the shared fields: SearchId (Guid), Source (string), Query (string?), Limit (int?), Offset (int?). It SHALL implement IWithSearchId.
+
+#### Scenario: SearchRequest record shape
+
+- **WHEN** a `SearchRequest` subtype is constructed
+- **THEN** it SHALL contain: SearchId (Guid), Source (string), Query (string?), Limit (int?), Offset (int?)
+- **AND** it SHALL implement IWithSearchId
+
+#### Scenario: SearchSeries inherits from SearchRequest
+
+- **WHEN** a `SearchSeries` record is constructed
+- **THEN** it SHALL inherit from `SearchRequest` and add: Season (int?), Episode (int?), TvdbId (int?), ImdbId (string?)
+
+#### Scenario: SearchMovie inherits from SearchRequest
+
+- **WHEN** a `SearchMovie` record is constructed
+- **THEN** it SHALL inherit from `SearchRequest` and add: ImdbId (string?), TmdbId (int?)
+
 ### Requirement: Search command messages use primitive types only
 
-All search command and response messages SHALL be defined as sealed records in FunkArr.Messages with primitive parameter types only (string, int, long, double, bool, Guid, DateTimeOffset, arrays of records). No IActorRef, no external domain types.
+Search command and response messages SHALL use only primitive types and simple records. SearchSeries SHALL inherit from SearchRequest and contain: Season (int?), Episode (int?), TvdbId (int?), ImdbId (string?). SearchMovie SHALL inherit from SearchRequest and contain: ImdbId (string?), TmdbId (int?). SearchSeriesCompleted SHALL contain: SearchId (Guid), Items (SearchResultItem[]), Total (int). SearchSeriesFailed SHALL contain: SearchId (Guid), Cause (Exception). SearchMovieCompleted SHALL contain: SearchId (Guid), Items (SearchResultItem[]), Total (int). SearchMovieFailed SHALL contain: SearchId (Guid), Cause (Exception).
 
-#### Scenario: SearchCommand record
+#### Scenario: SearchSeries message
 
-- **WHEN** a search is initiated from outside the Search domain
-- **THEN** SearchCommand SHALL contain: Query (string?), Cat (int?), Limit (int?), Offset (int?), Params (SearchCommand.ISearchParams?)
+- **WHEN** Sonarr searches for a show
+- **THEN** a SearchSeries record SHALL be created inheriting shared fields from SearchRequest and adding TV-specific fields
 
-#### Scenario: TvSearchCommand record
+#### Scenario: SearchMovie message
 
-- **WHEN** the SearchManager routes to a TV search shard
-- **THEN** TvSearchCommand SHALL contain: SearchId (Guid), Query (string?), Season (int?), Episode (int?), TvdbId (int?), ImdbId (string?), Limit (int?), Offset (int?)
-- **AND** TvSearchCommand SHALL implement only IWithSearchId (not ISearchCommand)
+- **WHEN** Radarr searches for a movie
+- **THEN** a SearchMovie record SHALL be created inheriting shared fields from SearchRequest and adding movie-specific fields
 
-#### Scenario: MovieSearchCommand record
+#### Scenario: SearchSeriesFailed carries Exception
 
-- **WHEN** the SearchManager routes to a movie search shard
-- **THEN** MovieSearchCommand SHALL contain: SearchId (Guid), Query (string?), ImdbId (string?), TmdbId (int?), Limit (int?), Offset (int?)
-- **AND** MovieSearchCommand SHALL implement only IWithSearchId (not ISearchCommand)
+- **WHEN** a TV search fails for any reason (timeout, query failure, scoring failure)
+- **THEN** SearchSeriesFailed SHALL contain the Exception as Cause, not a string Reason
 
-#### Scenario: SearchCompleted record
+#### Scenario: SearchMovieFailed carries Exception
 
-- **WHEN** a search succeeds
-- **THEN** SearchCompleted SHALL contain: SearchId (Guid), Items (SearchResultItem[]), Total (int)
-- **AND** SearchCompleted SHALL implement ISearchResponse
-
-#### Scenario: SearchFailed record
-
-- **WHEN** a search fails
-- **THEN** SearchFailed SHALL contain: SearchId (Guid), Reason (string), Cause (Exception?)
-- **AND** SearchFailed SHALL implement ISearchResponse
-- **AND** Cause SHALL default to null for backward compatibility with string-only failure paths
+- **WHEN** a movie search fails for any reason (timeout, query failure, scoring failure)
+- **THEN** SearchMovieFailed SHALL contain the Exception as Cause, not a string Reason
 
 ### Requirement: SearchResultItem contains scored media information
 
@@ -136,7 +146,7 @@ MediathekQuery and MediathekQueryCompleted SHALL model the MediathekViewWeb API 
 
 ### Requirement: Scoring messages use primitive candidates
 
-ScoreItems and ScoreCompleted SHALL use flat primitive records for MatchMagic interaction. ScoreItems SHALL include RequestId and ScoringOrigin for correlation and provenance. ScoreCompleted SHALL include RequestId for response correlation.
+ScoreItems and ScoreCompleted SHALL use flat primitive records for Scoring interaction. ScoreItems SHALL include RequestId and ScoringOrigin for correlation and provenance. ScoreCompleted SHALL include RequestId for response correlation.
 
 #### Scenario: ScoreItems record
 

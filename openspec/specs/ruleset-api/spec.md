@@ -3,7 +3,7 @@
 Internal REST API endpoints for querying ruleset data and scoring history, consumed by the Vue frontend.
 ## Requirements
 ### Requirement: List rulesets endpoint
-The system SHALL expose `GET /api/rulesets` that returns a JSON object with `communityVersion` (string or null) and `rulesets` (array). The `communityVersion` SHALL be read from `version.txt` via `IDataFiles`. When `version.txt` does not exist, `communityVersion` SHALL be `null`. Each entry in `rulesets` SHALL contain `ruleSetId`, `topic`, `aliases`, `tvdbId`, `imdbId`, `tmdbId`, `mediaName`, `ruleCount`, `sourceType`, `lastScoringRun`, and `matchRate`. The endpoint SHALL gather data from the RuleSetResolver (identity + media name), RuleSetManager (rule count + source type), and MatchHistoryWorker (scoring stats) before assembling the response. The endpoint SHALL use `TypedResults.Ok()` to return the response, enabling OpenAPI schema inference.
+The system SHALL expose `GET /api/rulesets` that returns a JSON object with `communityVersion` (string or null) and `rulesets` (array). The `communityVersion` SHALL be read from `version.txt` via `IDataFiles`. When `version.txt` does not exist, `communityVersion` SHALL be `null`. Each entry in `rulesets` SHALL contain `ruleSetId`, `topic`, `aliases`, `tvdbId`, `imdbId`, `tmdbId`, `mediaName`, `ruleCount`, `sourceType`, `lastScoringRun`, and `matchRate`. The endpoint SHALL gather data from the RuleSetResolver (identity + media name), RuleSetManager (rule count + source type), and ScoringHistoryWorker (scoring stats) before assembling the response. The endpoint SHALL use `TypedResults.Ok()` to return the response, enabling OpenAPI schema inference.
 
 #### Scenario: List with registered rulesets
 - **WHEN** `GET /api/rulesets` is called and 3 rulesets are registered and community version is "1.2.0"
@@ -14,7 +14,7 @@ The system SHALL expose `GET /api/rulesets` that returns a JSON object with `com
 - **THEN** the response is 200 with `communityVersion` and an empty `rulesets` array
 
 #### Scenario: Partial data availability
-- **WHEN** `GET /api/rulesets` is called and some MatchHistory workers time out
+- **WHEN** `GET /api/rulesets` is called and some ScoringHistory workers time out
 - **THEN** the response is 200 with all rulesets in the `rulesets` array, where timed-out rulesets have `lastScoringRun` and `matchRate` as `null`
 
 #### Scenario: Actor timeout
@@ -60,7 +60,7 @@ The system SHALL expose `GET /api/rulesets/{id}/history` with paginated scoring 
 - **THEN** the response is 200 with JSON containing `totalCount` and `snapshots` array
 
 #### Scenario: Actor timeout
-- **WHEN** the MatchHistoryWorker does not respond within the timeout
+- **WHEN** the ScoringHistoryWorker does not respond within the timeout
 - **THEN** the response is 504 with a Problem Details body containing title "Gateway Timeout"
 
 ### Requirement: Scoring detail endpoint
@@ -75,7 +75,7 @@ The system SHALL expose `GET /api/rulesets/{id}/history/{requestId}` with full s
 - **THEN** the response is 404 with a Problem Details body
 
 #### Scenario: Actor timeout
-- **WHEN** the MatchHistoryWorker does not respond within the timeout
+- **WHEN** the ScoringHistoryWorker does not respond within the timeout
 - **THEN** the response is 504 with a Problem Details body containing title "Gateway Timeout"
 
 ### Requirement: Endpoint file structure

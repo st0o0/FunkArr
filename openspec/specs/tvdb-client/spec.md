@@ -88,8 +88,8 @@ The TVDB client SHALL support filtering cached episodes by season number. When a
 - **THEN** all episodes across all seasons SHALL be returned
 
 ### Requirement: TvdbClient namespace
-The TvdbClient class and TvdbEpisode record SHALL reside in the `FunkArr.MetadataResolver` namespace (renamed from `FunkArr.EpisodeGuide`).
+The TvdbClient class and TvdbEpisode record SHALL reside in the `FunkArr.Enrichment` namespace.
 
 #### Scenario: Namespace
 - **WHEN** TvdbClient is referenced
-- **THEN** it SHALL be in the `FunkArr.MetadataResolver` namespace
+- **THEN** it SHALL be in the `FunkArr.Enrichment` namespace

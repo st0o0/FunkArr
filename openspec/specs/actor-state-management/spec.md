@@ -10,9 +10,9 @@ Defines the actor state pattern: state records in dedicated files, Empty factory
 
 Every actor with state SHALL have its state defined as a `sealed record` in a dedicated `<ActorName>State.cs` file in the same project and namespace as the actor. State records SHALL NOT be nested inside actor classes.
 
-#### Scenario: MatchHistoryWorker state file
-- **WHEN** the MatchHistoryWorker actor is examined
-- **THEN** its state SHALL be defined in `MatchHistoryState.cs` in `FunkArr.MatchMagic`
+#### Scenario: ScoringHistoryWorker state file
+- **WHEN** the ScoringHistoryWorker actor is examined
+- **THEN** its state SHALL be defined in `ScoringHistoryState.cs` in `FunkArr.Scoring`
 
 #### Scenario: Non-persistent actor state file
 - **WHEN** the RuleSetResolver actor is examined
@@ -26,8 +26,8 @@ Every actor with state SHALL have its state defined as a `sealed record` in a de
 
 Each state record SHALL expose a `public static readonly` `Empty` field returning the initial (zero) state.
 
-#### Scenario: MatchHistoryState.Empty
-- **WHEN** `MatchHistoryState.Empty` is accessed
+#### Scenario: ScoringHistoryState.Empty
+- **WHEN** `ScoringHistoryState.Empty` is accessed
 - **THEN** it SHALL return a state with an empty `ImmutableList<ScoringSnapshot>`
 
 #### Scenario: RuleSetResolverState.Empty
@@ -39,8 +39,8 @@ Each state record SHALL expose a `public static readonly` `Empty` field returnin
 State transitions SHALL be implemented as `Apply` extension methods on the state record. Each `Apply` method SHALL be a pure function: take current state and an input, return new state. It SHALL NOT mutate the input state.
 
 #### Scenario: Persistent actor Apply takes a persistence record
-- **WHEN** `MatchHistoryState.Apply(ScoringRecorded)` is called
-- **THEN** it SHALL return a new `MatchHistoryState` with the record applied, without modifying the original state
+- **WHEN** `ScoringHistoryState.Apply(ScoringRecorded)` is called
+- **THEN** it SHALL return a new `ScoringHistoryState` with the record applied, without modifying the original state
 
 #### Scenario: Non-persistent actor Apply takes a command
 - **WHEN** `RuleSetResolverState.Apply(RegisterRuleSet)` is called
@@ -51,19 +51,19 @@ State transitions SHALL be implemented as `Apply` extension methods on the state
 Persistent actors SHALL implement a `ProcessCommand` extension method on the state record. `ProcessCommand` SHALL validate the command against current state and return both the new state and the persistence record.
 
 #### Scenario: ProcessCommand produces persistence record
-- **WHEN** `MatchHistoryState.ProcessCommand(RecordScoringResult)` is called with a valid command
-- **THEN** it SHALL return a tuple of `(MatchHistoryState, ScoringRecorded)` containing the new state and the record to persist
+- **WHEN** `ScoringHistoryState.ProcessCommand(RecordScoringResult)` is called with a valid command
+- **THEN** it SHALL return a tuple of `(ScoringHistoryState, ScoringRecorded)` containing the new state and the record to persist
 
 ### Requirement: Query methods on state
 
 Read-only operations SHALL be implemented as extension methods on the state record. The actor SHALL delegate query handling to these methods.
 
 #### Scenario: QueryHistory on state
-- **WHEN** `MatchHistoryState.QueryHistory(QueryScoringHistory)` is called
+- **WHEN** `ScoringHistoryState.QueryHistory(QueryScoringHistory)` is called
 - **THEN** it SHALL return a `ScoringHistoryResult` computed from the current state
 
 #### Scenario: QueryDetail on state
-- **WHEN** `MatchHistoryState.QueryDetail(QueryScoringDetail)` is called
+- **WHEN** `ScoringHistoryState.QueryDetail(QueryScoringDetail)` is called
 - **THEN** it SHALL return either a `ScoringDetailResult` or `ScoringDetailNotFound`
 
 ### Requirement: Actors are thin plumbing
@@ -71,7 +71,7 @@ Read-only operations SHALL be implemented as extension methods on the state reco
 Actor classes SHALL contain only: message routing (`Receive<T>`/`Command<T>`), persistence calls (`Persist`, `SaveSnapshot`), recovery setup (`Recover<T>`), lifecycle management (passivation, timeouts), and DI constructor parameters. All state logic, validation, and query computation SHALL be delegated to state extension methods.
 
 #### Scenario: Persistent actor command handling
-- **WHEN** a MatchHistoryWorker receives a RecordScoringResult
+- **WHEN** a ScoringHistoryWorker receives a RecordScoringResult
 - **THEN** the actor SHALL call `_state.ProcessCommand(cmd)`, persist the returned record, and assign `_state` to the returned new state
 
 #### Scenario: Non-persistent actor command handling

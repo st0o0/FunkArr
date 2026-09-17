@@ -1,5 +1,7 @@
 # message-response-interfaces
 
+> **⚠️ SUPERSEDED**: This spec was never implemented. The codebase uses per-command/query abstract response types instead (e.g. `Ask<SearchCommandResponse>`, `Ask<ResolveRuleSetResponse>`). CLAUDE.md explicitly states: "No domain-wide response interfaces — each command/query has its own response type." This spec should be considered historical only.
+
 ## Purpose
 
 Domain-level response marker interfaces in FunkArr.Messages that enable typed Ask calls instead of Ask<object>, grouping all response types per domain under a single interface.
@@ -55,7 +57,7 @@ All `Ask<object>` calls SHALL be replaced with `Ask<IDomainResponse>` using the 
 
 #### Scenario: RuleSetApiEndpoints uses typed Ask for scoring detail
 
-- **WHEN** the RuleSetApi sends QueryScoringDetail to the MatchHistoryRegion
+- **WHEN** the RuleSetApi sends QueryScoringDetail to the ScoringHistoryRegion
 - **THEN** it SHALL use `Ask<IScoringResponse>` instead of `Ask<object>`
 
 #### Scenario: Workers use typed Ask for ResolveRuleSet

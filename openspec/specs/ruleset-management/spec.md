@@ -59,11 +59,11 @@ Each RuleSetWorker (Sharded by ruleSetId) SHALL handle `LoadRuleSet` messages by
 - **THEN** it SHALL re-read via `IDataFiles.ReadText()`, re-merge, and re-push the updated MatchingConfig and re-register with the resolver
 
 ### Requirement: RuleSetWorker handles removal
-Each RuleSetWorker SHALL handle `RemoveRuleSet` messages by sending a `RemoveMatchingConfig` to MatchMagicManager and a deregistration to RuleSetResolver.
+Each RuleSetWorker SHALL handle `RemoveRuleSet` messages by sending a `RemoveMatchingConfig` to ScoringManager and a deregistration to RuleSetResolver.
 
 #### Scenario: Ruleset removed
 - **WHEN** a RuleSetWorker receives `RemoveRuleSet("custom-show")`
-- **THEN** it SHALL send `RemoveMatchingConfig("custom-show")` to MatchMagicManager and `DeregisterRuleSet("custom-show")` to RuleSetResolver
+- **THEN** it SHALL send `RemoveMatchingConfig("custom-show")` to ScoringManager and `DeregisterRuleSet("custom-show")` to RuleSetResolver
 
 ### Requirement: RuleSetWorker transforms JSON strings to enums
 The RuleSetWorker SHALL transform string-based fields from the JSON (strategy, field, op, titleRule type) into the corresponding enum values defined in FunkArr.Messages before constructing the MatchingConfig.
@@ -92,12 +92,12 @@ The RuleSetWorker SHALL transform string-based fields from the JSON (strategy, f
 - **WHEN** a rule JSON has an unrecognized strategy, field, or op string
 - **THEN** the RuleSetWorker logs a warning and skips that rule
 
-### Requirement: RuleSetWorker pushes MatchingConfig to MatchMagicManager
-After loading and merging, the RuleSetWorker SHALL send the resolved MatchingConfig message to the MatchMagicManager.
+### Requirement: RuleSetWorker pushes MatchingConfig to ScoringManager
+After loading and merging, the RuleSetWorker SHALL send the resolved MatchingConfig message to the ScoringManager.
 
 #### Scenario: Config push at startup
 - **WHEN** a RuleSetWorker completes loading
-- **THEN** it sends a MatchingConfig message to the MatchMagicManager singleton
+- **THEN** it sends a MatchingConfig message to the ScoringManager singleton
 
 ### Requirement: RuleSetWorker registers with RuleSetResolver
 After loading, the RuleSetWorker SHALL send a registration message to the RuleSetResolver containing the ruleSetId, topic, aliases, and media IDs (tvdbId, imdbId, tmdbId) extracted from the ruleset JSON.
@@ -152,8 +152,8 @@ The RuleSetResolver SHALL handle `DeregisterRuleSet` messages by removing all to
 - **WHEN** `DeregisterRuleSet("unknown")` is received and "unknown" was never registered
 - **THEN** the resolver SHALL handle it silently without error
 
-### Requirement: MatchMagicManager handles config removal
-The MatchMagicManager SHALL handle `RemoveMatchingConfig` messages by removing the config for the given ruleSetId from its state.
+### Requirement: ScoringManager handles config removal
+The ScoringManager SHALL handle `RemoveMatchingConfig` messages by removing the config for the given ruleSetId from its state.
 
 #### Scenario: Remove existing config
 - **WHEN** `RemoveMatchingConfig("custom-show")` is received
@@ -218,12 +218,12 @@ When merging community and local RuleSet JSON files, the resolution config SHALL
 - **THEN** the merged MatchingConfig SHALL use the local resolution config only
 
 ### Requirement: RuleSetWorker includes resolution config in MatchingConfig
-The RuleSetWorker SHALL pass the parsed ResolutionConfig from RuleSetMerger.Build through to the MatchingConfig sent to MatchMagicManager.
+The RuleSetWorker SHALL pass the parsed ResolutionConfig from RuleSetMerger.Build through to the MatchingConfig sent to ScoringManager.
 
 #### Scenario: MatchingConfig carries resolution
 - **WHEN** RuleSetMerger.Build produces a MatchingConfig with Resolution set
-- **THEN** the MatchingConfig sent to MatchMagicManager SHALL include the same Resolution value
+- **THEN** the MatchingConfig sent to ScoringManager SHALL include the same Resolution value
 
 #### Scenario: MatchingConfig without resolution
 - **WHEN** RuleSetMerger.Build produces a MatchingConfig with Resolution=null
-- **THEN** the MatchingConfig sent to MatchMagicManager SHALL have Resolution=null
+- **THEN** the MatchingConfig sent to ScoringManager SHALL have Resolution=null

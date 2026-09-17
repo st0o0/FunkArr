@@ -81,7 +81,7 @@ calls. The setup SHALL NOT use `ClusterSharding.Get(system).Start(...)` directly
 
 #### Scenario: Manager actors run as cluster singletons
 - **WHEN** the host boots
-- **THEN** `MediathekViewWebManager`, `MatchMagicManager`, and `SearchGatewayManager` are registered as cluster singletons in the `IActorRegistry`
+- **THEN** `MediathekViewWebManager`, `ScoringManager`, and `SearchManager` are registered as cluster singletons in the `IActorRegistry`
 
 #### Scenario: Worker actors run as sharded entities
 - **WHEN** the host boots
@@ -89,7 +89,7 @@ calls. The setup SHALL NOT use `ClusterSharding.Get(system).Start(...)` directly
 
 #### Scenario: Actors resolve peers via registry
 - **WHEN** `TvSearchWorker` is created by the shard region
-- **THEN** it resolves `MediathekViewWebManager` and `MatchMagicManager` via `Context.GetActor<T>()` from the `IActorRegistry`
+- **THEN** it resolves `MediathekViewWebManager` and `ScoringManager` via `Context.GetActor<T>()` from the `IActorRegistry`
 
 ### Requirement: FunkArrOptions binding
 `FunkArrServiceSetup` SHALL register `FunkArrOptions` bound to config section `"FunkArr"`

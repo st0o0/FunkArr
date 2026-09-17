@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the evaluation logic for the MatchMagic domain: how rulesets evaluate media items through filter groups, matching strategies, title construction, quality variant building, and regex safety.
+Defines the evaluation logic for the Scoring domain: how rulesets evaluate media items through filter groups, matching strategies, title construction, quality variant building, and regex safety.
 
 ## Requirements
 
@@ -252,7 +252,7 @@ When producing a MatchResult, the system SHALL build QualityVariant entries from
 - **THEN** the result SHALL have an empty Qualities list
 
 ### Requirement: Strategy evaluation uses 5-member enum
-The MatchMagic evaluation SHALL switch on the 5-member `IdentificationStrategy` enum directly, without checking `TitleMatchMode`. The evaluation for `SeasonAndEpisodeNumber` and `AbsoluteEpisodeNumber` SHALL both use regex capture logic (with and without season pattern). The evaluation for `TitleExact` and `TitleIncludes` SHALL both use title construction logic (with exact and contains matching).
+The scoring evaluation SHALL switch on the 5-member `IdentificationStrategy` enum directly, without checking `TitleMatchMode`. The evaluation for `SeasonAndEpisodeNumber` and `AbsoluteEpisodeNumber` SHALL both use regex capture logic (with and without season pattern). The evaluation for `TitleExact` and `TitleIncludes` SHALL both use title construction logic (with exact and contains matching).
 
 #### Scenario: SeasonAndEpisodeNumber evaluation
 - **WHEN** a rule with strategy `SeasonAndEpisodeNumber` is evaluated
@@ -274,9 +274,9 @@ The MatchMagic evaluation SHALL switch on the 5-member `IdentificationStrategy` 
 - **WHEN** the evaluation code is inspected
 - **THEN** there are no references to `TitleMatchMode`
 
-### Requirement: MatchMagicActor builds FilterGroupTrace during filter evaluation
+### Requirement: ScoringActor builds FilterGroupTrace during filter evaluation
 
-The MatchMagicActor SHALL delegate filter evaluation to `ScoringEngine` instead of containing the evaluation logic directly. The `ScoringEngine` SHALL build a FilterGroupTrace while evaluating filters. Each condition evaluation SHALL record the field, operator, expected value, actual resolved value, and pass/fail. Short-circuited conditions SHALL be recorded with Skipped=true.
+The ScoringActor SHALL delegate filter evaluation to `ScoringEngine` instead of containing the evaluation logic directly. The `ScoringEngine` SHALL build a FilterGroupTrace while evaluating filters. Each condition evaluation SHALL record the field, operator, expected value, actual resolved value, and pass/fail. Short-circuited conditions SHALL be recorded with Skipped=true.
 
 #### Scenario: All conditions evaluated
 
@@ -293,9 +293,9 @@ The MatchMagicActor SHALL delegate filter evaluation to `ScoringEngine` instead 
 - **WHEN** a FilterGroup contains a nested FilterGroup
 - **THEN** the outer FilterGroupTrace SHALL contain a FilterNodeTrace of type Group with a nested FilterGroupTrace
 
-### Requirement: MatchMagicActor builds IdentificationTrace during identification
+### Requirement: ScoringActor builds IdentificationTrace during identification
 
-The MatchMagicActor SHALL delegate identification to `ScoringEngine` instead of containing the identification logic directly. The `ScoringEngine` SHALL build an IdentificationTrace after each identification attempt.
+The ScoringActor SHALL delegate identification to `ScoringEngine` instead of containing the identification logic directly. The `ScoringEngine` SHALL build an IdentificationTrace after each identification attempt.
 
 #### Scenario: Successful identification trace
 
@@ -323,29 +323,29 @@ All regex evaluations (filters, season/episode extraction, title rules) SHALL us
 - **WHEN** a filter regex pattern matches within the timeout
 - **THEN** the filter SHALL return the correct match result
 
-### Requirement: MatchMagicActor records scoring history via shard region
+### Requirement: ScoringActor records scoring history via shard region
 
-After sending `ScoreCompleted` to the caller, the MatchMagicActor SHALL send a `RecordScoringResult` to the `IMatchHistoryRegion` shard region. The actor SHALL resolve the shard region at runtime via `Context.GetActor<IMatchHistoryRegion>()`. The actor SHALL NOT receive the history ref via constructor injection or through messages.
+After sending `ScoreCompleted` to the caller, the ScoringActor SHALL send a `RecordScoringResult` to the `IScoringHistoryRegion` shard region. The actor SHALL resolve the shard region at runtime via `Context.GetActor<IScoringHistoryRegion>()`. The actor SHALL NOT receive the history ref via constructor injection or through messages.
 
 #### Scenario: Scoring result recorded after evaluation
-- **WHEN** MatchMagicActor completes scoring with at least one candidate
-- **THEN** it SHALL send a `RecordScoringResult` to the `IMatchHistoryRegion` shard region containing the request id, rule set id, origin, timestamp, candidate count, matched count, and item traces
+- **WHEN** ScoringActor completes scoring with at least one candidate
+- **THEN** it SHALL send a `RecordScoringResult` to the `IScoringHistoryRegion` shard region containing the request id, rule set id, origin, timestamp, candidate count, matched count, and item traces
 
 #### Scenario: No IActorRef in messages or constructor
-- **WHEN** MatchMagicManager creates an `ExecuteScoring` message for the pool
+- **WHEN** ScoringManager creates an `ExecuteScoring` message for the pool
 - **THEN** the message SHALL NOT contain an `IActorRef` field
 
 #### Scenario: History region resolved at runtime
-- **WHEN** MatchMagicActor is constructed
-- **THEN** it SHALL resolve `IMatchHistoryRegion` via `Context.GetActor<IMatchHistoryRegion>()` and cache it as a field
+- **WHEN** ScoringActor is constructed
+- **THEN** it SHALL resolve `IScoringHistoryRegion` via `Context.GetActor<IScoringHistoryRegion>()` and cache it as a field
 
-### Requirement: MatchMagicActor is thin plumbing only
+### Requirement: ScoringActor is thin plumbing only
 
-The MatchMagicActor SHALL contain only Akka plumbing: constructor with `Receive<T>` registration, a Handle method that calls `ScoringEngine.Score(...)`, sends results to Sender, and tells history to the shard region. All scoring logic SHALL live in `ScoringEngine`.
+The ScoringActor SHALL contain only Akka plumbing: constructor with `Receive<T>` registration, a Handle method that calls `ScoringEngine.Score(...)`, sends results to Sender, and tells history to the shard region. All scoring logic SHALL live in `ScoringEngine`.
 
 #### Scenario: Actor has no static scoring methods
 
-- **WHEN** `MatchMagicActor.cs` is inspected
+- **WHEN** `ScoringActor.cs` is inspected
 - **THEN** it SHALL NOT contain any `static` methods for filter evaluation, identification, regex, title construction, or date parsing
 
 #### Scenario: Actor delegates to ScoringEngine

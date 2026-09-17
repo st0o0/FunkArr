@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+TV search pipeline orchestration — the TvSearchWorker coordinates Mediathek queries, RuleSet resolution, MatchMagic scoring, and episode enrichment using Become-based phases and Ask+PipeTo communication.
+
+## Requirements
 
 ### Requirement: TvSearchWorker is a sharded entity
 
@@ -11,47 +15,67 @@ The TvSearchWorker SHALL be a sharded entity using SearchId (Guid) as the shard 
 
 ### Requirement: TvSearchWorker orchestrates search pipeline
 
-The TvSearchWorker SHALL use Become-based phase transitions to process the search pipeline. The worker SHALL capture the original Sender as `ReplyTo` in state when the TvSearch command arrives. All replies SHALL use `ReplyTo.Tell(...)` instead of `Sender.Tell(...)`. All `PipeTo` calls SHALL omit the Sender parameter.
+The TvSearchWorker SHALL use Become-based phase transitions and Ask+PipeTo for all inter-actor communication. The worker SHALL NOT implement IWithTimers. The worker SHALL capture the original Sender as `ReplyTo` in state when the SearchSeries command arrives. All replies SHALL use `_state.ReplyTo.Tell(...)`. All outgoing messages SHALL use `Ask<XxxResponse>(request, timeout).PipeTo(Self, failure: ex => new XxxFailed(ex))`. The PipeTo failure lambda SHALL map Ask timeouts and transport errors to the domain-owned Failed record type. Each Become state SHALL handle exactly two message types: XxxCompleted and XxxFailed. The worker SHALL NOT define any private timeout record types. The worker SHALL NOT use Timers.StartSingleTimer or Timers.Cancel.
 
 #### Scenario: Successful TV search with query text
 
-- **WHEN** the worker receives a TvSearch with Query="Tatort"
-- **THEN** it SHALL capture ReplyTo from Sender, Become the querying phase, build a MediathekQuery with topic-based search and duration minimum of 300 seconds, Ask the MediathekViewWebManager, then transition through RuleSet resolution and scoring phases, and Tell ReplyTo with a SearchCompleted containing scored items
+- **WHEN** the worker receives a SearchSeries with Query="Tatort"
+- **THEN** it SHALL call _state.Init(cmd, Sender), call _state.TryGetMediathekQuery to get the query message, Ask the MediathekViewWebManager with a 15-second timeout, PipeTo Self with failure mapped to QueryMediathekFailed, and Become(Querying)
 
 #### Scenario: ID-only TV search
 
-- **WHEN** the worker receives a TvSearch with Query=null and TvdbId=83214
-- **THEN** it SHALL capture ReplyTo, Become the resolving phase, Ask the RuleSetResolver with ResolveRuleSet(null, TvdbId: 83214), use the resolved topic to query Mediathek, then proceed through scoring
+- **WHEN** the worker receives a SearchSeries with Query=null and TvdbId=83214
+- **THEN** it SHALL call _state.Init(cmd, Sender), call _state.TryGetRuleSetRequest to get a ResolveRuleSet message, Ask the RuleSetResolver with a 5-second timeout, PipeTo Self with failure mapped to RuleSetFailed, and Become(ResolvingRuleSet)
 
 #### Scenario: ID-only search with no matching ruleset
 
-- **WHEN** the worker receives a TvSearch with Query=null and TvdbId=99999 and no ruleset maps that ID
-- **THEN** the worker SHALL receive a RuleSetFailed containing a RuleSetNotFoundException and Tell ReplyTo with SearchCompleted(SearchId, Items: [], Total: 0)
+- **WHEN** the RuleSetResolver responds with RuleSetFailed (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with _state.ToSearchCompleted()
 
 #### Scenario: Become-based phase transitions
 
 - **WHEN** the worker transitions between pipeline phases
-- **THEN** it SHALL use Become to switch handler sets so that each phase only handles messages relevant to that phase
+- **THEN** it SHALL use Become to switch handler sets so that each phase handles exactly XxxCompleted and XxxFailed messages
 
-#### Scenario: ScoredResults stored in state
+#### Scenario: Scoring phase transition
 
-- **WHEN** scoring completes and enrichment is needed
-- **THEN** the worker SHALL store ScoredResults in state (not as a separate mutable field) before transitioning to the enriching phase
+- **WHEN** scoring is needed after RuleSet resolution or query completion
+- **THEN** the worker SHALL call _state.TryGetScoringRequest, Ask the ScoringManager with a 10-second timeout, PipeTo Self with failure mapped to ScoringFailed, and Become(Scoring)
 
-#### Scenario: Text search carries IDs through to results
+#### Scenario: Enrichment phase transition
 
-- **WHEN** the worker receives a TvSearchCommand with Query="Tatort" and TvdbId=83214
-- **THEN** the worker SHALL use the text-based flow and set TvdbId=83214 on each SearchResultItem
+- **WHEN** ScoreCompleted is received and _state.TryGetEnrichmentRequest returns true
+- **THEN** the worker SHALL call _state.Apply(scored), Ask the EnrichmentManager with a 10-second timeout, PipeTo Self with failure mapped to EnrichEpisodesFailed, and Become(Enriching)
+
+#### Scenario: Scoring completes without enrichment needed
+
+- **WHEN** ScoreCompleted is received and _state.TryGetEnrichmentRequest returns false
+- **THEN** the worker SHALL call _state.Apply(scored) and Reply with _state.ToSearchCompleted()
+
+#### Scenario: Enrichment succeeds
+
+- **WHEN** EnrichEpisodesCompleted is received
+- **THEN** the worker SHALL call _state.Apply(enriched) and Reply with _state.ToSearchCompleted()
+
+#### Scenario: Enrichment fails
+
+- **WHEN** EnrichEpisodesFailed is received (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with _state.ToSearchCompleted() using existing metadata
 
 #### Scenario: MediathekViewWeb query fails
 
-- **WHEN** the MediathekViewWebManager Ask times out or returns an error
-- **THEN** the worker SHALL Tell the Sender with a SearchFailed and passivate
+- **WHEN** QueryMediathekFailed is received (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with SearchSeriesFailed(SearchId, cause)
 
 #### Scenario: MatchMagic scoring fails
 
-- **WHEN** the MatchMagicManager Ask times out or returns an error
-- **THEN** the worker SHALL Tell the Sender with a SearchFailed and passivate
+- **WHEN** ScoringFailed is received (including Ask timeout mapped via PipeTo failure)
+- **THEN** the worker SHALL Reply with SearchSeriesFailed(SearchId, cause)
+
+#### Scenario: Text search carries IDs through to results
+
+- **WHEN** the worker receives a SearchSeries with Query="Tatort" and TvdbId=83214
+- **THEN** the state's BaseIdentity SHALL include TvdbId=83214, which flows into all EnrichedItems and SearchResultItems
 
 ### Requirement: TvSearchWorker builds TV-specific queries
 
@@ -92,57 +116,52 @@ The TvSearchWorker SHALL use the Limit and Offset values from the incoming TvSea
 - **THEN** the MediathekQuery SHALL use Size=25 and Offset=0
 
 ### Requirement: TvSearchWorker episode resolution stage
-After receiving ScoreCompleted, the TvSearchWorker SHALL check if any matched items lack Season/Episode metadata (MetadataSpec.Season is null AND MetadataSpec.Episode is null). If unresolved items exist AND the search has a TvdbId, the worker SHALL construct EpisodeCandidates from the scored items and Ask the MetadataResolver to resolve them. The resolution config SHALL use the `ResolutionConfig` record defaults (`new ResolutionConfig()`).
+
+After receiving ScoreCompleted, the TvSearchWorker SHALL call _state.Apply(scored) and then _state.TryGetEnrichmentRequest. The state SHALL decide if enrichment is needed based on whether unresolved items exist and TvdbId is available. The worker SHALL NOT contain enrichment decision logic — it only acts on the TryGet result.
 
 #### Scenario: All items have season/episode from regex
-- **WHEN** all matched ScoredItems have MetadataSpec with Season and Episode set (regex-extracted)
-- **THEN** the worker SHALL skip episode resolution and proceed directly to ToScoredResult
+
+- **WHEN** all scored items have Season and Episode in their MetadataSpec
+- **THEN** _state.TryGetEnrichmentRequest SHALL return false and the worker SHALL Reply with _state.ToSearchCompleted()
 
 #### Scenario: Some items lack season/episode
-- **WHEN** matched ScoredItems include items with MetadataSpec.Season=null (title-constructed matches)
-- **THEN** the worker SHALL construct EpisodeCandidates for those items and Ask the MetadataResolver
+
+- **WHEN** scored items include entries with Season=null
+- **THEN** _state.TryGetEnrichmentRequest SHALL return true with an EnrichEpisodes message
 
 #### Scenario: No TvdbId available
-- **WHEN** the search has no TvdbId (query-only search)
-- **THEN** the worker SHALL skip episode resolution (TVDB lookup requires an ID)
 
-#### Scenario: Resolution succeeds
-- **WHEN** the MetadataResolver responds with EpisodesResolved containing resolved episodes
-- **THEN** the worker SHALL merge the resolved Season/Episode/EpisodeName into the corresponding ScoredItems' MetadataSpec before calling ToScoredResult
-
-#### Scenario: Resolution fails
-- **WHEN** the MetadataResolver responds with EpisodeResolutionFailed
-- **THEN** the worker SHALL proceed with ToScoredResult using the existing metadata (airdate-based titles)
-
-#### Scenario: Resolution times out
-- **WHEN** the MetadataResolver Ask times out (default 15 seconds)
-- **THEN** the worker SHALL proceed with ToScoredResult using the existing metadata
+- **WHEN** the search has no TvdbId
+- **THEN** _state.TryGetEnrichmentRequest SHALL return false
 
 ### Requirement: TvSearchWorker uses IMetadataResolver
-The TvSearchWorker SHALL resolve the MetadataResolver singleton via `Context.GetActor<IMetadataResolver>()` (renamed from `IEpisodeGuideManager`).
+
+The TvSearchWorker SHALL resolve the MetadataResolver singleton via `Context.GetActor<IMetadataResolver>()`.
 
 #### Scenario: Actor resolution
+
 - **WHEN** TvSearchWorker is constructed
 - **THEN** it SHALL resolve `IMetadataResolver` for episode resolution requests
 
 ### Requirement: TvSearchWorker constructs EpisodeCandidates from scored items
-The worker SHALL build EpisodeCandidate records from matched ScoredItems by extracting: Index from ScoredItem.Index, Title from the original MediathekItem, ConstructedTitle from TracedIdentification.Title (if available in scoring trace), AiredAt from MetadataSpec.AiredAt, Duration from the MediathekItem, ExistingSeason/ExistingEpisode from MetadataSpec.
 
-#### Scenario: Candidate from title-construction match
-- **WHEN** a ScoredItem matched via TitleConstruction with MetadataSpec(Season=null, Episode=null, AiredAt=2026-08-30)
+The state's TryGetEnrichmentRequest method SHALL build EpisodeCandidate records from EnrichedItems that lack Season/Episode by extracting: Index, Title from Source.Title, AiredAt from Source.AiredAt, Duration from Source.Duration.
+
+#### Scenario: Candidate from unresolved item
+
+- **WHEN** an EnrichedItem has Identity.Season=null and Identity.Episode=null, Source.AiredAt=2026-08-30
 - **THEN** the EpisodeCandidate SHALL have ExistingSeason=null, ExistingEpisode=null, AiredAt=2026-08-30
 
-#### Scenario: Candidate with existing regex season/episode
-- **WHEN** a ScoredItem matched via RegexCapture with MetadataSpec(Season="2026", Episode="01", AiredAt=2026-02-27)
-- **THEN** the EpisodeCandidate SHALL have ExistingSeason="2026", ExistingEpisode="01"
-
 ### Requirement: TvSearchWorker merges resolved episodes into metadata
-After receiving EpisodesResolved, the worker SHALL update the MetadataSpec for each resolved item by setting Season and Episode from the ResolvedEpisode. The AiredAt SHALL be preserved from the original metadata.
+
+The state's Apply(EpisodesEnriched) method SHALL update EnrichedItems by patching Identity.Season/Episode and setting Match from each EnrichedEpisode. Unresolved items SHALL retain their existing Identity and Match=null.
 
 #### Scenario: Merge resolved season/episode
-- **WHEN** a ResolvedEpisode has Index=3, Season="2026", Episode="09"
-- **THEN** the ScoredItem at index 3 SHALL have its MetadataSpec updated to Season="2026", Episode="09" while preserving the original AiredAt
 
-#### Scenario: Unresolved items retain original metadata
-- **WHEN** an item at index 5 has no corresponding ResolvedEpisode
-- **THEN** the ScoredItem at index 5 SHALL keep its original MetadataSpec unchanged
+- **WHEN** an EnrichedEpisode has Index=3, Season="2", Episode="9", Confidence=0.9, Method=TitleMatch
+- **THEN** the EnrichedItem at Index=3 SHALL have Identity.Season="2", Identity.Episode="9", Match=new MatchInfo(0.9, TitleMatch)
+
+#### Scenario: Unresolved items retain original identity
+
+- **WHEN** an item at index 5 has no corresponding EnrichedEpisode
+- **THEN** the EnrichedItem at index 5 SHALL keep its original Identity and Match=null

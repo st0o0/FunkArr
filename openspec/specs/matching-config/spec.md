@@ -119,7 +119,7 @@ The system SHALL define `MatchingRule(string Id, int Priority, float? Confidence
 - **THEN** the rule applies to all items (filters implicitly pass)
 
 ### Requirement: MatchingConfig record
-The system SHALL define `MatchingConfig(string RuleSetId, float DefaultConfidence, MatchingRule[] Rules)` as a sealed record. This is the contract message sent from RuleSetWorker to MatchMagicManager.
+The system SHALL define `MatchingConfig(string RuleSetId, float DefaultConfidence, MatchingRule[] Rules)` as a sealed record. This is the contract message sent from RuleSetWorker to ScoringManager.
 
 #### Scenario: Config with multiple rules
 - **WHEN** a MatchingConfig contains rules with different priorities
