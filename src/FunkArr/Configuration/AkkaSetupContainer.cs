@@ -52,7 +52,7 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithRemoting(new RemoteOptions
             {
                 HostName = "localhost",
-                Port = 2552,
+                Port = 2552
             })
             .WithClustering(new ClusterOptions
             {
@@ -79,24 +79,20 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithShardRegion<ITvSearchRegion>("tv-search",
                 (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
                 new ShardMessageExtractor(),
-                new ShardOptions())
-            .WithShardRegion<IMovieSearchRegion>(
-                "movie-search",
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30) })
+            .WithShardRegion<IMovieSearchRegion>("movie-search",
                 (_, _, resolver) => _ => resolver.Props<MovieSearchWorker>(),
                 new ShardMessageExtractor(),
-                new ShardOptions())
-            .WithShardRegion<IDownloadRegion>(
-                "download-worker",
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30) })
+            .WithShardRegion<IDownloadRegion>("download-worker",
                 (_, _, resolver) => _ => resolver.Props<DownloadWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
-            .WithShardRegion<IRuleSetRegion>(
-                "ruleset-worker",
+            .WithShardRegion<IRuleSetRegion>("ruleset-worker",
                 (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
                 new ShardMessageExtractor(),
                 new ShardOptions())
-            .WithShardRegion<IMatchHistoryRegion>(
-                "match-history",
+            .WithShardRegion<IMatchHistoryRegion>("match-history",
                 (_, _, resolver) => entityId => resolver.Props<MatchHistoryWorker>(entityId),
                 new ShardMessageExtractor(),
                 new ShardOptions());

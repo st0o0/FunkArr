@@ -1,6 +1,5 @@
 using System.IO.Abstractions;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using FunkArr.Core;
 using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
