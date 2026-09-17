@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Serilog.Extensions.Hosting" />

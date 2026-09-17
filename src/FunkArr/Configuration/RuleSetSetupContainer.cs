@@ -28,12 +28,13 @@ public sealed class RuleSetSetupContainer : ApplicationSetupContainer<WebApplica
         services.AddSingleton<IRuleSetExporter, RuleSetExporter>();
 
         var version = typeof(RuleSetSetupContainer).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-        services.AddHttpClient("GitHub", client =>
+        services.AddHttpClient(HttpClientNames.GitHub, client =>
         {
             client.BaseAddress = new Uri("https://api.github.com/");
             client.DefaultRequestHeaders.Add("Accept", "application/vnd.github+json");
             client.DefaultRequestHeaders.Add("User-Agent", $"FunkArr/{version}");
-        });
+        })
+        .AddStandardResilienceHandler();
     }
 
     protected override void SetupApplication(WebApplication app)
