@@ -123,9 +123,29 @@ The Identity section SHALL show: topic, aliases, and media IDs (TVDB, IMDB, TMDB
 
 The Source section SHALL show: community file path and last modified timestamp, local file path and last modified timestamp, and the effective merge mode (community only, local only, merged, standalone).
 
-The Matching Rules section SHALL show: default confidence, and for each rule: ID, priority, confidence override, identification strategy with its parameters, and filter conditions.
+The Matching Rules section SHALL show: default confidence, and for each rule a collapsible card. The collapsed state SHALL show the rule ID in monospace, the localized strategy badge, and priority. The expanded state SHALL show all rule details: strategy-specific parameters (season/episode regex, capture group), title rules rendered via `TitleRuleDisplay` component, and filter conditions rendered via `FilterConditionDisplay` component. The first rule SHALL be expanded by default; all others collapsed. When a ruleset has no rules defined, the page SHALL use the shared `EmptyState` component with a rules/list icon, a title indicating no rules are defined, and a description explaining that rules can be added via the editor.
 
 The page SHALL include a link to the scoring history at `/rulesets/:id/history`.
+
+#### Scenario: Collapsible rule cards
+- **WHEN** a ruleset with 4 rules is displayed
+- **THEN** the first rule card is expanded showing full details, and the other 3 are collapsed showing only ID, strategy badge, and priority
+
+#### Scenario: Expand collapsed rule
+- **WHEN** the user clicks a collapsed rule card header
+- **THEN** the card expands to show full details
+
+#### Scenario: Collapse expanded rule
+- **WHEN** the user clicks an expanded rule card header
+- **THEN** the card collapses to show only ID, strategy badge, and priority
+
+#### Scenario: Rule with filters uses FilterConditionDisplay
+- **WHEN** a rule has filter conditions
+- **THEN** the expanded card renders filters via the `FilterConditionDisplay` component with localized op symbols and group labels
+
+#### Scenario: Rule with title rules uses TitleRuleDisplay
+- **WHEN** a rule uses a title construction strategy with title rules
+- **THEN** the expanded card renders title rules via the `TitleRuleDisplay` component with type badges
 
 #### Scenario: Detail with community + local overlay
 - **WHEN** the user views a ruleset that has both community and local files
@@ -135,17 +155,47 @@ The page SHALL include a link to the scoring history at `/rulesets/:id/history`.
 - **WHEN** the user views a ruleset with only a community file
 - **THEN** the source section shows only the community path and merge mode "community only"
 
-#### Scenario: Rule display with RegexCapture strategy
-- **WHEN** a rule uses RegexCapture with season and episode patterns
-- **THEN** the rule card shows strategy "RegexCapture", the season regex, and the episode regex
+#### Scenario: Detail with no rules
+- **WHEN** the user views a ruleset that has zero matching rules
+- **THEN** the matching rules section displays an EmptyState with icon, title, and description instead of plain text
 
-#### Scenario: Rule display with filters
-- **WHEN** a rule has filter conditions
-- **THEN** the rule card shows the filter summary
+#### Scenario: Detail with rules
+- **WHEN** the user views a ruleset with one or more rules
+- **THEN** the matching rules section displays collapsible rule cards as before (no change)
 
 #### Scenario: Not found
 - **WHEN** the user navigates to `/rulesets/nonexistent` and the API returns 404
 - **THEN** the page displays a "not found" message
+
+### Requirement: Shared strategy label utility
+The frontend SHALL provide a shared utility function `strategyLabel(strategy: string): string` that maps strategy wire enum names to localized display labels via `$t()`. The utility SHALL be importable by all views (Detail-View, Builder, Debugger, ScoringDetail). The utility SHALL handle all known strategy values: `seasonAndEpisodeNumber`, `byAbsoluteEpisodeNumber`, `itemTitleExact`, `itemTitleIncludes`, `itemTitleEqualsAirdate`. Unknown values SHALL fall back to the raw string.
+
+#### Scenario: Strategy label in German locale
+- **WHEN** `strategyLabel("itemTitleExact")` is called with locale `de`
+- **THEN** the function returns the German translation for title exact match
+
+#### Scenario: Strategy label for unknown value
+- **WHEN** `strategyLabel("unknownStrategy")` is called
+- **THEN** the function returns `"unknownStrategy"` as fallback
+
+#### Scenario: Shared across views
+- **WHEN** the Detail-View, Builder, Debugger, and ScoringDetail render strategy labels
+- **THEN** all views SHALL use the same shared utility function
+
+### Requirement: Filter condition display component
+The frontend SHALL provide a component for rendering structured filter conditions (field/op/value grouped by all/any/not) in a read-only display format. This component SHALL be usable by the Detail-View for showing rule filters. The component SHALL render filter groups with section labels (all/any/not) and individual conditions showing field, operator, and value.
+
+#### Scenario: Render all-group filters
+- **WHEN** a filter has `all: [{ field: "title", op: "contains", value: "Tatort" }, { field: "duration", op: "greaterThan", value: "600" }]`
+- **THEN** the component renders both conditions under an "all" group label
+
+#### Scenario: Render mixed groups
+- **WHEN** a filter has conditions in both `all` and `not` groups
+- **THEN** the component renders both groups with their respective labels
+
+#### Scenario: Empty filters
+- **WHEN** a rule has no filters (null)
+- **THEN** no filter component is rendered
 
 ### Requirement: Scoring history page
 The Vue frontend SHALL render a scoring history page at route `/rulesets/:id/history`. On mount, the page SHALL fetch `GET /api/rulesets/:id/history` and display a table of past scoring runs. Each row SHALL show: request ID (truncated), source, query, timestamp (relative), candidate count, and matched count. Each row SHALL link to the scoring detail page.

@@ -184,7 +184,7 @@ When a Rule uses strategy ItemTitleIncludes, it SHALL apply the TitleRules to co
 - **THEN** the strategy SHALL return null
 
 ### Requirement: ItemTitleEqualsAirdate strategy
-When a Rule uses strategy ItemTitleEqualsAirdate, it SHALL extract a date from the MediaItem's Title using common German date formats (dd.MM.yyyy, dd.MM.yy, "dd. MMMM yyyy" with German month names). It SHALL produce an EpisodeIdentification with the extracted date as the Title.
+When a Rule uses strategy ItemTitleEqualsAirdate, it SHALL extract a date from the MediaItem's Title using common German date formats (dd.MM.yyyy, dd.MM.yy, "d. MMMM yyyy" with German month names). It SHALL use `CultureInfo("de-DE")` with `DateTime.TryParseExact` for parsing German month names instead of a hand-rolled month name array. It SHALL produce an EpisodeIdentification with the extracted date as the Title.
 
 #### Scenario: Numeric date in title
 - **WHEN** the item title is "heute-show vom 24.10.2024"
@@ -201,6 +201,10 @@ When a Rule uses strategy ItemTitleEqualsAirdate, it SHALL extract a date from t
 #### Scenario: No date in title
 - **WHEN** the item title contains no recognizable date
 - **THEN** the strategy SHALL return null
+
+#### Scenario: German month parsing uses CultureInfo
+- **WHEN** the date parsing code is inspected
+- **THEN** it SHALL use `CultureInfo.GetCultureInfo("de-DE")` and `DateTime.TryParseExact` instead of a hand-rolled `germanMonths` string array
 
 ### Requirement: ByAbsoluteEpisodeNumber strategy
 When a Rule uses strategy ByAbsoluteEpisodeNumber, it SHALL apply EpisodeRegex against the MediaItem's Title to extract an absolute episode number. It SHALL produce an EpisodeIdentification with Episode set to the captured number and Season null.
@@ -272,7 +276,7 @@ The MatchMagic evaluation SHALL switch on the 5-member `IdentificationStrategy` 
 
 ### Requirement: MatchMagicActor builds FilterGroupTrace during filter evaluation
 
-The MatchMagicActor SHALL build a FilterGroupTrace while evaluating filters. Each condition evaluation SHALL record the field, operator, expected value, actual resolved value, and pass/fail. Short-circuited conditions SHALL be recorded with Skipped=true.
+The MatchMagicActor SHALL delegate filter evaluation to `ScoringEngine` instead of containing the evaluation logic directly. The `ScoringEngine` SHALL build a FilterGroupTrace while evaluating filters. Each condition evaluation SHALL record the field, operator, expected value, actual resolved value, and pass/fail. Short-circuited conditions SHALL be recorded with Skipped=true.
 
 #### Scenario: All conditions evaluated
 
@@ -291,7 +295,7 @@ The MatchMagicActor SHALL build a FilterGroupTrace while evaluating filters. Eac
 
 ### Requirement: MatchMagicActor builds IdentificationTrace during identification
 
-The MatchMagicActor SHALL build an IdentificationTrace after each identification attempt.
+The MatchMagicActor SHALL delegate identification to `ScoringEngine` instead of containing the identification logic directly. The `ScoringEngine` SHALL build an IdentificationTrace after each identification attempt.
 
 #### Scenario: Successful identification trace
 
@@ -334,3 +338,17 @@ After sending `ScoreCompleted` to the caller, the MatchMagicActor SHALL send a `
 #### Scenario: History region resolved at runtime
 - **WHEN** MatchMagicActor is constructed
 - **THEN** it SHALL resolve `IMatchHistoryRegion` via `Context.GetActor<IMatchHistoryRegion>()` and cache it as a field
+
+### Requirement: MatchMagicActor is thin plumbing only
+
+The MatchMagicActor SHALL contain only Akka plumbing: constructor with `Receive<T>` registration, a Handle method that calls `ScoringEngine.Score(...)`, sends results to Sender, and tells history to the shard region. All scoring logic SHALL live in `ScoringEngine`.
+
+#### Scenario: Actor has no static scoring methods
+
+- **WHEN** `MatchMagicActor.cs` is inspected
+- **THEN** it SHALL NOT contain any `static` methods for filter evaluation, identification, regex, title construction, or date parsing
+
+#### Scenario: Actor delegates to ScoringEngine
+
+- **WHEN** an `ExecuteScoring` message is received
+- **THEN** the actor SHALL call `ScoringEngine.Score(...)` and use the returned results

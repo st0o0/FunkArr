@@ -72,17 +72,18 @@ All search command and response messages SHALL be defined as sealed records in F
 #### Scenario: SearchFailed record
 
 - **WHEN** a search fails
-- **THEN** SearchFailed SHALL contain: SearchId (Guid), Reason (string)
+- **THEN** SearchFailed SHALL contain: SearchId (Guid), Reason (string), Cause (Exception?)
 - **AND** SearchFailed SHALL implement ISearchResponse
+- **AND** Cause SHALL default to null for backward compatibility with string-only failure paths
 
 ### Requirement: SearchResultItem contains scored media information
 
-SearchResultItem SHALL carry all information needed by the Newznab response formatter, including optional media IDs for *arr result matching, and optional resolution metadata. The SearchResultItem record SHALL include optional ResolutionConfidence (float?) and ResolutionStrategy (string?) fields. These fields SHALL be populated for both TV show and movie search results when metadata resolution is performed. The Title field SHALL contain a scene-style formatted release title built by ReleaseTitleBuilder.
+SearchResultItem SHALL carry all information needed by the Newznab response formatter, including optional media IDs for *arr result matching, and optional enrichment metadata. The SearchResultItem record SHALL include optional MatchConfidence (float?) and MatchMethod (MatchMethod?) fields. These fields SHALL be populated for both TV show and movie search results when metadata enrichment is performed. The Title field SHALL contain a scene-style formatted release title built by ReleaseTitleBuilder.
 
 #### Scenario: SearchResultItem fields
 
 - **WHEN** a search result item is created
-- **THEN** it SHALL contain: Title (string), Channel (string), Topic (string), Url (string), Duration (int), Size (long), Quality (int), AiredAt (DateTimeOffset?), Score (double), SubtitleUrl (string?), TvdbId (int?), ImdbId (string?), TmdbId (int?), Season (string?), Episode (string?), ResolutionConfidence (float?), ResolutionStrategy (string?)
+- **THEN** it SHALL contain: Title (string), Channel (string), Topic (string), Url (string), Duration (int), Size (long), Quality (int), AiredAt (DateTimeOffset?), Score (double), SubtitleUrl (string?), TvdbId (int?), ImdbId (string?), TmdbId (int?), Season (string?), Episode (string?), MatchConfidence (float?), MatchMethod (MatchMethod?)
 
 #### Scenario: Title is scene-formatted
 
@@ -94,25 +95,20 @@ SearchResultItem SHALL carry all information needed by the Newznab response form
 - **WHEN** a search result item is created without scoring (no ruleset loaded)
 - **THEN** the Title SHALL still be scene-formatted using available data (topic, title, quality) but without S/E metadata
 
-#### Scenario: TV result with resolution metadata
+#### Scenario: TV result with enrichment metadata
 
-- **WHEN** a TV search result is resolved via FuzzyTitleMatch with confidence 0.85
-- **THEN** the SearchResultItem SHALL have ResolutionConfidence=0.85 and ResolutionStrategy="FuzzyTitleMatch"
+- **WHEN** a TV search result is enriched via TitleMatch with confidence 0.85
+- **THEN** the SearchResultItem SHALL have MatchConfidence=0.85 and MatchMethod=MatchMethod.TitleMatch
 
-#### Scenario: Movie result with resolution metadata
+#### Scenario: Movie result with enrichment metadata
 
-- **WHEN** a movie search result is resolved via TmdbIdLookup with confidence 1.0
-- **THEN** the SearchResultItem SHALL have ResolutionConfidence=1.0 and ResolutionStrategy="TmdbIdLookup"
+- **WHEN** a movie search result is enriched via TitleMatch with confidence 1.0
+- **THEN** the SearchResultItem SHALL have MatchConfidence=1.0 and MatchMethod=MatchMethod.TitleMatch
 
-#### Scenario: Unresolved result
+#### Scenario: Unenriched result
 
-- **WHEN** a search result was not resolved (no TVDB/TMDB key or resolution failed)
-- **THEN** the SearchResultItem SHALL have ResolutionConfidence=null and ResolutionStrategy=null
-
-#### Scenario: Movie result with TMDB-validated year
-
-- **WHEN** a movie result is enriched via TMDB resolution
-- **THEN** the release title SHALL include the validated year from TMDB
+- **WHEN** a search result was not enriched (no TVDB/TMDB key or enrichment failed)
+- **THEN** the SearchResultItem SHALL have MatchConfidence=null and MatchMethod=null
 
 ### Requirement: Mediathek messages model the external API contract
 
@@ -202,3 +198,40 @@ The `RegisterRuleSet` message SHALL include optional media ID fields for ID-base
 
 - **WHEN** a ruleset is registered
 - **THEN** `RegisterRuleSet` SHALL contain: RuleSetId (string), Topic (string), Aliases (string[]), TvdbId (int?), ImdbId (string?), TmdbId (int?)
+
+### Requirement: RuleSet response types use abstract record base
+
+FunkArr.Messages.RuleSet SHALL define an `abstract record RuleSetResponse` as the base for all RuleSet resolution responses. `RuleSetResolved` and `RuleSetFailed` SHALL extend `RuleSetResponse`. The `IRuleSetResponse` marker interface SHALL be removed.
+
+#### Scenario: RuleSetResponse base type
+
+- **WHEN** a caller uses `Ask<RuleSetResponse>` to resolve a RuleSet
+- **THEN** the result SHALL be pattern-matched on `RuleSetResolved` or `RuleSetFailed`
+
+### Requirement: RuleSetFailed replaces RuleSetNotFound
+
+FunkArr.Messages.RuleSet SHALL define a `RuleSetFailed` sealed record containing `Cause (Exception)`, replacing `RuleSetNotFound(string TopicOrAlias)`. A custom `RuleSetNotFoundException` SHALL carry the `TopicOrAlias` information. `RuleSetFailed` SHALL extend `RuleSetResponse`.
+
+#### Scenario: RuleSet not found
+
+- **WHEN** the RuleSetResolver cannot find a matching ruleset for topic "Unknown Show"
+- **THEN** it SHALL return `RuleSetFailed(new RuleSetNotFoundException("Unknown Show"))`
+
+#### Scenario: RuleSet resolution error
+
+- **WHEN** the RuleSet resolution fails due to an unexpected exception
+- **THEN** the PipeTo failure handler SHALL return `RuleSetFailed(ex)` with the original exception
+
+#### Scenario: RuleSetNotFoundException carries topic
+
+- **WHEN** a `RuleSetFailed` is received with `Cause` of type `RuleSetNotFoundException`
+- **THEN** the exception SHALL expose `TopicOrAlias` property with the original search term
+
+### Requirement: RuleSetResolverState.Resolve returns typed response
+
+The `RuleSetResolverState.Resolve()` method SHALL return `RuleSetResponse` instead of `object`, enabling compile-time type safety.
+
+#### Scenario: Typed resolve return
+
+- **WHEN** `RuleSetResolverState.Resolve()` is called
+- **THEN** it SHALL return either `RuleSetResolved` or `RuleSetFailed`, both subtypes of `RuleSetResponse`

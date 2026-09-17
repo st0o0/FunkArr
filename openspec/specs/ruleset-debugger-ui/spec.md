@@ -125,6 +125,25 @@ Within an expanded rule trace, the identification section SHALL show: the strate
 - **WHEN** a rule's filters failed before identification
 - **THEN** the identification section shows "Not attempted" (filters failed first)
 
+### Requirement: Filter trace rendering
+The `FilterGroupTraceView` component SHALL use the shared `opSymbol()` function to display compact operator symbols instead of raw enum names in filter condition traces. The component SHALL use the shared `groupLabel()` function to display localized group headers instead of the raw `group.operator` string from the API.
+
+#### Scenario: Op symbols in trace
+- **WHEN** a filter trace shows a condition with op "greaterThan"
+- **THEN** the condition displays `>` instead of `greaterThan`
+
+#### Scenario: Localized group header in trace
+- **WHEN** a filter trace group has operator "all" and locale is DE
+- **THEN** the group header displays the localized label instead of raw "all"
+
+#### Scenario: Field labels in trace
+- **WHEN** a filter trace shows a condition with field "duration"
+- **THEN** the condition displays the localized field label instead of raw "duration"
+
+#### Scenario: Trace coloring preserved
+- **WHEN** filter trace conditions render with shared vocabulary
+- **THEN** pass/fail coloring and skip states SHALL be preserved unchanged
+
 ### Requirement: Debugger presentation
 Result candidate cards SHALL use Level 1 card styling (`surface-raised` background with `border-default` borders). Matched cards SHALL have a 4px left border in `status-ok`. Unmatched cards SHALL have a 4px left border in `border-default`. Individual result items within the results list SHALL use Level 2 card styling with hover effects for expand/collapse interaction. Filter condition rows SHALL alternate between `surface-base` and `surface-raised` backgrounds. The rule pipeline trace SHALL use indented sections with `border-l-2` left borders colored by outcome.
 

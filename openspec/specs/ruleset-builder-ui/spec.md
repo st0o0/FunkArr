@@ -7,18 +7,24 @@ Vue.js visual editor for creating and editing local rulesets with strategy picke
 ### Requirement: RuleSet builder page
 The Vue frontend SHALL render a ruleset builder page at route `/rulesets/new` for creating new rulesets and `/rulesets/:id/edit` for editing existing ones. The page SHALL use an asymmetric split-pane layout: the builder form on the left (wider) and the search + test panel on the right (narrower). The grid SHALL use `grid-cols-[1fr_380px]` within a `max-w-5xl mx-auto` container.
 
+In edit mode, the builder SHALL fetch data from `GET /api/rulesets/:id` (the structured Detail endpoint) instead of a separate raw endpoint. The response fields SHALL be mapped directly to the form state. The `strategy` field SHALL already be in wire enum format (e.g. `"seasonAndEpisodeNumber"`), matching the form's select option values.
+
 #### Scenario: Navigate to create new ruleset
 - **WHEN** the user navigates to `/rulesets/new`
 - **THEN** the builder form renders with empty fields and the search panel on the right
 
 #### Scenario: Navigate to edit existing ruleset
 - **WHEN** the user navigates to `/rulesets/tatort/edit`
-- **THEN** the builder form is populated with the existing ruleset data from the API
+- **THEN** the builder form is populated with the existing ruleset data from `GET /api/rulesets/tatort`
 
 #### Scenario: Asymmetric split-pane layout
 - **WHEN** the builder page renders
 - **THEN** the builder form occupies the left pane (fluid, `1fr`) and the search/test panel occupies the right pane (fixed `380px`)
 - **AND** the entire layout is constrained to `max-w-5xl mx-auto`
+
+#### Scenario: Strategy label uses shared utility
+- **WHEN** a rule's collapsed header shows the strategy label
+- **THEN** the label SHALL be produced by the shared `strategyLabel()` utility, not a local function
 
 ### Requirement: Identity section
 The builder form SHALL include an Identity section with fields for: `ruleSetId` (text input, kebab-case, required, only editable on create), `topic` (text input, required), `aliases` (dynamic list of text inputs with add/remove), `mediaType` (radio or select: "show" or "movie", required, defaults to "show"), `mediaName` (text input, required, auto-filled from topic but independently editable), `tvdbId` (number input, optional), `imdbId` (text input, optional), and `tmdbId` (number input, optional).
@@ -141,42 +147,38 @@ The rule editor SHALL include a strategy dropdown with options: `seasonAndEpisod
 - **THEN** the regex fields are cleared and the title rules builder appears
 
 ### Requirement: Title rules builder
-When a TitleConstruction strategy is selected (itemTitleExact or itemTitleIncludes), the rule editor SHALL show a title rules builder. The builder SHALL display an ordered list of title parts, each with a type picker (`static` or `regex`). Static parts SHALL have a `value` text input. Regex parts SHALL have `field` (dropdown: title, topic, channel, description), `pattern` (text input), and `captureGroup` (optional number input). The builder SHALL support adding and removing title parts.
+When a TitleConstruction strategy is selected (itemTitleExact or itemTitleIncludes), the rule editor SHALL show a title rules builder. Type picker options SHALL use localized labels from the shared `titlePartLabel()` utility. Field dropdown options for regex parts SHALL use localized labels from `fieldLabel()`. All option values SHALL remain as enum strings for serialization.
 
-#### Scenario: Add static title part
-- **WHEN** the user adds a title part with type "static" and value "Tatort: "
-- **THEN** the part appears in the ordered list
+#### Scenario: Localized type picker
+- **WHEN** the title part type picker renders with DE locale
+- **THEN** options display localized labels (e.g. "Statisch", "Regex") while values remain "static", "regex"
 
-#### Scenario: Add regex title part
-- **WHEN** the user adds a title part with type "regex", field "title", and pattern "Tatort:\\s*(.+)"
-- **THEN** the part appears with the regex configuration
-
-#### Scenario: Remove title part
-- **WHEN** the user clicks remove on a title part
-- **THEN** the part is removed from the list
+#### Scenario: Localized field picker in regex part
+- **WHEN** a regex title part's field dropdown renders with DE locale
+- **THEN** options display localized labels (e.g. "Titel", "Thema") while values remain "title", "topic"
 
 ### Requirement: Filter builder
-Each rule editor SHALL include a filter builder with three sections: ALL (all conditions must match), ANY (at least one must match), and NOT (none may match). Each section SHALL contain an ordered list of filter conditions. Each condition SHALL have a field dropdown (title, topic, channel, description, duration, timestamp), an operator dropdown (eq, contains, notContains, greaterThan, lessThan, regex), and a value text input. The builder SHALL support adding and removing conditions within each section.
+Each rule editor SHALL include a filter builder with three sections: ALL (all conditions must match), ANY (at least one must match), and NOT (none may match). Section headers SHALL display localized group labels from the shared `groupLabel()` utility instead of raw English strings. Each condition SHALL have a field dropdown showing localized field labels from `fieldLabel()` (with enum values preserved as option values), an operator dropdown showing localized operator labels from `opLabel()` (with enum values preserved as option values), and a value text input. The builder SHALL support adding and removing conditions within each section.
 
-#### Scenario: Add filter condition to ALL section
-- **WHEN** the user adds a condition to the ALL section with field "duration", op "greaterThan", value "60"
-- **THEN** the condition appears in the ALL section
+#### Scenario: Localized group headers
+- **WHEN** the filter builder renders with DE locale
+- **THEN** section headers display localized labels (e.g. "Alle erfüllt", "Mind. eins", "Keines") instead of "all", "any", "not"
 
-#### Scenario: Add filter condition to NOT section
-- **WHEN** the user adds a condition to the NOT section with field "title", op "contains", value "Trailer"
-- **THEN** the condition appears in the NOT section
+#### Scenario: Localized op dropdown
+- **WHEN** the operator dropdown renders with DE locale
+- **THEN** options display localized labels (e.g. "größer als", "enthält", "gleich") while option values remain enum strings ("greaterThan", "contains", "eq")
 
-#### Scenario: Add filter condition to ANY section
-- **WHEN** the user adds a condition to the ANY section with field "channel", op "eq", value "ARD"
-- **THEN** the condition appears in the ANY section
+#### Scenario: Localized field dropdown
+- **WHEN** the field dropdown renders with DE locale
+- **THEN** options display localized labels (e.g. "Titel", "Thema", "Dauer") while option values remain enum strings ("title", "topic", "duration")
+
+#### Scenario: Add filter condition
+- **WHEN** the user adds a condition to any section
+- **THEN** the condition appears with localized dropdowns
 
 #### Scenario: Remove filter condition
 - **WHEN** the user clicks remove on a filter condition
 - **THEN** the condition is removed from its section
-
-#### Scenario: Empty filter sections
-- **WHEN** a filter section has no conditions
-- **THEN** the section is omitted from the saved JSON
 
 ### Requirement: Save ruleset
 The builder SHALL include a "Save" button that serializes the form state to the RawRuleSet JSON format and sends it to the appropriate API endpoint. For new rulesets: `POST /api/rulesets`. For existing rulesets: `PUT /api/rulesets/:id`. On success, a toast notification SHALL be shown and the page SHALL navigate to the detail view at `/rulesets/:id`. On error, a toast notification SHALL display the error message.
@@ -212,7 +214,7 @@ The serialized JSON SHALL include `media.name` and `media.type` as required by t
 - **THEN** an error toast SHALL display the error message
 
 ### Requirement: Builder API client functions
-The frontend SHALL expose API client functions for the write endpoints: `createRuleSet(data)` calling `POST /api/rulesets`, `updateRuleSet(id, data)` calling `PUT /api/rulesets/:id`, and `deleteRuleSet(id)` calling `DELETE /api/rulesets/:id`. All functions SHALL throw on non-2xx responses.
+The frontend SHALL expose API client functions for the write endpoints: `createRuleSet(data)` calling `POST /api/rulesets`, `updateRuleSet(id, data)` calling `PUT /api/rulesets/:id`, and `deleteRuleSet(id)` calling `DELETE /api/rulesets/:id`. All functions SHALL throw on non-2xx responses. The `getRuleSetRaw(id)` function SHALL be removed — the Builder SHALL use `getRuleSetDetail(id)` instead.
 
 #### Scenario: Create function sends POST
 - **WHEN** `createRuleSet` is called with ruleset data
@@ -225,6 +227,10 @@ The frontend SHALL expose API client functions for the write endpoints: `createR
 #### Scenario: Delete function sends DELETE
 - **WHEN** `deleteRuleSet("my-show")` is called
 - **THEN** a DELETE request is sent to `/api/rulesets/my-show`
+
+#### Scenario: Raw function removed
+- **WHEN** the codebase is inspected
+- **THEN** `getRuleSetRaw()` SHALL NOT exist in the API client
 
 ### Requirement: Builder presentation
 The builder form SHALL use `surface-raised` cards for each section (Identity, Rules). Form inputs SHALL use `surface-elevated` backgrounds with `border-default` borders. Section headings SHALL use `text-sm font-semibold text-text-secondary` in normal case (not uppercase tracking-widest). The Save button SHALL use Primary button tier styling (amber accent background, black text). The Cancel button SHALL use Secondary button tier styling. All heading text and button labels SHALL use `$t()` translation calls.
