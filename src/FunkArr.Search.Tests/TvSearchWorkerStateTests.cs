@@ -8,7 +8,7 @@ namespace FunkArr.Search.Tests;
 
 public sealed class TvSearchWorkerStateTests
 {
-    private static readonly IActorRef NoSender = ActorRefs.Nobody;
+    private static readonly IActorRef _noSender = ActorRefs.Nobody;
 
     [Fact]
     public void Init_sets_all_fields_from_command()
@@ -17,7 +17,7 @@ public sealed class TvSearchWorkerStateTests
         var id = Guid.NewGuid();
         var cmd = new SearchSeries(id, "sonarr", "Tatort", 2, 5, 83214, "tt123", 25, 10);
 
-        state.Init(cmd, NoSender);
+        state.Init(cmd, _noSender);
 
         Assert.Equal(id, state.SearchId);
         Assert.Equal("sonarr", state.Source);
@@ -281,7 +281,7 @@ public sealed class TvSearchWorkerStateTests
         int? tvdbId = null, string? imdbId = null, string? query = null)
     {
         var state = new TvSearchWorkerState();
-        state.Init(new SearchSeries(Guid.NewGuid(), "sonarr", query, null, null, tvdbId, imdbId, null, null), NoSender);
+        state.Init(new SearchSeries(Guid.NewGuid(), "sonarr", query, null, null, tvdbId, imdbId, null, null), _noSender);
         return state;
     }
 

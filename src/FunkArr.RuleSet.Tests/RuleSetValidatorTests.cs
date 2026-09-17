@@ -4,7 +4,7 @@ public sealed class RuleSetValidatorTests
 {
     private readonly RuleSetValidator _validator = new();
 
-    private const string ValidRuleSetJson = """
+    private const string _validRuleSetJson = """
         {
           "topic": "Test Show",
           "aliases": [],
@@ -32,7 +32,7 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_valid_ruleset_returns_no_errors()
     {
-        var errors = _validator.Validate(ValidRuleSetJson);
+        var errors = _validator.Validate(_validRuleSetJson);
 
         Assert.Empty(errors);
     }

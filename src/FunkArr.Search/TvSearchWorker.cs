@@ -12,10 +12,10 @@ namespace FunkArr.Search;
 
 public sealed class TvSearchWorker : ReceiveActor
 {
-    private static readonly TimeSpan MediathekTimeout = TimeSpan.FromSeconds(15);
-    private static readonly TimeSpan RuleSetTimeout = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan ScoringTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan EnrichmentTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _mediathekTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan _ruleSetTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan _scoringTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly TvSearchWorkerState _state = new();
@@ -38,7 +38,7 @@ public sealed class TvSearchWorker : ReceiveActor
             if (hasQuery)
             {
                 _state.TryGetMediathekQuery(out var query);
-                _mediathekManager.Ask<QueryMediathekResponse>(query, MediathekTimeout)
+                _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
                     .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
                 Become(Querying);
             }
@@ -46,7 +46,7 @@ public sealed class TvSearchWorker : ReceiveActor
             {
                 if (_state.TryGetRuleSetRequest(out var request))
                 {
-                    _ruleSetResolver.Ask<ResolveRuleSetResponse>(request, RuleSetTimeout)
+                    _ruleSetResolver.Ask<ResolveRuleSetResponse>(request, _ruleSetTimeout)
                         .PipeTo(Self, failure: ex => new RuleSetFailed(ex));
                     Become(ResolvingRuleSet);
                 }
@@ -54,7 +54,7 @@ public sealed class TvSearchWorker : ReceiveActor
             else
             {
                 _state.TryGetMediathekQuery(out var query);
-                _mediathekManager.Ask<QueryMediathekResponse>(query, MediathekTimeout)
+                _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
                     .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
                 Become(Querying);
             }
@@ -69,13 +69,13 @@ public sealed class TvSearchWorker : ReceiveActor
 
             if (_state.TryGetRuleSetRequest(out var ruleSetRequest))
             {
-                _ruleSetResolver.Ask<ResolveRuleSetResponse>(ruleSetRequest, RuleSetTimeout)
+                _ruleSetResolver.Ask<ResolveRuleSetResponse>(ruleSetRequest, _ruleSetTimeout)
                     .PipeTo(Self, failure: ex => new RuleSetFailed(ex));
                 Become(ResolvingRuleSet);
             }
             else if (_state.TryGetScoringRequest(out var scoringRequest))
             {
-                _scoringManager.Ask<ScoreItemsResponse>(scoringRequest, ScoringTimeout)
+                _scoringManager.Ask<ScoreItemsResponse>(scoringRequest, _scoringTimeout)
                     .PipeTo(Self, failure: ex => new ScoringFailed(ex));
                 Become(Scoring);
             }
@@ -101,13 +101,13 @@ public sealed class TvSearchWorker : ReceiveActor
             if (_state.Sources.Length == 0)
             {
                 _state.TryGetMediathekQueryForTopic(resolved.Topic, out var query);
-                _mediathekManager.Ask<QueryMediathekResponse>(query, MediathekTimeout)
+                _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
                     .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
                 Become(Querying);
             }
             else if (_state.TryGetScoringRequest(out var scoringRequest))
             {
-                _scoringManager.Ask<ScoreItemsResponse>(scoringRequest, ScoringTimeout)
+                _scoringManager.Ask<ScoreItemsResponse>(scoringRequest, _scoringTimeout)
                     .PipeTo(Self, failure: ex => new ScoringFailed(ex));
                 Become(Scoring);
             }
@@ -127,7 +127,7 @@ public sealed class TvSearchWorker : ReceiveActor
 
             if (_state.TryGetEnrichmentRequest(out var enrichRequest))
             {
-                _metadataResolver.Ask<EnrichEpisodesResponse>(enrichRequest, EnrichmentTimeout)
+                _metadataResolver.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout)
                     .PipeTo(Self, failure: ex => new EnrichEpisodesFailed(ex));
                 Become(Enriching);
                 return;

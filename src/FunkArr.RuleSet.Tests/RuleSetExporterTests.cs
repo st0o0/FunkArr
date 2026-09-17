@@ -6,7 +6,7 @@ namespace FunkArr.RuleSet.Tests;
 
 public sealed class RuleSetExporterTests
 {
-    private const string ValidLocalJson = """
+    private const string _validLocalJson = """
         {
           "topic": "My Local Show",
           "aliases": [],
@@ -22,7 +22,7 @@ public sealed class RuleSetExporterTests
         }
         """;
 
-    private const string CommunityJson = """
+    private const string _communityJson = """
         {
           "topic": "Shared Show",
           "aliases": ["Alias One"],
@@ -44,7 +44,7 @@ public sealed class RuleSetExporterTests
         }
         """;
 
-    private const string LocalOverrideJson = """
+    private const string _localOverrideJson = """
         {
           "topic": "Shared Show",
           "rules": [
@@ -63,7 +63,7 @@ public sealed class RuleSetExporterTests
         }
         """;
 
-    private const string StandaloneLocalJson = """
+    private const string _standaloneLocalJson = """
         {
           "topic": "Standalone Show",
           "standalone": true,
@@ -79,7 +79,7 @@ public sealed class RuleSetExporterTests
         }
         """;
 
-    private const string LocalWithDisableJson = """
+    private const string _localWithDisableJson = """
         {
           "topic": "Shared Show",
           "disable": ["community-title"],
@@ -111,7 +111,7 @@ public sealed class RuleSetExporterTests
     [Fact]
     public void Export_standalone_local_returns_json()
     {
-        var (exporter, _) = CreateExporter(localJson: ValidLocalJson);
+        var (exporter, _) = CreateExporter(localJson: _validLocalJson);
 
         var result = exporter.Export("test-show");
 
@@ -125,7 +125,7 @@ public sealed class RuleSetExporterTests
     [Fact]
     public void Export_merged_contains_all_rules()
     {
-        var (exporter, _) = CreateExporter(communityJson: CommunityJson, localJson: LocalOverrideJson);
+        var (exporter, _) = CreateExporter(communityJson: _communityJson, localJson: _localOverrideJson);
 
         var result = exporter.Export("test-show");
 
@@ -140,7 +140,7 @@ public sealed class RuleSetExporterTests
     [Fact]
     public void Export_standalone_override_strips_standalone_field()
     {
-        var (exporter, _) = CreateExporter(communityJson: CommunityJson, localJson: StandaloneLocalJson);
+        var (exporter, _) = CreateExporter(communityJson: _communityJson, localJson: _standaloneLocalJson);
 
         var result = exporter.Export("test-show");
 
@@ -154,7 +154,7 @@ public sealed class RuleSetExporterTests
     [Fact]
     public void Export_strips_disable_field()
     {
-        var (exporter, _) = CreateExporter(communityJson: CommunityJson, localJson: LocalWithDisableJson);
+        var (exporter, _) = CreateExporter(communityJson: _communityJson, localJson: _localWithDisableJson);
 
         var result = exporter.Export("test-show");
 
@@ -168,7 +168,7 @@ public sealed class RuleSetExporterTests
     [Fact]
     public void Export_community_only_returns_error()
     {
-        var (exporter, _) = CreateExporter(communityJson: CommunityJson);
+        var (exporter, _) = CreateExporter(communityJson: _communityJson);
 
         var result = exporter.Export("test-show");
 

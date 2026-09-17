@@ -8,7 +8,7 @@ namespace FunkArr.Search.Tests;
 
 public sealed class MovieSearchWorkerStateTests
 {
-    private static readonly IActorRef NoSender = ActorRefs.Nobody;
+    private static readonly IActorRef _noSender = ActorRefs.Nobody;
 
     [Fact]
     public void Init_sets_all_fields_from_command()
@@ -17,7 +17,7 @@ public sealed class MovieSearchWorkerStateTests
         var id = Guid.NewGuid();
         var cmd = new SearchMovie(id, "radarr", "Das Boot", "tt0806910", 550, 25, 10);
 
-        state.Init(cmd, NoSender);
+        state.Init(cmd, _noSender);
 
         Assert.Equal(id, state.SearchId);
         Assert.Equal("radarr", state.Source);
@@ -196,7 +196,7 @@ public sealed class MovieSearchWorkerStateTests
         string? imdbId = null, int? tmdbId = null, string? query = null)
     {
         var state = new MovieSearchWorkerState();
-        state.Init(new SearchMovie(Guid.NewGuid(), "radarr", query, imdbId, tmdbId, null, null), NoSender);
+        state.Init(new SearchMovie(Guid.NewGuid(), "radarr", query, imdbId, tmdbId, null, null), _noSender);
         return state;
     }
 

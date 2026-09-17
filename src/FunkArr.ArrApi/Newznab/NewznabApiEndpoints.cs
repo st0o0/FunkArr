@@ -13,7 +13,7 @@ namespace FunkArr.ArrApi.Newznab;
 
 public static class NewznabApiEndpoints
 {
-    private const string ApplicationNzb = "application/x-nzb";
+    private const string _applicationNzb = "application/x-nzb";
 
     private static readonly XmlSerializerNamespaces _namespaces = new(
         [new XmlQualifiedName("newznab", NewznabNamespace.Uri)]);
@@ -130,7 +130,7 @@ public static class NewznabApiEndpoints
 
         return Results.File(
             Encoding.UTF8.GetBytes(Serialize(nzb)),
-            ApplicationNzb,
+            _applicationNzb,
             $"funkarr-{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}.nzb");
     }
 
