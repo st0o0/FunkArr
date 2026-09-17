@@ -7,7 +7,7 @@ public sealed record SearchMovie(
     string? ImdbId,
     int? TmdbId,
     int? Limit,
-    int? Offset) : IWithSearchId;
+    int? Offset) : SearchRequest(SearchId, Source, Query, Limit, Offset);
 
 public abstract record SearchMovieResponse;
 

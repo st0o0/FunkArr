@@ -9,16 +9,12 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.Scoring.Tests;
 
-public sealed class ScoringHistoryWorkerTests : TestKit
+public sealed class ScoringHistoryWorkerTests() : TestKit(_persistenceConfig)
 {
     private static readonly Config _persistenceConfig = ConfigurationFactory.ParseString("""
         akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
         akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.inmem"
         """);
-
-    public ScoringHistoryWorkerTests() : base(_persistenceConfig)
-    {
-    }
 
     private static string UniqueId() => Guid.NewGuid().ToString("N")[..12];
 

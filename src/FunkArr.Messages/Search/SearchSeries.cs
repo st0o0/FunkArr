@@ -9,7 +9,7 @@ public sealed record SearchSeries(
     int? TvdbId,
     string? ImdbId,
     int? Limit,
-    int? Offset) : IWithSearchId;
+    int? Offset) : SearchRequest(SearchId, Source, Query, Limit, Offset);
 
 public abstract record SearchSeriesResponse;
 
