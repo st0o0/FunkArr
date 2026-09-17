@@ -20,6 +20,11 @@
             "field": "duration",
             "op": "greaterThan",
             "value": "18"
+          },
+          {
+            "field": "duration",
+            "op": "lessThan",
+            "value": "60"
           }
         ]
       },

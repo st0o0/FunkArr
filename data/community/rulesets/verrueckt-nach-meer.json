@@ -10,8 +10,25 @@
   "confidence": 1,
   "rules": [
     {
-      "id": "title-exact",
+      "id": "season-episode",
       "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "32"
+          }
+        ]
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=\\(S)(\\d{2,4})(?=/E)",
+      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "id": "title-exact",
+      "priority": 10,
       "filters": {
         "all": [
           {
@@ -31,8 +48,8 @@
       ]
     },
     {
-      "id": "title-exact-p10",
-      "priority": 10,
+      "id": "title-exact-p20",
+      "priority": 20,
       "filters": {
         "all": [
           {

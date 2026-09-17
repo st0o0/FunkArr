@@ -18,12 +18,17 @@
             "field": "duration",
             "op": "greaterThan",
             "value": "50"
+          },
+          {
+            "field": "topic",
+            "op": "eq",
+            "value": "Frühling"
           }
         ]
       },
       "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "seasonRegex": "(?<=\\(S)(\\d{2,4})(?=/E)",
+      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))",
       "titleRules": []
     },
     {
@@ -35,6 +40,11 @@
             "field": "duration",
             "op": "greaterThan",
             "value": "50"
+          },
+          {
+            "field": "topic",
+            "op": "eq",
+            "value": "Frühling"
           }
         ]
       },

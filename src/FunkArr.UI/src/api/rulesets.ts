@@ -306,7 +306,7 @@ export async function testRuleSet(config: TestScoringRequest['config'], candidat
   const res = await fetch('/api/rulesets/test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ config, candidates }),
+    body: JSON.stringify({ defaultConfidence: config.defaultConfidence, rules: config.rules, candidates }),
   })
   if (!res.ok) {
     throw new Error(`${res.status} ${res.statusText}`)

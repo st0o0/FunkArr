@@ -16,7 +16,7 @@
           {
             "field": "duration",
             "op": "greaterThan",
-            "value": "50"
+            "value": "40"
           },
           {
             "field": "channel",

@@ -283,23 +283,23 @@
         </section>
 
         <div v-if="saveError" class="text-status-fail text-sm">{{ saveError }}</div>
-      </div>
 
-      <!-- Sticky save bar -->
-      <div class="sticky bottom-0 bg-surface-base/95 backdrop-blur-sm border-t border-border-default py-3 flex items-center gap-3 z-10">
-        <button
-          class="px-3 py-1.5 bg-accent text-black font-medium rounded-md hover:bg-accent-dim text-sm transition-colors disabled:opacity-50"
-          :disabled="saving"
-          @click="handleSave"
-        >
-          {{ saving ? $t('builder.saving') : $t('builder.save') }}
-        </button>
-        <router-link
-          :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
-          class="px-3 py-1.5 bg-surface-elevated text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
-        >
-          {{ $t('builder.cancelButton') }}
-        </router-link>
+        <!-- Save bar -->
+        <div class="sticky bottom-0 bg-surface-base/95 backdrop-blur-sm border-t border-border-default py-3 flex items-center gap-3 z-10">
+          <button
+            class="px-3 py-1.5 bg-accent text-black font-medium rounded-md hover:bg-accent-dim text-sm transition-colors disabled:opacity-50"
+            :disabled="saving"
+            @click="handleSave"
+          >
+            {{ saving ? $t('builder.saving') : $t('builder.save') }}
+          </button>
+          <router-link
+            :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
+            class="px-3 py-1.5 bg-surface-elevated text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
+          >
+            {{ $t('builder.cancelButton') }}
+          </router-link>
+        </div>
       </div>
 
       <!-- Right pane: Debugger -->

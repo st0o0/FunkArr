@@ -9,7 +9,7 @@
   "confidence": 1,
   "rules": [
     {
-      "id": "title-exact",
+      "id": "absolute-episode",
       "priority": 0,
       "filters": {
         "all": [
@@ -20,24 +20,24 @@
           }
         ]
       },
-      "strategy": "itemTitleExact",
-      "titleRules": [
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "^(.+?)\\s+und\\s+"
-        },
-        {
-          "type": "static",
-          "field": "title",
-          "value": " & "
-        },
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "\\s+und\\s+([^|]+?)(?:\\s*\\||$)"
-        }
-      ]
+      "strategy": "byAbsoluteEpisodeNumber",
+      "episodeRegex": "\\((\\d{1,5})\\)",
+      "titleRules": []
+    },
+    {
+      "id": "airdate",
+      "priority": 10,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "31"
+          }
+        ]
+      },
+      "strategy": "itemTitleEqualsAirdate",
+      "titleRules": []
     }
   ]
 }

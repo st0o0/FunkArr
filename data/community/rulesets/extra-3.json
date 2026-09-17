@@ -17,7 +17,7 @@
           {
             "field": "duration",
             "op": "greaterThan",
-            "value": "31"
+            "value": "25"
           }
         ]
       },

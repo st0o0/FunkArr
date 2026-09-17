@@ -26,8 +26,24 @@
       "titleRules": []
     },
     {
-      "id": "absolute-episode-p1",
+      "id": "absolute-episode-prefix",
       "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "15"
+          }
+        ]
+      },
+      "strategy": "byAbsoluteEpisodeNumber",
+      "episodeRegex": "^(\\d{3,5})\\.",
+      "titleRules": []
+    },
+    {
+      "id": "absolute-episode-folge",
+      "priority": 2,
       "filters": {
         "all": [
           {

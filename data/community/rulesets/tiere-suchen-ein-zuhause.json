@@ -9,8 +9,23 @@
   "confidence": 1,
   "rules": [
     {
-      "id": "title-includes",
+      "id": "airdate",
       "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ]
+      },
+      "strategy": "itemTitleEqualsAirdate",
+      "titleRules": []
+    },
+    {
+      "id": "title-includes",
+      "priority": 10,
       "filters": {
         "all": [
           {

@@ -46,6 +46,18 @@
             "op": "greaterThan",
             "value": "35"
           }
+        ],
+        "not": [
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Audiodeskription"
+          },
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Gebärdensprache"
+          }
         ]
       },
       "strategy": "itemTitleIncludes",
@@ -57,7 +69,7 @@
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+          "pattern": "^(.*?)$"
         }
       ]
     }

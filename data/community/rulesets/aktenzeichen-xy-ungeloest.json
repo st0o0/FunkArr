@@ -10,7 +10,7 @@
   "confidence": 1,
   "rules": [
     {
-      "id": "airdate",
+      "id": "season-episode",
       "priority": 0,
       "filters": {
         "all": [
@@ -18,6 +18,33 @@
             "field": "duration",
             "op": "greaterThan",
             "value": "59"
+          },
+          {
+            "field": "topic",
+            "op": "contains",
+            "value": "Aktenzeichen"
+          }
+        ]
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=\\(S)(\\d{4})(?=/E)",
+      "episodeRegex": "(?<=/E)(\\d{1,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "id": "airdate",
+      "priority": 10,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "59"
+          },
+          {
+            "field": "topic",
+            "op": "contains",
+            "value": "Aktenzeichen"
           }
         ]
       },
@@ -31,14 +58,19 @@
       ]
     },
     {
-      "id": "airdate-p1",
-      "priority": 1,
+      "id": "airdate-p20",
+      "priority": 20,
       "filters": {
         "all": [
           {
             "field": "duration",
             "op": "greaterThan",
             "value": "59"
+          },
+          {
+            "field": "topic",
+            "op": "contains",
+            "value": "Aktenzeichen"
           }
         ]
       },

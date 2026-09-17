@@ -35,7 +35,7 @@ export function useMediathekAutoFetch(topic: Ref<string>) {
   watch(topic, (val) => {
     if (timeout) clearTimeout(timeout)
     timeout = setTimeout(() => fetchCandidates(val), 800)
-  })
+  }, { immediate: true })
 
   return { candidates, loading, error, refresh }
 }

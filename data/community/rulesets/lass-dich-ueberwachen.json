@@ -16,30 +16,28 @@
           {
             "field": "duration",
             "op": "greaterThan",
-            "value": "63"
+            "value": "55"
           }
         ]
       },
       "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
-      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "seasonRegex": "(?<=\\(S)(\\d{2,4})(?=/E)",
+      "episodeRegex": "(?<=/E)(\\d{2,4})(?=\\))",
       "titleRules": []
     },
     {
-      "id": "season-episode-p99",
-      "priority": 99,
+      "id": "airdate",
+      "priority": 10,
       "filters": {
         "all": [
           {
-            "field": "description",
-            "op": "contains",
-            "value": "im Herbst 2024 ist das Internet voll"
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "55"
           }
         ]
       },
-      "strategy": "seasonAndEpisodeNumber",
-      "seasonRegex": "S2024",
-      "episodeRegex": "E02",
+      "strategy": "itemTitleEqualsAirdate",
       "titleRules": []
     }
   ]

@@ -10,26 +10,20 @@
   "confidence": 1,
   "rules": [
     {
-      "id": "title-exact",
+      "id": "airdate",
       "priority": 0,
-      "strategy": "itemTitleExact",
-      "titleRules": [
-        {
-          "type": "regex",
-          "field": "title",
-          "pattern": "(?<=Henry: )(.*?)(?= \\| Unser Sandmännchen)"
-        }
-      ]
+      "strategy": "itemTitleEqualsAirdate",
+      "titleRules": []
     },
     {
-      "id": "title-exact-p1",
-      "priority": 1,
+      "id": "title-exact",
+      "priority": 10,
       "strategy": "itemTitleExact",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "Henry: (.*)"
+          "pattern": "(?<=:\\s)(.+?)(?:\\s*\\|.*|$)"
         }
       ]
     }
