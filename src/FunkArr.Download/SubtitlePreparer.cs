@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Logging;
+
 namespace FunkArr.Download;
 
-internal sealed class SubtitlePreparer(HttpClient http) : ISubtitlePreparer
+internal sealed class SubtitlePreparer(HttpClient http, ILogger<SubtitlePreparer> logger) : ISubtitlePreparer
 {
     public async Task<string?> PrepareAsync(string url, string outputDirectory, CancellationToken ct)
     {
@@ -13,8 +15,9 @@ internal sealed class SubtitlePreparer(HttpClient http) : ISubtitlePreparer
 
             content = await response.Content.ReadAsStringAsync(ct);
         }
-        catch (Exception) when (!ct.IsCancellationRequested)
+        catch (Exception ex) when (!ct.IsCancellationRequested)
         {
+            logger.LogWarning(ex, "Failed to download subtitle from {Url}", url);
             return null;
         }
 
