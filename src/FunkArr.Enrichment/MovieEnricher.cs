@@ -2,10 +2,9 @@ using FunkArr.Messages.Enrichment;
 
 namespace FunkArr.Enrichment;
 
-public sealed class MovieEnricher
+public static class MovieEnricher
 {
-    public EnrichedMovie[] Resolve(
-        TmdbMovie movie, string[] alternativeTitles, MovieCandidate[] candidates)
+    public static EnrichedMovie[] Resolve(TmdbMovie movie, string[] alternativeTitles, MovieCandidate[] candidates)
     {
         var year = ParseYear(movie.ReleaseDate);
         var results = new List<EnrichedMovie>();

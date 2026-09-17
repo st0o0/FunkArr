@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -43,7 +44,11 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
 
     public async Task<TmdbMovieData?> FindByImdbIdAsync(string imdbId)
     {
-        var url = $"find/{imdbId}?api_key={ApiKey()}&external_source=imdb_id";
+        var url = QueryHelpers.AddQueryString($"find/{imdbId}", new Dictionary<string, string?>
+        {
+            ["api_key"] = ApiKey(),
+            ["external_source"] = "imdb_id",
+        });
         var result = await FetchAsync<TmdbFindResponse>(url);
         var movie = result?.MovieResults is { Length: > 0 } ? result.MovieResults[0] : null;
 
@@ -68,13 +73,13 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
 
     private async Task<TmdbMovie?> FetchMovieAsync(int tmdbId)
     {
-        var url = $"movie/{tmdbId}?api_key={ApiKey()}";
+        var url = QueryHelpers.AddQueryString($"movie/{tmdbId}", "api_key", ApiKey());
         return await FetchAsync<TmdbMovie>(url);
     }
 
     private async Task<string[]> FetchAlternativeTitlesAsync(int tmdbId)
     {
-        var url = $"movie/{tmdbId}/alternative_titles?api_key={ApiKey()}";
+        var url = QueryHelpers.AddQueryString($"movie/{tmdbId}/alternative_titles", "api_key", ApiKey());
         var result = await FetchAsync<TmdbAlternativeTitlesResponse>(url);
         return result?.Titles?.Select(t => t.Title).Where(t => t is not null).Cast<string>().ToArray() ?? [];
     }

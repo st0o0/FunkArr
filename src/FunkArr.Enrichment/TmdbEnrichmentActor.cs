@@ -7,13 +7,11 @@ namespace FunkArr.Enrichment;
 internal sealed class TmdbEnrichmentActor : ReceiveActor
 {
     private readonly TmdbClient _tmdbClient;
-    private readonly MovieEnricher _movieEnricher;
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
-    public TmdbEnrichmentActor(TmdbClient tmdbClient, MovieEnricher movieEnricher)
+    public TmdbEnrichmentActor(TmdbClient tmdbClient)
     {
         _tmdbClient = tmdbClient;
-        _movieEnricher = movieEnricher;
 
         ReceiveAsync<EnrichMovies>(Handle);
     }
@@ -39,7 +37,7 @@ internal sealed class TmdbEnrichmentActor : ReceiveActor
                 return;
             }
 
-            var enriched = _movieEnricher.Resolve(data.Movie, data.AltTitles, msg.Candidates);
+            var enriched = MovieEnricher.Resolve(data.Movie, data.AltTitles, msg.Candidates);
             Sender.Tell(new EnrichMoviesCompleted(enriched));
         }
         catch (Exception ex)

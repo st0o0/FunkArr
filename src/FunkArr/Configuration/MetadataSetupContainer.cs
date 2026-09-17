@@ -29,8 +29,5 @@ public sealed class MetadataSetupContainer : IServiceSetupContainer
             client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
         })
         .AddStandardResilienceHandler();
-
-        services.AddSingleton<EpisodeEnricher>();
-        services.AddSingleton<MovieEnricher>();
     }
 }

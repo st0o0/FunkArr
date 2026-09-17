@@ -3,12 +3,12 @@ using FunkArr.Messages.Enrichment;
 
 namespace FunkArr.Enrichment;
 
-public sealed class EpisodeEnricher
+public static class EpisodeEnricher
 {
     private const float DefaultThreshold = 0.7f;
     private const int DefaultAirdateTolerance = 7;
 
-    public EnrichedEpisode[] Resolve(TvdbEpisode[] tvdbEpisodes, EpisodeCandidate[] candidates)
+    public static EnrichedEpisode[] Resolve(TvdbEpisode[] tvdbEpisodes, EpisodeCandidate[] candidates)
     {
         var results = new List<EnrichedEpisode>();
 
@@ -24,7 +24,7 @@ public sealed class EpisodeEnricher
         return results.ToArray();
     }
 
-    private EnrichedEpisode? ResolveCandidate(EpisodeCandidate candidate, TvdbEpisode[] episodes)
+    private static EnrichedEpisode? ResolveCandidate(EpisodeCandidate candidate, TvdbEpisode[] episodes)
     {
         if (candidate.ExistingSeason is not null && candidate.ExistingEpisode is not null)
         {

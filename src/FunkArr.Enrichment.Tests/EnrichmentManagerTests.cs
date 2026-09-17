@@ -8,13 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FunkArr.Enrichment.Tests;
 
-public sealed class EnrichmentManagerTests : TestKit
+public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
 {
-    public EnrichmentManagerTests()
-        : base(CreateConfig())
-    {
-    }
-
     private static Akka.Actor.Setup.ActorSystemSetup CreateConfig()
     {
         var services = new ServiceCollection();
@@ -27,8 +22,6 @@ public sealed class EnrichmentManagerTests : TestKit
         services.AddMemoryCache();
         services.AddHttpClient<TvdbClient>();
         services.AddHttpClient<TmdbClient>();
-        services.AddSingleton<EpisodeEnricher>();
-        services.AddSingleton<MovieEnricher>();
         var provider = services.BuildServiceProvider();
 
         return Akka.Actor.Setup.ActorSystemSetup.Create(DependencyResolverSetup.Create(provider));

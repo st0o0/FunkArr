@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -48,7 +49,10 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
 
         while (true)
         {
-            var url = $"series/{seriesId}/episodes/default?page={page}";
+            var url = QueryHelpers.AddQueryString(
+                $"series/{seriesId}/episodes/default",
+                "page",
+                page.ToString(CultureInfo.InvariantCulture));
 
             var response = await SendAuthenticated(url);
             if (!response.IsSuccessStatusCode)

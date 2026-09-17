@@ -7,13 +7,11 @@ namespace FunkArr.Enrichment;
 internal sealed class TvdbEnrichmentActor : ReceiveActor
 {
     private readonly TvdbClient _tvdbClient;
-    private readonly EpisodeEnricher _episodeEnricher;
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
-    public TvdbEnrichmentActor(TvdbClient tvdbClient, EpisodeEnricher episodeEnricher)
+    public TvdbEnrichmentActor(TvdbClient tvdbClient)
     {
         _tvdbClient = tvdbClient;
-        _episodeEnricher = episodeEnricher;
 
         ReceiveAsync<EnrichEpisodes>(Handle);
     }
@@ -28,7 +26,7 @@ internal sealed class TvdbEnrichmentActor : ReceiveActor
                 ? episodes.Where(e => e.SeasonNumber == msg.Season.Value).ToArray()
                 : episodes;
 
-            var enriched = _episodeEnricher.Resolve(filtered, msg.Candidates);
+            var enriched = EpisodeEnricher.Resolve(filtered, msg.Candidates);
             Sender.Tell(new EnrichEpisodesCompleted(enriched));
         }
         catch (Exception ex)
