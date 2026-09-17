@@ -12,6 +12,7 @@
     "system": "System",
     "recentDownloads": "Recent Downloads",
     "storage": "Storage",
+    "rulesets": "Rulesets",
     "downloading": "downloading",
     "queued": "queued",
     "view": "View",
@@ -123,11 +124,12 @@
     "updated": "Updated {date}",
     "matchingRules": "Matching Rules",
     "defaultConfidence": "Default confidence",
-    "noRulesDefined": "No rules defined.",
+    "noRulesDefined": "No rules defined",
+    "noRulesDescription": "Add matching rules via the editor to start identifying episodes.",
     "season": "Season",
     "episode": "Episode",
-    "matchMode": "Match Mode",
     "titleParts": "Title Parts",
+    "titlePartsCount": "Title Rule(s)",
     "filters": "Filters",
     "exportForCommunity": "Export for Community",
     "exporting": "Exporting...",
@@ -247,7 +249,8 @@
   "scoring": {
     "historyTitle": "Scoring History",
     "detailTitle": "Scoring Detail",
-    "noHistory": "No scoring history.",
+    "noHistory": "No scoring history",
+    "noHistoryDescription": "History appears after Sonarr or Radarr trigger a search against this ruleset.",
     "totalRuns": "{count} total scoring runs",
     "sourceColumn": "Source",
     "queryColumn": "Query",
@@ -291,6 +294,33 @@
     "passed": "(passed)",
     "failed": "(failed)",
     "skipped": "Skipped"
+  },
+  "rule": {
+    "op": {
+      "eq": "equals",
+      "contains": "contains",
+      "notContains": "not contains",
+      "greaterThan": "greater than",
+      "lessThan": "less than",
+      "regex": "regex"
+    },
+    "group": {
+      "all": "All match",
+      "any": "Any matches",
+      "not": "None match"
+    },
+    "field": {
+      "title": "Title",
+      "topic": "Topic",
+      "channel": "Channel",
+      "description": "Description",
+      "duration": "Duration",
+      "timestamp": "Timestamp"
+    },
+    "titlePart": {
+      "static": "Static",
+      "regex": "Regex"
+    }
   },
   "common": {
     "loading": "Loading...",

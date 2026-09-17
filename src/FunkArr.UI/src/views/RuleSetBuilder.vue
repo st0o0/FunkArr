@@ -161,7 +161,7 @@
               >
                 <div class="flex items-baseline gap-3">
                   <span class="font-mono text-sm font-medium text-text-primary">{{ rule.id || $t('builder.noId') }}</span>
-                  <span class="text-text-secondary text-xs">{{ strategyLabel(rule.strategy) }}</span>
+                  <span class="text-text-secondary text-xs">{{ strategyLabelLocal(rule.strategy) }}</span>
                   <span class="text-text-secondary text-xs">prio {{ rule.priority }}</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -225,18 +225,18 @@
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.titleRules') }}</label>
                   <div v-for="(tp, tIdx) in rule.titleRules" :key="tIdx" class="flex items-start gap-2 p-2 bg-surface-elevated/50 rounded-lg">
                     <select v-model="tp.type" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                      <option value="static">{{ $t('builder.titlePartStatic') }}</option>
-                      <option value="regex">{{ $t('builder.titlePartRegex') }}</option>
+                      <option value="static">{{ titlePartLabel('static', t) }}</option>
+                      <option value="regex">{{ titlePartLabel('regex', t) }}</option>
                     </select>
                     <template v-if="tp.type === 'static'">
                       <input v-model="tp.value" type="text" placeholder="static text" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                     </template>
                     <template v-else>
                       <select v-model="tp.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                        <option value="title">title</option>
-                        <option value="topic">topic</option>
-                        <option value="channel">channel</option>
-                        <option value="description">description</option>
+                        <option value="title">{{ fieldLabel('title', t) }}</option>
+                        <option value="topic">{{ fieldLabel('topic', t) }}</option>
+                        <option value="channel">{{ fieldLabel('channel', t) }}</option>
+                        <option value="description">{{ fieldLabel('description', t) }}</option>
                       </select>
                       <input v-model="tp.pattern" type="text" placeholder="regex pattern" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                       <input v-model.number="tp.captureGroup" type="number" placeholder="grp" class="w-14 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
@@ -251,26 +251,26 @@
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.filtersLabel') }}</label>
                   <div v-for="section in (['all', 'any', 'not'] as const)" :key="section" class="space-y-1">
                     <div class="flex items-center justify-between">
-                      <span class="text-sm font-semibold text-text-body">{{ section }}</span>
+                      <span class="text-sm font-semibold text-text-body">{{ groupLabel(section, t) }}</span>
                       <button class="text-xs text-text-secondary hover:text-text-body transition-colors" @click="addFilterCondition(rule, section)">{{ $t('builder.addFilter') }}</button>
                     </div>
-                    <div v-if="rule.filters[section].length === 0" class="text-text-secondary text-xs pl-2">{{ $t('builder.noConditions') }}</div>
+                    <div v-if="rule.filters[section].length === 0 && section === 'all'" class="text-text-secondary text-xs pl-2">{{ $t('builder.noConditions') }}</div>
                     <div v-for="(cond, cIdx) in rule.filters[section]" :key="cIdx" class="flex items-center gap-1.5">
                       <select v-model="cond.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                        <option value="title">title</option>
-                        <option value="topic">topic</option>
-                        <option value="channel">channel</option>
-                        <option value="description">description</option>
-                        <option value="duration">duration</option>
-                        <option value="timestamp">timestamp</option>
+                        <option value="title">{{ fieldLabel('title', t) }}</option>
+                        <option value="topic">{{ fieldLabel('topic', t) }}</option>
+                        <option value="channel">{{ fieldLabel('channel', t) }}</option>
+                        <option value="description">{{ fieldLabel('description', t) }}</option>
+                        <option value="duration">{{ fieldLabel('duration', t) }}</option>
+                        <option value="timestamp">{{ fieldLabel('timestamp', t) }}</option>
                       </select>
                       <select v-model="cond.op" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                        <option value="eq">eq</option>
-                        <option value="contains">contains</option>
-                        <option value="notContains">notContains</option>
-                        <option value="greaterThan">greaterThan</option>
-                        <option value="lessThan">lessThan</option>
-                        <option value="regex">regex</option>
+                        <option value="eq">{{ opLabel('eq', t) }}</option>
+                        <option value="contains">{{ opLabel('contains', t) }}</option>
+                        <option value="notContains">{{ opLabel('notContains', t) }}</option>
+                        <option value="greaterThan">{{ opLabel('greaterThan', t) }}</option>
+                        <option value="lessThan">{{ opLabel('lessThan', t) }}</option>
+                        <option value="regex">{{ opLabel('regex', t) }}</option>
                       </select>
                       <input v-model="cond.value" type="text" placeholder="value" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                       <button class="text-status-fail/60 hover:text-status-fail text-xs transition-colors" @click="rule.filters[section].splice(cIdx, 1)">×</button>
@@ -282,23 +282,24 @@
           </div>
         </section>
 
-        <!-- Save button -->
-        <div class="flex items-center gap-3">
-          <button
-            class="px-3 py-1.5 bg-accent text-black font-medium rounded-md hover:bg-accent-dim text-sm transition-colors disabled:opacity-50"
-            :disabled="saving"
-            @click="handleSave"
-          >
-            {{ saving ? $t('builder.saving') : $t('builder.save') }}
-          </button>
-          <router-link
-            :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
-            class="px-3 py-1.5 bg-surface-elevated text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
-          >
-            {{ $t('builder.cancelButton') }}
-          </router-link>
-        </div>
         <div v-if="saveError" class="text-status-fail text-sm">{{ saveError }}</div>
+      </div>
+
+      <!-- Sticky save bar -->
+      <div class="sticky bottom-0 bg-surface-base/95 backdrop-blur-sm border-t border-border-default py-3 flex items-center gap-3 z-10">
+        <button
+          class="px-3 py-1.5 bg-accent text-black font-medium rounded-md hover:bg-accent-dim text-sm transition-colors disabled:opacity-50"
+          :disabled="saving"
+          @click="handleSave"
+        >
+          {{ saving ? $t('builder.saving') : $t('builder.save') }}
+        </button>
+        <router-link
+          :to="isEditMode ? `/rulesets/${editId}` : '/rulesets'"
+          class="px-3 py-1.5 bg-surface-elevated text-text-body rounded-md hover:bg-surface-overlay text-sm transition-colors border border-border-default"
+        >
+          {{ $t('builder.cancelButton') }}
+        </router-link>
       </div>
 
       <!-- Right pane: Debugger -->
@@ -316,10 +317,12 @@ import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
-  getRuleSetRaw, createRuleSet, updateRuleSet, ValidationFailedError,
+  getRuleSetDetail, createRuleSet, updateRuleSet, ValidationFailedError,
   type RuleSetWriteRequest, type RuleSetWriteRule, type FilterConditionInput, type TitleRuleInput,
   type ValidationError,
 } from '../api/rulesets'
+import { strategyLabel } from '../utils/strategy'
+import { opLabel, groupLabel, fieldLabel, titlePartLabel } from '../utils/ruleVocabulary'
 import LiveMatchPreview from '../components/LiveMatchPreview.vue'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
@@ -454,15 +457,8 @@ function addFilterCondition(rule: FormRule, section: 'all' | 'any' | 'not') {
   rule.filters[section].push({ field: 'title', op: 'contains', value: '' })
 }
 
-function strategyLabel(strategy: string): string {
-  switch (strategy) {
-    case 'seasonAndEpisodeNumber': return t('builder.seasonEpisodeNumber')
-    case 'byAbsoluteEpisodeNumber': return t('builder.absoluteEpisodeNumber')
-    case 'itemTitleExact': return t('builder.titleExactMatch')
-    case 'itemTitleIncludes': return t('builder.titleIncludes')
-    case 'itemTitleEqualsAirdate': return t('builder.titleEqualsAirdate')
-    default: return strategy || '(none)'
-  }
+function strategyLabelLocal(strategy: string): string {
+  return strategyLabel(strategy, t)
 }
 
 function serializeForm(): RuleSetWriteRequest {
@@ -569,20 +565,20 @@ onMounted(async () => {
 
   loadingDetail.value = true
   try {
-    const raw = await getRuleSetRaw(editId)
+    const detail = await getRuleSetDetail(editId)
     form.ruleSetId = editId
-    form.topic = raw.topic || ''
-    form.aliases = raw.aliases ? [...raw.aliases] : []
-    form.mediaType = raw.media?.type ?? 'show'
-    form.mediaName = raw.media?.name ?? raw.topic ?? ''
-    mediaNameEdited.value = (raw.media?.name ?? '') !== (raw.topic ?? '')
-    isCommunitySource.value = !raw.standalone
-    form.tvdbId = raw.media?.tvdbId ?? null
-    form.imdbId = raw.media?.imdbId ?? ''
-    form.tmdbId = raw.media?.tmdbId ?? null
-    form.confidence = raw.confidence ?? 0.8
+    form.topic = detail.identity.topic || ''
+    form.aliases = detail.identity.aliases ? [...detail.identity.aliases] : []
+    form.mediaType = 'show'
+    form.mediaName = detail.identity.topic || ''
+    mediaNameEdited.value = false
+    isCommunitySource.value = detail.source.communityPath != null
+    form.tvdbId = detail.identity.tvdbId ?? null
+    form.imdbId = detail.identity.imdbId ?? ''
+    form.tmdbId = detail.identity.tmdbId ?? null
+    form.confidence = detail.defaultConfidence ?? 0.8
 
-    form.rules = (raw.rules || []).map((r: RuleSetWriteRule, idx: number) => ({
+    form.rules = (detail.rules || []).map((r, idx) => ({
       id: r.id || `rule-${idx + 1}`,
       priority: r.priority ?? idx * 10,
       confidence: r.confidence ?? null,

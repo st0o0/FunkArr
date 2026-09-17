@@ -44,20 +44,22 @@
             {{ tab.label }} ({{ tab.count }})
           </button>
         </div>
-        <span class="text-text-muted">|</span>
-        <div class="flex items-center gap-1">
-          <button
-            v-for="tab in sourceTabs"
-            :key="tab.label"
-            class="px-2.5 py-1 text-xs rounded-md transition-colors"
-            :class="sourceFilter === tab.value
-              ? 'bg-accent/15 text-accent font-medium'
-              : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
-            @click="sourceFilter = tab.value"
-          >
-            {{ tab.label }} ({{ tab.count }})
-          </button>
-        </div>
+        <template v-if="hasMultipleSources">
+          <span class="text-text-muted">|</span>
+          <div class="flex items-center gap-1">
+            <button
+              v-for="tab in sourceTabs"
+              :key="tab.label"
+              class="px-2.5 py-1 text-xs rounded-md transition-colors"
+              :class="sourceFilter === tab.value
+                ? 'bg-accent/15 text-accent font-medium'
+                : 'text-text-secondary hover:text-text-body hover:bg-surface-elevated'"
+              @click="sourceFilter = tab.value"
+            >
+              {{ tab.label }} ({{ tab.count }})
+            </button>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -103,9 +105,11 @@
           </div>
           <div class="flex items-center gap-1.5 shrink-0 ml-3">
             <span
+              v-if="rs.mediaType === MediaType.Movie"
               class="text-[11px] font-medium px-1.5 py-0.5 rounded bg-surface-overlay/60 text-text-body"
             >{{ mediaTypeLabel(rs) }}</span>
             <span
+              v-if="hasMultipleSources"
               class="text-[11px] font-medium px-1.5 py-0.5 rounded"
               :class="{
                 'bg-surface-overlay/60 text-text-body': rs.sourceType === SourceType.Community,
@@ -119,7 +123,7 @@
           {{ rs.topic }}
         </div>
         <div v-if="rs.aliases.length > 0" class="text-xs text-text-secondary mb-0.5">
-          {{ rs.aliases.join(', ') }}
+          {{ rs.aliases.slice(0, 2).join(', ') }}<span v-if="rs.aliases.length > 2" class="text-text-muted"> +{{ rs.aliases.length - 2 }}</span>
         </div>
         <div class="flex items-center gap-2 text-xs text-text-secondary mt-1">
           <span class="text-text-body">{{ $t('rulesets.ruleCount', { count: rs.ruleCount }) }}</span>
@@ -185,6 +189,11 @@ const typeTabs = computed(() => {
     { label: t('rulesets.shows'), value: MediaType.Show as number | null, count: shows },
     { label: t('rulesets.movies'), value: MediaType.Movie as number | null, count: movies },
   ]
+})
+
+const hasMultipleSources = computed(() => {
+  const types = new Set(rulesets.value.map(rs => rs.sourceType))
+  return types.size > 1
 })
 
 const sourceTabs = computed(() => {

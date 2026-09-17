@@ -5,7 +5,7 @@
     </div>
 
     <!-- Stats row -->
-    <div class="grid grid-cols-3 gap-3 mb-4">
+    <div class="grid grid-cols-4 gap-3 mb-4">
       <router-link to="/setup" class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 hover:bg-surface-elevated/50 transition-colors">
         <div class="flex items-center gap-2 mb-1">
           <span class="w-2 h-2 rounded-full shrink-0" :class="healthDotClass" />
@@ -25,7 +25,7 @@
           <span class="text-lg font-semibold text-text-primary tabular-nums">{{ storage ? formatSize(storageUsed) : '—' }}</span>
           <span v-if="storage" class="text-xs text-text-secondary">/ {{ formatSize(storage.completeDirectory.totalBytes) }}</span>
         </div>
-        <div v-if="storage" class="mt-2 h-1 rounded-full bg-surface-elevated overflow-hidden">
+        <div v-if="storage" class="mt-2 h-1.5 rounded-full bg-surface-elevated overflow-hidden">
           <div
             class="h-full rounded-full transition-all"
             :class="storagePercent > 90 ? 'bg-status-warn' : 'bg-accent'"
@@ -33,6 +33,12 @@
           />
         </div>
       </div>
+
+      <router-link to="/rulesets" class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 hover:bg-surface-elevated/50 transition-colors">
+        <div class="text-xs text-text-secondary mb-1">{{ $t('home.rulesets') }}</div>
+        <span class="text-lg font-semibold text-text-primary tabular-nums">{{ rulesetCount }}</span>
+        <div v-if="communityVersion" class="text-xs text-text-muted mt-0.5">v{{ communityVersion }}</div>
+      </router-link>
     </div>
 
     <!-- Queue progress (only when active) -->
@@ -62,8 +68,11 @@
         <router-link to="/activity/history" class="text-xs text-accent hover:text-accent/80 transition-colors">{{ $t('home.viewAll') }}</router-link>
       </div>
       <div v-if="recentItems.length === 0" class="px-4 py-8 text-center">
-        <p class="text-sm text-text-secondary">{{ $t('home.noRecentActivity') }}</p>
-        <p class="text-xs text-text-muted mt-1">{{ $t('home.noRecentActivityHint') }}</p>
+        <svg class="w-6 h-6 mx-auto mb-2 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>
+        </svg>
+        <p class="text-sm text-text-body font-medium">{{ $t('home.noRecentActivity') }}</p>
+        <p class="text-xs text-text-secondary mt-1">{{ $t('home.noRecentActivityHint') }}</p>
       </div>
       <div v-else>
         <div
@@ -94,6 +103,7 @@ import { useI18n } from 'vue-i18n'
 import { useGroupedQueue } from '../composables/useGroupedQueue'
 import { getHistory, type HistoryItem } from '../api/downloads'
 import { getSetupHealth, getStorageStatus, type SetupHealthCheck, type StorageStatusResponse } from '../api/setup'
+import { listRuleSets } from '../api/rulesets'
 import { QueueStatus, HistoryStatus, CheckStatus } from '../api/enums'
 import { formatSpeed, formatSize, formatRelativeDate } from '../utils/format'
 import ReleaseTitle from '../components/ReleaseTitle.vue'
@@ -104,6 +114,8 @@ const { activeCount, queuedCount, totalSpeed, items, release } = useGroupedQueue
 const health = ref<SetupHealthCheck | null>(null)
 const storage = ref<StorageStatusResponse | null>(null)
 const recentItems = ref<HistoryItem[]>([])
+const rulesetCount = ref(0)
+const communityVersion = ref<string | null>(null)
 
 const overallProgress = computed(() => {
   const active = items.value.filter(i => i.status === QueueStatus.Processing)
@@ -156,12 +168,17 @@ async function fetchRecent() {
 onMounted(async () => {
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
-  const [healthResult, storageResult] = await Promise.allSettled([
+  const [healthResult, storageResult, rulesetsResult] = await Promise.allSettled([
     getSetupHealth(),
     getStorageStatus(),
+    listRuleSets(),
   ])
   if (healthResult.status === 'fulfilled') health.value = healthResult.value
   if (storageResult.status === 'fulfilled') storage.value = storageResult.value
+  if (rulesetsResult.status === 'fulfilled') {
+    rulesetCount.value = rulesetsResult.value.rulesets.length
+    communityVersion.value = rulesetsResult.value.communityVersion
+  }
 
   fetchRecent()
 })

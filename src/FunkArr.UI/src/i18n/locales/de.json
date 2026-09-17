@@ -12,6 +12,7 @@
     "system": "System",
     "recentDownloads": "Letzte Downloads",
     "storage": "Speicher",
+    "rulesets": "Regelwerke",
     "downloading": "aktiv",
     "queued": "wartend",
     "view": "Anzeigen",
@@ -123,11 +124,12 @@
     "updated": "Aktualisiert {date}",
     "matchingRules": "Matching-Regeln",
     "defaultConfidence": "Standard-Konfidenz",
-    "noRulesDefined": "Keine Regeln definiert.",
+    "noRulesDefined": "Keine Regeln definiert",
+    "noRulesDescription": "Erstelle Matching-Regeln im Editor, um Episoden zu identifizieren.",
     "season": "Staffel",
     "episode": "Episode",
-    "matchMode": "Übereinstimmungsmodus",
     "titleParts": "Titelteile",
+    "titlePartsCount": "Titelregel(n)",
     "filters": "Filter",
     "exportForCommunity": "Für Community exportieren",
     "exporting": "Exportiere...",
@@ -142,7 +144,7 @@
     "localOverlayDeleted": "Lokale Überschreibung gelöscht",
     "failedToDelete": "Löschen fehlgeschlagen",
     "deleteFailed": "Löschen fehlgeschlagen",
-    "scoringHistory": "Bewertungsverlauf",
+    "scoringHistory": "Scoring-Verlauf",
     "edit": "Bearbeiten"
   },
   "builder": {
@@ -244,9 +246,10 @@
     "runTestHint": "Suche durchführen und Regeln testen, um Ergebnisse zu sehen."
   },
   "scoring": {
-    "historyTitle": "Bewertungsverlauf",
+    "historyTitle": "Scoring-Verlauf",
     "detailTitle": "Bewertungsdetail",
-    "noHistory": "Kein Bewertungsverlauf.",
+    "noHistory": "Kein Scoring-Verlauf",
+    "noHistoryDescription": "Verlauf erscheint, wenn Sonarr oder Radarr eine Suche gegen dieses Regelwerk starten.",
     "totalRuns": "{count} Bewertungsdurchläufe insgesamt",
     "sourceColumn": "Quelle",
     "queryColumn": "Abfrage",
@@ -290,6 +293,33 @@
     "passed": "(bestanden)",
     "failed": "(fehlgeschlagen)",
     "skipped": "Übersprungen"
+  },
+  "rule": {
+    "op": {
+      "eq": "gleich",
+      "contains": "enthält",
+      "notContains": "enthält nicht",
+      "greaterThan": "größer als",
+      "lessThan": "kleiner als",
+      "regex": "Regex"
+    },
+    "group": {
+      "all": "Alle erfüllt",
+      "any": "Mind. eins",
+      "not": "Keines"
+    },
+    "field": {
+      "title": "Titel",
+      "topic": "Thema",
+      "channel": "Sender",
+      "description": "Beschreibung",
+      "duration": "Dauer",
+      "timestamp": "Zeitstempel"
+    },
+    "titlePart": {
+      "static": "Statisch",
+      "regex": "Regex"
+    }
   },
   "common": {
     "loading": "Laden...",

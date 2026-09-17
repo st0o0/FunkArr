@@ -33,8 +33,6 @@
           <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
             <span class="text-text-secondary">{{ $t('detail.ruleSetId') }}</span>
             <span class="font-mono text-text-body">{{ detail.ruleSetId }}</span>
-            <span class="text-text-secondary">{{ $t('detail.topic') }}</span>
-            <span class="text-text-primary font-medium">{{ detail.identity.topic }}</span>
             <span class="text-text-secondary">{{ $t('detail.aliases') }}</span>
             <span class="text-text-body">{{ detail.identity.aliases.length > 0 ? detail.identity.aliases.join(', ') : '-' }}</span>
             <span class="text-text-secondary">{{ $t('detail.tvdb') }}</span>
@@ -43,27 +41,22 @@
             <span class="font-mono text-text-body">{{ detail.identity.imdbId ?? '-' }}</span>
             <span class="text-text-secondary">{{ $t('detail.tmdb') }}</span>
             <span class="font-mono text-text-body">{{ detail.identity.tmdbId ?? '-' }}</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="mb-4">
-        <h2 class="text-sm font-semibold mb-2 text-text-body">{{ $t('detail.source') }}</h2>
-        <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
-          <div class="flex items-center gap-3">
-            <span
-              class="px-2 py-0.5 rounded text-xs"
-              :class="mergeMode === 'merged'
-                ? 'bg-surface-elevated text-text-body'
-                : mergeMode === 'community only'
-                  ? 'bg-surface-elevated text-status-ok'
-                  : 'bg-surface-elevated text-text-secondary'"
-            >
-              {{ mergeMode === 'community only' ? $t('detail.communityLabel') : mergeMode === 'local only' ? $t('detail.localLabel') : $t('detail.communityLocalLabel') }}
-            </span>
-            <span v-if="detail.source.communityModified" class="text-xs text-text-secondary">
-              {{ $t('detail.updated', { date: formatDate(detail.source.communityModified) }) }}
-            </span>
+            <span class="text-text-secondary">{{ $t('detail.source') }}</span>
+            <div class="flex items-center gap-2">
+              <span
+                class="px-2 py-0.5 rounded text-xs"
+                :class="mergeMode === 'merged'
+                  ? 'bg-surface-elevated text-text-body'
+                  : mergeMode === 'community only'
+                    ? 'bg-surface-elevated text-status-ok'
+                    : 'bg-surface-elevated text-text-secondary'"
+              >
+                {{ mergeMode === 'community only' ? $t('detail.communityLabel') : mergeMode === 'local only' ? $t('detail.localLabel') : $t('detail.communityLocalLabel') }}
+              </span>
+              <span v-if="detail.source.communityModified" class="text-xs text-text-secondary">
+                {{ $t('detail.updated', { date: formatDate(detail.source.communityModified) }) }}
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -72,45 +65,59 @@
         <h2 class="text-sm font-semibold mb-2 text-text-body">{{ $t('detail.matchingRules') }}</h2>
         <div class="text-sm text-text-secondary mb-2">{{ $t('detail.defaultConfidence') }}: {{ detail.defaultConfidence }}</div>
 
-        <div v-if="detail.rules.length === 0" class="text-text-secondary text-sm">{{ $t('detail.noRulesDefined') }}</div>
+        <EmptyState
+          v-if="detail.rules.length === 0"
+          icon='<path d="M2 4h12M2 8h12M2 12h8"/><circle cx="13" cy="12" r="1.5"/>'
+          :title="$t('detail.noRulesDefined')"
+          :description="$t('detail.noRulesDescription')"
+        />
 
         <div v-else class="grid gap-2">
           <div
-            v-for="rule in detail.rules"
+            v-for="(rule, rIdx) in detail.rules"
             :key="rule.id"
-            class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm"
+            class="bg-surface-raised rounded-lg border border-border-default overflow-hidden text-sm"
           >
-            <div class="flex items-center justify-between mb-2">
+            <div
+              class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-surface-elevated/30 transition-colors"
+              @click="toggleRule(rule.id)"
+            >
               <div class="flex items-baseline gap-2">
                 <span class="font-mono font-medium text-text-primary">{{ rule.id }}</span>
-                <span class="text-[11px] px-1.5 py-0.5 rounded bg-surface-elevated text-text-body">{{ rule.strategy }}</span>
+                <span class="text-[11px] px-1.5 py-0.5 rounded bg-surface-elevated text-text-body">{{ strategyLabel(rule.strategy, t) }}</span>
               </div>
               <div class="flex items-center gap-2 text-xs text-text-secondary">
+                <span v-if="rule.titleRules && rule.titleRules.length > 0" class="text-text-muted">{{ rule.titleRules.length }} {{ $t('detail.titlePartsCount') }}</span>
+                <span v-if="rule.titleRules && rule.titleRules.length > 0 && filterCount(rule) > 0" class="text-text-muted">·</span>
+                <span v-if="filterCount(rule) > 0" class="text-text-muted">{{ filterCount(rule) }} Filter</span>
                 <span>prio {{ rule.priority }}</span>
                 <span v-if="rule.confidence != null">conf {{ rule.confidence }}</span>
+                <svg class="w-4 h-4 text-text-secondary transition-transform" :class="isExpanded(rule.id, rIdx) ? 'rotate-180' : ''" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
               </div>
             </div>
-            <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs">
-              <template v-if="rule.seasonPattern">
-                <span class="text-text-secondary">{{ $t('detail.season') }}</span>
-                <span class="font-mono text-text-body">{{ rule.seasonPattern }}</span>
-              </template>
-              <template v-if="rule.episodePattern">
-                <span class="text-text-secondary">{{ $t('detail.episode') }}</span>
-                <span class="font-mono text-text-body">{{ rule.episodePattern }}</span>
-              </template>
-              <template v-if="rule.matchMode">
-                <span class="text-text-secondary">{{ $t('detail.matchMode') }}</span>
-                <span class="text-text-body">{{ rule.matchMode }}</span>
-              </template>
-              <template v-if="rule.titleParts && rule.titleParts.length > 0">
-                <span class="text-text-secondary">{{ $t('detail.titleParts') }}</span>
-                <span class="text-text-body">{{ rule.titleParts.join(' + ') }}</span>
-              </template>
-              <template v-if="rule.filterSummary">
-                <span class="text-text-secondary">{{ $t('detail.filters') }}</span>
-                <span class="text-text-body">{{ rule.filterSummary }}</span>
-              </template>
+            <div v-if="isExpanded(rule.id, rIdx)" class="px-4 pb-4 border-t border-border-default pt-3">
+              <div class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs">
+                <template v-if="rule.seasonRegex">
+                  <span class="text-text-secondary">{{ $t('detail.season') }}</span>
+                  <span class="font-mono text-text-body">{{ rule.seasonRegex }}</span>
+                </template>
+                <template v-if="rule.episodeRegex">
+                  <span class="text-text-secondary">{{ $t('detail.episode') }}</span>
+                  <span class="font-mono text-text-body">{{ rule.episodeRegex }}</span>
+                </template>
+                <template v-if="rule.captureGroup != null">
+                  <span class="text-text-secondary">{{ $t('builder.captureGroup') }}</span>
+                  <span class="font-mono text-text-body">{{ rule.captureGroup }}</span>
+                </template>
+                <template v-if="rule.titleRules && rule.titleRules.length > 0">
+                  <span class="text-text-secondary">{{ $t('detail.titleParts') }}</span>
+                  <TitleRuleDisplay :title-rules="rule.titleRules" />
+                </template>
+                <template v-if="rule.filters">
+                  <span class="text-text-secondary">{{ $t('detail.filters') }}</span>
+                  <FilterConditionDisplay :filters="rule.filters" />
+                </template>
+              </div>
             </div>
           </div>
         </div>
@@ -159,14 +166,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { getRuleSetDetail, deleteRuleSet, exportRuleSet, ValidationFailedError, type RuleSetDetail } from '../api/rulesets'
+import { getRuleSetDetail, deleteRuleSet, exportRuleSet, ValidationFailedError, type RuleSetDetail, type RuleSetDetailRule } from '../api/rulesets'
+import { strategyLabel } from '../utils/strategy'
 import { useToast } from '../composables/useToast'
+import FilterConditionDisplay from '../components/FilterConditionDisplay.vue'
+import TitleRuleDisplay from '../components/TitleRuleDisplay.vue'
 
 const { t } = useI18n()
 const { toast } = useToast()
+import EmptyState from '../components/EmptyState.vue'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 
@@ -178,6 +189,20 @@ const detail = ref<RuleSetDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
+const expandedRules = reactive<Record<string, boolean>>({})
+
+function toggleRule(ruleId: string) {
+  expandedRules[ruleId] = !expandedRules[ruleId]
+}
+
+function isExpanded(ruleId: string, idx: number): boolean {
+  return expandedRules[ruleId] ?? idx === 0
+}
+
+function filterCount(rule: RuleSetDetailRule): number {
+  if (!rule.filters) return 0
+  return (rule.filters.all?.length ?? 0) + (rule.filters.any?.length ?? 0) + (rule.filters.not?.length ?? 0)
+}
 const deleting = ref(false)
 const deleteError = ref<string | null>(null)
 const exporting = ref(false)

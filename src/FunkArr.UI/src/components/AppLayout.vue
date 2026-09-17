@@ -85,14 +85,6 @@
           </svg>
           <span v-if="!collapsed" class="text-xs">{{ $t('nav.collapse') }}</span>
         </button>
-        <div v-if="!collapsed && (appVersion || rulesetVersion)" class="grid grid-cols-[auto_1fr] gap-x-1.5 px-2.5 pb-1 pt-0.5 text-[11px] text-text-muted tabular-nums">
-          <template v-if="appVersion">
-            <span>{{ $t('common.app') }}</span><span>v{{ appVersion }}</span>
-          </template>
-          <template v-if="rulesetVersion">
-            <span>{{ $t('common.rulesetVersion') }}</span><span>v{{ rulesetVersion }}</span>
-          </template>
-        </div>
       </div>
     </aside>
 
@@ -109,7 +101,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { setLocale } from '../i18n'
-import { getSystemVersion } from '../api/setup'
 
 const route = useRoute()
 const { t, locale } = useI18n()
@@ -119,18 +110,10 @@ function changeLocale(val: string) {
 }
 
 const collapsed = ref(false)
-const appVersion = ref<string | null>(null)
-const rulesetVersion = ref<string | null>(null)
 
-onMounted(async () => {
+onMounted(() => {
   const stored = localStorage.getItem('funkarr-sidebar')
   if (stored === 'collapsed') collapsed.value = true
-
-  try {
-    const version = await getSystemVersion()
-    appVersion.value = version.appVersion
-    rulesetVersion.value = version.communityRulesetVersion
-  } catch { /* version display is best-effort */ }
 })
 
 function toggle() {

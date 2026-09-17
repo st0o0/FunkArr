@@ -6,7 +6,12 @@
 
     <SkeletonTable v-if="loading" :rows="5" :columns="6" />
     <div v-else-if="error" class="text-status-fail text-sm">{{ error }}</div>
-    <div v-else-if="history && history.snapshots.length === 0" class="text-text-secondary text-sm">{{ $t('scoring.noHistory') }}</div>
+    <EmptyState
+      v-else-if="history && history.snapshots.length === 0"
+      icon='<circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>'
+      :title="$t('scoring.noHistory')"
+      :description="$t('scoring.noHistoryDescription')"
+    />
 
     <div v-else-if="history">
       <div class="text-sm text-text-secondary mb-3 tabular-nums">{{ $t('scoring.totalRuns', { count: history.totalCount }) }}</div>
@@ -63,6 +68,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getScoringHistory, type ScoringHistoryResult } from '../api/rulesets'
+import EmptyState from '../components/EmptyState.vue'
 import SkeletonTable from '../components/SkeletonTable.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 

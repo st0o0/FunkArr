@@ -13,16 +13,36 @@ export interface RuleSetEntry {
   matchRate: number | null
 }
 
+export interface FilterConditionOutput {
+  field: string
+  op: string
+  value: string
+}
+
+export interface FilterGroupOutput {
+  all: FilterConditionOutput[] | null
+  any: FilterConditionOutput[] | null
+  not: FilterConditionOutput[] | null
+}
+
+export interface TitleRuleOutput {
+  type: string
+  field: string | null
+  pattern: string | null
+  captureGroup: number | null
+  value: string | null
+}
+
 export interface RuleSetDetailRule {
   id: string
   priority: number
   confidence: number | null
   strategy: string
-  filterSummary: string | null
-  seasonPattern: string | null
-  episodePattern: string | null
-  matchMode: string | null
-  titleParts: string[] | null
+  seasonRegex: string | null
+  episodeRegex: string | null
+  captureGroup: number | null
+  filters: FilterGroupOutput | null
+  titleRules: TitleRuleOutput[] | null
 }
 
 export interface RuleSetIdentity {
@@ -220,10 +240,6 @@ export function listRuleSets(): Promise<RuleSetListResponse> {
 
 export function getRuleSetDetail(id: string): Promise<RuleSetDetail> {
   return fetchJson(`/api/rulesets/${encodeURIComponent(id)}`)
-}
-
-export function getRuleSetRaw(id: string): Promise<RuleSetWriteRequest> {
-  return fetchJson(`/api/rulesets/${encodeURIComponent(id)}/raw`)
 }
 
 export function getScoringHistory(id: string, offset = 0, limit = 20): Promise<ScoringHistoryResult> {

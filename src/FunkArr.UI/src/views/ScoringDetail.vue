@@ -90,7 +90,7 @@
                 </div>
                 <FilterGroupTraceView v-if="rt.filterTrace" :group="rt.filterTrace" class="mt-1" />
                 <div v-if="rt.identificationTrace" class="text-xs text-text-secondary mt-1 bg-surface-elevated/50 rounded p-2 space-y-0.5">
-                  <div><span class="text-text-secondary">{{ $t('preview.identification') }}:</span> {{ rt.identificationTrace.strategy }}</div>
+                  <div><span class="text-text-secondary">{{ $t('preview.identification') }}:</span> {{ strategyLabel(rt.identificationTrace.strategy ?? '', t) }}</div>
                   <div><span class="text-text-secondary">Attempted:</span> {{ rt.identificationTrace.attempted }}</div>
                   <div v-if="rt.identificationTrace.detail"><span class="text-text-secondary">Detail:</span> {{ rt.identificationTrace.detail }}</div>
                 </div>
@@ -110,6 +110,7 @@ import { useI18n } from 'vue-i18n'
 import { getScoringDetail, type ScoringDetail } from '../api/rulesets'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
+import { strategyLabel } from '../utils/strategy'
 import FilterGroupTraceView from '../components/FilterGroupTraceView.vue'
 
 const { t } = useI18n()

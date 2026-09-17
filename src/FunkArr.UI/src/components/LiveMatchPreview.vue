@@ -149,7 +149,7 @@
                 <div v-if="rt.identificationTrace && !isSkipped(rt, item, ri)" class="ml-2 text-xs">
                   <div class="flex items-center gap-2">
                     <span class="text-text-secondary">{{ $t('preview.identification') }}:</span>
-                    <span class="font-mono text-text-secondary">{{ rt.identificationTrace.strategy }}</span>
+                    <span class="font-mono text-text-secondary">{{ strategyLabel(rt.identificationTrace.strategy ?? '', t) }}</span>
                   </div>
                   <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">{{ $t('preview.notAttempted') }}</div>
                   <div v-else-if="rt.identificationTrace.detail" class="text-status-fail ml-4">{{ rt.identificationTrace.detail }}</div>
@@ -188,6 +188,7 @@ import {
 } from '../api/rulesets'
 import { useMediathekAutoFetch } from '../composables/useMediathekAutoFetch'
 import { useRulesetMatcher } from '../composables/useRulesetMatcher'
+import { strategyLabel } from '../utils/strategy'
 import FilterGroupTraceView from './FilterGroupTraceView.vue'
 
 const { t } = useI18n()
