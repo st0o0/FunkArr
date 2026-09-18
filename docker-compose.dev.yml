@@ -22,7 +22,7 @@ services:
 
   sonarr:
     container_name: sonarr
-    image: ghcr.io/home-operations/sonarr:rolling
+    image: ghcr.io/home-operations/sonarr:rolling@sha256:1f19eb5e0f421418c1a956bbe01310a0141423afe28bd9a4b1dcb8629ff2bce2
     ports:
       - "8989:8989"
     volumes:
@@ -35,7 +35,7 @@ services:
 
   radarr:
     container_name: radarr
-    image: ghcr.io/home-operations/radarr:rolling
+    image: ghcr.io/home-operations/radarr:rolling@sha256:be53998a2d39cfa3c3315b70c7509a6a1f2a10c3aee9337653efc9f4c970430e
     ports:
       - "7878:7878"
     volumes:
@@ -48,7 +48,7 @@ services:
 
   prowlarr:
     container_name: prowlarr
-    image: ghcr.io/home-operations/prowlarr:rolling
+    image: ghcr.io/home-operations/prowlarr:rolling@sha256:6152751c3ea2e7751564f5952173d5e83eed0e09f3fabd2cb6bdb58690c39e2f
     ports:
       - "9696:9696"
     volumes:
