@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.2.0...rulesets-v0.3.0) (2026-09-18)
+
+
+### New Rulesets
+
+* add VitePress docs site with dynamic ruleset catalog ([671fe2c](https://github.com/st0o0/FunkArr/commit/671fe2cd5e158b909ae0d939409e1cc4451c11e2))
+* bundle ruleset version in Docker image to skip redundant update on startup ([83c40b4](https://github.com/st0o0/FunkArr/commit/83c40b402e6b7413ec5862bd0dda1752bb992c03))
+
+
+### Ruleset Fixes
+
+* optimize 23 community rulesets and fix JSON export encoding ([08586a9](https://github.com/st0o0/FunkArr/commit/08586a9a232f427bd1ba909dba21a93f1b34b984))
+
 ## [0.2.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.1.0...rulesets-v0.2.0) (2026-09-12)
 
 
