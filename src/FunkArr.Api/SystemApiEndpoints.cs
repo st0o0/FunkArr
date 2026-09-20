@@ -67,7 +67,7 @@ public static class SystemApiEndpoints
 
         group.MapGet("/version", (DataPaths dataPaths, IDataFiles dataFiles) =>
         {
-            var appVersion = typeof(SystemApiEndpoints).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+            var appVersion = FunkArr.Core.VersionInfo.Version;
             var communityVersion = dataFiles.Exists(dataPaths.RuleSetVersion)
                 ? dataFiles.ReadText(dataPaths.RuleSetVersion).Trim()
                 : null;

@@ -7,6 +7,17 @@
         <Version>0.1.0</Version> <!-- x-release-please-version -->
     </PropertyGroup>
 
+    <Target Name="GenerateVersionInfo" BeforeTargets="CoreCompile" Condition="!$(MSBuildProjectName.Contains('Tests'))">
+        <PropertyGroup>
+            <_VersionSourceFile>$(IntermediateOutputPath)VersionInfo.g.cs</_VersionSourceFile>
+        </PropertyGroup>
+        <WriteLinesToFile File="$(_VersionSourceFile)" Overwrite="true"
+                         Lines="namespace FunkArr.Core%3B%0A%0Ainternal static partial class VersionInfo%0A{%0A    public const string Version = &quot;$(Version)&quot;%3B%0A}" />
+        <ItemGroup>
+            <Compile Include="$(_VersionSourceFile)" />
+        </ItemGroup>
+    </Target>
+
     <PropertyGroup Condition="$(MSBuildProjectName.Contains('Tests'))">
         <IsPackable>false</IsPackable>
         <NoWarn>$(NoWarn);xUnit1051</NoWarn>

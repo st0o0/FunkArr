@@ -10,6 +10,7 @@ RUN pnpm run build
 
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS build
 ARG TARGETARCH
+ARG VERSION=0.0.0-dev
 WORKDIR /src
 
 COPY src/global.json src/Directory.Build.props src/Directory.Packages.props ./
@@ -29,13 +30,15 @@ RUN dotnet restore FunkArr/FunkArr.csproj -a ${TARGETARCH}
 COPY src/ .
 COPY data/community/ruleset.schema.json /data/community/ruleset.schema.json
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
-RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/publish
+RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/publish /p:Version=${VERSION}
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:6a94333d37514e385650a3c81a55e5350b67253dbe136e9cf17e499c35606a8c
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+ARG VERSION=0.0.0-dev
 LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.description="German public broadcaster media libraries for the *arr ecosystem" \
+      org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/st0o0/funkarr" \
       org.opencontainers.image.documentation="https://github.com/st0o0/funkarr#readme"
 RUN mkdir -p /app/data/temp && chown 1654:1654 /app/data /app/data/temp
