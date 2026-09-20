@@ -1,5 +1,6 @@
 using FunkArr.Api.Extensions;
 using FunkArr.Api.Models;
+using FunkArr.Messages;
 using FunkArr.Messages.Download;
 
 namespace FunkArr.Api.Tests;
@@ -20,7 +21,7 @@ public sealed class DownloadApiEndpointTests
             CurrentTimeUs: 36_000_000,
             TotalDuration: 50,
             Speed: 1.0,
-            Category: "tv");
+            Category: MediaType.Show);
 
         var result = item.ToApi();
 
@@ -47,7 +48,7 @@ public sealed class DownloadApiEndpointTests
             CurrentTimeUs: 0,
             TotalDuration: 0,
             Speed: 0,
-            Category: "tv");
+            Category: MediaType.Show);
 
         var result = item.ToApi();
 
@@ -73,7 +74,7 @@ public sealed class DownloadApiEndpointTests
             CurrentTimeUs: 60_000_000,
             TotalDuration: 50,
             Speed: 1.0,
-            Category: "tv");
+            Category: MediaType.Show);
 
         var result = item.ToApi();
 
@@ -86,7 +87,7 @@ public sealed class DownloadApiEndpointTests
         var item = new HistoryItem(
             DownloadId: Guid.NewGuid(),
             Title: "Tagesschau",
-            Category: "tv",
+            Category: MediaType.Show,
             TotalBytes: 245_000_000,
             DownloadTimeSeconds: 185,
             RelativePath: "/downloads/tagesschau.mkv",
@@ -107,7 +108,7 @@ public sealed class DownloadApiEndpointTests
         var item = new HistoryItem(
             DownloadId: Guid.NewGuid(),
             Title: "Panorama",
-            Category: "tv",
+            Category: MediaType.Show,
             TotalBytes: 98_000_000,
             DownloadTimeSeconds: 0,
             RelativePath: "",
@@ -140,9 +141,9 @@ public sealed class DownloadApiEndpointTests
     {
         var items = new[]
         {
-            new QueueItem(Guid.NewGuid(), "A", DownloadStatus.Processing, "ARD", true, 100, 50, 1_000_000, 10, 1.0, "tv"),
-            new QueueItem(Guid.NewGuid(), "B", DownloadStatus.Processing, "ZDF", false, 100, 50, 1_000_000, 10, 1.0, "tv"),
-            new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, 0, 0, 0, 0, "tv"),
+            new QueueItem(Guid.NewGuid(), "A", DownloadStatus.Processing, "ARD", true, 100, 50, 1_000_000, 10, 1.0, MediaType.Show),
+            new QueueItem(Guid.NewGuid(), "B", DownloadStatus.Processing, "ZDF", false, 100, 50, 1_000_000, 10, 1.0, MediaType.Show),
+            new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, 0, 0, 0, 0, MediaType.Show),
         };
         var queueResult = new QueueResult(items, 3, 3);
 
@@ -158,7 +159,7 @@ public sealed class DownloadApiEndpointTests
         var item = new HistoryItem(
             DownloadId: Guid.NewGuid(),
             Title: "Test",
-            Category: "tv",
+            Category: MediaType.Show,
             TotalBytes: 100,
             DownloadTimeSeconds: 10,
             RelativePath: "/test.mkv",

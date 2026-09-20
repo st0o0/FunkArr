@@ -3,6 +3,7 @@ using Akka.Hosting;
 using Akka.TestKit;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Search;
 
 namespace FunkArr.Search.Tests;
@@ -24,7 +25,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
+        gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var forwarded = tvProbe.ExpectMsg<SearchSeries>();
@@ -41,7 +42,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("radarr", "Das Boot", null, null, null,
+        gateway.Tell(new SearchCommand(SearchSource.Radarr, "Das Boot", null, null, null,
             new SearchCommand.MovieParams(null, null)), TestActor);
 
         var forwarded = movieProbe.ExpectMsg<SearchMovie>();
@@ -57,7 +58,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("search", "test", 5040, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", 5040, null, null, null), TestActor);
 
         tvProbe.ExpectMsg<SearchSeries>();
         movieProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
@@ -70,7 +71,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("search", "test", 2040, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", 2040, null, null, null), TestActor);
 
         movieProbe.ExpectMsg<SearchMovie>();
         tvProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
@@ -83,7 +84,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
         tvProbe.ExpectMsg<SearchSeries>();
         movieProbe.ExpectMsg<SearchMovie>();
@@ -96,7 +97,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
         var movieCmd = movieProbe.ExpectMsg<SearchMovie>();
@@ -123,7 +124,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
+        gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
@@ -142,7 +143,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
+        gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
@@ -163,7 +164,7 @@ public sealed class SearchManagerTests : TestKit
         var gateway = Sys.ActorOf(Props.Create(() =>
             new SearchManager(TimeSpan.FromMilliseconds(200))));
 
-        gateway.Tell(new SearchCommand("sonarr", "Tatort", null, null, null,
+        gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
         tvProbe.ExpectMsg<SearchSeries>();
@@ -179,7 +180,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
         var movieCmd = movieProbe.ExpectMsg<SearchMovie>();
@@ -203,7 +204,7 @@ public sealed class SearchManagerTests : TestKit
         var movieProbe = CreateTestProbe();
         var gateway = CreateGateway(tvProbe, movieProbe);
 
-        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
         var movieCmd = movieProbe.ExpectMsg<SearchMovie>();
@@ -228,7 +229,7 @@ public sealed class SearchManagerTests : TestKit
         var gateway = Sys.ActorOf(Props.Create(() =>
             new SearchManager(TimeSpan.FromMilliseconds(200))));
 
-        gateway.Tell(new SearchCommand("search", "test", null, null, null, null), TestActor);
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
         var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
         movieProbe.ExpectMsg<SearchMovie>();

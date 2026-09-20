@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 
 namespace FunkArr.Search.Tests;
@@ -9,7 +10,7 @@ public sealed class ReleaseVariantTests
     {
         var item = MakeItem(urlHd: "https://hd.mp4", url: "https://sd.mp4", urlLow: "https://low.mp4");
 
-        var variants = ReleaseVariant.Expand(item, "tv", "Tatort");
+        var variants = ReleaseVariant.Expand(item, MediaType.Show, "Tatort");
 
         Assert.Equal(3, variants.Length);
         Assert.Contains(variants, v => v.Quality == 1080 && v.Url == "https://hd.mp4");
@@ -22,7 +23,7 @@ public sealed class ReleaseVariantTests
     {
         var item = MakeItem(url: "https://sd.mp4");
 
-        var variants = ReleaseVariant.Expand(item, "tv", null);
+        var variants = ReleaseVariant.Expand(item, MediaType.Show, null);
 
         var variant = Assert.Single(variants);
         Assert.Equal(720, variant.Quality);
@@ -34,7 +35,7 @@ public sealed class ReleaseVariantTests
     {
         var item = MakeItem();
 
-        var variants = ReleaseVariant.Expand(item, "tv", null);
+        var variants = ReleaseVariant.Expand(item, MediaType.Show, null);
 
         Assert.Empty(variants);
     }
@@ -44,7 +45,7 @@ public sealed class ReleaseVariantTests
     {
         var item = MakeItem(url: "https://sd.mp4", size: 0, duration: 3600);
 
-        var variants = ReleaseVariant.Expand(item, "tv", null);
+        var variants = ReleaseVariant.Expand(item, MediaType.Show, null);
 
         var variant = Assert.Single(variants);
         Assert.Equal(3600L * 420_000L, variant.Size);
@@ -55,7 +56,7 @@ public sealed class ReleaseVariantTests
     {
         var item = MakeItem(url: "https://sd.mp4", size: 999999);
 
-        var variants = ReleaseVariant.Expand(item, "tv", null);
+        var variants = ReleaseVariant.Expand(item, MediaType.Show, null);
 
         var variant = Assert.Single(variants);
         Assert.Equal(999999, variant.Size);
@@ -67,7 +68,7 @@ public sealed class ReleaseVariantTests
         var match = new MatchInfo(0.95f, MatchMethod.TitleMatch);
         var item = MakeItem(url: "https://sd.mp4", match: match);
 
-        var variants = ReleaseVariant.Expand(item, "tv", null);
+        var variants = ReleaseVariant.Expand(item, MediaType.Show, null);
 
         var variant = Assert.Single(variants);
         Assert.NotNull(variant.Match);

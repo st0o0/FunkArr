@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
@@ -43,7 +44,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", "Das Boot", null, null, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
         var mediathekQuery = probes.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Contains("title", mediathekQuery.Fields[0].Fields);
@@ -80,7 +81,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", null, null, null, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, null, null, null), TestActor);
 
         var query = probes.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Empty(query.Fields);
@@ -99,7 +100,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", "Unknown Movie", null, null, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Unknown Movie", null, null, null, null), TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new QueryMediathekCompleted(
@@ -125,7 +126,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", null, "tt0806910", null, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt0806910", null, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
         Assert.Null(resolveRequest.TopicOrAlias);
@@ -165,7 +166,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", null, null, 550, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, 550, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
         Assert.Equal(550, resolveRequest.TmdbId);
@@ -202,7 +203,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", null, "tt9999999", null, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt9999999", null, null, null), TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
         probes.Resolver.Reply(new RuleSetFailed(new RuleSetNotFoundException("")));
@@ -220,7 +221,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", "Das Boot", "tt1234567", null, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", "tt1234567", null, null, null), TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new QueryMediathekCompleted(
@@ -244,7 +245,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
-        worker.Tell(new SearchMovie(Guid.NewGuid(), "radarr", "Das Boot", null, null, null, null), TestActor);
+        worker.Tell(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new QueryMediathekCompleted(
@@ -271,7 +272,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
-        worker.Tell(new SearchMovie(Guid.NewGuid(), "radarr", null, "tt1234567", null, null, null), TestActor);
+        worker.Tell(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, null, "tt1234567", null, null, null), TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
         probes.Resolver.Reply(new RuleSetResolved("das-boot", "Das Boot"));
@@ -301,7 +302,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
 
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, "radarr", null, "tt0806910", null, null, null), TestActor);
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt0806910", null, null, null), TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
         probes.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));

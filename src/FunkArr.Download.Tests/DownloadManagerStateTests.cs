@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
 
@@ -128,7 +129,7 @@ public sealed class DownloadManagerStateTests
         Assert.Equal(2, state.Dispatched.Count);
     }
 
-    private static QueueItem MakeItem(string title, string category = "tv") =>
+    private static QueueItem MakeItem(string title, MediaType category = MediaType.Show) =>
         new(Guid.NewGuid(), title, DownloadStatus.Queued, "", false, 1000, 0, 0, 100, 0, category);
 
     [Fact]
@@ -159,9 +160,9 @@ public sealed class DownloadManagerStateTests
     [Fact]
     public void PaginateQueue_filters_by_category()
     {
-        var items = new[] { MakeItem("A", "tv"), MakeItem("B", "movies"), MakeItem("C", "tv") };
+        var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Movie), MakeItem("C", MediaType.Show) };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: "tv"), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3);
 
         Assert.Equal(2, result.Items.Length);
         Assert.Equal(2, result.TotalItems);
@@ -170,9 +171,9 @@ public sealed class DownloadManagerStateTests
     [Fact]
     public void PaginateQueue_category_filter_is_case_insensitive()
     {
-        var items = new[] { MakeItem("A", "TV"), MakeItem("B", "movies") };
+        var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Movie) };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: "tv"), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3);
 
         Assert.Single(result.Items);
     }
@@ -180,9 +181,9 @@ public sealed class DownloadManagerStateTests
     [Fact]
     public void PaginateQueue_category_filter_with_pagination()
     {
-        var items = new[] { MakeItem("A", "tv"), MakeItem("B", "tv"), MakeItem("C", "tv"), MakeItem("D", "movies") };
+        var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Show), MakeItem("C", MediaType.Show), MakeItem("D", MediaType.Movie) };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 1, Category: "tv"), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 1, Category: MediaType.Show), 3);
 
         Assert.Single(result.Items);
         Assert.Equal("B", result.Items[0].Title);

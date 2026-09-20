@@ -1,4 +1,5 @@
 using Akka.Actor;
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.Scoring;
@@ -15,12 +16,12 @@ public sealed class TvSearchWorkerStateTests
     {
         var state = new TvSearchWorkerState();
         var id = Guid.NewGuid();
-        var cmd = new SearchSeries(id, "sonarr", "Tatort", 2, 5, 83214, "tt123", 25, 10);
+        var cmd = new SearchSeries(id, SearchSource.Sonarr, "Tatort", 2, 5, 83214, "tt123", 25, 10);
 
         state.Init(cmd, _noSender);
 
         Assert.Equal(id, state.SearchId);
-        Assert.Equal("sonarr", state.Source);
+        Assert.Equal(SearchSource.Sonarr, state.Source);
         Assert.Equal("Tatort", state.Query);
         Assert.Equal(2, state.Season);
         Assert.Equal(83214, state.TvdbId);
@@ -78,8 +79,8 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal("2", state.Items[0].Identity.Season);
         Assert.Equal("9", state.Items[0].Identity.Episode);
         Assert.NotNull(state.Items[0].Match);
-        Assert.Equal(0.85f, state.Items[0].Match.Confidence);
-        Assert.Equal(MatchMethod.TitleMatch, state.Items[0].Match.Method);
+        Assert.Equal(0.85f, state.Items[0].Match!.Confidence);
+        Assert.Equal(MatchMethod.TitleMatch, state.Items[0].Match!.Method);
     }
 
     [Fact]
@@ -119,7 +120,7 @@ public sealed class TvSearchWorkerStateTests
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.ApplyRuleSet("tatort", "Tatort");
+        state.ApplyRuleSet("tatort", "Tatort", null);
 
         var result = state.TryGetRuleSetRequest(out _);
 
@@ -145,7 +146,7 @@ public sealed class TvSearchWorkerStateTests
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem("ARD", "Tatort", "Ep1")], 1));
-        state.ApplyRuleSet("tatort", null);
+        state.ApplyRuleSet("tatort", null, null);
 
         var result = state.TryGetScoringRequest(out var request);
 
@@ -160,7 +161,7 @@ public sealed class TvSearchWorkerStateTests
     public void TryGetScoringRequest_returns_false_when_sources_empty()
     {
         var state = InitState();
-        state.ApplyRuleSet("tatort", null);
+        state.ApplyRuleSet("tatort", null, null);
 
         var result = state.TryGetScoringRequest(out _);
 
@@ -241,7 +242,7 @@ public sealed class TvSearchWorkerStateTests
             MakeMediathekItem("ARD", "Show", "Low", url: "https://low.mp4"),
             MakeMediathekItem("ARD", "Show", "High", url: "https://high.mp4"),
         ], 2));
-        state.ApplyRuleSet("show", "Show");
+        state.ApplyRuleSet("show", "Show", null);
         state.Apply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.5, true),
@@ -277,11 +278,60 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal(0, result.Total);
     }
 
+    [Fact]
+    public void ApplyRuleSet_stores_enrichment_config()
+    {
+        var state = InitState();
+        var config = new EnrichmentConfig(
+            true, [EnrichmentMethod.Title], new TitleMatchConfig(0.5f),
+            new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
+            new YearMatchConfig(1));
+
+        state.ApplyRuleSet("tatort", "Tatort", config);
+
+        Assert.NotNull(state.EnrichmentConfig);
+        Assert.Equal(0.5f, state.EnrichmentConfig.Title.Threshold);
+    }
+
+    [Fact]
+    public void TryGetEnrichmentRequest_returns_false_when_enrichment_disabled()
+    {
+        var state = InitState(tvdbId: 83214);
+        state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
+        var config = new EnrichmentConfig(
+            false, [EnrichmentMethod.Title], new TitleMatchConfig(0.7f),
+            new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
+            new YearMatchConfig(1));
+        state.ApplyRuleSet("tatort", "Tatort", config);
+        state.Apply(new ScoreCompleted(Guid.Empty,
+            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))]));
+
+        var result = state.TryGetEnrichmentRequest(out _);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void TryGetEnrichmentRequest_populates_constructed_title_from_scoring()
+    {
+        var state = InitState(tvdbId: 83214);
+        state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
+        state.ApplyRuleSet("tatort", "Tatort", null);
+        state.Apply(new ScoreCompleted(Guid.Empty,
+            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null, "Roomservice"))]));
+
+        var result = state.TryGetEnrichmentRequest(out var request);
+
+        Assert.True(result);
+        Assert.NotNull(request);
+        Assert.Equal("Roomservice", request.Candidates[0].ConstructedTitle);
+    }
+
     private static TvSearchWorkerState InitState(
         int? tvdbId = null, string? imdbId = null, string? query = null)
     {
         var state = new TvSearchWorkerState();
-        state.Init(new SearchSeries(Guid.NewGuid(), "sonarr", query, null, null, tvdbId, imdbId, null, null), _noSender);
+        state.Init(new SearchSeries(Guid.NewGuid(), SearchSource.Sonarr, query, null, null, tvdbId, imdbId, null, null), _noSender);
         return state;
     }
 

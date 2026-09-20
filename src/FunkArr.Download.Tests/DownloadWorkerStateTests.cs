@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download.Tests;
@@ -8,7 +9,7 @@ public sealed class DownloadWorkerStateTests
 
     private static DownloadInitialized MakeInitialized() =>
         new(_testId, "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
-            "ARD", 3600, 1_000_000, "tv");
+            "ARD", 3600, 1_000_000, MediaType.Show);
 
     [Fact]
     public void Empty_is_not_initialized()
@@ -28,7 +29,7 @@ public sealed class DownloadWorkerStateTests
         Assert.Equal("ARD", state.Channel);
         Assert.Equal(3600, state.Duration);
         Assert.Equal(1_000_000L, state.Size);
-        Assert.Equal("tv", state.Category);
+        Assert.Equal(MediaType.Show, state.Category);
         Assert.Equal(WorkerStatus.Initialized, state.Status);
     }
 

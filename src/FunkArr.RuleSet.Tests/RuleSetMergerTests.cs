@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 
 namespace FunkArr.RuleSet.Tests;
@@ -455,7 +456,7 @@ public sealed class RuleSetMergerTests
         Assert.NotNull(identity);
         Assert.Equal(99999, identity.Value.TvdbId);
         Assert.Equal("Tatort", identity.Value.MediaName);
-        Assert.Equal("show", identity.Value.MediaType);
+        Assert.Equal(MediaType.Show, identity.Value.MediaType);
     }
 
     [Fact]
@@ -480,7 +481,7 @@ public sealed class RuleSetMergerTests
 
         Assert.NotNull(identity);
         Assert.Equal("Apocalypse Now - Final Cut", identity.Value.MediaName);
-        Assert.Equal("movie", identity.Value.MediaType);
+        Assert.Equal(MediaType.Movie, identity.Value.MediaType);
     }
 
     [Fact]

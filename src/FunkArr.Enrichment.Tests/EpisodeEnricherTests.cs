@@ -181,4 +181,82 @@ public sealed class EpisodeEnricherTests
         Assert.Single(results);
         Assert.Equal(1.0f, results[0].Confidence);
     }
+
+    [Fact]
+    public void Disabled_enrichment_returns_empty()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
+        };
+        var config = MakeConfig(enabled: false);
+
+        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public void Custom_title_threshold_accepts_weaker_match()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Nacht", null, null, 5340, null, null),
+        };
+
+        var defaultResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
+        var config = MakeConfig(titleThreshold: 0.3f);
+        var customResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
+
+        Assert.Empty(defaultResults);
+        Assert.Single(customResults);
+        Assert.Equal(MatchMethod.TitleMatch, customResults[0].Method);
+    }
+
+    [Fact]
+    public void Airdate_only_method_skips_title_matching()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Nachtschatten", null,
+                new DateTimeOffset(2026, 1, 2, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+        };
+        var config = MakeConfig(methods: [EnrichmentMethod.Airdate]);
+
+        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
+
+        Assert.Single(results);
+        Assert.Equal(MatchMethod.AirdateMatch, results[0].Method);
+    }
+
+    [Fact]
+    public void Custom_airdate_tolerance_narrows_window()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Unknown Title", null,
+                new DateTimeOffset(2026, 1, 5, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+        };
+
+        var defaultResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
+        var config = MakeConfig(airdateTolerance: 2);
+        var narrowResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
+
+        Assert.Single(defaultResults);
+        Assert.Empty(narrowResults);
+    }
+
+    private static EnrichmentConfig MakeConfig(
+        bool enabled = true,
+        EnrichmentMethod[]? methods = null,
+        float titleThreshold = 0.7f,
+        int airdateTolerance = 7,
+        float runtimeTolerance = 0.35f,
+        RuntimeMode runtimeMode = RuntimeMode.Tiebreaker) =>
+        new(enabled,
+            methods ?? [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
+            new TitleMatchConfig(titleThreshold),
+            new AirdateMatchConfig(airdateTolerance),
+            new RuntimeMatchConfig(runtimeTolerance, runtimeMode),
+            new YearMatchConfig(1));
 }

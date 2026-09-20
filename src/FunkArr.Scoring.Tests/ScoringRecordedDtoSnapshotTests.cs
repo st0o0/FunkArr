@@ -1,4 +1,5 @@
 using System.Text.Json;
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring.History;
 using FunkArr.Persistence.Events.ScoringHistory;
 
@@ -50,7 +51,7 @@ public sealed class ScoringRecordedSerializerTests
 
     private static ScoringRecorded CreateEvent() => new(
         RequestId: Guid.Parse("550e8400-e29b-41d4-a716-446655440000"),
-        Source: "sonarr",
+        Source: SearchSource.Sonarr,
         Query: "Tatort",
         Timestamp: DateTimeOffset.Parse("2026-08-31T14:23:00+00:00"),
         CandidateCount: 2,

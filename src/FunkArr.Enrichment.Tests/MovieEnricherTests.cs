@@ -126,4 +126,53 @@ public sealed class MovieEnricherTests
         Assert.Contains(results, r => r.Index == 0);
         Assert.Contains(results, r => r.Index == 2);
     }
+
+    [Fact]
+    public void Disabled_enrichment_returns_empty()
+    {
+        var candidates = new[] { new MovieCandidate(0, "Fight Club", null, 8340) };
+        var config = MakeConfig(enabled: false);
+
+        var results = MovieEnricher.Resolve(_fightClub, [], candidates, config);
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public void Custom_title_threshold_accepts_weaker_match()
+    {
+        var candidates = new[] { new MovieCandidate(0, "FC", null, 8340) };
+
+        var defaultResults = MovieEnricher.Resolve(_fightClub, [], candidates);
+        var config = MakeConfig(titleThreshold: 0.1f);
+        var customResults = MovieEnricher.Resolve(_fightClub, [], candidates, config);
+
+        Assert.Empty(defaultResults);
+        Assert.Single(customResults);
+    }
+
+    [Fact]
+    public void Custom_year_tolerance_widens_window()
+    {
+        var farYear = new DateTimeOffset(2003, 6, 15, 0, 0, 0, TimeSpan.Zero);
+        var candidates = new[] { new MovieCandidate(0, "Fight Club", farYear, 8340) };
+
+        var defaultResults = MovieEnricher.Resolve(_fightClub, [], candidates);
+        var config = MakeConfig(yearTolerance: 5);
+        var customResults = MovieEnricher.Resolve(_fightClub, [], candidates, config);
+
+        Assert.Empty(defaultResults);
+        Assert.Single(customResults);
+    }
+
+    private static EnrichmentConfig MakeConfig(
+        bool enabled = true,
+        float titleThreshold = 0.5f,
+        int yearTolerance = 1) =>
+        new(enabled,
+            [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
+            new TitleMatchConfig(titleThreshold),
+            new AirdateMatchConfig(7),
+            new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
+            new YearMatchConfig(yearTolerance));
 }

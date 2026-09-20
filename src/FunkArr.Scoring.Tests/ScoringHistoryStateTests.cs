@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using FunkArr.Persistence.Events.ScoringHistory;
@@ -10,7 +11,7 @@ public sealed class ScoringHistoryStateTests
         Guid? requestId = null,
         DateTimeOffset? timestamp = null) => new(
         RequestId: requestId ?? Guid.NewGuid(),
-        Source: "test",
+        Source: SearchSource.Test,
         Query: "TestQuery",
         Timestamp: timestamp ?? DateTimeOffset.UtcNow,
         CandidateCount: 1,
@@ -20,7 +21,7 @@ public sealed class ScoringHistoryStateTests
     private static RecordScoring CreateCommand(string ruleSetId = "test") => new(
         RequestId: Guid.NewGuid(),
         RuleSetId: ruleSetId,
-        Origin: new ScoringOrigin("sonarr", "Query"),
+        Origin: new ScoringOrigin(SearchSource.Sonarr, "Query"),
         Timestamp: DateTimeOffset.UtcNow,
         CandidateCount: 2,
         MatchedCount: 1,
@@ -149,8 +150,8 @@ public sealed class ScoringHistoryStateTests
         var t2 = DateTimeOffset.UtcNow.AddHours(-1);
 
         var state = ScoringHistoryState.Empty
-            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", t1, 10, 8, []))
-            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", t2, 10, 6, []));
+            .Apply(new ScoringRecorded(Guid.NewGuid(), SearchSource.Sonarr, "q", t1, 10, 8, []))
+            .Apply(new ScoringRecorded(Guid.NewGuid(), SearchSource.Sonarr, "q", t2, 10, 6, []));
 
         var result = state.ToScoringStats();
 
@@ -163,8 +164,8 @@ public sealed class ScoringHistoryStateTests
     public void ToScoringStats_ignores_zero_candidate_snapshots_for_match_rate()
     {
         var state = ScoringHistoryState.Empty
-            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", DateTimeOffset.UtcNow, 0, 0, []))
-            .Apply(new ScoringRecorded(Guid.NewGuid(), "sonarr", "q", DateTimeOffset.UtcNow, 10, 5, []));
+            .Apply(new ScoringRecorded(Guid.NewGuid(), SearchSource.Sonarr, "q", DateTimeOffset.UtcNow, 0, 0, []))
+            .Apply(new ScoringRecorded(Guid.NewGuid(), SearchSource.Sonarr, "q", DateTimeOffset.UtcNow, 10, 5, []));
 
         var result = state.ToScoringStats();
 

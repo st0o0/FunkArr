@@ -1,4 +1,5 @@
 using Akka.Actor;
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.Scoring;
@@ -15,12 +16,12 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = new MovieSearchWorkerState();
         var id = Guid.NewGuid();
-        var cmd = new SearchMovie(id, "radarr", "Das Boot", "tt0806910", 550, 25, 10);
+        var cmd = new SearchMovie(id, SearchSource.Radarr, "Das Boot", "tt0806910", 550, 25, 10);
 
         state.Init(cmd, _noSender);
 
         Assert.Equal(id, state.SearchId);
-        Assert.Equal("radarr", state.Source);
+        Assert.Equal(SearchSource.Radarr, state.Source);
         Assert.Equal("Das Boot", state.Query);
         Assert.Equal("tt0806910", state.ImdbId);
         Assert.Equal(550, state.TmdbId);
@@ -68,8 +69,8 @@ public sealed class MovieSearchWorkerStateTests
         Assert.Equal("tt0806910", state.Items[0].Identity.ImdbId);
         Assert.Equal(550, state.Items[0].Identity.TmdbId);
         Assert.NotNull(state.Items[0].Match);
-        Assert.Equal(0.92f, state.Items[0].Match.Confidence);
-        Assert.Equal(MatchMethod.TitleMatch, state.Items[0].Match.Method);
+        Assert.Equal(0.92f, state.Items[0].Match!.Confidence);
+        Assert.Equal(MatchMethod.TitleMatch, state.Items[0].Match!.Method);
     }
 
     [Fact]
@@ -102,7 +103,7 @@ public sealed class MovieSearchWorkerStateTests
     public void TryGetRuleSetRequest_returns_false_when_ruleset_already_set()
     {
         var state = InitState(imdbId: "tt123");
-        state.ApplyRuleSet("film", null);
+        state.ApplyRuleSet("film", null, null);
 
         Assert.False(state.TryGetRuleSetRequest(out _));
     }
@@ -148,7 +149,7 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem("ZDF", "Film", "Movie")], 1));
-        state.ApplyRuleSet("film", null);
+        state.ApplyRuleSet("film", null, null);
 
         var result = state.TryGetScoringRequest(out var request);
 
@@ -161,7 +162,7 @@ public sealed class MovieSearchWorkerStateTests
     public void TryGetScoringRequest_returns_false_when_sources_empty()
     {
         var state = InitState();
-        state.ApplyRuleSet("film", null);
+        state.ApplyRuleSet("film", null, null);
 
         Assert.False(state.TryGetScoringRequest(out _));
     }
@@ -192,11 +193,61 @@ public sealed class MovieSearchWorkerStateTests
         Assert.Single(result.Items);
     }
 
+    [Fact]
+    public void ApplyRuleSet_stores_enrichment_config()
+    {
+        var state = InitState();
+        var config = new EnrichmentConfig(
+            true, [EnrichmentMethod.Airdate], new TitleMatchConfig(0.5f),
+            new AirdateMatchConfig(3), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
+            new YearMatchConfig(1));
+
+        state.ApplyRuleSet("film", "Film", config);
+
+        Assert.NotNull(state.EnrichmentConfig);
+        Assert.Equal(3, state.EnrichmentConfig.Airdate.Tolerance);
+    }
+
+    [Fact]
+    public void TryGetEnrichmentRequest_returns_false_when_enrichment_disabled()
+    {
+        var state = InitState(imdbId: "tt123");
+        state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
+        var config = new EnrichmentConfig(
+            false, [EnrichmentMethod.Title], new TitleMatchConfig(0.5f),
+            new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
+            new YearMatchConfig(1));
+        state.ApplyRuleSet("film", "Film", config);
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)]));
+
+        Assert.False(state.TryGetEnrichmentRequest(out _));
+    }
+
+    [Fact]
+    public void TryGetEnrichmentRequest_includes_enrichment_config()
+    {
+        var state = InitState(imdbId: "tt123");
+        state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
+        var config = new EnrichmentConfig(
+            true, [EnrichmentMethod.Title], new TitleMatchConfig(0.4f),
+            new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
+            new YearMatchConfig(2));
+        state.ApplyRuleSet("film", "Film", config);
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)]));
+
+        var result = state.TryGetEnrichmentRequest(out var request);
+
+        Assert.True(result);
+        Assert.NotNull(request);
+        Assert.NotNull(request.Config);
+        Assert.Equal(0.4f, request.Config.Title.Threshold);
+    }
+
     private static MovieSearchWorkerState InitState(
         string? imdbId = null, int? tmdbId = null, string? query = null)
     {
         var state = new MovieSearchWorkerState();
-        state.Init(new SearchMovie(Guid.NewGuid(), "radarr", query, imdbId, tmdbId, null, null), _noSender);
+        state.Init(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, query, imdbId, tmdbId, null, null), _noSender);
         return state;
     }
 

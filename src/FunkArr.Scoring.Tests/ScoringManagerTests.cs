@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Options;
@@ -31,7 +32,7 @@ public sealed class ScoringManagerTests : TestKit
         manager.Tell(CreateAirdateConfig());
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
-        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
         var result = ExpectMsg<ScoreCompleted>();
         var item = Assert.Single(result.Results);
@@ -50,7 +51,7 @@ public sealed class ScoringManagerTests : TestKit
             new ScoreCandidate("Another Title", "Test", "ZDF", 3600, 1080, null, 0),
         };
 
-        manager.Tell(new ScoreItems(Guid.Empty, "nonexistent", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "nonexistent", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
         var result = ExpectMsg<ScoreCompleted>();
 
         Assert.Equal(2, result.Results.Length);
@@ -70,7 +71,7 @@ public sealed class ScoringManagerTests : TestKit
         manager.Tell(CreateAirdateConfig("test", 0.99f));
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
-        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
         var result = ExpectMsg<ScoreCompleted>();
         var item = Assert.Single(result.Results);
@@ -88,11 +89,11 @@ public sealed class ScoringManagerTests : TestKit
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
 
-        manager.Tell(new ScoreItems(Guid.Empty, "show-a", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "show-a", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
         var resultA = ExpectMsg<ScoreCompleted>();
         Assert.Equal(0.8, resultA.Results[0].Score, 0.001);
 
-        manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
         var resultB = ExpectMsg<ScoreCompleted>();
         Assert.Equal(0.6, resultB.Results[0].Score, 0.001);
     }
@@ -104,7 +105,7 @@ public sealed class ScoringManagerTests : TestKit
         var requestId = Guid.NewGuid();
 
         var candidates = new[] { new ScoreCandidate("Test", "Test", "ARD", 5400, 720, null, 0) };
-        manager.Tell(new ScoreItems(requestId, "nonexistent", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(requestId, "nonexistent", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
         var result = ExpectMsg<ScoreCompleted>();
         Assert.Equal(requestId, result.RequestId);
@@ -119,7 +120,7 @@ public sealed class ScoringManagerTests : TestKit
         manager.Tell(new RemoveMatchingConfig("test"));
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
-        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
         var result = ExpectMsg<ScoreCompleted>();
         var item = Assert.Single(result.Results);
@@ -135,7 +136,7 @@ public sealed class ScoringManagerTests : TestKit
         manager.Tell(new RemoveMatchingConfig("nonexistent"));
 
         var candidates = new[] { new ScoreCandidate("Test", "Test", "ARD", 5400, 720, null, 0) };
-        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
         var result = ExpectMsg<ScoreCompleted>();
         var item = Assert.Single(result.Results);
@@ -154,7 +155,7 @@ public sealed class ScoringManagerTests : TestKit
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
 
-        manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin("test", "test"), candidates));
+        manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
         var result = ExpectMsg<ScoreCompleted>();
         Assert.Equal(0.6, result.Results[0].Score, 0.001);
         Assert.True(result.Results[0].Matched);

@@ -209,6 +209,21 @@ public sealed class ScoringEngineTests
     }
 
     [Fact]
+    public void TitleParts_preserves_constructed_title_in_metadata()
+    {
+        var config = Config(0.9f,
+            new MatchingRule("r1", 0, null, null,
+                new IdentificationSpec(IdentificationStrategy.TitleIncludes,
+                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @":\s*(.+)")])));
+
+        var (scored, _) = ScoringEngine.Score(config,
+            [Candidate(title: "Tatort: Roomservice")]);
+
+        Assert.True(scored[0].Matched);
+        Assert.Equal("Roomservice", scored[0].Metadata?.ConstructedTitle);
+    }
+
+    [Fact]
     public void Regex_timeout_returns_gracefully()
     {
         var config = Config(0.9f,

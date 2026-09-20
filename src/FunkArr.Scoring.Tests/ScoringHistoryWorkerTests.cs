@@ -2,6 +2,7 @@ using Akka.Actor;
 using Akka.Configuration;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using FunkArr.Tests.Shared;
@@ -33,7 +34,7 @@ public sealed class ScoringHistoryWorkerTests() : TestKit(_persistenceConfig)
         new(
             RequestId: requestId ?? Guid.NewGuid(),
             RuleSetId: ruleSetId,
-            Origin: new ScoringOrigin("test", "TestQuery"),
+            Origin: new ScoringOrigin(SearchSource.Test, "TestQuery"),
             Timestamp: timestamp ?? DateTimeOffset.UtcNow,
             CandidateCount: 1,
             MatchedCount: 1,
@@ -54,7 +55,7 @@ public sealed class ScoringHistoryWorkerTests() : TestKit(_persistenceConfig)
 
         Assert.Equal(1, result.TotalCount);
         Assert.Single(result.Snapshots);
-        Assert.Equal("test", result.Snapshots[0].Source);
+        Assert.Equal(SearchSource.Test, result.Snapshots[0].Source);
         Assert.Equal("TestQuery", result.Snapshots[0].Query);
     }
 
@@ -95,7 +96,7 @@ public sealed class ScoringHistoryWorkerTests() : TestKit(_persistenceConfig)
         var result = ExpectMsg<ScoringDetailResult>(TimeSpan.FromSeconds(5));
 
         Assert.Equal(requestId, result.RequestId);
-        Assert.Equal("test", result.Source);
+        Assert.Equal(SearchSource.Test, result.Source);
         Assert.Single(result.ItemTraces);
     }
 
