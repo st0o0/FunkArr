@@ -72,7 +72,7 @@ EnrichedItem SHALL be a sealed record in FunkArr.Search containing: Index (int),
 
 ### Requirement: ReleaseVariant expands EnrichedItem into quality variants
 
-ReleaseVariant SHALL be a sealed record in FunkArr.Search containing: Title (string), Source (SourceInfo), Identity (MediaIdentity), Score (double), Quality (int), Size (long), Match (MatchInfo?). A static `Expand(EnrichedItem, string mediaType, string? mediaName)` method SHALL produce ReleaseVariant[] by expanding the source URLs into quality variants (HD=1080, normal=720, low=480) and generating a release title via ReleaseTitleBuilder for each variant.
+ReleaseVariant SHALL be a sealed record in FunkArr.Search containing: Title (string), Source (SourceInfo), Identity (MediaIdentity), Score (double), Quality (int), Size (long), Match (MatchInfo?). A static `Expand(EnrichedItem, MediaType mediaType, string? mediaName)` method SHALL produce ReleaseVariant[] by expanding the source URLs into quality variants (HD=1080, normal=720, low=480) and generating a release title via ReleaseTitleBuilder for each variant. The `mediaType` parameter SHALL be a `MediaType` enum value, not a string.
 
 #### Scenario: Item with all three quality URLs
 
@@ -93,6 +93,11 @@ ReleaseVariant SHALL be a sealed record in FunkArr.Search containing: Title (str
 
 - **WHEN** Source.Size is 0 or negative
 - **THEN** the ReleaseVariant size SHALL be estimated from Duration and quality-specific bitrate
+
+#### Scenario: MediaType enum replaces string parameter
+
+- **WHEN** `ReleaseVariant.Expand` is called for a TV show
+- **THEN** the `mediaType` parameter SHALL be `MediaType.Show`, not `"tv"`
 
 ### Requirement: ReleaseVariant maps to SearchResultItem
 

@@ -7,7 +7,7 @@ FunkArr.Messages SHALL define a `SearchCommand` record as the single public comm
 #### Scenario: SearchCommand record shape
 
 - **WHEN** a `SearchCommand` is constructed
-- **THEN** it SHALL contain: Query (string?), Cat (int?), Limit (int?), Offset (int?), Params (SearchCommand.ISearchParams?)
+- **THEN** it SHALL contain: Source (SearchSource), Query (string?), Cat (int?), Limit (int?), Offset (int?), Params (SearchCommand.ISearchParams?)
 
 #### Scenario: ISearchParams marker interface
 
@@ -49,7 +49,7 @@ FunkArr.Messages SHALL define an `abstract record SearchRequest` as the base for
 #### Scenario: SearchRequest record shape
 
 - **WHEN** a `SearchRequest` subtype is constructed
-- **THEN** it SHALL contain: SearchId (Guid), Source (string), Query (string?), Limit (int?), Offset (int?)
+- **THEN** it SHALL contain: SearchId (Guid), Source (SearchSource), Query (string?), Limit (int?), Offset (int?)
 - **AND** it SHALL implement IWithSearchId
 
 #### Scenario: SearchSeries inherits from SearchRequest
@@ -156,7 +156,7 @@ ScoreItems and ScoreCompleted SHALL use flat primitive records for Scoring inter
 #### Scenario: ScoringOrigin record
 
 - **WHEN** a scoring origin is specified
-- **THEN** ScoringOrigin SHALL contain: Source (string), Query (string)
+- **THEN** ScoringOrigin SHALL contain: Source (SearchSource), Query (string)
 
 #### Scenario: ScoreCandidate record
 
