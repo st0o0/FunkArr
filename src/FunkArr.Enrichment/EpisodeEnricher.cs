@@ -5,16 +5,19 @@ namespace FunkArr.Enrichment;
 
 public static class EpisodeEnricher
 {
-    private const float _defaultThreshold = 0.7f;
-    private const int _defaultAirdateTolerance = 7;
-
-    public static EnrichedEpisode[] Resolve(TvdbEpisode[] tvdbEpisodes, EpisodeCandidate[] candidates)
+    public static EnrichedEpisode[] Resolve(
+        TvdbEpisode[] tvdbEpisodes, EpisodeCandidate[] candidates, EnrichmentConfig? config = null)
     {
+        if (config is { Enabled: false })
+        {
+            return [];
+        }
+
         var results = new List<EnrichedEpisode>();
 
         foreach (var candidate in candidates)
         {
-            var resolved = ResolveCandidate(candidate, tvdbEpisodes);
+            var resolved = ResolveCandidate(candidate, tvdbEpisodes, config);
             if (resolved is not null)
             {
                 results.Add(resolved);
@@ -24,7 +27,8 @@ public static class EpisodeEnricher
         return results.ToArray();
     }
 
-    private static EnrichedEpisode? ResolveCandidate(EpisodeCandidate candidate, TvdbEpisode[] episodes)
+    private static EnrichedEpisode? ResolveCandidate(
+        EpisodeCandidate candidate, TvdbEpisode[] episodes, EnrichmentConfig? config)
     {
         if (candidate.ExistingSeason is not null && candidate.ExistingEpisode is not null)
         {
@@ -34,14 +38,49 @@ public static class EpisodeEnricher
                 tvdbMatch?.Name ?? "", 1.0f, MatchMethod.RegexExtracted);
         }
 
-        var titleMatch = FindByTitle(candidate, episodes, _defaultThreshold);
-        if (titleMatch is not null)
+        var titleThreshold = config?.Title.Threshold ?? 0.7f;
+        var airdateTolerance = config?.Airdate.Tolerance ?? 7;
+        var runtimeTolerance = config?.Runtime.Tolerance ?? 0.35f;
+        var runtimeMode = config?.Runtime.Mode ?? RuntimeMode.Tiebreaker;
+        var methods = config?.Methods ?? [EnrichmentMethod.Title, EnrichmentMethod.Airdate];
+
+        var filteredEpisodes = runtimeMode == RuntimeMode.Filter
+            ? FilterByRuntime(episodes, candidate.Duration, runtimeTolerance)
+            : episodes;
+
+        foreach (var method in methods)
         {
-            return titleMatch;
+            var result = method switch
+            {
+                EnrichmentMethod.Title => FindByTitle(candidate, filteredEpisodes, titleThreshold, runtimeTolerance),
+                EnrichmentMethod.Airdate => FindByAirdate(candidate, filteredEpisodes, airdateTolerance),
+                _ => null,
+            };
+
+            if (result is not null)
+            {
+                return result;
+            }
         }
 
-        var airdateMatch = FindByAirdate(candidate, episodes, _defaultAirdateTolerance);
-        return airdateMatch;
+        return null;
+    }
+
+    private static TvdbEpisode[] FilterByRuntime(TvdbEpisode[] episodes, int durationSeconds, float tolerance)
+    {
+        var filtered = episodes.Where(ep =>
+        {
+            if (ep.Runtime is null or 0)
+            {
+                return true;
+            }
+
+            var epDurationSeconds = ep.Runtime.Value * 60;
+            var diff = Math.Abs(durationSeconds - epDurationSeconds);
+            return diff <= epDurationSeconds * tolerance;
+        }).ToArray();
+
+        return filtered.Length > 0 ? filtered : episodes;
     }
 
     private static TvdbEpisode? FindBySeasonEpisode(TvdbEpisode[] episodes, string season, string episode)
@@ -55,7 +94,8 @@ public static class EpisodeEnricher
         return Array.Find(episodes, ep => ep.SeasonNumber == s && ep.Number == e);
     }
 
-    private static EnrichedEpisode? FindByTitle(EpisodeCandidate candidate, TvdbEpisode[] episodes, float threshold)
+    private static EnrichedEpisode? FindByTitle(
+        EpisodeCandidate candidate, TvdbEpisode[] episodes, float threshold, float runtimeTolerance)
     {
         TvdbEpisode? bestMatch = null;
         var bestSimilarity = 0f;
@@ -106,7 +146,7 @@ public static class EpisodeEnricher
 
             if (tieBreakers.Length > 1)
             {
-                bestMatch = BreakTieByRuntime(tieBreakers.Select(t => t.Episode).ToArray(), candidate.Duration)
+                bestMatch = BreakTieByRuntime(tieBreakers.Select(t => t.Episode).ToArray(), candidate.Duration, runtimeTolerance)
                             ?? bestMatch;
             }
         }
@@ -171,7 +211,7 @@ public static class EpisodeEnricher
             MatchMethod.AirdateMatch);
     }
 
-    private static TvdbEpisode? BreakTieByRuntime(TvdbEpisode[] candidates, int durationSeconds)
+    private static TvdbEpisode? BreakTieByRuntime(TvdbEpisode[] candidates, int durationSeconds, float runtimeTolerance)
     {
         TvdbEpisode? best = null;
         var bestDiff = double.MaxValue;
@@ -185,7 +225,7 @@ public static class EpisodeEnricher
 
             var epDurationSeconds = ep.Runtime.Value * 60;
             var diff = Math.Abs(durationSeconds - epDurationSeconds);
-            var tolerance = epDurationSeconds * 0.35;
+            var tolerance = epDurationSeconds * (double)runtimeTolerance;
 
             if (diff <= tolerance && diff < bestDiff)
             {

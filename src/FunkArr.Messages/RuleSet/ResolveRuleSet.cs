@@ -1,3 +1,5 @@
+using FunkArr.Messages.Enrichment;
+
 namespace FunkArr.Messages.RuleSet;
 
 public sealed record ResolveRuleSet(
@@ -8,6 +10,10 @@ public sealed record ResolveRuleSet(
 
 public abstract record ResolveRuleSetResponse;
 
-public sealed record RuleSetResolved(string RuleSetId, string Topic, string? MediaName = null) : ResolveRuleSetResponse;
+public sealed record RuleSetResolved(
+    string RuleSetId,
+    string Topic,
+    string? MediaName = null,
+    EnrichmentConfig? Enrichment = null) : ResolveRuleSetResponse;
 
 public sealed record RuleSetFailed(Exception Cause) : ResolveRuleSetResponse;

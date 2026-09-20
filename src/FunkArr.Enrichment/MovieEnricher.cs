@@ -4,14 +4,20 @@ namespace FunkArr.Enrichment;
 
 public static class MovieEnricher
 {
-    public static EnrichedMovie[] Resolve(TmdbMovie movie, string[] alternativeTitles, MovieCandidate[] candidates)
+    public static EnrichedMovie[] Resolve(
+        TmdbMovie movie, string[] alternativeTitles, MovieCandidate[] candidates, EnrichmentConfig? config = null)
     {
+        if (config is { Enabled: false })
+        {
+            return [];
+        }
+
         var year = ParseYear(movie.ReleaseDate);
         var results = new List<EnrichedMovie>();
 
         foreach (var candidate in candidates)
         {
-            var resolved = ResolveCandidate(candidate, movie, alternativeTitles, year);
+            var resolved = ResolveCandidate(candidate, movie, alternativeTitles, year, config);
             if (resolved is not null)
             {
                 results.Add(resolved);
@@ -22,8 +28,11 @@ public static class MovieEnricher
     }
 
     private static EnrichedMovie? ResolveCandidate(
-        MovieCandidate candidate, TmdbMovie movie, string[] altTitles, int? movieYear)
+        MovieCandidate candidate, TmdbMovie movie, string[] altTitles, int? movieYear, EnrichmentConfig? config)
     {
+        var titleThreshold = config?.Title.Threshold ?? 0.5f;
+        var yearTolerance = config?.Year.Tolerance ?? 1;
+
         var allTitles = new List<string>();
         if (movie.Title is not null)
         {
@@ -48,9 +57,9 @@ public static class MovieEnricher
             }
         }
 
-        var yearMatches = ValidateYear(candidate.AiredAt, movieYear);
+        var yearMatches = ValidateYear(candidate.AiredAt, movieYear, yearTolerance);
 
-        if (bestSimilarity >= 0.5f && yearMatches)
+        if (bestSimilarity >= titleThreshold && yearMatches)
         {
             return new EnrichedMovie(
                 candidate.Index,
@@ -78,14 +87,14 @@ public static class MovieEnricher
         return null;
     }
 
-    private static bool ValidateYear(DateTimeOffset? candidateAiredAt, int? movieYear)
+    private static bool ValidateYear(DateTimeOffset? candidateAiredAt, int? movieYear, int tolerance)
     {
         if (movieYear is null || candidateAiredAt is null)
         {
             return true;
         }
 
-        return Math.Abs(candidateAiredAt.Value.Year - movieYear.Value) <= 1;
+        return Math.Abs(candidateAiredAt.Value.Year - movieYear.Value) <= tolerance;
     }
 
     private static int? ParseYear(string? releaseDate)

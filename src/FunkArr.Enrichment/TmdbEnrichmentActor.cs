@@ -37,7 +37,7 @@ internal sealed class TmdbEnrichmentActor : ReceiveActor
                 return;
             }
 
-            var enriched = MovieEnricher.Resolve(data.Movie, data.AltTitles, msg.Candidates);
+            var enriched = MovieEnricher.Resolve(data.Movie, data.AltTitles, msg.Candidates, msg.Config);
             Sender.Tell(new EnrichMoviesCompleted(enriched));
         }
         catch (Exception ex)

@@ -26,7 +26,7 @@ internal sealed class TvdbEnrichmentActor : ReceiveActor
                 ? episodes.Where(e => e.SeasonNumber == msg.Season.Value).ToArray()
                 : episodes;
 
-            var enriched = EpisodeEnricher.Resolve(filtered, msg.Candidates);
+            var enriched = EpisodeEnricher.Resolve(filtered, msg.Candidates, msg.Config);
             Sender.Tell(new EnrichEpisodesCompleted(enriched));
         }
         catch (Exception ex)
