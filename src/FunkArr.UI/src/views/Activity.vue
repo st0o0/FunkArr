@@ -1,16 +1,16 @@
 <template>
   <div class="max-w-3xl mx-auto">
     <div class="flex items-center justify-between mb-5">
-      <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ $t('activity.title') }}</h1>
-      <div class="flex items-center gap-3 text-xs">
-        <span v-if="totalSpeed > 0" class="text-text-secondary tabular-nums">{{ formatSpeed(totalSpeed) }}</span>
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="$t('activity.search')"
-          class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted w-40 focus:outline-none focus:border-border-focus"
-        />
+      <div class="flex items-center gap-3">
+        <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ $t('activity.title') }}</h1>
+        <span v-if="totalSpeed > 0" class="text-xs text-accent tabular-nums font-medium px-2 py-0.5 rounded-md bg-accent/10">{{ formatSpeed(totalSpeed) }}</span>
       </div>
+      <input
+        v-model="searchQuery"
+        type="text"
+        :placeholder="$t('activity.search')"
+        class="bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body placeholder-text-muted w-40 focus:outline-none focus:border-border-focus"
+      />
     </div>
 
     <div class="flex items-center gap-1 mb-4">

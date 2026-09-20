@@ -70,6 +70,7 @@
           <option value="de-AT">Österreichisch</option>
           <option value="de-CH">Schwizerdütsch</option>
         </select>
+        <div v-if="!collapsed && appVersion" class="px-2.5 py-1 text-[11px] text-text-muted tabular-nums">v{{ appVersion }}</div>
         <button
           @click="toggle"
           class="w-full flex items-center rounded-md text-text-secondary hover:text-text-body hover:bg-surface-elevated/50 transition-colors"
@@ -110,10 +111,18 @@ function changeLocale(val: string) {
 }
 
 const collapsed = ref(false)
+const appVersion = ref<string | null>(null)
 
-onMounted(() => {
+onMounted(async () => {
   const stored = localStorage.getItem('funkarr-sidebar')
   if (stored === 'collapsed') collapsed.value = true
+  try {
+    const res = await fetch('/api/system/version')
+    if (res.ok) {
+      const data = await res.json()
+      appVersion.value = data.appVersion
+    }
+  } catch { /* ignore */ }
 })
 
 function toggle() {

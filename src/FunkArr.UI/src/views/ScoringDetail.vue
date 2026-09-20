@@ -18,7 +18,7 @@
         <span class="text-text-muted">|</span>
         <span>{{ $t('scoring.queryColumn') }}: {{ detail.query }}</span>
         <span class="text-text-muted">|</span>
-        <span>{{ new Date(detail.timestamp).toLocaleString() }}</span>
+        <span>{{ new Date(detail.timestamp).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) }}</span>
       </div>
 
       <div class="flex items-center gap-2 mb-4">

@@ -68,6 +68,7 @@
     "copy": "Copy",
     "copiedToClipboard": "Copied to clipboard",
     "version": "Version",
+    "advancedSettingsHint": "<strong>Important:</strong> In {service}, click <strong>Show Advanced</strong> at the top to reveal all required fields (e.g., API Path, URL Base).",
     "testConnectionHint": "After entering these values, use the <strong>Test</strong> button in {service} to verify the connection works.",
     "sonarrDailyTip": "<strong>Tip:</strong> Shows identified by air date (e.g., Die Sendung mit der Maus, Bibi Blocksberg) need <strong>Series Type: Daily</strong> in Sonarr for automatic import.",
     "fixDefault": "Check your configuration and try again.",

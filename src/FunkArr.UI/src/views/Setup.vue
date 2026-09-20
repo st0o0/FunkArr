@@ -112,6 +112,9 @@
       <h2 class="text-sm font-medium text-text-primary mb-1">{{ $t('setup.configureService', { service: currentServiceConfig.title }) }}</h2>
       <p class="text-text-secondary text-sm mb-4">{{ currentServiceConfig.description }}</p>
 
+      <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-text-body mb-4" v-html="$t('setup.advancedSettingsHint', { service: currentServiceConfig.title })">
+      </div>
+
       <div class="bg-surface-raised rounded-lg border border-border-default overflow-hidden mb-4">
         <table class="w-full text-sm">
           <tbody>
@@ -126,11 +129,11 @@
                   <span>{{ field.value }}</span>
                   <button
                     v-if="field.copyable"
-                    @click="copyToClipboard(field.value)"
+                    @click="handleCopy(field.value)"
                     class="text-xs px-1.5 py-0.5 border border-border-default rounded hover:bg-surface-elevated text-text-secondary transition-colors"
                     :title="`${$t('setup.copy')} ${field.label}`"
                   >
-                    {{ justCopied === field.value ? $t('setup.copied') : $t('setup.copy') }}
+                    {{ hasCopied(field.value) ? $t('setup.copied') : $t('setup.copy') }}
                   </button>
                 </div>
                 <div v-if="field.note" class="text-xs text-text-secondary mt-0.5 font-sans">{{ field.note }}</div>
@@ -173,9 +176,11 @@ import { useI18n } from 'vue-i18n'
 import { getSetupHealth, type SetupHealthCheck } from '../api/setup'
 import { CheckStatus } from '../api/enums'
 import { useToast } from '../composables/useToast'
+import { useClipboard } from '../composables/useClipboard'
 
 const { t } = useI18n()
 const { toast } = useToast()
+const { copy, hasCopied } = useClipboard()
 import SkeletonCard from '../components/SkeletonCard.vue'
 
 const health = ref<SetupHealthCheck | null>(null)
@@ -183,7 +188,6 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 const currentStep = ref(0)
 const selectedServices = ref<string[]>([])
-const justCopied = ref<string | null>(null)
 
 const healthLabelKeys: Record<string, string> = {
   apiKey: 'health.apiKey',
@@ -328,15 +332,9 @@ async function runHealthCheck() {
   }
 }
 
-async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-    toast(t('setup.copiedToClipboard'))
-    justCopied.value = text
-    setTimeout(() => { justCopied.value = null }, 2000)
-  } catch {
-    // Clipboard not available
-  }
+async function handleCopy(text: string) {
+  const ok = await copy(text)
+  toast(ok ? t('setup.copiedToClipboard') : t('setup.copy'))
 }
 
 onMounted(runHealthCheck)

@@ -217,7 +217,7 @@ const mergeMode = computed(() => {
 })
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString()
+  return new Date(dateStr).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 async function handleExport() {

@@ -68,6 +68,7 @@
     "copy": "Kopieren",
     "copiedToClipboard": "In die Zwischenablage kopiert",
     "version": "Version",
+    "advancedSettingsHint": "<strong>Wichtig:</strong> Klicke in {service} oben auf <strong>Show Advanced</strong>, damit alle benötigten Felder angezeigt werden (z.B. API Path, URL Base).",
     "testConnectionHint": "Gib diese Werte ein und klicke auf <strong>Test</strong> in {service}, um die Verbindung zu prüfen.",
     "sonarrDailyTip": "<strong>Tipp:</strong> Sendungen, die über das Ausstrahlungsdatum identifiziert werden (z.B. Die Sendung mit der Maus, Bibi Blocksberg), benötigen in Sonarr den <strong>Serientyp: Daily</strong> für den automatischen Import.",
     "fixDefault": "Überprüfe deine Konfiguration und versuche es erneut.",

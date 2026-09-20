@@ -82,7 +82,7 @@ const error = ref<string | null>(null)
 const offset = ref(0)
 
 function formatTime(ts: string): string {
-  return new Date(ts).toLocaleString()
+  return new Date(ts).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 async function load() {
