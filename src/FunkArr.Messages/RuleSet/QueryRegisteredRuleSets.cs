@@ -10,6 +10,6 @@ public sealed record RegisteredRuleSetEntry(
     string? ImdbId,
     int? TmdbId,
     string? MediaName,
-    string? MediaType);
+    MediaType? MediaType);
 
 public sealed record RegisteredRuleSetsResult(RegisteredRuleSetEntry[] Entries);

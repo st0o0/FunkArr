@@ -1,3 +1,5 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Messages.Download;
 
 public sealed record AddDownload(
@@ -7,4 +9,4 @@ public sealed record AddDownload(
     string Channel,
     int Duration,
     long Size,
-    string Category);
+    MediaType Category);

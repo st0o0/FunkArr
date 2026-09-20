@@ -1,8 +1,10 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Messages.Search;
 
 public abstract record SearchRequest(
     Guid SearchId,
-    string Source,
+    SearchSource Source,
     string? Query,
     int? Limit,
     int? Offset) : IWithSearchId;

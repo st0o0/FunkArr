@@ -1,3 +1,5 @@
+using FunkArr.Messages.Enrichment;
+
 namespace FunkArr.Messages.RuleSet;
 
 public sealed record RegisterRuleSet(
@@ -8,4 +10,5 @@ public sealed record RegisterRuleSet(
     string? ImdbId = null,
     int? TmdbId = null,
     string? MediaName = null,
-    string? MediaType = null);
+    MediaType? MediaType = null,
+    EnrichmentConfig? Enrichment = null);

@@ -1,3 +1,5 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Messages.Download;
 
 public sealed record QueueResult(QueueItem[] Items, int TotalSlots, int TotalItems);
@@ -13,4 +15,4 @@ public sealed record QueueItem(
     long CurrentTimeUs,
     int TotalDuration,
     double Speed,
-    string Category);
+    MediaType Category);

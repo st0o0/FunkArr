@@ -1,9 +1,11 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Messages.Download;
 
 public sealed record RecordDownload(
     Guid DownloadId,
     string Title,
-    string Category,
+    MediaType Category,
     long Size,
     DownloadStatus Status,
     string? RelativePath,

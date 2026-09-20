@@ -1,8 +1,10 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Messages.Search;
 
 public sealed record SearchMovie(
     Guid SearchId,
-    string Source,
+    SearchSource Source,
     string? Query,
     string? ImdbId,
     int? TmdbId,

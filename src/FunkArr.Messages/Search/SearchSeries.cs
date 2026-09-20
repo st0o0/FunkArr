@@ -1,8 +1,10 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Messages.Search;
 
 public sealed record SearchSeries(
     Guid SearchId,
-    string Source,
+    SearchSource Source,
     string? Query,
     int? Season,
     int? Episode,

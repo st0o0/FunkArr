@@ -1,9 +1,11 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Persistence.Events.Download;
 
 public sealed record HistoryRecorded(
     Guid DownloadId,
     string Title,
-    string Category,
+    MediaType Category,
     long Size,
     int Status,
     string? RelativePath,
