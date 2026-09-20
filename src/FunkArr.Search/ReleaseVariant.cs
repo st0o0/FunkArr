@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
@@ -15,7 +16,7 @@ public sealed record ReleaseVariant(
     long Size,
     MatchInfo? Match)
 {
-    public static ReleaseVariant[] Expand(EnrichedItem item, string mediaType, string? mediaName)
+    public static ReleaseVariant[] Expand(EnrichedItem item, MediaType mediaType, string? mediaName)
     {
         var variants = VideoQuality.GetVariants(item.Source);
         if (variants.Length == 0)

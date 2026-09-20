@@ -77,7 +77,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
                 _state = _state.Apply(e);
                 _downloadManager.Tell(new SlotFree(cmd.DownloadId));
                 _downloadHistory.Tell(new RecordDownload(
-                    cmd.DownloadId, _state.Title!, _state.Category!, _state.Size,
+                    cmd.DownloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Failed, null, reason, 0, completedAt));
                 Passivate();
             });
@@ -112,7 +112,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
             Guid.Parse(Context.Self.Path.Name),
             _state.Title!, _state.VideoUrl!, _state.SubtitleUrl,
             _state.Channel!, _state.Duration, _state.Size,
-            _state.Category!);
+            _state.Category!.Value);
 
         Persist(evt, e => _state = _state.Apply(e));
     }
@@ -127,7 +127,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         Sender.Tell(new WorkerStatusResult(
             Guid.Parse(Context.Self.Path.Name),
             _state.Title!,
-            _state.Category!,
+            _state.Category!.Value,
             _state.Channel ?? "",
             _state.SubtitleUrl is not null,
             _state.Size,
@@ -191,7 +191,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
                 _dataFiles.Remove(Path.GetDirectoryName(paths.IncompletePath)!);
                 _downloadManager.Tell(new SlotFree(downloadId));
                 _downloadHistory.Tell(new RecordDownload(
-                    downloadId, _state.Title!, _state.Category!, _state.Size,
+                    downloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Completed, paths.RelativePath, null,
                     msg.ElapsedSeconds, completedAt));
                 Passivate();
@@ -209,7 +209,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
                 _state = _state.Apply(e);
                 _downloadManager.Tell(new SlotFree(downloadId));
                 _downloadHistory.Tell(new RecordDownload(
-                    downloadId, _state.Title!, _state.Category!, _state.Size,
+                    downloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Failed, null, reason, 0, completedAt));
                 Passivate();
             });
@@ -226,7 +226,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
     }
 
     private DataPaths.ResolvedDownload ResolvePaths() =>
-        _dataPaths.ResolveDownload(Context.Self.Path.Name, _state.Title!, _state.Category, _options.Categories);
+        _dataPaths.ResolveDownload(Context.Self.Path.Name, _state.Title!, _state.Category?.ToString().ToLowerInvariant(), _options.Categories);
 
     private void CancelRunning()
     {

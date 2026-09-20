@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download;
@@ -17,7 +18,7 @@ public sealed record DownloadWorkerState(
     string? Channel,
     int Duration,
     long Size,
-    string? Category,
+    MediaType? Category,
     WorkerStatus Status,
     string? FailMessage,
     long BytesDownloaded,

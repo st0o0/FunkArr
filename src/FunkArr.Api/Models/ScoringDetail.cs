@@ -1,8 +1,10 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Api.Models;
 
 public sealed record ScoringDetail(
     Guid RequestId,
-    string Source,
+    SearchSource Source,
     string Query,
     DateTimeOffset Timestamp,
     ItemTrace[] ItemTraces);

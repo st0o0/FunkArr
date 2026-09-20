@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Akka.Actor;
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
@@ -12,7 +13,7 @@ public sealed class TvSearchWorkerState
 {
     public Guid SearchId { get; private set; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
-    public string Source { get; private set; } = "";
+    public SearchSource Source { get; private set; }
     public string? Query { get; private set; }
     public SourceInfo[] Sources { get; private set; } = [];
     public string? RuleSetId { get; private set; }
@@ -22,7 +23,10 @@ public sealed class TvSearchWorkerState
     public int? Limit { get; private set; }
     public int? Offset { get; private set; }
     public string? MediaName { get; private set; }
+    public EnrichmentConfig? EnrichmentConfig { get; private set; }
     public EnrichedItem[] Items { get; private set; } = [];
+
+    private Dictionary<int, string?> _constructedTitles = [];
 
     public MediaIdentity BaseIdentity => new(TvdbId, ImdbId, null, null, null);
 
@@ -44,10 +48,11 @@ public sealed class TvSearchWorkerState
         Sources = result.Items.Select(SourceInfo.From).ToArray();
     }
 
-    public void ApplyRuleSet(string ruleSetId, string? mediaName)
+    public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
     {
         RuleSetId = ruleSetId;
         MediaName = mediaName;
+        EnrichmentConfig = enrichmentConfig;
     }
 
     public void Apply(ScoreCompleted scored)
@@ -64,6 +69,15 @@ public sealed class TvSearchWorkerState
                 Episode = s.Metadata?.Episode,
             },
             Match: null)).ToArray();
+
+        _constructedTitles.Clear();
+        foreach (var s in scored.Results)
+        {
+            if (s.Metadata?.ConstructedTitle is not null)
+            {
+                _constructedTitles[s.Index] = s.Metadata.ConstructedTitle;
+            }
+        }
     }
 
     public void Apply(EnrichEpisodesCompleted enriched)
@@ -165,10 +179,16 @@ public sealed class TvSearchWorkerState
             return false;
         }
 
+        if (EnrichmentConfig is { Enabled: false })
+        {
+            return false;
+        }
+
         var candidates = Items
             .Where(e => e.Matched && e.HasScoringMetadata && e.Identity.Season is null && e.Identity.Episode is null)
             .Select(e => new EpisodeCandidate(
-                e.Index, e.Source.Title, null,
+                e.Index, e.Source.Title,
+                _constructedTitles.GetValueOrDefault(e.Index),
                 e.Source.AiredAt, e.Source.Duration,
                 null, null))
             .ToArray();
@@ -178,7 +198,7 @@ public sealed class TvSearchWorkerState
             return false;
         }
 
-        request = new EnrichEpisodes(TvdbId.Value, Season, candidates);
+        request = new EnrichEpisodes(TvdbId.Value, Season, candidates, EnrichmentConfig);
         return true;
     }
 
@@ -187,7 +207,7 @@ public sealed class TvSearchWorkerState
         var items = Items.Length > 0 ? Items : UnscoredItems();
 
         var variants = items
-            .SelectMany(e => ReleaseVariant.Expand(e, "tv", MediaName))
+            .SelectMany(e => ReleaseVariant.Expand(e, MediaType.Show, MediaName))
             .OrderByDescending(v => v.Score)
             .Select(v => v.ToResultItem())
             .ToArray();

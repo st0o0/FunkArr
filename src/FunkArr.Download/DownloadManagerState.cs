@@ -35,7 +35,7 @@ public static class DownloadManagerStateExtensions
         if (query.Category is not null)
         {
             filtered = filtered
-                .Where(i => string.Equals(i.Category, query.Category, StringComparison.OrdinalIgnoreCase));
+                .Where(i => i.Category == query.Category);
         }
 
         var materialized = filtered.ToArray();

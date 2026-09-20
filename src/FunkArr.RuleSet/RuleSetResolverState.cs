@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using FunkArr.Messages;
+using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.RuleSet;
 
 namespace FunkArr.RuleSet;
@@ -9,7 +11,8 @@ public sealed record RuleSetResolverState(
     ImmutableDictionary<string, string> IdIndex,
     ImmutableDictionary<string, string> TopicByRuleSetId,
     ImmutableDictionary<string, string> MediaNameByRuleSetId,
-    ImmutableDictionary<string, string> MediaTypeByRuleSetId)
+    ImmutableDictionary<string, MediaType> MediaTypeByRuleSetId,
+    ImmutableDictionary<string, EnrichmentConfig> EnrichmentConfigByRuleSetId)
 {
     public static readonly RuleSetResolverState Empty = new(
         ImmutableDictionary.Create<string, string>(StringComparer.OrdinalIgnoreCase),
@@ -17,7 +20,8 @@ public sealed record RuleSetResolverState(
         ImmutableDictionary<string, string>.Empty,
         ImmutableDictionary<string, string>.Empty,
         ImmutableDictionary<string, string>.Empty,
-        ImmutableDictionary<string, string>.Empty);
+        ImmutableDictionary<string, MediaType>.Empty,
+        ImmutableDictionary<string, EnrichmentConfig>.Empty);
 }
 
 public static class RuleSetResolverStateExtensions
@@ -43,7 +47,8 @@ public static class RuleSetResolverStateExtensions
             idIndex,
             state.TopicByRuleSetId.Remove(msg.RuleSetId),
             state.MediaNameByRuleSetId.Remove(msg.RuleSetId),
-            state.MediaTypeByRuleSetId.Remove(msg.RuleSetId));
+            state.MediaTypeByRuleSetId.Remove(msg.RuleSetId),
+            state.EnrichmentConfigByRuleSetId.Remove(msg.RuleSetId));
     }
 
     public static RuleSetResolverState Apply(this RuleSetResolverState state, RegisterRuleSet msg)
@@ -77,8 +82,12 @@ public static class RuleSetResolverStateExtensions
             : state.MediaNameByRuleSetId.Remove(msg.RuleSetId);
 
         var mediaTypeIndex = msg.MediaType is not null
-            ? state.MediaTypeByRuleSetId.SetItem(msg.RuleSetId, msg.MediaType)
+            ? state.MediaTypeByRuleSetId.SetItem(msg.RuleSetId, msg.MediaType.Value)
             : state.MediaTypeByRuleSetId.Remove(msg.RuleSetId);
+
+        var enrichmentIndex = msg.Enrichment is not null
+            ? state.EnrichmentConfigByRuleSetId.SetItem(msg.RuleSetId, msg.Enrichment)
+            : state.EnrichmentConfigByRuleSetId.Remove(msg.RuleSetId);
 
         return new RuleSetResolverState(
             lookupIndex,
@@ -86,7 +95,8 @@ public static class RuleSetResolverStateExtensions
             idIndex,
             state.TopicByRuleSetId.SetItem(msg.RuleSetId, msg.Topic),
             mediaNameIndex,
-            mediaTypeIndex);
+            mediaTypeIndex,
+            enrichmentIndex);
     }
 
     public static ResolveRuleSetResponse Resolve(this RuleSetResolverState state, ResolveRuleSet msg)
@@ -96,7 +106,8 @@ public static class RuleSetResolverStateExtensions
         {
             var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, msg.TopicOrAlias);
             var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-            return new RuleSetResolved(ruleSetId, topic, mediaName);
+            var enrichment = state.EnrichmentConfigByRuleSetId.TryGetValue(ruleSetId, out var ec) ? ec : null;
+            return new RuleSetResolved(ruleSetId, topic, mediaName, enrichment);
         }
 
         if (TryResolveById(state, "tvdb", msg.TvdbId?.ToString(), out var byTvdb))
@@ -134,7 +145,8 @@ public static class RuleSetResolverStateExtensions
 
         var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, "");
         var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-        resolved = new RuleSetResolved(ruleSetId, topic, mediaName);
+        var enrichment = state.EnrichmentConfigByRuleSetId.TryGetValue(ruleSetId, out var ec) ? ec : null;
+        resolved = new RuleSetResolved(ruleSetId, topic, mediaName, enrichment);
         return true;
     }
 
@@ -189,7 +201,7 @@ public static class RuleSetResolverStateExtensions
             }
 
             var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-            var mediaType = state.MediaTypeByRuleSetId.GetValueOrDefault(ruleSetId);
+            MediaType? mediaType = state.MediaTypeByRuleSetId.TryGetValue(ruleSetId, out var mt) ? mt : null;
             entries.Add(new RegisteredRuleSetEntry(ruleSetId, topic, aliases, tvdbId, imdbId, tmdbId, mediaName, mediaType));
         }
 

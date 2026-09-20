@@ -96,7 +96,7 @@ public sealed class TvSearchWorker : ReceiveActor
     {
         Receive<RuleSetResolved>(resolved =>
         {
-            _state.ApplyRuleSet(resolved.RuleSetId, resolved.MediaName);
+            _state.ApplyRuleSet(resolved.RuleSetId, resolved.MediaName, resolved.Enrichment);
 
             if (_state.Sources.Length == 0)
             {

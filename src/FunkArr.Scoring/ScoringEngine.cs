@@ -521,7 +521,7 @@ public static class ScoringEngine
             ? DateTimeOffset.FromUnixTimeSeconds(candidate.Timestamp)
             : null;
 
-        return new MetadataSpec(id.Season, id.Episode, airedAt);
+        return new MetadataSpec(id.Season, id.Episode, airedAt, id.Title);
     }
 
     private static string NormalizeUmlauts(string input) => input

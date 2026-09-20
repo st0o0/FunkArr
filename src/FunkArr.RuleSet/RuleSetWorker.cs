@@ -59,7 +59,7 @@ public sealed class RuleSetWorker : ReceiveActor
         resolver.Tell(new RegisterRuleSet(
             msg.RuleSetId, identity.Value.Topic, identity.Value.Aliases,
             identity.Value.TvdbId, identity.Value.ImdbId, identity.Value.TmdbId,
-            identity.Value.MediaName, identity.Value.MediaType));
+            identity.Value.MediaName, identity.Value.MediaType, identity.Value.Enrichment));
     }
 
     private void HandleRemove(RemoveRuleSet msg)

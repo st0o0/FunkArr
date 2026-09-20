@@ -1,3 +1,5 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Api.Models;
 
 public enum SourceType
@@ -6,12 +8,6 @@ public enum SourceType
     Local,
     Merged,
     Unknown,
-}
-
-public enum MediaType
-{
-    Show,
-    Movie,
 }
 
 public sealed record RuleSetListEntry(

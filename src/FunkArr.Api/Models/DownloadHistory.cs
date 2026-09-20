@@ -1,3 +1,5 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Api.Models;
 
 public enum HistoryStatus
@@ -13,7 +15,7 @@ public sealed record DownloadHistoryResponse(
 public sealed record DownloadHistoryItem(
     string DownloadId,
     string Title,
-    string Category,
+    MediaType Category,
     long TotalBytes,
     int DownloadTimeSeconds,
     string? RelativePath,

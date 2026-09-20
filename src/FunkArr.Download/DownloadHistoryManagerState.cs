@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
 
@@ -6,7 +7,7 @@ namespace FunkArr.Download;
 public sealed record HistoryRecord(
     Guid DownloadId,
     string Title,
-    string Category,
+    MediaType Category,
     long Size,
     DownloadStatus Status,
     string? RelativePath,
@@ -58,9 +59,8 @@ public static class DownloadHistoryManagerStateExtensions
     public static HistoryCategoriesResult ToHistoryCategories(this DownloadHistoryManagerState state)
     {
         var categories = state.Records
-            .Select(r => r.Category)
-            .Where(c => !string.IsNullOrEmpty(c))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(r => r.Category.ToString().ToLowerInvariant())
+            .Distinct()
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
@@ -72,7 +72,7 @@ public static class DownloadHistoryManagerStateExtensions
         IEnumerable<HistoryRecord> filtered = state.Records;
         if (query.Category is not null)
         {
-            filtered = filtered.Where(r => string.Equals(r.Category, query.Category, StringComparison.OrdinalIgnoreCase));
+            filtered = filtered.Where(r => r.Category == query.Category);
         }
 
         var materialized = filtered.ToArray();

@@ -1,3 +1,5 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Api.Models;
 
 public sealed record ScoringHistory(
@@ -7,7 +9,7 @@ public sealed record ScoringHistory(
 
 public sealed record ScoringSnapshotSummary(
     Guid RequestId,
-    string Source,
+    SearchSource Source,
     string Query,
     DateTimeOffset Timestamp,
     int CandidateCount,

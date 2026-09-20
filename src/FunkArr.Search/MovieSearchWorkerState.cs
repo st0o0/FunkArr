@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Akka.Actor;
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
@@ -12,7 +13,7 @@ public sealed class MovieSearchWorkerState
 {
     public Guid SearchId { get; private set; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
-    public string Source { get; private set; } = "";
+    public SearchSource Source { get; private set; }
     public string? Query { get; private set; }
     public SourceInfo[] Sources { get; private set; } = [];
     public string? RuleSetId { get; private set; }
@@ -21,6 +22,7 @@ public sealed class MovieSearchWorkerState
     public int? Limit { get; private set; }
     public int? Offset { get; private set; }
     public string? MediaName { get; private set; }
+    public EnrichmentConfig? EnrichmentConfig { get; private set; }
     public EnrichedItem[] Items { get; private set; } = [];
 
     public MediaIdentity BaseIdentity => new(null, ImdbId, TmdbId, null, null);
@@ -42,10 +44,11 @@ public sealed class MovieSearchWorkerState
         Sources = result.Items.Select(SourceInfo.From).ToArray();
     }
 
-    public void ApplyRuleSet(string ruleSetId, string? mediaName)
+    public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
     {
         RuleSetId = ruleSetId;
         MediaName = mediaName;
+        EnrichmentConfig = enrichmentConfig;
     }
 
     public void Apply(ScoreCompleted scored)
@@ -167,6 +170,11 @@ public sealed class MovieSearchWorkerState
             return false;
         }
 
+        if (EnrichmentConfig is { Enabled: false })
+        {
+            return false;
+        }
+
         var candidates = Items
             .Where(e => e.Matched)
             .Select(e => new MovieCandidate(
@@ -179,7 +187,7 @@ public sealed class MovieSearchWorkerState
             return false;
         }
 
-        request = new EnrichMovies(ImdbId, TmdbId, candidates);
+        request = new EnrichMovies(ImdbId, TmdbId, candidates, EnrichmentConfig);
         return true;
     }
 
@@ -188,7 +196,7 @@ public sealed class MovieSearchWorkerState
         var items = Items.Length > 0 ? Items : UnscoredItems();
 
         var variants = items
-            .SelectMany(e => ReleaseVariant.Expand(e, "movie", MediaName))
+            .SelectMany(e => ReleaseVariant.Expand(e, MediaType.Movie, MediaName))
             .OrderByDescending(v => v.Score)
             .Select(v => v.ToResultItem())
             .ToArray();

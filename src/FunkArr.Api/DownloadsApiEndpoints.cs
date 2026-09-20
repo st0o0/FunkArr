@@ -3,6 +3,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -78,7 +79,7 @@ public static class DownloadsApiEndpoints
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
             var result = await history.Ask<HistoryResult>(
-                new QueryHistory(start ?? 0, limit ?? 25, category), _askTimeout);
+                new QueryHistory(start ?? 0, limit ?? 25, ParseMediaType(category)), _askTimeout);
             return Results.Ok(result.ToApi());
         })
         .WithSummary("Get download history")
@@ -147,4 +148,11 @@ public static class DownloadsApiEndpoints
 
         return app;
     }
+
+    private static MediaType? ParseMediaType(string? value) => value switch
+    {
+        "movie" or "movies" => MediaType.Movie,
+        "tv" or "show" => MediaType.Show,
+        _ => null,
+    };
 }

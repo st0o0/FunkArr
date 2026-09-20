@@ -4,6 +4,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -98,7 +99,8 @@ public static class SabnzbdApiEndpoints
             var channel = Meta(FunkArrHeaders.Channel) ?? "";
             _ = int.TryParse(Meta(FunkArrHeaders.Duration), out var duration);
             _ = long.TryParse(Meta(FunkArrHeaders.Size), out var size);
-            var category = req.Cat ?? Meta(FunkArrHeaders.Category) ?? "";
+            var categoryStr = req.Cat ?? Meta(FunkArrHeaders.Category) ?? "";
+            var category = ParseMediaType(categoryStr);
 
             var manager = await registry.GetAsync<IDownloadManager>();
             var addCmd = new AddDownload(title, videoUrl, subtitleUrl, channel, duration, size, category);
@@ -159,7 +161,7 @@ public static class SabnzbdApiEndpoints
 
     private static async Task<IResult> QueueResult(IActorRef manager, int start, int limit, string? category)
     {
-        var result = await manager.Ask<QueueResult>(new QueryQueue(start, limit, category), _askTimeout);
+        var result = await manager.Ask<QueueResult>(new QueryQueue(start, limit, ParseMediaTypeNullable(category)), _askTimeout);
 
         var slots = result.Items.Select((item, index) => new QueueSlot(
             NzoId: item.DownloadId.ToString(),
@@ -168,7 +170,7 @@ public static class SabnzbdApiEndpoints
             Timeleft: FormatTimeLeft(item),
             Mb: (item.TotalBytes / 1_048_576.0).ToString("F0"),
             Filename: item.Title,
-            Cat: item.Category,
+            Cat: MapMediaTypeToCategory(item.Category),
             Mbleft: ((item.TotalBytes - item.BytesDownloaded) / 1_048_576.0).ToString("F0"),
             Percentage: item.TotalDuration > 0
                 ? ((int)(item.CurrentTimeUs / 1_000_000.0 / item.TotalDuration * 100)).ToString()
@@ -188,13 +190,13 @@ public static class SabnzbdApiEndpoints
 
     private static async Task<IResult> HistoryResult(IActorRef history, DataPaths dataPaths, int start, int limit, string? category)
     {
-        var result = await history.Ask<HistoryResult>(new QueryHistory(start, limit, category), _askTimeout);
+        var result = await history.Ask<HistoryResult>(new QueryHistory(start, limit, ParseMediaTypeNullable(category)), _askTimeout);
 
         var slots = result.Items.Select(item => new HistorySlot(
             NzoId: item.DownloadId.ToString(),
             Name: item.Title,
             NzbName: item.Title + ".nzb",
-            Category: item.Category,
+            Category: MapMediaTypeToCategory(item.Category),
             Bytes: item.TotalBytes,
             DownloadTime: item.DownloadTimeSeconds,
             Storage: !string.IsNullOrEmpty(item.RelativePath)
@@ -284,4 +286,24 @@ public static class SabnzbdApiEndpoints
         var ts = TimeSpan.FromSeconds(remainingSeconds);
         return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
     }
+
+    private static MediaType ParseMediaType(string value) => value switch
+    {
+        "movie" or "movies" => MediaType.Movie,
+        _ => MediaType.Show,
+    };
+
+    private static MediaType? ParseMediaTypeNullable(string? value) => value switch
+    {
+        null or "" => null,
+        "movie" or "movies" => MediaType.Movie,
+        "tv" or "show" => MediaType.Show,
+        _ => null,
+    };
+
+    private static string MapMediaTypeToCategory(MediaType mediaType) => mediaType switch
+    {
+        MediaType.Movie => "movie",
+        _ => "tv",
+    };
 }

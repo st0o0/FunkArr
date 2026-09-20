@@ -2,6 +2,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Scoring;
 using FilterNode = FunkArr.Messages.Scoring.FilterNode;
 
@@ -50,7 +51,7 @@ public static class RuleSetMerger
         return new MatchingConfig(ruleSetId, confidence, rules);
     }
 
-    public static (string Topic, string[] Aliases, int? TvdbId, string? ImdbId, int? TmdbId, string? MediaName, string? MediaType)? ExtractIdentity(
+    public static (string Topic, string[] Aliases, int? TvdbId, string? ImdbId, int? TmdbId, string? MediaName, Messages.MediaType? MediaType, EnrichmentConfig Enrichment)? ExtractIdentity(
         string? communityJson, string? localJson)
     {
         var community = communityJson is not null
@@ -68,7 +69,7 @@ public static class RuleSetMerger
 
         var aliases = resolved.Aliases?.ToArray() ?? [];
         var media = resolved.Media;
-        return (resolved.Topic, aliases, media?.TvdbId, media?.ImdbId, media?.TmdbId, media?.Name, media?.Type);
+        return (resolved.Topic, aliases, media?.TvdbId, media?.ImdbId, media?.TmdbId, media?.Name, media?.Type, BuildEnrichmentConfig(resolved.Enrichment));
     }
 
     private static readonly JsonSerializerOptions _exportOptions = new()
@@ -102,6 +103,49 @@ public static class RuleSetMerger
         }
 
         return node?.ToJsonString(_exportOptions);
+    }
+
+    internal static EnrichmentConfig BuildEnrichmentConfig(RawEnrichment? raw)
+    {
+        return new EnrichmentConfig(
+            Enabled: raw?.Enabled ?? true,
+            Methods: raw?.Methods?.ToArray() ?? [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
+            Title: new TitleMatchConfig(raw?.Title?.Threshold ?? 0.7f),
+            Airdate: new AirdateMatchConfig(raw?.Airdate?.Tolerance ?? 7),
+            Runtime: new RuntimeMatchConfig(
+                raw?.Runtime?.Tolerance ?? 0.35f,
+                raw?.Runtime?.Mode ?? RuntimeMode.Tiebreaker),
+            Year: new YearMatchConfig(raw?.Year?.Tolerance ?? 1));
+    }
+
+    private static RawEnrichment? MergeEnrichment(RawEnrichment? community, RawEnrichment? local)
+    {
+        if (community is null && local is null) return null;
+        if (community is null) return local;
+        if (local is null) return community;
+
+        return new RawEnrichment
+        {
+            Enabled = local.Enabled ?? community.Enabled,
+            Methods = local.Methods ?? community.Methods,
+            Title = local.Title is not null ? new RawTitleMatch
+            {
+                Threshold = local.Title.Threshold ?? community.Title?.Threshold,
+            } : community.Title,
+            Airdate = local.Airdate is not null ? new RawAirdateMatch
+            {
+                Tolerance = local.Airdate.Tolerance ?? community.Airdate?.Tolerance,
+            } : community.Airdate,
+            Runtime = local.Runtime is not null ? new RawRuntimeMatch
+            {
+                Tolerance = local.Runtime.Tolerance ?? community.Runtime?.Tolerance,
+                Mode = local.Runtime.Mode ?? community.Runtime?.Mode,
+            } : community.Runtime,
+            Year = local.Year is not null ? new RawYearMatch
+            {
+                Tolerance = local.Year.Tolerance ?? community.Year?.Tolerance,
+            } : community.Year,
+        };
     }
 
     private static RawRuleSet? Resolve(RawRuleSet? community, RawRuleSet? local)
@@ -143,6 +187,7 @@ public static class RuleSetMerger
             Media = media,
             Confidence = confidence,
             Rules = rules,
+            Enrichment = MergeEnrichment(community.Enrichment, local.Enrichment),
         };
     }
 
@@ -423,6 +468,7 @@ public static class RuleSetMerger
         public List<RawRule>? Rules { get; set; }
         public bool Standalone { get; set; }
         public List<string>? Disable { get; set; }
+        public RawEnrichment? Enrichment { get; set; }
     }
 
     private sealed class RawMedia
@@ -431,7 +477,7 @@ public static class RuleSetMerger
         public string? ImdbId { get; set; }
         public int? TmdbId { get; set; }
         public string? Name { get; set; }
-        public string? Type { get; set; }
+        public Messages.MediaType? Type { get; set; }
     }
 
     private sealed class RawRule
@@ -461,5 +507,36 @@ public static class RuleSetMerger
         public string? Pattern { get; set; }
         public int? CaptureGroup { get; set; }
         public string? Value { get; set; }
+    }
+
+    internal sealed class RawEnrichment
+    {
+        public bool? Enabled { get; set; }
+        public List<EnrichmentMethod>? Methods { get; set; }
+        public RawTitleMatch? Title { get; set; }
+        public RawAirdateMatch? Airdate { get; set; }
+        public RawRuntimeMatch? Runtime { get; set; }
+        public RawYearMatch? Year { get; set; }
+    }
+
+    internal sealed class RawTitleMatch
+    {
+        public float? Threshold { get; set; }
+    }
+
+    internal sealed class RawAirdateMatch
+    {
+        public int? Tolerance { get; set; }
+    }
+
+    internal sealed class RawRuntimeMatch
+    {
+        public float? Tolerance { get; set; }
+        public RuntimeMode? Mode { get; set; }
+    }
+
+    internal sealed class RawYearMatch
+    {
+        public int? Tolerance { get; set; }
     }
 }

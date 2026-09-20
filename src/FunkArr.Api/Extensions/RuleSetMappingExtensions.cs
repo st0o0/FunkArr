@@ -38,10 +38,4 @@ internal static class RuleSetMappingExtensions
         _ => ApiModels.SourceType.Unknown,
     };
 
-    internal static ApiModels.MediaType? ToApiMediaType(this string? mediaType) => mediaType switch
-    {
-        "movie" => ApiModels.MediaType.Movie,
-        "show" => ApiModels.MediaType.Show,
-        _ => null,
-    };
 }

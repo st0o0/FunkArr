@@ -1,5 +1,6 @@
 using Akka.Actor;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using Servus.Akka;
@@ -19,7 +20,7 @@ public sealed class ScoringActor : ReceiveActor
     {
         var (scored, itemTraces) = ScoringEngine.Score(msg.Config, msg.Items);
 
-        if (msg.Origin.Source == "Test")
+        if (msg.Origin.Source == SearchSource.Test)
         {
             Sender.Tell(new TestScoreCompleted(msg.RequestId, itemTraces));
         }

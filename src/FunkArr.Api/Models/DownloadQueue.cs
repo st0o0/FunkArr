@@ -1,3 +1,5 @@
+using FunkArr.Messages;
+
 namespace FunkArr.Api.Models;
 
 public enum QueueStatus
@@ -17,7 +19,7 @@ public sealed record DownloadQueueItem(
     string Title,
     QueueStatus Status,
     string Channel,
-    string Category,
+    MediaType Category,
     bool HasSubtitles,
     int TotalDuration,
     long TotalBytes,

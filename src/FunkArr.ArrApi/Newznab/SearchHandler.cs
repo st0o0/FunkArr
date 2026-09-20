@@ -1,5 +1,6 @@
 using Akka.Actor;
 using FunkArr.ArrApi.Newznab.Models;
+using FunkArr.Messages;
 using FunkArr.Messages.Search;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -35,7 +36,7 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
 
     private static (SearchCommand?, NewznabCategory) BuildTvSearch(IndexerRequest req)
     {
-        var cmd = new SearchCommand("sonarr", req.Q, null,
+        var cmd = new SearchCommand(SearchSource.Sonarr, req.Q, null,
             NewznabApiEndpoints.CapLimit(req.Limit), req.Offset,
             new SearchCommand.TvParams(
                 NewznabApiEndpoints.ParseInt(req.Season),
@@ -48,7 +49,7 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
 
     private static (SearchCommand?, NewznabCategory) BuildMovieSearch(IndexerRequest req)
     {
-        var cmd = new SearchCommand("radarr", req.Q, null,
+        var cmd = new SearchCommand(SearchSource.Radarr, req.Q, null,
             NewznabApiEndpoints.CapLimit(req.Limit), req.Offset,
             new SearchCommand.MovieParams(req.ImdbId, NewznabApiEndpoints.ParseInt(req.TmdbId)));
 
@@ -59,7 +60,7 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
     {
         var cat = NewznabApiEndpoints.ParseInt(req.Cat);
         var category = NewznabCategory.FromCat(cat) ?? NewznabCategory.Tv;
-        var cmd = new SearchCommand("search", req.Q, cat, NewznabApiEndpoints.CapLimit(req.Limit), req.Offset, null);
+        var cmd = new SearchCommand(SearchSource.Prowlarr, req.Q, cat, NewznabApiEndpoints.CapLimit(req.Limit), req.Offset, null);
         return (cmd, category);
     }
 

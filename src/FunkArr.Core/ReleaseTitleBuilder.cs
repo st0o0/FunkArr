@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 
 namespace FunkArr.Core;
@@ -6,11 +7,11 @@ public static class ReleaseTitleBuilder
 {
     private static readonly char[] _invalidChars = ['/', ':', ';', '"', '\'', '@', '#', '?', '$', '%', '^', '*', '+', '=', '!', '<', '>', ',', '(', ')', '&'];
 
-    public static string Build(string topic, string title, MetadataSpec? metadata, int quality, string category)
+    public static string Build(string topic, string title, MetadataSpec? metadata, int quality, MediaType category)
     {
         var parts = new List<string> { Sanitize(topic) };
 
-        if (category == "movie")
+        if (category == MediaType.Movie)
         {
             AppendMovieIdentifier(parts, metadata);
         }
