@@ -12,7 +12,14 @@ internal static class ScoringMappingExtensions
             msg.Identification is not null
                 ? new ApiModels.TracedIdentification(msg.Identification.Season, msg.Identification.Episode, msg.Identification.Title)
                 : null,
-            msg.RuleTraces.Select(rt => rt.ToApi()).ToArray());
+            msg.RuleTraces.Select(rt => rt.ToApi()).ToArray(),
+            msg.EnrichmentTrace is not null
+                ? new ApiModels.EnrichmentTraceOutput(
+                    msg.EnrichmentTrace.Method, msg.EnrichmentTrace.Confidence, msg.EnrichmentTrace.Enriched,
+                    msg.EnrichmentTrace.ResolvedSeason, msg.EnrichmentTrace.ResolvedEpisode,
+                    msg.EnrichmentTrace.ResolvedTitle, msg.EnrichmentTrace.ResolvedYear,
+                    msg.EnrichmentTrace.DaysDiff, msg.EnrichmentTrace.Detail)
+                : null);
 
     internal static ApiModels.RuleTrace ToApi(this RuleTrace msg) =>
         new(msg.RuleId, msg.Priority, msg.Outcome.ToApi(),

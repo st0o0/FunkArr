@@ -21,7 +21,8 @@ public sealed record ItemTrace(
     double Score,
     string? MatchedRuleId,
     TracedIdentification? Identification,
-    RuleTrace[] RuleTraces);
+    RuleTrace[] RuleTraces,
+    EnrichmentTraceOutput? EnrichmentTrace = null);
 
 public sealed record RuleTrace(
     string RuleId,

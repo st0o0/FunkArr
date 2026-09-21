@@ -1,3 +1,4 @@
+using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring.History;
 using ApiModels = FunkArr.Api.Models;
@@ -18,7 +19,23 @@ internal static class RuleSetMappingExtensions
             msg.Rules.Select(r => new ApiModels.RuleSetDetailRule(
                 r.Id, r.Priority, r.Confidence, r.Strategy,
                 r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
-                r.Filters, r.TitleRules)).ToArray());
+                r.Filters, r.TitleRules)).ToArray(),
+            msg.Enrichment.ToApi());
+
+    internal static ApiModels.EnrichmentConfigOutput ToApi(this EnrichmentConfig config) =>
+        new(config.Enabled, config.Methods,
+            new ApiModels.TitleMatchConfigOutput(config.Title.Threshold),
+            new ApiModels.AirdateMatchConfigOutput(config.Airdate.Tolerance),
+            new ApiModels.RuntimeMatchConfigOutput(config.Runtime.Tolerance, config.Runtime.Mode),
+            new ApiModels.YearMatchConfigOutput(config.Year.Tolerance));
+
+    internal static EnrichmentConfig ToMessage(this ApiModels.EnrichmentConfigInput input) =>
+        new(input.Enabled ?? true,
+            input.Methods ?? [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
+            new TitleMatchConfig(input.Title?.Threshold ?? 0.7f),
+            new AirdateMatchConfig(input.Airdate?.Tolerance ?? 7),
+            new RuntimeMatchConfig(input.Runtime?.Tolerance ?? 0.35f, input.Runtime?.Mode ?? RuntimeMode.Tiebreaker),
+            new YearMatchConfig(input.Year?.Tolerance ?? 1));
 
     internal static ApiModels.ScoringHistory ToApi(this ScoringHistoryResult msg) =>
         new(msg.RuleSetId, msg.TotalCount,

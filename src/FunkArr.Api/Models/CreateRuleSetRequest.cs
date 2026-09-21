@@ -8,4 +8,5 @@ public sealed record CreateRuleSetRequest(
     string[]? Aliases = null,
     float? Confidence = null,
     bool? Standalone = null,
-    string[]? Disable = null) : IRuleSetBody;
+    string[]? Disable = null,
+    EnrichmentConfigInput? Enrichment = null) : IRuleSetBody;

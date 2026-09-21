@@ -1,3 +1,4 @@
+using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Scoring;
 
 namespace FunkArr.Messages.RuleSet;
@@ -11,7 +12,8 @@ public sealed record RuleSetDetailResult(
     RuleSetDetailResult.RuleSetIdentity Identity,
     RuleSetDetailResult.RuleSetSource Source,
     float DefaultConfidence,
-    RuleSetDetailRule[] Rules) : RuleSetDetailResponse
+    RuleSetDetailRule[] Rules,
+    EnrichmentConfig Enrichment) : RuleSetDetailResponse
 {
     public sealed record RuleSetIdentity(
         string Topic,

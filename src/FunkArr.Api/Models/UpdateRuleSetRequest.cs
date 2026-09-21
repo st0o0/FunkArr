@@ -7,4 +7,5 @@ public sealed record UpdateRuleSetRequest(
     string[]? Aliases = null,
     float? Confidence = null,
     bool? Standalone = null,
-    string[]? Disable = null) : IRuleSetBody;
+    string[]? Disable = null,
+    EnrichmentConfigInput? Enrichment = null) : IRuleSetBody;

@@ -3,7 +3,12 @@ namespace FunkArr.Api.Models;
 public sealed record TestScoreRequest(
     float DefaultConfidence,
     RuleInput[] Rules,
-    TestCandidate[] Candidates);
+    TestCandidate[] Candidates,
+    EnrichmentConfigInput? Enrichment = null,
+    int? TvdbId = null,
+    int? TmdbId = null,
+    string? ImdbId = null,
+    string? MediaType = null);
 
 public sealed record TestCandidate(
     string Title = "",

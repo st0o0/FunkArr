@@ -5,6 +5,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
 using FunkArr.Core;
+using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
@@ -171,15 +172,22 @@ public static partial class RuleSetApiEndpoints
             var result = await manager.Ask<TestScoreItemsResponse>(
                 new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout);
 
-            return result switch
+            if (result is not TestScoreCompleted completed)
             {
-                TestScoreCompleted completed => Results.Ok(new ApiModels.TestScoreResponse(
-                    completed.ItemTraces.Select(t => t.ToApi()).ToArray())),
-                _ => ApiResults.GatewayTimeout(),
-            };
+                return ApiResults.GatewayTimeout();
+            }
+
+            var itemTraces = completed.ItemTraces;
+            if (request.Enrichment is not null && request.Enrichment.Enabled != false)
+            {
+                itemTraces = await RunTestEnrichment(itemTraces, request, registry);
+            }
+
+            return Results.Ok(new ApiModels.TestScoreResponse(
+                itemTraces.Select(t => t.ToApi()).ToArray()));
         })
         .WithSummary("Test ruleset scoring")
-        .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration. Returns per-item traces.")
+        .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration with optional enrichment. Returns per-item traces.")
         .Produces<ApiModels.TestScoreResponse>()
         .ProducesProblem(400)
         .ProducesProblem(504);
@@ -256,6 +264,7 @@ public static partial class RuleSetApiEndpoints
             request.Rules,
             request.Standalone,
             request.Disable,
+            request.Enrichment,
         }, _diskJsonOptions);
 
     private static string SerializeForDisk(ApiModels.UpdateRuleSetRequest request) =>
@@ -268,6 +277,7 @@ public static partial class RuleSetApiEndpoints
             request.Rules,
             request.Standalone,
             request.Disable,
+            request.Enrichment,
         }, _diskJsonOptions);
 
     private static IResult HandleGetRaw(string id, IDataFiles dataFiles, DataPaths dataPaths)
@@ -321,6 +331,166 @@ public static partial class RuleSetApiEndpoints
 
         httpContext.Response.Headers.ContentDisposition = $"attachment; filename=\"{id}.json\"";
         return Results.Content(result.Json!, "application/json");
+    }
+
+    private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
+
+    private static async Task<ItemTrace[]> RunTestEnrichment(
+        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request, IActorRegistry registry)
+    {
+        var enrichmentConfig = request.Enrichment!.ToMessage();
+        var isShow = string.Equals(request.MediaType, "show", StringComparison.OrdinalIgnoreCase);
+        var isMovie = string.Equals(request.MediaType, "movie", StringComparison.OrdinalIgnoreCase);
+
+        try
+        {
+            var enrichmentManager = await registry.GetAsync<IEnrichmentManager>();
+
+            if (isShow && request.TvdbId is not null)
+            {
+                return await EnrichEpisodes(itemTraces, request, enrichmentConfig, enrichmentManager);
+            }
+
+            if (isMovie && (request.TmdbId is not null || request.ImdbId is not null))
+            {
+                return await EnrichMovies(itemTraces, request, enrichmentConfig, enrichmentManager);
+            }
+        }
+        catch
+        {
+            // enrichment timeout or failure — return scoring results without enrichment
+        }
+
+        return itemTraces;
+    }
+
+    private static async Task<ItemTrace[]> EnrichEpisodes(
+        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request,
+        EnrichmentConfig config, IActorRef enrichmentManager)
+    {
+        var matchedIndices = new List<(int TraceIndex, EpisodeCandidate Candidate)>();
+
+        for (var i = 0; i < itemTraces.Length; i++)
+        {
+            var trace = itemTraces[i];
+            if (!trace.Matched) continue;
+
+            var airedAt = trace.CandidateTimestamp > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(trace.CandidateTimestamp)
+                : (DateTimeOffset?)null;
+
+            int? season = null;
+            if (trace.Identification?.Season is not null && int.TryParse(trace.Identification.Season, out var s))
+                season = s;
+
+            matchedIndices.Add((i, new EpisodeCandidate(
+                matchedIndices.Count,
+                trace.CandidateTitle,
+                trace.Identification?.Title,
+                airedAt,
+                trace.CandidateDuration,
+                trace.Identification?.Season,
+                trace.Identification?.Episode)));
+        }
+
+        if (matchedIndices.Count == 0) return itemTraces;
+
+        var enrichRequest = new EnrichEpisodes(
+            request.TvdbId!.Value, Season: null,
+            matchedIndices.Select(m => m.Candidate).ToArray(), config);
+
+        var response = await enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout);
+        if (response is not EnrichEpisodesCompleted completed) return itemTraces;
+
+        var enrichedLookup = completed.Episodes.ToDictionary(e => e.Index);
+        var result = new ItemTrace[itemTraces.Length];
+        Array.Copy(itemTraces, result, itemTraces.Length);
+
+        foreach (var (traceIndex, candidate) in matchedIndices)
+        {
+            var trace = result[traceIndex];
+            if (enrichedLookup.TryGetValue(candidate.Index, out var enriched))
+            {
+                result[traceIndex] = trace with
+                {
+                    EnrichmentTrace = new EnrichmentTrace(
+                        enriched.Method, enriched.Confidence, true,
+                        enriched.Season, enriched.Episode, enriched.EpisodeName)
+                };
+            }
+            else
+            {
+                result[traceIndex] = trace with
+                {
+                    EnrichmentTrace = new EnrichmentTrace(
+                        MatchMethod.TitleMatch, 0f, false,
+                        Detail: "no matching episode found")
+                };
+            }
+        }
+
+        return result;
+    }
+
+    private static async Task<ItemTrace[]> EnrichMovies(
+        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request,
+        EnrichmentConfig config, IActorRef enrichmentManager)
+    {
+        var matchedIndices = new List<(int TraceIndex, MovieCandidate Candidate)>();
+
+        for (var i = 0; i < itemTraces.Length; i++)
+        {
+            var trace = itemTraces[i];
+            if (!trace.Matched) continue;
+
+            var airedAt = trace.CandidateTimestamp > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(trace.CandidateTimestamp)
+                : (DateTimeOffset?)null;
+
+            matchedIndices.Add((i, new MovieCandidate(
+                matchedIndices.Count,
+                trace.CandidateTitle,
+                airedAt,
+                trace.CandidateDuration)));
+        }
+
+        if (matchedIndices.Count == 0) return itemTraces;
+
+        var enrichRequest = new EnrichMovies(
+            request.ImdbId, request.TmdbId,
+            matchedIndices.Select(m => m.Candidate).ToArray(), config);
+
+        var response = await enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout);
+        if (response is not EnrichMoviesCompleted completed) return itemTraces;
+
+        var enrichedLookup = completed.Movies.ToDictionary(m => m.Index);
+        var result = new ItemTrace[itemTraces.Length];
+        Array.Copy(itemTraces, result, itemTraces.Length);
+
+        foreach (var (traceIndex, candidate) in matchedIndices)
+        {
+            var trace = result[traceIndex];
+            if (enrichedLookup.TryGetValue(candidate.Index, out var enriched))
+            {
+                result[traceIndex] = trace with
+                {
+                    EnrichmentTrace = new EnrichmentTrace(
+                        enriched.Method, enriched.Confidence, true,
+                        ResolvedTitle: enriched.Title, ResolvedYear: enriched.Year)
+                };
+            }
+            else
+            {
+                result[traceIndex] = trace with
+                {
+                    EnrichmentTrace = new EnrichmentTrace(
+                        MatchMethod.TitleMatch, 0f, false,
+                        Detail: "no matching movie found")
+                };
+            }
+        }
+
+        return result;
     }
 
     [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.Compiled)]

@@ -65,7 +65,8 @@ public static class RuleSetManagerStateExtensions
                 paths.CommunityModified,
                 paths.LocalModified),
             config.DefaultConfidence,
-            config.Rules.ToDetailRules());
+            config.Rules.ToDetailRules(),
+            identity.Value.Enrichment);
     }
 
     public static RuleSetDetailRule[] ToDetailRules(this MatchingRule[] rules)

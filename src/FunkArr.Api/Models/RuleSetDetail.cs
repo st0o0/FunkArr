@@ -7,7 +7,8 @@ public sealed record RuleSetDetail(
     RuleSetDetail.RuleSetIdentity Identity,
     RuleSetDetail.RuleSetSource Source,
     float DefaultConfidence,
-    RuleSetDetailRule[] Rules)
+    RuleSetDetailRule[] Rules,
+    EnrichmentConfigOutput Enrichment)
 {
     public sealed record RuleSetIdentity(
         string Topic,
