@@ -7,9 +7,9 @@ namespace FunkArr.Download;
 
 public sealed class DownloadHistoryManager : ReceivePersistentActor
 {
-    public override string PersistenceId => "download-history";
-
     private DownloadHistoryManagerState _state = DownloadHistoryManagerState.Empty;
+
+    public override string PersistenceId { get; } = "download-history";
 
     public DownloadHistoryManager()
     {

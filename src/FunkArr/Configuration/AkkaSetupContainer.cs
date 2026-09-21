@@ -5,6 +5,7 @@ using Akka.Remote.Hosting;
 using FunkArr.Core;
 using FunkArr.Download;
 using FunkArr.Enrichment;
+using FunkArr.History;
 using FunkArr.RuleSet;
 using FunkArr.Scoring;
 using FunkArr.Search;
@@ -76,6 +77,8 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => resolver.Props<ScoringManager>())
             .WithSingleton<IEnrichmentManager>("enrichment-manager",
                 (_, _, resolver) => resolver.Props<EnrichmentManager>())
+            .WithSingleton<IStatsCollector>("stats-collector",
+                (_, _, resolver) => resolver.Props<StatsCollector>())
             .WithShardRegion<ITvSearchRegion>("tv-search",
                 (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
                 new ShardMessageExtractor(),
@@ -85,16 +88,16 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 new ShardMessageExtractor(),
                 new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30) })
             .WithShardRegion<IDownloadRegion>("download-worker",
-                (_, _, resolver) => _ => resolver.Props<DownloadWorker>(),
+                (_, _, resolver) => entityId => resolver.Props<DownloadWorker>(entityId),
                 new ShardMessageExtractor(),
-                new ShardOptions())
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) })
             .WithShardRegion<IRuleSetRegion>("ruleset-worker",
                 (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
                 new ShardMessageExtractor(),
-                new ShardOptions())
-            .WithShardRegion<IScoringHistoryRegion>("scoring-history",
-                (_, _, resolver) => entityId => resolver.Props<ScoringHistoryWorker>(entityId),
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) })
+            .WithShardRegion<IHistoryRegion>("history",
+                (_, _, resolver) => entityId => resolver.Props<HistoryWorker>(entityId),
                 new ShardMessageExtractor(),
-                new ShardOptions());
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) });
     }
 }

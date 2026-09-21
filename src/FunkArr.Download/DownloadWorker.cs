@@ -12,8 +12,6 @@ namespace FunkArr.Download;
 
 public sealed class DownloadWorker : ReceivePersistentActor
 {
-    public override string PersistenceId => "download-" + Context.Self.Path.Name;
-
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
     private readonly IActorRef _downloadHistory = Context.GetActor<IDownloadHistoryManager>();
@@ -21,11 +19,16 @@ public sealed class DownloadWorker : ReceivePersistentActor
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
     private readonly DownloadOptions _options;
+    private readonly Guid _downloadId;
     private DownloadWorkerState _state = DownloadWorkerState.Empty;
     private CancellationTokenSource? _cts;
 
-    public DownloadWorker(IRemuxer remuxer, IDataFiles dataFiles, DataPaths dataPaths, IOptions<DownloadOptions> options)
+    public override string PersistenceId { get; }
+
+    public DownloadWorker(IRemuxer remuxer, IDataFiles dataFiles, DataPaths dataPaths, IOptions<DownloadOptions> options, string entityId)
     {
+        _downloadId = Guid.Parse(entityId);
+        PersistenceId = $"download-{entityId}";
         _remuxer = remuxer;
         _dataFiles = dataFiles;
         _dataPaths = dataPaths;
@@ -109,7 +112,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         }
 
         var evt = new DownloadInitialized(
-            Guid.Parse(Context.Self.Path.Name),
+            _downloadId,
             _state.Title!, _state.VideoUrl!, _state.SubtitleUrl,
             _state.Channel!, _state.Duration, _state.Size,
             _state.Category!.Value);
@@ -125,7 +128,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         }
 
         Sender.Tell(new WorkerStatusResult(
-            Guid.Parse(Context.Self.Path.Name),
+            _downloadId,
             _state.Title!,
             _state.Category!.Value,
             _state.Channel ?? "",
@@ -162,7 +165,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
             return;
         }
 
-        var downloadId = Guid.Parse(Context.Self.Path.Name);
         var paths = ResolvePaths();
 
         if (msg.Success)
@@ -174,7 +176,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
             }
             catch (Exception ex)
             {
-                _log.Warning(ex, "Download {DownloadId} move failed: {Title}", downloadId, _state.Title);
+                _log.Warning(ex, "Download {DownloadId} move failed: {Title}", _downloadId, _state.Title);
                 msg = msg with { Success = false, Error = $"Move failed: {ex.Message}" };
             }
         }
@@ -182,16 +184,16 @@ public sealed class DownloadWorker : ReceivePersistentActor
         if (msg.Success)
         {
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var evt = new DownloadSucceeded(downloadId, msg.ElapsedSeconds, completedAt);
+            var evt = new DownloadSucceeded(_downloadId, msg.ElapsedSeconds, completedAt);
 
-            _log.Info("Download {DownloadId} completed in {Elapsed}s: {Title}", downloadId, msg.ElapsedSeconds, _state.Title);
+            _log.Info("Download {DownloadId} completed in {Elapsed}s: {Title}", _downloadId, msg.ElapsedSeconds, _state.Title);
             Persist(evt, e =>
             {
                 _state = _state.Apply(e);
                 _dataFiles.Remove(Path.GetDirectoryName(paths.IncompletePath)!);
-                _downloadManager.Tell(new SlotFree(downloadId));
+                _downloadManager.Tell(new SlotFree(_downloadId));
                 _downloadHistory.Tell(new RecordDownload(
-                    downloadId, _state.Title!, _state.Category!.Value, _state.Size,
+                    _downloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Completed, paths.RelativePath, null,
                     msg.ElapsedSeconds, completedAt));
                 Passivate();
@@ -201,15 +203,15 @@ public sealed class DownloadWorker : ReceivePersistentActor
         {
             var reason = msg.Error ?? "FFmpeg failed";
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            var evt = new DownloadFaulted(downloadId, reason);
+            var evt = new DownloadFaulted(_downloadId, reason);
 
-            _log.Warning("Download {DownloadId} failed: {Reason} - {Title}", downloadId, reason, _state.Title);
+            _log.Warning("Download {DownloadId} failed: {Reason} - {Title}", _downloadId, reason, _state.Title);
             Persist(evt, e =>
             {
                 _state = _state.Apply(e);
-                _downloadManager.Tell(new SlotFree(downloadId));
+                _downloadManager.Tell(new SlotFree(_downloadId));
                 _downloadHistory.Tell(new RecordDownload(
-                    downloadId, _state.Title!, _state.Category!.Value, _state.Size,
+                    _downloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Failed, null, reason, 0, completedAt));
                 Passivate();
             });
@@ -226,7 +228,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
     }
 
     private DataPaths.ResolvedDownload ResolvePaths() =>
-        _dataPaths.ResolveDownload(Context.Self.Path.Name, _state.Title!, _state.Category?.ToString().ToLowerInvariant(), _options.Categories);
+        _dataPaths.ResolveDownload(_downloadId.ToString(), _state.Title!, _state.Category?.ToString().ToLowerInvariant(), _options.Categories);
 
     private void CancelRunning()
     {

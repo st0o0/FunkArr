@@ -13,12 +13,12 @@ public sealed class DownloadManager : ReceivePersistentActor
 {
     private static readonly TimeSpan _fanOutTimeout = TimeSpan.FromSeconds(2);
 
-    public override string PersistenceId => "download-manager";
-
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
     private readonly int _maxConcurrent;
     private DownloadManagerState _state = DownloadManagerState.Empty;
+
+    public override string PersistenceId { get; } = "download-manager";
 
     public DownloadManager(IOptionsMonitor<DownloadOptions> options)
     {
@@ -106,8 +106,8 @@ public sealed class DownloadManager : ReceivePersistentActor
                     r.TotalDuration, r.Speed, r.Category))
                 .ToArray();
 
-            return DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent);
-        });
+            return (QueueResponse)DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent);
+        }, failure: ex => new QueueFailed(ex));
     }
 
 
