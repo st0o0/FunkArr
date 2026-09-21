@@ -11,6 +11,7 @@ export interface RuleSetEntry {
   sourceType: number
   lastScoringRun: string | null
   matchRate: number | null
+  enrichmentRate: number | null
 }
 
 export interface FilterConditionOutput {

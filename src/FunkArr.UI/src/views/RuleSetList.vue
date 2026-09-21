@@ -138,6 +138,10 @@
             <span>&middot;</span>
             <span>{{ $t('rulesets.matchRate', { rate: formatPercent(rs.matchRate) }) }}</span>
           </template>
+          <template v-if="rs.enrichmentRate !== null">
+            <span>&middot;</span>
+            <span>{{ $t('rulesets.enrichmentRate', { rate: formatPercent(rs.enrichmentRate) }) }}</span>
+          </template>
         </div>
       </router-link>
     </div>

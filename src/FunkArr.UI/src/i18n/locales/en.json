@@ -121,7 +121,8 @@
     "rulesetCount": "{count} ruleset | {count} rulesets",
     "ruleCount": "{count} rule | {count} rules",
     "lastScored": "Last scored {time}",
-    "matchRate": "{rate} match rate"
+    "matchRate": "{rate} match rate",
+    "enrichmentRate": "{rate} enrichment"
   },
   "detail": {
     "identity": "Identity",
