@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.6](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.5...funkarr-v0.1.6) (2026-09-21)
+
+
+### Features
+
+* Configure docs for root path and add CNAME ([2f45c1d](https://github.com/st0o0/FunkArr/commit/2f45c1d0d5f9483d812b2cdbaa9d619212cf87cd))
+* **json:** add MediaType enum converter ([1dc3acd](https://github.com/st0o0/FunkArr/commit/1dc3acdfced3ec43667b53c5b5f4b8762186124b))
+
+
+### Refactoring
+
+* Remove unused usings ([6d7edc9](https://github.com/st0o0/FunkArr/commit/6d7edc972b254a40ee4c6af7d0ff6bd457b786a1))
+
 ## [0.1.5](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.4...funkarr-v0.1.5) (2026-09-21)
 
 
