@@ -161,7 +161,7 @@ public static class DownloadsApiEndpoints
                     s.Start.ToString("HH:mm"), s.End.ToString("HH:mm")))
                 .ToArray();
             return Results.Ok(new ApiModels.DownloadSettingsResponse(
-                opts.ConcurrentDownloads, opts.SpeedLimitBytesPerSecond, schedule));
+                opts.ConcurrentDownloads, schedule));
         })
         .WithSummary("Get download settings")
         .Produces<ApiModels.DownloadSettingsResponse>();

@@ -8,7 +8,6 @@ public sealed class DownloadOptions
     public int ConcurrentDownloads { get; set; } = 3;
     public List<DownloadCategory> Categories { get; set; } = [];
     public List<DownloadTimeSlot> DownloadSchedule { get; set; } = [];
-    public long? SpeedLimitBytesPerSecond { get; set; }
 }
 
 public sealed class DownloadCategory

@@ -1,10 +1,11 @@
 # download-scheduling Specification
 
 ## Purpose
-TBD - created by archiving change download-scheduling-and-limits. Update Purpose after archive.
+
+Time-based download scheduling. Configurable time windows (DownloadTimeSlot) that gate when the DownloadManager dispatches new downloads. Running downloads are never interrupted — only new dispatches are gated.
 ## Requirements
 ### Requirement: DownloadManager checks time-window before dispatching
-The DownloadManager SHALL check whether the current server-local time falls within any configured `DownloadSchedule` time slot before dispatching new downloads. When no schedule is configured (empty or null list), dispatching SHALL proceed unconditionally (current behavior).
+The DownloadManager SHALL use an injected `TimeProvider` to obtain the current server-local time and check whether it falls within any configured `DownloadSchedule` time slot before dispatching new downloads. When no schedule is configured (empty or null list), dispatching SHALL proceed unconditionally (current behavior).
 
 #### Scenario: No schedule configured
 - **WHEN** `DownloadOptions.DownloadSchedule` is null or empty
@@ -12,12 +13,12 @@ The DownloadManager SHALL check whether the current server-local time falls with
 
 #### Scenario: Within a time window
 - **WHEN** `DownloadOptions.DownloadSchedule` contains `{ Start: 23:00, End: 02:00 }`
-- **AND** the current server-local time is 23:30
+- **AND** `TimeProvider.GetLocalNow()` returns 23:30
 - **THEN** `DispatchNext` SHALL dispatch queued downloads normally
 
 #### Scenario: Outside all time windows
 - **WHEN** `DownloadOptions.DownloadSchedule` contains `{ Start: 23:00, End: 02:00 }`
-- **AND** the current server-local time is 15:00
+- **AND** `TimeProvider.GetLocalNow()` returns 15:00
 - **THEN** `DispatchNext` SHALL NOT dispatch any downloads
 - **AND** SHALL schedule a timer to call `DispatchNext` at 23:00
 
@@ -28,12 +29,12 @@ The DownloadManager SHALL check whether the current server-local time falls with
 
 #### Scenario: Multiple time slots
 - **WHEN** `DownloadSchedule` contains `[{ Start: 06:00, End: 08:00 }, { Start: 23:00, End: 02:00 }]`
-- **AND** the current time is 07:00
+- **AND** `TimeProvider.GetLocalNow()` returns 07:00
 - **THEN** `DispatchNext` SHALL dispatch (matches first slot)
 
 #### Scenario: Multiple time slots, outside all
 - **WHEN** `DownloadSchedule` contains `[{ Start: 06:00, End: 08:00 }, { Start: 23:00, End: 02:00 }]`
-- **AND** the current time is 15:00
+- **AND** `TimeProvider.GetLocalNow()` returns 15:00
 - **THEN** `DispatchNext` SHALL NOT dispatch
 - **AND** SHALL schedule a timer for 23:00 (the next window start)
 

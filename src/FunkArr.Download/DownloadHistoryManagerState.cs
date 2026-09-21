@@ -78,7 +78,7 @@ public static class DownloadHistoryManagerStateExtensions
         var materialized = filtered.ToArray();
         var totalItems = materialized.Length;
 
-        IEnumerable<HistoryRecord> paged = materialized.Skip(query.Start);
+        var paged = materialized.Skip(query.Start);
         if (query.Limit > 0)
         {
             paged = paged.Take(query.Limit);

@@ -9,7 +9,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 {
     private DownloadHistoryManagerState _state = DownloadHistoryManagerState.Empty;
 
-    public override string PersistenceId { get; } = "download-history";
+    public override string PersistenceId => "download-history";
 
     public DownloadHistoryManager()
     {

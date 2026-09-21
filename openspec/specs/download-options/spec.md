@@ -5,11 +5,11 @@
 Configuration model for download paths, concurrency limits, and category-based directory routing. Bound to the `FunkArr:Download` config section.
 ## Requirements
 ### Requirement: DownloadOptions config class
-The system SHALL define a `DownloadOptions` class in `FunkArr.Core` bound to the `FunkArr:Download` config section containing `Path` (string, default `"data/downloads"`), `ConcurrentDownloads` (int, default 3), `Categories` (list of `DownloadCategory`), `DownloadSchedule` (list of `DownloadTimeSlot`, default empty), and `SpeedLimitBytesPerSecond` (long?, default null).
+The system SHALL define a `DownloadOptions` class in `FunkArr.Core` bound to the `FunkArr:Download` config section containing `Path` (string, default `"data/downloads"`), `ConcurrentDownloads` (int, default 3), `Categories` (list of `DownloadCategory`), and `DownloadSchedule` (list of `DownloadTimeSlot`, default empty).
 
 #### Scenario: Default values
 - **WHEN** no `FunkArr:Download` config is provided
-- **THEN** `Path` SHALL be `"data/downloads"`, `ConcurrentDownloads` SHALL be `3`, `Categories` SHALL be an empty list, `DownloadSchedule` SHALL be an empty list, and `SpeedLimitBytesPerSecond` SHALL be null
+- **THEN** `Path` SHALL be `"data/downloads"`, `ConcurrentDownloads` SHALL be `3`, `Categories` SHALL be an empty list, and `DownloadSchedule` SHALL be an empty list
 
 #### Scenario: ENV override
 - **WHEN** `FunkArr__Download__Path=/shared/downloads` is set
@@ -22,10 +22,6 @@ The system SHALL define a `DownloadOptions` class in `FunkArr.Core` bound to the
 #### Scenario: Schedule via ENV
 - **WHEN** `FunkArr__Download__DownloadSchedule__0__Start=23:00` and `FunkArr__Download__DownloadSchedule__0__End=02:00` are set
 - **THEN** `DownloadSchedule` SHALL contain one entry with Start 23:00 and End 02:00
-
-#### Scenario: Speed limit via ENV
-- **WHEN** `FunkArr__Download__SpeedLimitBytesPerSecond=10485760` is set
-- **THEN** `SpeedLimitBytesPerSecond` SHALL be 10485760
 
 ### Requirement: DownloadCategory model
 The system SHALL define a `DownloadCategory` class with `Name` (string, required) and `Dir` (string, optional, defaults to empty string). When `Dir` is empty, the category directory SHALL be the `Name`.
@@ -46,17 +42,13 @@ The system SHALL define a `DownloadTimeSlot` class with `Start` (TimeOnly, requi
 - **THEN** it SHALL represent a download window from 23:00 to 02:00 (over midnight)
 
 ### Requirement: DownloadOptions validation
-The system SHALL validate `DownloadOptions` on startup using `IValidateOptions<DownloadOptions>`. Validation SHALL reject `DownloadTimeSlot` entries where `Start == End` and SHALL reject `SpeedLimitBytesPerSecond` values less than zero.
+The system SHALL validate `DownloadOptions` on startup using `IValidateOptions<DownloadOptions>`. Validation SHALL reject `DownloadTimeSlot` entries where `Start == End`.
 
 #### Scenario: Valid configuration
-- **WHEN** `DownloadSchedule` contains slots with `Start != End` and `SpeedLimitBytesPerSecond` is null
+- **WHEN** `DownloadSchedule` contains slots with `Start != End`
 - **THEN** validation SHALL pass
 
 #### Scenario: Zero-length time slot
 - **WHEN** a `DownloadTimeSlot` has `Start == End`
 - **THEN** validation SHALL fail with message indicating which slot is invalid
-
-#### Scenario: Negative speed limit
-- **WHEN** `SpeedLimitBytesPerSecond` is -1
-- **THEN** validation SHALL fail with message indicating speed limit must be non-negative
 

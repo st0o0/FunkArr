@@ -8,11 +8,6 @@ public sealed class DownloadOptionsValidator : IValidateOptions<DownloadOptions>
     {
         var failures = new List<string>();
 
-        if (options.SpeedLimitBytesPerSecond is < 0)
-        {
-            failures.Add("SpeedLimitBytesPerSecond must be non-negative.");
-        }
-
         for (var i = 0; i < options.DownloadSchedule.Count; i++)
         {
             var slot = options.DownloadSchedule[i];

@@ -10,13 +10,12 @@ internal sealed class FfmpegRunner : IFfmpegRunner
 {
     public async Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitlePath, string outputPath,
-        Action<ProgressUpdate> onProgress, CancellationToken ct,
-        long? speedLimitBytesPerSecond = null)
+        Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var progressBlock = new Dictionary<string, string>();
 
-        var processor = BuildArguments(videoUrl, subtitlePath, outputPath, speedLimitBytesPerSecond)
+        var processor = BuildArguments(videoUrl, subtitlePath, outputPath)
             .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
             .CancellableThrough(ct);
 
@@ -39,13 +38,8 @@ internal sealed class FfmpegRunner : IFfmpegRunner
     }
 
     internal static FFMpegArgumentProcessor BuildArguments(
-        string videoUrl, string? subtitlePath, string outputPath,
-        long? speedLimitBytesPerSecond = null)
+        string videoUrl, string? subtitlePath, string outputPath)
     {
-        var rateLimitArgs = speedLimitBytesPerSecond is > 0
-            ? $"-maxrate {speedLimitBytesPerSecond * 8} -bufsize {speedLimitBytesPerSecond * 8}"
-            : null;
-
         var arguments = subtitlePath is not null
             ? FFMpegArguments
                 .FromUrlInput(new Uri(videoUrl))
@@ -59,7 +53,6 @@ internal sealed class FfmpegRunner : IFfmpegRunner
                         .WithCustomArgument("-disposition:s:0 0")
                         .WithCustomArgument("-metadata:s:s:0 language=deu")
                         .WithCustomArgument("-progress pipe:1");
-                    if (rateLimitArgs is not null) options.WithCustomArgument(rateLimitArgs);
                 })
             : FFMpegArguments
                 .FromUrlInput(new Uri(videoUrl))
@@ -68,7 +61,6 @@ internal sealed class FfmpegRunner : IFfmpegRunner
                     options
                         .WithCopyCodec()
                         .WithCustomArgument("-progress pipe:1");
-                    if (rateLimitArgs is not null) options.WithCustomArgument(rateLimitArgs);
                 });
 
         return arguments;

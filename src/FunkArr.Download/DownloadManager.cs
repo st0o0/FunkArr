@@ -16,17 +16,19 @@ public sealed class DownloadManager : ReceivePersistentActor
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
     private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
+    private readonly TimeProvider _timeProvider;
     private int _maxConcurrent;
     private ICancelable? _scheduleTimer;
     private DownloadManagerState _state = DownloadManagerState.Empty;
 
     private sealed record ScheduleWake;
 
-    public override string PersistenceId { get; } = "download-manager";
+    public override string PersistenceId => "download-manager";
 
-    public DownloadManager(IOptionsMonitor<DownloadOptions> options)
+    public DownloadManager(IOptionsMonitor<DownloadOptions> options, TimeProvider timeProvider)
     {
         _optionsMonitor = options;
+        _timeProvider = timeProvider;
         _maxConcurrent = options.CurrentValue.ConcurrentDownloads;
 
         Command<AddDownload>(HandleAdd);
@@ -121,7 +123,7 @@ public sealed class DownloadManager : ReceivePersistentActor
                     r.TotalDuration, r.Speed, r.Category))
                 .ToArray();
 
-            return (QueueResponse)DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent);
+            return DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent);
         }, failure: ex => new QueueFailed(ex));
     }
 
@@ -164,7 +166,7 @@ public sealed class DownloadManager : ReceivePersistentActor
     private void DispatchNext()
     {
         var schedule = _optionsMonitor.CurrentValue.DownloadSchedule;
-        var now = TimeOnly.FromDateTime(DateTime.Now);
+        var now = TimeOnly.FromTimeSpan(_timeProvider.GetLocalNow().TimeOfDay);
 
         if (!DownloadScheduleHelper.IsWithinSchedule(now, schedule))
         {

@@ -96,10 +96,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         });
     }
 
-    private void HandleCancel(CancelDownload _)
-    {
-        CancelRunning();
-    }
+    private void HandleCancel(CancelDownload _) => CancelRunning();
 
     private void HandleReset(ResetDownload _)
     {
@@ -217,9 +214,8 @@ public sealed class DownloadWorker : ReceivePersistentActor
     {
         _cts = new CancellationTokenSource();
         var self = Self;
-        var speedLimit = _optionsMonitor.CurrentValue.SpeedLimitBytesPerSecond;
         _remuxer.RunAsync(videoUrl, subtitleUrl, outputPath,
-            progress => self.Tell(progress), _cts.Token, speedLimit)
+            progress => self.Tell(progress), _cts.Token)
             .PipeTo(self, failure: ex => new FfmpegResult(false, -1, ex.Message, 0));
     }
 

@@ -4,8 +4,7 @@ internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner 
 {
     public async Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitleUrl, string outputPath,
-        Action<ProgressUpdate> onProgress, CancellationToken ct,
-        long? speedLimitBytesPerSecond = null)
+        Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         string? subtitlePath = null;
         try
@@ -15,7 +14,7 @@ internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner 
                 subtitlePath = await subtitlePreparer.PrepareAsync(subtitleUrl, Path.GetDirectoryName(outputPath)!, ct);
             }
 
-            return await ffmpeg.RunAsync(videoUrl, subtitlePath, outputPath, onProgress, ct, speedLimitBytesPerSecond);
+            return await ffmpeg.RunAsync(videoUrl, subtitlePath, outputPath, onProgress, ct);
         }
         finally
         {

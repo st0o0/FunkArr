@@ -55,7 +55,7 @@ The system SHALL use FFMpegCore's `ProcessAsynchronously` with `throwOnError: tr
 - **THEN** the runner SHALL terminate the FFmpeg process and return an `FfmpegResult` with `Success=false`, `ExitCode=-1`, and `Error="Cancelled"`
 
 ### Requirement: FFmpeg runner as injectable service
-The system SHALL provide `IFfmpegRunner` as a DI-injectable interface with no Akka dependency, registered via an extension method on `IServiceCollection`.
+The system SHALL provide `IFfmpegRunner` as a DI-injectable interface with no Akka dependency, registered via an extension method on `IServiceCollection`. The `RunAsync` method SHALL accept `videoUrl`, `subtitlePath`, `outputPath`, `onProgress` callback, and `CancellationToken`. It SHALL NOT accept a speed limit parameter.
 
 #### Scenario: DI registration
 - **WHEN** the application starts
@@ -68,3 +68,8 @@ The system SHALL provide `IFfmpegRunner` as a DI-injectable interface with no Ak
 #### Scenario: Type visibility
 - **WHEN** the FunkArr.Download project is referenced by other projects
 - **THEN** `FfmpegRunner` (implementation) SHALL be internal; `IFfmpegRunner`, `FfmpegResult`, and `ProgressUpdate` SHALL be public (required by the public DownloadWorker constructor)
+
+#### Scenario: No speed limit parameter
+- **WHEN** `IFfmpegRunner.RunAsync()` is called
+- **THEN** the method signature SHALL NOT include a `speedLimitBytesPerSecond` parameter
+- **AND** no `-maxrate` or `-bufsize` arguments SHALL be passed to FFmpeg
