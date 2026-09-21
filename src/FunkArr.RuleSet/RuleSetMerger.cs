@@ -14,6 +14,7 @@ public static class RuleSetMerger
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters = { new JsonStringEnumConverter<Messages.MediaType>() },
     };
 
     public static MatchingConfig? BuildFromJson(string ruleSetId, string json)
@@ -78,6 +79,7 @@ public static class RuleSetMerger
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters = { new JsonStringEnumConverter<Messages.MediaType>() },
     };
 
     public static string? ResolveToJson(string? communityJson, string? localJson)
