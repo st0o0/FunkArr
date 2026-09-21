@@ -7,14 +7,14 @@ using FunkArr.Persistence.Events.ScoringHistory;
 namespace FunkArr.History;
 
 public sealed record HistoryState(
-    ImmutableList<HistoryState.HistorySnapshot> Snapshots,
+    ImmutableList<HistoryState.HistoryEntry> Snapshots,
     ScoringStatsResult Stats)
 {
     public static readonly HistoryState Empty = new(
-        ImmutableList<HistorySnapshot>.Empty,
+        ImmutableList<HistoryEntry>.Empty,
         new ScoringStatsResult(null, null));
 
-    public sealed record HistorySnapshot(
+    public sealed record HistoryEntry(
         Guid RequestId,
         ScoringOrigin Origin,
         DateTimeOffset Timestamp,
@@ -26,20 +26,20 @@ public sealed record HistoryState(
     public static HistoryState FromPersistence(PersistedHistoryState persisted)
     {
         var snapshots = persisted.Entries
-            .Select(e => new HistorySnapshot(
+            .Select(e => new HistoryEntry(
                 e.RequestId,
-                new ScoringOrigin(e.Source, e.Query),
+                new ScoringOrigin(e.Source.ToDomain(), e.Query),
                 e.Timestamp,
                 e.CandidateCount,
                 e.MatchedCount,
                 e.EnrichedCount,
-                e.ItemTraces))
+                e.ItemTraces.Select(t => t.ToDomain()).ToArray()))
             .ToImmutableList();
 
         return new HistoryState(snapshots, ComputeStats(snapshots));
     }
 
-    internal static ScoringStatsResult ComputeStats(ImmutableList<HistorySnapshot> snapshots)
+    internal static ScoringStatsResult ComputeStats(ImmutableList<HistoryEntry> snapshots)
     {
         if (snapshots.Count == 0)
         {
@@ -69,27 +69,27 @@ public static class HistoryStateExtensions
     {
         var evt = new HistoryRecorded(
             cmd.RequestId,
-            cmd.Origin.Source,
+            cmd.Origin.Source.ToPersistence(),
             cmd.Origin.Query,
             cmd.Timestamp,
             cmd.CandidateCount,
             cmd.MatchedCount,
             cmd.EnrichedCount,
-            cmd.ItemTraces);
+            cmd.ItemTraces.Select(t => t.ToPersistence()).ToArray());
 
         return (state.Apply(evt), evt);
     }
 
     public static HistoryState Apply(this HistoryState state, HistoryRecorded evt)
     {
-        var snapshot = new HistoryState.HistorySnapshot(
+        var snapshot = new HistoryState.HistoryEntry(
             evt.RequestId,
-            new ScoringOrigin(evt.Source, evt.Query),
+            new ScoringOrigin(evt.Source.ToDomain(), evt.Query),
             evt.Timestamp,
             evt.CandidateCount,
             evt.MatchedCount,
             evt.EnrichedCount,
-            evt.ItemTraces);
+            evt.ItemTraces.Select(t => t.ToDomain()).ToArray());
 
         var snapshots = state.Snapshots.Add(snapshot);
         var stats = HistoryState.ComputeStats(snapshots);
@@ -160,12 +160,12 @@ public static class HistoryStateExtensions
         new(state.Snapshots
             .Select(s => new HistoryRecorded(
                 s.RequestId,
-                s.Origin.Source,
+                s.Origin.Source.ToPersistence(),
                 s.Origin.Query,
                 s.Timestamp,
                 s.CandidateCount,
                 s.MatchedCount,
                 s.EnrichedCount,
-                s.ItemTraces))
+                s.ItemTraces.Select(t => t.ToPersistence()).ToArray()))
             .ToArray());
 }

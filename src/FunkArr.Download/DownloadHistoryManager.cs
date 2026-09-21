@@ -31,7 +31,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         }
 
         var evt = new HistoryRecorded(
-            cmd.DownloadId, cmd.Title, cmd.Category, cmd.Size,
+            cmd.DownloadId, cmd.Title, cmd.Category.ToPersistence(), cmd.Size,
             (int)cmd.Status, cmd.RelativePath, cmd.FailMessage,
             cmd.DownloadTimeSeconds, cmd.CompletedAt);
 

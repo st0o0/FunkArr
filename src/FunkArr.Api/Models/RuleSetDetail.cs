@@ -1,5 +1,3 @@
-using FunkArr.Messages.Scoring;
-
 namespace FunkArr.Api.Models;
 
 public sealed record RuleSetDetail(

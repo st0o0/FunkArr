@@ -39,7 +39,7 @@ internal static class DownloadMappingExtensions
             item.Title,
             status,
             item.Channel,
-            item.Category,
+            (ApiModels.MediaType)(int)item.Category,
             item.HasSubtitles,
             item.TotalDuration,
             item.TotalBytes,
@@ -55,7 +55,7 @@ internal static class DownloadMappingExtensions
     internal static ApiModels.DownloadHistoryItem ToApi(this HistoryItem item) =>
         new(item.DownloadId.ToString(),
             item.Title,
-            item.Category,
+            (ApiModels.MediaType)(int)item.Category,
             item.TotalBytes,
             item.DownloadTimeSeconds,
             item.Status == DownloadStatus.Completed ? item.RelativePath : null,

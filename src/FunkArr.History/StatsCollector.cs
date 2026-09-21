@@ -14,7 +14,7 @@ public sealed class StatsCollector : ReceiveActor
 
     public StatsCollector()
     {
-        Receive<StatsUpdated>(msg => _state = _state.Apply(msg));
+        Receive<UpdateStats>(msg => _state = _state.Apply(msg));
         Receive<QueryAllStats>(_ => Sender.Tell(_state.GetSnapshot()));
         Receive<RemoveStats>(msg => _state = _state.Apply(msg));
         Receive<RegisteredRuleSetsResult>(HandleBackfillRuleSets);
@@ -22,7 +22,7 @@ public sealed class StatsCollector : ReceiveActor
         {
             if (msg.Stats is not null)
             {
-                _state = _state.Apply(new StatsUpdated(msg.RuleSetId, msg.Stats));
+                _state = _state.Apply(new UpdateStats(msg.RuleSetId, msg.Stats));
             }
         });
         Receive<BackfillFailed>(_ => { });

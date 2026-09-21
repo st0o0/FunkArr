@@ -1,7 +1,7 @@
 using FunkArr.Api.Extensions;
 using FunkArr.Api.Models;
-using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using MediaType = FunkArr.Messages.MediaType;
 
 namespace FunkArr.Api.Tests;
 

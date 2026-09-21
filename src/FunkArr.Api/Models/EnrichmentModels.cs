@@ -1,5 +1,3 @@
-using FunkArr.Messages.Enrichment;
-
 namespace FunkArr.Api.Models;
 
 public sealed record EnrichmentConfigOutput(

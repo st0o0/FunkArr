@@ -9,18 +9,18 @@ public sealed record StatsCollectorState(
     public static readonly StatsCollectorState Empty = new(
         ImmutableDictionary<string, ScoringStatsResult>.Empty.WithComparers(StringComparer.Ordinal));
 
-    public static StatsCollectorState FromSnapshot(AllStatsSnapshot snapshot) =>
+    public static StatsCollectorState FromSnapshot(AllStatsResult snapshot) =>
         new(snapshot.Entries.WithComparers(StringComparer.Ordinal));
 }
 
 public static class StatsCollectorStateExtensions
 {
-    public static StatsCollectorState Apply(this StatsCollectorState state, StatsUpdated msg) =>
+    public static StatsCollectorState Apply(this StatsCollectorState state, UpdateStats msg) =>
         new(state.Stats.SetItem(msg.RuleSetId, msg.Stats));
 
     public static StatsCollectorState Apply(this StatsCollectorState state, RemoveStats msg) =>
         new(state.Stats.Remove(msg.RuleSetId));
 
-    public static AllStatsSnapshot GetSnapshot(this StatsCollectorState state) =>
+    public static AllStatsResult GetSnapshot(this StatsCollectorState state) =>
         new(state.Stats);
 }

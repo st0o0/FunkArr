@@ -15,7 +15,7 @@ internal static class ScoringMappingExtensions
             msg.RuleTraces.Select(rt => rt.ToApi()).ToArray(),
             msg.EnrichmentTrace is not null
                 ? new ApiModels.EnrichmentTraceOutput(
-                    msg.EnrichmentTrace.Method, msg.EnrichmentTrace.Confidence, msg.EnrichmentTrace.Enriched,
+                    (ApiModels.MatchMethod)(int)msg.EnrichmentTrace.Method, msg.EnrichmentTrace.Confidence, msg.EnrichmentTrace.Enriched,
                     msg.EnrichmentTrace.ResolvedSeason, msg.EnrichmentTrace.ResolvedEpisode,
                     msg.EnrichmentTrace.ResolvedTitle, msg.EnrichmentTrace.ResolvedYear,
                     msg.EnrichmentTrace.DaysDiff, msg.EnrichmentTrace.Detail)

@@ -18,12 +18,4 @@ public static class MediathekViewWebManagerStateExtensions
 
     public static bool HasCapacity(this MediathekViewWebManagerState state, int maxConcurrent) =>
         state.InFlight < maxConcurrent;
-
-    public static MediathekViewWebManagerSnapshot GetSnapshot(this MediathekViewWebManagerState state) =>
-        new(state.InFlight);
-
-    public static MediathekViewWebManagerState FromSnapshot(MediathekViewWebManagerSnapshot snapshot) =>
-        new(snapshot.InFlight);
 }
-
-public sealed record MediathekViewWebManagerSnapshot(int InFlight);

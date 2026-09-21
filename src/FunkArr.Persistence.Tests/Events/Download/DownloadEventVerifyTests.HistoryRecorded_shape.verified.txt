@@ -1,0 +1,11 @@
+﻿{
+  "DownloadId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "Title": "Tatort: Der letzte Schrei",
+  "Category": 0,
+  "Size": 1073741824,
+  "Status": 2,
+  "RelativePath": "/downloads/tatort.mkv",
+  "FailMessage": null,
+  "DownloadTimeSeconds": 120,
+  "CompletedAt": 1700000000
+}

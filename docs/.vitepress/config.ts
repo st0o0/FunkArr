@@ -33,7 +33,8 @@ export default defineConfig({
               { text: 'Eigene Regelwerke', link: '/rulesets/custom' },
               { text: 'Feld-Referenz', link: '/rulesets/field-reference' },
               { text: 'Strategien', link: '/rulesets/strategies' },
-              { text: 'Filter', link: '/rulesets/filters' }
+              { text: 'Filter', link: '/rulesets/filters' },
+              { text: 'Regelwerk-Builder', link: '/rulesets/builder' }
             ]
           }
         ],
@@ -65,7 +66,8 @@ export default defineConfig({
               { text: 'Custom Rulesets', link: '/en/rulesets/custom' },
               { text: 'Field Reference', link: '/en/rulesets/field-reference' },
               { text: 'Strategies', link: '/en/rulesets/strategies' },
-              { text: 'Filters', link: '/en/rulesets/filters' }
+              { text: 'Filters', link: '/en/rulesets/filters' },
+              { text: 'Builder', link: '/en/rulesets/builder' }
             ]
           }
         ],

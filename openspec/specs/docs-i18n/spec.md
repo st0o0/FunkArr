@@ -38,7 +38,7 @@ All documentation pages SHALL be maintained in English under the `en/` subfolder
 - **THEN** the page content is in English
 
 ### Requirement: Localized nav and sidebar
-The VitePress config SHALL define separate nav and sidebar labels per locale. German nav: "Anleitung", "Konfiguration", "Regelwerke". English nav: "Guide", "Config", "Rulesets". Sidebar section titles and page titles SHALL match the locale.
+The VitePress config SHALL define separate nav and sidebar labels per locale. German nav: "Anleitung", "Konfiguration", "Regelwerke". English nav: "Guide", "Config", "Rulesets". Sidebar section titles and page titles SHALL match the locale. The Rulesets sidebar section SHALL include a "Regelwerk-Builder" entry (German) and "Builder" entry (English) linking to the respective builder pages.
 
 #### Scenario: German nav labels
 - **WHEN** the docs render in German
@@ -51,6 +51,14 @@ The VitePress config SHALL define separate nav and sidebar labels per locale. Ge
 #### Scenario: German sidebar
 - **WHEN** the sidebar renders in German
 - **THEN** section titles and page links are in German (e.g., "Erste Schritte", "Eigene Regelwerke")
+
+#### Scenario: German sidebar includes builder
+- **WHEN** the sidebar renders in German
+- **THEN** the Regelwerke section includes a "Regelwerk-Builder" entry linking to `/rulesets/builder`
+
+#### Scenario: English sidebar includes builder
+- **WHEN** the sidebar renders in English
+- **THEN** the Rulesets section includes a "Builder" entry linking to `/en/rulesets/builder`
 
 ### Requirement: No AT/CH docs locales
 The documentation site SHALL NOT include Austrian or Swiss dialect variants. Dialect content is limited to the Vue.js frontend.

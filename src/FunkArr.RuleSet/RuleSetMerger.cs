@@ -14,7 +14,15 @@ public static class RuleSetMerger
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter<Messages.MediaType>() },
+        Converters =
+        {
+            new JsonStringEnumConverter<Messages.MediaType>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<FilterField>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<FilterOp>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<TitlePartType>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<EnrichmentMethod>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<RuntimeMode>(JsonNamingPolicy.CamelCase),
+        },
     };
 
     public static MatchingConfig? BuildFromJson(string ruleSetId, string json)
@@ -79,7 +87,15 @@ public static class RuleSetMerger
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        Converters = { new JsonStringEnumConverter<Messages.MediaType>() },
+        Converters =
+        {
+            new JsonStringEnumConverter<Messages.MediaType>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<FilterField>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<FilterOp>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<TitlePartType>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<EnrichmentMethod>(JsonNamingPolicy.CamelCase),
+            new JsonStringEnumConverter<RuntimeMode>(JsonNamingPolicy.CamelCase),
+        },
     };
 
     public static string? ResolveToJson(string? communityJson, string? localJson)
@@ -376,16 +392,18 @@ public static class RuleSetMerger
             return false;
         }
 
-        var bytes = System.Text.Encoding.UTF8.GetBytes($"\"{value}\"");
-        try
+        strategy = value switch
         {
-            strategy = JsonSerializer.Deserialize<IdentificationStrategy>(bytes, _jsonOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
+            "seasonAndEpisodeNumber" => IdentificationStrategy.SeasonAndEpisodeNumber,
+            "byAbsoluteEpisodeNumber" => IdentificationStrategy.AbsoluteEpisodeNumber,
+            "itemTitleExact" => IdentificationStrategy.TitleExact,
+            "itemTitleIncludes" => IdentificationStrategy.TitleIncludes,
+            "itemTitleEqualsAirdate" => IdentificationStrategy.AirdateExtraction,
+            _ => default,
+        };
+
+        return value is "seasonAndEpisodeNumber" or "byAbsoluteEpisodeNumber"
+            or "itemTitleExact" or "itemTitleIncludes" or "itemTitleEqualsAirdate";
     }
 
     private static TitlePart[]? TransformTitleRules(List<RawTitleRule>? titleRules)

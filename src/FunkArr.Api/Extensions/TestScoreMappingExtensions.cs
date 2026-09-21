@@ -1,11 +1,11 @@
 using FunkArr.Api.Models;
-using FunkArr.Messages.Scoring;
+using MsgScoring = FunkArr.Messages.Scoring;
 
 namespace FunkArr.Api.Extensions;
 
 internal static class TestScoreMappingExtensions
 {
-    internal static (MatchingConfig Config, ScoreCandidate[] Candidates) ToMessage(this TestScoreRequest request)
+    internal static (MsgScoring.MatchingConfig Config, MsgScoring.ScoreCandidate[] Candidates) ToMessage(this TestScoreRequest request)
     {
         var rules = (request.Rules ?? [])
             .Select(r => r.ToMessage())
@@ -13,13 +13,13 @@ internal static class TestScoreMappingExtensions
             .Select(r => r!)
             .ToArray();
 
-        var config = new MatchingConfig("test", request.DefaultConfidence, rules);
+        var config = new MsgScoring.MatchingConfig("test", request.DefaultConfidence, rules);
         var candidates = (request.Candidates ?? []).Select(c => c.ToMessage()).ToArray();
 
         return (config, candidates);
     }
 
-    internal static MatchingRule? ToMessage(this RuleInput rule)
+    internal static MsgScoring.MatchingRule? ToMessage(this RuleInput rule)
     {
         var identification = rule.ToIdentification();
         if (identification is null)
@@ -29,37 +29,44 @@ internal static class TestScoreMappingExtensions
 
         var filters = rule.Filters is not null ? rule.Filters.ToMessage() : null;
 
-        return new MatchingRule(rule.Id, rule.Priority, rule.Confidence, filters, identification);
+        return new MsgScoring.MatchingRule(rule.Id, rule.Priority, rule.Confidence, filters, identification);
     }
 
-    private static IdentificationSpec? ToIdentification(this RuleInput rule) => rule.Strategy switch
+    private static MsgScoring.IdentificationSpec? ToIdentification(this RuleInput rule)
     {
-        IdentificationStrategy.SeasonAndEpisodeNumber => new IdentificationSpec(
-            IdentificationStrategy.SeasonAndEpisodeNumber,
-            SeasonPattern: rule.SeasonRegex,
-            EpisodePattern: rule.EpisodeRegex,
-            CaptureGroup: rule.CaptureGroup),
+        var strategy = rule.Strategy is not null
+            ? (MsgScoring.IdentificationStrategy)(int)rule.Strategy
+            : (MsgScoring.IdentificationStrategy?)null;
 
-        IdentificationStrategy.AbsoluteEpisodeNumber => new IdentificationSpec(
-            IdentificationStrategy.AbsoluteEpisodeNumber,
-            EpisodePattern: rule.EpisodeRegex,
-            CaptureGroup: rule.CaptureGroup),
+        return strategy switch
+        {
+            MsgScoring.IdentificationStrategy.SeasonAndEpisodeNumber => new MsgScoring.IdentificationSpec(
+                MsgScoring.IdentificationStrategy.SeasonAndEpisodeNumber,
+                SeasonPattern: rule.SeasonRegex,
+                EpisodePattern: rule.EpisodeRegex,
+                CaptureGroup: rule.CaptureGroup),
 
-        IdentificationStrategy.TitleExact => new IdentificationSpec(
-            IdentificationStrategy.TitleExact,
-            TitleParts: rule.TitleRules?.ToMessageParts()),
+            MsgScoring.IdentificationStrategy.AbsoluteEpisodeNumber => new MsgScoring.IdentificationSpec(
+                MsgScoring.IdentificationStrategy.AbsoluteEpisodeNumber,
+                EpisodePattern: rule.EpisodeRegex,
+                CaptureGroup: rule.CaptureGroup),
 
-        IdentificationStrategy.TitleIncludes => new IdentificationSpec(
-            IdentificationStrategy.TitleIncludes,
-            TitleParts: rule.TitleRules?.ToMessageParts()),
+            MsgScoring.IdentificationStrategy.TitleExact => new MsgScoring.IdentificationSpec(
+                MsgScoring.IdentificationStrategy.TitleExact,
+                TitleParts: rule.TitleRules?.ToMessageParts()),
 
-        IdentificationStrategy.AirdateExtraction => new IdentificationSpec(
-            IdentificationStrategy.AirdateExtraction),
+            MsgScoring.IdentificationStrategy.TitleIncludes => new MsgScoring.IdentificationSpec(
+                MsgScoring.IdentificationStrategy.TitleIncludes,
+                TitleParts: rule.TitleRules?.ToMessageParts()),
 
-        _ => null,
-    };
+            MsgScoring.IdentificationStrategy.AirdateExtraction => new MsgScoring.IdentificationSpec(
+                MsgScoring.IdentificationStrategy.AirdateExtraction),
 
-    private static TitlePart[]? ToMessageParts(this TitleRuleInput[] titleRules)
+            _ => null,
+        };
+    }
+
+    private static MsgScoring.TitlePart[]? ToMessageParts(this TitleRuleInput[] titleRules)
     {
         if (titleRules.Length == 0)
         {
@@ -67,24 +74,29 @@ internal static class TestScoreMappingExtensions
         }
 
         var parts = titleRules
-            .Select(tr => new TitlePart(tr.Type, Value: tr.Value, Pattern: tr.Pattern, Field: tr.Field, CaptureGroup: tr.CaptureGroup))
+            .Select(tr => new MsgScoring.TitlePart(
+                (MsgScoring.TitlePartType)(int)tr.Type,
+                Value: tr.Value,
+                Pattern: tr.Pattern,
+                Field: tr.Field is not null ? (MsgScoring.FilterField)(int)tr.Field : null,
+                CaptureGroup: tr.CaptureGroup))
             .ToArray();
 
         return parts.Length > 0 ? parts : null;
     }
 
-    private static FilterSpec? ToMessage(this FilterGroupInput spec)
+    private static MsgScoring.FilterSpec? ToMessage(this FilterGroupInput spec)
     {
         var all = spec.All is not null ? ToMessageNodes(spec.All) : null;
         var any = spec.Any is not null ? ToMessageNodes(spec.Any) : null;
         var not = spec.Not is not null ? ToMessageNodes(spec.Not) : null;
 
-        return all is null && any is null && not is null ? null : new FilterSpec(all, any, not);
+        return all is null && any is null && not is null ? null : new MsgScoring.FilterSpec(all, any, not);
     }
 
-    private static FilterNode[]? ToMessageNodes(FilterNodeInput[] nodes)
+    private static MsgScoring.FilterNode[]? ToMessageNodes(FilterNodeInput[] nodes)
     {
-        var result = new List<FilterNode>();
+        var result = new List<MsgScoring.FilterNode>();
 
         foreach (var node in nodes)
         {
@@ -93,18 +105,22 @@ internal static class TestScoreMappingExtensions
                 var nested = new FilterGroupInput(node.All, node.Any, node.Not).ToMessage();
                 if (nested is not null)
                 {
-                    result.Add(new FilterNode.GroupNode(nested));
+                    result.Add(new MsgScoring.FilterNode.GroupNode(nested));
                 }
             }
             else if (node.Field is not null && node.Op is not null && node.Value is not null)
             {
-                result.Add(new FilterNode.ConditionNode(new FilterCondition(node.Field.Value, node.Op.Value, node.Value)));
+                result.Add(new MsgScoring.FilterNode.ConditionNode(
+                    new MsgScoring.FilterCondition(
+                        (MsgScoring.FilterField)(int)node.Field.Value,
+                        (MsgScoring.FilterOp)(int)node.Op.Value,
+                        node.Value)));
             }
         }
 
         return result.Count > 0 ? result.ToArray() : null;
     }
 
-    private static ScoreCandidate ToMessage(this TestCandidate c) =>
+    private static MsgScoring.ScoreCandidate ToMessage(this TestCandidate c) =>
         new(c.Title, c.Topic, c.Channel, c.Duration, c.Quality, c.Description, c.Timestamp);
 }

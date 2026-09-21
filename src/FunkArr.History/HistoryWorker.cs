@@ -49,7 +49,7 @@ public sealed class HistoryWorker : ReceivePersistentActor
                     SaveSnapshot(_state.GetPersistenceState());
                 }
 
-                _statsCollector.Tell(new StatsUpdated(ruleSetId, _state.Stats));
+                _statsCollector.Tell(new UpdateStats(ruleSetId, _state.Stats));
             });
         });
 

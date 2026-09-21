@@ -36,12 +36,6 @@ public static class SearchManagerStateExtensions
         this SearchManagerState state, Guid searchId) =>
         state.Pending.TryGetValue(searchId, out var pending) ? pending : null;
 
-    public static SearchManagerSnapshot GetSnapshot(this SearchManagerState state) =>
-        new(state.Pending.Count);
-
-    public static SearchManagerState FromSnapshot(SearchManagerSnapshot _) =>
-        SearchManagerState.Empty;
-
     public static SearchCommandCompleted MergeResults(Guid searchId, SearchCommandCompleted tv, SearchCommandCompleted movie)
     {
         var merged = tv.Items.Concat(movie.Items)
@@ -50,5 +44,3 @@ public static class SearchManagerStateExtensions
         return new SearchCommandCompleted(searchId, merged, merged.Length);
     }
 }
-
-public sealed record SearchManagerSnapshot(int PendingCount);

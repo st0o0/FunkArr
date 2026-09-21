@@ -1,5 +1,4 @@
 using Akka.Actor;
-using Akka.Cluster.Sharding;
 using Akka.Event;
 using Akka.Persistence;
 using FunkArr.Core;
@@ -58,7 +57,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
 
         var evt = new DownloadInitialized(
             cmd.DownloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
-            cmd.Channel, cmd.Duration, cmd.Size, cmd.Category);
+            cmd.Channel, cmd.Duration, cmd.Size, cmd.Category.ToPersistence());
 
         Persist(evt, e => _state = _state.Apply(e));
     }
@@ -113,7 +112,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
             _downloadId,
             _state.Title!, _state.VideoUrl!, _state.SubtitleUrl,
             _state.Channel!, _state.Duration, _state.Size,
-            _state.Category!.Value);
+            _state.Category!.Value.ToPersistence());
 
         Persist(evt, e => _state = _state.Apply(e));
     }

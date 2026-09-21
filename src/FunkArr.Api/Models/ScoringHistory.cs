@@ -1,5 +1,3 @@
-using FunkArr.Messages;
-
 namespace FunkArr.Api.Models;
 
 public sealed record ScoringHistory(

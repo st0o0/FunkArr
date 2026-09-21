@@ -3,23 +3,15 @@ using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download;
 
-public sealed record DownloadManagerSnapshot(Guid[] Queued, Guid[] Dispatched);
-
 public sealed record DownloadManagerState(
     IReadOnlyList<Guid> Queued,
     IReadOnlySet<Guid> Dispatched)
 {
     public static readonly DownloadManagerState Empty = new([], new HashSet<Guid>());
-
-    public static DownloadManagerState FromSnapshot(DownloadManagerSnapshot snapshot) =>
-        new(snapshot.Queued.ToList(), snapshot.Dispatched.ToHashSet());
 }
 
 public static class DownloadManagerStateExtensions
 {
-    public static DownloadManagerSnapshot GetSnapshot(this DownloadManagerState state) =>
-        new(state.Queued.ToArray(), state.Dispatched.ToArray());
-
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadEnqueued evt)
         => state with { Queued = [.. state.Queued, evt.DownloadId] };
 

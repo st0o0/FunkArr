@@ -1,0 +1,80 @@
+﻿{
+  "Entries": [
+    {
+      "RequestId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "Source": 0,
+      "Query": "Tatort",
+      "Timestamp": "2024-11-15T12:00:00+00:00",
+      "CandidateCount": 10,
+      "MatchedCount": 3,
+      "EnrichedCount": 2,
+      "ItemTraces": [
+        {
+          "CandidateTitle": "Tatort: Der letzte Schrei",
+          "CandidateTopic": "Tatort",
+          "CandidateChannel": "ARD",
+          "CandidateDuration": 5400,
+          "CandidateQuality": 720,
+          "CandidateDescription": "Ein spannender Fall",
+          "CandidateTimestamp": 1700000000,
+          "Matched": true,
+          "Score": 0.95,
+          "MatchedRuleId": "rule-1",
+          "Identification": {
+            "Season": "1",
+            "Episode": "5",
+            "Title": "Der letzte Schrei"
+          },
+          "RuleTraces": [
+            {
+              "RuleId": "rule-1",
+              "Priority": 1,
+              "Outcome": 0,
+              "FilterTrace": {
+                "Operator": "and",
+                "Passed": true,
+                "Nodes": [
+                  {
+                    "Field": "title",
+                    "Op": "contains",
+                    "ExpectedValue": "Tatort",
+                    "ActualValue": "Tatort: Der letzte Schrei",
+                    "Passed": true,
+                    "Skipped": false,
+                    "Group": null
+                  }
+                ]
+              },
+              "IdentificationTrace": {
+                "Strategy": "seasonAndEpisodeNumber",
+                "Attempted": true,
+                "Detail": "S01E05"
+              }
+            }
+          ],
+          "EnrichmentTrace": {
+            "Method": 1,
+            "Confidence": 0.9,
+            "Enriched": true,
+            "ResolvedSeason": "1",
+            "ResolvedEpisode": "5",
+            "ResolvedTitle": "Der letzte Schrei",
+            "ResolvedYear": null,
+            "DaysDiff": null,
+            "Detail": null
+          }
+        }
+      ]
+    },
+    {
+      "RequestId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "Source": 1,
+      "Query": "Film",
+      "Timestamp": "2024-11-15T13:00:00+00:00",
+      "CandidateCount": 5,
+      "MatchedCount": 1,
+      "EnrichedCount": 0,
+      "ItemTraces": []
+    }
+  ]
+}

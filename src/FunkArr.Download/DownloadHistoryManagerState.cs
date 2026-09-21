@@ -15,24 +15,16 @@ public sealed record HistoryRecord(
     int DownloadTimeSeconds,
     long CompletedAt);
 
-public sealed record DownloadHistoryManagerSnapshot(HistoryRecord[] Records);
-
 public sealed record DownloadHistoryManagerState(IReadOnlyList<HistoryRecord> Records)
 {
     public static readonly DownloadHistoryManagerState Empty = new([]);
-
-    public static DownloadHistoryManagerState FromSnapshot(DownloadHistoryManagerSnapshot snapshot) =>
-        new(snapshot.Records.ToList());
 }
 
 public static class DownloadHistoryManagerStateExtensions
 {
-    public static DownloadHistoryManagerSnapshot GetSnapshot(this DownloadHistoryManagerState state) =>
-        new(state.Records.ToArray());
-
     public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, HistoryRecorded evt) =>
         new(Records: [.. state.Records, new HistoryRecord(
-            evt.DownloadId, evt.Title, evt.Category, evt.Size,
+            evt.DownloadId, evt.Title, evt.Category.ToDomain(), evt.Size,
             (DownloadStatus)evt.Status, evt.RelativePath, evt.FailMessage,
             evt.DownloadTimeSeconds, evt.CompletedAt)]);
 

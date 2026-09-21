@@ -1,5 +1,2 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\FunkArr.Messages\FunkArr.Messages.csproj" />
-  </ItemGroup>
 </Project>

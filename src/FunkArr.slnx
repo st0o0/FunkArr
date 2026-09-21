@@ -34,6 +34,7 @@
     <Project Path="FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj" />
     <Project Path="FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj" />
     <Project Path="FunkArr.History.Tests/FunkArr.History.Tests.csproj" />
+    <Project Path="FunkArr.Persistence.Tests/FunkArr.Persistence.Tests.csproj" />
   </Folder>
   <Project Path="FunkArr/FunkArr.csproj" />
 </Solution>

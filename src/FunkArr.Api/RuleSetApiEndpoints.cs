@@ -48,7 +48,7 @@ public static partial class RuleSetApiEndpoints
                 new QueryRegisteredRuleSets(), _queryTimeout);
             var summaryTask = manager.Ask<RuleSetSummaryResult>(
                 new QueryRuleSetSummaries(), _queryTimeout);
-            var statsTask = statsCollector.Ask<AllStatsSnapshot>(
+            var statsTask = statsCollector.Ask<AllStatsResult>(
                 new QueryAllStats(), _statsTimeout);
 
             await Task.WhenAll(resolverTask, summaryTask, statsTask);
@@ -65,7 +65,7 @@ public static partial class RuleSetApiEndpoints
 
                 return new ApiModels.RuleSetListEntry(
                     e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId,
-                    e.MediaName, e.MediaType,
+                    e.MediaName, e.MediaType is not null ? (ApiModels.MediaType)(int)e.MediaType : null,
                     summary?.RuleCount ?? 0,
                     (summary?.SourceType).ToApi(),
                     stat?.LastRun,

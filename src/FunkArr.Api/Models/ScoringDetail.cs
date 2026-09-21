@@ -1,5 +1,3 @@
-using FunkArr.Messages;
-
 namespace FunkArr.Api.Models;
 
 public sealed record ScoringDetail(
@@ -30,13 +28,6 @@ public sealed record RuleTrace(
     RuleOutcome Outcome,
     FilterGroupTrace? FilterTrace,
     IdentificationTrace? IdentificationTrace);
-
-public enum RuleOutcome
-{
-    Matched,
-    FilterFailed,
-    IdentificationFailed
-}
 
 public sealed record FilterGroupTrace(
     string Operator,

@@ -5,7 +5,7 @@ namespace FunkArr.Scoring.Tests;
 public sealed class ScoringManagerStateTests
 {
     [Fact]
-    public void SnapshotRoundTrip_PreservesConfigs()
+    public void Apply_AddsConfig()
     {
         var config = new MatchingConfig("tatort", 0.8f, [
             new MatchingRule("rule-1", 0, null, null,
@@ -14,25 +14,13 @@ public sealed class ScoringManagerStateTests
 
         var state = ScoringManagerState.Empty.Apply(config);
 
-        var snapshot = state.GetSnapshot();
-        var restored = ScoringManagerState.FromSnapshot(snapshot);
-
-        Assert.Equal(state.Configs.Count, restored.Configs.Count);
-        Assert.NotNull(restored.GetConfig("tatort"));
-        Assert.Equal(0.8f, restored.GetConfig("tatort")!.DefaultConfidence);
+        Assert.Single(state.Configs);
+        Assert.NotNull(state.GetConfig("tatort"));
+        Assert.Equal(0.8f, state.GetConfig("tatort")!.DefaultConfidence);
     }
 
     [Fact]
-    public void SnapshotRoundTrip_EmptyState()
-    {
-        var snapshot = ScoringManagerState.Empty.GetSnapshot();
-        var restored = ScoringManagerState.FromSnapshot(snapshot);
-
-        Assert.Empty(restored.Configs);
-    }
-
-    [Fact]
-    public void SnapshotRoundTrip_MultipleConfigs()
+    public void Apply_MultipleConfigs()
     {
         var config1 = new MatchingConfig("tatort", 0.8f, []);
         var config2 = new MatchingConfig("heute-show", 0.9f, []);
@@ -41,10 +29,28 @@ public sealed class ScoringManagerStateTests
             .Apply(config1)
             .Apply(config2);
 
-        var restored = ScoringManagerState.FromSnapshot(state.GetSnapshot());
+        Assert.Equal(2, state.Configs.Count);
+        Assert.NotNull(state.GetConfig("tatort"));
+        Assert.NotNull(state.GetConfig("heute-show"));
+    }
 
-        Assert.Equal(2, restored.Configs.Count);
-        Assert.NotNull(restored.GetConfig("tatort"));
-        Assert.NotNull(restored.GetConfig("heute-show"));
+    [Fact]
+    public void Apply_RemoveConfig()
+    {
+        var config = new MatchingConfig("tatort", 0.8f, []);
+
+        var state = ScoringManagerState.Empty
+            .Apply(config)
+            .Apply(new RemoveMatchingConfig("tatort"));
+
+        Assert.Empty(state.Configs);
+    }
+
+    [Fact]
+    public void GetConfig_NonExistent_ReturnsNull()
+    {
+        var result = ScoringManagerState.Empty.GetConfig("nonexistent");
+
+        Assert.Null(result);
     }
 }

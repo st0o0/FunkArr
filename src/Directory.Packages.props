@@ -34,6 +34,9 @@
     <PackageVersion Include="OpenTelemetry.Api" Version="1.19.0" />
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
   </ItemGroup>
+  <ItemGroup Label="Serialization (testing)">
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="Akka.Hosting.TestKit" Version="1.5.71" />
     <PackageVersion Include="Akka.Persistence.TestKit" Version="1.5.71" />

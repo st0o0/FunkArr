@@ -9,12 +9,7 @@ public sealed record ScoringManagerState(
     public static readonly ScoringManagerState Empty =
         new(ImmutableDictionary<string, MatchingConfig>.Empty.WithComparers(StringComparer.Ordinal));
 
-    public static ScoringManagerState FromSnapshot(ScoringManagerSnapshot snapshot) =>
-        new(snapshot.Configs.WithComparers(StringComparer.Ordinal));
 }
-
-public sealed record ScoringManagerSnapshot(
-    ImmutableDictionary<string, MatchingConfig> Configs);
 
 public static class ScoringManagerStateExtensions
 {
@@ -26,7 +21,4 @@ public static class ScoringManagerStateExtensions
 
     public static MatchingConfig? GetConfig(this ScoringManagerState state, string ruleSetId) =>
         state.Configs.GetValueOrDefault(ruleSetId);
-
-    public static ScoringManagerSnapshot GetSnapshot(this ScoringManagerState state) =>
-        new(state.Configs);
 }

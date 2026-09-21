@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FunkArr.Core\FunkArr.Core.csproj" />
+    <ProjectReference Include="..\FunkArr.Persistence\FunkArr.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>
