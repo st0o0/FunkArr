@@ -1,6 +1,6 @@
 using FunkArr.Messages;
 
-namespace FunkArr.Messages.Scoring.History;
+namespace FunkArr.Messages.History;
 
 public sealed record ScoringSnapshotSummary(
     Guid RequestId,

@@ -11,6 +11,7 @@
     <Project Path="FunkArr.RuleSet/FunkArr.RuleSet.csproj" />
     <Project Path="FunkArr.Enrichment/FunkArr.Enrichment.csproj" />
     <Project Path="FunkArr.Scoring/FunkArr.Scoring.csproj" />
+    <Project Path="FunkArr.History/FunkArr.History.csproj" />
   </Folder>
   <Folder Name="/Adapters/">
     <Project Path="FunkArr.Api/FunkArr.Api.csproj" />
@@ -31,6 +32,7 @@
     <Project Path="FunkArr.Api.Tests/FunkArr.Api.Tests.csproj" />
     <Project Path="FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj" />
     <Project Path="FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj" />
+    <Project Path="FunkArr.History.Tests/FunkArr.History.Tests.csproj" />
   </Folder>
   <Project Path="FunkArr/FunkArr.csproj" />
 </Solution>

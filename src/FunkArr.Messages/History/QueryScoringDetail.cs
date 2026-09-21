@@ -1,6 +1,7 @@
 using FunkArr.Messages;
+using FunkArr.Messages.Scoring.History;
 
-namespace FunkArr.Messages.Scoring.History;
+namespace FunkArr.Messages.History;
 
 public sealed record QueryScoringDetail(
     string RuleSetId,

@@ -1,4 +1,6 @@
-namespace FunkArr.Messages.Scoring.History;
+using FunkArr.Messages;
+
+namespace FunkArr.Messages.History;
 
 public sealed record QueryScoringHistory(
     string RuleSetId,

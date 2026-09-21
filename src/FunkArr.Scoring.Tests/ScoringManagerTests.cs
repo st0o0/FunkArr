@@ -11,10 +11,6 @@ namespace FunkArr.Scoring.Tests;
 
 public sealed class ScoringManagerTests : TestKit
 {
-    public ScoringManagerTests()
-    {
-        ActorRegistry.For(Sys).Register<IScoringHistoryRegion>(CreateTestProbe(), overwrite: true);
-    }
     private static IOptionsMonitor<ScoringOptions> ScoringOpts(int poolSize = 1) =>
         new TestOptionsMonitor<ScoringOptions>(new ScoringOptions { PoolSize = poolSize });
 
