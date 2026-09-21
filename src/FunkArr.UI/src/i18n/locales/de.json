@@ -86,7 +86,20 @@
     "sonarrConfigDescription": "FunkArr als SABnzbd-Download-Client in Sonarr hinzufügen: Settings > Download Clients > Add > SABnzbd.",
     "radarrConfigDescription": "FunkArr als SABnzbd-Download-Client in Radarr hinzufügen: Settings > Download Clients > Add > SABnzbd.",
     "adjustProxy": "Anpassen bei Verwendung eines Reverse Proxy",
-    "configureService": "{service} konfigurieren"
+    "configureService": "{service} konfigurieren",
+    "serviceUrl": "URL",
+    "serviceApiKey": "API-Schlüssel",
+    "urlPlaceholder": "http://{service}:{port}",
+    "apiKeyPlaceholder": "{service}-API-Schlüssel eingeben",
+    "createIndexer": "Indexer erstellen",
+    "createDownloadClient": "Download-Client erstellen",
+    "created": "Erstellt",
+    "creating": "Wird erstellt...",
+    "configureManually": "Manuell konfigurieren",
+    "createFailed": "Fehler: {error}",
+    "funkArrUrl": "FunkArr-URL (optional)",
+    "funkArrUrlPlaceholder": "http://funkarr:6969",
+    "funkArrUrlHint": "Wie der Dienst FunkArr erreicht. Leer lassen, wenn gleiches Netzwerk wie der Browser."
   },
   "rulesets": {
     "title": "Regelwerke",
