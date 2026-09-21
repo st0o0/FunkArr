@@ -60,12 +60,22 @@ export interface RuleSetSource {
   localModified: string | null
 }
 
+export interface EnrichmentConfig {
+  enabled: boolean
+  methods: string[]
+  title: { threshold: number }
+  airdate: { tolerance: number }
+  runtime: { tolerance: number; mode: string }
+  year: { tolerance: number }
+}
+
 export interface RuleSetDetail {
   ruleSetId: string
   identity: RuleSetIdentity
   source: RuleSetSource
   defaultConfidence: number
   rules: RuleSetDetailRule[]
+  enrichment: EnrichmentConfig
 }
 
 export interface ScoringSnapshot {
@@ -119,6 +129,18 @@ export interface RuleTrace {
   identificationTrace: IdentificationTraceDetail | null
 }
 
+export interface EnrichmentTrace {
+  method: string
+  confidence: number
+  enriched: boolean
+  resolvedSeason: string | null
+  resolvedEpisode: string | null
+  resolvedTitle: string | null
+  resolvedYear: number | null
+  daysDiff: number | null
+  detail: string | null
+}
+
 export interface ItemTrace {
   candidateTitle: string
   candidateTopic: string
@@ -132,6 +154,7 @@ export interface ItemTrace {
   matchedRuleId: string | null
   identification: TracedIdentification | null
   ruleTraces: RuleTrace[]
+  enrichmentTrace: EnrichmentTrace | null
 }
 
 export interface ScoringDetail {
@@ -140,6 +163,15 @@ export interface ScoringDetail {
   query: string
   timestamp: string
   itemTraces: ItemTrace[]
+}
+
+export interface EnrichmentConfigInput {
+  enabled?: boolean
+  methods?: string[]
+  title?: { threshold?: number }
+  airdate?: { tolerance?: number }
+  runtime?: { tolerance?: number; mode?: string }
+  year?: { tolerance?: number }
 }
 
 export interface RuleSetWriteRequest {
@@ -157,6 +189,7 @@ export interface RuleSetWriteRequest {
   standalone?: boolean
   disable?: string[]
   rules?: RuleSetWriteRule[]
+  enrichment?: EnrichmentConfigInput
 }
 
 export interface RuleSetWriteRule {
@@ -195,6 +228,11 @@ export interface TestScoringRequest {
     rules: RuleSetWriteRule[]
   }
   candidates: TestCandidate[]
+  enrichment?: EnrichmentConfigInput
+  tvdbId?: number
+  tmdbId?: number
+  imdbId?: string
+  mediaType?: string
 }
 
 export interface TestCandidate {
@@ -302,11 +340,35 @@ export async function deleteRuleSet(id: string): Promise<void> {
   }
 }
 
-export async function testRuleSet(config: TestScoringRequest['config'], candidates: TestCandidate[]): Promise<TestScoringResponse> {
+export interface TestEnrichmentParams {
+  enrichment?: EnrichmentConfigInput
+  tvdbId?: number
+  tmdbId?: number
+  imdbId?: string
+  mediaType?: string
+}
+
+export async function testRuleSet(
+  config: TestScoringRequest['config'],
+  candidates: TestCandidate[],
+  enrichmentParams?: TestEnrichmentParams,
+): Promise<TestScoringResponse> {
+  const body: Record<string, unknown> = {
+    defaultConfidence: config.defaultConfidence,
+    rules: config.rules,
+    candidates,
+  }
+  if (enrichmentParams) {
+    if (enrichmentParams.enrichment) body.enrichment = enrichmentParams.enrichment
+    if (enrichmentParams.tvdbId) body.tvdbId = enrichmentParams.tvdbId
+    if (enrichmentParams.tmdbId) body.tmdbId = enrichmentParams.tmdbId
+    if (enrichmentParams.imdbId) body.imdbId = enrichmentParams.imdbId
+    if (enrichmentParams.mediaType) body.mediaType = enrichmentParams.mediaType
+  }
   const res = await fetch('/api/rulesets/test', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ defaultConfidence: config.defaultConfidence, rules: config.rules, candidates }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) {
     throw new Error(`${res.status} ${res.statusText}`)

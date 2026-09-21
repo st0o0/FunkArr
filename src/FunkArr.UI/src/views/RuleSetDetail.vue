@@ -61,6 +61,43 @@
         </div>
       </section>
 
+      <section v-if="detail.enrichment" class="mb-4">
+        <h2 class="text-sm font-semibold mb-2 text-text-body">{{ $t('detail.enrichment') }}</h2>
+        <div class="bg-surface-raised rounded-lg border border-border-default p-4 text-sm">
+          <div class="flex items-center gap-3 mb-2">
+            <span
+              class="px-2 py-0.5 rounded text-xs font-medium"
+              :class="detail.enrichment.enabled ? 'bg-status-ok/10 text-status-ok' : 'bg-surface-elevated text-text-secondary'"
+            >{{ detail.enrichment.enabled ? $t('detail.enrichmentEnabled') : $t('detail.enrichmentDisabled') }}</span>
+            <template v-if="detail.enrichment.enabled">
+              <span
+                v-for="method in detail.enrichment.methods"
+                :key="method"
+                class="px-1.5 py-0.5 rounded text-[11px] bg-surface-elevated text-text-body"
+              >{{ method }}</span>
+            </template>
+          </div>
+          <div v-if="detail.enrichment.enabled" class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs text-text-secondary">
+            <template v-if="detail.enrichment.methods.includes('title')">
+              <span>Title Threshold</span>
+              <span class="font-mono text-text-body">{{ detail.enrichment.title.threshold }}</span>
+            </template>
+            <template v-if="detail.enrichment.methods.includes('airdate')">
+              <span>Airdate Tolerance</span>
+              <span class="font-mono text-text-body">{{ detail.enrichment.airdate.tolerance }}d</span>
+            </template>
+            <template v-if="detail.enrichment.methods.includes('runtime')">
+              <span>Runtime</span>
+              <span class="font-mono text-text-body">{{ detail.enrichment.runtime.tolerance }} ({{ detail.enrichment.runtime.mode }})</span>
+            </template>
+            <template v-if="detail.enrichment.methods.includes('year')">
+              <span>Year Tolerance</span>
+              <span class="font-mono text-text-body">±{{ detail.enrichment.year.tolerance }}</span>
+            </template>
+          </div>
+        </div>
+      </section>
+
       <section class="mb-5">
         <h2 class="text-sm font-semibold mb-2 text-text-body">{{ $t('detail.matchingRules') }}</h2>
         <div class="text-sm text-text-secondary mb-2">{{ $t('detail.defaultConfidence') }}: {{ detail.defaultConfidence }}</div>

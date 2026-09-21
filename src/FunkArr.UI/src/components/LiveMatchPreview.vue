@@ -95,7 +95,7 @@
           : 'bg-surface-elevated text-text-muted cursor-not-allowed border border-border-default'"
         :disabled="candidates.length === 0 || rules.length === 0 || testing"
         @click="runFullTest"
-      >{{ testing ? $t('preview.testing') : $t('preview.fullTestButton', { count: candidates.length }) }}</button>
+      >{{ testing ? (testPhase === 'enriching' ? $t('preview.enriching') : $t('preview.scoring')) : $t('preview.fullTestButton', { count: candidates.length }) }}</button>
     </template>
 
     <!-- Full Test Results Mode -->
@@ -164,6 +164,39 @@
                 </div>
               </div>
             </div>
+
+            <!-- Enrichment Trace -->
+            <div v-if="item.enrichmentTrace" class="mt-3 pt-2 border-t border-border-default">
+              <div class="text-xs font-semibold text-text-secondary mb-1.5">{{ $t('preview.enrichmentResult') }}</div>
+              <div
+                class="pl-3 border-l-2 text-xs"
+                :class="item.enrichmentTrace.enriched ? 'border-status-ok' : 'border-amber-500'"
+              >
+                <div class="flex items-center gap-2 mb-0.5">
+                  <span
+                    class="px-1.5 py-0.5 rounded text-[11px] font-medium"
+                    :class="item.enrichmentTrace.enriched
+                      ? (item.enrichmentTrace.method === 'RegexExtracted' ? 'bg-blue-500/10 text-blue-500' : 'bg-status-ok/10 text-status-ok')
+                      : 'bg-amber-500/10 text-amber-500'"
+                  >{{ item.enrichmentTrace.enriched
+                      ? (item.enrichmentTrace.method === 'RegexExtracted' ? $t('preview.confirmedViaTvdb') : enrichmentMethodLabel(item.enrichmentTrace.method))
+                      : $t('preview.notEnriched') }}</span>
+                  <span v-if="item.enrichmentTrace.enriched" class="text-text-secondary">
+                    {{ (item.enrichmentTrace.confidence * 100).toFixed(0) }}%
+                  </span>
+                </div>
+                <div v-if="item.enrichmentTrace.enriched" class="text-status-ok">
+                  <span v-if="item.enrichmentTrace.resolvedSeason" class="mr-2">S<span class="font-mono">{{ item.enrichmentTrace.resolvedSeason }}</span></span>
+                  <span v-if="item.enrichmentTrace.resolvedEpisode" class="mr-2">E<span class="font-mono">{{ item.enrichmentTrace.resolvedEpisode }}</span></span>
+                  <span v-if="item.enrichmentTrace.resolvedTitle" class="font-mono">"{{ item.enrichmentTrace.resolvedTitle }}"</span>
+                  <span v-if="item.enrichmentTrace.resolvedYear" class="font-mono ml-2">({{ item.enrichmentTrace.resolvedYear }})</span>
+                  <span v-if="item.enrichmentTrace.daysDiff != null" class="text-text-secondary ml-2">{{ $t('preview.daysDifference', { days: item.enrichmentTrace.daysDiff }) }}</span>
+                </div>
+                <div v-else-if="item.enrichmentTrace.detail" class="text-amber-500">
+                  {{ item.enrichmentTrace.detail }}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -185,6 +218,7 @@ import {
   testRuleSet,
   type TestCandidate,
   type ItemTrace,
+  type TestEnrichmentParams,
 } from '../api/rulesets'
 import { useMediathekAutoFetch } from '../composables/useMediathekAutoFetch'
 import { useRulesetMatcher } from '../composables/useRulesetMatcher'
@@ -212,6 +246,19 @@ const props = defineProps<{
       }
       titleRules: { type: string; field: string; pattern: string; captureGroup: number | null; value: string }[]
     }[]
+    enrichment?: {
+      enabled: boolean
+      methods: string[]
+      titleThreshold: number
+      airdateTolerance: number
+      runtimeTolerance: number
+      runtimeMode: string
+      yearTolerance: number
+    }
+    tvdbId?: number | null
+    tmdbId?: number | null
+    imdbId?: string
+    mediaType?: string
   }
 }>()
 
@@ -223,6 +270,7 @@ const { results: liveResults, matchedCount, total } = useRulesetMatcher(candidat
 
 const mode = ref<'live' | 'fullTest'>('live')
 const testing = ref(false)
+const testPhase = ref<'scoring' | 'enriching'>('scoring')
 const testError = ref<string | null>(null)
 const fullTestResults = ref<ItemTrace[] | null>(null)
 const expanded = reactive<Record<number, boolean>>({})
@@ -259,6 +307,7 @@ function hasFilters(filters: { all: unknown[]; any: unknown[]; not: unknown[] })
 
 async function runFullTest() {
   testing.value = true
+  testPhase.value = 'scoring'
   testError.value = null
   Object.keys(expanded).forEach(k => delete expanded[Number(k)])
 
@@ -294,8 +343,28 @@ async function runFullTest() {
     })),
   }
 
+  const enrichment = props.builderState.enrichment
+  let enrichmentParams: TestEnrichmentParams | undefined
+  if (enrichment?.enabled) {
+    testPhase.value = 'enriching'
+    enrichmentParams = {
+      enrichment: {
+        enabled: enrichment.enabled,
+        methods: enrichment.methods,
+        title: { threshold: enrichment.titleThreshold },
+        airdate: { tolerance: enrichment.airdateTolerance },
+        runtime: { tolerance: enrichment.runtimeTolerance, mode: enrichment.runtimeMode },
+        year: { tolerance: enrichment.yearTolerance },
+      },
+      tvdbId: props.builderState.tvdbId ?? undefined,
+      tmdbId: props.builderState.tmdbId ?? undefined,
+      imdbId: props.builderState.imdbId || undefined,
+      mediaType: props.builderState.mediaType,
+    }
+  }
+
   try {
-    const response = await testRuleSet(config, testCandidates)
+    const response = await testRuleSet(config, testCandidates, enrichmentParams)
     fullTestResults.value = response.itemTraces
     mode.value = 'fullTest'
   } catch (e) {
@@ -331,6 +400,16 @@ function outcomeBorderClass(outcome: string, skipped: boolean): string {
     case 'filterFailed': return 'border-status-fail'
     case 'identificationFailed': return 'border-amber-500'
     default: return 'border-border-default'
+  }
+}
+
+function enrichmentMethodLabel(method: string): string {
+  switch (method) {
+    case 'TitleMatch': return t('preview.titleMatch')
+    case 'AirdateMatch': return t('preview.airdateMatch')
+    case 'YearMatch': return t('preview.yearMatch')
+    case 'RegexExtracted': return t('preview.regexExtracted')
+    default: return method
   }
 }
 

@@ -146,7 +146,11 @@
     "failedToDelete": "Failed to delete",
     "deleteFailed": "Delete failed",
     "scoringHistory": "Scoring History",
-    "edit": "Edit"
+    "edit": "Edit",
+    "enrichment": "Enrichment",
+    "enrichmentEnabled": "Enabled",
+    "enrichmentDisabled": "Disabled",
+    "enrichmentMethods": "Methods"
   },
   "builder": {
     "newRuleSet": "New RuleSet",
@@ -205,7 +209,24 @@
     "topicRequired": "Topic is required",
     "ruleSetSaved": "RuleSet saved",
     "failedToSave": "Failed to save",
-    "validationErrorsFound": "{count} validation error{count, plural, one {} other {s}} found"
+    "validationErrorsFound": "{count} validation error{count, plural, one {} other {s}} found",
+    "enrichment": "Enrichment",
+    "enrichmentDescription": "Configure how matched items are resolved against external metadata (TVDB/TMDB).",
+    "enrichmentEnabled": "Enabled",
+    "enrichmentMethods": "Methods",
+    "methodTitle": "Title",
+    "methodAirdate": "Airdate",
+    "methodRuntime": "Runtime",
+    "methodYear": "Year",
+    "titleThreshold": "Title Threshold",
+    "airdateTolerance": "Airdate Tolerance (days)",
+    "runtimeTolerance": "Runtime Tolerance",
+    "runtimeMode": "Runtime Mode",
+    "runtimeModeTiebreaker": "Tiebreaker",
+    "runtimeModeFilter": "Filter",
+    "yearTolerance": "Year Tolerance",
+    "enrichmentHintShow": "Enrichment requires a TVDB ID to resolve episodes.",
+    "enrichmentHintMovie": "Enrichment requires a TMDB or IMDB ID to resolve movies."
   },
   "preview": {
     "livePreview": "Live Preview",
@@ -229,7 +250,18 @@
     "skipped": "Skipped",
     "identification": "Identification",
     "notAttempted": "Not attempted",
-    "ok": "OK"
+    "ok": "OK",
+    "scoring": "Scoring...",
+    "enriching": "Enriching...",
+    "enrichmentResult": "Enrichment",
+    "enriched": "Enriched",
+    "notEnriched": "Not Enriched",
+    "confirmedViaTvdb": "Confirmed via TVDB",
+    "titleMatch": "Title Match",
+    "airdateMatch": "Airdate Match",
+    "yearMatch": "Year Match",
+    "regexExtracted": "Regex Extracted",
+    "daysDifference": "{days}d difference"
   },
   "debugger": {
     "searchTab": "Search",

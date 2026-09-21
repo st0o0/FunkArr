@@ -135,6 +135,76 @@
           </div>
         </section>
 
+        <!-- Enrichment Section -->
+        <section>
+          <h2 class="text-sm font-semibold mb-1 text-text-body">{{ $t('builder.enrichment') }}</h2>
+          <p class="text-xs text-text-secondary mb-2">{{ $t('builder.enrichmentDescription') }}</p>
+          <div class="bg-surface-raised rounded-lg border border-border-default p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-text-body font-medium">{{ $t('builder.enrichmentEnabled') }}</label>
+              <button
+                type="button"
+                class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                :class="form.enrichment.enabled ? 'bg-accent' : 'bg-surface-elevated border border-border-default'"
+                @click="form.enrichment.enabled = !form.enrichment.enabled"
+              >
+                <span
+                  class="inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform"
+                  :class="form.enrichment.enabled ? 'translate-x-4' : 'translate-x-0.5'"
+                />
+              </button>
+            </div>
+
+            <div :class="{ 'opacity-40 pointer-events-none': !form.enrichment.enabled }">
+              <div class="mb-3">
+                <label class="block text-xs text-text-body mb-1.5 font-medium">{{ $t('builder.enrichmentMethods') }}</label>
+                <div class="flex flex-wrap gap-2">
+                  <label v-for="method in ['title', 'airdate', 'runtime', 'year']" :key="method" class="flex items-center gap-1.5 text-xs text-text-body cursor-pointer">
+                    <input
+                      type="checkbox"
+                      :checked="form.enrichment.methods.includes(method)"
+                      class="rounded border-border-default text-accent focus:ring-accent"
+                      @change="toggleMethod(method)"
+                    />
+                    {{ $t(`builder.method${method.charAt(0).toUpperCase() + method.slice(1)}`) }}
+                  </label>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div v-if="form.enrichment.methods.includes('title')">
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.titleThreshold') }}</label>
+                  <input v-model.number="form.enrichment.titleThreshold" type="number" min="0" max="1" step="0.05" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
+                </div>
+                <div v-if="form.enrichment.methods.includes('airdate')">
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.airdateTolerance') }}</label>
+                  <input v-model.number="form.enrichment.airdateTolerance" type="number" min="0" step="1" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
+                </div>
+                <div v-if="form.enrichment.methods.includes('runtime')">
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.runtimeTolerance') }}</label>
+                  <input v-model.number="form.enrichment.runtimeTolerance" type="number" min="0" max="1" step="0.05" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
+                </div>
+                <div v-if="form.enrichment.methods.includes('runtime')">
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.runtimeMode') }}</label>
+                  <select v-model="form.enrichment.runtimeMode" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus">
+                    <option value="tiebreaker">{{ $t('builder.runtimeModeTiebreaker') }}</option>
+                    <option value="filter">{{ $t('builder.runtimeModeFilter') }}</option>
+                  </select>
+                </div>
+                <div v-if="form.enrichment.methods.includes('year')">
+                  <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.yearTolerance') }}</label>
+                  <input v-model.number="form.enrichment.yearTolerance" type="number" min="0" step="1" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
+                </div>
+              </div>
+
+              <div v-if="enrichmentHint" class="mt-2 text-xs text-amber-500 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 5v3m0 2.5v.5"/><circle cx="8" cy="8" r="6.5"/></svg>
+                {{ enrichmentHint }}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Rules Section -->
         <section>
           <div class="flex items-center justify-between mb-2">
@@ -388,6 +458,16 @@ const saving = ref(false)
 const saveError = ref<string | null>(null)
 const validationErrors = ref<ValidationError[]>([])
 
+interface FormEnrichment {
+  enabled: boolean
+  methods: string[]
+  titleThreshold: number
+  airdateTolerance: number
+  runtimeTolerance: number
+  runtimeMode: string
+  yearTolerance: number
+}
+
 const form = reactive({
   ruleSetId: '',
   topic: '',
@@ -401,6 +481,15 @@ const form = reactive({
   standalone: false,
   disable: [] as string[],
   rules: [] as FormRule[],
+  enrichment: {
+    enabled: true,
+    methods: ['title', 'airdate'],
+    titleThreshold: 0.7,
+    airdateTolerance: 7,
+    runtimeTolerance: 0.35,
+    runtimeMode: 'tiebreaker',
+    yearTolerance: 1,
+  } as FormEnrichment,
 })
 
 const mediaNameEdited = ref(false)
@@ -418,9 +507,30 @@ const ruleSetIdError = computed(() => {
   return ''
 })
 
+const enrichmentHint = computed(() => {
+  if (!form.enrichment.enabled) return ''
+  if (form.mediaType === 'show' && !form.tvdbId) return t('builder.enrichmentHintShow')
+  if (form.mediaType === 'movie' && !form.tmdbId && !form.imdbId) return t('builder.enrichmentHintMovie')
+  return ''
+})
+
+function toggleMethod(method: string) {
+  const idx = form.enrichment.methods.indexOf(method)
+  if (idx >= 0) {
+    form.enrichment.methods.splice(idx, 1)
+  } else {
+    form.enrichment.methods.push(method)
+  }
+}
+
 const debuggerState = computed(() => ({
   confidence: form.confidence,
   rules: form.rules,
+  enrichment: form.enrichment,
+  tvdbId: form.tvdbId,
+  tmdbId: form.tmdbId,
+  imdbId: form.imdbId,
+  mediaType: form.mediaType,
 }))
 
 function createEmptyRule(): FormRule {
@@ -505,12 +615,22 @@ function serializeForm(): RuleSetWriteRequest {
   if (form.imdbId) media.imdbId = form.imdbId
   if (form.tmdbId) media.tmdbId = form.tmdbId
 
+  const enrichment: RuleSetWriteRequest['enrichment'] = {
+    enabled: form.enrichment.enabled,
+    methods: form.enrichment.methods,
+    title: { threshold: form.enrichment.titleThreshold },
+    airdate: { tolerance: form.enrichment.airdateTolerance },
+    runtime: { tolerance: form.enrichment.runtimeTolerance, mode: form.enrichment.runtimeMode },
+    year: { tolerance: form.enrichment.yearTolerance },
+  }
+
   const result: RuleSetWriteRequest = {
     topic: form.topic,
     aliases: form.aliases.filter(a => a.trim() !== ''),
     media,
     confidence: form.confidence,
     rules,
+    enrichment,
   }
   if (!isEditMode.value) result.ruleSetId = form.ruleSetId
   if (isEditMode.value && isCommunitySource.value) result.standalone = true
@@ -577,6 +697,16 @@ onMounted(async () => {
     form.imdbId = detail.identity.imdbId ?? ''
     form.tmdbId = detail.identity.tmdbId ?? null
     form.confidence = detail.defaultConfidence ?? 0.8
+
+    if (detail.enrichment) {
+      form.enrichment.enabled = detail.enrichment.enabled
+      form.enrichment.methods = [...detail.enrichment.methods]
+      form.enrichment.titleThreshold = detail.enrichment.title.threshold
+      form.enrichment.airdateTolerance = detail.enrichment.airdate.tolerance
+      form.enrichment.runtimeTolerance = detail.enrichment.runtime.tolerance
+      form.enrichment.runtimeMode = detail.enrichment.runtime.mode
+      form.enrichment.yearTolerance = detail.enrichment.year.tolerance
+    }
 
     form.rules = (detail.rules || []).map((r, idx) => ({
       id: r.id || `rule-${idx + 1}`,
