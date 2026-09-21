@@ -1,68 +1,6 @@
 # CLAUDE.md
 
-## Project
-
-FunkArr - German-language public broadcaster media library integration for the *arr
-ecosystem. A .NET service (Docker container) on Akka.NET: searches ARD/ZDF/ORF/SRF/etc.
-Mediatheken via MediathekViewWeb API, downloads video + subtitles, remuxes to
-MKV via FFmpeg, and exposes Newznab-compatible indexer API (for Sonarr/Radarr/
-Prowlarr) and SABnzbd-compatible download client API.
-
-## Solution structure
-
-Multi-project solution with domain isolation:
-
-```
-src/
-  FunkArr.slnx
-  FunkArr/                        # Host: Program.cs, Startup, DI, Config
-  FunkArr.Core/                   # Common types, Akka/Servus refs
-  FunkArr.Api/                    # Internal REST API (JSON, OpenAPI-first)
-  FunkArr.ArrApi/                 # Newznab + SABnzbd adapter (thin translation)
-  FunkArr.Search/                 # MediathekViewWeb query + fetch
-  FunkArr.Download/               # Download pipeline, FFmpeg, subtitles, muxing
-  FunkArr.RuleSet/                # Ruleset registry, models, GitHub sync, generator
-  FunkArr.Scoring/                # Match scoring, stats, diagnostics
-  FunkArr.Enrichment/             # TMDB + TVDB metadata enrichment
-  FunkArr.Messages/               # Commands, queries, responses (all domains)
-  FunkArr.Persistence/            # DTOs (extend-only, versioned)
-  FunkArr.UI/                     # Vue.js frontend (Vite + Tailwind)
-  FunkArr.Search.Tests/
-  FunkArr.Download.Tests/
-  FunkArr.RuleSet.Tests/
-  FunkArr.Scoring.Tests/
-  FunkArr.Enrichment.Tests/
-  FunkArr.Api.Tests/
-  FunkArr.ArrApi.Tests/
-  FunkArr.Architecture.Tests/     # ArchUnit conventions
-  FunkArr.Tests.Shared/           # Shared test infrastructure
-```
-
-## Build & test
-
-All commands run from repo root (never cd into src/):
-
-```powershell
-dotnet build src/FunkArr.slnx
-dotnet format src/FunkArr.slnx --verify-no-changes
-```
-
-Tests are xUnit v3 on Microsoft.Testing.Platform - `dotnet run`, **not** `dotnet test`:
-
-```powershell
-dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
-dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
-```
-
-Run the service via `docker-compose.dev.yml`, never `dotnet run`.
-
-## Message naming convention
-
-- Commands: `VerbNoun` (e.g. `SearchSeries`, `AddDownload`). Response: `abstract record VerbNounResponse` with `VerbNounCompleted` / `VerbNounFailed`. Command + responses in one file.
-- Queries: `QueryNoun` (e.g. `QueryRuleSetDetail`). Response: `abstract record NounResponse` with `NounResult` / `NounFailed`. Query + responses in one file.
-- Events: Past-tense (e.g. `ScoringRecorded`), in `FunkArr.Persistence/Events/`.
-- Config: Noun, fire-and-forget (e.g. `MatchingConfig`).
-- No domain-wide response interfaces — each command/query has its own response type.
+@AGENTS.md
 
 ## Workflow
 
@@ -71,13 +9,39 @@ a change (proposal/design/specs/tasks) - `/opsx:apply` to implement - `/opsx:arc
 
 ## Skill routing
 
-- Actors & supervision: `sepp:actor-pattern-library`, `sepp:resilience-patterns`
-- Messages & pipeline design: `sepp:message-driven-designer`
-- Domain modeling: `sepp:domain-modeling-patterns`
-- Servus patterns: `servus-skills:servus-*` (startup, actors, etc.)
+### Project skills (FunkArr-specific)
 
-## References
+- New actor: `funkarr-actor` (Pathfinder pattern with FunkArr namespaces)
+- New message: `funkarr-message` (commands, queries, events)
+- New endpoint: `funkarr-endpoint` (Minimal API + actor Ask)
+- New test: `funkarr-test` (TestKit with DataPaths, TestDataFiles)
 
-- MediathekViewWeb API: https://mediathekviewweb.de/
-- Newznab API spec: https://newznab.readthedocs.io/
-- SABnzbd API spec: https://sabnzbd.org/wiki/advanced/api
+### Akka.NET skills (akka-skills plugin)
+
+- Actor state pattern: `akka-skills:actor-state` (state records, Apply/GetSnapshot, persistence)
+- Persistence separation: `akka-skills:persistence` (three-tier state model, SaveSnapshot, extend-only DTOs)
+- Project structure: `akka-skills:project-structure` (solution layout, domain isolation, ArchUnitNET)
+- Message conventions: `akka-skills:messages` (VerbNoun commands, QueryNoun queries) — this project uses Pattern A (dedicated Messages project)
+- Actor testing: `akka-skills:testing` (Classic + Hosting TestKit, async assertions, persistence testing)
+- Logging: `akka-skills:logging` (ILoggingAdapter in actors, ILogger in services, Serilog setup)
+- Setup containers: `akka-skills:setup-container` (Servus AppBuilder, DI/Actor/App composition)
+- Cluster hosting: `akka-skills:cluster-hosting` (Singletons, ShardRegions, MessageExtractor)
+- Actor pools: `akka-skills:actor-pools` (Router-Pools, DI-Pools, Stash-Capacity)
+- Persistence setup: `akka-skills:persistence-setup` (WithSqlPersistence, Provider, Clustering)
+- Become state machines: `akka-skills:become-state-machines` (multi-phase workflows, stash-during-init, connection lifecycle)
+- Advanced patterns: `akka-skills:advanced-patterns` (IWithTimers, ReceiveAsync, PipeTo, DeathWatch, Passivation, PersistAll)
+- Streams: `akka-skills:streams` (Source/Flow/Sink, MergeHub/BroadcastHub, StreamRefs, custom GraphStage, supervision)
+- Supervision: `akka-skills:supervision` (BackoffSupervisor, custom SupervisorStrategy, escalation)
+
+### Plugin skills
+
+- Akka.NET: `dotnet-skills:akka-*` (hosting, testing, best-practices, management)
+- Actor patterns: `dotnet-skills:csharp-concurrency-patterns`
+- C# coding: `dotnet-skills:csharp-coding-standards`, `dotnet-skills:csharp-type-design-performance`
+- EF Core / DB: `dotnet-skills:efcore-patterns`, `dotnet-skills:database-performance`
+- Testing: `dotnet-skills:akka-testing-patterns`, `dotnet-skills:testcontainers`, `dotnet-skills:snapshot-testing`
+- Project structure: `dotnet-skills:project-structure`, `dotnet-skills:package-management`
+- DI / Config: `dotnet-skills:microsoft-extensions-dependency-injection`, `dotnet-skills:microsoft-extensions-configuration`
+- Aspire: `dotnet-skills:aspire-*`
+- Serialization: `dotnet-skills:serialization`
+- OpenTelemetry: `dotnet-skills:opentelementry-dotnet-instrumentation`
