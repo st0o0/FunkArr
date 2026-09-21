@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  base: '/funkarr/',
+  base: '/',
   title: 'FunkArr',
   head: [
-    ['link', { rel: 'icon', href: '/funkarr/logo.svg' }]
+    ['link', { rel: 'icon', href: '/logo.svg' }]
   ],
   locales: {
     root: {

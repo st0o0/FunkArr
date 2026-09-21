@@ -34,7 +34,8 @@ RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/pu
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f62a272ac1b46e83f56b8ed0416572f31cd1128e2c4a5e63eb34d348e4a36095
 # hadolint ignore=DL3018
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg icu-libs
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ARG VERSION=0.0.0-dev
 LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.description="German public broadcaster media libraries for the *arr ecosystem" \
