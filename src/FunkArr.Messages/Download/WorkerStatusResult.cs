@@ -1,5 +1,3 @@
-using FunkArr.Messages;
-
 namespace FunkArr.Messages.Download;
 
 public sealed record WorkerStatusResult(

@@ -1,4 +1,3 @@
-using FunkArr.Messages;
 using FunkArr.Messages.Scoring.History;
 
 namespace FunkArr.Messages.History;

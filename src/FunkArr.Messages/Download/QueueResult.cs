@@ -1,5 +1,3 @@
-using FunkArr.Messages;
-
 namespace FunkArr.Messages.Download;
 
 public abstract record QueueResponse;

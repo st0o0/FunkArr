@@ -1,5 +1,4 @@
 using Akka.Actor;
-using Akka.Hosting;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages;

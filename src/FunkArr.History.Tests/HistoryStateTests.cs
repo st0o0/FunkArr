@@ -1,7 +1,4 @@
 using FunkArr.Messages;
-using FunkArr.Messages.History;
-using FunkArr.Messages.Scoring;
-using FunkArr.Messages.Scoring.History;
 using FunkArr.Persistence.Events.ScoringHistory;
 
 namespace FunkArr.History.Tests;

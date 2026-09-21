@@ -1,6 +1,5 @@
 using FunkArr.Core;
 using FunkArr.Messages;
-using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 

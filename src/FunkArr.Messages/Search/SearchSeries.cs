@@ -1,5 +1,3 @@
-using FunkArr.Messages;
-
 namespace FunkArr.Messages.Search;
 
 public sealed record SearchSeries(

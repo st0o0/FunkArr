@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace FunkArr.Api.Models;
 
 internal sealed record ArrField<T>(string Name, T Value);
