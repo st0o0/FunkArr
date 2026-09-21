@@ -575,7 +575,7 @@ public sealed class ScoringActorTests : TestKit
         Assert.Equal(RuleOutcome.IdentificationFailed, trace.RuleTraces[0].Outcome);
         Assert.NotNull(trace.RuleTraces[0].IdentificationTrace);
         Assert.True(trace.RuleTraces[0].IdentificationTrace!.Attempted);
-        Assert.Equal("no date found in title", trace.RuleTraces[0].IdentificationTrace!.Detail);
+        Assert.Equal(IdentificationFailureReason.NoDateFoundInTitle, trace.RuleTraces[0].IdentificationTrace!.Detail);
     }
 
     [Fact]

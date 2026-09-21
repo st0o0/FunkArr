@@ -1,6 +1,6 @@
 namespace FunkArr.Messages.Scoring.History;
 
 public sealed record FilterGroupTrace(
-    string Operator,
+    FilterGroupOp Operator,
     bool Passed,
     FilterNodeTrace[] Nodes);

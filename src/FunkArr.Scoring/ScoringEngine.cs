@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
+using static FunkArr.Messages.Scoring.FilterGroupOp;
 
 namespace FunkArr.Scoring;
 
@@ -88,7 +89,7 @@ public static class ScoringEngine
 
         if (filters.All is { Length: > 0 })
         {
-            var (passed, trace) = EvaluateGroupTraced(filters.All, "All", candidate);
+            var (passed, trace) = EvaluateGroupTraced(filters.All, All, candidate);
             subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
             if (!passed)
             {
@@ -98,7 +99,7 @@ public static class ScoringEngine
 
         if (filters.Any is { Length: > 0 })
         {
-            var (passed, trace) = EvaluateGroupTraced(filters.Any, "Any", candidate);
+            var (passed, trace) = EvaluateGroupTraced(filters.Any, Any, candidate);
             subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
             if (!passed)
             {
@@ -108,7 +109,7 @@ public static class ScoringEngine
 
         if (filters.Not is { Length: > 0 })
         {
-            var (passed, trace) = EvaluateGroupTraced(filters.Not, "Not", candidate);
+            var (passed, trace) = EvaluateGroupTraced(filters.Not, Not, candidate);
             subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
             if (!passed)
             {
@@ -120,19 +121,19 @@ public static class ScoringEngine
         {
             0 => (true, null),
             1 => (overallPassed, subGroups[0].Group),
-            _ => (overallPassed, new FilterGroupTrace("All", overallPassed, subGroups.ToArray()))
+            _ => (overallPassed, new FilterGroupTrace(All, overallPassed, subGroups.ToArray()))
         };
     }
 
     private static (bool passed, FilterGroupTrace trace) EvaluateGroupTraced(
-        FilterNode[] nodes, string op, ScoreCandidate candidate)
+        FilterNode[] nodes, FilterGroupOp op, ScoreCandidate candidate)
     {
         var nodeTraces = new List<FilterNodeTrace>(nodes.Length);
         bool groupPassed;
 
         switch (op)
         {
-            case "All":
+            case All:
                 {
                     var failed = false;
                     foreach (var node in nodes)
@@ -154,7 +155,7 @@ public static class ScoringEngine
                     groupPassed = !failed;
                     break;
                 }
-            case "Any":
+            case Any:
                 {
                     var found = false;
                     foreach (var node in nodes)
@@ -176,7 +177,7 @@ public static class ScoringEngine
                     groupPassed = found;
                     break;
                 }
-            case "Not":
+            case Not:
                 {
                     var anyMatched = false;
                     foreach (var node in nodes)
@@ -302,13 +303,12 @@ public static class ScoringEngine
             IdentificationStrategy.TitleExact => IdentifyTitleConstructionTraced(spec, candidate, exact: true),
             IdentificationStrategy.TitleIncludes => IdentifyTitleConstructionTraced(spec, candidate, exact: false),
             IdentificationStrategy.AirdateExtraction => IdentifyAirdateTraced(candidate),
-            _ => (false, new IdentificationTrace(null, false, "unknown strategy"), null),
+            _ => (false, new IdentificationTrace(null, false, IdentificationFailureReason.UnknownStrategy), null),
         };
 
     private static (bool, IdentificationTrace, TracedIdentification?) IdentifyRegexCaptureTraced(
         IdentificationSpec spec, ScoreCandidate candidate)
     {
-        var strategyName = spec.Strategy.ToString();
         string? season = null;
 
         if (spec.SeasonPattern is not null)
@@ -317,7 +317,7 @@ public static class ScoringEngine
             if (season is null)
             {
                 return (false,
-                    new IdentificationTrace(strategyName, true, "season pattern did not match"),
+                    new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.SeasonPatternNotMatched),
                     null);
             }
         }
@@ -325,7 +325,7 @@ public static class ScoringEngine
         if (spec.EpisodePattern is null)
         {
             return (false,
-                new IdentificationTrace(strategyName, true, "no episode pattern configured"),
+                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.NoEpisodePatternConfigured),
                 null);
         }
 
@@ -333,24 +333,22 @@ public static class ScoringEngine
         if (episode is null)
         {
             return (false,
-                new IdentificationTrace(strategyName, true, "episode pattern did not match"),
+                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.EpisodePatternNotMatched),
                 null);
         }
 
         return (true,
-            new IdentificationTrace(strategyName, true, null),
+            new IdentificationTrace(spec.Strategy, true, null),
             new TracedIdentification(season, episode, null));
     }
 
     private static (bool, IdentificationTrace, TracedIdentification?) IdentifyTitleConstructionTraced(
         IdentificationSpec spec, ScoreCandidate candidate, bool exact = true)
     {
-        var strategyName = spec.Strategy.ToString();
-
         if (spec.TitleParts is not { Length: > 0 })
         {
             return (false,
-                new IdentificationTrace(strategyName, true, "no title parts configured"),
+                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.NoTitlePartsConfigured),
                 null);
         }
 
@@ -358,7 +356,7 @@ public static class ScoringEngine
         if (constructedTitle is null)
         {
             return (false,
-                new IdentificationTrace(strategyName, true, "title part regex did not match"),
+                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.TitlePartRegexNotMatched),
                 null);
         }
 
@@ -370,12 +368,12 @@ public static class ScoringEngine
         if (!matched)
         {
             return (false,
-                new IdentificationTrace(strategyName, true, "title does not match constructed title"),
+                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.TitleDoesNotMatch),
                 null);
         }
 
         return (true,
-            new IdentificationTrace(strategyName, true, null),
+            new IdentificationTrace(spec.Strategy, true, null),
             new TracedIdentification(null, null, constructedTitle));
     }
 
@@ -386,13 +384,13 @@ public static class ScoringEngine
         if (date is null)
         {
             return (false,
-                new IdentificationTrace("AirdateExtraction", true, "no date found in title"),
+                new IdentificationTrace(IdentificationStrategy.AirdateExtraction, true, IdentificationFailureReason.NoDateFoundInTitle),
                 null);
         }
 
         var formatted = date.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         return (true,
-            new IdentificationTrace("AirdateExtraction", true, null),
+            new IdentificationTrace(IdentificationStrategy.AirdateExtraction, true, null),
             new TracedIdentification(null, null, formatted));
     }
 

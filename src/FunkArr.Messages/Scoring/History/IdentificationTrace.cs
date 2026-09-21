@@ -1,6 +1,6 @@
 namespace FunkArr.Messages.Scoring.History;
 
 public sealed record IdentificationTrace(
-    string? Strategy,
+    IdentificationStrategy? Strategy,
     bool Attempted,
-    string? Detail);
+    IdentificationFailureReason? Detail);

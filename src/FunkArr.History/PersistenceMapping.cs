@@ -1,5 +1,6 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
+using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using FunkArr.Persistence;
 using FunkArr.Persistence.Events.ScoringHistory;
@@ -53,10 +54,10 @@ internal static class PersistenceMapping
             trace.FilterTrace?.ToDomain(), trace.IdentificationTrace?.ToDomain());
 
     public static PersistedFilterGroupTrace ToPersistence(this FilterGroupTrace trace) =>
-        new(trace.Operator, trace.Passed, trace.Nodes.Select(n => n.ToPersistence()).ToArray());
+        new(trace.Operator.ToString(), trace.Passed, trace.Nodes.Select(n => n.ToPersistence()).ToArray());
 
     public static FilterGroupTrace ToDomain(this PersistedFilterGroupTrace trace) =>
-        new(trace.Operator, trace.Passed, trace.Nodes.Select(n => n.ToDomain()).ToArray());
+        new(Enum.Parse<FilterGroupOp>(trace.Operator), trace.Passed, trace.Nodes.Select(n => n.ToDomain()).ToArray());
 
     public static PersistedFilterNodeTrace ToPersistence(this FilterNodeTrace trace) =>
         new(trace.Field, trace.Op, trace.ExpectedValue, trace.ActualValue,
@@ -73,10 +74,12 @@ internal static class PersistenceMapping
         new(trace.Season, trace.Episode, trace.Title);
 
     public static PersistedIdentificationTrace ToPersistence(this IdentificationTrace trace) =>
-        new(trace.Strategy, trace.Attempted, trace.Detail);
+        new(trace.Strategy?.ToString(), trace.Attempted, trace.Detail?.ToString());
 
     public static IdentificationTrace ToDomain(this PersistedIdentificationTrace trace) =>
-        new(trace.Strategy, trace.Attempted, trace.Detail);
+        new(trace.Strategy is not null ? Enum.Parse<IdentificationStrategy>(trace.Strategy) : null,
+            trace.Attempted,
+            trace.Detail is not null ? Enum.Parse<IdentificationFailureReason>(trace.Detail) : null);
 
     public static PersistedEnrichmentTrace ToPersistence(this EnrichmentTrace trace) =>
         new((PersistedMatchMethod)(int)trace.Method, trace.Confidence, trace.Enriched,

@@ -3,9 +3,7 @@
 ## Purpose
 
 Defines the ScoringEngine static class in FunkArr.Scoring that contains all scoring logic extracted from ScoringActor: filter evaluation, identification strategies, title construction, regex capture, German date extraction, umlaut normalization, and metadata building. Pure computation with no Akka.NET dependencies.
-
 ## Requirements
-
 ### Requirement: ScoringEngine is a pure static class
 
 The `ScoringEngine` SHALL be a `static class` in `FunkArr.Scoring` with no Akka.NET dependencies. It SHALL contain all scoring logic currently in `ScoringActor`: filter evaluation, identification strategies, title construction, regex capture, German date extraction, umlaut normalization, and metadata building.
@@ -41,7 +39,7 @@ The `ScoringEngine` SHALL expose one public static method `Score` that accepts t
 
 ### Requirement: ScoringEngine filter evaluation produces traces
 
-The `ScoringEngine` SHALL evaluate filter groups (All, Any, Not) with short-circuit semantics and produce `FilterGroupTrace` records. All filter evaluation logic from `ScoringActor` SHALL be preserved identically.
+The `ScoringEngine` SHALL evaluate filter groups using `FilterGroupOp` enum values (All, Any, Not) with short-circuit semantics and produce `FilterGroupTrace` records. The `EvaluateGroupTraced` method SHALL accept a `FilterGroupOp` parameter instead of a string. All filter evaluation logic from `ScoringActor` SHALL be preserved identically.
 
 #### Scenario: All group short-circuits on failure
 
@@ -53,14 +51,27 @@ The `ScoringEngine` SHALL evaluate filter groups (All, Any, Not) with short-circ
 - **WHEN** an Any group's first condition passes
 - **THEN** remaining conditions SHALL be marked Skipped in the trace
 
+#### Scenario: EvaluateGroupTraced uses FilterGroupOp parameter
+- **WHEN** the ScoringEngine evaluates a filter group
+- **THEN** the `EvaluateGroupTraced` method SHALL accept a `FilterGroupOp` parameter instead of `string`
+- **AND** the switch expression SHALL match on `FilterGroupOp.All`, `FilterGroupOp.Any`, `FilterGroupOp.Not` instead of string literals
+
 ### Requirement: ScoringEngine identification strategies produce traces
 
-The `ScoringEngine` SHALL support all five identification strategies: SeasonAndEpisodeNumber, AbsoluteEpisodeNumber, TitleExact, TitleIncludes, AirdateExtraction. Each SHALL produce an `IdentificationTrace` with the strategy name, attempted flag, and optional detail.
+The `ScoringEngine` SHALL support all five identification strategies: SeasonAndEpisodeNumber, AbsoluteEpisodeNumber, TitleExact, TitleIncludes, AirdateExtraction. Each SHALL produce an `IdentificationTrace` with the `IdentificationStrategy` enum value directly (not `.ToString()`), attempted flag, and optional `IdentificationFailureReason` enum detail.
 
 #### Scenario: All strategies preserved
 
 - **WHEN** the ScoringEngine identification method is called
 - **THEN** it SHALL handle all five `IdentificationStrategy` enum values identically to the current `ScoringActor` implementation
+
+#### Scenario: Strategy passed as enum
+- **WHEN** the ScoringEngine creates an IdentificationTrace
+- **THEN** it SHALL pass `spec.Strategy` directly instead of `spec.Strategy.ToString()`
+
+#### Scenario: Failure reasons as enums
+- **WHEN** the ScoringEngine creates an IdentificationTrace for a failed identification
+- **THEN** it SHALL use the corresponding `IdentificationFailureReason` enum value instead of a string literal
 
 ### Requirement: MetadataSpec includes ConstructedTitle
 `MetadataSpec` SHALL include an optional `string? ConstructedTitle` field alongside Season, Episode, and AiredAt. The `ScoringEngine.BuildMetadata` method SHALL preserve the `TracedIdentification.Title` value as `ConstructedTitle` instead of dropping it.
@@ -104,3 +115,4 @@ All regex evaluations in `ScoringEngine` SHALL use a 100ms timeout to prevent ca
 
 - **WHEN** a regex pattern causes backtracking exceeding 100ms
 - **THEN** the evaluation SHALL return false (for filters) or null (for captures) without throwing
+

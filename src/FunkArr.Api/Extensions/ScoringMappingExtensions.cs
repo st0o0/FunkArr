@@ -25,11 +25,11 @@ internal static class ScoringMappingExtensions
         new(msg.RuleId, msg.Priority, msg.Outcome.ToApi(),
             msg.FilterTrace is not null ? msg.FilterTrace.ToApi() : null,
             msg.IdentificationTrace is not null
-                ? new ApiModels.IdentificationTrace(msg.IdentificationTrace.Strategy, msg.IdentificationTrace.Attempted, msg.IdentificationTrace.Detail)
+                ? new ApiModels.IdentificationTrace(msg.IdentificationTrace.Strategy?.ToString(), msg.IdentificationTrace.Attempted, msg.IdentificationTrace.Detail?.ToString())
                 : null);
 
     internal static ApiModels.FilterGroupTrace ToApi(this FilterGroupTrace msg) =>
-        new(msg.Operator, msg.Passed,
+        new(msg.Operator.ToString(), msg.Passed,
             msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
                 n.Field, n.Op, n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,
                 n.Group is not null ? n.Group.ToApi() : null)).ToArray());
