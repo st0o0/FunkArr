@@ -3,9 +3,9 @@ using Akka.Actor;
 using Akka.Hosting;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
+using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
-using FunkArr.Messages.Scoring.History;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -250,7 +250,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IScoringManager>(scoringProbe);
-        registry.Register<IScoringHistoryRegion>(historyProbe);
+        registry.Register<IHistoryRegion>(historyProbe);
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
@@ -296,7 +296,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetRegion>(shardProbe);
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IScoringManager>(scoringProbe);
-        registry.Register<IScoringHistoryRegion>(historyProbe);
+        registry.Register<IHistoryRegion>(historyProbe);
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
 

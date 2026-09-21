@@ -120,9 +120,20 @@ public static class RuleSetMerger
 
     private static RawEnrichment? MergeEnrichment(RawEnrichment? community, RawEnrichment? local)
     {
-        if (community is null && local is null) return null;
-        if (community is null) return local;
-        if (local is null) return community;
+        if (community is null && local is null)
+        {
+            return null;
+        }
+
+        if (community is null)
+        {
+            return local;
+        }
+
+        if (local is null)
+        {
+            return community;
+        }
 
         return new RawEnrichment
         {
@@ -358,7 +369,10 @@ public static class RuleSetMerger
     private static bool TryParseStrategy(string? value, out IdentificationStrategy strategy)
     {
         strategy = default;
-        if (value is null) return false;
+        if (value is null)
+        {
+            return false;
+        }
 
         var bytes = System.Text.Encoding.UTF8.GetBytes($"\"{value}\"");
         try

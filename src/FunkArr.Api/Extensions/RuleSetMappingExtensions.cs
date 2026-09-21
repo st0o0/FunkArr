@@ -1,6 +1,6 @@
 using FunkArr.Messages.Enrichment;
+using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
-using FunkArr.Messages.Scoring.History;
 using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api.Extensions;

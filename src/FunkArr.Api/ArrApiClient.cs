@@ -29,7 +29,9 @@ public sealed class ArrApiClient(HttpClient httpClient)
             using var response = await httpClient.SendAsync(request);
 
             if (response.IsSuccessStatusCode)
+            {
                 return new CreateArrResourceResponse(true);
+            }
 
             var body = await response.Content.ReadAsStringAsync();
             var errorMessage = TryExtractErrorMessage(body) ??
@@ -56,7 +58,9 @@ public sealed class ArrApiClient(HttpClient httpClient)
 
             if (root.ValueKind == JsonValueKind.Object &&
                 root.TryGetProperty("message", out var msg))
+            {
                 return msg.GetString();
+            }
 
             if (root.ValueKind == JsonValueKind.Array)
             {
@@ -65,11 +69,15 @@ public sealed class ArrApiClient(HttpClient httpClient)
                 {
                     if (item.ValueKind == JsonValueKind.Object &&
                         item.TryGetProperty("errorMessage", out var errMsg))
+                    {
                         errors.Add(errMsg.GetString() ?? "");
+                    }
                 }
 
                 if (errors.Count > 0)
+                {
                     return string.Join("; ", errors);
+                }
             }
         }
         catch (JsonException)

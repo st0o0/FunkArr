@@ -6,6 +6,7 @@ using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using DownloadQueueResponse = FunkArr.Messages.Download.QueueResponse;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
@@ -145,7 +146,8 @@ public static class SabnzbdApiEndpoints
 
     private static async Task<IResult> FullStatusResult(IActorRef manager, string completePath)
     {
-        var result = await manager.Ask<QueueResult>(new QueryQueue(), _askTimeout);
+        if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(), _askTimeout) is not QueueResult result)
+            return Results.Problem("Queue query failed", statusCode: 502);
         var totalSpeed = result.Items
             .Where(i => i is { Status: DownloadStatus.Processing, Speed: > 0 })
             .Sum(i => i.TotalBytes > 0 ? i.BytesDownloaded / Math.Max(1.0, i.CurrentTimeUs / 1_000_000.0) : 0);
@@ -161,7 +163,8 @@ public static class SabnzbdApiEndpoints
 
     private static async Task<IResult> QueueResult(IActorRef manager, int start, int limit, string? category)
     {
-        var result = await manager.Ask<QueueResult>(new QueryQueue(start, limit, ParseMediaTypeNullable(category)), _askTimeout);
+        if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(start, limit, ParseMediaTypeNullable(category)), _askTimeout) is not QueueResult result)
+            return Results.Problem("Queue query failed", statusCode: 502);
 
         var slots = result.Items.Select((item, index) => new QueueSlot(
             NzoId: item.DownloadId.ToString(),
@@ -178,7 +181,7 @@ public static class SabnzbdApiEndpoints
             Priority: "Normal",
             Speed: FormatSpeed(item))).ToArray();
 
-        return Results.Json(new QueueResponse(new QueueData(
+        return Results.Json(new Models.QueueResponse(new QueueData(
             Paused: false,
             Speedlimit: "",
             NoofSlotsTotal: result.TotalItems,

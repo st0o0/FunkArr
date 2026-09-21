@@ -2,8 +2,8 @@ using System.IO.Abstractions;
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
+using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
-using FunkArr.Messages.Scoring.History;
 using Servus.Akka;
 
 namespace FunkArr.RuleSet;
@@ -215,7 +215,7 @@ public sealed class RuleSetManager : ReceiveActor
     {
         var summaries = _state.ToSummaries(_dataFiles, _log);
         var summaryMap = summaries.Entries.ToDictionary(s => s.RuleSetId);
-        var historyRegion = Context.GetActor<IScoringHistoryRegion>();
+        var historyRegion = Context.GetActor<IHistoryRegion>();
         var statsTimeout = TimeSpan.FromSeconds(3);
 
         var statsTasks = summaryMap.Keys.Select(async ruleSetId =>

@@ -26,8 +26,13 @@ public static class DownloadsApiEndpoints
         group.MapGet("/queue", async (IActorRegistry registry) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            var result = await manager.Ask<QueueResult>(new QueryQueue(), _askTimeout);
-            return Results.Ok(result.ToApi());
+            var response = await manager.Ask<QueueResponse>(new QueryQueue(), _askTimeout);
+            return response switch
+            {
+                QueueResult result => Results.Ok(result.ToApi()),
+                QueueFailed failed => Results.Problem(failed.Cause.Message, statusCode: 502),
+                _ => Results.Problem("Unexpected response", statusCode: 500),
+            };
         })
         .WithSummary("Get download queue")
         .Produces<ApiModels.DownloadQueueResponse>()
@@ -46,7 +51,8 @@ public static class DownloadsApiEndpoints
             {
                 try
                 {
-                    var result = await manager.Ask<QueueResult>(new QueryQueue(), _askTimeout, ct);
+                    var queueResponse = await manager.Ask<QueueResponse>(new QueryQueue(), _askTimeout, ct);
+                    if (queueResponse is not QueueResult result) continue;
                     var response = result.ToApi();
                     var json = JsonSerializer.Serialize(response, _jsonOptions);
 

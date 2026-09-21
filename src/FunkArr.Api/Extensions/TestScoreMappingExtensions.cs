@@ -23,7 +23,9 @@ internal static class TestScoreMappingExtensions
     {
         var identification = rule.ToIdentification();
         if (identification is null)
+        {
             return null;
+        }
 
         var filters = rule.Filters is not null ? rule.Filters.ToMessage() : null;
 
@@ -60,7 +62,9 @@ internal static class TestScoreMappingExtensions
     private static TitlePart[]? ToMessageParts(this TitleRuleInput[] titleRules)
     {
         if (titleRules.Length == 0)
+        {
             return null;
+        }
 
         var parts = titleRules
             .Select(tr => new TitlePart(tr.Type, Value: tr.Value, Pattern: tr.Pattern, Field: tr.Field, CaptureGroup: tr.CaptureGroup))
@@ -88,7 +92,9 @@ internal static class TestScoreMappingExtensions
             {
                 var nested = new FilterGroupInput(node.All, node.Any, node.Not).ToMessage();
                 if (nested is not null)
+                {
                     result.Add(new FilterNode.GroupNode(nested));
+                }
             }
             else if (node.Field is not null && node.Op is not null && node.Value is not null)
             {

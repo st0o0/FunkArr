@@ -22,4 +22,5 @@ public sealed record RuleSetListEntry(
     int RuleCount,
     SourceType SourceType,
     DateTimeOffset? LastScoringRun,
-    double? MatchRate);
+    double? MatchRate,
+    double? EnrichmentRate = null);

@@ -6,6 +6,7 @@ using Akka.Hosting;
 using FunkArr.Api.Extensions;
 using FunkArr.Core;
 using FunkArr.Messages.Enrichment;
+using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
@@ -41,46 +42,35 @@ public static partial class RuleSetApiEndpoints
         {
             var resolver = await registry.GetAsync<IRuleSetResolver>();
             var manager = await registry.GetAsync<IRuleSetManager>();
-            var historyRegion = await registry.GetAsync<IScoringHistoryRegion>();
+            var statsCollector = await registry.GetAsync<IStatsCollector>();
 
             var resolverTask = resolver.Ask<RegisteredRuleSetsResult>(
                 new QueryRegisteredRuleSets(), _queryTimeout);
             var summaryTask = manager.Ask<RuleSetSummaryResult>(
                 new QueryRuleSetSummaries(), _queryTimeout);
+            var statsTask = statsCollector.Ask<AllStatsSnapshot>(
+                new QueryAllStats(), _statsTimeout);
 
-            await Task.WhenAll(resolverTask, summaryTask);
+            await Task.WhenAll(resolverTask, summaryTask, statsTask);
 
             var entries = resolverTask.Result;
             var summaries = summaryTask.Result;
             var summaryMap = summaries.Entries.ToDictionary(s => s.RuleSetId);
+            var allStats = statsTask.Result.Entries;
 
-            var statsTasks = entries.Entries.Select(async e =>
-            {
-                try
-                {
-                    return await historyRegion.Ask<ScoringStatsResult>(
-                        new QueryScoringStats(e.RuleSetId), _statsTimeout);
-                }
-                catch
-                {
-                    return new ScoringStatsResult(null, null);
-                }
-            }).ToArray();
-
-            var stats = await Task.WhenAll(statsTasks);
-
-            var result = entries.Entries.Select((e, i) =>
+            var result = entries.Entries.Select(e =>
             {
                 summaryMap.TryGetValue(e.RuleSetId, out var summary);
-                var stat = stats[i];
+                allStats.TryGetValue(e.RuleSetId, out var stat);
 
                 return new ApiModels.RuleSetListEntry(
                     e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId,
                     e.MediaName, e.MediaType,
                     summary?.RuleCount ?? 0,
                     (summary?.SourceType).ToApi(),
-                    stat.LastRun,
-                    stat.MatchRate);
+                    stat?.LastRun,
+                    stat?.MatchRate,
+                    stat?.EnrichmentRate);
             }).ToArray();
 
             var communityVersion = dataFiles.Exists(dataPaths.RuleSetVersion)
@@ -115,7 +105,7 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}/history", async (string id, int? offset, int? limit, IActorRegistry registry) =>
         {
-            var historyRegion = await registry.GetAsync<IScoringHistoryRegion>();
+            var historyRegion = await registry.GetAsync<IHistoryRegion>();
             var result = await historyRegion.Ask<ScoringHistoryResult>(
                 new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout);
             return Results.Ok(result.ToApi());
@@ -127,7 +117,7 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}/history/{requestId:guid}", async (string id, Guid requestId, IActorRegistry registry) =>
         {
-            var historyRegion = await registry.GetAsync<IScoringHistoryRegion>();
+            var historyRegion = await registry.GetAsync<IHistoryRegion>();
             var result = await historyRegion.Ask<ScoringDetailResponse>(
                 new QueryScoringDetail(id, requestId), _queryTimeout);
             return result switch
@@ -373,7 +363,10 @@ public static partial class RuleSetApiEndpoints
         for (var i = 0; i < itemTraces.Length; i++)
         {
             var trace = itemTraces[i];
-            if (!trace.Matched) continue;
+            if (!trace.Matched)
+            {
+                continue;
+            }
 
             var airedAt = trace.CandidateTimestamp > 0
                 ? DateTimeOffset.FromUnixTimeSeconds(trace.CandidateTimestamp)
@@ -381,7 +374,9 @@ public static partial class RuleSetApiEndpoints
 
             int? season = null;
             if (trace.Identification?.Season is not null && int.TryParse(trace.Identification.Season, out var s))
+            {
                 season = s;
+            }
 
             matchedIndices.Add((i, new EpisodeCandidate(
                 matchedIndices.Count,
@@ -393,14 +388,20 @@ public static partial class RuleSetApiEndpoints
                 trace.Identification?.Episode)));
         }
 
-        if (matchedIndices.Count == 0) return itemTraces;
+        if (matchedIndices.Count == 0)
+        {
+            return itemTraces;
+        }
 
         var enrichRequest = new EnrichEpisodes(
             request.TvdbId!.Value, Season: null,
             matchedIndices.Select(m => m.Candidate).ToArray(), config);
 
         var response = await enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout);
-        if (response is not EnrichEpisodesCompleted completed) return itemTraces;
+        if (response is not EnrichEpisodesCompleted completed)
+        {
+            return itemTraces;
+        }
 
         var enrichedLookup = completed.Episodes.ToDictionary(e => e.Index);
         var result = new ItemTrace[itemTraces.Length];
@@ -441,7 +442,10 @@ public static partial class RuleSetApiEndpoints
         for (var i = 0; i < itemTraces.Length; i++)
         {
             var trace = itemTraces[i];
-            if (!trace.Matched) continue;
+            if (!trace.Matched)
+            {
+                continue;
+            }
 
             var airedAt = trace.CandidateTimestamp > 0
                 ? DateTimeOffset.FromUnixTimeSeconds(trace.CandidateTimestamp)
@@ -454,14 +458,20 @@ public static partial class RuleSetApiEndpoints
                 trace.CandidateDuration)));
         }
 
-        if (matchedIndices.Count == 0) return itemTraces;
+        if (matchedIndices.Count == 0)
+        {
+            return itemTraces;
+        }
 
         var enrichRequest = new EnrichMovies(
             request.ImdbId, request.TmdbId,
             matchedIndices.Select(m => m.Candidate).ToArray(), config);
 
         var response = await enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout);
-        if (response is not EnrichMoviesCompleted completed) return itemTraces;
+        if (response is not EnrichMoviesCompleted completed)
+        {
+            return itemTraces;
+        }
 
         var enrichedLookup = completed.Movies.ToDictionary(m => m.Index);
         var result = new ItemTrace[itemTraces.Length];
