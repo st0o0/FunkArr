@@ -2,7 +2,7 @@
   "name": "funkarr-docs",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.4.2",
+  "packageManager": "pnpm@12.5.0",
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
