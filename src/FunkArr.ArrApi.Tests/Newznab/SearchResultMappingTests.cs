@@ -8,7 +8,7 @@ namespace FunkArr.ArrApi.Tests.Newznab;
 
 public sealed class SearchResultMappingTests
 {
-    private static readonly SearchHandler _handler = new(null!, "http://localhost:6969", "test-key", NullLogger<SearchHandler>.Instance);
+    private static readonly SearchHandler _handler = new(null!, new SearchResultCache(TimeSpan.FromSeconds(60), TimeProvider.System), "http://localhost:6969", "test-key", NullLogger<SearchHandler>.Instance);
     [Fact]
     public void ToRss_maps_search_completed_to_rss()
     {
@@ -71,11 +71,11 @@ public sealed class SearchResultMappingTests
             [new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)],
             1);
 
-        var rss = _handler.ToRss(completed, 5, 100, NewznabCategory.Tv);
+        var rss = _handler.ToRss(completed, 0, 100, NewznabCategory.Tv);
         var xml = NewznabApiEndpoints.Serialize(rss);
 
         Assert.Contains("<title>Test</title>", xml);
-        Assert.Contains("offset=\"5\"", xml);
+        Assert.Contains("offset=\"0\"", xml);
         Assert.Contains("total=\"1\"", xml);
     }
 
@@ -217,4 +217,58 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ParseInt_returns_null_for_null() =>
         Assert.Null(NewznabApiEndpoints.ParseInt(null));
+
+    [Fact]
+    public void ToRss_offset0_returns_first_items()
+    {
+        var completed = MakeCompleted(5);
+
+        var rss = _handler.ToRss(completed, offset: 0, limit: 3, NewznabCategory.Tv);
+
+        Assert.Equal(3, rss.Channel.Items.Count);
+        Assert.Equal("Item-0", rss.Channel.Items[0].Title);
+        Assert.Equal("Item-2", rss.Channel.Items[2].Title);
+    }
+
+    [Fact]
+    public void ToRss_offset_skips_items()
+    {
+        var completed = MakeCompleted(5);
+
+        var rss = _handler.ToRss(completed, offset: 2, limit: 2, NewznabCategory.Tv);
+
+        Assert.Equal(2, rss.Channel.Items.Count);
+        Assert.Equal("Item-2", rss.Channel.Items[0].Title);
+        Assert.Equal("Item-3", rss.Channel.Items[1].Title);
+    }
+
+    [Fact]
+    public void ToRss_offset_beyond_items_returns_empty()
+    {
+        var completed = MakeCompleted(3);
+
+        var rss = _handler.ToRss(completed, offset: 5, limit: 100, NewznabCategory.Tv);
+
+        Assert.Empty(rss.Channel.Items);
+    }
+
+    [Fact]
+    public void ToRss_total_reflects_full_result_set()
+    {
+        var completed = MakeCompleted(10);
+
+        var rss = _handler.ToRss(completed, offset: 3, limit: 2, NewznabCategory.Tv);
+
+        Assert.Equal(2, rss.Channel.Items.Count);
+        Assert.Equal(10, rss.Channel.Response.Total);
+    }
+
+    private static SearchCommandCompleted MakeCompleted(int count)
+    {
+        var items = Enumerable.Range(0, count)
+            .Select(i => new SearchResultItem(
+                $"Item-{i}", "ARD", "Topic", $"url-{i}", 3600, 100, 720, null, 0.9 - i * 0.01))
+            .ToArray();
+        return new SearchCommandCompleted(Guid.NewGuid(), items, count);
+    }
 }

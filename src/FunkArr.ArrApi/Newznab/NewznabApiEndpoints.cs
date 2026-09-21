@@ -23,6 +23,8 @@ public static class NewznabApiEndpoints
 
     public static WebApplication MapNewznabApi(this WebApplication app)
     {
+        var cache = new SearchResultCache(TimeSpan.FromSeconds(60), TimeProvider.System);
+
         var group = app.MapGroup("/index/api")
             .WithTags("Newznab")
             .AddEndpointFilter(new ApiKeyEndpointFilter(
@@ -36,6 +38,7 @@ public static class NewznabApiEndpoints
                 "tvsearch" or "movie" or "search" =>
                     await new SearchHandler(
                         await registry.GetAsync<ISearchManager>(),
+                        cache,
                         $"{ctx.Request.Scheme}://{ctx.Request.Host}",
                         ctx.Request.Query["apikey"].FirstOrDefault() ?? "",
                         searchLogger).Handle(req),

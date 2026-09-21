@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace FunkArr.ArrApi.Newznab;
 
-internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string apiKey, ILogger<SearchHandler> logger)
+internal sealed class SearchHandler(IActorRef gateway, SearchResultCache cache, string baseUrl, string apiKey, ILogger<SearchHandler> logger)
 {
     private static readonly TimeSpan _searchTimeout = TimeSpan.FromSeconds(30);
 
@@ -20,7 +20,29 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
             return NewznabApiEndpoints.EmptyResult(req.Offset ?? 0);
         }
 
-        return await AskAndFormat(cmd, req.Offset ?? 0, req.Limit ?? NewznabApiEndpoints.DefaultLimit, category);
+        var offset = req.Offset ?? 0;
+        var limit = req.Limit ?? NewznabApiEndpoints.DefaultLimit;
+        var key = SearchResultCache.BuildKey(cmd);
+
+        try
+        {
+            var allItems = await cache.GetOrAddAsync(key, async () =>
+            {
+                var fullCmd = cmd with { Offset = null, Limit = null };
+                var response = await gateway.Ask<SearchCommandResponse>(fullCmd, _searchTimeout);
+                return response is SearchCommandCompleted completed ? completed.Items : [];
+            });
+
+            var paged = allItems.Skip(offset).Take(limit).ToArray();
+            var completed = new SearchCommandCompleted(Guid.Empty, paged, allItems.Length);
+            return NewznabApiEndpoints.XmlResult(
+                NewznabApiEndpoints.Serialize(this.ToRss(completed, offset, limit, category)));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Search failed for {SearchType} query {Query}", cmd.Source, cmd.Query);
+            return NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError("Search timed out"));
+        }
     }
 
     private (SearchCommand? Cmd, NewznabCategory Category) BuildCommand(IndexerRequest req)
@@ -64,29 +86,9 @@ internal sealed class SearchHandler(IActorRef gateway, string baseUrl, string ap
         return (cmd, category);
     }
 
-    private async Task<IResult> AskAndFormat(SearchCommand cmd, int offset, int limit, NewznabCategory category)
-    {
-        try
-        {
-            var response = await gateway.Ask<SearchCommandResponse>(cmd, _searchTimeout);
-            return response switch
-            {
-                SearchCommandCompleted completed => NewznabApiEndpoints.XmlResult(
-                    NewznabApiEndpoints.Serialize(this.ToRss(completed, offset, limit, category))),
-                SearchCommandFailed failed => NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError(failed.Cause.Message)),
-                _ => NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError("Unexpected response")),
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Search failed for {SearchType} query {Query}", cmd.Source, cmd.Query);
-            return NewznabApiEndpoints.ErrorResult(NewznabError.UnknownError("Search timed out"));
-        }
-    }
-
     internal Rss ToRss(SearchCommandCompleted completed, int offset, int limit, NewznabCategory category)
     {
-        var paged = completed.Items.Take(limit);
+        var paged = completed.Items.Skip(offset).Take(limit);
 
         var items = paged.Select(item =>
         {
