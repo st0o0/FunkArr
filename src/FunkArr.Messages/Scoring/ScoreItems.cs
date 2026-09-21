@@ -10,6 +10,7 @@ public abstract record ScoreItemsResponse;
 
 public sealed record ScoreCompleted(
     Guid RequestId,
-    ScoredItem[] Results) : ScoreItemsResponse;
+    ScoredItem[] Results,
+    History.ItemTrace[] ItemTraces) : ScoreItemsResponse;
 
 public sealed record ScoringFailed(Exception Cause) : ScoreItemsResponse;

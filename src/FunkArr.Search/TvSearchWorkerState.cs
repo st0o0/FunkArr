@@ -2,9 +2,11 @@ using System.Diagnostics.CodeAnalysis;
 using Akka.Actor;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
+using FunkArr.Messages.History;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
+using FunkArr.Messages.Scoring.History;
 using FunkArr.Messages.Search;
 
 namespace FunkArr.Search;
@@ -25,7 +27,10 @@ public sealed class TvSearchWorkerState
     public string? MediaName { get; private set; }
     public EnrichmentConfig? EnrichmentConfig { get; private set; }
     public EnrichedItem[] Items { get; private set; } = [];
+    public ItemTrace[] ItemTraces { get; private set; } = [];
 
+    private Guid _scoringRequestId;
+    private ScoringOrigin? _scoringOrigin;
     private Dictionary<int, string?> _constructedTitles = [];
 
     public MediaIdentity BaseIdentity => new(TvdbId, ImdbId, null, null, null);
@@ -69,6 +74,8 @@ public sealed class TvSearchWorkerState
                 Episode = s.Metadata?.Episode,
             },
             Match: null)).ToArray();
+
+        ItemTraces = scored.ItemTraces;
 
         _constructedTitles.Clear();
         foreach (var s in scored.Results)
@@ -165,8 +172,9 @@ public sealed class TvSearchWorkerState
             s.Title, s.Topic, s.Channel, s.Duration, s.ResolveQuality(),
             s.Description, s.AiredAt?.ToUnixTimeSeconds() ?? 0)).ToArray();
 
-        var origin = new ScoringOrigin(Source, Sources[0].Topic);
-        request = new ScoreItems(Guid.NewGuid(), RuleSetId, origin, candidates);
+        _scoringRequestId = Guid.NewGuid();
+        _scoringOrigin = new ScoringOrigin(Source, Sources[0].Topic);
+        request = new ScoreItems(_scoringRequestId, RuleSetId, _scoringOrigin, candidates);
         return true;
     }
 
@@ -202,6 +210,8 @@ public sealed class TvSearchWorkerState
         return true;
     }
 
+    public SearchSeriesCompleted GetSnapshot() => ToSearchCompleted();
+
     public SearchSeriesCompleted ToSearchCompleted()
     {
         var items = Items.Length > 0 ? Items : UnscoredItems();
@@ -213,6 +223,58 @@ public sealed class TvSearchWorkerState
             .ToArray();
 
         return new SearchSeriesCompleted(SearchId, variants, variants.Length);
+    }
+
+    public void MergeEnrichmentIntoTraces(EnrichedEpisode[] enriched)
+    {
+        var lookup = enriched.ToDictionary(e => e.Index);
+        ItemTraces = ItemTraces.Select(trace =>
+        {
+            if (!trace.Matched)
+            {
+                return trace;
+            }
+
+            var candidateIndex = Array.FindIndex(Items, i => i.Source.Title == trace.CandidateTitle && i.Matched);
+            if (candidateIndex < 0)
+            {
+                return trace;
+            }
+
+            if (lookup.TryGetValue(candidateIndex, out var ep))
+            {
+                return trace with
+                {
+                    EnrichmentTrace = new EnrichmentTrace(
+                        ep.Method, ep.Confidence, true,
+                        ep.Season, ep.Episode, ep.EpisodeName)
+                };
+            }
+
+            return trace with
+            {
+                EnrichmentTrace = new EnrichmentTrace(
+                    MatchMethod.TitleMatch, 0f, false,
+                    Detail: "no matching episode found")
+            };
+        }).ToArray();
+    }
+
+    public RecordHistory? BuildRecordHistory()
+    {
+        if (RuleSetId is null || _scoringOrigin is null || ItemTraces.Length == 0)
+        {
+            return null;
+        }
+
+        var matchedCount = Items.Count(i => i.Matched);
+        var enrichedCount = ItemTraces.Count(t => t.EnrichmentTrace is { Enriched: true });
+
+        return new RecordHistory(
+            _scoringRequestId, RuleSetId, _scoringOrigin,
+            DateTimeOffset.UtcNow,
+            Sources.Length, matchedCount, enrichedCount,
+            ItemTraces);
     }
 
     private EnrichedItem[] UnscoredItems() =>

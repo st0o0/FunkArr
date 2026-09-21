@@ -1,8 +1,5 @@
 using Akka.Actor;
-using Akka.Hosting;
-using Akka.TestKit;
 using Akka.TestKit.Xunit;
-using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
@@ -11,13 +8,6 @@ namespace FunkArr.Scoring.Tests;
 
 public sealed class ScoringActorTests : TestKit
 {
-    private readonly TestProbe _historyProbe;
-
-    public ScoringActorTests()
-    {
-        _historyProbe = CreateTestProbe();
-        ActorRegistry.For(Sys).Register<IScoringHistoryRegion>(_historyProbe, overwrite: true);
-    }
     private static MatchingConfig Config(float confidence, params MatchingRule[] rules) =>
         new("test", confidence, rules);
 
@@ -497,12 +487,11 @@ public sealed class ScoringActorTests : TestKit
         Assert.False(fail.Results[0].Matched);
     }
 
-    private RecordScoring ScoreWithTrace(MatchingConfig config, params ScoreCandidate[] items)
+    private ScoreCompleted ScoreWithTrace(MatchingConfig config, params ScoreCandidate[] items)
     {
         var actor = Sys.ActorOf(Props.Create<ScoringActor>());
         actor.Tell(new ExecuteScoring(config, items, Guid.NewGuid(), new ScoringOrigin(SearchSource.Sonarr, "test")));
-        ExpectMsg<ScoreCompleted>();
-        return _historyProbe.ExpectMsg<RecordScoring>();
+        return ExpectMsg<ScoreCompleted>();
     }
 
     [Fact]

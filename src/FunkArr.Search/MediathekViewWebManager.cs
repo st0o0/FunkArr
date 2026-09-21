@@ -39,7 +39,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
             return;
         }
 
-        _state = _state.Increment();
+        _state = _state.Apply(new MediathekViewWebManagerState.RequestStarted());
         ExecuteQuery(query);
     }
 
@@ -104,7 +104,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private void SlotFreed()
     {
-        _state = _state.Decrement();
+        _state = _state.Apply(new MediathekViewWebManagerState.RequestCompleted());
         Stash.Unstash();
     }
 

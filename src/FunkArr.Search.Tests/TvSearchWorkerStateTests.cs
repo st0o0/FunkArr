@@ -53,7 +53,7 @@ public sealed class TvSearchWorkerStateTests
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
 
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))], []));
 
         Assert.Single(state.Items);
         Assert.Equal(0.9, state.Items[0].Score);
@@ -71,7 +71,7 @@ public sealed class TvSearchWorkerStateTests
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
         state.Apply(new ScoreCompleted(Guid.Empty,
-            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))]));
+            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))], []));
 
         state.Apply(new EnrichEpisodesCompleted(
             [new EnrichedEpisode(0, "2", "9", "Roomservice", 0.85f, MatchMethod.TitleMatch)]));
@@ -92,7 +92,7 @@ public sealed class TvSearchWorkerStateTests
         [
             new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null)),
             new ScoredItem(1, 0.5, false),
-        ]));
+        ], []));
 
         state.Apply(new EnrichEpisodesCompleted(
             [new EnrichedEpisode(0, "1", "1", "Name", 0.9f, MatchMethod.TitleMatch)]));
@@ -185,7 +185,7 @@ public sealed class TvSearchWorkerStateTests
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
         state.Apply(new ScoreCompleted(Guid.Empty,
-            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, DateTimeOffset.UtcNow))]));
+            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, DateTimeOffset.UtcNow))], []));
 
         var result = state.TryGetEnrichmentRequest(out var request);
 
@@ -201,7 +201,7 @@ public sealed class TvSearchWorkerStateTests
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
         state.Apply(new ScoreCompleted(Guid.Empty,
-            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))]));
+            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))], []));
 
         var result = state.TryGetEnrichmentRequest(out _);
 
@@ -214,7 +214,7 @@ public sealed class TvSearchWorkerStateTests
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
         state.Apply(new ScoreCompleted(Guid.Empty,
-            [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))]));
+            [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))], []));
 
         var result = state.TryGetEnrichmentRequest(out _);
 
@@ -226,7 +226,7 @@ public sealed class TvSearchWorkerStateTests
     {
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
         var result = state.TryGetEnrichmentRequest(out _);
 
@@ -247,7 +247,7 @@ public sealed class TvSearchWorkerStateTests
         [
             new ScoredItem(0, 0.5, true),
             new ScoredItem(1, 0.9, true),
-        ]));
+        ], []));
 
         var result = state.ToSearchCompleted();
 
@@ -304,7 +304,7 @@ public sealed class TvSearchWorkerStateTests
             new YearMatchConfig(1));
         state.ApplyRuleSet("tatort", "Tatort", config);
         state.Apply(new ScoreCompleted(Guid.Empty,
-            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))]));
+            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))], []));
 
         var result = state.TryGetEnrichmentRequest(out _);
 
@@ -318,7 +318,7 @@ public sealed class TvSearchWorkerStateTests
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
         state.ApplyRuleSet("tatort", "Tatort", null);
         state.Apply(new ScoreCompleted(Guid.Empty,
-            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null, "Roomservice"))]));
+            [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null, "Roomservice"))], []));
 
         var result = state.TryGetEnrichmentRequest(out var request);
 

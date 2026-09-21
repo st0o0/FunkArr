@@ -166,6 +166,23 @@ public static class RuleSetResolverStateExtensions
         string prefix, string? value, string ruleSetId)
         => value is not null ? idIndex.SetItem($"{prefix}:{value}", ruleSetId) : idIndex;
 
+    public static RegisteredRuleSetsResult GetSnapshot(this RuleSetResolverState state) =>
+        state.QueryAll();
+
+    public static RuleSetResolverState FromSnapshot(RegisteredRuleSetsResult snapshot)
+    {
+        var state = RuleSetResolverState.Empty;
+        foreach (var entry in snapshot.Entries)
+        {
+            state = state.Apply(new RegisterRuleSet(
+                entry.RuleSetId, entry.Topic, entry.Aliases,
+                entry.TvdbId, entry.ImdbId, entry.TmdbId,
+                entry.MediaName, entry.MediaType, null));
+        }
+
+        return state;
+    }
+
     public static RegisteredRuleSetsResult QueryAll(this RuleSetResolverState state)
     {
         var entries = new List<RegisteredRuleSetEntry>();

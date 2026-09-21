@@ -46,7 +46,7 @@ public sealed class MovieSearchWorkerStateTests
         var state = InitState(imdbId: "tt0806910", tmdbId: 550);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
 
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         Assert.Single(state.Items);
         Assert.Equal(0.8, state.Items[0].Score);
@@ -61,7 +61,7 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = InitState(imdbId: "tt0806910", tmdbId: 550);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         state.Apply(new EnrichMoviesCompleted(
             [new EnrichedMovie(0, "Das Boot", 1981, "tt0806910", 550, 0.92f, MatchMethod.TitleMatch)]));
@@ -78,7 +78,7 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = InitState(imdbId: null, tmdbId: 550);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         state.Apply(new EnrichMoviesCompleted(
             [new EnrichedMovie(0, "Film", 2024, "tt999", 550, 0.9f, MatchMethod.TitleMatch)]));
@@ -113,7 +113,7 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = InitState(imdbId: "tt123", tmdbId: 550);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         var result = state.TryGetEnrichmentRequest(out var request);
 
@@ -129,7 +129,7 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         Assert.False(state.TryGetEnrichmentRequest(out _));
     }
@@ -139,7 +139,7 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = InitState(imdbId: "tt123");
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.0, false)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.0, false)], []));
 
         Assert.False(state.TryGetEnrichmentRequest(out _));
     }
@@ -218,7 +218,7 @@ public sealed class MovieSearchWorkerStateTests
             new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
             new YearMatchConfig(1));
         state.ApplyRuleSet("film", "Film", config);
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
         Assert.False(state.TryGetEnrichmentRequest(out _));
     }
@@ -233,7 +233,7 @@ public sealed class MovieSearchWorkerStateTests
             new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
             new YearMatchConfig(2));
         state.ApplyRuleSet("film", "Film", config);
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)]));
+        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
         var result = state.TryGetEnrichmentRequest(out var request);
 

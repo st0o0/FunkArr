@@ -15,24 +15,32 @@ public sealed record SearchManagerState(
         SearchManager.SearchType Type,
         SearchCommandCompleted? TvResult,
         SearchCommandCompleted? MovieResult);
+
+    public sealed record AddSearch(Guid SearchId, PendingSearch Pending);
+    public sealed record UpdateSearch(Guid SearchId, PendingSearch Pending);
+    public sealed record RemoveSearch(Guid SearchId);
 }
 
 public static class SearchManagerStateExtensions
 {
-    public static SearchManagerState AddPending(this SearchManagerState state, Guid searchId,
-        SearchManagerState.PendingSearch pending) =>
-        new(Pending: state.Pending.SetItem(searchId, pending));
+    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.AddSearch msg) =>
+        new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
 
-    public static SearchManagerState UpdatePending(this SearchManagerState state, Guid searchId,
-        SearchManagerState.PendingSearch pending) =>
-        new(Pending: state.Pending.SetItem(searchId, pending));
+    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.UpdateSearch msg) =>
+        new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
 
-    public static SearchManagerState RemovePending(this SearchManagerState state, Guid searchId) =>
-        new(Pending: state.Pending.Remove(searchId));
+    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.RemoveSearch msg) =>
+        new(Pending: state.Pending.Remove(msg.SearchId));
 
     public static SearchManagerState.PendingSearch? TryGetPending(
         this SearchManagerState state, Guid searchId) =>
         state.Pending.TryGetValue(searchId, out var pending) ? pending : null;
+
+    public static SearchManagerSnapshot GetSnapshot(this SearchManagerState state) =>
+        new(state.Pending.Count);
+
+    public static SearchManagerState FromSnapshot(SearchManagerSnapshot _) =>
+        SearchManagerState.Empty;
 
     public static SearchCommandCompleted MergeResults(Guid searchId, SearchCommandCompleted tv, SearchCommandCompleted movie)
     {
@@ -42,3 +50,5 @@ public static class SearchManagerStateExtensions
         return new SearchCommandCompleted(searchId, merged, merged.Length);
     }
 }
+
+public sealed record SearchManagerSnapshot(int PendingCount);

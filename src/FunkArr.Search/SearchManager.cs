@@ -44,16 +44,16 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                 _tvShardRegion.Tell(new SearchSeries(searchId, cmd.Source, cmd.Query,
                     tv.Season, tv.Episode, tv.TvdbId, tv.ImdbId,
                     cmd.Limit, cmd.Offset));
-                _state = _state.AddPending(searchId,
-                    new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
+                _state = _state.Apply(new SearchManagerState.AddSearch(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null)));
                 break;
 
             case SearchCommand.MovieParams movie:
                 _movieShardRegion.Tell(new SearchMovie(searchId, cmd.Source, cmd.Query,
                     movie.ImdbId, movie.TmdbId,
                     cmd.Limit, cmd.Offset));
-                _state = _state.AddPending(searchId,
-                    new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
+                _state = _state.Apply(new SearchManagerState.AddSearch(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null)));
                 break;
 
             default:
@@ -78,15 +78,15 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             case SearchType.Tv:
                 _tvShardRegion.Tell(new SearchSeries(searchId, cmd.Source, cmd.Query,
                     null, null, null, null, cmd.Limit, cmd.Offset));
-                _state = _state.AddPending(searchId,
-                    new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null));
+                _state = _state.Apply(new SearchManagerState.AddSearch(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Tv, null, null)));
                 break;
 
             case SearchType.Movie:
                 _movieShardRegion.Tell(new SearchMovie(searchId, cmd.Source, cmd.Query,
                     null, null, cmd.Limit, cmd.Offset));
-                _state = _state.AddPending(searchId,
-                    new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null));
+                _state = _state.Apply(new SearchManagerState.AddSearch(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Movie, null, null)));
                 break;
 
             default:
@@ -94,8 +94,8 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                     null, null, null, null, cmd.Limit, cmd.Offset));
                 _movieShardRegion.Tell(new SearchMovie(searchId, cmd.Source, cmd.Query,
                     null, null, cmd.Limit, cmd.Offset));
-                _state = _state.AddPending(searchId,
-                    new SearchManagerState.PendingSearch(Sender, SearchType.Both, null, null));
+                _state = _state.Apply(new SearchManagerState.AddSearch(searchId,
+                    new SearchManagerState.PendingSearch(Sender, SearchType.Both, null, null)));
                 break;
         }
     }
@@ -115,7 +115,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             case SearchType.Tv:
             case SearchType.Movie:
                 pending.OriginalSender.Tell(completed);
-                _state = _state.RemovePending(searchId);
+                _state = _state.Apply(new SearchManagerState.RemoveSearch(searchId));
                 break;
 
             case SearchType.Both:
@@ -128,11 +128,11 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                     var merged = SearchManagerStateExtensions.MergeResults(
                         searchId, updated.TvResult, updated.MovieResult);
                     pending.OriginalSender.Tell(merged);
-                    _state = _state.RemovePending(searchId);
+                    _state = _state.Apply(new SearchManagerState.RemoveSearch(searchId));
                 }
                 else
                 {
-                    _state = _state.UpdatePending(searchId, updated);
+                    _state = _state.Apply(new SearchManagerState.UpdateSearch(searchId, updated));
                 }
                 break;
         }
@@ -152,13 +152,13 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             if (partial is not null)
             {
                 pending.OriginalSender.Tell(partial);
-                _state = _state.RemovePending(searchId);
+                _state = _state.Apply(new SearchManagerState.RemoveSearch(searchId));
                 return;
             }
         }
 
         pending.OriginalSender.Tell(new SearchCommandFailed(searchId, cause));
-        _state = _state.RemovePending(searchId);
+        _state = _state.Apply(new SearchManagerState.RemoveSearch(searchId));
     }
 
     private void HandleTimeout(SearchTimeout timeout)
@@ -175,14 +175,14 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             if (partial is not null)
             {
                 pending.OriginalSender.Tell(partial);
-                _state = _state.RemovePending(timeout.SearchId);
+                _state = _state.Apply(new SearchManagerState.RemoveSearch(timeout.SearchId));
                 return;
             }
         }
 
         _log.Warning("Search {SearchId} timed out after {Timeout}s", timeout.SearchId, _searchTimeout.TotalSeconds);
         pending.OriginalSender.Tell(new SearchCommandFailed(timeout.SearchId, new TimeoutException("Search timed out")));
-        _state = _state.RemovePending(timeout.SearchId);
+        _state = _state.Apply(new SearchManagerState.RemoveSearch(timeout.SearchId));
     }
 
     private void ScheduleTimeout(Guid searchId) => Timers.StartSingleTimer($"timeout-{searchId}", new SearchTimeout(searchId), _searchTimeout);

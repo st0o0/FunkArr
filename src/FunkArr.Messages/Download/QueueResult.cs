@@ -2,7 +2,11 @@ using FunkArr.Messages;
 
 namespace FunkArr.Messages.Download;
 
-public sealed record QueueResult(QueueItem[] Items, int TotalSlots, int TotalItems);
+public abstract record QueueResponse;
+
+public sealed record QueueResult(QueueItem[] Items, int TotalSlots, int TotalItems) : QueueResponse;
+
+public sealed record QueueFailed(Exception Cause) : QueueResponse;
 
 public sealed record QueueItem(
     Guid DownloadId,

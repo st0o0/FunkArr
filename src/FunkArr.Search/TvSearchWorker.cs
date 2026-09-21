@@ -24,6 +24,7 @@ public sealed class TvSearchWorker : ReceiveActor
     private readonly IActorRef _scoringManager = Context.GetActor<IScoringManager>();
     private readonly IActorRef _ruleSetResolver = Context.GetActor<IRuleSetResolver>();
     private readonly IActorRef _metadataResolver = Context.GetActor<IEnrichmentManager>();
+    private readonly IActorRef _historyRegion = Context.GetActor<IHistoryRegion>();
 
     public TvSearchWorker()
     {
@@ -133,6 +134,7 @@ public sealed class TvSearchWorker : ReceiveActor
                 return;
             }
 
+            RecordHistory();
             Reply(_state.ToSearchCompleted());
         });
 
@@ -148,13 +150,25 @@ public sealed class TvSearchWorker : ReceiveActor
         Receive<EnrichEpisodesCompleted>(enriched =>
         {
             _state.Apply(enriched);
+            _state.MergeEnrichmentIntoTraces(enriched.Episodes);
+            RecordHistory();
             Reply(_state.ToSearchCompleted());
         });
 
         Receive<EnrichEpisodesFailed>(_ =>
         {
+            RecordHistory();
             Reply(_state.ToSearchCompleted());
         });
+    }
+
+    private void RecordHistory()
+    {
+        var record = _state.BuildRecordHistory();
+        if (record is not null)
+        {
+            _historyRegion.Tell(record);
+        }
     }
 
     private void Reply(SearchSeriesResponse response)

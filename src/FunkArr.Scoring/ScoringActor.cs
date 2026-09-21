@@ -1,16 +1,11 @@
 using Akka.Actor;
-using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
-using FunkArr.Messages.Scoring.History;
-using Servus.Akka;
 
 namespace FunkArr.Scoring;
 
 public sealed class ScoringActor : ReceiveActor
 {
-    private readonly IActorRef _historyRegion = Context.GetActor<IScoringHistoryRegion>();
-
     public ScoringActor()
     {
         Receive<ExecuteScoring>(Handle);
@@ -26,12 +21,7 @@ public sealed class ScoringActor : ReceiveActor
         }
         else
         {
-            Sender.Tell(new ScoreCompleted(msg.RequestId, scored));
-
-            var matchedCount = scored.Count(s => s.Matched);
-            _historyRegion.Tell(new RecordScoring(
-                msg.RequestId, msg.Config.RuleSetId, msg.Origin,
-                DateTimeOffset.UtcNow, msg.Items.Length, matchedCount, itemTraces));
+            Sender.Tell(new ScoreCompleted(msg.RequestId, scored, itemTraces));
         }
     }
 }

@@ -25,6 +25,14 @@ public sealed record RuleSetPaths(
 
 public static class RuleSetManagerStateExtensions
 {
+    public static RuleSetManagerState Apply(this RuleSetManagerState state,
+        System.Collections.Immutable.ImmutableDictionary<string, RuleSetPaths> knownRuleSets) =>
+        state with { KnownRuleSets = knownRuleSets, PendingIds = state.PendingIds.Clear(), FullRescanRequested = false };
+
+    public static RuleSetManagerState GetSnapshot(this RuleSetManagerState state) => state;
+
+    public static RuleSetManagerState FromSnapshot(RuleSetManagerState snapshot) => snapshot;
+
     public static RuleSetDetailResult? BuildDetail(this RuleSetManagerState state, string ruleSetId, IDataFiles dataFiles)
     {
         if (!state.KnownRuleSets.TryGetValue(ruleSetId, out var paths))
@@ -156,7 +164,9 @@ public static class RuleSetManagerStateExtensions
             catch (Exception ex)
             {
                 if (log is not null)
+                {
                     log.Warning("Failed to load ruleset config for {RuleSetId}: {Error}", ruleSetId, ex.Message);
+                }
             }
 
             entries.Add(new RuleSetSummaryEntry(ruleSetId, ruleCount, sourceType));

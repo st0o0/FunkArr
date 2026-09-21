@@ -17,11 +17,13 @@ public sealed class TvSearchWorkerTests : TestKit
         Akka.TestKit.TestProbe Mediathek,
         Akka.TestKit.TestProbe Scoring,
         Akka.TestKit.TestProbe Resolver,
-        Akka.TestKit.TestProbe Enrichment);
+        Akka.TestKit.TestProbe Enrichment,
+        Akka.TestKit.TestProbe History);
 
     private TestProbes RegisterProbes()
     {
         var probes = new TestProbes(
+            CreateTestProbe(),
             CreateTestProbe(),
             CreateTestProbe(),
             CreateTestProbe(),
@@ -32,6 +34,7 @@ public sealed class TvSearchWorkerTests : TestKit
         registry.Register<IScoringManager>(probes.Scoring);
         registry.Register<IRuleSetResolver>(probes.Resolver);
         registry.Register<IEnrichmentManager>(probes.Enrichment);
+        registry.Register<IHistoryRegion>(probes.History);
 
         return probes;
     }
@@ -64,7 +67,7 @@ public sealed class TvSearchWorkerTests : TestKit
         Assert.Single(scoreRequest.Candidates);
         Assert.Equal("tatort", scoreRequest.RuleSetId);
 
-        p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.95, true)]));
+        p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.95, true)], []));
 
         var result = ExpectMsg<SearchSeriesCompleted>();
         Assert.Equal(searchId, result.SearchId);
@@ -168,7 +171,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>();
         Assert.Equal("tatort", scoreRequest.RuleSetId);
 
-        p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)]));
+        p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
         var result = ExpectMsg<SearchSeriesCompleted>();
         Assert.Equal(searchId, result.SearchId);
@@ -242,7 +245,7 @@ public sealed class TvSearchWorkerTests : TestKit
         [
             new ScoredItem(0, 0.9, true, new MetadataSpec(null, null,
                 DateTimeOffset.FromUnixTimeSeconds(1788113728))),
-        ]));
+        ], []));
 
         var enrichRequest = p.Enrichment.ExpectMsg<EnrichEpisodes>();
         Assert.Equal(83214, enrichRequest.TvdbId);
@@ -288,7 +291,7 @@ public sealed class TvSearchWorkerTests : TestKit
         [
             new ScoredItem(0, 0.95, true, new MetadataSpec("2026", "01",
                 DateTimeOffset.FromUnixTimeSeconds(1788113728))),
-        ]));
+        ], []));
 
         var result = ExpectMsg<SearchSeriesCompleted>();
         var item = Assert.Single(result.Items);
@@ -322,7 +325,7 @@ public sealed class TvSearchWorkerTests : TestKit
         [
             new ScoredItem(0, 0.9, true, new MetadataSpec(null, null,
                 DateTimeOffset.FromUnixTimeSeconds(1788113728))),
-        ]));
+        ], []));
 
         p.Enrichment.ExpectMsg<EnrichEpisodes>();
         p.Enrichment.Reply(new EnrichEpisodesFailed(new Exception("KEKW")));

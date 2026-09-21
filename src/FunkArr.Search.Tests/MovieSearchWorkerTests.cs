@@ -17,11 +17,13 @@ public sealed class MovieSearchWorkerTests : TestKit
         Akka.TestKit.TestProbe Mediathek,
         Akka.TestKit.TestProbe Scoring,
         Akka.TestKit.TestProbe Resolver,
-        Akka.TestKit.TestProbe Enrichment);
+        Akka.TestKit.TestProbe Enrichment,
+        Akka.TestKit.TestProbe History);
 
     private TestProbes RegisterProbes()
     {
         var probes = new TestProbes(
+            CreateTestProbe(),
             CreateTestProbe(),
             CreateTestProbe(),
             CreateTestProbe(),
@@ -32,6 +34,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         registry.Register<IScoringManager>(probes.Scoring);
         registry.Register<IRuleSetResolver>(probes.Resolver);
         registry.Register<IEnrichmentManager>(probes.Enrichment);
+        registry.Register<IHistoryRegion>(probes.History);
 
         return probes;
     }
@@ -64,7 +67,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var scoreRequest = probes.Scoring.ExpectMsg<ScoreItems>();
         Assert.Equal("das-boot", scoreRequest.RuleSetId);
 
-        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         var result = ExpectMsg<SearchMovieCompleted>();
         Assert.Equal(searchId, result.SearchId);
@@ -146,7 +149,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var scoreRequest = probes.Scoring.ExpectMsg<ScoreItems>();
         Assert.Equal("tatort", scoreRequest.RuleSetId);
 
-        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.85, true)]));
+        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.85, true)], []));
 
         var enrichRequest = probes.Enrichment.ExpectMsg<EnrichMovies>();
         Assert.Equal("tt0806910", enrichRequest.ImdbId);
@@ -180,7 +183,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         ], 1));
 
         probes.Scoring.ExpectMsg<ScoreItems>();
-        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.7, true)]));
+        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.7, true)], []));
 
         var enrichRequest = probes.Enrichment.ExpectMsg<EnrichMovies>();
         Assert.Equal(550, enrichRequest.TmdbId);
@@ -258,7 +261,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         probes.Resolver.Reply(new RuleSetResolved("das-boot", "Das Boot"));
 
         probes.Scoring.ExpectMsg<ScoreItems>();
-        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         var result = ExpectMsg<SearchMovieCompleted>();
         Assert.Single(result.Items);
@@ -285,7 +288,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         ], 1));
 
         probes.Scoring.ExpectMsg<ScoreItems>();
-        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)]));
+        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
         probes.Enrichment.ExpectMsg<EnrichMovies>();
         probes.Enrichment.Reply(new EnrichMoviesFailed(new Exception("TMDB unavailable")));
