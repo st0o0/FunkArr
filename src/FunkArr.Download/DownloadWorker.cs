@@ -82,7 +82,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
                 _downloadHistory.Tell(new RecordDownload(
                     cmd.DownloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Failed, null, reason, 0, completedAt));
-                Passivate();
             });
             return;
         }
@@ -101,12 +100,11 @@ public sealed class DownloadWorker : ReceivePersistentActor
     private void HandleCancel(CancelDownload _)
     {
         CancelRunning();
-        Passivate();
     }
 
     private void HandleReset(ResetDownload _)
     {
-        if (_state.Status != WorkerStatus.Failed)
+        if (_state.Status is not (WorkerStatus.Failed or WorkerStatus.Completed))
         {
             return;
         }
@@ -196,7 +194,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
                     _downloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Completed, paths.RelativePath, null,
                     msg.ElapsedSeconds, completedAt));
-                Passivate();
             });
         }
         else
@@ -213,7 +210,6 @@ public sealed class DownloadWorker : ReceivePersistentActor
                 _downloadHistory.Tell(new RecordDownload(
                     _downloadId, _state.Title!, _state.Category!.Value, _state.Size,
                     DownloadStatus.Failed, null, reason, 0, completedAt));
-                Passivate();
             });
         }
     }
@@ -237,23 +233,11 @@ public sealed class DownloadWorker : ReceivePersistentActor
         _cts = null;
     }
 
-    private void Passivate()
-    {
-        CancelRunning();
-        Context.Parent.Tell(new Passivate(PoisonPill.Instance));
-    }
-
     private void OnRecoveryCompleted()
     {
-        switch (_state.Status)
+        if (_state.Status == WorkerStatus.Downloading)
         {
-            case WorkerStatus.Downloading:
-                _state = _state with { Status = WorkerStatus.Initialized };
-                break;
-            case WorkerStatus.Completed:
-            case WorkerStatus.Failed:
-                Passivate();
-                break;
+            _state = _state with { Status = WorkerStatus.Initialized };
         }
     }
 
