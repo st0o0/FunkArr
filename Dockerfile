@@ -8,7 +8,7 @@ RUN pnpm install --frozen-lockfile
 COPY src/FunkArr.UI/ .
 RUN pnpm run build
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-noble@sha256:2fa828c68761b1b8c23d7662dc134421b9d3b59fe1425fdbc80804e390cdb24d AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:3cc3bbbbf93d82104892f42aa9106b6be4d120346dea0649643a97c801525256 AS build
 ARG TARGETARCH
 ARG VERSION=0.0.0-dev
 WORKDIR /src
@@ -32,9 +32,9 @@ COPY data/community/ruleset.schema.json /data/community/ruleset.schema.json
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
 RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/publish /p:Version=${VERSION}
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble@sha256:6a94333d37514e385650a3c81a55e5350b67253dbe136e9cf17e499c35606a8c
-# hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f62a272ac1b46e83f56b8ed0416572f31cd1128e2c4a5e63eb34d348e4a36095
+# hadolint ignore=DL3018
+RUN apk add --no-cache ffmpeg
 ARG VERSION=0.0.0-dev
 LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.description="German public broadcaster media libraries for the *arr ecosystem" \
