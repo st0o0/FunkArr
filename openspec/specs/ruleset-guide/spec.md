@@ -24,7 +24,7 @@ The docs SHALL include a complete field reference page (`rulesets/field-referenc
 
 #### Scenario: Rule field documentation
 - **WHEN** a user looks up the `priority` field
-- **THEN** they find: name "priority", type "integer", optional (default 0), description "sort order for rule evaluation — lower values are evaluated first"
+- **THEN** they find: name "priority", type "integer", optional (default 0), description "sort order for rule evaluation - lower values are evaluated first"
 
 #### Scenario: Local-only fields documented
 - **WHEN** a user looks up `standalone` and `disable`

@@ -7,7 +7,7 @@ In-memory cache for metadata fetched from external providers (TVDB, TMDB), using
 ## Requirements
 
 ### Requirement: Unified cache with content-aware TTLs
-The EnrichmentManager SHALL maintain a unified in-memory cache keyed by (provider, id) tuples — e.g., ("tvdb", 83214) or ("tmdb", 550). Cache entries SHALL have content-aware TTLs based on content type.
+The EnrichmentManager SHALL maintain a unified in-memory cache keyed by (provider, id) tuples - e.g., ("tvdb", 83214) or ("tmdb", 550). Cache entries SHALL have content-aware TTLs based on content type.
 
 #### Scenario: TV show cache entry
 - **WHEN** TVDB episode data for series 83214 is fetched

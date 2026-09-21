@@ -1,7 +1,7 @@
 ## Requirements
 
 ### Requirement: FunkArrOptions exposes data path only
-`FunkArrOptions` SHALL expose only `ApiKey` (string) and `DataPath` (string). The computed path properties `RuleSetDataPath`, `LocalRuleSetDataPath`, and `PersistencePath` are removed — path resolution is handled by `DataPaths`.
+`FunkArrOptions` SHALL expose only `ApiKey` (string) and `DataPath` (string). The computed path properties `RuleSetDataPath`, `LocalRuleSetDataPath`, and `PersistencePath` are removed - path resolution is handled by `DataPaths`.
 
 #### Scenario: FunkArrOptions simplified
 - **WHEN** `FunkArrOptions` is inspected

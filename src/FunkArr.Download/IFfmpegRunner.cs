@@ -8,5 +8,6 @@ public interface IFfmpegRunner
 {
     Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitlePath, string outputPath,
-        Action<ProgressUpdate> onProgress, CancellationToken ct);
+        Action<ProgressUpdate> onProgress, CancellationToken ct,
+        long? speedLimitBytesPerSecond = null);
 }

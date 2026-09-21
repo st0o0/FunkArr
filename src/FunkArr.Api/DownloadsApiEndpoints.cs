@@ -7,6 +7,7 @@ using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
@@ -151,6 +152,19 @@ public static class DownloadsApiEndpoints
         .WithSummary("Retry failed download")
         .Produces<ApiModels.OperationResult>()
         .ProducesProblem(504);
+
+        group.MapGet("/settings", (IOptionsMonitor<DownloadOptions> options) =>
+        {
+            var opts = options.CurrentValue;
+            var schedule = opts.DownloadSchedule
+                .Select(s => new ApiModels.DownloadTimeSlotResponse(
+                    s.Start.ToString("HH:mm"), s.End.ToString("HH:mm")))
+                .ToArray();
+            return Results.Ok(new ApiModels.DownloadSettingsResponse(
+                opts.ConcurrentDownloads, opts.SpeedLimitBytesPerSecond, schedule));
+        })
+        .WithSummary("Get download settings")
+        .Produces<ApiModels.DownloadSettingsResponse>();
 
         return app;
     }

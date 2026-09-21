@@ -16,12 +16,12 @@ Jede Regel hat eine **Strategie**, die bestimmt, wie FunkArr Staffel-/Episodenin
 
 Extrahiert eine Staffel- und Episodennummer aus dem Mediathek-Titel mittels Regex-Mustern.
 
-**Wann verwenden:** Der Titel enthält Staffel- und Episodeninformationen in beliebigem Format — deutsch („Staffel 3 Folge 12"), abgekürzt („S03/E12") oder in Klammern eingebettet.
+**Wann verwenden:** Der Titel enthält Staffel- und Episodeninformationen in beliebigem Format - deutsch („Staffel 3 Folge 12"), abgekürzt („S03/E12") oder in Klammern eingebettet.
 
 **Benötigte Felder:**
-- `seasonRegex` — Muster zur Extraktion der Staffelnummer
-- `episodeRegex` — Muster zur Extraktion der Episodennummer
-- `captureGroup` (optional) — welche Capture Group verwendet wird (Standard: 1)
+- `seasonRegex` - Muster zur Extraktion der Staffelnummer
+- `episodeRegex` - Muster zur Extraktion der Episodennummer
+- `captureGroup` (optional) - welche Capture Group verwendet wird (Standard: 1)
 
 **Beispiel:**
 
@@ -55,7 +55,7 @@ Extrahiert eine einzelne absolute Episodennummer ohne Staffel. Sonarr ordnet sie
 **Wann verwenden:** Langlaufende Sendungen, die einen einzelnen fortlaufenden Episodenzähler verwenden. Häufig bei deutschen Kindersendungen und täglichen Serien.
 
 **Benötigte Felder:**
-- `episodeRegex` — Muster zur Extraktion der Episodennummer
+- `episodeRegex` - Muster zur Extraktion der Episodennummer
 - `captureGroup` (optional)
 
 **Beispiel: Schloss Einstein**
@@ -96,7 +96,7 @@ Konstruiert einen Titel-String aus Teilen und gleicht ihn **exakt** mit dem Sona
 **Wann verwenden:** Episodentitel sind einzigartig und vorhersagbar. Der Mediathek-Titel enthält den Episodentitel wörtlich oder er kann sauber extrahiert werden.
 
 **Benötigte Felder:**
-- `titleRules` — Array von Titelteilen (fester Text und/oder Regex-Extraktionen)
+- `titleRules` - Array von Titelteilen (fester Text und/oder Regex-Extraktionen)
 
 **Beispiel:**
 
@@ -120,7 +120,7 @@ Konstruiert einen Titel-String aus Teilen und prüft, ob der Sonarr/Radarr-Episo
 **Wann verwenden:** Episodentitel sind im Mediathek-Titel mit zusätzlicher Formatierung eingebettet, oder wenn exaktes Matching zu fragil ist.
 
 **Benötigte Felder:**
-- `titleRules` — Array von Titelteilen
+- `titleRules` - Array von Titelteilen
 
 **Beispiel: Tatort**
 
@@ -183,7 +183,7 @@ Extrahiert ein Ausstrahlungsdatum aus dem Titel. Verwendet für Sendungen, die �
 **Wann verwenden:** Talkshows, Nachrichtensendungen, Wochenmagazine und tägliche Sendungen, bei denen Episoden über das Ausstrahlungsdatum identifiziert werden.
 
 **Benötigte Felder:**
-- `titleRules` — Regex zur Extraktion des Datums aus dem Mediathek-Titel
+- `titleRules` - Regex zur Extraktion des Datums aus dem Mediathek-Titel
 
 **Beispiel: heute-show**
 
@@ -243,8 +243,8 @@ Für datumsbasierte Sendungen setze den **Serientyp** in Sonarr auf **Daily**. O
 
 Titelregeln (`titleRules`) bauen einen String auf, indem sie Teile von links nach rechts anhängen. Jeder Teil ist entweder:
 
-- **Statisch** — hängt festen Text an
-- **Regex** — führt einen Regex gegen ein Mediathek-Feld aus und hängt den Match an
+- **Statisch** - hängt festen Text an
+- **Regex** - führt einen Regex gegen ein Mediathek-Feld aus und hängt den Match an
 
 ### Auswertungsreihenfolge
 
@@ -257,15 +257,15 @@ Teil 1        Teil 2        Teil 3
 ### Regex-Teile
 
 Ein Regex-Teil hat drei Komponenten:
-1. `field` — welches Mediathek-Feld durchsucht wird (normalerweise `title`)
-2. `pattern` — der auszuführende Regex
-3. `captureGroup` — welche Gruppe extrahiert wird (Standard: 0 = vollständiger Match)
+1. `field` - welches Mediathek-Feld durchsucht wird (normalerweise `title`)
+2. `pattern` - der auszuführende Regex
+3. `captureGroup` - welche Gruppe extrahiert wird (Standard: 0 = vollständiger Match)
 
 Wenn der Regex nicht matcht, scheitert die gesamte Regel bei der Identifikation.
 
 ### Mehrere Regeln für Robustheit
 
-Reale Mediathek-Titel variieren. Ein gängiges Muster ist, mehrere Regeln mit aufsteigender Priorität zu definieren — die erste behandelt den Standardfall, Fallback-Regeln behandeln Sonderfälle:
+Reale Mediathek-Titel variieren. Ein gängiges Muster ist, mehrere Regeln mit aufsteigender Priorität zu definieren - die erste behandelt den Standardfall, Fallback-Regeln behandeln Sonderfälle:
 
 ```json
 "rules": [

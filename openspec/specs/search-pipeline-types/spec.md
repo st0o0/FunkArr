@@ -1,6 +1,6 @@
 ## Purpose
 
-Pipeline stage types internal to FunkArr.Search — SourceInfo (Mediathek projection), MediaIdentity (external IDs + season/episode), MatchInfo (enrichment result), EnrichedItem (post-scoring central type), and ReleaseVariant (post-expansion with variant quality URLs).
+Pipeline stage types internal to FunkArr.Search - SourceInfo (Mediathek projection), MediaIdentity (external IDs + season/episode), MatchInfo (enrichment result), EnrichedItem (post-scoring central type), and ReleaseVariant (post-expansion with variant quality URLs).
 
 ## Requirements
 
@@ -101,7 +101,7 @@ ReleaseVariant SHALL be a sealed record in FunkArr.Search containing: Title (str
 
 ### Requirement: ReleaseVariant maps to SearchResultItem
 
-ReleaseVariant SHALL have a `ToResultItem()` method that produces a flat SearchResultItem by copying fields directly. This mapping SHALL contain no logic — only field assignment.
+ReleaseVariant SHALL have a `ToResultItem()` method that produces a flat SearchResultItem by copying fields directly. This mapping SHALL contain no logic - only field assignment.
 
 #### Scenario: Trivial 1:1 mapping
 

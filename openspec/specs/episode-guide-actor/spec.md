@@ -33,11 +33,11 @@ The EnrichmentManager SHALL create provider-specific worker pools using `Smalles
 ### Requirement: EnrichmentManager handles ResolveEpisodes
 The EnrichmentManager SHALL handle `ResolveEpisodes` messages. On cache hit, it SHALL resolve locally and respond directly. On cache miss, it SHALL forward to the TVDB pool with the original sender so the pool worker can fetch, resolve, and respond.
 
-#### Scenario: Cache hit — resolve locally
+#### Scenario: Cache hit - resolve locally
 - **WHEN** `ResolveEpisodes(TvdbId=83214, ...)` is received and TVDB data is cached
 - **THEN** the EnrichmentManager SHALL run EpisodeResolver locally and respond with `EpisodesResolved` without involving the pool
 
-#### Scenario: Cache miss — forward to pool
+#### Scenario: Cache miss - forward to pool
 - **WHEN** `ResolveEpisodes(TvdbId=83214, ...)` is received and no cached data exists
 - **THEN** the EnrichmentManager SHALL forward the request to the TVDB pool with the original Sender
 - **AND** the pool worker SHALL fetch from TVDB, resolve, respond to Sender, and send CacheUpdate to parent
@@ -80,7 +80,7 @@ When candidates already have ExistingSeason and ExistingEpisode set (from regex 
 - **WHEN** all EpisodeCandidates have ExistingSeason and ExistingEpisode set
 - **THEN** the EnrichmentManager SHALL respond immediately with ResolvedEpisodes without any TVDB API call
 
-#### Scenario: Mixed candidates — some extracted, some not
+#### Scenario: Mixed candidates - some extracted, some not
 - **WHEN** some candidates have ExistingSeason/ExistingEpisode and others do not
 - **THEN** the EnrichmentManager SHALL pass through the extracted ones and attempt TVDB resolution for the rest
 

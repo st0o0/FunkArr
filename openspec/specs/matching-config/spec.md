@@ -89,7 +89,7 @@ The system SHALL define `TitlePart(TitlePartType Type, string? Value, string? Pa
 - **THEN** it captures text from the specified field using the regex pattern and contributes it to the constructed title
 
 ### Requirement: IdentificationSpec record
-The system SHALL define `IdentificationSpec(IdentificationStrategy Strategy, string? SeasonPattern, string? EpisodePattern, int? CaptureGroup, TitlePart[]? TitleParts)` as a sealed record. The record SHALL NOT have a `MatchMode` parameter — the strategy enum alone determines matching behavior.
+The system SHALL define `IdentificationSpec(IdentificationStrategy Strategy, string? SeasonPattern, string? EpisodePattern, int? CaptureGroup, TitlePart[]? TitleParts)` as a sealed record. The record SHALL NOT have a `MatchMode` parameter - the strategy enum alone determines matching behavior.
 
 #### Scenario: SeasonAndEpisodeNumber spec
 - **WHEN** Strategy is SeasonAndEpisodeNumber
@@ -105,7 +105,7 @@ The system SHALL define `IdentificationSpec(IdentificationStrategy Strategy, str
 
 #### Scenario: IdentificationSpec has no MatchMode
 - **WHEN** `IdentificationSpec` is inspected
-- **THEN** it has parameters: Strategy, SeasonPattern, EpisodePattern, CaptureGroup, TitleParts — no MatchMode
+- **THEN** it has parameters: Strategy, SeasonPattern, EpisodePattern, CaptureGroup, TitleParts - no MatchMode
 
 ### Requirement: MatchingRule record
 The system SHALL define `MatchingRule(string Id, int Priority, float? Confidence, FilterSpec? Filters, IdentificationSpec Identification)` as a sealed record.

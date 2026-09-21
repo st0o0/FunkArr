@@ -1,6 +1,6 @@
 ## Purpose
 
-Interactive Vue component in VitePress docs for visually constructing FunkArr ruleset JSON with validation, import, and export — without requiring a running FunkArr instance.
+Interactive Vue component in VitePress docs for visually constructing FunkArr ruleset JSON with validation, import, and export - without requiring a running FunkArr instance.
 
 ## Requirements
 

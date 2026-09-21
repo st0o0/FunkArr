@@ -58,7 +58,7 @@ The TitleMatch method SHALL compute a normalized Levenshtein similarity (0.0 to 
 - **WHEN** candidate title is "Koenige der Nacht" and TVDB episode name is "Könige der Nacht"
 - **THEN** the comparison SHALL normalize umlauts and be case-insensitive
 
-#### Scenario: Multiple TVDB episodes match — highest similarity wins
+#### Scenario: Multiple TVDB episodes match - highest similarity wins
 - **WHEN** two TVDB episodes have similarity >= threshold
 - **THEN** the episode with the highest similarity SHALL be selected
 

@@ -3,9 +3,7 @@
 ## Purpose
 
 Cluster Singleton actor managing download queue, concurrency limits, and persistence. Coordinates DownloadWorker shard region.
-
 ## Requirements
-
 ### Requirement: DownloadManager is a Cluster Singleton
 The DownloadManager SHALL be registered as a Cluster Singleton actor named "download-manager".
 
@@ -26,13 +24,20 @@ The DownloadManager SHALL handle `AddDownload` messages by assigning a new `Guid
 - **AND** call DispatchNext to check if the download can start immediately
 
 ### Requirement: DownloadManager enforces concurrency limit
-The DownloadManager SHALL limit the number of concurrent downloads to the configured `DownloadOptions.ConcurrentDownloads` (default 3). When a slot is available, the Manager SHALL persist a `DownloadDispatched` event and send a bare `StartDownload(DownloadId)` go-signal to the Worker shard region.
+The DownloadManager SHALL limit the number of concurrent downloads to the configured `DownloadOptions.ConcurrentDownloads` (default 3). When a slot is available AND the current server-local time is within a configured download schedule (or no schedule is configured), the Manager SHALL persist a `DownloadDispatched` event and send a bare `StartDownload(DownloadId)` go-signal to the Worker shard region. When outside all scheduled windows, the Manager SHALL schedule a timer for the next window start instead of dispatching.
 
 #### Scenario: Under capacity
 - **WHEN** DispatchNext runs and fewer than `DownloadOptions.ConcurrentDownloads` downloads are in the Dispatched set
+- **AND** the current time is within a configured schedule window (or no schedule is configured)
 - **THEN** the Manager SHALL move the next Queued item to the Dispatched set
 - **AND** persist a `DownloadDispatched` event with DownloadId
 - **AND** send `StartDownload(DownloadId)` to the Worker shard region
+
+#### Scenario: Under capacity but outside schedule
+- **WHEN** DispatchNext runs and slots are available
+- **AND** a schedule is configured and the current time is outside all windows
+- **THEN** the Manager SHALL NOT dispatch any downloads
+- **AND** SHALL schedule a timer for the next window start
 
 #### Scenario: At capacity
 - **WHEN** DispatchNext runs and the Dispatched set has reached the configured maximum
@@ -112,3 +117,4 @@ The DownloadManager SHALL persist state changes using Akka.Persistence event sou
 - **THEN** the Queued and Dispatched sets SHALL be restored from persisted events
 - **AND** items that were Dispatched at crash time SHALL be moved to Queued
 - **AND** DispatchNext SHALL be called to re-dispatch StartDownload signals to Workers
+

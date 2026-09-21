@@ -66,18 +66,18 @@ dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
 - Queries: `QueryNoun` (e.g. `QueryRuleSetDetail`). Response: `abstract record NounResponse` with `NounResult` / `NounFailed`. Query + responses in one file.
 - Events: Past-tense (e.g. `ScoringRecorded`), in `FunkArr.Persistence/Events/`.
 - Config: Noun, fire-and-forget (e.g. `MatchingConfig`).
-- No domain-wide response interfaces — each command/query has its own response type.
+- No domain-wide response interfaces - each command/query has its own response type.
 
 ## Versioning
 
-Version 0.x — breaking changes are fine without migration code or compatibility shims.
+Version 0.x - breaking changes are fine without migration code or compatibility shims.
 Revisit once version hits 1.0+.
 
 ## API path layout
 
-- `/api` — Internal REST API for UI (FunkArr.Api, OpenAPI-first)
-- `/index/api` — Newznab indexer API for Prowlarr/Sonarr/Radarr (FunkArr.ArrApi)
-- `/download/api` — SABnzbd-compatible download client API (FunkArr.ArrApi)
+- `/api` - Internal REST API for UI (FunkArr.Api, OpenAPI-first)
+- `/index/api` - Newznab indexer API for Prowlarr/Sonarr/Radarr (FunkArr.ArrApi)
+- `/download/api` - SABnzbd-compatible download client API (FunkArr.ArrApi)
 
 ## Akka conventions
 
@@ -90,7 +90,7 @@ Revisit once version hits 1.0+.
   constructor params.
 - **Actor state pattern** (Pathfinder pattern): State in its own `<Actor>State.cs` file (not nested).
   Extension methods `Apply(event)` / `ProcessCommand(cmd)` on the state record. Actors are thin
-  plumbing (message routing, persistence, lifecycle only). State never sent to callers directly —
+  plumbing (message routing, persistence, lifecycle only). State never sent to callers directly -
   use `GetSnapshot()` → response record, `FromSnapshot()` → reconstruct. For persistent actors:
   `GetPersistenceState()` → `Persisted*State` record in `FunkArr.Persistence/Events/`,
   `FromPersistence()` → reconstruct. `SaveSnapshot(_state.GetPersistenceState())`, not

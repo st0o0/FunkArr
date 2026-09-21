@@ -44,7 +44,7 @@ The HistoryWorker SHALL use a separate `PersistedHistoryState` record for Akka.P
 
 #### Scenario: PersistedHistoryState is flat data
 - **WHEN** `PersistedHistoryState` is examined
-- **THEN** it SHALL be a sealed record with only the data fields needed to reconstruct HistoryState — no methods, no trimming logic
+- **THEN** it SHALL be a sealed record with only the data fields needed to reconstruct HistoryState - no methods, no trimming logic
 
 ### Requirement: HistoryWorker provides GetSnapshot for queries
 

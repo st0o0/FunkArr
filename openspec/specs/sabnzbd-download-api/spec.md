@@ -208,7 +208,7 @@ The system SHALL accept `start` (int, default 0) and `limit` (int, default 0) qu
 - **THEN** the response SHALL contain only history slots matching category "radarr"
 
 ### Requirement: Output query parameter
-The system SHALL accept the `output` query parameter on all download API endpoints. The parameter value SHALL be accepted but ignored — the response format is always JSON.
+The system SHALL accept the `output` query parameter on all download API endpoints. The parameter value SHALL be accepted but ignored - the response format is always JSON.
 
 #### Scenario: Output parameter accepted
 - **WHEN** `?mode=version&output=json` is requested

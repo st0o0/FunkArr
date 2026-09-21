@@ -17,21 +17,21 @@ public sealed class DownloadWorker : ReceivePersistentActor
     private readonly IRemuxer _remuxer;
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
-    private readonly DownloadOptions _options;
+    private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
     private readonly Guid _downloadId;
     private DownloadWorkerState _state = DownloadWorkerState.Empty;
     private CancellationTokenSource? _cts;
 
     public override string PersistenceId { get; }
 
-    public DownloadWorker(IRemuxer remuxer, IDataFiles dataFiles, DataPaths dataPaths, IOptions<DownloadOptions> options, string entityId)
+    public DownloadWorker(IRemuxer remuxer, IDataFiles dataFiles, DataPaths dataPaths, IOptionsMonitor<DownloadOptions> options, string entityId)
     {
         _downloadId = Guid.Parse(entityId);
         PersistenceId = $"download-{entityId}";
         _remuxer = remuxer;
         _dataFiles = dataFiles;
         _dataPaths = dataPaths;
-        _options = options.Value;
+        _optionsMonitor = options;
 
         Command<InitDownload>(HandleInit);
         Command<StartDownload>(HandleStart);
@@ -217,13 +217,14 @@ public sealed class DownloadWorker : ReceivePersistentActor
     {
         _cts = new CancellationTokenSource();
         var self = Self;
+        var speedLimit = _optionsMonitor.CurrentValue.SpeedLimitBytesPerSecond;
         _remuxer.RunAsync(videoUrl, subtitleUrl, outputPath,
-            progress => self.Tell(progress), _cts.Token)
+            progress => self.Tell(progress), _cts.Token, speedLimit)
             .PipeTo(self, failure: ex => new FfmpegResult(false, -1, ex.Message, 0));
     }
 
     private DataPaths.ResolvedDownload ResolvePaths() =>
-        _dataPaths.ResolveDownload(_downloadId.ToString(), _state.Title!, _state.Category?.ToString().ToLowerInvariant(), _options.Categories);
+        _dataPaths.ResolveDownload(_downloadId.ToString(), _state.Title!, _state.Category?.ToString().ToLowerInvariant(), _optionsMonitor.CurrentValue.Categories);
 
     private void CancelRunning()
     {

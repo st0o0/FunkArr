@@ -21,7 +21,7 @@ a change (proposal/design/specs/tasks) - `/opsx:apply` to implement - `/opsx:arc
 - Actor state pattern: `akka-skills:actor-state` (state records, Apply/GetSnapshot, persistence)
 - Persistence separation: `akka-skills:persistence` (three-tier state model, SaveSnapshot, extend-only DTOs)
 - Project structure: `akka-skills:project-structure` (solution layout, domain isolation, ArchUnitNET)
-- Message conventions: `akka-skills:messages` (VerbNoun commands, QueryNoun queries) — this project uses Pattern A (dedicated Messages project)
+- Message conventions: `akka-skills:messages` (VerbNoun commands, QueryNoun queries) - this project uses Pattern A (dedicated Messages project)
 - Actor testing: `akka-skills:testing` (Classic + Hosting TestKit, async assertions, persistence testing)
 - Logging: `akka-skills:logging` (ILoggingAdapter in actors, ILogger in services, Serilog setup)
 - Setup containers: `akka-skills:setup-container` (Servus AppBuilder, DI/Actor/App composition)

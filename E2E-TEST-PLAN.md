@@ -2,18 +2,18 @@
 
 Complete browser + API test script covering every clickable element and interaction.
 
-> **Note**: This file is a test specification — do not check off items here. Write test
+> **Note**: This file is a test specification - do not check off items here. Write test
 > results to a separate results file so this plan stays reusable across runs.
 
 **Prerequisites**: `docker compose -f docker-compose.dev.yml up -d --build`, wait for FunkArr on port 6969.  
-**Arr services**: Sonarr (8989), Radarr (7878), Prowlarr (9696) — all with API key `funkarr-dev-api-key-01`.
+**Arr services**: Sonarr (8989), Radarr (7878), Prowlarr (9696) - all with API key `funkarr-dev-api-key-01`.
 
 ---
 
 ## Test Scenarios & Prerequisites
 
 Some tests require specific state. The execution order (bottom of this file) sets up these
-scenarios in sequence — each phase builds on the previous one.
+scenarios in sequence - each phase builds on the previous one.
 
 | Scenario | Setup | Required for |
 |---|---|---|
@@ -23,29 +23,29 @@ scenarios in sequence — each phase builds on the previous one.
 | **Post-search** | At least 1 Sonarr search triggered → scoring history + download exist | 3.x, 4.x, 5.x, 12.x, 13.x, 18.x, 19.x |
 | **Local ruleset exists** | A local-only ruleset created (via UI or API) | 6.9-6.11 (source filters), 7.8 (export), 10.x (delete), 11.x |
 | **Merged ruleset exists** | Community ruleset edited locally (PUT /api/rulesets/{id}) | 7.10-7.11, 10.1-10.2 |
-| **Active download** | Download in progress (timing-sensitive — trigger search and test quickly) | 3.4-3.7, 18.1 |
+| **Active download** | Download in progress (timing-sensitive - trigger search and test quickly) | 3.4-3.7, 18.1 |
 | **Failed download** | Download that failed (403 or similar) | 5.6-5.8, 18.4-18.5 |
 | **Multiple queue items** | 2+ downloads queued simultaneously | 3.8-3.9, 4.2 |
 
 ### Setup Wizard Notes
 
 The setup wizard URL fields show placeholders (e.g. `http://sonarr:8989`) but the value is
-empty — the user must type both URL and API key for the create buttons to enable. When testing
+empty - the user must type both URL and API key for the create buttons to enable. When testing
 with Chrome automation, use the `type` action (physical keyboard) after clicking the field.
 `nativeInputValueSetter` or `form_input` may not trigger Vue's v-model reliably.
 
 Docker networking: Prowlarr/Sonarr/Radarr must reach FunkArr at `http://funkarr:6969` (Docker
 internal DNS). The "Indexer erstellen" / "Download-Client erstellen" buttons make a test
-connection — this only works when all containers are on the same Docker network. From `localhost`
+connection - this only works when all containers are on the same Docker network. From `localhost`
 (the browser), use the FunkArr setup API (`POST /api/setup/{service}/{resource}`) as a fallback.
 
 ---
 
-## 0. Clean Slate — Reset from Previous Run
+## 0. Clean Slate - Reset from Previous Run
 
 Run this before a fresh E2E test to wipe all state from a previous run.
 
-### Full reset (nuclear — removes ALL data)
+### Full reset (nuclear - removes ALL data)
 
 ```powershell
 # Stop everything
@@ -136,22 +136,22 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 3. Activity — Active Downloads (Aktiv tab)
+## 3. Activity - Active Downloads (Aktiv tab)
 
 **Route**: `/activity`
 
-- [ ] **3.1** Tab buttons visible: Aktiv, Wartend, Verlauf — Aktiv is default
+- [ ] **3.1** Tab buttons visible: Aktiv, Wartend, Verlauf - Aktiv is default
 - [ ] **3.2** Empty state: "Keine aktiven Downloads" message when idle
 - [ ] **3.3** Search field visible and filters active downloads
 - [ ] **3.4** During download: shows title, episode, quality badge (1080p), channel tag, size tag, duration tag, SUB badge (if subtitles) *(requires: active download)*
 - [ ] **3.5** Progress bar with %, download speed (KB/s), ETA *(requires: active download)*
 - [ ] **3.6** Global speed indicator in page header *(requires: active download)*
-- [ ] **3.7** Cancel button (X) on active download → toast "Download abgebrochen" *(requires: active download — timing-sensitive)*
+- [ ] **3.7** Cancel button (X) on active download → toast "Download abgebrochen" *(requires: active download - timing-sensitive)*
 - [ ] **3.8** Queue group cards expand/collapse on header click *(requires: multiple active downloads in same group)*
 
 ---
 
-## 4. Activity — Queue (Wartend tab)
+## 4. Activity - Queue (Wartend tab)
 
 **Route**: `/activity` → click Wartend tab
 
@@ -162,7 +162,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 5. Activity — History (Verlauf tab)
+## 5. Activity - History (Verlauf tab)
 
 **Route**: `/activity` → click Verlauf tab
 
@@ -179,7 +179,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 6. RuleSets — List
+## 6. RuleSets - List
 
 **Route**: `/rulesets`
 
@@ -190,7 +190,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **6.5** Clear search → all rulesets shown again
 - [ ] **6.6** Type filter: click "Serien" → only series, count updates
 - [ ] **6.7** Type filter: click "Filme" → only movies, count updates *(0 if no movie rulesets exist)*
-- [ ] **6.8** Type filter: click "Alle" → reset *(default state — test after using another filter)*
+- [ ] **6.8** Type filter: click "Alle" → reset *(default state - test after using another filter)*
 - [ ] **6.9** Source filter: click "Community" → filtered count "X Regelwerke von Y" *(requires: local ruleset exists)*
 - [ ] **6.10** Source filter: click "Lokal" → only merged/local rulesets *(requires: local ruleset exists)*
 - [ ] **6.11** Source filter: click "Alle Quellen" → reset *(requires: local ruleset exists)*
@@ -201,7 +201,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 7. RuleSet — Detail
+## 7. RuleSet - Detail
 
 **Route**: `/rulesets/{id}`
 
@@ -220,7 +220,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 8. RuleSet — Editor
+## 8. RuleSet - Editor
 
 **Route**: `/rulesets/{id}/edit`
 
@@ -282,7 +282,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 9. RuleSet — Create New
+## 9. RuleSet - Create New
 
 **Route**: `/rulesets/new`
 
@@ -299,9 +299,9 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 10. RuleSet — Delete
+## 10. RuleSet - Delete
 
-- [ ] **10.1** "Lokal löschen" on merged ruleset → confirmation panel *(requires: merged ruleset — PUT a community ruleset first)*
+- [ ] **10.1** "Lokal löschen" on merged ruleset → confirmation panel *(requires: merged ruleset - PUT a community ruleset first)*
 - [ ] **10.2** Confirm → removes local override, detail reloads as community-only *(requires: merged ruleset)*
 - [ ] **10.3** "Lokal löschen" on local-only ruleset → confirmation panel
 - [ ] **10.4** Confirm → deletes completely, navigates to `/rulesets`
@@ -310,7 +310,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 11. RuleSet — Export
+## 11. RuleSet - Export
 
 - [ ] **11.1** Click "Für Community exportieren" on detail page
 - [ ] **11.2** Valid ruleset → toast "Erfolgreich exportiert" *(requires: merged ruleset)*
@@ -351,7 +351,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 14. Setup Wizard — System Health
+## 14. Setup Wizard - System Health
 
 **Route**: `/setup`
 
@@ -362,7 +362,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 15. Setup Wizard — Services (Dienste)
+## 15. Setup Wizard - Services (Dienste)
 
 **Route**: `/setup` → step 2
 
@@ -376,13 +376,13 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 16. Setup Wizard — Service Configuration
+## 16. Setup Wizard - Service Configuration
 
 **Route**: `/setup` → per-service steps
 
 ### Prowlarr
-- [ ] **16.1** URL field shows placeholder `http://prowlarr:9696` (value empty — must type)
-- [ ] **16.2** API-Schlüssel password field — type API key (both URL + key required for buttons to enable)
+- [ ] **16.1** URL field shows placeholder `http://prowlarr:9696` (value empty - must type)
+- [ ] **16.2** API-Schlüssel password field - type API key (both URL + key required for buttons to enable)
 - [ ] **16.3** FunkArr-URL optional field shows placeholder `http://funkarr:6969`
 - [ ] **16.4** Click "Indexer erstellen" → creates Newznab indexer in Prowlarr *(requires: Docker networking)*
 - [ ] **16.5** Success state shown after creation (button changes) *(requires: successful creation)*
@@ -432,7 +432,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ## 18. Download Lifecycle
 
-- [ ] **18.1** Active download shows cancel button → click cancels, toast shown *(requires: active download — timing-sensitive)*
+- [ ] **18.1** Active download shows cancel button → click cancels, toast shown *(requires: active download - timing-sensitive)*
 - [ ] **18.2** Queued download shows cancel button → click removes from queue *(requires: queued download)*
 - [ ] **18.3** Completed download in history → X button deletes entry
 - [ ] **18.4** Failed download → "Wiederholen" button re-queues → toast "Wiederholung gestartet" *(requires: failed download)*
@@ -497,12 +497,12 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 For a clean E2E run, execute in this order:
 
 1. **Startup**: Docker compose up, wait for health (sections 14, 22)
-2. **Setup wizard**: Full walkthrough — health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
+2. **Setup wizard**: Full walkthrough - health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
 3. **Dashboard**: Verify stat cards, links, version (section 1)
 4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links (section 2)
 5. **Rulesets list**: Search, all filter combinations, both sort options, click through (section 6)
-6. **Ruleset detail**: View Tatort — identity, enrichment, expand/collapse rules, export (sections 7, 11)
-7. **Ruleset editor**: Open editor — edit every field type, add/remove aliases, toggle enrichment, add/remove rules and filters, live preview + full test, save (section 8)
+6. **Ruleset detail**: View Tatort - identity, enrichment, expand/collapse rules, export (sections 7, 11)
+7. **Ruleset editor**: Open editor - edit every field type, add/remove aliases, toggle enrichment, add/remove rules and filters, live preview + full test, save (section 8)
 8. **Create ruleset**: Create test ruleset with all fields, verify in list (section 9)
 9. **Delete ruleset**: Delete test ruleset via confirmation flow, verify gone (section 10)
 10. **Sonarr search**: Trigger search, verify pipeline end-to-end (section 17)

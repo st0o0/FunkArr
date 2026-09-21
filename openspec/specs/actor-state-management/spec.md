@@ -36,7 +36,7 @@ Each state record SHALL expose a `public static readonly` `Empty` field returnin
 
 ### Requirement: State evolution via Apply extension methods
 
-State transitions SHALL be implemented as `Apply` extension methods on the state record. Each `Apply` method SHALL be a pure function: take current state and an input, return new state. It SHALL NOT mutate the input state. All stateful actors SHALL use `Apply()` naming — ad-hoc names like `Increment`/`Decrement`, `AddPending`/`RemovePending` SHALL NOT be used.
+State transitions SHALL be implemented as `Apply` extension methods on the state record. Each `Apply` method SHALL be a pure function: take current state and an input, return new state. It SHALL NOT mutate the input state. All stateful actors SHALL use `Apply()` naming - ad-hoc names like `Increment`/`Decrement`, `AddPending`/`RemovePending` SHALL NOT be used.
 
 #### Scenario: Persistent actor Apply takes a persistence record
 - **WHEN** `HistoryState.Apply(HistoryRecorded)` is called
@@ -96,7 +96,7 @@ State records SHALL use immutable collection types (`ImmutableList<T>`, `Immutab
 
 ### Requirement: State-as-snapshot replaced by Pathfinder snapshot pattern
 
-Persistent actors SHALL NOT pass their state record directly to `SaveSnapshot()`. Instead, each persistent actor's state SHALL implement `GetPersistenceState()` returning a separate `Persisted*State` record, and a static `FromPersistence(Persisted*State)` factory method to reconstruct state. The persisted record SHALL be a flat, immutable record in `FunkArr.Persistence` containing only the data fields needed for reconstruction — no behavior, no computed properties, no trimming logic.
+Persistent actors SHALL NOT pass their state record directly to `SaveSnapshot()`. Instead, each persistent actor's state SHALL implement `GetPersistenceState()` returning a separate `Persisted*State` record, and a static `FromPersistence(Persisted*State)` factory method to reconstruct state. The persisted record SHALL be a flat, immutable record in `FunkArr.Persistence` containing only the data fields needed for reconstruction - no behavior, no computed properties, no trimming logic.
 
 #### Scenario: Save snapshot via GetPersistenceState
 - **WHEN** the snapshot interval is reached in a persistent actor
@@ -108,7 +108,7 @@ Persistent actors SHALL NOT pass their state record directly to `SaveSnapshot()`
 
 #### Scenario: Persisted record is flat data only
 - **WHEN** any `Persisted*State` record is examined
-- **THEN** it SHALL contain only primitive types and serializable collections — no methods, no computed properties, no logger fields
+- **THEN** it SHALL contain only primitive types and serializable collections - no methods, no computed properties, no logger fields
 
 #### Scenario: Persisted records live in Persistence project
 - **WHEN** all `Persisted*State` record types are located
@@ -116,7 +116,7 @@ Persistent actors SHALL NOT pass their state record directly to `SaveSnapshot()`
 
 ### Requirement: All stateful actors provide GetSnapshot and FromSnapshot
 
-Every actor with a state class SHALL have `GetSnapshot()` on its state returning a purpose-built response record, and a static `FromSnapshot()` factory method to reconstruct state from that response. The actor SHALL use `GetSnapshot()` when responding to queries — it SHALL NOT send its internal state record directly to callers.
+Every actor with a state class SHALL have `GetSnapshot()` on its state returning a purpose-built response record, and a static `FromSnapshot()` factory method to reconstruct state from that response. The actor SHALL use `GetSnapshot()` when responding to queries - it SHALL NOT send its internal state record directly to callers.
 
 #### Scenario: GetSnapshot returns response record
 - **WHEN** an actor receives a query for its state
@@ -128,7 +128,7 @@ Every actor with a state class SHALL have `GetSnapshot()` on its state returning
 
 #### Scenario: Internal state never sent to callers
 - **WHEN** any actor's `Receive<T>` handlers are examined
-- **THEN** no handler SHALL call `Sender.Tell(_state)` or `Sender.Tell(_state.SomeInternalCollection)` — only snapshot/response records SHALL be sent
+- **THEN** no handler SHALL call `Sender.Tell(_state)` or `Sender.Tell(_state.SomeInternalCollection)` - only snapshot/response records SHALL be sent
 
 ### Requirement: Replay-only actors skip persistence layer
 
@@ -153,7 +153,7 @@ Persistent actors SHALL use `LastSequenceNr % snapshotInterval == 0` to determin
 
 ### Requirement: Persistence records in FunkArr.Persistence
 
-Persistence records SHALL be defined in `FunkArr.Persistence/Events/` as `sealed record` types with positional parameters. They SHALL NOT use mutable DTO patterns (`{ get; init; }`). They SHALL NOT have Event, Dto, or Persisted suffixes — just the descriptive name (e.g., `ScoringRecorded`).
+Persistence records SHALL be defined in `FunkArr.Persistence/Events/` as `sealed record` types with positional parameters. They SHALL NOT use mutable DTO patterns (`{ get; init; }`). They SHALL NOT have Event, Dto, or Persisted suffixes - just the descriptive name (e.g., `ScoringRecorded`).
 
 #### Scenario: ScoringRecorded is a record
 - **WHEN** the ScoringRecorded type is examined

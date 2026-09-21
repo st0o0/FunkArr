@@ -1,6 +1,6 @@
 # Konfiguration
 
-Alle Einstellungen erfolgen über Umgebungsvariablen mit dem Präfix `FunkArr__`. Der doppelte Unterstrich (`__`) trennt verschachtelte Abschnitte — das ist die standardmäßige ASP.NET Core Konfigurationsbindung.
+Alle Einstellungen erfolgen über Umgebungsvariablen mit dem Präfix `FunkArr__`. Der doppelte Unterstrich (`__`) trennt verschachtelte Abschnitte - das ist die standardmäßige ASP.NET Core Konfigurationsbindung.
 
 Die Standardwerte funktionieren sofort für die lokale Entwicklung. Für den Produktivbetrieb musst du normalerweise nur `FunkArr__ApiKey` und `FunkArr__Download__Path` setzen.
 
@@ -44,8 +44,8 @@ data/
 
 Der Download-Pfad enthält zwei Unterverzeichnisse, die FunkArr automatisch verwaltet:
 
-- **`incomplete/`** — aktive Downloads und laufende Remux-Operationen
-- **`complete/`** — fertige Downloads, nach Kategorie-Unterverzeichnissen organisiert
+- **`incomplete/`** - aktive Downloads und laufende Remux-Operationen
+- **`complete/`** - fertige Downloads, nach Kategorie-Unterverzeichnissen organisiert
 
 Sonarr und Radarr überwachen das `complete/`-Verzeichnis auf fertige Dateien. Stelle sicher, dass dieser Pfad sowohl für FunkArr als auch für deine *arr-Apps erreichbar ist (typischerweise über ein gemeinsames Docker-Volume-Mount).
 
@@ -66,10 +66,10 @@ FunkArr__Download__Categories__1__Dir=movies
 
 | Variable | Standard | Beschreibung |
 |----------|----------|-------------|
-| `FunkArr__Download__Categories__N__Name` | — | Kategoriename wie in Sonarr/Radarr konfiguriert |
-| `FunkArr__Download__Categories__N__Dir` | — | Unterverzeichnis innerhalb von `complete/` für diese Kategorie |
+| `FunkArr__Download__Categories__N__Name` | - | Kategoriename wie in Sonarr/Radarr konfiguriert |
+| `FunkArr__Download__Categories__N__Dir` | - | Unterverzeichnis innerhalb von `complete/` für diese Kategorie |
 
-Wenn Sonarr eine Download-Anfrage mit der Kategorie `tv` sendet, landet die fertige Datei in `complete/tv/`. Das `N` im Variablennamen ist ein nullbasierter Index — verwende `0`, `1`, `2` usw. für jede Kategorie.
+Wenn Sonarr eine Download-Anfrage mit der Kategorie `tv` sendet, landet die fertige Datei in `complete/tv/`. Das `N` im Variablennamen ist ein nullbasierter Index - verwende `0`, `1`, `2` usw. für jede Kategorie.
 
 ## Regelwerke
 
@@ -85,7 +85,7 @@ Das GitHub-Repository, in dem Community-Regelwerke als Release-Assets veröffent
 
 ### Version
 
-Setze auf `latest`, um immer das neueste Community-Regelwerk-Release zu verwenden. Pinne auf einen bestimmten Versions-Tag (z.B. `rulesets-v0.2.0`), um automatische Updates zu verhindern — nützlich, wenn ein neues Release ein Mapping bricht, auf das du angewiesen bist.
+Setze auf `latest`, um immer das neueste Community-Regelwerk-Release zu verwenden. Pinne auf einen bestimmten Versions-Tag (z.B. `rulesets-v0.2.0`), um automatische Updates zu verhindern - nützlich, wenn ein neues Release ein Mapping bricht, auf das du angewiesen bist.
 
 ### Aktualisierung
 
@@ -130,11 +130,11 @@ Der Scoring-Pool verarbeitet Mediathek-Suchergebnisse parallel gegen Regelwerke.
 | `FunkArr__MatchHistory__MaxAgeDays` | `30` | Tage, bevor alte Snapshots gelöscht werden |
 | `FunkArr__MatchHistory__SnapshotInterval` | `20` | Intervall zwischen Snapshots |
 
-Der Match-Verlauf verfolgt, welche Regelwerk-Zuordnungen erfolgreiche Downloads erzeugt haben. Diese Daten fließen zurück in das Scoring — Regeln, die historisch korrekte Matches erzeugt haben, erhalten einen Konfidenz-Boost.
+Der Match-Verlauf verfolgt, welche Regelwerk-Zuordnungen erfolgreiche Downloads erzeugt haben. Diese Daten fließen zurück in das Scoring - Regeln, die historisch korrekte Matches erzeugt haben, erhalten einen Konfidenz-Boost.
 
-- **MaxSnapshots** — begrenzt den Speicher für den Match-Verlauf. Höhere Werte liefern mehr historische Daten für das Scoring, verbrauchen aber mehr Speicherplatz.
-- **MaxAgeDays** — entfernt Snapshots, die älter als diese Anzahl Tage sind. Mediathek-Inhalte ändern sich regelmäßig, sodass alte Match-Daten weniger relevant werden.
-- **SnapshotInterval** — steuert, wie oft neue Snapshots erstellt werden. Niedrigere Werte erfassen detailliertere Daten, erhöhen aber die Datenbankschreibvorgänge.
+- **MaxSnapshots** - begrenzt den Speicher für den Match-Verlauf. Höhere Werte liefern mehr historische Daten für das Scoring, verbrauchen aber mehr Speicherplatz.
+- **MaxAgeDays** - entfernt Snapshots, die älter als diese Anzahl Tage sind. Mediathek-Inhalte ändern sich regelmäßig, sodass alte Match-Daten weniger relevant werden.
+- **SnapshotInterval** - steuert, wie oft neue Snapshots erstellt werden. Niedrigere Werte erfassen detailliertere Daten, erhöhen aber die Datenbankschreibvorgänge.
 
 ## PostgreSQL
 
@@ -142,7 +142,7 @@ Standardmäßig verwendet FunkArr SQLite mit der Datenbankdatei unter `{DataPath
 
 | Variable | Standard | Beschreibung |
 |----------|----------|-------------|
-| `FunkArr__Postgres__Host` | _(leer)_ | PostgreSQL-Host — setzen, um PostgreSQL zu aktivieren |
+| `FunkArr__Postgres__Host` | _(leer)_ | PostgreSQL-Host - setzen, um PostgreSQL zu aktivieren |
 | `FunkArr__Postgres__Port` | `5432` | PostgreSQL-Port |
 | `FunkArr__Postgres__User` | _(leer)_ | PostgreSQL-Benutzer |
 | `FunkArr__Postgres__Password` | _(leer)_ | PostgreSQL-Passwort |
@@ -177,7 +177,7 @@ ports:
 
 ## FFmpeg
 
-FFmpeg muss im `PATH` verfügbar sein — es ist im offiziellen Docker-Image enthalten. FunkArr verwendet FFmpeg um:
+FFmpeg muss im `PATH` verfügbar sein - es ist im offiziellen Docker-Image enthalten. FunkArr verwendet FFmpeg um:
 
 - Videostreams herunterzuladen (einschließlich HLS `.m3u8`)
 - Nach MKV zu remuxen (kopiert Video-/Audio-Codecs ohne Neucodierung)
@@ -191,8 +191,8 @@ FunkArr stellt drei Health-Endpunkte bereit, von denen keiner konfigurierbar ist
 
 | Endpunkt | Zweck |
 |----------|-------|
-| `/healthz` | Vollständiger Health-Check (Datenbank, Actor-System) — gibt 200 oder 503 zurück |
-| `/alive` | Einfacher Liveness-Probe — gibt immer 200 zurück |
-| `/api/system/setup` | Setup-Validierung — prüft API-Schlüssel, Verzeichnisse, FFmpeg, API-Konnektivität |
+| `/healthz` | Vollständiger Health-Check (Datenbank, Actor-System) - gibt 200 oder 503 zurück |
+| `/alive` | Einfacher Liveness-Probe - gibt immer 200 zurück |
+| `/api/system/setup` | Setup-Validierung - prüft API-Schlüssel, Verzeichnisse, FFmpeg, API-Konnektivität |
 
 Verwende `/healthz` für Container-Orchestrierungs-Health-Probes und `/api/system/setup` in der Web-Oberfläche, um deine Konfiguration zu überprüfen.

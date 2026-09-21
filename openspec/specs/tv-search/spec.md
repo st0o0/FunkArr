@@ -1,12 +1,12 @@
 ## Purpose
 
-TV search pipeline orchestration — the TvSearchWorker coordinates Mediathek queries, RuleSet resolution, MatchMagic scoring, and episode enrichment using Become-based phases and Ask+PipeTo communication.
+TV search pipeline orchestration - the TvSearchWorker coordinates Mediathek queries, RuleSet resolution, MatchMagic scoring, and episode enrichment using Become-based phases and Ask+PipeTo communication.
 
 ## Requirements
 
 ### Requirement: TvSearchWorker is a sharded entity
 
-The TvSearchWorker SHALL be a sharded entity using SearchId (Guid) as the shard key. Each search request creates a new worker instance that processes the search and responds. The worker SHALL be passivated automatically via `PassivateIdleEntityAfter` on the shard configuration — no manual Passivate calls.
+The TvSearchWorker SHALL be a sharded entity using SearchId (Guid) as the shard key. Each search request creates a new worker instance that processes the search and responds. The worker SHALL be passivated automatically via `PassivateIdleEntityAfter` on the shard configuration - no manual Passivate calls.
 
 #### Scenario: Worker creation and auto-passivation
 
@@ -117,7 +117,7 @@ The TvSearchWorker SHALL use the Limit and Offset values from the incoming TvSea
 
 ### Requirement: TvSearchWorker episode resolution stage
 
-After receiving ScoreCompleted, the TvSearchWorker SHALL call _state.Apply(scored) and then _state.TryGetEnrichmentRequest. The state SHALL decide if enrichment is needed based on whether unresolved items exist and TvdbId is available. The worker SHALL NOT contain enrichment decision logic — it only acts on the TryGet result.
+After receiving ScoreCompleted, the TvSearchWorker SHALL call _state.Apply(scored) and then _state.TryGetEnrichmentRequest. The state SHALL decide if enrichment is needed based on whether unresolved items exist and TvdbId is available. The worker SHALL NOT contain enrichment decision logic - it only acts on the TryGet result.
 
 #### Scenario: All items have season/episode from regex
 

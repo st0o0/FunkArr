@@ -56,7 +56,7 @@ The test suite SHALL include contract tests that deserialize sample MediathekVie
 
 ### Requirement: MediathekViewWebManager uses extracted models
 
-The `MediathekViewWebManager` SHALL reference the standalone `MediathekApiModels` types instead of defining its own nested types. The `JsonSerializerOptions` SHALL NOT use `SnakeCaseLower` naming policy — explicit `[JsonPropertyName]` attributes on the models handle naming.
+The `MediathekViewWebManager` SHALL reference the standalone `MediathekApiModels` types instead of defining its own nested types. The `JsonSerializerOptions` SHALL NOT use `SnakeCaseLower` naming policy - explicit `[JsonPropertyName]` attributes on the models handle naming.
 
 #### Scenario: Deserialization options
 

@@ -15,13 +15,18 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
-    private readonly int _maxConcurrent;
+    private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
+    private int _maxConcurrent;
+    private ICancelable? _scheduleTimer;
     private DownloadManagerState _state = DownloadManagerState.Empty;
+
+    private sealed record ScheduleWake;
 
     public override string PersistenceId { get; } = "download-manager";
 
     public DownloadManager(IOptionsMonitor<DownloadOptions> options)
     {
+        _optionsMonitor = options;
         _maxConcurrent = options.CurrentValue.ConcurrentDownloads;
 
         Command<AddDownload>(HandleAdd);
@@ -29,6 +34,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         Command<QueryQueue>(HandleQueryQueue);
         Command<DeleteDownload>(HandleDelete);
         Command<RetryDownload>(HandleRetry);
+        Command<ScheduleWake>(_ => DispatchNext());
 
         Recover<DownloadEnqueued>(evt => _state = _state.Apply(evt));
         Recover<DownloadDispatched>(evt => _state = _state.Apply(evt));
@@ -38,6 +44,15 @@ public sealed class DownloadManager : ReceivePersistentActor
             _state = _state.ResetDispatched();
             DispatchNext();
         });
+
+        options.OnChange(OnOptionsChanged);
+    }
+
+    private void OnOptionsChanged(DownloadOptions opts)
+    {
+        _maxConcurrent = opts.ConcurrentDownloads;
+        CancelScheduleTimer();
+        DispatchNext();
     }
 
     private void HandleAdd(AddDownload cmd)
@@ -148,6 +163,19 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void DispatchNext()
     {
+        var schedule = _optionsMonitor.CurrentValue.DownloadSchedule;
+        var now = TimeOnly.FromDateTime(DateTime.Now);
+
+        if (!DownloadScheduleHelper.IsWithinSchedule(now, schedule))
+        {
+            var delay = DownloadScheduleHelper.DelayUntilNextWindow(now, schedule);
+            _log.Info("Outside download schedule, next window in {Delay}", delay);
+            ScheduleWakeUp(delay);
+            return;
+        }
+
+        CancelScheduleTimer();
+
         var toDispatch = new List<Guid>();
 
         while (_state.Dispatched.Count + toDispatch.Count < _maxConcurrent)
@@ -178,4 +206,15 @@ public sealed class DownloadManager : ReceivePersistentActor
         }
     }
 
+    private void ScheduleWakeUp(TimeSpan delay)
+    {
+        CancelScheduleTimer();
+        _scheduleTimer = Context.System.Scheduler.ScheduleTellOnceCancelable(delay, Self, new ScheduleWake(), ActorRefs.NoSender);
+    }
+
+    private void CancelScheduleTimer()
+    {
+        _scheduleTimer?.Cancel();
+        _scheduleTimer = null;
+    }
 }

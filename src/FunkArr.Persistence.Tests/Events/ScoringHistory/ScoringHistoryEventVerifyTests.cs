@@ -1,23 +1,23 @@
-using Newtonsoft.Json;
 using FunkArr.Persistence.Events.ScoringHistory;
 using FunkArr.Tests.Shared;
+using Newtonsoft.Json;
 using static VerifyXunit.Verifier;
 
 namespace FunkArr.Persistence.Tests.Events.ScoringHistory;
 
 public sealed class ScoringHistoryEventVerifyTests
 {
-    private static readonly Guid TestRequestId = new("b2c3d4e5-f6a7-8901-bcde-f12345678901");
-    private static readonly DateTimeOffset TestTimestamp = new(2024, 11, 15, 12, 0, 0, TimeSpan.Zero);
+    private static readonly Guid _testRequestId = new("b2c3d4e5-f6a7-8901-bcde-f12345678901");
+    private static readonly DateTimeOffset _testTimestamp = new(2024, 11, 15, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public Task HistoryRecorded_shape()
     {
         var evt = new HistoryRecorded(
-            TestRequestId,
+            _testRequestId,
             PersistedSearchSource.Sonarr,
             "Tatort",
-            TestTimestamp,
+            _testTimestamp,
             CandidateCount: 10,
             MatchedCount: 3,
             EnrichedCount: 2,
@@ -30,10 +30,10 @@ public sealed class ScoringHistoryEventVerifyTests
     public void HistoryRecorded_roundtrip()
     {
         var original = new HistoryRecorded(
-            TestRequestId,
+            _testRequestId,
             PersistedSearchSource.Sonarr,
             "Tatort",
-            TestTimestamp,
+            _testTimestamp,
             CandidateCount: 10,
             MatchedCount: 3,
             EnrichedCount: 2,

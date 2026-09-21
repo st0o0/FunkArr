@@ -1,6 +1,6 @@
 # message-response-interfaces
 
-> **⚠️ SUPERSEDED**: This spec was never implemented. The codebase uses per-command/query abstract response types instead (e.g. `Ask<SearchCommandResponse>`, `Ask<ResolveRuleSetResponse>`). CLAUDE.md explicitly states: "No domain-wide response interfaces — each command/query has its own response type." This spec should be considered historical only.
+> **⚠️ SUPERSEDED**: This spec was never implemented. The codebase uses per-command/query abstract response types instead (e.g. `Ask<SearchCommandResponse>`, `Ask<ResolveRuleSetResponse>`). CLAUDE.md explicitly states: "No domain-wide response interfaces - each command/query has its own response type." This spec should be considered historical only.
 
 ## Purpose
 

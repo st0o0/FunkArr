@@ -1,6 +1,6 @@
 # Filters
 
-Filters decide which Mediathek entries enter a matching rule. They run **before** identification — if a filter fails, the rule is skipped and the next rule in priority order is tried.
+Filters decide which Mediathek entries enter a matching rule. They run **before** identification - if a filter fails, the rule is skipped and the next rule in priority order is tried.
 
 ## How Filters Work
 
@@ -58,7 +58,7 @@ Most Mediathek entries include trailers, teasers, and clip excerpts that are muc
 }
 ```
 
-This is the most common filter — nearly every community ruleset uses it.
+This is the most common filter - nearly every community ruleset uses it.
 
 ### Restrict to a specific channel
 
@@ -164,4 +164,4 @@ Filters evaluate with short-circuit logic:
 - **`any`**: stops at the first passing condition
 - **`not`**: stops at the first matching condition (which means the filter fails)
 
-This is visible in the debugger's pipeline trace — skipped conditions appear in gray.
+This is visible in the debugger's pipeline trace - skipped conditions appear in gray.

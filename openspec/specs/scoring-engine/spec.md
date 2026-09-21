@@ -18,7 +18,7 @@ The `ScoringEngine` SHALL be a `static class` in `FunkArr.Scoring` with no Akka.
 #### Scenario: Class is static
 
 - **WHEN** `ScoringEngine` is defined
-- **THEN** it SHALL be a `static class` — not instantiable, no instance state
+- **THEN** it SHALL be a `static class` - not instantiable, no instance state
 
 ### Requirement: ScoringEngine exposes a single public Score method
 

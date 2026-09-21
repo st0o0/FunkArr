@@ -16,12 +16,12 @@ Every rule has a **strategy** that determines how FunkArr extracts season/episod
 
 Extracts a season and episode number from the Mediathek title using regex patterns.
 
-**When to use:** The title contains season and episode information in any format — German ("Staffel 3 Folge 12"), abbreviated ("S03/E12"), or embedded in parentheses.
+**When to use:** The title contains season and episode information in any format - German ("Staffel 3 Folge 12"), abbreviated ("S03/E12"), or embedded in parentheses.
 
 **Required fields:**
-- `seasonRegex` — pattern to extract the season number
-- `episodeRegex` — pattern to extract the episode number
-- `captureGroup` (optional) — which capture group to use (default: 1)
+- `seasonRegex` - pattern to extract the season number
+- `episodeRegex` - pattern to extract the episode number
+- `captureGroup` (optional) - which capture group to use (default: 1)
 
 **Example:**
 
@@ -55,7 +55,7 @@ Extracts a single absolute episode number with no season. Sonarr maps it to the 
 **When to use:** Long-running shows that use a single running episode counter. Common for German children's shows and daily series.
 
 **Required fields:**
-- `episodeRegex` — pattern to extract the episode number
+- `episodeRegex` - pattern to extract the episode number
 - `captureGroup` (optional)
 
 **Example: Schloss Einstein**
@@ -96,7 +96,7 @@ Constructs a title string from parts and matches it **exactly** against the Sona
 **When to use:** Episode titles are unique and predictable. The Mediathek title contains the episode title verbatim or can be extracted cleanly.
 
 **Required fields:**
-- `titleRules` — array of title parts (static text and/or regex extractions)
+- `titleRules` - array of title parts (static text and/or regex extractions)
 
 **Example:**
 
@@ -120,7 +120,7 @@ Constructs a title string from parts and checks if the Sonarr/Radarr episode tit
 **When to use:** Episode titles are embedded in the Mediathek title with extra formatting, or when exact matching is too brittle.
 
 **Required fields:**
-- `titleRules` — array of title parts
+- `titleRules` - array of title parts
 
 **Example: Tatort**
 
@@ -183,7 +183,7 @@ Extracts a broadcast date from the title. Used for shows identified by their air
 **When to use:** Talk shows, news programs, weekly magazines, and daily shows where episodes are identified by broadcast date.
 
 **Required fields:**
-- `titleRules` — regex to extract the date from the Mediathek title
+- `titleRules` - regex to extract the date from the Mediathek title
 
 **Example: heute-show**
 
@@ -243,8 +243,8 @@ For airdate-matched shows, set the **Series Type** to **Daily** in Sonarr. Witho
 
 Title rules (`titleRules`) build a string by appending parts left to right. Each part is either:
 
-- **Static** — appends literal text
-- **Regex** — runs a regex against a Mediathek field and appends the match
+- **Static** - appends literal text
+- **Regex** - runs a regex against a Mediathek field and appends the match
 
 ### Evaluation order
 
@@ -257,15 +257,15 @@ Part 1        Part 2        Part 3
 ### Regex parts
 
 A regex part has three components:
-1. `field` — which Mediathek field to search (usually `title`)
-2. `pattern` — the regex to run
-3. `captureGroup` — which group to extract (default: 0 = full match)
+1. `field` - which Mediathek field to search (usually `title`)
+2. `pattern` - the regex to run
+3. `captureGroup` - which group to extract (default: 0 = full match)
 
 If the regex doesn't match, the entire rule fails identification.
 
 ### Multiple rules for robustness
 
-Real-world Mediathek titles vary. A common pattern is to define multiple rules at increasing priority levels — the first handles the standard case, and fallback rules handle edge cases:
+Real-world Mediathek titles vary. A common pattern is to define multiple rules at increasing priority levels - the first handles the standard case, and fallback rules handle edge cases:
 
 ```json
 "rules": [

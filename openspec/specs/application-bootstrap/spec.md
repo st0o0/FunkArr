@@ -95,12 +95,12 @@ calls. The setup SHALL NOT use `ClusterSharding.Get(system).Start(...)` directly
 `FunkArrServiceSetup` SHALL register `FunkArrOptions` bound to config section `"FunkArr"`
 with `.ValidateOnStart()`. `FunkArrOptions` SHALL be defined in `FunkArr.Core` and have properties:
 - `ApiKey` (string, default `"funkarr-default-api-key"`)
-- `DataPath` (string, default `"data"`) — the single configurable storage root
+- `DataPath` (string, default `"data"`) - the single configurable storage root
 
 `FunkArrOptions` SHALL expose the following computed read-only properties:
-- `PersistencePath` — returns `Path.Combine(DataPath, "funkarr.db")`
-- `DownloadPath` — returns `Path.Combine(DataPath, "downloads")`
-- `RuleSetDataPath` — returns `Path.Combine(DataPath, "community")`
+- `PersistencePath` - returns `Path.Combine(DataPath, "funkarr.db")`
+- `DownloadPath` - returns `Path.Combine(DataPath, "downloads")`
+- `RuleSetDataPath` - returns `Path.Combine(DataPath, "community")`
 
 These computed properties SHALL NOT be bindable from configuration. Only `DataPath` SHALL be configurable.
 

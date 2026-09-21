@@ -285,6 +285,31 @@ public sealed class FfmpegRunnerTests
         Assert.Equal("Server returned 404 Not Found", FfmpegRunner.ExtractError(stderr));
     }
 
+    [Fact]
+    public void BuildArguments_with_speed_limit_includes_maxrate()
+    {
+        var processor = FfmpegRunner.BuildArguments(
+            "https://example.com/video.mp4", null, "/tmp/out.mkv",
+            speedLimitBytesPerSecond: 10_485_760);
+
+        var args = processor.Arguments;
+
+        Assert.Contains("-maxrate", args);
+        Assert.Contains("-bufsize", args);
+    }
+
+    [Fact]
+    public void BuildArguments_without_speed_limit_excludes_maxrate()
+    {
+        var processor = FfmpegRunner.BuildArguments(
+            "https://example.com/video.mp4", null, "/tmp/out.mkv");
+
+        var args = processor.Arguments;
+
+        Assert.DoesNotContain("-maxrate", args);
+        Assert.DoesNotContain("-bufsize", args);
+    }
+
     private static void FeedBlock(
         Dictionary<string, string> block, List<ProgressUpdate> updates, params string[] lines)
     {

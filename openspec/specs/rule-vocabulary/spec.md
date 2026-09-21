@@ -56,7 +56,7 @@ The frontend SHALL provide a function `titlePartLabel(type: string, t): string` 
 - **THEN** the function returns the German translation (e.g. "Statisch")
 
 ### Requirement: i18n key namespace
-All rule vocabulary i18n keys SHALL be organized under a `rule` top-level namespace in both DE and EN locale files. The namespace SHALL contain sub-objects: `op` (operator labels), `opSymbol` (not needed — symbols are not locale-dependent), `group` (group labels), `field` (field labels), `titlePart` (title part type labels).
+All rule vocabulary i18n keys SHALL be organized under a `rule` top-level namespace in both DE and EN locale files. The namespace SHALL contain sub-objects: `op` (operator labels), `opSymbol` (not needed - symbols are not locale-dependent), `group` (group labels), `field` (field labels), `titlePart` (title part type labels).
 
 #### Scenario: i18n structure
 - **WHEN** the EN locale file is inspected

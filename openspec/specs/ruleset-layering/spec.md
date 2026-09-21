@@ -47,7 +47,7 @@ When both a community and a local ruleset exist for the same topic and the local
 #### Scenario: Combined replace, add, and disable
 
 - **WHEN** community has rules `["season-episode", "title-fallback", "airdate"]`, local has rule `["season-episode", "orf-channel"]` and `Disable = ["airdate"]`
-- **THEN** the effective ruleset SHALL contain `["season-episode" (local version), "title-fallback", "orf-channel"]` — airdate is disabled, season-episode is replaced, orf-channel is added
+- **THEN** the effective ruleset SHALL contain `["season-episode" (local version), "title-fallback", "orf-channel"]` - airdate is disabled, season-episode is replaced, orf-channel is added
 
 ### Requirement: Standalone local rulesets replace community entirely
 

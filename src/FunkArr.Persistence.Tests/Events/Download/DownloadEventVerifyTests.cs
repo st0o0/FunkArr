@@ -1,5 +1,5 @@
-using Newtonsoft.Json;
 using FunkArr.Persistence.Events.Download;
+using Newtonsoft.Json;
 
 namespace FunkArr.Persistence.Tests.Events.Download;
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-FileSystemWatcher-based live reload for the RuleSetManager — monitors community and local ruleset directories for changes, debounces events, and dispatches LoadRuleSet/RemoveRuleSet to workers.
+FileSystemWatcher-based live reload for the RuleSetManager - monitors community and local ruleset directories for changes, debounces events, and dispatches LoadRuleSet/RemoveRuleSet to workers.
 
 ## Requirements
 
@@ -40,7 +40,7 @@ The RuleSetManager SHALL debounce FileSystemWatcher events by accumulating affec
 
 #### Scenario: Events during debounce window do not reset timer
 - **WHEN** a file change event occurs while a `FlushChanges` is already scheduled
-- **THEN** the existing timer SHALL NOT be reset — `FlushChanges` fires at the originally scheduled time, and the new ID is added to the pending set
+- **THEN** the existing timer SHALL NOT be reset - `FlushChanges` fires at the originally scheduled time, and the new ID is added to the pending set
 
 #### Scenario: Change in community and local for same ID
 - **WHEN** `tatort.json` is modified in both `data/community/rulesets/` and `data/local/rulesets/` within the debounce window
@@ -86,7 +86,7 @@ The RuleSetManager SHALL handle `FileSystemWatcher.Error` events by scheduling a
 
 #### Scenario: Full rescan clears pending IDs
 - **WHEN** `FlushChanges` fires with `FullRescanRequested = true` and pending IDs exist
-- **THEN** the full rescan SHALL process everything — pending IDs are irrelevant and SHALL be cleared
+- **THEN** the full rescan SHALL process everything - pending IDs are irrelevant and SHALL be cleared
 
 ### Requirement: RuleSetManager holds known ruleset state
 The RuleSetManager SHALL maintain its known ruleset state using `ImmutableDictionary<string, RuleSetPaths>` and pending IDs using `ImmutableHashSet<string>`, consistent with other state records in the project.

@@ -37,7 +37,7 @@ The Manager SHALL maintain a `Dictionary<string, RuleSet>` of loaded RuleSets an
 
 ### Requirement: ScoringManager wraps pure logic without Akka dependency in Scoring library
 
-The existing Scoring library (RuleSet, Rule, Filter, FilterGroup, etc.) SHALL remain pure — no Akka references. The Manager actor is the only bridge between the actor system and the pure evaluation logic.
+The existing Scoring library (RuleSet, Rule, Filter, FilterGroup, etc.) SHALL remain pure - no Akka references. The Manager actor is the only bridge between the actor system and the pure evaluation logic.
 
 #### Scenario: Pure library independence
 

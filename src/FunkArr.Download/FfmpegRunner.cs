@@ -10,12 +10,13 @@ internal sealed class FfmpegRunner : IFfmpegRunner
 {
     public async Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitlePath, string outputPath,
-        Action<ProgressUpdate> onProgress, CancellationToken ct)
+        Action<ProgressUpdate> onProgress, CancellationToken ct,
+        long? speedLimitBytesPerSecond = null)
     {
         var sw = Stopwatch.StartNew();
         var progressBlock = new Dictionary<string, string>();
 
-        var processor = BuildArguments(videoUrl, subtitlePath, outputPath)
+        var processor = BuildArguments(videoUrl, subtitlePath, outputPath, speedLimitBytesPerSecond)
             .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
             .CancellableThrough(ct);
 
@@ -38,24 +39,37 @@ internal sealed class FfmpegRunner : IFfmpegRunner
     }
 
     internal static FFMpegArgumentProcessor BuildArguments(
-        string videoUrl, string? subtitlePath, string outputPath)
+        string videoUrl, string? subtitlePath, string outputPath,
+        long? speedLimitBytesPerSecond = null)
     {
+        var rateLimitArgs = speedLimitBytesPerSecond is > 0
+            ? $"-maxrate {speedLimitBytesPerSecond * 8} -bufsize {speedLimitBytesPerSecond * 8}"
+            : null;
+
         var arguments = subtitlePath is not null
             ? FFMpegArguments
                 .FromUrlInput(new Uri(videoUrl))
                 .AddFileInput(subtitlePath)
-                .OutputToFile(outputPath, overwrite: true, options => options
-                    .CopyChannel(Channel.Video)
-                    .CopyChannel(Channel.Audio)
-                    .WithCustomArgument("-c:s srt")
-                    .WithCustomArgument("-disposition:s:0 0")
-                    .WithCustomArgument("-metadata:s:s:0 language=deu")
-                    .WithCustomArgument("-progress pipe:1"))
+                .OutputToFile(outputPath, overwrite: true, options =>
+                {
+                    options
+                        .CopyChannel(Channel.Video)
+                        .CopyChannel(Channel.Audio)
+                        .WithCustomArgument("-c:s srt")
+                        .WithCustomArgument("-disposition:s:0 0")
+                        .WithCustomArgument("-metadata:s:s:0 language=deu")
+                        .WithCustomArgument("-progress pipe:1");
+                    if (rateLimitArgs is not null) options.WithCustomArgument(rateLimitArgs);
+                })
             : FFMpegArguments
                 .FromUrlInput(new Uri(videoUrl))
-                .OutputToFile(outputPath, overwrite: true, options => options
-                    .WithCopyCodec()
-                    .WithCustomArgument("-progress pipe:1"));
+                .OutputToFile(outputPath, overwrite: true, options =>
+                {
+                    options
+                        .WithCopyCodec()
+                        .WithCustomArgument("-progress pipe:1");
+                    if (rateLimitArgs is not null) options.WithCustomArgument(rateLimitArgs);
+                });
 
         return arguments;
     }

@@ -24,7 +24,7 @@ The system SHALL have a StatsCollector singleton actor registered as IStatsColle
 
 #### Scenario: Response type is AllStatsSnapshot
 - **WHEN** the StatsCollector handles QueryAllStats
-- **THEN** it SHALL respond with `AllStatsSnapshot` — not `AllStatsResult`, not `_state.Stats`, not the raw `StatsCollectorState`
+- **THEN** it SHALL respond with `AllStatsSnapshot` - not `AllStatsResult`, not `_state.Stats`, not the raw `StatsCollectorState`
 
 ### Requirement: StatsCollector message namespace
 StatsCollector messages (`StatsUpdated`, `QueryAllStats`, `AllStatsSnapshot`, `RemoveStats`) SHALL be in namespace `FunkArr.Messages.History`, not `FunkArr.Messages.Scoring.History`.

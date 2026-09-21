@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Enrichment configuration model — enums, config records, JSON schema section, and merge logic in RuleSetMerger. Controls per-ruleset enrichment behavior: method ordering, thresholds, tolerances, and enable/disable.
+Enrichment configuration model - enums, config records, JSON schema section, and merge logic in RuleSetMerger. Controls per-ruleset enrichment behavior: method ordering, thresholds, tolerances, and enable/disable.
 
 ## Requirements
 
@@ -27,15 +27,15 @@ The system SHALL define a `RuntimeMode` enum in `FunkArr.Messages.Enrichment` wi
 ### Requirement: EnrichmentConfig record hierarchy
 The system SHALL define the following sealed records in `FunkArr.Messages.Enrichment`:
 
-- `EnrichmentConfig(bool Enabled, EnrichmentMethod[] Methods, TitleMatchConfig Title, AirdateMatchConfig Airdate, RuntimeMatchConfig Runtime, YearMatchConfig Year)` — all fields non-nullable
-- `TitleMatchConfig(float Threshold)` — Levenshtein similarity threshold (0.0–1.0)
-- `AirdateMatchConfig(int Tolerance)` — days ± for date proximity matching
-- `RuntimeMatchConfig(float Tolerance, RuntimeMode Mode)` — fraction of runtime for matching, and whether runtime is used as tiebreaker or pre-filter
-- `YearMatchConfig(int Tolerance)` — years ± for movie release year matching
+- `EnrichmentConfig(bool Enabled, EnrichmentMethod[] Methods, TitleMatchConfig Title, AirdateMatchConfig Airdate, RuntimeMatchConfig Runtime, YearMatchConfig Year)` - all fields non-nullable
+- `TitleMatchConfig(float Threshold)` - Levenshtein similarity threshold (0.0–1.0)
+- `AirdateMatchConfig(int Tolerance)` - days ± for date proximity matching
+- `RuntimeMatchConfig(float Tolerance, RuntimeMode Mode)` - fraction of runtime for matching, and whether runtime is used as tiebreaker or pre-filter
+- `YearMatchConfig(int Tolerance)` - years ± for movie release year matching
 
 #### Scenario: All fields are non-nullable
 - **WHEN** an `EnrichmentConfig` is constructed
-- **THEN** all properties SHALL be non-nullable — no null checks required downstream
+- **THEN** all properties SHALL be non-nullable - no null checks required downstream
 
 #### Scenario: Default config matches current hardcoded values
 - **WHEN** no enrichment section is present in a ruleset JSON

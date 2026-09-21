@@ -18,7 +18,7 @@ The system SHALL use FFMpegCore's fluent API to build FFmpeg arguments for downl
 - **THEN** FFMpegCore SHALL be invoked with `FromUrlInput` for the video, `AddUrlInput` for the subtitle, `OutputToFile` with `overwrite: true`, and custom arguments for `-c:v copy -c:a copy -c:s srt -metadata:s:s:0 language=deu`
 
 ### Requirement: FFmpeg argument builder for HLS video
-The system SHALL use FFMpegCore's fluent API to build FFmpeg arguments for downloading HLS video sources (.m3u8) identically to direct HTTP — FFmpeg handles the protocol transparently.
+The system SHALL use FFMpegCore's fluent API to build FFmpeg arguments for downloading HLS video sources (.m3u8) identically to direct HTTP - FFmpeg handles the protocol transparently.
 
 #### Scenario: HLS without subtitle
 - **WHEN** a download is started for VideoUrl "https://example.com/chunklist.m3u8" and no subtitle

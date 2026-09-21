@@ -32,7 +32,7 @@ The system SHALL define a `DownloadAdded` record returned after a download is ac
 - **THEN** it SHALL contain `DownloadId` (Guid) and SHALL implement `IWithDownloadId`
 
 ### Requirement: InitDownload command
-The system SHALL define an `InitDownload` record sent from Manager to Worker to initialize the Worker with all download metadata. Infrastructure paths (IncompletePath, OutputPath) SHALL NOT be included — the Worker computes these at runtime.
+The system SHALL define an `InitDownload` record sent from Manager to Worker to initialize the Worker with all download metadata. Infrastructure paths (IncompletePath, OutputPath) SHALL NOT be included - the Worker computes these at runtime.
 
 #### Scenario: InitDownload fields
 - **WHEN** an InitDownload message is created

@@ -95,8 +95,8 @@ All configuration is via environment variables. Defaults work out of the box - t
 | **Downloads** | | |
 | `FunkArr__Download__Path` | `data/downloads` | Root download directory (contains `incomplete/` and `complete/`) |
 | `FunkArr__Download__ConcurrentDownloads` | `3` | Max parallel downloads |
-| `FunkArr__Download__Categories__0__Name` | — | Category name (e.g. `tv`) - map Sonarr/Radarr categories to subdirectories |
-| `FunkArr__Download__Categories__0__Dir` | — | Subdirectory for this category (e.g. `tv`) |
+| `FunkArr__Download__Categories__0__Name` | - | Category name (e.g. `tv`) - map Sonarr/Radarr categories to subdirectories |
+| `FunkArr__Download__Categories__0__Dir` | - | Subdirectory for this category (e.g. `tv`) |
 | **RuleSets** | | |
 | `FunkArr__RuleSet__Repository` | `st0o0/funkarr` | GitHub repo for community rulesets |
 | `FunkArr__RuleSet__Version` | `latest` | Pin ruleset version or `latest` |

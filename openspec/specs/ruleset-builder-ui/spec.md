@@ -235,7 +235,7 @@ The serialized JSON SHALL include `media.name` and `media.type` as required by t
 - **THEN** an error toast SHALL display the error message
 
 ### Requirement: Builder API client functions
-The frontend SHALL expose API client functions for the write endpoints: `createRuleSet(data)` calling `POST /api/rulesets`, `updateRuleSet(id, data)` calling `PUT /api/rulesets/:id`, and `deleteRuleSet(id)` calling `DELETE /api/rulesets/:id`. All functions SHALL throw on non-2xx responses. The `getRuleSetRaw(id)` function SHALL be removed — the Builder SHALL use `getRuleSetDetail(id)` instead.
+The frontend SHALL expose API client functions for the write endpoints: `createRuleSet(data)` calling `POST /api/rulesets`, `updateRuleSet(id, data)` calling `PUT /api/rulesets/:id`, and `deleteRuleSet(id)` calling `DELETE /api/rulesets/:id`. All functions SHALL throw on non-2xx responses. The `getRuleSetRaw(id)` function SHALL be removed - the Builder SHALL use `getRuleSetDetail(id)` instead.
 
 #### Scenario: Create function sends POST
 - **WHEN** `createRuleSet` is called with ruleset data

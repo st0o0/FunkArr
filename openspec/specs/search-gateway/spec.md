@@ -44,12 +44,12 @@ The SearchManager SHALL maintain a `Dictionary<SearchId, PendingSearch>` in its 
 - **WHEN** a SearchCompleted message arrives for a single-type search (TV or Movie only)
 - **THEN** the Gateway SHALL look up the PendingSearch by SearchId, Tell the OriginalSender with a SearchResult, and remove the PendingSearch entry
 
-#### Scenario: Fan-out merge — both results arrive
+#### Scenario: Fan-out merge - both results arrive
 
 - **WHEN** both TV and Movie SearchCompleted messages arrive for a fan-out search
 - **THEN** the Gateway SHALL merge both result sets and Tell the OriginalSender with the combined SearchResult
 
-#### Scenario: Fan-out merge — partial result on timeout
+#### Scenario: Fan-out merge - partial result on timeout
 
 - **WHEN** only one of two expected results arrives before the search timeout
 - **THEN** the Gateway SHALL respond with whatever results arrived, Tell the OriginalSender, and remove the PendingSearch entry

@@ -1,12 +1,12 @@
 ## Purpose
 
-Movie search pipeline orchestration — the MovieSearchWorker coordinates Mediathek queries, RuleSet resolution, MatchMagic scoring, and movie enrichment using Become-based phases and Ask+PipeTo communication.
+Movie search pipeline orchestration - the MovieSearchWorker coordinates Mediathek queries, RuleSet resolution, MatchMagic scoring, and movie enrichment using Become-based phases and Ask+PipeTo communication.
 
 ## Requirements
 
 ### Requirement: MovieSearchWorker is a sharded entity
 
-The MovieSearchWorker SHALL be a sharded entity using SearchId (Guid) as the shard key. Each search request creates a new worker instance that processes the search and responds. The worker SHALL be passivated automatically via `PassivateIdleEntityAfter` on the shard configuration — no manual Passivate calls.
+The MovieSearchWorker SHALL be a sharded entity using SearchId (Guid) as the shard key. Each search request creates a new worker instance that processes the search and responds. The worker SHALL be passivated automatically via `PassivateIdleEntityAfter` on the shard configuration - no manual Passivate calls.
 
 #### Scenario: Worker creation and auto-passivation
 

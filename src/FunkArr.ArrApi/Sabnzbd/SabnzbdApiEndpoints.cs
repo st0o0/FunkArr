@@ -6,11 +6,11 @@ using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
-using DownloadQueueResponse = FunkArr.Messages.Download.QueueResponse;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using DownloadQueueResponse = FunkArr.Messages.Download.QueueResponse;
 
 namespace FunkArr.ArrApi.Sabnzbd;
 

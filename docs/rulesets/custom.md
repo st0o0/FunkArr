@@ -18,7 +18,7 @@ Navigiere zu **Regelwerke → + Neu** in der FunkArr-Oberfläche. Der Builder ö
 | **Thema** | `Abenteuer Wald` | Exakt wie im Mediathek-Themenfeld angezeigt. |
 | **Medientyp** | Serie | Teilt Sonarr/Radarr mit, wie es behandelt werden soll. |
 | **Medienname** | `Abenteuer Wald` | Wird automatisch vom Thema übernommen. Ändere ihn nur, wenn die Sendung in TVDB/TMDB einen anderen Namen hat. |
-| **TVDB ID** | `12345` | Auf thetvdb.com nachschlagen. Optional, aber empfohlen — Sonarr verwendet sie für die Zuordnung. |
+| **TVDB ID** | `12345` | Auf thetvdb.com nachschlagen. Optional, aber empfohlen - Sonarr verwendet sie für die Zuordnung. |
 
 Füge Aliase hinzu, wenn die Sendung unter verschiedenen Themennamen erscheint (z.B. „Abenteuer Wald - Spezial").
 
@@ -52,7 +52,7 @@ Das stellt sicher, dass nur vollständige Episoden (länger als 20 Minuten) zuge
 
 Das Live-Vorschau-Panel rechts lädt automatisch Mediathek-Einträge, die zu deinem Thema passen. Während du Regeln erstellst, erscheinen Treffer in Echtzeit mit grünen Indikatoren.
 
-Für gründlicheres Testen klicke auf **Vollständiger Test**, um deine Regeln an den Server zu senden. Der vollständige Test zeigt einen detaillierten Pipeline-Trace für jeden Kandidaten — welche Regeln versucht wurden, welche Filter bestanden oder fehlgeschlagen sind und was extrahiert wurde.
+Für gründlicheres Testen klicke auf **Vollständiger Test**, um deine Regeln an den Server zu senden. Der vollständige Test zeigt einen detaillierten Pipeline-Trace für jeden Kandidaten - welche Regeln versucht wurden, welche Filter bestanden oder fehlgeschlagen sind und was extrahiert wurde.
 
 ### 7. Speichern
 
@@ -68,7 +68,7 @@ Lokale Regelwerke haben Vorrang vor Community-Regelwerken für dieselbe Sendung.
 - **Media-Felder** → lokal gewinnt pro Feld (tvdbId, imdbId, etc.)
 - **Konfidenz** → lokaler Wert wird verwendet, wenn gesetzt
 
-Um ein Community-Regelwerk zu bearbeiten, navigiere zu seiner Detailseite und klicke auf **Bearbeiten**. Deine Änderungen werden als lokale Überschreibung gespeichert — die Community-Basis bleibt intakt und erhält weiterhin Updates.
+Um ein Community-Regelwerk zu bearbeiten, navigiere zu seiner Detailseite und klicke auf **Bearbeiten**. Deine Änderungen werden als lokale Überschreibung gespeichert - die Community-Basis bleibt intakt und erhält weiterhin Updates.
 
 ## Standalone-Modus
 
@@ -94,6 +94,6 @@ Wenn du ein Regelwerk erstellt hast, das für andere nützlich sein könnte, kli
 
 ## Nächste Schritte
 
-- [Feld-Referenz](./field-reference) — jedes Feld im Detail erklärt
-- [Strategie-Guide](./strategies) — die richtige Identifikationsstrategie wählen
-- [Filter-Kochbuch](./filters) — Kandidaten filtern und eingrenzen
+- [Feld-Referenz](./field-reference) - jedes Feld im Detail erklärt
+- [Strategie-Guide](./strategies) - die richtige Identifikationsstrategie wählen
+- [Filter-Kochbuch](./filters) - Kandidaten filtern und eingrenzen

@@ -1,6 +1,6 @@
 # Configuration
 
-All configuration is via environment variables using the `FunkArr__` prefix. The double underscore (`__`) separates nested sections — this is standard ASP.NET Core configuration binding.
+All configuration is via environment variables using the `FunkArr__` prefix. The double underscore (`__`) separates nested sections - this is standard ASP.NET Core configuration binding.
 
 Defaults work out of the box for local development. For production, you typically only need to set `FunkArr__ApiKey` and `FunkArr__Download__Path`.
 
@@ -44,8 +44,8 @@ data/
 
 The download path contains two subdirectories that FunkArr manages automatically:
 
-- **`incomplete/`** — active downloads and remux operations in progress
-- **`complete/`** — finished downloads, organized by category subdirectories
+- **`incomplete/`** - active downloads and remux operations in progress
+- **`complete/`** - finished downloads, organized by category subdirectories
 
 Sonarr and Radarr monitor the `complete/` directory for finished files. Make sure this path is accessible to both FunkArr and your *arr apps (typically via a shared Docker volume mount).
 
@@ -66,10 +66,10 @@ FunkArr__Download__Categories__1__Dir=movies
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `FunkArr__Download__Categories__N__Name` | — | Category name as configured in Sonarr/Radarr |
-| `FunkArr__Download__Categories__N__Dir` | — | Subdirectory inside `complete/` for this category |
+| `FunkArr__Download__Categories__N__Name` | - | Category name as configured in Sonarr/Radarr |
+| `FunkArr__Download__Categories__N__Dir` | - | Subdirectory inside `complete/` for this category |
 
-When Sonarr sends a download request with category `tv`, the finished file ends up in `complete/tv/`. The `N` in the variable name is a zero-based index — use `0`, `1`, `2`, etc. for each category.
+When Sonarr sends a download request with category `tv`, the finished file ends up in `complete/tv/`. The `N` in the variable name is a zero-based index - use `0`, `1`, `2`, etc. for each category.
 
 ## Rulesets
 
@@ -85,7 +85,7 @@ The GitHub repository where community rulesets are published as release assets. 
 
 ### Version
 
-Set to `latest` to always use the newest community ruleset release. Pin to a specific version tag (e.g. `rulesets-v0.2.0`) to prevent automatic updates — useful if a new release breaks a mapping you depend on.
+Set to `latest` to always use the newest community ruleset release. Pin to a specific version tag (e.g. `rulesets-v0.2.0`) to prevent automatic updates - useful if a new release breaks a mapping you depend on.
 
 ### Refresh
 
@@ -130,11 +130,11 @@ The scoring pool processes Mediathek search results against rulesets in parallel
 | `FunkArr__MatchHistory__MaxAgeDays` | `30` | Days before old snapshots are pruned |
 | `FunkArr__MatchHistory__SnapshotInterval` | `20` | Interval between snapshots |
 
-Match history tracks which ruleset mappings produced successful downloads over time. This data feeds back into scoring — rules that historically produced correct matches get a confidence boost.
+Match history tracks which ruleset mappings produced successful downloads over time. This data feeds back into scoring - rules that historically produced correct matches get a confidence boost.
 
-- **MaxSnapshots** — limits storage for match history. Higher values give more historical data for scoring but use more disk.
-- **MaxAgeDays** — removes snapshots older than this many days. Mediathek content changes regularly, so old match data becomes less relevant.
-- **SnapshotInterval** — controls how often new snapshots are taken. Lower values capture more granular data but increase database writes.
+- **MaxSnapshots** - limits storage for match history. Higher values give more historical data for scoring but use more disk.
+- **MaxAgeDays** - removes snapshots older than this many days. Mediathek content changes regularly, so old match data becomes less relevant.
+- **SnapshotInterval** - controls how often new snapshots are taken. Lower values capture more granular data but increase database writes.
 
 ## PostgreSQL
 
@@ -142,7 +142,7 @@ By default, FunkArr uses SQLite with the database file at `{DataPath}/funkarr.db
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `FunkArr__Postgres__Host` | _(empty)_ | PostgreSQL host — set to enable PostgreSQL |
+| `FunkArr__Postgres__Host` | _(empty)_ | PostgreSQL host - set to enable PostgreSQL |
 | `FunkArr__Postgres__Port` | `5432` | PostgreSQL port |
 | `FunkArr__Postgres__User` | _(empty)_ | PostgreSQL user |
 | `FunkArr__Postgres__Password` | _(empty)_ | PostgreSQL password |
@@ -177,7 +177,7 @@ ports:
 
 ## FFmpeg
 
-FFmpeg must be available on `PATH` — it is included in the official Docker image. FunkArr uses FFmpeg to:
+FFmpeg must be available on `PATH` - it is included in the official Docker image. FunkArr uses FFmpeg to:
 
 - Download video streams (including HLS `.m3u8`)
 - Remux to MKV (copies video/audio codecs without re-encoding)
@@ -191,8 +191,8 @@ FunkArr exposes three health endpoints, none of which are configurable:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/healthz` | Full health check (database, actor system) — returns 200 or 503 |
-| `/alive` | Simple liveness probe — always returns 200 |
-| `/api/system/setup` | Setup validation — checks API key, directories, FFmpeg, API connectivity |
+| `/healthz` | Full health check (database, actor system) - returns 200 or 503 |
+| `/alive` | Simple liveness probe - always returns 200 |
+| `/api/system/setup` | Setup validation - checks API key, directories, FFmpeg, API connectivity |
 
 Use `/healthz` for container orchestration health probes and `/api/system/setup` in the web UI to verify your configuration.

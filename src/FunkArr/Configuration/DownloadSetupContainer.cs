@@ -3,6 +3,7 @@ using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Sabnzbd;
 using FunkArr.Core;
 using FunkArr.Download;
+using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
@@ -11,6 +12,8 @@ public sealed class DownloadSetupContainer : ApplicationSetupContainer<WebApplic
 {
     public void SetupServices(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<IValidateOptions<DownloadOptions>, DownloadOptionsValidator>();
+
         services
             .AddOptions<DownloadOptions>()
             .Bind(configuration.GetSection(DownloadOptions.SectionName))

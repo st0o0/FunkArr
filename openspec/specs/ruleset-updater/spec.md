@@ -39,11 +39,11 @@ The RuleSetUpdater SHALL query `GET https://api.github.com/repos/{RuleSetReposit
 ### Requirement: RuleSetUpdater compares local version before downloading
 The RuleSetUpdater SHALL read `DataPaths.RuleSetVersion` using `IDataFiles.Exists()` and `IDataFiles.ReadText()` and compare with the remote release version. If versions match, the download SHALL be skipped.
 
-#### Scenario: Version matches — skip download
+#### Scenario: Version matches - skip download
 - **WHEN** `IDataFiles.ReadText(dataPaths.RuleSetVersion)` returns `"1.0.0"` and the latest remote release is `community-rulesets-v1.0.0`
 - **THEN** the actor SHALL skip the download and log at Debug level
 
-#### Scenario: Version differs — download
+#### Scenario: Version differs - download
 - **WHEN** `IDataFiles.ReadText(dataPaths.RuleSetVersion)` returns `"1.0.0"` and the latest remote release is `community-rulesets-v1.1.0`
 - **THEN** the actor SHALL download and extract the new version
 

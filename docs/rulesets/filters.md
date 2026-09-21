@@ -1,6 +1,6 @@
 # Filter
 
-Filter entscheiden, welche Mediathek-Einträge in eine Matching-Regel gelangen. Sie laufen **vor** der Identifikation — wenn ein Filter fehlschlägt, wird die Regel übersprungen und die nächste Regel in der Prioritätsreihenfolge versucht.
+Filter entscheiden, welche Mediathek-Einträge in eine Matching-Regel gelangen. Sie laufen **vor** der Identifikation - wenn ein Filter fehlschlägt, wird die Regel übersprungen und die nächste Regel in der Prioritätsreihenfolge versucht.
 
 ## Funktionsweise
 
@@ -58,7 +58,7 @@ Die meisten Mediathek-Einträge enthalten Trailer, Teaser und Clip-Ausschnitte, 
 }
 ```
 
-Das ist der häufigste Filter — fast jedes Community-Regelwerk verwendet ihn.
+Das ist der häufigste Filter - fast jedes Community-Regelwerk verwendet ihn.
 
 ### Auf einen bestimmten Sender beschränken
 
@@ -164,4 +164,4 @@ Filter werden mit Short-Circuit-Logik ausgewertet:
 - **`any`**: stoppt bei der ersten bestehenden Bedingung
 - **`not`**: stoppt bei der ersten zutreffenden Bedingung (was bedeutet, dass der Filter fehlschlägt)
 
-Dies ist im Pipeline-Trace des Debuggers sichtbar — übersprungene Bedingungen erscheinen in Grau.
+Dies ist im Pipeline-Trace des Debuggers sichtbar - übersprungene Bedingungen erscheinen in Grau.

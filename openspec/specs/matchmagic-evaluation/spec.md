@@ -7,7 +7,7 @@ Defines the evaluation logic for the Scoring domain: how rulesets evaluate media
 ## Requirements
 
 ### Requirement: RuleSet evaluation entry point
-RuleSet SHALL expose an `Evaluate(IReadOnlyList<MediaItem> items)` method that returns `IReadOnlyList<MatchResult>`. It SHALL iterate rules sorted by priority (0 = highest). For each item, the first rule whose Match succeeds wins — later rules are not evaluated for that item. Items that match no rule SHALL not appear in the result.
+RuleSet SHALL expose an `Evaluate(IReadOnlyList<MediaItem> items)` method that returns `IReadOnlyList<MatchResult>`. It SHALL iterate rules sorted by priority (0 = highest). For each item, the first rule whose Match succeeds wins - later rules are not evaluated for that item. Items that match no rule SHALL not appear in the result.
 
 #### Scenario: Single item matches first rule
 - **WHEN** a RuleSet has two rules (priority 0 and 10) and an item passes rule 0's filters and strategy
@@ -59,27 +59,27 @@ Rule SHALL expose a `Match(MediaItem item, float defaultConfidence)` method that
 ### Requirement: FilterGroup evaluation
 FilterGroup SHALL expose an `Evaluate(MediaItem item)` method returning bool. Evaluation SHALL be recursive: `All` requires every node to pass, `Any` requires at least one node to pass, `Not` requires every node to fail. When multiple groups are present (e.g., both All and Not), ALL groups must pass for the overall FilterGroup to pass.
 
-#### Scenario: All group — all pass
+#### Scenario: All group - all pass
 - **WHEN** a FilterGroup has `All: [duration > 30, duration < 90]` and the item has duration 2700 seconds (45 min)
 - **THEN** Evaluate SHALL return true
 
-#### Scenario: All group — one fails
+#### Scenario: All group - one fails
 - **WHEN** a FilterGroup has `All: [duration > 30, duration < 90]` and the item has duration 6000 seconds (100 min)
 - **THEN** Evaluate SHALL return false
 
-#### Scenario: Any group — one passes
+#### Scenario: Any group - one passes
 - **WHEN** a FilterGroup has `Any: [channel eq "ARD", channel eq "Das Erste"]` and the item channel is "Das Erste"
 - **THEN** Evaluate SHALL return true
 
-#### Scenario: Any group — none pass
+#### Scenario: Any group - none pass
 - **WHEN** a FilterGroup has `Any: [channel eq "ARD", channel eq "Das Erste"]` and the item channel is "ZDF"
 - **THEN** Evaluate SHALL return false
 
-#### Scenario: Not group — blocks matching item
+#### Scenario: Not group - blocks matching item
 - **WHEN** a FilterGroup has `Not: [title contains "Audiodeskription"]` and the item title contains "Audiodeskription"
 - **THEN** Evaluate SHALL return false
 
-#### Scenario: Not group — passes non-matching item
+#### Scenario: Not group - passes non-matching item
 - **WHEN** a FilterGroup has `Not: [title contains "Audiodeskription"]` and the item title is "Tatort: Die goldene Zeit"
 - **THEN** Evaluate SHALL return true
 
@@ -102,7 +102,7 @@ Filter SHALL expose an `Evaluate(MediaItem item)` method returning bool. It SHAL
 - **WHEN** a Filter has field "duration", op GreaterThan, value "60" and the item has duration 5400 seconds (90 min)
 - **THEN** Evaluate SHALL return true (90 > 60)
 
-#### Scenario: Duration greaterThan — value is in minutes
+#### Scenario: Duration greaterThan - value is in minutes
 - **WHEN** a Filter has field "duration", op GreaterThan, value "60"
 - **THEN** the system SHALL compare the item's duration in minutes (item.Duration / 60) against the filter value
 
@@ -110,7 +110,7 @@ Filter SHALL expose an `Evaluate(MediaItem item)` method returning bool. It SHAL
 - **WHEN** a Filter has field "title", op Contains, value "Tatort" and the item title is "Tatort: Die goldene Zeit"
 - **THEN** Evaluate SHALL return true
 
-#### Scenario: Title contains — case insensitive
+#### Scenario: Title contains - case insensitive
 - **WHEN** a Filter has field "title", op Contains, value "tatort" and the item title is "Tatort: Die goldene Zeit"
 - **THEN** Evaluate SHALL return true
 
@@ -118,7 +118,7 @@ Filter SHALL expose an `Evaluate(MediaItem item)` method returning bool. It SHAL
 - **WHEN** a Filter has field "channel", op Eq, value "ARD" and the item channel is "ARD"
 - **THEN** Evaluate SHALL return true
 
-#### Scenario: Channel eq — case insensitive
+#### Scenario: Channel eq - case insensitive
 - **WHEN** a Filter has field "channel", op Eq, value "ard" and the item channel is "ARD"
 - **THEN** Evaluate SHALL return true
 
@@ -126,7 +126,7 @@ Filter SHALL expose an `Evaluate(MediaItem item)` method returning bool. It SHAL
 - **WHEN** a Filter has field "title", op Regex, value "^Tatort" and the item title is "Tatort: Schwarzer Freitag"
 - **THEN** Evaluate SHALL return true
 
-#### Scenario: Regex filter — no match
+#### Scenario: Regex filter - no match
 - **WHEN** a Filter has field "title", op Regex, value "^Tatort" and the item title is "heute-show vom 5. Juni"
 - **THEN** Evaluate SHALL return false
 

@@ -18,7 +18,7 @@ Navigate to **Rulesets → + New** in the FunkArr web UI. The builder opens with
 | **Topic** | `Abenteuer Wald` | Exactly as it appears in the Mediathek topic field. |
 | **Media Type** | Show | Tells Sonarr/Radarr how to handle it. |
 | **Media Name** | `Abenteuer Wald` | Auto-filled from Topic. Change it only if the show has a different name in TVDB/TMDB. |
-| **TVDB ID** | `12345` | Look this up on thetvdb.com. Optional but recommended — Sonarr uses it to match. |
+| **TVDB ID** | `12345` | Look this up on thetvdb.com. Optional but recommended - Sonarr uses it to match. |
 
 Add aliases if the show appears under different topic names (e.g., "Abenteuer Wald - Spezial").
 
@@ -52,7 +52,7 @@ This ensures only full episodes (longer than 20 minutes) are matched.
 
 The live preview panel on the right auto-fetches Mediathek entries matching your topic. As you build rules, matches appear in real time with green indicators.
 
-For more thorough testing, click **Full Test** to send your rules to the server. The full test shows a detailed pipeline trace for each candidate — which rules were tried, which filters passed or failed, and what was extracted.
+For more thorough testing, click **Full Test** to send your rules to the server. The full test shows a detailed pipeline trace for each candidate - which rules were tried, which filters passed or failed, and what was extracted.
 
 ### 7. Save
 
@@ -68,7 +68,7 @@ Local rulesets take priority over community rulesets for the same show. When bot
 - **Media fields** → local wins per field (tvdbId, imdbId, etc.)
 - **Confidence** → local value used if set
 
-To edit a community ruleset, navigate to its detail page and click **Edit**. Your changes are saved as a local overlay — the community base stays intact and continues to receive updates.
+To edit a community ruleset, navigate to its detail page and click **Edit**. Your changes are saved as a local overlay - the community base stays intact and continues to receive updates.
 
 ## Standalone Mode
 
@@ -94,6 +94,6 @@ If you've created a ruleset that others would find useful, click **Export for Co
 
 ## Next Steps
 
-- [Field Reference](./field-reference) — every field explained in detail
-- [Strategy Guide](./strategies) — choosing the right identification strategy
-- [Filter Cookbook](./filters) — filtering and narrowing candidates
+- [Field Reference](./field-reference) - every field explained in detail
+- [Strategy Guide](./strategies) - choosing the right identification strategy
+- [Filter Cookbook](./filters) - filtering and narrowing candidates

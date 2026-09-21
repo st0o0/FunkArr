@@ -1,6 +1,6 @@
 ## Purpose
 
-State classes for TvSearchWorker and MovieSearchWorker — sealed classes with Apply methods for pipeline transformations and TryGet methods for routing decisions (Pathfinder pattern).
+State classes for TvSearchWorker and MovieSearchWorker - sealed classes with Apply methods for pipeline transformations and TryGet methods for routing decisions (Pathfinder pattern).
 
 ## Requirements
 

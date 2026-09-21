@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TMDB (The Movie Database) v3 API client for looking up movie metadata — details, alternative titles, and IMDB-to-TMDB ID resolution.
+TMDB (The Movie Database) v3 API client for looking up movie metadata - details, alternative titles, and IMDB-to-TMDB ID resolution.
 
 ## Requirements
 

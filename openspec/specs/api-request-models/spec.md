@@ -98,7 +98,7 @@ FunkArr.Api.Models SHALL define a `DownloadHistoryRequest` record used with `[As
 #### Scenario: Default values applied in handler
 
 - **WHEN** Start and Limit are null
-- **THEN** the handler SHALL apply defaults (Start=0, Limit=25) — defaulting stays in handler code
+- **THEN** the handler SHALL apply defaults (Start=0, Limit=25) - defaulting stays in handler code
 
 ### Requirement: RuleSetApiEndpoints list handler extracted
 

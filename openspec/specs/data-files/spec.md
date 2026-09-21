@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Unified file I/O service for all domains. Handles directory creation, file moves, reads, writes (including atomic), directory replacement, cleanup, writability checks, and file watching — with transparent Linux permission handling.
+Unified file I/O service for all domains. Handles directory creation, file moves, reads, writes (including atomic), directory replacement, cleanup, writability checks, and file watching - with transparent Linux permission handling.
 
 ## Requirements
 
 ### Requirement: IDataFiles interface
-The system SHALL define an `IDataFiles` interface in `FunkArr.Core` providing unified file I/O operations for all domains. The interface SHALL handle platform-specific permissions transparently — on Linux, created directories SHALL have mode 777 and created/moved files SHALL have mode 666.
+The system SHALL define an `IDataFiles` interface in `FunkArr.Core` providing unified file I/O operations for all domains. The interface SHALL handle platform-specific permissions transparently - on Linux, created directories SHALL have mode 777 and created/moved files SHALL have mode 666.
 
 #### Scenario: Interface definition
 - **WHEN** the `IDataFiles` interface is inspected
