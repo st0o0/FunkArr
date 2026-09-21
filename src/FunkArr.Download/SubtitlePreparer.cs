@@ -11,7 +11,9 @@ internal sealed class SubtitlePreparer(HttpClient http, ILogger<SubtitlePreparer
         {
             var response = await http.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
+            {
                 return null;
+            }
 
             content = await response.Content.ReadAsStringAsync(ct);
         }
@@ -22,12 +24,16 @@ internal sealed class SubtitlePreparer(HttpClient http, ILogger<SubtitlePreparer
         }
 
         if (string.IsNullOrWhiteSpace(content))
+        {
             return null;
+        }
 
         var trimmed = content.TrimStart('﻿').TrimStart();
 
         if (trimmed.StartsWith("WEBVTT", StringComparison.Ordinal))
+        {
             return WriteFile(outputDirectory, ".vtt", content);
+        }
 
         if (trimmed.StartsWith("<?xml", StringComparison.Ordinal) || trimmed.StartsWith("<tt", StringComparison.Ordinal))
         {
@@ -36,7 +42,9 @@ internal sealed class SubtitlePreparer(HttpClient http, ILogger<SubtitlePreparer
         }
 
         if (IsSrt(trimmed))
+        {
             return WriteFile(outputDirectory, ".srt", content);
+        }
 
         return null;
     }

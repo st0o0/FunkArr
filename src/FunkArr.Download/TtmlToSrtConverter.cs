@@ -30,7 +30,9 @@ internal static partial class TtmlToSrtConverter
             var text = ExtractText(p);
 
             if (string.IsNullOrWhiteSpace(text))
+            {
                 continue;
+            }
 
             sb.Append(index++);
             sb.Append('\n');
@@ -48,13 +50,19 @@ internal static partial class TtmlToSrtConverter
     internal static TimeSpan ParseTimestamp(string value)
     {
         if (value.EndsWith('s') && double.TryParse(value.AsSpan(0, value.Length - 1), CultureInfo.InvariantCulture, out var seconds))
+        {
             return TimeSpan.FromSeconds(seconds);
+        }
 
         if (TimeSpan.TryParseExact(value, [@"hh\:mm\:ss\.FFF", @"hh\:mm\:ss\,FFF", @"hh\:mm\:ss"], CultureInfo.InvariantCulture, out var ts))
+        {
             return ts;
+        }
 
         if (TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts))
+        {
             return ts;
+        }
 
         return TimeSpan.Zero;
     }
@@ -79,10 +87,10 @@ internal static partial class TtmlToSrtConverter
                 case XText text:
                     sb.Append(text.Value);
                     break;
-                case XElement child when child.Name.LocalName == "br":
+                case XElement { Name.LocalName: "br" }:
                     sb.Append('\n');
                     break;
-                case XElement child when child.Name.LocalName is "span" or "p":
+                case XElement { Name.LocalName: "span" or "p" } child:
                     ExtractTextNodes(child, sb);
                     break;
             }
