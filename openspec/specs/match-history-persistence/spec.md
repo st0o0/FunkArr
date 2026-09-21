@@ -2,127 +2,82 @@
 
 ## Purpose
 
-Defines the ScoringHistoryWorker sharded entity actor: persistence of scoring events, bounded in-memory state, Akka.Persistence snapshots, retention policy, passivation, and configuration.
+Defines the HistoryWorker sharded entity actor: persistence of history events, bounded in-memory state, Pathfinder persistence pattern with PersistedHistoryState, retention policy, passivation, and configuration.
 
 ## Requirements
 
-### Requirement: ScoringHistoryWorker is a sharded entity actor
+### Requirement: HistoryWorker is a sharded entity actor
 
-The ScoringHistoryWorker SHALL be a sharded entity actor keyed by RuleSetId. It SHALL use the naming convention `*Worker` (sharded entity) and be registered in the actor system under shard region "scoring-history".
-
-The ScoringHistoryWorker PersistenceId SHALL be correctly initialized without dead field references. It SHALL use the format `"scoring-history-{ruleSetId}"` derived from `Context.Self.Path.Name`.
+The HistoryWorker SHALL be a sharded entity actor keyed by RuleSetId in the `FunkArr.History` namespace. It SHALL be registered under shard region "history" with `IHistoryRegion` actor key. Its PersistenceId SHALL be `"history-{ruleSetId}"`.
 
 #### Scenario: Shard routing by RuleSetId
-
-- **WHEN** a RecordScoringResult message with RuleSetId="tatort" is sent to the ScoringHistory ShardRegion
-- **THEN** it SHALL be routed to the ScoringHistoryWorker instance for "tatort"
+- **WHEN** a RecordHistory message with RuleSetId="tatort" is sent to the History ShardRegion
+- **THEN** it SHALL be routed to the HistoryWorker instance for "tatort"
 
 #### Scenario: Different RuleSets have independent workers
-
-- **WHEN** RecordScoringResult messages arrive for "tatort" and "heute-show"
-- **THEN** each SHALL be handled by a separate ScoringHistoryWorker instance with independent state
+- **WHEN** RecordHistory messages arrive for "tatort" and "heute-show"
+- **THEN** each SHALL be handled by a separate HistoryWorker instance with independent state
 
 #### Scenario: PersistenceId format
+- **WHEN** a HistoryWorker is created for RuleSetId "tatort"
+- **THEN** its PersistenceId SHALL be "history-tatort"
 
-- **WHEN** a ScoringHistoryWorker is created for RuleSetId "tatort"
-- **THEN** its PersistenceId SHALL be "scoring-history-tatort"
-- **AND** the PersistenceId SHALL NOT reference a dead `field` keyword or uninitialized backing field
+### Requirement: HistoryWorker persists history events
 
-### Requirement: ScoringHistoryWorker persists scoring events
+The HistoryWorker SHALL persist each RecordHistory command as a `HistoryRecorded` event to the Akka.Persistence journal using `_state.ProcessCommand(cmd)` -> `(new State, Event)` -> `Persist(event)` -> assign new state.
 
-The ScoringHistoryWorker SHALL persist each RecordScoringResult as a `ScoringRecorded` domain event to the Akka.Persistence journal. It SHALL use the new pattern: Command -> `State.ProcessCommand(cmd)` -> `(new State, Event)` -> `Persist(event)` -> assign new state.
+#### Scenario: Persist history record
+- **WHEN** a RecordHistory message is received
+- **THEN** the HistoryWorker SHALL call `_state.ProcessCommand(cmd)`, persist the returned `HistoryRecorded`, and update `_state` to the returned new state
 
-#### Scenario: Persist scoring result
+### Requirement: HistoryWorker uses Pathfinder persistence pattern
 
-- **WHEN** a RecordScoringResult message is received
-- **THEN** the ScoringHistoryWorker SHALL call `_state.ProcessCommand(cmd)`, persist the returned `ScoringRecorded`, and update `_state` to the returned new state
+The HistoryWorker SHALL use a separate `PersistedHistoryState` record for Akka.Persistence snapshots. The `HistoryState` SHALL implement `GetPersistenceState()` returning `PersistedHistoryState` and a static `FromPersistence(PersistedHistoryState)` factory for recovery. The `PersistedHistoryState` record SHALL reside in `FunkArr.Persistence/Events/ScoringHistory/`.
 
-#### Scenario: Persist failure does not crash actor
-
-- **WHEN** persistence fails (e.g., SQLite write error)
-- **THEN** the ScoringHistoryWorker SHALL log the error and continue accepting new messages (supervision handles restart if needed)
-
-### Requirement: ScoringHistoryWorker maintains bounded in-memory state
-
-The ScoringHistoryWorker SHALL maintain a list of ScoringSnapshot records in memory, bounded by the retention policy. State SHALL be represented as `ScoringHistoryState` defined in a dedicated `ScoringHistoryState.cs` file, initialized from `ScoringHistoryState.Empty`.
-
-#### Scenario: State after persist
-
-- **WHEN** a ScoringRecorded is persisted
-- **THEN** the in-memory state SHALL contain a new ScoringSnapshot derived from the event, and retention trimming SHALL be applied via state extension methods
-
-#### Scenario: State on recovery
-
-- **WHEN** a ScoringHistoryWorker recovers from journal
-- **THEN** it SHALL replay all events via `_state = _state.Apply(evt)`, apply retention trimming, and be ready to accept new messages
-
-### Requirement: ScoringHistoryWorker takes Akka.Persistence snapshots
-
-The ScoringHistoryWorker SHALL save an Akka.Persistence snapshot every N events (configurable, default 20) using `LastSequenceNr % snapshotInterval == 0`. The state record SHALL be passed directly to `SaveSnapshot()`. On recovery, it SHALL cast the snapshot to `ScoringHistoryState` and assign it directly.
-
-#### Scenario: Snapshot after interval
-
+#### Scenario: Save snapshot via GetPersistenceState
 - **WHEN** `LastSequenceNr % snapshotInterval == 0` after persisting an event
-- **THEN** it SHALL call `SaveSnapshot(_state)`
+- **THEN** the actor SHALL call `SaveSnapshot(_state.GetPersistenceState())`
 
-#### Scenario: Recovery with snapshot
+#### Scenario: Recover from snapshot via FromPersistence
+- **WHEN** a `SnapshotOffer` is received during recovery with a `PersistedHistoryState`
+- **THEN** the actor SHALL call `HistoryState.FromPersistence(persisted)` to reconstruct the state
 
-- **WHEN** a ScoringHistoryWorker recovers and a SnapshotOffer is received
-- **THEN** it SHALL assign `_state = (ScoringHistoryState)offer.Snapshot` and replay only events after the snapshot
+#### Scenario: PersistedHistoryState is flat data
+- **WHEN** `PersistedHistoryState` is examined
+- **THEN** it SHALL be a sealed record with only the data fields needed to reconstruct HistoryState — no methods, no trimming logic
 
-#### Scenario: Snapshot interval configurable
+### Requirement: HistoryWorker provides GetSnapshot for queries
 
-- **WHEN** appsettings.json has `FunkArr:ScoringHistory:SnapshotInterval` set to 10
-- **THEN** snapshots SHALL be taken when `LastSequenceNr % 10 == 0`
+The `HistoryState` SHALL implement `GetSnapshot()` and `FromSnapshot()` for query responses. Query handlers SHALL use state projection methods, not expose raw state.
 
-### Requirement: Retention policy trims old snapshots
+#### Scenario: Stats query uses state projection
+- **WHEN** a `QueryScoringStats` is received
+- **THEN** the actor SHALL respond with `_state.Stats` (a computed `ScoringStatsResult`), not the raw state record
 
-The ScoringHistoryWorker SHALL enforce a dual retention policy: maximum snapshot count AND maximum age. Both are configurable via `appsettings.json`. Whichever limit triggers first wins.
+### Requirement: HistoryWorker maintains bounded in-memory state
 
-#### Scenario: Max count exceeded
+The HistoryWorker SHALL maintain history records in memory, bounded by retention policy (max count + max age). Trimming SHALL be applied after persist and on recovery.
 
-- **WHEN** MaxSnapshots is 100 and the worker has 101 snapshots in state
-- **THEN** the oldest snapshot SHALL be removed, leaving 100
+#### Scenario: Retention trimming after persist
+- **WHEN** a HistoryRecorded is persisted
+- **THEN** `_state.Trim(maxSnapshots, maxAgeDays)` SHALL be applied
 
-#### Scenario: Max age exceeded
-
-- **WHEN** MaxAgeDays is 30 and a snapshot has Timestamp older than 30 days
-- **THEN** that snapshot SHALL be removed regardless of count
-
-#### Scenario: Both limits applied
-
-- **WHEN** MaxSnapshots is 100 and MaxAgeDays is 30 and there are 50 snapshots but 10 are older than 30 days
-- **THEN** the 10 old snapshots SHALL be removed, leaving 40
-
-#### Scenario: Trimming on recovery
-
-- **WHEN** a ScoringHistoryWorker recovers and replayed state contains snapshots exceeding retention
+#### Scenario: Retention trimming on recovery
+- **WHEN** a HistoryWorker recovers
 - **THEN** retention trimming SHALL be applied before the actor becomes ready
 
-#### Scenario: Default retention values
+### Requirement: HistoryWorker passivates after inactivity
 
-- **WHEN** no retention config is specified in appsettings.json
-- **THEN** MaxSnapshots SHALL default to 100 and MaxAgeDays SHALL default to 30
-
-### Requirement: ScoringHistoryWorker passivates after inactivity
-
-The ScoringHistoryWorker SHALL passivate (stop itself, releasing memory) after 5 minutes of inactivity. It SHALL be re-activated on the next message via shard region.
+The HistoryWorker SHALL passivate after 5 minutes of inactivity via `Context.SetReceiveTimeout`.
 
 #### Scenario: Passivation after idle
-
 - **WHEN** no messages arrive for 5 minutes
-- **THEN** the ScoringHistoryWorker SHALL request passivation from the shard region
+- **THEN** the HistoryWorker SHALL request passivation from the shard region
 
-#### Scenario: Re-activation
+### Requirement: ScoringHistoryWorker is removed
 
-- **WHEN** a message arrives for a passivated ScoringHistoryWorker
-- **THEN** the shard region SHALL create a new instance, which recovers from the journal
+The legacy `ScoringHistoryWorker`, `ScoringHistoryState`, and their tests SHALL be deleted. The shard region "scoring-history" SHALL NOT be registered.
 
-### Requirement: ScoringHistoryWorker configuration
-
-The ScoringHistoryWorker SHALL read configuration from `FunkArr:ScoringHistory` section in appsettings.json.
-
-#### Scenario: Configuration structure
-
-- **WHEN** appsettings.json contains `{"FunkArr": {"ScoringHistory": {"MaxSnapshots": 200, "MaxAgeDays": 60, "SnapshotInterval": 10}}}`
-- **THEN** the ScoringHistoryWorker SHALL use MaxSnapshots=200, MaxAgeDays=60, and SnapshotInterval=10
+#### Scenario: No ScoringHistoryWorker in codebase
+- **WHEN** the solution is searched for `ScoringHistoryWorker` or `ScoringHistoryState`
+- **THEN** no results SHALL be found

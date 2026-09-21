@@ -50,17 +50,17 @@ The MovieSearchWorker SHALL use Become-based phase transitions and Ask+PipeTo fo
 #### Scenario: Scoring completes without enrichment needed
 
 - **WHEN** ScoreCompleted is received and _state.TryGetEnrichmentRequest returns false
-- **THEN** the worker SHALL call _state.Apply(scored) and Reply with _state.ToSearchCompleted()
+- **THEN** the worker SHALL call _state.Apply(scored), tell HistoryRegion with RecordHistory (scoring-only ItemTraces), and Reply with _state.ToSearchCompleted()
 
 #### Scenario: Enrichment succeeds
 
 - **WHEN** EnrichMoviesCompleted is received
-- **THEN** the worker SHALL call _state.Apply(enriched) and Reply with _state.ToSearchCompleted()
+- **THEN** the worker SHALL call _state.Apply(enriched), merge enrichment into ItemTraces, tell HistoryRegion with RecordHistory, and Reply with _state.ToSearchCompleted()
 
 #### Scenario: Enrichment fails
 
 - **WHEN** EnrichMoviesFailed is received (including Ask timeout mapped via PipeTo failure)
-- **THEN** the worker SHALL Reply with _state.ToSearchCompleted() using existing metadata
+- **THEN** the worker SHALL tell HistoryRegion with RecordHistory (scoring-only ItemTraces) and Reply with _state.ToSearchCompleted() using existing metadata
 
 #### Scenario: MediathekViewWeb query fails
 
@@ -138,6 +138,23 @@ After receiving ScoreCompleted, the MovieSearchWorker SHALL call _state.Apply(sc
 
 - **WHEN** scored items have no matched entries (all Matched=false)
 - **THEN** _state.TryGetEnrichmentRequest SHALL return false
+
+### Requirement: MovieSearchWorker records history after enrichment
+MovieSearchWorker SHALL tell HistoryRegion with RecordHistory after enrichment completes (or after scoring if enrichment is skipped).
+
+#### Scenario: Record after enrichment
+- **WHEN** MovieSearchWorker receives MoviesEnriched
+- **THEN** it merges enrichment into ItemTraces
+- **THEN** it tells HistoryRegion with RecordHistory
+- **THEN** it replies SearchMovieCompleted to the caller
+
+#### Scenario: Record after scoring when enrichment skipped
+- **WHEN** MovieSearchWorker completes scoring and enrichment is not applicable
+- **THEN** it tells HistoryRegion with RecordHistory (scoring-only ItemTraces)
+
+#### Scenario: Record after enrichment failure
+- **WHEN** MovieSearchWorker receives EnrichMoviesFailed
+- **THEN** it tells HistoryRegion with RecordHistory (scoring-only ItemTraces)
 
 ### Requirement: MovieSearchWorker uses IMetadataResolver
 

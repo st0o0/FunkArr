@@ -6,10 +6,40 @@ Formerly defined persistence DTOs for scoring traces, versioning rules, JSON pro
 
 ## Requirements
 
-No active requirements. All former requirements have been removed:
+### Requirement: History persistence actor
+The HistoryWorker (renamed from ScoringHistoryWorker) SHALL use PersistenceId `history-{ruleSetId}` and persist HistoryRecorded events that include enrichment data.
 
-- **Persistence DTOs for scoring trace are separate from Messages** -- replaced by persistence records in `FunkArr.Persistence/Events/`. See actor-state-management.
-- **Persistence DTOs use stable JSON property names** -- JSON property stability is handled by Akka's default serializer. No custom serializer at 0.x.
-- **Persistence DTOs have version tracking** -- not needed at 0.x, breaking changes acceptable. Will be addressed post-1.0 if needed.
-- **JSON snapshot tests verify serialization stability** -- replaced by serializer roundtrip tests. See actor-state-management.
-- **Mapping between Messages and Persistence DTOs** -- eliminated. `ProcessCommand` on state produces persistence records directly. See actor-state-management.
+#### Scenario: Persist history with enrichment
+- **WHEN** HistoryWorker receives RecordHistory with enrichment data
+- **THEN** it persists a HistoryRecorded event containing candidateCount, matchedCount, enrichedCount, and ItemTrace[] with EnrichmentTrace
+
+#### Scenario: Recovery replays HistoryRecorded events
+- **WHEN** HistoryWorker recovers from journal
+- **THEN** it replays HistoryRecorded events and rebuilds state including pre-computed stats
+
+### Requirement: Pre-computed stats in HistoryWorker state
+HistoryState SHALL maintain a pre-computed HistoryStats record that is updated on every Apply, not computed on-demand.
+
+#### Scenario: QueryStats returns pre-computed stats instantly
+- **WHEN** HistoryWorker receives QueryStats
+- **THEN** it returns the pre-computed HistoryStats without iterating snapshots
+
+#### Scenario: Stats include enrichment rate
+- **WHEN** HistoryStats is computed
+- **THEN** it includes lastRun, matchRate, enrichmentRate (enrichedCount/matchedCount average), and totalRuns
+
+### Requirement: HistoryWorker tells StatsCollector after persist
+After persisting a HistoryRecorded event and updating state, HistoryWorker SHALL tell StatsCollector its updated stats via explicit actor ref.
+
+#### Scenario: Stats update on persist
+- **WHEN** HistoryWorker persists a new event
+- **THEN** it tells StatsCollector with StatsUpdated(ruleSetId, stats) using Context.GetActor<IStatsCollector>()
+
+---
+
+*Former requirements removed (see actor-state-management for current patterns):*
+- ~~Persistence DTOs for scoring trace are separate from Messages~~
+- ~~Persistence DTOs use stable JSON property names~~
+- ~~Persistence DTOs have version tracking~~
+- ~~JSON snapshot tests verify serialization stability~~
+- ~~Mapping between Messages and Persistence DTOs~~

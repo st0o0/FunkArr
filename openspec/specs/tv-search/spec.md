@@ -50,17 +50,17 @@ The TvSearchWorker SHALL use Become-based phase transitions and Ask+PipeTo for a
 #### Scenario: Scoring completes without enrichment needed
 
 - **WHEN** ScoreCompleted is received and _state.TryGetEnrichmentRequest returns false
-- **THEN** the worker SHALL call _state.Apply(scored) and Reply with _state.ToSearchCompleted()
+- **THEN** the worker SHALL call _state.Apply(scored), tell HistoryRegion with RecordHistory (scoring-only ItemTraces), and Reply with _state.ToSearchCompleted()
 
 #### Scenario: Enrichment succeeds
 
 - **WHEN** EnrichEpisodesCompleted is received
-- **THEN** the worker SHALL call _state.Apply(enriched) and Reply with _state.ToSearchCompleted()
+- **THEN** the worker SHALL call _state.Apply(enriched), merge enrichment into ItemTraces, tell HistoryRegion with RecordHistory, and Reply with _state.ToSearchCompleted()
 
 #### Scenario: Enrichment fails
 
 - **WHEN** EnrichEpisodesFailed is received (including Ask timeout mapped via PipeTo failure)
-- **THEN** the worker SHALL Reply with _state.ToSearchCompleted() using existing metadata
+- **THEN** the worker SHALL tell HistoryRegion with RecordHistory (scoring-only ItemTraces) and Reply with _state.ToSearchCompleted() using existing metadata
 
 #### Scenario: MediathekViewWeb query fails
 
@@ -165,3 +165,22 @@ The state's Apply(EpisodesEnriched) method SHALL update EnrichedItems by patchin
 
 - **WHEN** an item at index 5 has no corresponding EnrichedEpisode
 - **THEN** the EnrichedItem at index 5 SHALL keep its original Identity and Match=null
+
+### Requirement: TvSearchWorker records history after enrichment
+TvSearchWorker SHALL tell HistoryRegion with RecordHistory after enrichment completes (or after scoring if enrichment is skipped).
+
+#### Scenario: Record after enrichment
+- **WHEN** TvSearchWorker receives EpisodesEnriched
+- **THEN** it merges enrichment into ItemTraces
+- **THEN** it tells HistoryRegion with RecordHistory
+- **THEN** it replies SearchSeriesCompleted to the caller
+
+#### Scenario: Record after scoring when enrichment skipped
+- **WHEN** TvSearchWorker completes scoring and enrichment is not applicable
+- **THEN** it tells HistoryRegion with RecordHistory (scoring-only ItemTraces)
+- **THEN** it replies SearchSeriesCompleted
+
+#### Scenario: Record after enrichment failure
+- **WHEN** TvSearchWorker receives EnrichEpisodesFailed
+- **THEN** it tells HistoryRegion with RecordHistory (scoring-only ItemTraces)
+- **THEN** it replies SearchSeriesCompleted
