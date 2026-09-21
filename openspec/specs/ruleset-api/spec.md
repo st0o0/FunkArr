@@ -22,11 +22,15 @@ The system SHALL expose `GET /api/rulesets` that returns a JSON object with `com
 - **THEN** the response is 504 with a Problem Details body containing title "Gateway Timeout"
 
 ### Requirement: RuleSet detail endpoint
-The system SHALL expose `GET /api/rulesets/{id}` that returns the full detail for a single ruleset. The endpoint SHALL use `TypedResults` for all response paths. Each rule in the response SHALL include structured, typed fields: `strategy` as the JSON wire enum name (e.g. `"seasonAndEpisodeNumber"`, `"itemTitleExact"`), `filters` as a structured filter group (with `all`/`any`/`not` arrays of typed conditions), `titleRules` as a structured array of typed title parts, and `seasonRegex`/`episodeRegex`/`captureGroup` as direct fields. The response SHALL NOT include pre-formatted string fields `matchMode`, `filterSummary`, or pre-formatted `titleParts` string arrays.
+The system SHALL expose `GET /api/rulesets/{id}` that returns the full detail for a single ruleset. The endpoint SHALL use `TypedResults` for all response paths. Each rule in the response SHALL include structured, typed fields: `strategy` as the JSON wire enum name (e.g. `"seasonAndEpisodeNumber"`, `"itemTitleExact"`), `filters` as a structured filter group (with `all`/`any`/`not` arrays of typed conditions), `titleRules` as a structured array of typed title parts, and `seasonRegex`/`episodeRegex`/`captureGroup` as direct fields. The response SHALL NOT include pre-formatted string fields `matchMode`, `filterSummary`, or pre-formatted `titleParts` string arrays. The response SHALL include enrichment config in the RuleSetDetail response.
 
 #### Scenario: Detail for existing ruleset
 - **WHEN** `GET /api/rulesets/tatort` is called and the ruleset exists
 - **THEN** the response is 200 with JSON containing identity, source info, default confidence, and rules array with structured typed fields
+
+#### Scenario: Detail with enrichment config
+- **WHEN** GET /api/rulesets/{id} is called
+- **THEN** the response includes an enrichment object with the ruleset's resolved enrichment config (merged from community + local, or defaults)
 
 #### Scenario: Detail rule strategy as wire name
 - **WHEN** a rule uses `IdentificationStrategy.TitleExact`
@@ -113,6 +117,31 @@ The test scoring endpoint (`POST /api/rulesets/test`) SHALL accept a typed `Test
 #### Scenario: Parser class removed
 - **WHEN** the codebase is inspected
 - **THEN** `RuleSetTestRequestParser.cs` SHALL NOT exist
+
+### Requirement: Create endpoint accepts enrichment config
+The POST /api/rulesets/ endpoint SHALL accept an optional enrichment object in CreateRuleSetRequest and serialize it to disk.
+
+#### Scenario: Create with enrichment
+- **WHEN** POST /api/rulesets/ includes enrichment config
+- **THEN** the enrichment object is serialized to the JSON file
+
+### Requirement: Update endpoint accepts enrichment config
+The PUT /api/rulesets/{id} endpoint SHALL accept an optional enrichment object in UpdateRuleSetRequest and serialize it to disk.
+
+#### Scenario: Update with enrichment
+- **WHEN** PUT /api/rulesets/{id} includes enrichment config
+- **THEN** the enrichment object is serialized to the JSON file
+
+### Requirement: Test endpoint accepts enrichment config and identity
+The POST /api/rulesets/test endpoint SHALL accept optional enrichment config and identity fields (tvdbId, tmdbId, imdbId, mediaType) alongside existing scoring config.
+
+#### Scenario: Test with enrichment
+- **WHEN** POST /api/rulesets/test includes enrichment config and tvdbId
+- **THEN** enrichment runs after scoring and results include EnrichmentTrace
+
+#### Scenario: Test without enrichment
+- **WHEN** POST /api/rulesets/test omits enrichment config
+- **THEN** behavior is unchanged from current (scoring only)
 
 ### Requirement: Validate on create
 `POST /api/rulesets` SHALL accept a typed `CreateRuleSetRequest` model via STJ deserialization. The endpoint SHALL validate `RuleSetId` format and `Topic` presence from the typed model. The endpoint SHALL re-serialize the body (without `ruleSetId`) to JSON for `IRuleSetValidator.Validate()`.

@@ -180,6 +180,27 @@ Each rule editor SHALL include a filter builder with three sections: ALL (all co
 - **WHEN** the user clicks remove on a filter condition
 - **THEN** the condition is removed from its section
 
+### Requirement: Enrichment section in builder form
+The RuleSet Builder form SHALL include an enrichment config section that allows editing all enrichment settings (enabled, methods, thresholds, tolerances, runtime mode).
+
+#### Scenario: Enrichment section visible
+- **WHEN** user opens the RuleSet Builder (create or edit)
+- **THEN** an "Enrichment" section is visible between Default Confidence and Matching Rules
+
+### Requirement: Enrichment config included in save
+The serializeForm function SHALL include enrichment config in the request body sent to create/update endpoints.
+
+#### Scenario: Save includes enrichment
+- **WHEN** user modifies enrichment settings and saves the ruleset
+- **THEN** the API request body includes the enrichment object with current values
+
+### Requirement: Enrichment config loaded in edit mode
+When loading a ruleset for editing, the builder SHALL populate the enrichment section from the detail API response.
+
+#### Scenario: Load enrichment in edit mode
+- **WHEN** user navigates to edit an existing ruleset
+- **THEN** the enrichment section shows the ruleset's current enrichment config from the API
+
 ### Requirement: Save ruleset
 The builder SHALL include a "Save" button that serializes the form state to the RawRuleSet JSON format and sends it to the appropriate API endpoint. For new rulesets: `POST /api/rulesets`. For existing rulesets: `PUT /api/rulesets/:id`. On success, a toast notification SHALL be shown and the page SHALL navigate to the detail view at `/rulesets/:id`. On error, a toast notification SHALL display the error message.
 
