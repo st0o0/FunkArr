@@ -1,5 +1,70 @@
 # Changelog
 
+## [0.1.5](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.4...funkarr-v0.1.5) (2026-09-21)
+
+
+### Features
+
+* add arr service proxy endpoints for automated setup ([ff0787d](https://github.com/st0o0/FunkArr/commit/ff0787dedf097695426d0480ff56178047fe0313))
+* add configurable enrichment with EnrichmentConfig, wire ConstructedTitle through enrichers ([ef6030e](https://github.com/st0o0/FunkArr/commit/ef6030e0c5294084c4613094955166890cc2b788))
+* add enrichment config to ruleset API and scoring trace ([a27d203](https://github.com/st0o0/FunkArr/commit/a27d203c3a9e4955bb08b71d9481cd73f32e872d))
+* add history recording to search workers and API enrichment rate ([7f00fab](https://github.com/st0o0/FunkArr/commit/7f00fab86c79f58eea0ee18dbda04861ce2b9941))
+* add i18n with DE/EN/AT/CH locales to frontend and docs ([325742a](https://github.com/st0o0/FunkArr/commit/325742a4e1cc0922563b85dca4f0e7c2e1f15591))
+* add live matching preview to ruleset builder ([e237d40](https://github.com/st0o0/FunkArr/commit/e237d40b9d81db19533ce2d473c712b584d23020))
+* add Newznab search result cache ([ffc83e4](https://github.com/st0o0/FunkArr/commit/ffc83e43eb33dad8c859042402a6cb204a07f5c6))
+* add ruleset schema validation and community export ([d266e93](https://github.com/st0o0/FunkArr/commit/d266e938f5b9827cf735e97abc61dbfe8ad466fe))
+* add SearchSource and MediaType enums, replace string types in messages and persistence ([897ed0a](https://github.com/st0o0/FunkArr/commit/897ed0a9e61af37fc6416406b2d57d926bc97194))
+* add structured rule display components to UI ([1114fa2](https://github.com/st0o0/FunkArr/commit/1114fa244495558ec0b5fcbb24f474cf1ed949c7))
+* add VitePress docs site with dynamic ruleset catalog ([671fe2c](https://github.com/st0o0/FunkArr/commit/671fe2cd5e158b909ae0d939409e1cc4451c11e2))
+* extend docker preset for base image digest pinning + automerge ([9589764](https://github.com/st0o0/FunkArr/commit/9589764a1b698c11bd7aa69b8403525ef4fe6667))
+* extract history domain from scoring into FunkArr.History ([2ad9fca](https://github.com/st0o0/FunkArr/commit/2ad9fca9e573f77797af3102b3db2e61da2768a9))
+* pass VERSION build-arg through Dockerfile to .NET assembly and Docker label ([f5a8997](https://github.com/st0o0/FunkArr/commit/f5a89974da91c37c9d3077284aa033392e534aac))
+* **ui:** add automated arr service creation to setup wizard ([1c7b5db](https://github.com/st0o0/FunkArr/commit/1c7b5db5f0be9fba73369d259dff2ddbcde42640))
+* **ui:** add enrichment config to ruleset builder, detail, and live preview ([9234702](https://github.com/st0o0/FunkArr/commit/92347023f739b6144c8f87e0f44a65c2f362062e))
+* **ui:** add enrichment rate to ruleset list ([41fedf8](https://github.com/st0o0/FunkArr/commit/41fedf8a3f2f24bac9b3c86896396a5493c7d424))
+* **ui:** improve activity card layout, add version display, fix clipboard and date formatting ([8a4e35e](https://github.com/st0o0/FunkArr/commit/8a4e35e943febbe82a306866ee814c59ddcad12e))
+
+
+### Bug Fixes
+
+* add id-token permission for cosign signing in dev builds ([260b0ff](https://github.com/st0o0/FunkArr/commit/260b0ffb15a8cd0d43b28414278926a13af00c2d))
+* grant contents:read and drop paths filter in dev-build docker job ([073de89](https://github.com/st0o0/FunkArr/commit/073de8981cdea88375e07fcd49ded5b45527587b))
+* optimize 23 community rulesets and fix JSON export encoding ([08586a9](https://github.com/st0o0/FunkArr/commit/08586a9a232f427bd1ba909dba21a93f1b34b984))
+* proper timeout vs 500 handling in exception filter, null-safe test score mapping ([c02e401](https://github.com/st0o0/FunkArr/commit/c02e401ad7dd63bcdc543e84f6a5dbbcad8364b2))
+* strip ruleSetId from body before schema validation ([4ea3897](https://github.com/st0o0/FunkArr/commit/4ea3897caa726e9c8052c5b158ce753081476ebb))
+* use pnpm renovate preset instead of npm ([05e2840](https://github.com/st0o0/FunkArr/commit/05e284031f2a548ee2065cff0d57813e62e7294c))
+
+
+### Documentation
+
+* add ruleset field reference, strategy guide, and filter cookbook ([1775c50](https://github.com/st0o0/FunkArr/commit/1775c506db55df305294aedc8cb418f21018b030))
+* align README badges, add MIT LICENSE ([8bb5163](https://github.com/st0o0/FunkArr/commit/8bb5163d5e494a50b24ab4c0bceb066f76f9f33d))
+* expand configuration reference and add confidence score to catalog ([b70dcbc](https://github.com/st0o0/FunkArr/commit/b70dcbc092434907af4306d736dadb12afc54c71))
+* sync openspec specs and archive string-to-enum-cleanup + enrichment-config changes ([7b35eb0](https://github.com/st0o0/FunkArr/commit/7b35eb08650518600abfc82a1e3b1718d647d0ad))
+* sync openspec specs for enrichment, arr-service-proxy, and setup ([62d0ce0](https://github.com/st0o0/FunkArr/commit/62d0ce0c0e8794b0c73d4a1fdf591b5ebbc0ca89))
+* sync openspec specs for history domain and state patterns ([3dbaffd](https://github.com/st0o0/FunkArr/commit/3dbaffd753af7c1c04e41bb3889381842fdd3390))
+* sync openspec specs for i18n, api cleanup, and typed request models ([9c751f5](https://github.com/st0o0/FunkArr/commit/9c751f5407f7916646b629092611f138850ee566))
+* update CLAUDE.md and add AGENTS.md ([c2e6eaf](https://github.com/st0o0/FunkArr/commit/c2e6eafcbcea4579ce4893e596008d94e967a76d))
+* update specs for domain renames and search pipeline rework ([4377657](https://github.com/st0o0/FunkArr/commit/43776573c196e54e71ddddba9be01d8a01058c8e))
+
+
+### Refactoring
+
+* add idle passivation to search shards ([2efba1b](https://github.com/st0o0/FunkArr/commit/2efba1bd661292d9aa04b6034f2396f77ca7d14c))
+* add structured logging to subtitle preparer ([a9a5e0c](https://github.com/st0o0/FunkArr/commit/a9a5e0c51e224b54e0d87f090f86bf0d7d40dfb0))
+* apply Pathfinder state pattern across all domains ([a9d6860](https://github.com/st0o0/FunkArr/commit/a9d686096fba22b790cc3c9e32b1b3f1dc333af8))
+* clean up Enrichment domain (exception handling, client improvements, test updates) ([76503a3](https://github.com/st0o0/FunkArr/commit/76503a384da8aa54f90ff581b8edb7c46b8391ab))
+* extract SearchPipeline and add endpoint exception filter ([07e63cf](https://github.com/st0o0/FunkArr/commit/07e63cf2a7b4ac088ee1cfbd8915037e48f9b354))
+* extract shared constants and add HTTP resilience ([ae20d5b](https://github.com/st0o0/FunkArr/commit/ae20d5b33d80658033fa27668524393b15777667))
+* remove unused imports in download tests ([38eefe3](https://github.com/st0o0/FunkArr/commit/38eefe32dcd76df4d225ed4d88b9c3612217bb17))
+* rename domains (Scoring, Enrichment) and unify message naming ([6441e8c](https://github.com/st0o0/FunkArr/commit/6441e8c401684316574cc990df2d23c806b03037))
+* replace opaque request models with typed records ([9d07108](https://github.com/st0o0/FunkArr/commit/9d0710868598788e8939b8917bae0c334c87b8c5))
+* replace string enums with typed API enums and ToApi/ToMessage extensions ([e868c09](https://github.com/st0o0/FunkArr/commit/e868c090774442174e7e5eef76a9745027a92413))
+* rework search pipeline into worker state pattern with typed domain models ([ba94595](https://github.com/st0o0/FunkArr/commit/ba94595d617eb6cacc43e4f186ec763cb2af22d2))
+* simplify download history state construction ([d55904e](https://github.com/st0o0/FunkArr/commit/d55904e82933070bed26e9a49be427b07d0fbdfb))
+* unify entityId ctor, PersistenceId, and idle passivation across actors ([c769a3d](https://github.com/st0o0/FunkArr/commit/c769a3dcdf041f668b32c72e2d8fc2e9bca6d841))
+* use SearchSource/MediaType enums across all domains, add enrichment config routing ([31a19eb](https://github.com/st0o0/FunkArr/commit/31a19eb28460673a9b1eb94811984cfcfa29f91f))
+
 ## [0.1.4](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.3...funkarr-v0.1.4) (2026-09-14)
 
 
