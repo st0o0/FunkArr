@@ -38,6 +38,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
             .WithSummary("Liveness probe");
 
         app.MapSystemApi();
+        app.MapSetupArrApi();
 
         app.MapFallbackToFile("index.html");
     }

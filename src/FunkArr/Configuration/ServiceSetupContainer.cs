@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Text.Json;
+using FunkArr.Api;
 using FunkArr.Core;
 using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
@@ -43,6 +44,11 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
                 builder.Expire(TimeSpan.FromSeconds(30)).Tag("rulesets"));
             options.AddPolicy("SystemVersion", builder =>
                 builder.Expire(TimeSpan.FromSeconds(60)));
+        });
+
+        services.AddHttpClient<ArrApiClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
         });
 
         services.AddHealthChecks();
