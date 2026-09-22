@@ -47,7 +47,8 @@ internal static class DownloadMappingExtensions
             item.BytesDownloaded,
             percentage,
             speed,
-            eta);
+            eta,
+            item.Priority.ToString());
     }
 
     internal static ApiModels.DownloadHistoryResponse ToApi(this HistoryResult result) =>

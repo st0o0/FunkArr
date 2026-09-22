@@ -1,21 +1,25 @@
+using FunkArr.Messages.Download;
+using FunkArr.Persistence;
 using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download.Tests;
 
 public sealed class DownloadManagerRetryStateTests
 {
+    private static DownloadEnqueued Enqueue(Guid id) => new(id, PersistedDownloadPriority.Normal);
+
     [Fact]
     public void Re_enqueue_after_dequeue_adds_back_to_queue()
     {
         var id = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(new DownloadEnqueued(id))
+            .Apply(Enqueue(id))
             .Apply(new DownloadDispatched(id))
             .Apply(new DownloadDequeued(id))
-            .Apply(new DownloadEnqueued(id));
+            .Apply(Enqueue(id));
 
         Assert.Single(state.Queued);
-        Assert.Equal(id, state.Queued[0]);
+        Assert.Equal(id, state.Queued[0].Id);
         Assert.Empty(state.Dispatched);
     }
 
@@ -24,13 +28,13 @@ public sealed class DownloadManagerRetryStateTests
     {
         var id = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(new DownloadEnqueued(id))
+            .Apply(Enqueue(id))
             .Apply(new DownloadDispatched(id))
             .Apply(new DownloadDequeued(id));
 
         Assert.False(state.Contains(id));
 
-        state = state.Apply(new DownloadEnqueued(id));
+        state = state.Apply(Enqueue(id));
         Assert.True(state.Contains(id));
     }
 
@@ -40,15 +44,15 @@ public sealed class DownloadManagerRetryStateTests
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(new DownloadEnqueued(id1))
+            .Apply(Enqueue(id1))
             .Apply(new DownloadDispatched(id1))
             .Apply(new DownloadDequeued(id1))
-            .Apply(new DownloadEnqueued(id2))
-            .Apply(new DownloadEnqueued(id1));
+            .Apply(Enqueue(id2))
+            .Apply(Enqueue(id1));
 
         Assert.Equal(2, state.Queued.Count);
-        Assert.Equal(id2, state.Queued[0]);
-        Assert.Equal(id1, state.Queued[1]);
+        Assert.Equal(id2, state.Queued[0].Id);
+        Assert.Equal(id1, state.Queued[1].Id);
     }
 
     [Fact]
@@ -56,13 +60,13 @@ public sealed class DownloadManagerRetryStateTests
     {
         var id = Guid.NewGuid();
         var state = DownloadManagerState.Empty
-            .Apply(new DownloadEnqueued(id))
+            .Apply(Enqueue(id))
             .Apply(new DownloadDispatched(id))
             .Apply(new DownloadDequeued(id))
-            .Apply(new DownloadEnqueued(id))
+            .Apply(Enqueue(id))
             .Apply(new DownloadDispatched(id));
 
         Assert.Empty(state.Queued);
-        Assert.Contains(id, state.Dispatched);
+        Assert.True(state.Dispatched.ContainsKey(id));
     }
 }

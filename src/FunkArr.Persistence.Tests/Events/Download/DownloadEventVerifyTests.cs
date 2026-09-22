@@ -10,7 +10,7 @@ public sealed class DownloadEventVerifyTests
     [Fact]
     public Task DownloadEnqueued_shape()
     {
-        var evt = new DownloadEnqueued(_testId);
+        var evt = new DownloadEnqueued(_testId, PersistedDownloadPriority.Normal);
         var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
         return Verify(json);
     }
@@ -18,7 +18,7 @@ public sealed class DownloadEventVerifyTests
     [Fact]
     public void DownloadEnqueued_roundtrip()
     {
-        var original = new DownloadEnqueued(_testId);
+        var original = new DownloadEnqueued(_testId, PersistedDownloadPriority.Normal);
         var json = JsonConvert.SerializeObject(original);
         var result = JsonConvert.DeserializeObject<DownloadEnqueued>(json)!;
         Assert.Equal(original.DownloadId, result.DownloadId);

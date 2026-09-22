@@ -189,6 +189,56 @@ public static class DownloadsApiEndpoints
         .Produces<ApiModels.OperationResult>()
         .ProducesProblem(504);
 
+        group.MapPost("/queue/{id:guid}/move", async (Guid id, ApiModels.MoveRequest body, IActorRegistry registry) =>
+        {
+            var manager = await registry.GetAsync<IDownloadManager>();
+            var result = await manager.Ask<MoveDownloadResponse>(new MoveDownload(id, body.Position), _askTimeout);
+            return result switch
+            {
+                MoveDownloadCompleted => Results.Ok(new ApiModels.OperationResult(true)),
+                MoveDownloadFailed f => Results.NotFound(new ApiModels.OperationResult(false, f.Reason)),
+                _ => Results.Problem("Unexpected response", statusCode: 500),
+            };
+        })
+        .WithSummary("Move download to position")
+        .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(504);
+
+        group.MapPost("/queue/{id:guid}/priority", async (Guid id, ApiModels.PriorityRequest body, IActorRegistry registry) =>
+        {
+            if (!Enum.TryParse<DownloadPriority>(body.Priority, true, out var priority))
+            {
+                return Results.BadRequest(new ApiModels.OperationResult(false, "Invalid priority. Use High, Normal, or Low."));
+            }
+
+            var manager = await registry.GetAsync<IDownloadManager>();
+            var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(id, priority), _askTimeout);
+            return result switch
+            {
+                SetDownloadPriorityCompleted => Results.Ok(new ApiModels.OperationResult(true)),
+                SetDownloadPriorityFailed f => Results.NotFound(new ApiModels.OperationResult(false, f.Reason)),
+                _ => Results.Problem("Unexpected response", statusCode: 500),
+            };
+        })
+        .WithSummary("Set download priority")
+        .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(504);
+
+        group.MapPost("/queue/swap", async (ApiModels.SwapRequest body, IActorRegistry registry) =>
+        {
+            var manager = await registry.GetAsync<IDownloadManager>();
+            var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(body.Id1, body.Id2), _askTimeout);
+            return result switch
+            {
+                SwapDownloadsCompleted => Results.Ok(new ApiModels.OperationResult(true)),
+                SwapDownloadsFailed f => Results.BadRequest(new ApiModels.OperationResult(false, f.Reason)),
+                _ => Results.Problem("Unexpected response", statusCode: 500),
+            };
+        })
+        .WithSummary("Swap two downloads")
+        .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(504);
+
         group.MapGet("/settings", (IOptionsMonitor<DownloadOptions> options) =>
         {
             var opts = options.CurrentValue;

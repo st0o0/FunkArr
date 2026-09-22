@@ -47,6 +47,10 @@ public static class SabnzbdApiEndpoints
                 "fullstatus" => await FullStatusResult(manager, dataPaths.Complete),
                 "queue" when req.Name == "delete" && !string.IsNullOrEmpty(req.Value) =>
                     await DeleteFromQueueResult(manager, req.Value),
+                "queue" when req.Name == "priority" && !string.IsNullOrEmpty(req.Value) =>
+                    await SetPriorityResult(manager, req.Value, req.Value2),
+                "queue" when req.Name == "switch" && !string.IsNullOrEmpty(req.Value) && !string.IsNullOrEmpty(req.Value2) =>
+                    await SwitchResult(manager, req.Value, req.Value2),
                 "queue" when req.Name is not null =>
                     Results.Json(new { status = false, error = "Invalid queue command" }, statusCode: 400),
                 "queue" => await QueueResult(manager, req.Start ?? 0, req.Limit ?? 0, req.Category),
@@ -103,9 +107,16 @@ public static class SabnzbdApiEndpoints
             var categoryStr = req.Cat ?? Meta(FunkArrHeaders.Category) ?? "";
             var category = ParseMediaType(categoryStr);
 
+            var priority = MapSabnzbdPriority(req.Priority);
+
             var manager = await registry.GetAsync<IDownloadManager>();
-            var addCmd = new AddDownload(title, videoUrl, subtitleUrl, channel, duration, size, category);
+            var addCmd = new AddDownload(title, videoUrl, subtitleUrl, channel, duration, size, category, priority);
             var result = await manager.Ask<DownloadAdded>(addCmd, _askTimeout);
+
+            if (req.Priority == "2")
+            {
+                manager.Tell(new ForceStartDownload(result.DownloadId));
+            }
 
             return Results.Json(new { status = true, nzo_ids = new[] { result.DownloadId.ToString() } });
 
@@ -178,7 +189,7 @@ public static class SabnzbdApiEndpoints
             Percentage: item.TotalDuration > 0
                 ? ((int)(item.CurrentTimeUs / 1_000_000.0 / item.TotalDuration * 100)).ToString()
                 : "0",
-            Priority: "Normal",
+            Priority: item.Priority.ToString(),
             Speed: FormatSpeed(item))).ToArray();
 
         return Results.Json(new Models.QueueResponse(new QueueData(
@@ -309,4 +320,52 @@ public static class SabnzbdApiEndpoints
         MediaType.Movie => "movie",
         _ => "tv",
     };
+
+    private static async Task<IResult> SetPriorityResult(IActorRef manager, string nzoId, string? priorityValue)
+    {
+        if (!Guid.TryParse(nzoId, out var downloadId))
+            return Results.Json(new { status = false, error = "Invalid nzo_id" });
+
+        if (!int.TryParse(priorityValue, out var priorityInt))
+            return Results.Json(new { status = false, error = "Invalid priority value" });
+
+        if (priorityInt == 2)
+        {
+            var forceResult = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(downloadId), _askTimeout);
+            return forceResult.Success
+                ? Results.Json(new { status = true })
+                : Results.Json(new { status = false, error = forceResult.Error });
+        }
+
+        var priority = (DownloadPriority)Math.Clamp(priorityInt, -1, 1);
+        var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), _askTimeout);
+        return result is SetDownloadPriorityCompleted
+            ? Results.Json(new { status = true })
+            : Results.Json(new { status = false, error = (result as SetDownloadPriorityFailed)?.Reason });
+    }
+
+    private static async Task<IResult> SwitchResult(IActorRef manager, string nzoId1, string nzoId2)
+    {
+        if (!Guid.TryParse(nzoId1, out var id1) || !Guid.TryParse(nzoId2, out var id2))
+            return Results.Json(new { status = false, error = "Invalid nzo_id" });
+
+        var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), _askTimeout);
+        return result is SwapDownloadsCompleted
+            ? Results.Json(new { status = true })
+            : Results.Json(new { status = false, error = (result as SwapDownloadsFailed)?.Reason });
+    }
+
+    private static DownloadPriority MapSabnzbdPriority(string? value)
+    {
+        if (!int.TryParse(value, out var intVal))
+            return DownloadPriority.Normal;
+
+        return intVal switch
+        {
+            -1 => DownloadPriority.Low,
+            1 => DownloadPriority.High,
+            2 => DownloadPriority.High,
+            _ => DownloadPriority.Normal,
+        };
+    }
 }

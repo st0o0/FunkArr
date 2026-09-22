@@ -27,4 +27,11 @@ public sealed record DownloadQueueItem(
     long BytesDownloaded,
     int Percentage,
     long Speed,
-    string Eta);
+    string Eta,
+    string Priority);
+
+public sealed record MoveRequest(int Position);
+
+public sealed record PriorityRequest(string Priority);
+
+public sealed record SwapRequest(Guid Id1, Guid Id2);

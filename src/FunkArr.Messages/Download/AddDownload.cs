@@ -7,4 +7,5 @@ public sealed record AddDownload(
     string Channel,
     int Duration,
     long Size,
-    MediaType Category);
+    MediaType Category,
+    DownloadPriority Priority = DownloadPriority.Normal);

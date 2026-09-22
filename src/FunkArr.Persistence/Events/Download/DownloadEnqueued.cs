@@ -1,3 +1,3 @@
 namespace FunkArr.Persistence.Events.Download;
 
-public sealed record DownloadEnqueued(Guid DownloadId);
+public sealed record DownloadEnqueued(Guid DownloadId, PersistedDownloadPriority Priority);

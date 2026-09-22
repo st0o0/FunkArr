@@ -23,4 +23,5 @@ public sealed record QueueItem(
     long CurrentTimeUs,
     int TotalDuration,
     double Speed,
-    MediaType Category);
+    MediaType Category,
+    DownloadPriority Priority);

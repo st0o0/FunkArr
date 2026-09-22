@@ -32,12 +32,18 @@ public sealed class DownloadManager : ReceivePersistentActor
         Command<PauseDownloads>(HandlePause);
         Command<ResumeDownloads>(HandleResume);
         Command<ForceStartDownload>(HandleForceStart);
+        Command<MoveDownload>(HandleMove);
+        Command<SwapDownloads>(HandleSwap);
+        Command<SetDownloadPriority>(HandleSetPriority);
         Command<ScheduleEnabled>(HandleScheduleEnabled);
         Command<ScheduleDisabled>(HandleScheduleDisabled);
 
         Recover<DownloadEnqueued>(evt => _state = _state.Apply(evt));
         Recover<DownloadDispatched>(evt => _state = _state.Apply(evt));
         Recover<DownloadDequeued>(evt => _state = _state.Apply(evt));
+        Recover<DownloadMoved>(evt => _state = _state.Apply(evt));
+        Recover<DownloadSwapped>(evt => _state = _state.Apply(evt));
+        Recover<DownloadPriorityChanged>(evt => _state = _state.Apply(evt));
         Recover<DownloadsPaused>(evt => _state = _state.Apply(evt));
         Recover<DownloadsResumed>(evt => _state = _state.Apply(evt));
         Recover<RecoveryCompleted>(_ =>
@@ -58,7 +64,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         var downloadId = Guid.NewGuid();
 
         _log.Info("Enqueuing download {DownloadId}: {Title}", downloadId, cmd.Title);
-        Persist(new DownloadEnqueued(downloadId), e =>
+        Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
 
@@ -74,7 +80,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void HandleSlotFree(SlotFree msg)
     {
-        if (!_state.Dispatched.Contains(msg.DownloadId))
+        if (!_state.Dispatched.ContainsKey(msg.DownloadId))
         {
             return;
         }
@@ -90,7 +96,9 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void HandleQueryQueue(QueryQueue query)
     {
-        var allIds = _state.Dispatched.Concat(_state.Queued).ToArray();
+        var allIds = _state.Dispatched.Keys
+            .Concat(_state.Queued.Select(e => e.Id))
+            .ToArray();
 
         if (allIds.Length == 0)
         {
@@ -113,12 +121,16 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             var items = results
                 .Where(r => r is not null)
-                .Select(r => new QueueItem(
-                    r!.DownloadId, r.Title,
-                    r.Status == (int)WorkerStatus.Downloading ? DownloadStatus.Processing : DownloadStatus.Queued,
-                    r.Channel, r.HasSubtitles,
-                    r.Size, r.BytesDownloaded, r.CurrentTimeUs,
-                    r.TotalDuration, r.Speed, r.Category))
+                .Select(r =>
+                {
+                    var priority = LookupPriority(state, r!.DownloadId);
+                    return new QueueItem(
+                        r.DownloadId, r.Title,
+                        r.Status == (int)WorkerStatus.Downloading ? DownloadStatus.Processing : DownloadStatus.Queued,
+                        r.Channel, r.HasSubtitles,
+                        r.Size, r.BytesDownloaded, r.CurrentTimeUs,
+                        r.TotalDuration, r.Speed, r.Category, priority);
+                })
                 .ToArray();
 
             return DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent, state);
@@ -151,7 +163,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         }
 
         var sender = Sender;
-        Persist(new DownloadEnqueued(cmd.DownloadId), e =>
+        Persist(new DownloadEnqueued(cmd.DownloadId, DownloadPriority.Normal.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
             _downloadRegion.Tell(new ResetDownload(cmd.DownloadId));
@@ -197,13 +209,13 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void HandleForceStart(ForceStartDownload cmd)
     {
-        if (_state.Dispatched.Contains(cmd.DownloadId))
+        if (_state.Dispatched.ContainsKey(cmd.DownloadId))
         {
             Sender.Tell(new ForceStartDownloadResult(false, "Item already dispatched"));
             return;
         }
 
-        if (!_state.Queued.Contains(cmd.DownloadId))
+        if (!_state.Queued.Any(e => e.Id == cmd.DownloadId))
         {
             Sender.Tell(new ForceStartDownloadResult(false, "Item not queued"));
             return;
@@ -216,6 +228,74 @@ public sealed class DownloadManager : ReceivePersistentActor
             _log.Info("Force-starting download {DownloadId}", cmd.DownloadId);
             _downloadRegion.Tell(new StartDownload(cmd.DownloadId));
             sender.Tell(new ForceStartDownloadResult(true, null));
+        });
+    }
+
+    private void HandleMove(MoveDownload cmd)
+    {
+        if (!_state.Queued.Any(e => e.Id == cmd.DownloadId))
+        {
+            Sender.Tell(new MoveDownloadFailed("Item not queued"));
+            return;
+        }
+
+        var sender = Sender;
+        Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), e =>
+        {
+            _state = _state.Apply(e);
+            _log.Info("Moved download {DownloadId} to position {Position}", cmd.DownloadId, cmd.Position);
+            sender.Tell(new MoveDownloadCompleted());
+        });
+    }
+
+    private void HandleSwap(SwapDownloads cmd)
+    {
+        var entry1 = _state.Queued.FirstOrDefault(e => e.Id == cmd.DownloadId1);
+        var entry2 = _state.Queued.FirstOrDefault(e => e.Id == cmd.DownloadId2);
+
+        if (entry1 == default || entry2 == default)
+        {
+            Sender.Tell(new SwapDownloadsFailed("One or both items not queued"));
+            return;
+        }
+
+        if (entry1.Priority != entry2.Priority)
+        {
+            Sender.Tell(new SwapDownloadsFailed("Cannot swap items with different priorities"));
+            return;
+        }
+
+        var sender = Sender;
+        Persist(new DownloadSwapped(cmd.DownloadId1, cmd.DownloadId2), e =>
+        {
+            _state = _state.Apply(e);
+            _log.Info("Swapped downloads {Id1} and {Id2}", cmd.DownloadId1, cmd.DownloadId2);
+            sender.Tell(new SwapDownloadsCompleted());
+        });
+    }
+
+    private void HandleSetPriority(SetDownloadPriority cmd)
+    {
+        var entry = _state.Queued.FirstOrDefault(e => e.Id == cmd.DownloadId);
+        if (entry == default)
+        {
+            Sender.Tell(new SetDownloadPriorityFailed("Item not queued"));
+            return;
+        }
+
+        if (entry.Priority == cmd.Priority)
+        {
+            Sender.Tell(new SetDownloadPriorityCompleted());
+            return;
+        }
+
+        var sender = Sender;
+        Persist(new DownloadPriorityChanged(cmd.DownloadId, cmd.Priority.ToPersistence()), e =>
+        {
+            _state = _state.Apply(e);
+            _log.Info("Changed download {DownloadId} priority to {Priority}", cmd.DownloadId, cmd.Priority);
+            sender.Tell(new SetDownloadPriorityCompleted());
+            DispatchNext();
         });
     }
 
@@ -244,14 +324,14 @@ public sealed class DownloadManager : ReceivePersistentActor
         while (_state.Dispatched.Count + toDispatch.Count < _maxConcurrent)
         {
             var dispatching = toDispatch.ToHashSet();
-            var next = _state.Queued.FirstOrDefault(id => !dispatching.Contains(id));
+            var next = _state.Queued.FirstOrDefault(e => !dispatching.Contains(e.Id));
 
-            if (next == Guid.Empty)
+            if (next == default)
             {
                 break;
             }
 
-            toDispatch.Add(next);
+            toDispatch.Add(next.Id);
         }
 
         if (toDispatch.Count == 0)
@@ -267,5 +347,16 @@ public sealed class DownloadManager : ReceivePersistentActor
             _log.Info("Dispatching download {DownloadId}", downloadId);
             _downloadRegion.Tell(new StartDownload(downloadId));
         }
+    }
+
+    private static DownloadPriority LookupPriority(DownloadManagerState state, Guid downloadId)
+    {
+        var entry = state.Queued.FirstOrDefault(e => e.Id == downloadId);
+        if (entry != default)
+            return entry.Priority;
+
+        return state.Dispatched.TryGetValue(downloadId, out var priority)
+            ? priority
+            : DownloadPriority.Normal;
     }
 }

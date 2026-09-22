@@ -1,4 +1,5 @@
 using FunkArr.Messages;
+using FunkArr.Messages.Download;
 using FunkArr.Persistence;
 
 namespace FunkArr.Download;
@@ -20,4 +21,10 @@ internal static class PersistenceMapping
             PersistedMediaType.Movie => MediaType.Movie,
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
         };
+
+    public static PersistedDownloadPriority ToPersistence(this DownloadPriority priority) =>
+        (PersistedDownloadPriority)(int)priority;
+
+    public static DownloadPriority ToDomain(this PersistedDownloadPriority priority) =>
+        (DownloadPriority)(int)priority;
 }

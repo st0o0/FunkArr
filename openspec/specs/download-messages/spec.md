@@ -17,7 +17,7 @@ The system SHALL define an `AddDownload` record containing all metadata needed t
 
 #### Scenario: AddDownload fields
 - **WHEN** an AddDownload message is created
-- **THEN** it SHALL contain `Title` (string, scene-formatted), `VideoUrl` (string), `SubtitleUrl` (string?, nullable), `Channel` (string), `Duration` (int, seconds), `Size` (long, bytes), `Category` (MediaType)
+- **THEN** it SHALL contain `Title` (string, scene-formatted), `VideoUrl` (string), `SubtitleUrl` (string?, nullable), `Channel` (string), `Duration` (int, seconds), `Size` (long, bytes), `Category` (MediaType), `Priority` (DownloadPriority, default Normal)
 
 #### Scenario: Title is scene-formatted
 - **WHEN** an AddDownload is created from a parsed NZB
@@ -103,7 +103,7 @@ The system SHALL define a `QueueResult` record containing the current queue stat
 
 #### Scenario: QueueItem fields
 - **WHEN** a QueueItem is inspected
-- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Status` (DownloadStatus), `TotalBytes` (long), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `Category` (MediaType), `Channel` (string), `HasSubtitles` (bool)
+- **THEN** it SHALL contain `DownloadId` (Guid), `Title` (string), `Status` (DownloadStatus), `TotalBytes` (long), `BytesDownloaded` (long), `CurrentTimeUs` (long), `TotalDuration` (int), `Speed` (double), `Category` (MediaType), `Channel` (string), `HasSubtitles` (bool), `Priority` (DownloadPriority)
 
 ### Requirement: QueryHistory query
 The system SHALL define a `QueryHistory` record for requesting download history with optional pagination and category filter.
@@ -196,7 +196,7 @@ The system SHALL define a `DownloadEnqueued` persistence DTO for the Manager's q
 
 #### Scenario: DownloadEnqueued fields
 - **WHEN** a `DownloadEnqueued` event is persisted
-- **THEN** it SHALL contain `DownloadId` (Guid)
+- **THEN** it SHALL contain `DownloadId` (Guid) and `Priority` (DownloadPriority)
 
 ### Requirement: DownloadDispatched persistence DTO
 The system SHALL define a `DownloadDispatched` persistence DTO for the Manager's dispatch event.
