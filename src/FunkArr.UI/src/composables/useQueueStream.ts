@@ -5,10 +5,25 @@ const items = ref<QueueItem[]>([])
 const totalSlots = ref(0)
 const activeCount = ref(0)
 const queuedCount = ref(0)
+const isPaused = ref(false)
+const isScheduleActive = ref(true)
+const nextWindow = ref<string | null>(null)
 const connected = ref(false)
+const isDragging = ref(false)
 
 let eventSource: EventSource | null = null
 let refCount = 0
+let bufferedData: QueueResponse | null = null
+
+function applyData(data: QueueResponse) {
+  items.value = data.items
+  totalSlots.value = data.totalSlots
+  activeCount.value = data.activeCount
+  queuedCount.value = data.queuedCount
+  isPaused.value = data.isPaused
+  isScheduleActive.value = data.isScheduleActive
+  nextWindow.value = data.nextWindow
+}
 
 function connect() {
   if (eventSource && eventSource.readyState !== EventSource.CLOSED) return
@@ -21,10 +36,11 @@ function connect() {
 
   eventSource.addEventListener('queue', (e: MessageEvent) => {
     const data: QueueResponse = JSON.parse(e.data)
-    items.value = data.items
-    totalSlots.value = data.totalSlots
-    activeCount.value = data.activeCount
-    queuedCount.value = data.queuedCount
+    if (isDragging.value) {
+      bufferedData = data
+    } else {
+      applyData(data)
+    }
     connected.value = true
   })
 
@@ -43,6 +59,13 @@ function disconnect() {
     eventSource = null
     connected.value = false
     items.value = []
+  }
+}
+
+function flushBuffer() {
+  if (bufferedData) {
+    applyData(bufferedData)
+    bufferedData = null
   }
 }
 
@@ -65,7 +88,12 @@ export function useQueueStream() {
     totalSlots: readonly(totalSlots),
     activeCount: readonly(activeCount),
     queuedCount: readonly(queuedCount),
+    isPaused: readonly(isPaused),
+    isScheduleActive: readonly(isScheduleActive),
+    nextWindow: readonly(nextWindow),
     connected: readonly(connected),
+    isDragging,
+    flushBuffer,
     release,
   }
 }

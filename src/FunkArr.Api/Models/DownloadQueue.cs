@@ -30,7 +30,7 @@ public sealed record DownloadQueueItem(
     string Eta,
     string Priority);
 
-public sealed record MoveRequest(int Position);
+public sealed record MoveRequest(int Position, string? Priority = null);
 
 public sealed record PriorityRequest(string Priority);
 

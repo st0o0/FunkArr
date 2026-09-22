@@ -240,12 +240,30 @@ public sealed class DownloadManager : ReceivePersistentActor
         }
 
         var sender = Sender;
-        Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), e =>
+
+        if (cmd.Priority is { } newPriority)
         {
-            _state = _state.Apply(e);
-            _log.Info("Moved download {DownloadId} to position {Position}", cmd.DownloadId, cmd.Position);
-            sender.Tell(new MoveDownloadCompleted());
-        });
+            var prioEvt = new DownloadPriorityChanged(cmd.DownloadId, newPriority.ToPersistence());
+            Persist(prioEvt, e =>
+            {
+                _state = _state.Apply(e);
+                Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), m =>
+                {
+                    _state = _state.Apply(m);
+                    _log.Info("Moved download {DownloadId} to position {Position} with priority {Priority}", cmd.DownloadId, cmd.Position, newPriority);
+                    sender.Tell(new MoveDownloadCompleted());
+                });
+            });
+        }
+        else
+        {
+            Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), e =>
+            {
+                _state = _state.Apply(e);
+                _log.Info("Moved download {DownloadId} to position {Position}", cmd.DownloadId, cmd.Position);
+                sender.Tell(new MoveDownloadCompleted());
+            });
+        }
     }
 
     private void HandleSwap(SwapDownloads cmd)

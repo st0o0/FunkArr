@@ -11,6 +11,7 @@ export interface QueueItem {
   percentage: number
   speed: number
   eta: string
+  priority: string
 }
 
 export interface QueueResponse {
@@ -18,6 +19,9 @@ export interface QueueResponse {
   totalSlots: number
   activeCount: number
   queuedCount: number
+  isPaused: boolean
+  isScheduleActive: boolean
+  nextWindow: string | null
 }
 
 export interface HistoryItem {
@@ -47,6 +51,15 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 async function fetchAction(url: string, method: string): Promise<{ success: boolean; error?: string }> {
   const res = await fetch(url, { method })
+  return res.json()
+}
+
+async function fetchJsonAction(url: string, method: string, body: unknown): Promise<{ success: boolean; error?: string }> {
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
   return res.json()
 }
 
@@ -86,4 +99,26 @@ export function getHistoryStats(): Promise<HistoryStatsResponse> {
 
 export function getHistoryCategories(): Promise<string[]> {
   return fetchJson('/api/downloads/history/categories')
+}
+
+export function moveDownload(id: string, position: number, priority?: string) {
+  const body: Record<string, unknown> = { position }
+  if (priority) body.priority = priority
+  return fetchJsonAction(`/api/downloads/queue/${id}/move`, 'POST', body)
+}
+
+export function setDownloadPriority(id: string, priority: string) {
+  return fetchJsonAction(`/api/downloads/queue/${id}/priority`, 'POST', { priority })
+}
+
+export function forceStartDownload(id: string) {
+  return fetchAction(`/api/downloads/queue/${id}/force-start`, 'POST')
+}
+
+export function pauseDownloads() {
+  return fetchAction('/api/downloads/pause', 'POST')
+}
+
+export function resumeDownloads() {
+  return fetchAction('/api/downloads/resume', 'POST')
 }

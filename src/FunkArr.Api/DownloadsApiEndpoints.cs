@@ -191,8 +191,18 @@ public static class DownloadsApiEndpoints
 
         group.MapPost("/queue/{id:guid}/move", async (Guid id, ApiModels.MoveRequest body, IActorRegistry registry) =>
         {
+            DownloadPriority? priority = null;
+            if (body.Priority is not null && !Enum.TryParse(body.Priority, true, out DownloadPriority parsed))
+            {
+                return Results.BadRequest(new ApiModels.OperationResult(false, "Invalid priority. Use High, Normal, or Low."));
+            }
+            else if (body.Priority is not null)
+            {
+                priority = Enum.Parse<DownloadPriority>(body.Priority, true);
+            }
+
             var manager = await registry.GetAsync<IDownloadManager>();
-            var result = await manager.Ask<MoveDownloadResponse>(new MoveDownload(id, body.Position), _askTimeout);
+            var result = await manager.Ask<MoveDownloadResponse>(new MoveDownload(id, body.Position, priority), _askTimeout);
             return result switch
             {
                 MoveDownloadCompleted => Results.Ok(new ApiModels.OperationResult(true)),

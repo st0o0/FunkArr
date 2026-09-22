@@ -13,84 +13,107 @@
       />
     </div>
 
-    <div class="flex items-center gap-1 mb-4">
-      <button
-        v-for="tab in tabs"
-        :key="tab.id"
-        @click="activeTab = tab.id"
-        class="px-3 py-1.5 rounded-md text-xs transition-colors"
-        :class="activeTab === tab.id
-          ? 'bg-surface-elevated text-text-primary'
-          : 'text-text-secondary hover:text-text-body'"
-      >
-        {{ tab.label }}
-        <span
-          v-if="tab.count > 0"
-          class="ml-1 tabular-nums"
-          :class="activeTab === tab.id ? 'text-text-body' : 'text-text-secondary'"
-        >{{ tab.count }}</span>
-      </button>
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-1">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          class="px-3 py-1.5 rounded-md text-xs transition-colors"
+          :class="activeTab === tab.id
+            ? 'bg-surface-elevated text-text-primary'
+            : 'text-text-secondary hover:text-text-body'"
+        >
+          {{ tab.label }}
+          <span
+            v-if="tab.count > 0"
+            class="ml-1 tabular-nums"
+            :class="activeTab === tab.id ? 'text-text-body' : 'text-text-secondary'"
+          >{{ tab.count }}</span>
+        </button>
+      </div>
+
+      <div v-if="activeTab === 'queue'" class="flex items-center gap-2">
+        <span v-if="pipelineIsPaused" class="text-xs text-status-warn px-2 py-0.5 rounded-md bg-status-warn/10">{{ $t('queue.paused') }}</span>
+        <span v-else-if="!pipelineScheduleActive && pipelineNextWindow" class="text-xs text-status-info px-2 py-0.5 rounded-md bg-status-info/10">
+          {{ $t('queue.scheduledAt', { time: formatAbsoluteDate(pipelineNextWindow) }) }}
+        </span>
+        <button
+          @click="handleTogglePause"
+          class="px-2.5 py-1 text-xs rounded-md border border-border-default text-text-secondary hover:text-text-body hover:bg-surface-elevated transition-colors"
+        >
+          {{ pipelineIsPaused ? $t('queue.resume') : $t('queue.pause') }}
+        </button>
+      </div>
     </div>
 
-    <!-- Active tab -->
-    <div v-if="activeTab === 'active'">
+    <!-- Queue tab -->
+    <div v-if="activeTab === 'queue'">
       <EmptyState
-        v-if="activeItems.length === 0"
+        v-if="active.length === 0 && queued.length === 0"
         icon='<path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>'
         :title="$t('activity.noActiveDownloads')"
         :description="$t('activity.noActiveDownloadsHint')"
       />
-      <div v-else class="space-y-2">
-        <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-2.5 flex items-center gap-4">
-          <div class="flex-1">
+      <template v-else>
+        <!-- Active downloads -->
+        <div v-if="active.length > 0">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="h-px flex-1 bg-accent/30" />
+            <span class="text-xs font-medium px-2 text-accent">{{ $t('activity.active') }} ({{ active.length }})</span>
+            <div class="h-px flex-1 bg-accent/30" />
+          </div>
+          <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-2 mb-1">
             <div class="h-1 bg-surface-elevated rounded-full overflow-hidden">
               <div class="h-full bg-accent rounded-full transition-all duration-700" :style="{ width: `${overallProgress}%` }" />
             </div>
           </div>
-          <span class="text-xs text-text-secondary tabular-nums shrink-0">{{ activeItems.length }} {{ $t('activity.active').toLowerCase() }}</span>
-        </div>
-        <template v-for="group in activeGroups" :key="group.series">
-          <div v-if="group.items.length === 1" class="rounded-lg border border-border-default overflow-hidden px-4 py-2.5 bg-surface-raised">
-            <QueueCard :item="group.items[0]" @cancel="handleCancel" />
-          </div>
-          <QueueGroupCard v-else :group="group" @cancel="handleCancel" />
-        </template>
-      </div>
-    </div>
-
-    <!-- Queued tab -->
-    <div v-if="activeTab === 'queued'">
-      <EmptyState
-        v-if="queuedItems.length === 0"
-        icon='<path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 12h12"/>'
-        :title="$t('activity.noQueuedDownloads')"
-        :description="$t('activity.noQueuedDownloadsHint')"
-      />
-      <div v-else class="space-y-1.5">
-        <div
-          v-for="item in queuedItems"
-          :key="item.downloadId"
-          class="flex items-center justify-between px-4 py-2.5 bg-surface-raised rounded-lg border border-border-default"
-        >
-          <div class="min-w-0 flex-1">
-            <ReleaseTitle :title="item.title" compact />
-            <div class="flex items-center gap-2 mt-0.5 text-xs text-text-secondary">
-              <span>{{ item.category }}</span>
-              <span>&middot;</span>
-              <span class="tabular-nums">{{ formatSize(item.totalBytes) }}</span>
+          <div class="space-y-1.5 mb-2">
+            <div
+              v-for="item in active"
+              :key="item.downloadId"
+              class="px-4 py-2.5 bg-surface-raised rounded-lg border border-border-default"
+            >
+              <ActiveDownloadCard :item="item" @menu="openContextMenu" />
             </div>
           </div>
-          <button
-            @click="handleCancel(item.downloadId)"
-            class="p-1 text-text-secondary hover:text-status-fail transition-colors rounded shrink-0 ml-3"
-            :title="$t('queue.cancel')"
-          >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-              <path d="M4 4l8 8M12 4l-8 8" />
-            </svg>
-          </button>
         </div>
-      </div>
+
+        <!-- Priority buckets -->
+        <PrioritySection
+          :items="high"
+          priority="High"
+          :label="$t('queue.priorityHigh')"
+          :show-empty="isDragActive"
+          @menu="openContextMenu"
+          @reorder="handleReorder"
+          @priority-change="handlePriorityChange"
+          @drag-start="onDragStart"
+          @drag-end="onDragEnd"
+        />
+        <PrioritySection
+          :items="normal"
+          priority="Normal"
+          :label="$t('queue.priorityNormal')"
+          :show-empty="isDragActive"
+          @menu="openContextMenu"
+          @reorder="handleReorder"
+          @priority-change="handlePriorityChange"
+          @drag-start="onDragStart"
+          @drag-end="onDragEnd"
+        />
+        <PrioritySection
+          :items="low"
+          priority="Low"
+          :label="$t('queue.priorityLow')"
+          :show-empty="isDragActive"
+          @menu="openContextMenu"
+          @reorder="handleReorder"
+          @priority-change="handlePriorityChange"
+          @drag-start="onDragStart"
+          @drag-end="onDragEnd"
+        />
+      </template>
     </div>
 
     <!-- History tab -->
@@ -217,59 +240,125 @@
         </div>
       </div>
     </div>
+
+    <QueueContextMenu
+      ref="contextMenu"
+      @priority="handleSetPriority"
+      @force-start="handleForceStart"
+      @delete="handleDelete"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useGroupedQueue, type QueueGroup } from '../composables/useGroupedQueue'
-import { getHistory, getHistoryCategories, deleteQueueItem, deleteHistoryItem, retryDownload, type HistoryResponse } from '../api/downloads'
-import QueueGroupCard from '../components/QueueGroupCard.vue'
-import QueueCard from '../components/QueueCard.vue'
+import { usePriorityQueue } from '../composables/usePriorityQueue'
+import {
+  getHistory, getHistoryCategories, deleteHistoryItem, retryDownload,
+  moveDownload, setDownloadPriority, forceStartDownload, deleteQueueItem,
+  pauseDownloads, resumeDownloads,
+  type QueueItem, type HistoryResponse,
+} from '../api/downloads'
+import ActiveDownloadCard from '../components/ActiveDownloadCard.vue'
+import PrioritySection from '../components/PrioritySection.vue'
+import QueueContextMenu from '../components/QueueContextMenu.vue'
 import EmptyState from '../components/EmptyState.vue'
 import SkeletonTable from '../components/SkeletonTable.vue'
 import ReleaseTitle from '../components/ReleaseTitle.vue'
 import { useToast } from '../composables/useToast'
 import { formatSpeed, formatSize, formatDuration, formatRelativeDate, formatAbsoluteDate } from '../utils/format'
 import { parseReleaseName } from '../utils/releaseTitle'
-import { QueueStatus, HistoryStatus } from '../api/enums'
+import { HistoryStatus } from '../api/enums'
 
 const { t } = useI18n()
 const { toast } = useToast()
-const { groups, items, activeCount, queuedCount, totalSpeed, release } = useGroupedQueue()
+const {
+  active, high, normal, low, queued, totalSpeed, overallProgress,
+  isPaused: pipelineIsPaused, isScheduleActive: pipelineScheduleActive,
+  nextWindow: pipelineNextWindow, activeCount, queuedCount,
+  isDragging, flushBuffer, release,
+} = usePriorityQueue()
 
-const activeTab = ref<'active' | 'queued' | 'history'>('active')
+const activeTab = ref<'queue' | 'history'>('queue')
 const searchQuery = ref('')
-
-const activeItems = computed(() => items.value.filter(i => i.status === QueueStatus.Processing))
-const queuedItems = computed(() => items.value.filter(i => i.status === QueueStatus.Queued))
-
-const activeGroups = computed<QueueGroup[]>(() =>
-  groups.value.filter(g => g.activeCount > 0).map(g => ({
-    ...g,
-    items: g.items.filter(i => i.status === QueueStatus.Processing),
-  }))
-)
-
-const overallProgress = computed(() => {
-  if (activeItems.value.length === 0) return 0
-  const total = activeItems.value.reduce((sum, i) => sum + i.percentage, 0)
-  return Math.round(total / activeItems.value.length)
-})
+const isDragActive = ref(false)
+const contextMenu = ref<InstanceType<typeof QueueContextMenu> | null>(null)
 
 const tabs = computed(() => [
-  { id: 'active' as const, label: t('activity.active'), count: activeCount.value },
-  { id: 'queued' as const, label: t('activity.queuedTab'), count: queuedCount.value },
+  { id: 'queue' as const, label: t('activity.queueTab'), count: activeCount.value + queuedCount.value },
   { id: 'history' as const, label: t('activity.history'), count: 0 },
 ])
 
-async function handleCancel(id: string) {
+function openContextMenu(event: MouseEvent, item: QueueItem) {
+  contextMenu.value?.open(event, item)
+}
+
+function onDragStart() {
+  isDragActive.value = true
+  isDragging.value = true
+}
+
+function onDragEnd() {
+  isDragActive.value = false
+  isDragging.value = false
+  flushBuffer()
+}
+
+async function handleReorder(item: QueueItem, newIndex: number) {
+  try {
+    await moveDownload(item.downloadId, newIndex)
+  } catch {
+    toast(t('queue.moveFailed'), 'error')
+  }
+}
+
+async function handlePriorityChange(item: QueueItem, newIndex: number, newPriority: string) {
+  try {
+    await moveDownload(item.downloadId, newIndex, newPriority)
+  } catch {
+    toast(t('queue.moveFailed'), 'error')
+  }
+}
+
+async function handleSetPriority(id: string, priority: string) {
+  try {
+    await setDownloadPriority(id, priority)
+    toast(t('queue.priorityChanged'))
+  } catch {
+    toast(t('queue.priorityFailed'), 'error')
+  }
+}
+
+async function handleForceStart(id: string) {
+  try {
+    await forceStartDownload(id)
+    toast(t('queue.forceStarted'))
+  } catch {
+    toast(t('queue.forceStartFailed'), 'error')
+  }
+}
+
+async function handleDelete(id: string) {
   try {
     await deleteQueueItem(id)
     toast(t('activity.downloadCancelled'))
   } catch {
     toast(t('activity.failedToCancel'), 'error')
+  }
+}
+
+async function handleTogglePause() {
+  try {
+    if (pipelineIsPaused.value) {
+      await resumeDownloads()
+      toast(t('queue.resumed'))
+    } else {
+      await pauseDownloads()
+      toast(t('queue.pausedMessage'))
+    }
+  } catch {
+    toast(t('queue.toggleFailed'), 'error')
   }
 }
 
