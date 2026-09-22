@@ -50,17 +50,32 @@ Download speed SHALL be formatted in human-readable units per second.
 - **WHEN** speed is 12900000 bytes/second
 - **THEN** it SHALL display as "12.3 MB/s"
 
-### Requirement: Priority display in queue
-The download queue view SHALL display the priority of each queued item.
+### Requirement: Queue view layout
+The download activity view SHALL display two tabs: Queue and History. The Queue tab SHALL show active downloads in a pinned non-draggable section at the top, followed by priority-bucketed queue sections (High, Normal, Low) below.
 
-#### Scenario: Priority badge
-- **WHEN** a download has priority High or Low
-- **THEN** the queue item SHALL display a visual priority indicator
-- **AND** Normal-priority items SHALL NOT display a priority indicator (it is the default)
+#### Scenario: Merged queue view
+- **WHEN** the user navigates to the Activity/Queue view
+- **THEN** active downloads SHALL be shown at the top
+- **AND** queued downloads SHALL be grouped by priority below
 
-### Requirement: Priority grouping
-The download queue view SHALL visually group items by priority bucket.
+#### Scenario: Empty queue
+- **WHEN** no downloads are active or queued
+- **THEN** an empty state message SHALL be displayed
 
-#### Scenario: Visual separation
-- **WHEN** the queue contains items of different priorities
-- **THEN** items SHALL be displayed in priority order (High, Normal, Low) matching the backend queue order
+### Requirement: Priority bucket sections
+Each priority level (High, Normal, Low) SHALL have a labeled section header showing the priority name and item count. Sections with no items SHALL be hidden (except during drag).
+
+#### Scenario: Priority section header
+- **WHEN** the Normal bucket contains 3 items
+- **THEN** the section header SHALL display "Normal (3)"
+
+#### Scenario: Empty bucket hidden
+- **WHEN** the High bucket contains no items and no drag is active
+- **THEN** the High section SHALL not be rendered
+
+### Requirement: Priority badge on queue cards
+Queue cards SHALL NOT display a priority badge — the section header provides the priority context. This avoids visual redundancy.
+
+#### Scenario: No badge on Normal item
+- **WHEN** a Normal-priority item is rendered inside the Normal section
+- **THEN** no priority badge or label SHALL appear on the card itself
