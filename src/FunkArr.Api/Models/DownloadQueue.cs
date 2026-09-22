@@ -10,7 +10,10 @@ public sealed record DownloadQueueResponse(
     DownloadQueueItem[] Items,
     int TotalSlots,
     int ActiveCount,
-    int QueuedCount);
+    int QueuedCount,
+    bool IsPaused,
+    bool IsScheduleActive,
+    DateTimeOffset? NextWindow);
 
 public sealed record DownloadQueueItem(
     string DownloadId,

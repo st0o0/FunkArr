@@ -24,20 +24,20 @@ The DownloadManager SHALL handle `AddDownload` messages by assigning a new `Guid
 - **AND** call DispatchNext to check if the download can start immediately
 
 ### Requirement: DownloadManager enforces concurrency limit
-The DownloadManager SHALL limit the number of concurrent downloads to the configured `DownloadOptions.ConcurrentDownloads` (default 3). The DownloadManager SHALL obtain the current time via an injected `TimeProvider` (not `DateTime.Now`). When a slot is available AND the current server-local time is within a configured download schedule (or no schedule is configured), the Manager SHALL persist a `DownloadDispatched` event and send a bare `StartDownload(DownloadId)` go-signal to the Worker shard region. When outside all scheduled windows, the Manager SHALL schedule a timer for the next window start instead of dispatching.
+The DownloadManager SHALL limit the number of concurrent downloads to the configured `DownloadOptions.ConcurrentDownloads` (default 3). The DownloadManager SHALL use a two-gate dispatch model: dispatching only proceeds when both `ScheduleEnabled` is true (set by DownloadScheduler) AND `Paused` is false (set by user). When a slot is available and both gates are open, the Manager SHALL persist a `DownloadDispatched` event and send a bare `StartDownload(DownloadId)` go-signal to the Worker shard region. The Manager SHALL NOT own any time-window logic, timer management, or TimeProvider dependency.
 
-#### Scenario: Under capacity
+#### Scenario: Under capacity with both gates open
 - **WHEN** DispatchNext runs and fewer than `DownloadOptions.ConcurrentDownloads` downloads are in the Dispatched set
-- **AND** the current time is within a configured schedule window (or no schedule is configured)
+- **AND** `Paused` is false and `ScheduleEnabled` is true
 - **THEN** the Manager SHALL move the next Queued item to the Dispatched set
 - **AND** persist a `DownloadDispatched` event with DownloadId
 - **AND** send `StartDownload(DownloadId)` to the Worker shard region
 
-#### Scenario: Under capacity but outside schedule
+#### Scenario: Under capacity but schedule gate closed
 - **WHEN** DispatchNext runs and slots are available
-- **AND** a schedule is configured and the current time is outside all windows
+- **AND** `ScheduleEnabled` is false
 - **THEN** the Manager SHALL NOT dispatch any downloads
-- **AND** SHALL schedule a timer for the next window start
+- **AND** SHALL NOT manage any timers (timer management belongs to DownloadScheduler)
 
 #### Scenario: At capacity
 - **WHEN** DispatchNext runs and the Dispatched set has reached the configured maximum
@@ -48,13 +48,41 @@ The DownloadManager SHALL limit the number of concurrent downloads to the config
 - **THEN** the Manager SHALL persist a `DownloadDequeued` event for the DownloadId
 - **AND** call DispatchNext
 
-#### Scenario: TimeProvider injection
+### Requirement: DownloadManager handles ScheduleEnabled
+The DownloadManager SHALL handle `ScheduleEnabled` messages from the DownloadScheduler by setting `ScheduleEnabled = true`, clearing `NextWindow`, and calling `DispatchNext()`.
+
+#### Scenario: Schedule enabled
+- **WHEN** a `ScheduleEnabled` message is received
+- **THEN** the Manager SHALL set `ScheduleEnabled = true`
+- **AND** set `NextWindow = null`
+- **AND** call `DispatchNext()`
+
+### Requirement: DownloadManager handles ScheduleDisabled
+The DownloadManager SHALL handle `ScheduleDisabled(DateTimeOffset? NextWindow)` messages from the DownloadScheduler by setting `ScheduleEnabled = false` and storing the next window time.
+
+#### Scenario: Schedule disabled with next window
+- **WHEN** a `ScheduleDisabled(NextWindow: 2026-09-22T23:00:00+02:00)` message is received
+- **THEN** the Manager SHALL set `ScheduleEnabled = false`
+- **AND** set `NextWindow = 2026-09-22T23:00:00+02:00`
+
+### Requirement: DownloadManager state includes gate fields
+The DownloadManager state record SHALL include `Paused` (bool, default false), `ScheduleEnabled` (bool, default true), and `NextWindow` (DateTimeOffset?, default null) alongside the existing Queued and Dispatched fields.
+
+#### Scenario: Default state
+- **WHEN** the Manager starts with an empty journal
+- **THEN** `Paused` SHALL be false
+- **AND** `ScheduleEnabled` SHALL be true
+- **AND** `NextWindow` SHALL be null
+
+### Requirement: DownloadManager does not depend on TimeProvider
+The DownloadManager SHALL NOT inject or depend on `TimeProvider`. All time-related scheduling decisions are made by the DownloadScheduler.
+
+#### Scenario: Constructor signature
 - **WHEN** the DownloadManager is constructed
-- **THEN** it SHALL receive `TimeProvider` via constructor dependency injection
-- **AND** use `TimeProvider.GetLocalNow()` to determine the current time in `DispatchNext()`
+- **THEN** it SHALL accept `IOptionsMonitor<DownloadOptions>` but NOT `TimeProvider`
 
 ### Requirement: DownloadManager answers queue queries
-The DownloadManager SHALL handle `QueryQueue` messages by fanning out `QueryWorkerStatus` to all Workers in its Queued and Dispatched sets, collecting responses, and building a `QueueResult`. The handler SHALL apply the `Category` filter, `Start` offset, and `Limit` from the `QueryQueue` message to the collected responses before building the result.
+The DownloadManager SHALL handle `QueryQueue` messages by fanning out `QueryWorkerStatus` to all Workers in its Queued and Dispatched sets, collecting responses, and building a `QueueResult`. The handler SHALL apply the `Category` filter, `Start` offset, and `Limit` from the `QueryQueue` message to the collected responses before building the result. The `QueueResult` SHALL include `IsPaused`, `IsScheduleActive`, and `NextWindow` pipeline status fields.
 
 #### Scenario: Queue query with fan-out
 - **WHEN** a `QueryQueue` message is received
@@ -75,6 +103,11 @@ The DownloadManager SHALL handle `QueryQueue` messages by fanning out `QueryWork
 #### Scenario: Queue query with Limit 0 means all
 - **WHEN** a `QueryQueue` message is received with `Limit = 0`
 - **THEN** the Manager SHALL return all items (after category filter and start offset)
+
+#### Scenario: Queue query includes pipeline status
+- **WHEN** a `QueryQueue` message is received
+- **AND** the Manager is paused and schedule is disabled with NextWindow = 23:00
+- **THEN** the `QueueResult` SHALL include `IsPaused = true`, `IsScheduleActive = false`, `NextWindow = 23:00`
 
 ### Requirement: DownloadManager handles delete
 The DownloadManager SHALL handle `DeleteDownload` messages for items in its queue (Queued or Dispatched) by dequeuing and cancelling the Worker.

@@ -53,7 +53,11 @@ public static class DownloadsApiEndpoints
                 try
                 {
                     var queueResponse = await manager.Ask<QueueResponse>(new QueryQueue(), _askTimeout, ct);
-                    if (queueResponse is not QueueResult result) continue;
+                    if (queueResponse is not QueueResult result)
+                    {
+                        continue;
+                    }
+
                     var response = result.ToApi();
                     var json = JsonSerializer.Serialize(response, _jsonOptions);
 
@@ -150,6 +154,38 @@ public static class DownloadsApiEndpoints
                 : Results.BadRequest(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Retry failed download")
+        .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(504);
+
+        group.MapPost("/pause", async (IActorRegistry registry) =>
+        {
+            var manager = await registry.GetAsync<IDownloadManager>();
+            var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), _askTimeout);
+            return Results.Ok(new ApiModels.OperationResult(result.Success));
+        })
+        .WithSummary("Pause download pipeline")
+        .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(504);
+
+        group.MapPost("/resume", async (IActorRegistry registry) =>
+        {
+            var manager = await registry.GetAsync<IDownloadManager>();
+            var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), _askTimeout);
+            return Results.Ok(new ApiModels.OperationResult(result.Success));
+        })
+        .WithSummary("Resume download pipeline")
+        .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(504);
+
+        group.MapPost("/queue/{id:guid}/force-start", async (Guid id, IActorRegistry registry) =>
+        {
+            var manager = await registry.GetAsync<IDownloadManager>();
+            var result = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(id), _askTimeout);
+            return result.Success
+                ? Results.Ok(new ApiModels.OperationResult(true))
+                : Results.BadRequest(new ApiModels.OperationResult(false, result.Error));
+        })
+        .WithSummary("Force-start a queued download")
         .Produces<ApiModels.OperationResult>()
         .ProducesProblem(504);
 

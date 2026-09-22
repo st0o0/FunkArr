@@ -12,6 +12,7 @@ public interface IRuleSetUpdater;
 public interface IHistoryRegion;
 public interface IStatsCollector;
 public interface IDownloadManager;
+public interface IDownloadScheduler;
 public interface IDownloadRegion;
 public interface IDownloadHistoryManager;
 public interface IEnrichmentManager;

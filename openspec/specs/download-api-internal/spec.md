@@ -5,19 +5,19 @@
 Internal REST + SSE API endpoints for the FunkArr UI to query download queue state, download history, and perform actions (cancel, delete, retry). Lives in FunkArr.Api alongside existing RuleSet and Setup endpoints.
 ## Requirements
 ### Requirement: Queue snapshot endpoint
-The system SHALL respond to `GET /api/downloads/queue` with a JSON array of current queue items including progress data.
+The system SHALL respond to `GET /api/downloads/queue` with a JSON object containing queue items, progress data, and pipeline status.
 
 #### Scenario: Queue with items
 - **WHEN** `GET /api/downloads/queue` is requested
-- **THEN** the response SHALL be JSON with `items` array and `totalSlots` count
+- **THEN** the response SHALL be JSON with `items` array, `totalSlots` count, `isPaused` (bool), `isScheduleActive` (bool), and `nextWindow` (ISO 8601 string or null)
 - **AND** each item SHALL contain `downloadId` (string), `title` (string), `status` ("Queued" or "Processing"), `channel` (string), `category` (string), `totalBytes` (number), `bytesDownloaded` (number), `percentage` (0-100), `speed` (bytes/second), `eta` (formatted HH:MM:SS string), `hasSubtitles` (bool), `totalDuration` (int, seconds)
 
 #### Scenario: Empty queue
 - **WHEN** `GET /api/downloads/queue` is requested and no downloads are queued or active
-- **THEN** the response SHALL be JSON `{"items":[],"totalSlots":0}`
+- **THEN** the response SHALL be JSON `{"items":[],"totalSlots":0,"isPaused":false,"isScheduleActive":true,"nextWindow":null}`
 
 ### Requirement: Queue SSE stream endpoint
-The system SHALL respond to `GET /api/downloads/queue/stream` with a `text/event-stream` response that pushes the full queue state at a regular interval.
+The system SHALL respond to `GET /api/downloads/queue/stream` with a `text/event-stream` response that pushes the full queue state including pipeline status at a regular interval.
 
 #### Scenario: SSE connection established
 - **WHEN** a client connects to `GET /api/downloads/queue/stream`
@@ -26,7 +26,7 @@ The system SHALL respond to `GET /api/downloads/queue/stream` with a `text/event
 
 #### Scenario: Periodic queue events
 - **WHEN** a client is connected to the SSE stream
-- **THEN** the server SHALL send an event with `event: queue` and `data:` containing the same JSON structure as the queue snapshot endpoint
+- **THEN** the server SHALL send an event with `event: queue` and `data:` containing the same JSON structure as the queue snapshot endpoint (including `isPaused`, `isScheduleActive`, `nextWindow`)
 - **AND** events SHALL be sent approximately every 3 seconds
 
 #### Scenario: Client disconnection
@@ -37,6 +37,48 @@ The system SHALL respond to `GET /api/downloads/queue/stream` with a `text/event
 - **WHEN** the DownloadManager does not respond within the ask timeout during an SSE tick
 - **THEN** the server SHALL skip that tick and retry on the next interval
 - **AND** the SSE connection SHALL remain open
+
+### Requirement: Pause downloads endpoint
+The system SHALL respond to `POST /api/downloads/pause` by sending a `PauseDownloads` message to the DownloadManager.
+
+#### Scenario: Successful pause
+- **WHEN** `POST /api/downloads/pause` is requested
+- **THEN** the system SHALL send `PauseDownloads` to the DownloadManager
+- **AND** respond with HTTP 200 and JSON `{"success":true}`
+
+#### Scenario: Actor timeout
+- **WHEN** the DownloadManager does not respond within the ask timeout
+- **THEN** the response SHALL be HTTP 504 Gateway Timeout
+
+### Requirement: Resume downloads endpoint
+The system SHALL respond to `POST /api/downloads/resume` by sending a `ResumeDownloads` message to the DownloadManager.
+
+#### Scenario: Successful resume
+- **WHEN** `POST /api/downloads/resume` is requested
+- **THEN** the system SHALL send `ResumeDownloads` to the DownloadManager
+- **AND** respond with HTTP 200 and JSON `{"success":true}`
+
+#### Scenario: Actor timeout
+- **WHEN** the DownloadManager does not respond within the ask timeout
+- **THEN** the response SHALL be HTTP 504 Gateway Timeout
+
+### Requirement: Force start download endpoint
+The system SHALL respond to `POST /api/downloads/queue/{id}/force-start` by sending a `ForceStartDownload` message to the DownloadManager.
+
+#### Scenario: Successful force start
+- **WHEN** `POST /api/downloads/queue/{id}/force-start` is requested with a valid DownloadId
+- **AND** the download is in the Queued set
+- **THEN** the system SHALL send `ForceStartDownload` to the DownloadManager
+- **AND** respond with HTTP 200 and JSON `{"success":true}`
+
+#### Scenario: Item not queued
+- **WHEN** `POST /api/downloads/queue/{id}/force-start` is requested
+- **AND** the DownloadManager returns failure
+- **THEN** the response SHALL be HTTP 400 with JSON `{"success":false,"error":"<message>"}`
+
+#### Scenario: Invalid GUID
+- **WHEN** `POST /api/downloads/queue/{id}/force-start` is requested with a non-GUID string
+- **THEN** the response SHALL be HTTP 400
 
 ### Requirement: History endpoint with pagination
 The system SHALL respond to `GET /api/downloads/history` with a paginated JSON list of completed and failed download records.

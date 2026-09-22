@@ -71,6 +71,8 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => resolver.Props<SearchManager>())
             .WithSingleton<IDownloadManager>("download-manager",
                 (_, _, resolver) => resolver.Props<DownloadManager>())
+            .WithSingleton<IDownloadScheduler>("download-scheduler",
+                (_, _, resolver) => resolver.Props<DownloadScheduler>())
             .WithSingleton<IDownloadHistoryManager>("download-history",
                 (_, _, resolver) => resolver.Props<DownloadHistoryManager>())
             .WithSingleton<IScoringManager>("scoring-manager",

@@ -15,20 +15,13 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
-    private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
-    private readonly TimeProvider _timeProvider;
     private int _maxConcurrent;
-    private ICancelable? _scheduleTimer;
     private DownloadManagerState _state = DownloadManagerState.Empty;
-
-    private sealed record ScheduleWake;
 
     public override string PersistenceId => "download-manager";
 
-    public DownloadManager(IOptionsMonitor<DownloadOptions> options, TimeProvider timeProvider)
+    public DownloadManager(IOptionsMonitor<DownloadOptions> options)
     {
-        _optionsMonitor = options;
-        _timeProvider = timeProvider;
         _maxConcurrent = options.CurrentValue.ConcurrentDownloads;
 
         Command<AddDownload>(HandleAdd);
@@ -36,25 +29,28 @@ public sealed class DownloadManager : ReceivePersistentActor
         Command<QueryQueue>(HandleQueryQueue);
         Command<DeleteDownload>(HandleDelete);
         Command<RetryDownload>(HandleRetry);
-        Command<ScheduleWake>(_ => DispatchNext());
+        Command<PauseDownloads>(HandlePause);
+        Command<ResumeDownloads>(HandleResume);
+        Command<ForceStartDownload>(HandleForceStart);
+        Command<ScheduleEnabled>(HandleScheduleEnabled);
+        Command<ScheduleDisabled>(HandleScheduleDisabled);
 
         Recover<DownloadEnqueued>(evt => _state = _state.Apply(evt));
         Recover<DownloadDispatched>(evt => _state = _state.Apply(evt));
         Recover<DownloadDequeued>(evt => _state = _state.Apply(evt));
+        Recover<DownloadsPaused>(evt => _state = _state.Apply(evt));
+        Recover<DownloadsResumed>(evt => _state = _state.Apply(evt));
         Recover<RecoveryCompleted>(_ =>
         {
             _state = _state.ResetDispatched();
             DispatchNext();
         });
 
-        options.OnChange(OnOptionsChanged);
-    }
-
-    private void OnOptionsChanged(DownloadOptions opts)
-    {
-        _maxConcurrent = opts.ConcurrentDownloads;
-        CancelScheduleTimer();
-        DispatchNext();
+        options.OnChange(opts =>
+        {
+            _maxConcurrent = opts.ConcurrentDownloads;
+            DispatchNext();
+        });
     }
 
     private void HandleAdd(AddDownload cmd)
@@ -98,7 +94,8 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         if (allIds.Length == 0)
         {
-            Sender.Tell(new QueueResult([], _maxConcurrent, 0));
+            Sender.Tell(new QueueResult([], _maxConcurrent, 0,
+                _state.Paused, _state.ScheduleEnabled, _state.NextWindow));
             return;
         }
 
@@ -106,6 +103,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         var self = Self;
         var region = _downloadRegion;
         var maxConcurrent = _maxConcurrent;
+        var state = _state;
 
         var tasks = allIds.Select(id =>
             region.Ask<WorkerStatusResult>(new QueryWorkerStatus(id), _fanOutTimeout)
@@ -123,10 +121,9 @@ public sealed class DownloadManager : ReceivePersistentActor
                     r.TotalDuration, r.Speed, r.Category))
                 .ToArray();
 
-            return DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent);
+            return DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent, state);
         }, failure: ex => new QueueFailed(ex));
     }
-
 
     private void HandleDelete(DeleteDownload cmd)
     {
@@ -163,20 +160,84 @@ public sealed class DownloadManager : ReceivePersistentActor
         });
     }
 
-    private void DispatchNext()
+    private void HandlePause(PauseDownloads _)
     {
-        var schedule = _optionsMonitor.CurrentValue.DownloadSchedule;
-        var now = TimeOnly.FromTimeSpan(_timeProvider.GetLocalNow().TimeOfDay);
-
-        if (!DownloadScheduleHelper.IsWithinSchedule(now, schedule))
+        if (_state.Paused)
         {
-            var delay = DownloadScheduleHelper.DelayUntilNextWindow(now, schedule);
-            _log.Info("Outside download schedule, next window in {Delay}", delay);
-            ScheduleWakeUp(delay);
+            Sender.Tell(new PauseDownloadsResult(true));
             return;
         }
 
-        CancelScheduleTimer();
+        var sender = Sender;
+        Persist(new DownloadsPaused(), e =>
+        {
+            _state = _state.Apply(e);
+            _log.Info("Downloads paused by user");
+            sender.Tell(new PauseDownloadsResult(true));
+        });
+    }
+
+    private void HandleResume(ResumeDownloads _)
+    {
+        if (!_state.Paused)
+        {
+            Sender.Tell(new ResumeDownloadsResult(true));
+            return;
+        }
+
+        var sender = Sender;
+        Persist(new DownloadsResumed(), e =>
+        {
+            _state = _state.Apply(e);
+            _log.Info("Downloads resumed by user");
+            sender.Tell(new ResumeDownloadsResult(true));
+            DispatchNext();
+        });
+    }
+
+    private void HandleForceStart(ForceStartDownload cmd)
+    {
+        if (_state.Dispatched.Contains(cmd.DownloadId))
+        {
+            Sender.Tell(new ForceStartDownloadResult(false, "Item already dispatched"));
+            return;
+        }
+
+        if (!_state.Queued.Contains(cmd.DownloadId))
+        {
+            Sender.Tell(new ForceStartDownloadResult(false, "Item not queued"));
+            return;
+        }
+
+        var sender = Sender;
+        Persist(new DownloadDispatched(cmd.DownloadId), e =>
+        {
+            _state = _state.Apply(e);
+            _log.Info("Force-starting download {DownloadId}", cmd.DownloadId);
+            _downloadRegion.Tell(new StartDownload(cmd.DownloadId));
+            sender.Tell(new ForceStartDownloadResult(true, null));
+        });
+    }
+
+    private void HandleScheduleEnabled(ScheduleEnabled _)
+    {
+        _state = _state with { ScheduleEnabled = true, NextWindow = null };
+        _log.Info("Download schedule enabled");
+        DispatchNext();
+    }
+
+    private void HandleScheduleDisabled(ScheduleDisabled msg)
+    {
+        _state = _state with { ScheduleEnabled = false, NextWindow = msg.NextWindow };
+        _log.Info("Download schedule disabled, next window: {NextWindow}", msg.NextWindow);
+    }
+
+    private void DispatchNext()
+    {
+        if (_state.Paused || !_state.ScheduleEnabled)
+        {
+            return;
+        }
 
         var toDispatch = new List<Guid>();
 
@@ -206,17 +267,5 @@ public sealed class DownloadManager : ReceivePersistentActor
             _log.Info("Dispatching download {DownloadId}", downloadId);
             _downloadRegion.Tell(new StartDownload(downloadId));
         }
-    }
-
-    private void ScheduleWakeUp(TimeSpan delay)
-    {
-        CancelScheduleTimer();
-        _scheduleTimer = Context.System.Scheduler.ScheduleTellOnceCancelable(delay, Self, new ScheduleWake(), ActorRefs.NoSender);
-    }
-
-    private void CancelScheduleTimer()
-    {
-        _scheduleTimer?.Cancel();
-        _scheduleTimer = null;
     }
 }

@@ -5,7 +5,10 @@ namespace FunkArr.Download;
 
 public sealed record DownloadManagerState(
     IReadOnlyList<Guid> Queued,
-    IReadOnlySet<Guid> Dispatched)
+    IReadOnlySet<Guid> Dispatched,
+    bool Paused = false,
+    bool ScheduleEnabled = true,
+    DateTimeOffset? NextWindow = null)
 {
     public static readonly DownloadManagerState Empty = new([], new HashSet<Guid>());
 }
@@ -26,10 +29,16 @@ public static class DownloadManagerStateExtensions
     public static DownloadManagerState ResetDispatched(this DownloadManagerState state)
         => new(Queued: [.. state.Dispatched, .. state.Queued], Dispatched: new HashSet<Guid>());
 
+    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadsPaused _)
+        => state with { Paused = true };
+
+    public static DownloadManagerState Apply(this DownloadManagerState state, DownloadsResumed _)
+        => state with { Paused = false };
+
     public static bool Contains(this DownloadManagerState state, Guid downloadId)
         => state.Queued.Contains(downloadId) || state.Dispatched.Contains(downloadId);
 
-    public static QueueResult PaginateQueue(QueueItem[] items, QueryQueue query, int totalSlots)
+    public static QueueResult PaginateQueue(QueueItem[] items, QueryQueue query, int totalSlots, DownloadManagerState state)
     {
         IEnumerable<QueueItem> filtered = items;
         if (query.Category is not null)
@@ -47,6 +56,7 @@ public static class DownloadManagerStateExtensions
             paged = paged.Take(query.Limit);
         }
 
-        return new QueueResult(paged.ToArray(), totalSlots, totalItems);
+        return new QueueResult(paged.ToArray(), totalSlots, totalItems,
+            state.Paused, state.ScheduleEnabled, state.NextWindow);
     }
 }

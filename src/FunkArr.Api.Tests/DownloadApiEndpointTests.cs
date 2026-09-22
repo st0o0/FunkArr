@@ -126,7 +126,7 @@ public sealed class DownloadApiEndpointTests
     [Fact]
     public void Queue_response_preserves_total_slots()
     {
-        var queueResult = new QueueResult([], 5, 0);
+        var queueResult = new QueueResult([], 5, 0, false, true, null);
 
         var response = queueResult.ToApi();
 
@@ -145,7 +145,7 @@ public sealed class DownloadApiEndpointTests
             new QueueItem(Guid.NewGuid(), "B", DownloadStatus.Processing, "ZDF", false, 100, 50, 1_000_000, 10, 1.0, MediaType.Show),
             new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, 0, 0, 0, 0, MediaType.Show),
         };
-        var queueResult = new QueueResult(items, 3, 3);
+        var queueResult = new QueueResult(items, 3, 3, false, true, null);
 
         var response = queueResult.ToApi();
 

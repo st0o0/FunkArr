@@ -10,7 +10,8 @@ internal static class DownloadMappingExtensions
         var items = result.Items.Select(i => i.ToApi()).ToArray();
         var activeCount = result.Items.Count(i => i.Status == DownloadStatus.Processing);
         var queuedCount = result.Items.Count(i => i.Status == DownloadStatus.Queued);
-        return new ApiModels.DownloadQueueResponse(items, result.TotalSlots, activeCount, queuedCount);
+        return new ApiModels.DownloadQueueResponse(items, result.TotalSlots, activeCount, queuedCount,
+            result.IsPaused, result.IsScheduleActive, result.NextWindow);
     }
 
     internal static ApiModels.DownloadQueueItem ToApi(this QueueItem item)

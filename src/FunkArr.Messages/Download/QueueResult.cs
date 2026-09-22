@@ -2,7 +2,13 @@ namespace FunkArr.Messages.Download;
 
 public abstract record QueueResponse;
 
-public sealed record QueueResult(QueueItem[] Items, int TotalSlots, int TotalItems) : QueueResponse;
+public sealed record QueueResult(
+    QueueItem[] Items,
+    int TotalSlots,
+    int TotalItems,
+    bool IsPaused,
+    bool IsScheduleActive,
+    DateTimeOffset? NextWindow) : QueueResponse;
 
 public sealed record QueueFailed(Exception Cause) : QueueResponse;
 

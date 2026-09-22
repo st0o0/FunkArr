@@ -129,6 +129,45 @@ public sealed class DownloadManagerStateTests
         Assert.Equal(2, state.Dispatched.Count);
     }
 
+    [Fact]
+    public void Apply_Paused_sets_paused_true()
+    {
+        var state = DownloadManagerState.Empty
+            .Apply(new DownloadsPaused());
+
+        Assert.True(state.Paused);
+    }
+
+    [Fact]
+    public void Apply_Resumed_sets_paused_false()
+    {
+        var state = DownloadManagerState.Empty
+            .Apply(new DownloadsPaused())
+            .Apply(new DownloadsResumed());
+
+        Assert.False(state.Paused);
+    }
+
+    [Fact]
+    public void Default_state_has_schedule_enabled_and_not_paused()
+    {
+        Assert.False(DownloadManagerState.Empty.Paused);
+        Assert.True(DownloadManagerState.Empty.ScheduleEnabled);
+        Assert.Null(DownloadManagerState.Empty.NextWindow);
+    }
+
+    [Fact]
+    public void PaginateQueue_includes_pipeline_status()
+    {
+        var state = DownloadManagerState.Empty with { Paused = true, ScheduleEnabled = false, NextWindow = DateTimeOffset.UtcNow };
+        var items = new[] { MakeItem("A") };
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(), 3, state);
+
+        Assert.True(result.IsPaused);
+        Assert.False(result.IsScheduleActive);
+        Assert.NotNull(result.NextWindow);
+    }
+
     private static QueueItem MakeItem(string title, MediaType category = MediaType.Show) =>
         new(Guid.NewGuid(), title, DownloadStatus.Queued, "", false, 1000, 0, 0, 100, 0, category);
 
@@ -137,7 +176,7 @@ public sealed class DownloadManagerStateTests
     {
         var items = new[] { MakeItem("A"), MakeItem("B"), MakeItem("C") };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(), 3, DownloadManagerState.Empty);
 
         Assert.Equal(3, result.Items.Length);
         Assert.Equal(3, result.TotalItems);
@@ -149,7 +188,7 @@ public sealed class DownloadManagerStateTests
     {
         var items = new[] { MakeItem("A"), MakeItem("B"), MakeItem("C"), MakeItem("D") };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 2), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 2), 3, DownloadManagerState.Empty);
 
         Assert.Equal(2, result.Items.Length);
         Assert.Equal("B", result.Items[0].Title);
@@ -162,7 +201,7 @@ public sealed class DownloadManagerStateTests
     {
         var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Movie), MakeItem("C", MediaType.Show) };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3, DownloadManagerState.Empty);
 
         Assert.Equal(2, result.Items.Length);
         Assert.Equal(2, result.TotalItems);
@@ -173,7 +212,7 @@ public sealed class DownloadManagerStateTests
     {
         var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Movie) };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3, DownloadManagerState.Empty);
 
         Assert.Single(result.Items);
     }
@@ -183,7 +222,7 @@ public sealed class DownloadManagerStateTests
     {
         var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Show), MakeItem("C", MediaType.Show), MakeItem("D", MediaType.Movie) };
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 1, Category: MediaType.Show), 3);
+        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 1, Category: MediaType.Show), 3, DownloadManagerState.Empty);
 
         Assert.Single(result.Items);
         Assert.Equal("B", result.Items[0].Title);
