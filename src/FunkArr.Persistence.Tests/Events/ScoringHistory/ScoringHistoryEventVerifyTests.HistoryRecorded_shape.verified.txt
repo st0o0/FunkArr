@@ -29,7 +29,7 @@
           "Priority": 1,
           "Outcome": 0,
           "FilterTrace": {
-            "Operator": "and",
+            "Operator": 0,
             "Passed": true,
             "Nodes": [
               {
@@ -44,9 +44,9 @@
             ]
           },
           "IdentificationTrace": {
-            "Strategy": "seasonAndEpisodeNumber",
+            "Strategy": 0,
             "Attempted": true,
-            "Detail": "S01E05"
+            "Detail": null
           }
         }
       ],
