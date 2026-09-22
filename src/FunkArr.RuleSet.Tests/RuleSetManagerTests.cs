@@ -113,7 +113,7 @@ public sealed class RuleSetManagerTests : TestKit
         Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
         shardProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
-        AwaitCondition(() => _dataFiles.Watchers.Count >= 1);
+        AwaitCondition(() => _dataFiles.Watchers.Count >= 2);
 
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "new-show.json");
         File.WriteAllText(filePath, _sampleJson);
@@ -143,7 +143,7 @@ public sealed class RuleSetManagerTests : TestKit
         Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
-        AwaitCondition(() => _dataFiles.Watchers.Count >= 1);
+        AwaitCondition(() => _dataFiles.Watchers.Count >= 2);
 
         File.Delete(filePath);
         _dataFiles.Watchers[0].SimulateDeleted(filePath);
