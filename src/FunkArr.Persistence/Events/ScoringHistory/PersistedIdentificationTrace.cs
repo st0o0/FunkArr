@@ -1,6 +1,6 @@
 namespace FunkArr.Persistence.Events.ScoringHistory;
 
 public sealed record PersistedIdentificationTrace(
-    string? Strategy,
+    PersistedIdentificationStrategy? Strategy,
     bool Attempted,
-    string? Detail);
+    PersistedIdentificationFailureReason? Detail);

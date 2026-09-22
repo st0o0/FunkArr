@@ -22,12 +22,12 @@ public static class TestItemTraceBuilder
             [
                 new PersistedRuleTrace(
                     "rule-1", 1, PersistedRuleOutcome.Matched,
-                    new PersistedFilterGroupTrace("and", true,
+                    new PersistedFilterGroupTrace(PersistedFilterGroupOp.All, true,
                     [
                         new PersistedFilterNodeTrace("title", "contains", "Tatort",
                             "Tatort: Der letzte Schrei", true, false, null)
                     ]),
-                    new PersistedIdentificationTrace("seasonAndEpisodeNumber", true, "S01E05"))
+                    new PersistedIdentificationTrace(PersistedIdentificationStrategy.SeasonAndEpisodeNumber, true, null))
             ],
             EnrichmentTrace: new PersistedEnrichmentTrace(
                 PersistedMatchMethod.TitleMatch, 0.9f, true,

@@ -54,10 +54,10 @@ internal static class PersistenceMapping
             trace.FilterTrace?.ToDomain(), trace.IdentificationTrace?.ToDomain());
 
     public static PersistedFilterGroupTrace ToPersistence(this FilterGroupTrace trace) =>
-        new(trace.Operator.ToString(), trace.Passed, trace.Nodes.Select(n => n.ToPersistence()).ToArray());
+        new((PersistedFilterGroupOp)(int)trace.Operator, trace.Passed, trace.Nodes.Select(n => n.ToPersistence()).ToArray());
 
     public static FilterGroupTrace ToDomain(this PersistedFilterGroupTrace trace) =>
-        new(Enum.Parse<FilterGroupOp>(trace.Operator), trace.Passed, trace.Nodes.Select(n => n.ToDomain()).ToArray());
+        new((FilterGroupOp)(int)trace.Operator, trace.Passed, trace.Nodes.Select(n => n.ToDomain()).ToArray());
 
     public static PersistedFilterNodeTrace ToPersistence(this FilterNodeTrace trace) =>
         new(trace.Field, trace.Op, trace.ExpectedValue, trace.ActualValue,
@@ -74,12 +74,14 @@ internal static class PersistenceMapping
         new(trace.Season, trace.Episode, trace.Title);
 
     public static PersistedIdentificationTrace ToPersistence(this IdentificationTrace trace) =>
-        new(trace.Strategy?.ToString(), trace.Attempted, trace.Detail?.ToString());
+        new(trace.Strategy is not null ? (PersistedIdentificationStrategy)(int)trace.Strategy.Value : null,
+            trace.Attempted,
+            trace.Detail is not null ? (PersistedIdentificationFailureReason)(int)trace.Detail.Value : null);
 
     public static IdentificationTrace ToDomain(this PersistedIdentificationTrace trace) =>
-        new(trace.Strategy is not null ? Enum.Parse<IdentificationStrategy>(trace.Strategy) : null,
+        new(trace.Strategy is not null ? (IdentificationStrategy)(int)trace.Strategy.Value : null,
             trace.Attempted,
-            trace.Detail is not null ? Enum.Parse<IdentificationFailureReason>(trace.Detail) : null);
+            trace.Detail is not null ? (IdentificationFailureReason)(int)trace.Detail.Value : null);
 
     public static PersistedEnrichmentTrace ToPersistence(this EnrichmentTrace trace) =>
         new((PersistedMatchMethod)(int)trace.Method, trace.Confidence, trace.Enriched,

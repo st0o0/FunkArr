@@ -1,6 +1,6 @@
 namespace FunkArr.Persistence.Events.ScoringHistory;
 
 public sealed record PersistedFilterGroupTrace(
-    string Operator,
+    PersistedFilterGroupOp Operator,
     bool Passed,
     PersistedFilterNodeTrace[] Nodes);
