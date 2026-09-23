@@ -64,6 +64,7 @@ public sealed class ApiKeyActionFilterTests
 
         Assert.True(called);
         Assert.Null(context.Result);
+        Assert.Equal("test-api-key", context.HttpContext.Items["ApiKey"]);
     }
 
     [Fact]
@@ -100,13 +101,28 @@ public sealed class ApiKeyActionFilterTests
 
         Assert.True(called);
         Assert.Null(context.Result);
+        Assert.Equal("test-api-key", context.HttpContext.Items["ApiKey"]);
+    }
+
+    [Fact]
+    public async Task Filter_does_not_store_key_on_failure()
+    {
+        var filter = new NewznabApiKeyFilter(_options);
+        var context = CreateContext(apiKey: "wrong-key");
+
+        await filter.OnActionExecutionAsync(context, () =>
+            Task.FromResult(new ActionExecutedContext(context, [], null!)));
+
+        Assert.False(context.HttpContext.Items.ContainsKey("ApiKey"));
     }
 
     private static ActionExecutingContext CreateContext(string? apiKey)
     {
         var httpContext = new DefaultHttpContext();
         if (apiKey is not null)
+        {
             httpContext.Request.QueryString = new QueryString($"?apikey={apiKey}");
+        }
 
         var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
         return new ActionExecutingContext(actionContext, [], new Dictionary<string, object?>(), null!);
