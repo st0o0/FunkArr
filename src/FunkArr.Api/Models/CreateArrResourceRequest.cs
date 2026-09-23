@@ -1,10 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using FunkArr.Api.Validation;
 
 namespace FunkArr.Api.Models;
 
 public sealed record CreateArrResourceRequest(
-    [property: Required, SafeUrl] string Url,
+    [property: Required] string Url,
     [property: Required] string ApiKey,
     string? FunkArrUrl = null);
 
