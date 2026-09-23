@@ -10,7 +10,7 @@ public sealed record EnrichmentConfig(
 
 public sealed record TitleMatchConfig(float Threshold);
 
-public sealed record AirdateMatchConfig(int Tolerance);
+public sealed record AirdateMatchConfig(int Tolerance, float MinTitleAffinity = 0.3f);
 
 public sealed record RuntimeMatchConfig(float Tolerance, RuntimeMode Mode);
 

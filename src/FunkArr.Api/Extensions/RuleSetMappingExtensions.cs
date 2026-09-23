@@ -44,7 +44,7 @@ internal static class RuleSetMappingExtensions
         new(config.Enabled,
             config.Methods.Select(m => (ApiModels.EnrichmentMethod)(int)m).ToArray(),
             new ApiModels.TitleMatchConfigOutput(config.Title.Threshold),
-            new ApiModels.AirdateMatchConfigOutput(config.Airdate.Tolerance),
+            new ApiModels.AirdateMatchConfigOutput(config.Airdate.Tolerance, config.Airdate.MinTitleAffinity),
             new ApiModels.RuntimeMatchConfigOutput(config.Runtime.Tolerance, (ApiModels.RuntimeMode)(int)config.Runtime.Mode),
             new ApiModels.YearMatchConfigOutput(config.Year.Tolerance));
 
@@ -53,7 +53,7 @@ internal static class RuleSetMappingExtensions
             (input.Methods ?? [ApiModels.EnrichmentMethod.Title, ApiModels.EnrichmentMethod.Airdate])
                 .Select(m => (EnrichmentMethod)(int)m).ToArray(),
             new TitleMatchConfig(input.Title?.Threshold ?? 0.7f),
-            new AirdateMatchConfig(input.Airdate?.Tolerance ?? 7),
+            new AirdateMatchConfig(input.Airdate?.Tolerance ?? 7, input.Airdate?.MinTitleAffinity ?? 0.3f),
             new RuntimeMatchConfig(
                 input.Runtime?.Tolerance ?? 0.35f,
                 input.Runtime?.Mode is not null ? (RuntimeMode)(int)input.Runtime.Mode : RuntimeMode.Tiebreaker),

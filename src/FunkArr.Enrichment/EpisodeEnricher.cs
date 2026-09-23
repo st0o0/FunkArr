@@ -48,12 +48,15 @@ public static class EpisodeEnricher
             ? FilterByRuntime(episodes, candidate.Duration, runtimeTolerance)
             : episodes;
 
+        var minTitleAffinity = config?.Airdate.MinTitleAffinity ?? 0.3f;
+        var bestTitleScore = -1f;
+
         foreach (var method in methods)
         {
             var result = method switch
             {
                 EnrichmentMethod.Title => FindByTitle(candidate, filteredEpisodes, titleThreshold, runtimeTolerance),
-                EnrichmentMethod.Airdate => FindByAirdate(candidate, filteredEpisodes, airdateTolerance),
+                EnrichmentMethod.Airdate => FindByAirdateGuarded(candidate, filteredEpisodes, airdateTolerance, minTitleAffinity, ref bestTitleScore),
                 _ => null,
             };
 
@@ -94,6 +97,72 @@ public static class EpisodeEnricher
         return Array.Find(episodes, ep => ep.SeasonNumber == s && ep.Number == e);
     }
 
+    private static readonly string[] _titleSeparator = [" - "];
+
+    internal static float CandidateEpisodeSimilarity(string candidateTitle, string? constructedTitle, string episodeName)
+    {
+        var best = SimilarityWithSegments(candidateTitle, episodeName);
+
+        if (constructedTitle is not null)
+        {
+            best = Math.Max(best, SimilarityWithSegments(constructedTitle, episodeName));
+        }
+
+        return best;
+    }
+
+    private static float SimilarityWithSegments(string candidate, string episodeName)
+    {
+        var best = LevenshteinDistance.Similarity(candidate, episodeName);
+        if (best >= 1.0f)
+        {
+            return best;
+        }
+
+        var segments = episodeName.Split(_titleSeparator, StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length <= 1)
+        {
+            return best;
+        }
+
+        foreach (var segment in segments)
+        {
+            var trimmed = segment.Trim();
+            if (trimmed.Length == 0)
+            {
+                continue;
+            }
+
+            best = Math.Max(best, LevenshteinDistance.Similarity(candidate, trimmed));
+            if (best >= 1.0f)
+            {
+                return best;
+            }
+        }
+
+        return best;
+    }
+
+    internal static float BestTitleScore(EpisodeCandidate candidate, TvdbEpisode[] episodes)
+    {
+        var best = 0f;
+        foreach (var episode in episodes)
+        {
+            if (string.IsNullOrEmpty(episode.Name))
+            {
+                continue;
+            }
+
+            best = Math.Max(best, CandidateEpisodeSimilarity(candidate.Title, candidate.ConstructedTitle, episode.Name));
+            if (best >= 1.0f)
+            {
+                return best;
+            }
+        }
+
+        return best;
+    }
+
     private static EnrichedEpisode? FindByTitle(
         EpisodeCandidate candidate, TvdbEpisode[] episodes, float threshold, float runtimeTolerance)
     {
@@ -107,13 +176,7 @@ public static class EpisodeEnricher
                 continue;
             }
 
-            var similarity = LevenshteinDistance.Similarity(candidate.Title, episode.Name);
-
-            if (candidate.ConstructedTitle is not null)
-            {
-                var constructedSimilarity = LevenshteinDistance.Similarity(candidate.ConstructedTitle, episode.Name);
-                similarity = Math.Max(similarity, constructedSimilarity);
-            }
+            var similarity = CandidateEpisodeSimilarity(candidate.Title, candidate.ConstructedTitle, episode.Name);
 
             if (similarity > bestSimilarity)
             {
@@ -131,16 +194,7 @@ public static class EpisodeEnricher
         {
             var tieBreakers = episodes
                 .Where(ep => !string.IsNullOrEmpty(ep.Name))
-                .Select(ep =>
-                {
-                    var sim = LevenshteinDistance.Similarity(candidate.Title, ep.Name!);
-                    if (candidate.ConstructedTitle is not null)
-                    {
-                        sim = Math.Max(sim, LevenshteinDistance.Similarity(candidate.ConstructedTitle, ep.Name!));
-                    }
-
-                    return (Episode: ep, Similarity: sim);
-                })
+                .Select(ep => (Episode: ep, Similarity: CandidateEpisodeSimilarity(candidate.Title, candidate.ConstructedTitle, ep.Name!)))
                 .Where(x => Math.Abs(x.Similarity - bestSimilarity) < 0.001f)
                 .ToArray();
 
@@ -158,6 +212,26 @@ public static class EpisodeEnricher
             bestMatch.Name ?? "",
             bestSimilarity,
             MatchMethod.TitleMatch);
+    }
+
+    private static EnrichedEpisode? FindByAirdateGuarded(
+        EpisodeCandidate candidate, TvdbEpisode[] episodes, int toleranceDays,
+        float minTitleAffinity, ref float bestTitleScore)
+    {
+        if (minTitleAffinity > 0f)
+        {
+            if (bestTitleScore < 0f)
+            {
+                bestTitleScore = BestTitleScore(candidate, episodes);
+            }
+
+            if (bestTitleScore < minTitleAffinity)
+            {
+                return null;
+            }
+        }
+
+        return FindByAirdate(candidate, episodes, toleranceDays);
     }
 
     private static EnrichedEpisode? FindByAirdate(

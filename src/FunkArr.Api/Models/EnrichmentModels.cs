@@ -10,7 +10,7 @@ public sealed record EnrichmentConfigOutput(
 
 public sealed record TitleMatchConfigOutput(float Threshold);
 
-public sealed record AirdateMatchConfigOutput(int Tolerance);
+public sealed record AirdateMatchConfigOutput(int Tolerance, float MinTitleAffinity);
 
 public sealed record RuntimeMatchConfigOutput(float Tolerance, RuntimeMode Mode);
 
@@ -26,7 +26,7 @@ public sealed record EnrichmentConfigInput(
 
 public sealed record TitleMatchConfigInput(float? Threshold = null);
 
-public sealed record AirdateMatchConfigInput(int? Tolerance = null);
+public sealed record AirdateMatchConfigInput(int? Tolerance = null, float? MinTitleAffinity = null);
 
 public sealed record RuntimeMatchConfigInput(float? Tolerance = null, RuntimeMode? Mode = null);
 

@@ -27,6 +27,20 @@ internal sealed class TvdbEnrichmentActor : ReceiveActor
                 : episodes;
 
             var enriched = EpisodeEnricher.Resolve(filtered, msg.Candidates, msg.Config);
+
+            if (msg.Season is not null && enriched.Length < msg.Candidates.Length)
+            {
+                var matchedIndices = new HashSet<int>(enriched.Select(e => e.Index));
+                var unmatched = msg.Candidates.Where(c => !matchedIndices.Contains(c.Index)).ToArray();
+
+                if (unmatched.Length > 0)
+                {
+                    var fallback = EpisodeEnricher.Resolve(episodes, unmatched, msg.Config);
+                    var penalized = fallback.Select(e => e with { Confidence = e.Confidence * 0.9f }).ToArray();
+                    enriched = [.. enriched, .. penalized];
+                }
+            }
+
             Sender.Tell(new EnrichEpisodesCompleted(enriched));
         }
         catch (Exception ex)

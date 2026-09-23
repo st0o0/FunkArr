@@ -129,7 +129,7 @@ public static class RuleSetMerger
             Enabled: raw?.Enabled ?? true,
             Methods: raw?.Methods?.ToArray() ?? [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
             Title: new TitleMatchConfig(raw?.Title?.Threshold ?? 0.7f),
-            Airdate: new AirdateMatchConfig(raw?.Airdate?.Tolerance ?? 7),
+            Airdate: new AirdateMatchConfig(raw?.Airdate?.Tolerance ?? 7, raw?.Airdate?.MinTitleAffinity ?? 0.3f),
             Runtime: new RuntimeMatchConfig(
                 raw?.Runtime?.Tolerance ?? 0.35f,
                 raw?.Runtime?.Mode ?? RuntimeMode.Tiebreaker),
@@ -164,6 +164,7 @@ public static class RuleSetMerger
             Airdate = local.Airdate is not null ? new RawAirdateMatch
             {
                 Tolerance = local.Airdate.Tolerance ?? community.Airdate?.Tolerance,
+                MinTitleAffinity = local.Airdate.MinTitleAffinity ?? community.Airdate?.MinTitleAffinity,
             } : community.Airdate,
             Runtime = local.Runtime is not null ? new RawRuntimeMatch
             {
@@ -561,6 +562,7 @@ public static class RuleSetMerger
     internal sealed class RawAirdateMatch
     {
         public int? Tolerance { get; set; }
+        public float? MinTitleAffinity { get; set; }
     }
 
     internal sealed class RawRuntimeMatch

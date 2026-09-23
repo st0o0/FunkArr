@@ -12,6 +12,14 @@ public sealed class EpisodeEnricherTests
         new(2026, 16, "Könige der Nacht", "2026-05-03", 88),
     ];
 
+    private static readonly TvdbEpisode[] _compositeEpisodes =
+    [
+        new(2026, 1, "Winkler - 20 - Nachtschatten", "2026-01-01", 89),
+        new(2026, 9, "Odenthal - 83 - Sashimi Spezial", "2026-03-01", 89),
+        new(2026, 17, "Lindholm - 33 - König in Gelb", "2026-09-13", 89),
+        new(2026, 18, "Ballauf & Schenk - 96 - Die letzten Menschen von Köln", "2026-09-20", 89),
+    ];
+
     [Fact]
     public void RegexExtracted_passes_through()
     {
@@ -98,8 +106,9 @@ public sealed class EpisodeEnricherTests
             new EpisodeCandidate(0, "Unknown Title", null,
                 new DateTimeOffset(2026, 1, 2, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
         };
+        var config = MakeConfig(minTitleAffinity: 0f);
 
-        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
+        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
         Assert.Single(results);
         Assert.Equal("2026", results[0].Season);
@@ -115,8 +124,9 @@ public sealed class EpisodeEnricherTests
             new EpisodeCandidate(0, "Unknown Title", null,
                 new DateTimeOffset(2026, 6, 15, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
         };
+        var config = MakeConfig(minTitleAffinity: 0f);
 
-        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
+        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
         Assert.Empty(results);
     }
@@ -175,8 +185,9 @@ public sealed class EpisodeEnricherTests
             new EpisodeCandidate(0, "Unknown", null,
                 new DateTimeOffset(2026, 1, 1, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
         };
+        var config = MakeConfig(minTitleAffinity: 0f);
 
-        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
+        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
         Assert.Single(results);
         Assert.Equal(1.0f, results[0].Confidence);
@@ -238,12 +249,208 @@ public sealed class EpisodeEnricherTests
                 new DateTimeOffset(2026, 1, 5, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
         };
 
-        var defaultResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
-        var config = MakeConfig(airdateTolerance: 2);
+        var defaultResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, MakeConfig(minTitleAffinity: 0f));
+        var config = MakeConfig(airdateTolerance: 2, minTitleAffinity: 0f);
         var narrowResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
         Assert.Single(defaultResults);
         Assert.Empty(narrowResults);
+    }
+
+    [Fact]
+    public void TitleMatch_composite_tvdb_title_matches_segment()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
+
+        Assert.Single(results);
+        Assert.Equal("2026", results[0].Season);
+        Assert.Equal("17", results[0].Episode);
+        Assert.True(results[0].Confidence >= 0.95f);
+        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+    }
+
+    [Fact]
+    public void TitleMatch_composite_tvdb_title_rejects_unrelated()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Bauernsterben", null, null, 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public void TitleMatch_non_composite_title_unchanged()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
+
+        Assert.Single(results);
+        Assert.Equal("1", results[0].Episode);
+    }
+
+    [Fact]
+    public void TitleMatch_constructed_title_compared_against_segments()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Tatort: König in Gelb", "König in Gelb", null, 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
+
+        Assert.Single(results);
+        Assert.Equal("17", results[0].Episode);
+    }
+
+    [Fact]
+    public void TitleMatch_composite_multiple_candidates_match_correct_episodes()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null),
+            new EpisodeCandidate(1, "Sashimi Spezial", null, null, 5340, null, null),
+            new EpisodeCandidate(2, "Die letzten Menschen von Köln", null, null, 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
+
+        Assert.Equal(3, results.Length);
+        Assert.Equal("17", results[0].Episode);
+        Assert.Equal("9", results[1].Episode);
+        Assert.Equal("18", results[2].Episode);
+    }
+
+    [Fact]
+    public void BestTitleScore_returns_segment_score()
+    {
+        var candidate = new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null);
+        var score = EpisodeEnricher.BestTitleScore(candidate, _compositeEpisodes);
+        Assert.True(score >= 0.95f);
+    }
+
+    [Fact]
+    public void BestTitleScore_low_for_unrelated()
+    {
+        var candidate = new EpisodeCandidate(0, "Bauernsterben", null, null, 5340, null, null);
+        var score = EpisodeEnricher.BestTitleScore(candidate, _compositeEpisodes);
+        Assert.True(score < 0.5f);
+    }
+
+    [Fact]
+    public void Season_fallback_matches_rerun_from_other_season()
+    {
+        var season2025 = new TvdbEpisode[]
+        {
+            new(2025, 5, "Schürk & Hölzer - 05 - Das Ende der Nacht", "2025-02-08", 89),
+        };
+        var season2026 = _compositeEpisodes;
+
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Das Ende der Nacht", null, null, 5340, null, null),
+        };
+
+        var firstPass = EpisodeEnricher.Resolve(season2026, candidates);
+        Assert.Empty(firstPass);
+
+        var allSeasons = season2025.Concat(season2026).ToArray();
+        var fallback = EpisodeEnricher.Resolve(allSeasons, candidates);
+        Assert.Single(fallback);
+        Assert.Equal("2025", fallback[0].Season);
+        Assert.Equal("5", fallback[0].Episode);
+    }
+
+    [Fact]
+    public void Season_fallback_confidence_penalty_applied()
+    {
+        var allEpisodes = new TvdbEpisode[]
+        {
+            new(2025, 5, "Das Ende der Nacht", "2025-02-08", 89),
+        };
+
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Das Ende der Nacht", null, null, 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(allEpisodes, candidates);
+        Assert.Single(results);
+
+        var penalized = results[0] with { Confidence = results[0].Confidence * 0.9f };
+        Assert.True(penalized.Confidence < results[0].Confidence);
+        Assert.True(penalized.Confidence > 0.8f);
+    }
+
+    [Fact]
+    public void Season_fallback_not_needed_when_all_matched()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
+        Assert.Single(results);
+        Assert.Equal("17", results[0].Episode);
+    }
+
+    [Fact]
+    public void AirDate_guard_blocks_when_no_title_affinity()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Bauernsterben", null,
+                new DateTimeOffset(2026, 9, 14, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates, MakeConfig());
+
+        Assert.Empty(results);
+    }
+
+    [Fact]
+    public void AirDate_guard_allows_when_title_has_affinity()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "König in Gelb", null,
+                new DateTimeOffset(2026, 9, 14, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+        };
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates, MakeConfig());
+
+        Assert.Single(results);
+        Assert.Equal("17", results[0].Episode);
+        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+    }
+
+    [Fact]
+    public void AirDate_guard_disabled_with_zero_affinity()
+    {
+        var candidates = new[]
+        {
+            new EpisodeCandidate(0, "Bauernsterben", null,
+                new DateTimeOffset(2026, 9, 13, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+        };
+        var config = MakeConfig(minTitleAffinity: 0f);
+
+        var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates, config);
+
+        Assert.Single(results);
+        Assert.Equal(MatchMethod.AirdateMatch, results[0].Method);
     }
 
     private static EnrichmentConfig MakeConfig(
@@ -252,11 +459,12 @@ public sealed class EpisodeEnricherTests
         float titleThreshold = 0.7f,
         int airdateTolerance = 7,
         float runtimeTolerance = 0.35f,
-        RuntimeMode runtimeMode = RuntimeMode.Tiebreaker) =>
+        RuntimeMode runtimeMode = RuntimeMode.Tiebreaker,
+        float minTitleAffinity = 0.3f) =>
         new(enabled,
             methods ?? [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
             new TitleMatchConfig(titleThreshold),
-            new AirdateMatchConfig(airdateTolerance),
+            new AirdateMatchConfig(airdateTolerance, minTitleAffinity),
             new RuntimeMatchConfig(runtimeTolerance, runtimeMode),
             new YearMatchConfig(1));
 }
