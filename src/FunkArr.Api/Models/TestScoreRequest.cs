@@ -1,9 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FunkArr.Api.Models;
 
 public sealed record TestScoreRequest(
-    float DefaultConfidence,
-    RuleInput[] Rules,
-    TestCandidate[] Candidates,
+    [property: Range(0.0, 1.0)] float DefaultConfidence,
+    [property: Required, MinLength(1)] RuleInput[] Rules,
+    [property: Required, MinLength(1)] TestCandidate[] Candidates,
     EnrichmentConfigInput? Enrichment = null,
     int? TvdbId = null,
     int? TmdbId = null,

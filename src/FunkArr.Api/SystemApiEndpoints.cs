@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Models;
+using FunkArr.Api.Validation;
 using FunkArr.Core;
 using FunkArr.Messages.Enrichment;
 using Microsoft.AspNetCore.Builder;
@@ -20,6 +21,7 @@ public static class SystemApiEndpoints
     {
         var group = app.MapGroup("/api/system")
             .WithTags("System")
+            .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapGet("/setup", async (

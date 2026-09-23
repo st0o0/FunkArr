@@ -2,6 +2,7 @@ using System.Text.Json;
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
+using FunkArr.Api.Validation;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
@@ -22,6 +23,7 @@ public static class DownloadsApiEndpoints
     {
         var group = app.MapGroup("/api/downloads")
             .WithTags("Downloads")
+            .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapGet("/queue", async (IActorRegistry registry) =>
@@ -86,11 +88,11 @@ public static class DownloadsApiEndpoints
         .WithSummary("Stream download queue (SSE)")
         .ExcludeFromDescription();
 
-        group.MapGet("/history", async (int? start, int? limit, string? category, IActorRegistry registry) =>
+        group.MapGet("/history", async ([AsParameters] ApiModels.DownloadHistoryRequest req, IActorRegistry registry) =>
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
             var result = await history.Ask<HistoryResult>(
-                new QueryHistory(start ?? 0, limit ?? 25, ParseMediaType(category)), _askTimeout);
+                new QueryHistory(req.Start ?? 0, req.Limit ?? 25, ParseMediaType(req.Category)), _askTimeout);
             return Results.Ok(result.ToApi());
         })
         .WithSummary("Get download history")

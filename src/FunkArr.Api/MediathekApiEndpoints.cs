@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
+using FunkArr.Api.Validation;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
@@ -17,54 +18,45 @@ public static class MediathekApiEndpoints
     {
         var group = app.MapGroup("/api/mediathek")
             .WithTags("Mediathek")
+            .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
 
-        group.MapGet("/search", async (
-            string? q,
-            string? channel,
-            string? topic,
-            int? durationMin,
-            int? durationMax,
-            int? offset,
-            int? limit,
-            string? sortBy,
-            string? sortOrder,
-            IActorRegistry registry) =>
+        group.MapGet("/search", async ([AsParameters] ApiModels.MediathekSearchRequest req, IActorRegistry registry) =>
         {
-            if (string.IsNullOrWhiteSpace(q) && string.IsNullOrWhiteSpace(channel) && string.IsNullOrWhiteSpace(topic))
+            if (string.IsNullOrWhiteSpace(req.Q) && string.IsNullOrWhiteSpace(req.Channel) && string.IsNullOrWhiteSpace(req.Topic))
             {
                 return Results.BadRequest(new ApiModels.ErrorResponse("At least one of q, channel, or topic is required"));
             }
 
-            var actualLimit = Math.Clamp(limit ?? 20, 1, 100);
-            var actualOffset = Math.Max(offset ?? 0, 0);
+            var actualLimit = req.Limit ?? 20;
+            var actualOffset = req.Offset ?? 0;
 
             var fields = new List<MediathekQueryField>();
-            if (!string.IsNullOrWhiteSpace(q))
+            if (!string.IsNullOrWhiteSpace(req.Q))
             {
-                fields.Add(new MediathekQueryField(["title", "topic"], q));
+                fields.Add(new MediathekQueryField(["title", "topic"], req.Q));
             }
 
-            if (!string.IsNullOrWhiteSpace(channel))
+            if (!string.IsNullOrWhiteSpace(req.Channel))
             {
-                fields.Add(new MediathekQueryField(["channel"], channel));
+                fields.Add(new MediathekQueryField(["channel"], req.Channel));
             }
 
-            if (!string.IsNullOrWhiteSpace(topic))
+            if (!string.IsNullOrWhiteSpace(req.Topic))
             {
-                fields.Add(new MediathekQueryField(["topic"], topic));
+                fields.Add(new MediathekQueryField(["topic"], req.Topic));
             }
 
             var manager = await registry.GetAsync<IMediathekManager>();
             var query = new QueryMediathek(
                 fields.ToArray(),
-                SortBy: sortBy,
-                SortOrder: sortOrder,
+                SortBy: req.SortBy,
+                SortOrder: req.SortOrder,
                 Future: false,
                 Offset: actualOffset,
                 Size: actualLimit,
-                DurationMin: durationMin,
-                DurationMax: durationMax);
+                DurationMin: req.DurationMin,
+                DurationMax: req.DurationMax);
 
             var result = await manager.Ask<QueryMediathekResponse>(query, _queryTimeout);
             return result switch

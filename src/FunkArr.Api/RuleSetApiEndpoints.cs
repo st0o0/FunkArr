@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
+using FunkArr.Api.Validation;
 using FunkArr.Core;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.History;
@@ -36,6 +37,7 @@ public static partial class RuleSetApiEndpoints
     {
         var group = app.MapGroup("/api/rulesets")
             .WithTags("Rulesets")
+            .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapGet("/", async (IActorRegistry registry, IDataFiles dataFiles, DataPaths dataPaths) =>
@@ -190,16 +192,6 @@ public static partial class RuleSetApiEndpoints
 
     private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
     {
-        if (string.IsNullOrWhiteSpace(request.RuleSetId))
-        {
-            return Results.BadRequest(new ApiModels.ErrorResponse("ruleSetId is required"));
-        }
-
-        if (!_ruleSetIdPattern.IsMatch(request.RuleSetId))
-        {
-            return Results.BadRequest(new ApiModels.ErrorResponse("ruleSetId must be kebab-case (lowercase letters, numbers, hyphens)"));
-        }
-
         var localPath = Path.Join(dataPaths.LocalRuleSets, $"{request.RuleSetId}.json");
         if (dataFiles.Exists(localPath))
         {

@@ -1,4 +1,5 @@
 using FunkArr.Api.Models;
+using FunkArr.Api.Validation;
 using FunkArr.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -12,6 +13,7 @@ public static class SetupArrEndpoints
     {
         var group = app.MapGroup("/api/setup")
             .WithTags("Setup")
+            .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
 
         group.MapPost("/prowlarr/indexer", async (

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FunkArr.Api.Models;
 
 public enum QueueStatus
@@ -31,8 +33,8 @@ public sealed record DownloadQueueItem(
     string Eta,
     string Priority);
 
-public sealed record MoveRequest(int Position, string? Priority = null);
+public sealed record MoveRequest([property: Range(0, int.MaxValue)] int Position, string? Priority = null);
 
-public sealed record PriorityRequest(string Priority);
+public sealed record PriorityRequest([property: Required] string Priority);
 
 public sealed record SwapRequest(Guid Id1, Guid Id2);
