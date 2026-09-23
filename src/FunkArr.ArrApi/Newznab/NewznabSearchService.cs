@@ -23,7 +23,9 @@ public sealed class NewznabSearchService(
         var (cmd, category) = BuildCommand(req);
 
         if (cmd is null)
+        {
             return new SearchServiceResult.Empty(req.Offset ?? 0);
+        }
 
         var offset = req.Offset ?? 0;
         var limit = req.Limit ?? DefaultLimit;
@@ -45,10 +47,15 @@ public sealed class NewznabSearchService(
             var rss = ToRss(paged, filtered.Length, offset, baseUrl, apiKey, category);
             return new SearchServiceResult.Success(rss);
         }
+        catch (TimeoutException ex)
+        {
+            logger.LogWarning(ex, "Search timed out for {SearchType} query {Query}", cmd.Source, cmd.Query);
+            return new SearchServiceResult.Failed("Search timed out");
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Search failed for {SearchType} query {Query}", cmd.Source, cmd.Query);
-            return new SearchServiceResult.Failed("Search timed out");
+            return new SearchServiceResult.Failed("Search failed");
         }
     }
 
@@ -128,19 +135,29 @@ public sealed class NewznabSearchService(
         };
 
         if (item.Season is not null)
+        {
             attrs.Add(new NewznabAttribute { Name = "season", Value = item.Season });
+        }
 
         if (item.Episode is not null)
+        {
             attrs.Add(new NewznabAttribute { Name = "episode", Value = item.Episode });
+        }
 
         if (item.TvdbId is not null)
+        {
             attrs.Add(new NewznabAttribute { Name = "tvdbid", Value = item.TvdbId.Value.ToString() });
+        }
 
         if (item.ImdbId is not null)
+        {
             attrs.Add(new NewznabAttribute { Name = "imdb", Value = item.ImdbId });
+        }
 
         if (item.TmdbId is not null)
+        {
             attrs.Add(new NewznabAttribute { Name = "tmdbid", Value = item.TmdbId.Value.ToString() });
+        }
 
         return attrs;
     }

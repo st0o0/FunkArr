@@ -14,7 +14,7 @@ internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> l
         catch (TimeoutException ex)
         {
             var endpoint = context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown";
-            logger.LogError(ex, "Timeout in endpoint {Endpoint}", endpoint);
+            logger.LogWarning(ex, "Timeout in endpoint {Endpoint}", endpoint);
             return ApiResults.GatewayTimeout();
         }
         catch (Exception ex)
@@ -23,7 +23,7 @@ internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> l
             logger.LogError(ex, "Unhandled exception in endpoint {Endpoint}", endpoint);
             return Results.Problem(
                 title: "Internal Server Error",
-                detail: ex.Message,
+                detail: "An unexpected error occurred",
                 statusCode: 500);
         }
     }
