@@ -213,12 +213,12 @@ public sealed class TvSearchWorkerState
         }
 
         var candidates = Items
-            .Where(e => e.Matched && e.HasScoringMetadata && e.Identity.Season is null && e.Identity.Episode is null)
+            .Where(e => e.Matched && e.HasScoringMetadata && e.Match is null)
             .Select(e => new EpisodeCandidate(
                 e.Index, e.Source.Title,
                 _constructedTitles.GetValueOrDefault(e.Index),
                 e.Source.AiredAt, e.Source.Duration,
-                null, null))
+                e.Identity.Season, e.Identity.Episode))
             .ToArray();
 
         if (candidates.Length == 0)

@@ -30,14 +30,6 @@ public static class EpisodeEnricher
     private static EnrichedEpisode? ResolveCandidate(
         EpisodeCandidate candidate, TvdbEpisode[] episodes, EnrichmentConfig? config)
     {
-        if (candidate.ExistingSeason is not null && candidate.ExistingEpisode is not null)
-        {
-            var tvdbMatch = FindBySeasonEpisode(episodes, candidate.ExistingSeason, candidate.ExistingEpisode);
-            return new EnrichedEpisode(candidate.Index,
-                candidate.ExistingSeason, candidate.ExistingEpisode,
-                tvdbMatch?.Name ?? "", 1.0f, MatchMethod.RegexExtracted);
-        }
-
         var titleThreshold = config?.Title.Threshold ?? 0.7f;
         var airdateTolerance = config?.Airdate.Tolerance ?? 7;
         var runtimeTolerance = config?.Runtime.Tolerance ?? 0.35f;
@@ -64,6 +56,14 @@ public static class EpisodeEnricher
             {
                 return result;
             }
+        }
+
+        if (candidate.ExistingSeason is not null && candidate.ExistingEpisode is not null)
+        {
+            return new EnrichedEpisode(candidate.Index,
+                candidate.ExistingSeason, candidate.ExistingEpisode,
+                FindBySeasonEpisode(episodes, candidate.ExistingSeason, candidate.ExistingEpisode)?.Name ?? "",
+                1.0f, MatchMethod.RegexExtracted);
         }
 
         return null;

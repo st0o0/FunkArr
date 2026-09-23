@@ -1,15 +1,19 @@
 ## Purpose
 
 Episode enrichment logic matching Mediathek items to TVDB episodes using multiple match methods in priority order.
-
 ## Requirements
-
 ### Requirement: Episode resolution applies strategies in priority order
-The episode resolver SHALL attempt to enrich each EpisodeCandidate to a TVDB episode using match methods. RegexExtracted SHALL always run first unconditionally. After that, the resolver SHALL walk the `EnrichmentConfig.Methods` array in order, attempting each method until one produces a confident match. If `EnrichmentConfig.Enabled` is false, the resolver SHALL return an empty array. If no method produces a match, the item SHALL remain unenriched. Default method order is [Title, Airdate] which preserves current behavior.
+The episode resolver SHALL attempt to enrich each EpisodeCandidate to a TVDB episode using match methods. The resolver SHALL walk the `EnrichmentConfig.Methods` array in order, attempting each method until one produces a confident match. If a configured method produces a match, its TVDB-sourced Season/Episode SHALL be used. If no configured method matches and the candidate has ExistingSeason/ExistingEpisode (regex-extracted), those SHALL be used as fallback with Method=RegexExtracted and Confidence=1.0. If `EnrichmentConfig.Enabled` is false, the resolver SHALL return an empty array. Default method order is [Title, Airdate].
 
 #### Scenario: Regex-extracted season/episode passes through
-- **WHEN** an EpisodeCandidate has ExistingSeason="2026" and ExistingEpisode="01"
-- **THEN** the resolver SHALL return an EnrichedEpisode with Season="2026", Episode="01", Method=MatchMethod.RegexExtracted, Confidence=1.0 without querying TVDB
+- **WHEN** an EpisodeCandidate has ExistingSeason="5" and ExistingEpisode="13"
+- **AND** no configured enrichment method produces a confident TVDB match
+- **THEN** the resolver SHALL return an EnrichedEpisode with Season="5", Episode="13", Method=MatchMethod.RegexExtracted, Confidence=1.0 as fallback
+
+#### Scenario: Regex-extracted S/E overridden by TVDB match
+- **WHEN** an EpisodeCandidate has ExistingSeason="31" and ExistingEpisode="03"
+- **AND** TitleMatch resolves to TVDB Season="1", Episode="110" with confidence >= threshold
+- **THEN** the resolver SHALL return Season="1", Episode="110", Method=MatchMethod.Title
 
 #### Scenario: Methods array controls fallback order
 - **WHEN** EnrichmentConfig.Methods is [Airdate, Title]
@@ -29,6 +33,7 @@ The episode resolver SHALL attempt to enrich each EpisodeCandidate to a TVDB epi
 
 #### Scenario: No method matches
 - **WHEN** no match method produces a confident match for an EpisodeCandidate
+- **AND** the candidate has no ExistingSeason and no ExistingEpisode
 - **THEN** the resolver SHALL not include that item in the enriched results
 
 ### Requirement: FuzzyTitleMatch uses Levenshtein similarity
@@ -200,3 +205,4 @@ The LevenshteinDistance utility SHALL reside in the `FunkArr.Enrichment` namespa
 #### Scenario: Namespace
 - **WHEN** LevenshteinDistance is referenced
 - **THEN** it SHALL be in the `FunkArr.Enrichment` namespace
+

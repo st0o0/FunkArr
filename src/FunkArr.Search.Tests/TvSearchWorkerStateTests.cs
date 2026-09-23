@@ -209,16 +209,20 @@ public sealed class TvSearchWorkerStateTests
     }
 
     [Fact]
-    public void TryGetEnrichmentRequest_returns_false_when_all_items_have_season_episode()
+    public void TryGetEnrichmentRequest_sends_items_with_existing_season_episode_for_tvdb_resolution()
     {
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
         state.Apply(new ScoreCompleted(Guid.Empty,
             [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))], []));
 
-        var result = state.TryGetEnrichmentRequest(out _);
+        var result = state.TryGetEnrichmentRequest(out var request);
 
-        Assert.False(result);
+        Assert.True(result);
+        Assert.NotNull(request);
+        Assert.Single(request!.Candidates);
+        Assert.Equal("1", request.Candidates[0].ExistingSeason);
+        Assert.Equal("3", request.Candidates[0].ExistingEpisode);
     }
 
     [Fact]

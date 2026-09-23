@@ -268,7 +268,7 @@ public sealed class TvSearchWorkerTests : TestKit
     }
 
     [Fact]
-    public void Resolution_skipped_when_items_have_season_episode()
+    public void Resolution_runs_for_items_with_regex_season_episode()
     {
         var p = RegisterProbes();
         var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker()));
@@ -293,12 +293,20 @@ public sealed class TvSearchWorkerTests : TestKit
                 DateTimeOffset.FromUnixTimeSeconds(1788113728))),
         ], []));
 
+        var enrichMsg = p.Enrichment.ExpectMsg<EnrichEpisodes>();
+        Assert.Single(enrichMsg.Candidates);
+        Assert.Equal("2026", enrichMsg.Candidates[0].ExistingSeason);
+        Assert.Equal("01", enrichMsg.Candidates[0].ExistingEpisode);
+
+        p.Enrichment.Reply(new EnrichEpisodesCompleted(
+        [
+            new EnrichedEpisode(0, "2026", "1", "Episode Title", 0.9f, MatchMethod.AirdateMatch),
+        ]));
+
         var result = ExpectMsg<SearchSeriesCompleted>();
         var item = Assert.Single(result.Items);
         Assert.Equal("2026", item.Season);
-        Assert.Equal("01", item.Episode);
-
-        p.Enrichment.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+        Assert.Equal("1", item.Episode);
     }
 
     [Fact]
