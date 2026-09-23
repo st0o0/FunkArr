@@ -9,7 +9,7 @@ namespace FunkArr.Download;
 
 public sealed class DownloadScheduler : ReceiveActor, IWithTimers
 {
-    private const string TimerKey = "schedule";
+    private const string _timerKey = "schedule";
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
@@ -35,7 +35,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
 
     private void EvaluateSchedule()
     {
-        Timers.Cancel(TimerKey);
+        Timers.Cancel(_timerKey);
 
         var schedule = _optionsMonitor.CurrentValue.DownloadSchedule;
 
@@ -54,7 +54,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
             _downloadManager.Tell(new ScheduleEnabled());
 
             var delayToEnd = DelayUntilWindowEnd(now, schedule);
-            Timers.StartSingleTimer(TimerKey, new Evaluate(), delayToEnd);
+            Timers.StartSingleTimer(_timerKey, new Evaluate(), delayToEnd);
         }
         else
         {
@@ -63,7 +63,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
             _log.Info("Outside download schedule, next window at {NextWindow}", nextWindow);
             _downloadManager.Tell(new ScheduleDisabled(nextWindow));
 
-            Timers.StartSingleTimer(TimerKey, new Evaluate(), delay);
+            Timers.StartSingleTimer(_timerKey, new Evaluate(), delay);
         }
     }
 

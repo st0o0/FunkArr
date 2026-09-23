@@ -67,15 +67,17 @@ public sealed class NewznabSearchService(
             return items;
         }
 
-        var seasonStr = tvParams.Season!.Value.ToString();
+        var season = tvParams.Season!.Value;
 
         if (hasEpisode)
         {
-            var episodeStr = tvParams.Episode!.Value.ToString();
-            return items.Where(i => i.Season == seasonStr && i.Episode == episodeStr).ToArray();
+            var episode = tvParams.Episode!.Value;
+            return items.Where(i =>
+                int.TryParse(i.Season, out var s) && s == season &&
+                int.TryParse(i.Episode, out var e) && e == episode).ToArray();
         }
 
-        return items.Where(i => i.Season == seasonStr).ToArray();
+        return items.Where(i => int.TryParse(i.Season, out var s) && s == season).ToArray();
     }
 
     internal static Rss ToRss(

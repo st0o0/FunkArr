@@ -76,4 +76,35 @@ public sealed class NewznabFilterTests
 
         Assert.Equal(2, filtered.Length);
     }
+
+    [Fact]
+    public void Matches_zero_padded_episode_numbers()
+    {
+        var items = new[]
+        {
+            MakeItem("Folge 5", "05", "07"),
+            MakeItem("Folge 5 720p", "5", "7"),
+        };
+        var tvParams = new SearchCommand.TvParams(5, 7, 12345, null);
+
+        var result = NewznabSearchService.FilterBySeasonEpisode(items, tvParams);
+
+        Assert.Equal(2, result.Length);
+    }
+
+    [Fact]
+    public void Matches_zero_padded_season_only()
+    {
+        var items = new[]
+        {
+            MakeItem("Folge A", "05", "01"),
+            MakeItem("Folge B", "05", "02"),
+            MakeItem("Other season", "06", "01"),
+        };
+        var tvParams = new SearchCommand.TvParams(5, null, 12345, null);
+
+        var result = NewznabSearchService.FilterBySeasonEpisode(items, tvParams);
+
+        Assert.Equal(2, result.Length);
+    }
 }
