@@ -8,17 +8,24 @@ Defines error handling standards for API endpoints, actors, and PipeTo patterns 
 
 ### Requirement: API endpoint catch blocks SHALL log exceptions
 
-Every `catch (Exception)` block in API endpoint code SHALL log the exception with structured context before returning an error response. The log SHALL use `LogError` level and include domain-relevant identifiers as structured properties.
+API endpoint methods that contain try/catch blocks SHALL log the caught exception using `ILogger`. TimeoutException SHALL be logged at Warning level and produce a 504 response. Other exceptions SHALL be logged at Error level and produce a 500 response with a generic message. The `EndpointExceptionFilter` SHALL NOT include `ex.Message` in the response body — it SHALL use a fixed generic message ("An unexpected error occurred") and log the detail server-side only.
 
-#### Scenario: API endpoint catches timeout exception
+#### Scenario: Timeout exception in endpoint
 
-- **WHEN** an API endpoint catches an `Exception` during an actor Ask operation
-- **THEN** it SHALL call `logger.LogError(ex, "...")` with a structured template including the operation name and relevant entity ID before returning the error response
+- **WHEN** an endpoint catches a `TimeoutException`
+- **THEN** the exception is logged at Warning level
+- **THEN** a 504 Gateway Timeout response is returned
 
-#### Scenario: No silent exception swallowing in endpoints
+#### Scenario: General exception in endpoint
 
-- **WHEN** any `catch (Exception)` block exists in FunkArr.Api or FunkArr.ArrApi endpoint code
-- **THEN** the caught exception SHALL be captured in a variable and passed to a logging call
+- **WHEN** an endpoint catches a non-timeout exception
+- **THEN** the exception is logged at Error level
+- **THEN** a 500 response is returned with title "Internal Server Error" and no exception detail in the body
+
+#### Scenario: Exception message not leaked
+
+- **WHEN** the `EndpointExceptionFilter` catches any exception
+- **THEN** the response body contains "An unexpected error occurred" as the detail, not the exception message
 
 ### Requirement: API endpoints SHALL receive ILogger via DI
 

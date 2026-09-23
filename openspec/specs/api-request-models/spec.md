@@ -5,15 +5,19 @@ Typed request models for the internal REST API, replacing raw `JsonElement` pars
 ## Requirements
 
 ### Requirement: CreateRuleSetRequest typed model
-The `CreateRuleSetRequest` SHALL be a fully typed record with: `RuleSetId` (string, required), `Topic` (string, required), `Media` (MediaInput, required), `Rules` (RuleInput[], required), `Aliases` (string[]?), `Confidence` (float?), `Standalone` (bool?), `Disable` (string[]?). No `[JsonExtensionData]` SHALL be used.
+`CreateRuleSetRequest` SHALL be a sealed record implementing `IRuleSetBody`. The record SHALL include DataAnnotation attributes: `[Required]` on `RuleSetId`, `Topic`; `[RegularExpression(@"^[a-z0-9]+(-[a-z0-9]+)*$")]` on `RuleSetId`; `[Required]` and `[MinLength(1)]` on `Rules`. `Confidence` SHALL have `[Range(0.0, 1.0)]` when provided.
 
 #### Scenario: Typed deserialization
 - **WHEN** the API receives a Create request with all fields
 - **THEN** ASP.NET model binding deserializes into the typed record with enum fields resolved
 
 #### Scenario: Missing required field returns 400
-- **WHEN** the API receives a Create request without `topic`
-- **THEN** model binding returns 400 Bad Request automatically
+- **WHEN** a POST request omits `Topic`
+- **THEN** the API returns 400 before the handler executes
+
+#### Scenario: Invalid RuleSetId format
+- **WHEN** a POST request includes `RuleSetId = "Not Kebab"`
+- **THEN** the API returns 400 with a regex validation error
 
 #### Scenario: Serialization for disk
 - **WHEN** the typed request is serialized to JSON for disk storage
@@ -35,15 +39,15 @@ The `UpdateRuleSetRequest` SHALL be a fully typed record identical to `CreateRul
 - **THEN** the validator SHALL receive the same JSON structure as before (field names, nesting)
 
 ### Requirement: TestScoreRequest uses shared RuleInput
-The `TestScoreRequest` SHALL use `RuleInput[]` directly instead of a separate `TestRule[]` type. The record SHALL have: `DefaultConfidence` (float), `Rules` (RuleInput[]), `Candidates` (TestCandidate[]).
+`TestScoreRequest` SHALL be a sealed record. `DefaultConfidence` SHALL have `[Range(0.0, 1.0)]`. `Rules` SHALL have `[Required]` and `[MinLength(1)]`. `Candidates` SHALL have `[Required]` and `[MinLength(1)]`.
 
 #### Scenario: TestScore reuses RuleInput
 - **WHEN** a test score request is received
 - **THEN** the rules array deserializes using the same `RuleInput` type as Create/Update
 
-#### Scenario: Missing config or candidates
-- **WHEN** a JSON body without `rules` or `candidates` is posted
-- **THEN** the endpoint SHALL return 400 Bad Request
+#### Scenario: Empty candidates array
+- **WHEN** a POST request to `/api/rulesets/test` includes an empty `Candidates` array
+- **THEN** the API returns 400
 
 ### Requirement: No manual field extraction in HandleCreate
 The `HandleCreate` endpoint SHALL NOT use `request.Body.TryGetValue(...)` for field extraction. Required field validation SHALL be handled by ASP.NET model binding.
@@ -69,12 +73,17 @@ The `FilterSpec` model with `All`, `Any`, `Not` arrays of `FilterNode` SHALL des
 
 ### Requirement: MediathekSearchRequest typed request record
 
-FunkArr.Api.Models SHALL define a `MediathekSearchRequest` record used with `[AsParameters]` for the `/api/mediathek/search` endpoint. It SHALL contain: Q (string?), Channel (string?), Topic (string?), DurationMin (int?), DurationMax (int?), Offset (int?), Limit (int?), SortBy (string?), SortOrder (string?). All properties SHALL use `[FromQuery]` attributes.
+`MediathekSearchRequest` SHALL be a sealed record with `[FromQuery]` attributes on all properties. The `MediathekApiEndpoints` search endpoint SHALL bind this record via `[AsParameters]` instead of individual lambda parameters. The record SHALL include `[Range]` attributes: `Limit` range 1–100, `Offset` minimum 0, `DurationMin` minimum 0, `DurationMax` minimum 0.
 
-#### Scenario: Query parameters bind to request record
+#### Scenario: Search endpoint binds via AsParameters
 
-- **WHEN** a GET request arrives at `/api/mediathek/search?q=tatort&channel=ARD&limit=50`
-- **THEN** the `MediathekSearchRequest` SHALL have Q="tatort", Channel="ARD", Limit=50, and all other properties null
+- **WHEN** a GET request to `/api/mediathek/search?q=test&limit=10` is received
+- **THEN** the endpoint handler receives a bound `MediathekSearchRequest` instance with `Q = "test"` and `Limit = 10`
+
+#### Scenario: Out of range limit rejected
+
+- **WHEN** a GET request includes `limit=-5`
+- **THEN** the API returns 400 with a validation error on Limit
 
 #### Scenario: OpenAPI shows query parameters
 
@@ -88,17 +97,28 @@ FunkArr.Api.Models SHALL define a `MediathekSearchRequest` record used with `[As
 
 ### Requirement: DownloadHistoryRequest typed request record
 
-FunkArr.Api.Models SHALL define a `DownloadHistoryRequest` record used with `[AsParameters]` for the `/api/downloads/history` endpoint. It SHALL contain: Start (int?), Limit (int?), Category (string?). All properties SHALL use `[FromQuery]` attributes.
+`DownloadHistoryRequest` SHALL be a sealed record with `[FromQuery]` attributes on all properties. The `DownloadsApiEndpoints` history endpoint SHALL bind this record via `[AsParameters]` instead of individual lambda parameters. The record SHALL include `[Range]` attributes: `Start` minimum 0, `Limit` range 1–1000.
 
-#### Scenario: Query parameters bind to request record
+#### Scenario: History endpoint binds via AsParameters
 
-- **WHEN** a GET request arrives at `/api/downloads/history?start=10&limit=25&category=sonarr`
-- **THEN** the `DownloadHistoryRequest` SHALL have Start=10, Limit=25, Category="sonarr"
+- **WHEN** a GET request to `/api/downloads/history?start=0&limit=50` is received
+- **THEN** the endpoint handler receives a bound `DownloadHistoryRequest` instance
 
 #### Scenario: Default values applied in handler
 
 - **WHEN** Start and Limit are null
 - **THEN** the handler SHALL apply defaults (Start=0, Limit=25) - defaulting stays in handler code
+
+### Requirement: CreateArrResourceRequest validated
+`CreateArrResourceRequest` SHALL include `[Required]` on `Url` and `ApiKey`, and `[SafeUrl]` on `Url` to prevent SSRF.
+
+#### Scenario: Missing API key in setup request
+- **WHEN** a POST request to `/api/setup/sonarr/indexer` omits `ApiKey`
+- **THEN** the API returns 400
+
+#### Scenario: SSRF attempt blocked
+- **WHEN** a POST request includes `Url = "http://169.254.169.254/metadata"`
+- **THEN** the API returns 400 with SafeUrl validation error
 
 ### Requirement: RuleSetApiEndpoints list handler extracted
 

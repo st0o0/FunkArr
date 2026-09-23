@@ -7,7 +7,7 @@ Defines domain result types for ArrApi services, ensuring services return typed 
 ## Requirements
 
 ### Requirement: Newznab search service returns domain result
-`NewznabSearchService.Search()` SHALL return a `SearchServiceResult` (abstract sealed record) instead of `IActionResult`. Subtypes: `SearchServiceResult.Ok(Rss Rss)` for successful search, `SearchServiceResult.Empty(int Offset)` for no-query searches, `SearchServiceResult.Failed(string Message)` for errors.
+`NewznabSearchService` SHALL differentiate exception types in its catch block. `TimeoutException` SHALL produce `SearchServiceResult.Failed("Search timed out")`. Other exceptions SHALL produce `SearchServiceResult.Failed("Search failed")` with a distinct message. Both SHALL be logged.
 
 #### Scenario: Successful search returns Ok with Rss
 - **WHEN** `NewznabSearchService.Search()` completes successfully
@@ -17,9 +17,15 @@ Defines domain result types for ArrApi services, ensuring services return typed 
 - **WHEN** the search command cannot be built (no valid search type)
 - **THEN** it SHALL return `SearchServiceResult.Empty` with the requested offset
 
-#### Scenario: Actor timeout returns Failed
-- **WHEN** the actor ask times out or throws
-- **THEN** it SHALL return `SearchServiceResult.Failed` with an error message
+#### Scenario: Timeout during Newznab search
+- **WHEN** the search actor does not respond within the timeout
+- **THEN** the service returns `SearchServiceResult.Failed("Search timed out")`
+- **THEN** the exception is logged at Warning level
+
+#### Scenario: Non-timeout error during Newznab search
+- **WHEN** the search actor throws a non-timeout exception
+- **THEN** the service returns `SearchServiceResult.Failed("Search failed")`
+- **THEN** the exception is logged at Error level
 
 ### Requirement: NZB service returns domain result
 `NzbService.GetNzb()` SHALL return a `NzbGetResult` (abstract sealed record) instead of `IActionResult`. Subtypes: `NzbGetResult.Ok(byte[] Content, string FileName)` for successful NZB generation, `NzbGetResult.Error(NewznabError Error)` for validation failures.
@@ -37,7 +43,20 @@ Defines domain result types for ArrApi services, ensuring services return typed 
 - **THEN** it SHALL return `NzbGetResult.Error` with `NewznabError.IncorrectParameter`
 
 ### Requirement: SABnzbd services return domain results
-`SabnzbdQueueService` and `SabnzbdDownloadService` methods SHALL return domain result types instead of `IActionResult`. A shared `SabnzbdResult` (abstract sealed record) with subtypes `SabnzbdResult.Ok(object Data)` and `SabnzbdResult.Error(string Message, int StatusCode)` SHALL cover all SABnzbd operations.
+`SabnzbdDownloadService` and `SabnzbdQueueService` SHALL wrap all `Ask<>` calls in try/catch blocks. `TimeoutException` SHALL be caught and translated to `SabnzbdResult.Error("Request timed out", 504)`. Other exceptions SHALL be caught and translated to `SabnzbdResult.Error` with an appropriate message and status code. No `Ask<>` call SHALL propagate exceptions to the controller.
+
+#### Scenario: Actor timeout in download service
+- **WHEN** `SabnzbdDownloadService` calls `Ask<>` and the actor does not respond within the timeout
+- **THEN** the service returns `SabnzbdResult.Error("Request timed out", 504)`
+- **THEN** no exception propagates to the controller
+
+#### Scenario: Actor timeout in queue service
+- **WHEN** `SabnzbdQueueService` calls `Ask<>` and the actor does not respond within the timeout
+- **THEN** the service returns `SabnzbdResult.Error("Request timed out", 504)`
+
+#### Scenario: Unexpected exception in service
+- **WHEN** an `Ask<>` call throws a non-timeout exception
+- **THEN** the service logs the exception and returns `SabnzbdResult.Error` with a generic message
 
 #### Scenario: GetQueue returns Ok with queue data
 - **WHEN** `SabnzbdQueueService.GetQueue()` succeeds
@@ -58,6 +77,14 @@ Defines domain result types for ArrApi services, ensuring services return typed 
 #### Scenario: DeleteFromQueue with invalid GUID returns Error
 - **WHEN** `SabnzbdDownloadService.DeleteFromQueue()` is called with non-GUID string
 - **THEN** it SHALL return `SabnzbdResult.Error` with "Item not found" message
+
+### Requirement: SABnzbd queue service guards response types
+`SabnzbdQueueService.GetHistory()` SHALL verify the response type from `Ask<>` before casting. If the response is not the expected type, it SHALL return `SabnzbdResult.Error("History query failed", 502)` instead of throwing an `InvalidCastException`.
+
+#### Scenario: Unexpected response type from history query
+- **WHEN** `GetHistory()` receives an unexpected response type from the actor
+- **THEN** the service returns `SabnzbdResult.Error("History query failed", 502)`
+- **THEN** no `InvalidCastException` is thrown
 
 ### Requirement: Services have no MVC dependency
 Service classes in `FunkArr.ArrApi` SHALL NOT reference types from `Microsoft.AspNetCore.Mvc` namespace. All HTTP-response construction SHALL be the responsibility of controller classes.
