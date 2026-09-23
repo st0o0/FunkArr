@@ -3,20 +3,18 @@ using System.Xml;
 using System.Xml.Serialization;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
-using Microsoft.AspNetCore.Mvc;
 
 namespace FunkArr.ArrApi.Newznab;
 
 public sealed class NzbService
 {
-    private const string _applicationNzb = "application/x-nzb";
     private static readonly XmlSerializer _nzbSerializer = new(typeof(Nzb));
     private static readonly XmlReaderSettings _xmlSettings = new() { DtdProcessing = DtdProcessing.Ignore };
 
-    internal IActionResult GetNzb(string? id)
+    internal NzbGetResult GetNzb(string? id)
     {
         if (string.IsNullOrEmpty(id))
-            return NewznabXmlResult.Error(NewznabError.MissingParameter);
+            return new NzbGetResult.Error(NewznabError.MissingParameter);
 
         string decoded;
         try
@@ -25,18 +23,18 @@ public sealed class NzbService
         }
         catch (FormatException)
         {
-            return NewznabXmlResult.Error(NewznabError.IncorrectParameter);
+            return new NzbGetResult.Error(NewznabError.IncorrectParameter);
         }
 
         var parts = decoded.Split('\t');
         if (parts.Length < 2)
-            return NewznabXmlResult.Error(NewznabError.IncorrectParameter);
+            return new NzbGetResult.Error(NewznabError.IncorrectParameter);
 
         var title = parts[0];
         var url = parts[1];
 
         if (url.Length == 0)
-            return NewznabXmlResult.Error(NewznabError.IncorrectParameter);
+            return new NzbGetResult.Error(NewznabError.IncorrectParameter);
 
         var subtitleUrl = parts.Length > 2 && parts[2].Length > 0 ? parts[2] : null;
         var channel = parts.Length > 3 ? parts[3] : "";
@@ -62,10 +60,9 @@ public sealed class NzbService
         var nzb = new Nzb { Head = new NzbHead { Metas = metas } };
         var xml = NewznabXmlResult.Serialize(nzb);
 
-        return new FileContentResult(Encoding.UTF8.GetBytes(xml), _applicationNzb)
-        {
-            FileDownloadName = $"funkarr-{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}.nzb",
-        };
+        return new NzbGetResult.Success(
+            Encoding.UTF8.GetBytes(xml),
+            $"funkarr-{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}.nzb");
     }
 
     internal NzbParseResult? ParseNzb(Stream stream)

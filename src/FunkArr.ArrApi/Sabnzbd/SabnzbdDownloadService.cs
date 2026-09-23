@@ -4,7 +4,6 @@ using FunkArr.ArrApi.Newznab;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -18,10 +17,10 @@ public sealed class SabnzbdDownloadService(
 {
     private TimeSpan Timeout => TimeSpan.FromSeconds(options.Value.DownloadTimeoutSeconds);
 
-    internal async Task<IActionResult> AddFile(IFormFile? file, string? cat, string? priority)
+    internal async Task<SabnzbdResult> AddFile(IFormFile? file, string? cat, string? priority)
     {
         if (file is null)
-            return new JsonResult(new { status = false, error = "No NZB file uploaded" }) { StatusCode = 400 };
+            return new SabnzbdResult.Error("No NZB file uploaded");
 
         NzbParseResult parsed;
         try
@@ -29,18 +28,18 @@ public sealed class SabnzbdDownloadService(
             await using var stream = file.OpenReadStream();
             var result = nzbService.ParseNzb(stream);
             if (result is null)
-                return new JsonResult(new { status = false, error = "Invalid NZB file: not valid XML" }) { StatusCode = 400 };
+                return new SabnzbdResult.Error("Invalid NZB file: not valid XML");
             parsed = result;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to parse NZB file");
-            return new JsonResult(new { status = false, error = "Invalid NZB file: not valid XML" }) { StatusCode = 400 };
+            return new SabnzbdResult.Error("Invalid NZB file: not valid XML");
         }
 
         var videoUrl = parsed.Meta(FunkArrHeaders.Url) ?? parsed.Meta("url");
         if (string.IsNullOrEmpty(videoUrl))
-            return new JsonResult(new { status = false, error = "Invalid NZB format: missing video URL" }) { StatusCode = 400 };
+            return new SabnzbdResult.Error("Invalid NZB format: missing video URL");
 
         var title = parsed.Meta("title") ?? "Unknown";
         var subtitleUrl = parsed.Meta(FunkArrHeaders.SubtitleUrl);
@@ -58,37 +57,37 @@ public sealed class SabnzbdDownloadService(
         if (priority == "2")
             manager.Tell(new ForceStartDownload(addResult.DownloadId));
 
-        return new JsonResult(new { status = true, nzo_ids = new[] { addResult.DownloadId.ToString() } });
+        return new SabnzbdResult.Ok(new { status = true, nzo_ids = new[] { addResult.DownloadId.ToString() } });
     }
 
-    internal async Task<IActionResult> DeleteFromQueue(string? nzoId)
+    internal async Task<SabnzbdResult> DeleteFromQueue(string? nzoId)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
-            return new JsonResult(new { status = false, error = "Item not found" });
+            return new SabnzbdResult.Error("Item not found");
 
         var manager = await registry.GetAsync<IDownloadManager>();
         var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(downloadId), Timeout);
         return result.Success
-            ? new JsonResult(new { status = true })
-            : new JsonResult(new { status = false, error = result.Error });
+            ? new SabnzbdResult.Ok(new { status = true })
+            : new SabnzbdResult.Error(result.Error ?? "Delete failed");
     }
 
-    internal async Task<IActionResult> DeleteFromHistory(string? nzoId)
+    internal async Task<SabnzbdResult> DeleteFromHistory(string? nzoId)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
-            return new JsonResult(new { status = false, error = "Item not found" });
+            return new SabnzbdResult.Error("Item not found");
 
         var history = await registry.GetAsync<IDownloadHistoryManager>();
         var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(downloadId), Timeout);
         return result.Success
-            ? new JsonResult(new { status = true })
-            : new JsonResult(new { status = false, error = result.Error });
+            ? new SabnzbdResult.Ok(new { status = true })
+            : new SabnzbdResult.Error(result.Error ?? "Delete failed");
     }
 
-    internal async Task<IActionResult> Retry(string? nzoId)
+    internal async Task<SabnzbdResult> Retry(string? nzoId)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
-            return new JsonResult(new { status = false, error = "Item not found" });
+            return new SabnzbdResult.Error("Item not found");
 
         var manager = await registry.GetAsync<IDownloadManager>();
         var history = await registry.GetAsync<IDownloadHistoryManager>();
@@ -96,17 +95,17 @@ public sealed class SabnzbdDownloadService(
         history.Tell(new RemoveHistoryEntry(downloadId));
         var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(downloadId), Timeout);
         return result.Success
-            ? new JsonResult(new { status = true })
-            : new JsonResult(new { status = false, error = result.Error });
+            ? new SabnzbdResult.Ok(new { status = true })
+            : new SabnzbdResult.Error(result.Error ?? "Retry failed");
     }
 
-    internal async Task<IActionResult> SetPriority(string? nzoId, string? priorityValue)
+    internal async Task<SabnzbdResult> SetPriority(string? nzoId, string? priorityValue)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
-            return new JsonResult(new { status = false, error = "Invalid nzo_id" });
+            return new SabnzbdResult.Error("Invalid nzo_id");
 
         if (!int.TryParse(priorityValue, out var priorityInt))
-            return new JsonResult(new { status = false, error = "Invalid priority value" });
+            return new SabnzbdResult.Error("Invalid priority value");
 
         var manager = await registry.GetAsync<IDownloadManager>();
 
@@ -114,26 +113,26 @@ public sealed class SabnzbdDownloadService(
         {
             var forceResult = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(downloadId), Timeout);
             return forceResult.Success
-                ? new JsonResult(new { status = true })
-                : new JsonResult(new { status = false, error = forceResult.Error });
+                ? new SabnzbdResult.Ok(new { status = true })
+                : new SabnzbdResult.Error(forceResult.Error ?? "Force start failed");
         }
 
         var priority = (DownloadPriority)Math.Clamp(priorityInt, -1, 1);
         var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), Timeout);
         return result is SetDownloadPriorityCompleted
-            ? new JsonResult(new { status = true })
-            : new JsonResult(new { status = false, error = (result as SetDownloadPriorityFailed)?.Reason });
+            ? new SabnzbdResult.Ok(new { status = true })
+            : new SabnzbdResult.Error((result as SetDownloadPriorityFailed)?.Reason ?? "Priority change failed");
     }
 
-    internal async Task<IActionResult> Swap(string? nzoId1, string? nzoId2)
+    internal async Task<SabnzbdResult> Swap(string? nzoId1, string? nzoId2)
     {
         if (!Guid.TryParse(nzoId1, out var id1) || !Guid.TryParse(nzoId2, out var id2))
-            return new JsonResult(new { status = false, error = "Invalid nzo_id" });
+            return new SabnzbdResult.Error("Invalid nzo_id");
 
         var manager = await registry.GetAsync<IDownloadManager>();
         var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), Timeout);
         return result is SwapDownloadsCompleted
-            ? new JsonResult(new { status = true })
-            : new JsonResult(new { status = false, error = (result as SwapDownloadsFailed)?.Reason });
+            ? new SabnzbdResult.Ok(new { status = true })
+            : new SabnzbdResult.Error((result as SwapDownloadsFailed)?.Reason ?? "Swap failed");
     }
 }

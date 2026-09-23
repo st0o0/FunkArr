@@ -3,7 +3,6 @@ using Akka.Hosting;
 using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using DownloadQueueResponse = FunkArr.Messages.Download.QueueResponse;
 
@@ -17,18 +16,18 @@ public sealed class SabnzbdQueueService(
 {
     private TimeSpan Timeout => TimeSpan.FromSeconds(arrApiOptions.Value.DownloadTimeoutSeconds);
 
-    internal async Task<IActionResult> GetQueue(int start, int limit, string? category)
+    internal async Task<SabnzbdResult> GetQueue(int start, int limit, string? category)
     {
         var manager = await registry.GetAsync<IDownloadManager>();
         if (await manager.Ask<DownloadQueueResponse>(
                 new QueryQueue(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout)
             is not QueueResult result)
-            return new ObjectResult("Queue query failed") { StatusCode = 502 };
+            return new SabnzbdResult.Error("Queue query failed", 502);
 
         var slots = result.Items.Select((item, index) =>
             SabnzbdResponseMapper.BuildQueueSlot(item, start + index)).ToArray();
 
-        return new JsonResult(new Models.QueueResponse(new QueueData(
+        return new SabnzbdResult.Ok(new Models.QueueResponse(new QueueData(
             Paused: false,
             Speedlimit: "",
             NoofSlotsTotal: result.TotalItems,
@@ -38,7 +37,7 @@ public sealed class SabnzbdQueueService(
             Slots: slots)));
     }
 
-    internal async Task<IActionResult> GetHistory(int start, int limit, string? category)
+    internal async Task<SabnzbdResult> GetHistory(int start, int limit, string? category)
     {
         var history = await registry.GetAsync<IDownloadHistoryManager>();
         var result = await history.Ask<HistoryResult>(
@@ -47,22 +46,22 @@ public sealed class SabnzbdQueueService(
         var slots = result.Items.Select(item =>
             SabnzbdResponseMapper.BuildHistorySlot(item, dataPaths.Complete)).ToArray();
 
-        return new JsonResult(new HistoryResponse(new HistoryData(
+        return new SabnzbdResult.Ok(new HistoryResponse(new HistoryData(
             NoofSlots: result.TotalItems,
             Slots: slots)));
     }
 
-    internal async Task<IActionResult> GetFullStatus()
+    internal async Task<SabnzbdResult> GetFullStatus()
     {
         var manager = await registry.GetAsync<IDownloadManager>();
         if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(), Timeout) is not QueueResult result)
-            return new ObjectResult("Queue query failed") { StatusCode = 502 };
+            return new SabnzbdResult.Error("Queue query failed", 502);
 
         var totalSpeed = result.Items
             .Where(i => i is { Status: DownloadStatus.Processing, Speed: > 0 })
             .Sum(i => i.TotalBytes > 0 ? i.BytesDownloaded / Math.Max(1.0, i.CurrentTimeUs / 1_000_000.0) : 0);
 
-        return new JsonResult(new FullStatusResponse(new FullStatusData(
+        return new SabnzbdResult.Ok(new FullStatusResponse(new FullStatusData(
             Paused: false,
             Speedlimit: "",
             Diskspace1: "0",
@@ -71,10 +70,10 @@ public sealed class SabnzbdQueueService(
             Speed: ((long)totalSpeed).ToString())));
     }
 
-    internal IActionResult GetConfig()
+    internal SabnzbdResult GetConfig()
     {
         var opts = downloadOptions.Value;
-        return new JsonResult(new
+        return new SabnzbdResult.Ok(new
         {
             config = new
             {

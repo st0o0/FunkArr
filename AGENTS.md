@@ -21,8 +21,8 @@ src/
   FunkArr.slnx
   FunkArr/                        # Host: Program.cs, Startup, DI, Config
   FunkArr.Core/                   # Common types, Akka/Servus refs
-  FunkArr.Api/                    # Internal REST API (JSON, OpenAPI-first)
-  FunkArr.ArrApi/                 # Newznab + SABnzbd adapter (thin translation)
+  FunkArr.Api/                    # Internal REST API (Minimal APIs, OpenAPI-first)
+  FunkArr.ArrApi/                 # Newznab + SABnzbd adapter (controller-based API)
   FunkArr.Search/                 # MediathekViewWeb query + fetch
   FunkArr.Download/               # Download pipeline, FFmpeg, subtitles, muxing
   FunkArr.RuleSet/                # Ruleset registry, models, GitHub sync, generator
@@ -75,9 +75,9 @@ Revisit once version hits 1.0+.
 
 ## API path layout
 
-- `/api` - Internal REST API for UI (FunkArr.Api, OpenAPI-first)
-- `/index/api` - Newznab indexer API for Prowlarr/Sonarr/Radarr (FunkArr.ArrApi)
-- `/download/api` - SABnzbd-compatible download client API (FunkArr.ArrApi)
+- `/api` - Internal REST API for UI (FunkArr.Api, Minimal APIs, OpenAPI-first)
+- `/index/api` - Newznab indexer API for Prowlarr/Sonarr/Radarr (FunkArr.ArrApi, controller-based API)
+- `/download/api` - SABnzbd-compatible download client API (FunkArr.ArrApi, controller-based API)
 
 ## Akka conventions
 

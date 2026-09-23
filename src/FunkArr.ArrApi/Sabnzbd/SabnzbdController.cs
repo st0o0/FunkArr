@@ -15,25 +15,25 @@ public sealed class SabnzbdController(
     {
         return (req.Mode ?? "") switch
         {
-            "version" => new JsonResult(new { version = SabnzbdConstants.Version }),
-            "get_config" => queue.GetConfig(),
-            "fullstatus" => await queue.GetFullStatus(),
+            "version" => Ok(new { version = SabnzbdConstants.Version }),
+            "get_config" => MapResult(queue.GetConfig()),
+            "fullstatus" => MapResult(await queue.GetFullStatus()),
             "queue" when req.Name == "delete" && !string.IsNullOrEmpty(req.Value) =>
-                await downloads.DeleteFromQueue(req.Value),
+                MapResult(await downloads.DeleteFromQueue(req.Value)),
             "queue" when req.Name == "priority" && !string.IsNullOrEmpty(req.Value) =>
-                await downloads.SetPriority(req.Value, req.Value2),
+                MapResult(await downloads.SetPriority(req.Value, req.Value2)),
             "queue" when req.Name == "switch" && !string.IsNullOrEmpty(req.Value) && !string.IsNullOrEmpty(req.Value2) =>
-                await downloads.Swap(req.Value, req.Value2),
+                MapResult(await downloads.Swap(req.Value, req.Value2)),
             "queue" when req.Name is not null =>
-                new JsonResult(new { status = false, error = "Invalid queue command" }) { StatusCode = 400 },
-            "queue" => await queue.GetQueue(req.Start ?? 0, req.Limit ?? 0, req.Category),
+                BadRequest(new { status = false, error = "Invalid queue command" }),
+            "queue" => MapResult(await queue.GetQueue(req.Start ?? 0, req.Limit ?? 0, req.Category)),
             "history" when req.Name == "delete" && !string.IsNullOrEmpty(req.Value) =>
-                await downloads.DeleteFromHistory(req.Value),
-            "history" => await queue.GetHistory(req.Start ?? 0, req.Limit ?? 0, req.Category),
+                MapResult(await downloads.DeleteFromHistory(req.Value)),
+            "history" => MapResult(await queue.GetHistory(req.Start ?? 0, req.Limit ?? 0, req.Category)),
             "retry" when string.IsNullOrEmpty(req.Value) =>
-                new JsonResult(new { status = false, error = "Missing value parameter" }) { StatusCode = 400 },
-            "retry" => await downloads.Retry(req.Value),
-            _ => new JsonResult(new { status = false, error = "Invalid mode" }) { StatusCode = 400 },
+                BadRequest(new { status = false, error = "Missing value parameter" }),
+            "retry" => MapResult(await downloads.Retry(req.Value)),
+            _ => BadRequest(new { status = false, error = "Invalid mode" }),
         };
     }
 
@@ -44,8 +44,15 @@ public sealed class SabnzbdController(
         IFormFile? name)
     {
         if ((req.Mode ?? "") != "addfile")
-            return new JsonResult(new { status = false, error = "Invalid mode" }) { StatusCode = 400 };
+            return BadRequest(new { status = false, error = "Invalid mode" });
 
-        return await downloads.AddFile(name, req.Cat, req.Priority);
+        return MapResult(await downloads.AddFile(name, req.Cat, req.Priority));
     }
+
+    private IActionResult MapResult(SabnzbdResult result) => result switch
+    {
+        SabnzbdResult.Ok ok => Ok(ok.Data),
+        SabnzbdResult.Error err => new ObjectResult(new { status = false, error = err.Message }) { StatusCode = err.StatusCode },
+        _ => StatusCode(500, new { status = false, error = "Unexpected result" }),
+    };
 }

@@ -4,7 +4,6 @@ using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Search;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -19,12 +18,12 @@ public sealed class NewznabSearchService(
     internal const int MaxLimit = 500;
     internal const int DefaultLimit = 100;
 
-    internal async Task<IActionResult> Search(IndexerRequest req, string baseUrl, string apiKey)
+    internal async Task<SearchServiceResult> Search(IndexerRequest req, string baseUrl, string apiKey)
     {
         var (cmd, category) = BuildCommand(req);
 
         if (cmd is null)
-            return NewznabXmlResult.Empty(req.Offset ?? 0);
+            return new SearchServiceResult.Empty(req.Offset ?? 0);
 
         var offset = req.Offset ?? 0;
         var limit = req.Limit ?? DefaultLimit;
@@ -44,12 +43,12 @@ public sealed class NewznabSearchService(
             var filtered = FilterBySeasonEpisode(allItems, cmd.Params as SearchCommand.TvParams);
             var paged = filtered.Skip(offset).Take(limit).ToArray();
             var rss = ToRss(paged, filtered.Length, offset, baseUrl, apiKey, category);
-            return NewznabXmlResult.From(rss);
+            return new SearchServiceResult.Success(rss);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Search failed for {SearchType} query {Query}", cmd.Source, cmd.Query);
-            return NewznabXmlResult.Error(NewznabError.UnknownError("Search timed out"));
+            return new SearchServiceResult.Failed("Search timed out");
         }
     }
 

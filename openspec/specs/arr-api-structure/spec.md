@@ -7,7 +7,7 @@ Defines the unified ArrApi adapter project that consolidates Newznab indexer and
 ## Requirements
 
 ### Requirement: Unified ArrApi project
-`FunkArr.ArrApi` SHALL be a single adapter project containing both the Newznab indexer API and SABnzbd download client API. It SHALL use ASP.NET MVC Controllers with constructor-injected services instead of Minimal API static extension methods. Services SHALL be registered via an `AddArrApiServices()` IServiceCollection extension method.
+`FunkArr.ArrApi` SHALL be a single adapter project containing both the Newznab indexer API and SABnzbd download client API. It SHALL use ASP.NET Core controller-based API pattern (`ControllerBase` + `[ApiController]`) with constructor-injected services instead of Minimal API static extension methods. Services SHALL return domain result types; controllers SHALL own HTTP-response mapping. Services SHALL be registered via an `AddArrApiServices()` IServiceCollection extension method.
 
 #### Scenario: Project exists and compiles
 - **WHEN** `dotnet build FunkArr.slnx` is run
@@ -76,15 +76,19 @@ NZB generation and parsing SHALL be encapsulated in `NzbService` within the `Fun
 - **THEN** it SHALL use `NzbService` for NZB parsing
 
 ### Requirement: No business logic in adapter
-`FunkArr.ArrApi` SHALL NOT contain queue management, history tracking, retry logic, or any other domain state. All stateful operations SHALL be delegated to domain projects via Messages. Controllers SHALL be thin dispatchers delegating to services. Services SHALL handle protocol translation only.
+`FunkArr.ArrApi` SHALL NOT contain queue management, history tracking, retry logic, or any other domain state. All stateful operations SHALL be delegated to domain projects via Messages. Controllers SHALL be HTTP-mapping dispatchers that pattern-match on service results. Services SHALL handle protocol translation only and return domain result types without HTTP concerns.
 
 #### Scenario: No DownloadState class
 - **WHEN** examining the ArrApi project
 - **THEN** no class managing download queue or history state SHALL exist
 
-#### Scenario: Controller methods are thin dispatchers
+#### Scenario: Controller methods map service results to HTTP
 - **WHEN** examining controller action methods
-- **THEN** each method SHALL delegate to an injected service and return the result, with no inline business logic
+- **THEN** each method SHALL call a service, pattern-match on the domain result type, and map to `IActionResult` using `ControllerBase` helpers or custom result types
+
+#### Scenario: Services return domain types not IActionResult
+- **WHEN** examining service method signatures
+- **THEN** no service method SHALL return `IActionResult` or any type from `Microsoft.AspNetCore.Mvc`
 
 ### Requirement: ArrApiOptions configuration
 `ArrApiOptions` SHALL be a configuration class bound to `FunkArr:ArrApi` section providing configurable timeouts and cache TTL.

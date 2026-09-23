@@ -13,7 +13,7 @@ a change (proposal/design/specs/tasks) - `/opsx:apply` to implement - `/opsx:arc
 
 - New actor: `funkarr-actor` (Pathfinder pattern with FunkArr namespaces)
 - New message: `funkarr-message` (commands, queries, events)
-- New endpoint: `funkarr-endpoint` (Minimal API + actor Ask)
+- New endpoint: `funkarr-endpoint` (Minimal API + actor Ask, for FunkArr.Api only)
 - New test: `funkarr-test` (TestKit with DataPaths, TestDataFiles)
 
 ### Akka.NET skills (akka-skills plugin)

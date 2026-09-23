@@ -1,7 +1,7 @@
 using System.Text;
 using FunkArr.ArrApi.Newznab;
+using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
-using Microsoft.AspNetCore.Mvc;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 
@@ -10,16 +10,15 @@ public sealed class NzbServiceTests
     private readonly NzbService _service = new();
 
     [Fact]
-    public void GetNzb_returns_file_for_valid_id()
+    public void GetNzb_returns_success_for_valid_id()
     {
         var id = EncodeNzbId("Test Title", "https://example.com/video.mp4");
 
         var result = _service.GetNzb(id);
 
-        Assert.IsType<FileContentResult>(result);
-        var file = (FileContentResult)result;
-        Assert.Equal("application/x-nzb", file.ContentType);
-        Assert.Contains("funkarr-", file.FileDownloadName);
+        var success = Assert.IsType<NzbGetResult.Success>(result);
+        Assert.NotEmpty(success.Content);
+        Assert.Contains("funkarr-", success.FileName);
     }
 
     [Fact]
@@ -27,8 +26,8 @@ public sealed class NzbServiceTests
     {
         var result = _service.GetNzb(null);
 
-        var content = Assert.IsType<ContentResult>(result);
-        Assert.Equal(400, content.StatusCode);
+        var error = Assert.IsType<NzbGetResult.Error>(result);
+        Assert.Equal(200, error.ErrorDetail.Code);
     }
 
     [Fact]
@@ -36,8 +35,7 @@ public sealed class NzbServiceTests
     {
         var result = _service.GetNzb("");
 
-        var content = Assert.IsType<ContentResult>(result);
-        Assert.Equal(400, content.StatusCode);
+        Assert.IsType<NzbGetResult.Error>(result);
     }
 
     [Fact]
@@ -45,8 +43,8 @@ public sealed class NzbServiceTests
     {
         var result = _service.GetNzb("not-valid-base64!!!");
 
-        var content = Assert.IsType<ContentResult>(result);
-        Assert.Equal(400, content.StatusCode);
+        var error = Assert.IsType<NzbGetResult.Error>(result);
+        Assert.Equal(201, error.ErrorDetail.Code);
     }
 
     [Fact]
@@ -56,8 +54,7 @@ public sealed class NzbServiceTests
 
         var result = _service.GetNzb(id);
 
-        var content = Assert.IsType<ContentResult>(result);
-        Assert.Equal(400, content.StatusCode);
+        Assert.IsType<NzbGetResult.Error>(result);
     }
 
     [Fact]
@@ -67,8 +64,7 @@ public sealed class NzbServiceTests
 
         var result = _service.GetNzb(id);
 
-        var content = Assert.IsType<ContentResult>(result);
-        Assert.Equal(400, content.StatusCode);
+        Assert.IsType<NzbGetResult.Error>(result);
     }
 
     [Fact]
@@ -77,8 +73,8 @@ public sealed class NzbServiceTests
         var id = EncodeNzbId("Title", "https://example.com/v.mp4", "https://example.com/sub.vtt");
 
         var result = _service.GetNzb(id);
-        var file = Assert.IsType<FileContentResult>(result);
-        var xml = Encoding.UTF8.GetString(file.FileContents);
+        var success = Assert.IsType<NzbGetResult.Success>(result);
+        var xml = Encoding.UTF8.GetString(success.Content);
 
         Assert.Contains(FunkArrHeaders.SubtitleUrl, xml);
         Assert.Contains("https://example.com/sub.vtt", xml);
@@ -90,8 +86,8 @@ public sealed class NzbServiceTests
         var id = EncodeNzbId("Title", "https://example.com/v.mp4", category: "movie");
 
         var result = _service.GetNzb(id);
-        var file = Assert.IsType<FileContentResult>(result);
-        var xml = Encoding.UTF8.GetString(file.FileContents);
+        var success = Assert.IsType<NzbGetResult.Success>(result);
+        var xml = Encoding.UTF8.GetString(success.Content);
 
         Assert.Contains(FunkArrHeaders.Category, xml);
         Assert.Contains("movie", xml);
