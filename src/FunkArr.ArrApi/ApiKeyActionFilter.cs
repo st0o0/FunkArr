@@ -20,6 +20,7 @@ public abstract class ApiKeyActionFilter(IOptions<FunkArrOptions> options) : IAs
             return;
         }
 
+        context.HttpContext.Items["ApiKey"] = apiKey;
         await next();
     }
 
