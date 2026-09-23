@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FunkArr.ArrApi.Newznab;
 
-internal sealed record IndexerRequest(
+public sealed record IndexerRequest(
     [FromQuery(Name = "t")] string? T,
     [FromQuery(Name = "q")] string? Q,
     [FromQuery(Name = "cat")] string? Cat,

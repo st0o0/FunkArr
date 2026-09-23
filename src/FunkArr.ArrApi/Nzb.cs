@@ -1,6 +1,6 @@
 using System.Xml.Serialization;
 
-namespace FunkArr.ArrApi;
+namespace FunkArr.ArrApi.Newznab;
 
 [XmlRoot("nzb", Namespace = "http://www.newzbin.com/DTD/2003/nzb")]
 public sealed class Nzb

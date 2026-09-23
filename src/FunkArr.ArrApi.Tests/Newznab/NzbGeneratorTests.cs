@@ -23,7 +23,7 @@ public sealed class NzbGeneratorTests
             },
         };
 
-        var xml = NewznabApiEndpoints.Serialize(nzb);
+        var xml = NewznabXmlResult.Serialize(nzb);
         var doc = XDocument.Parse(xml);
         var root = doc.Root!;
 
@@ -54,7 +54,7 @@ public sealed class NzbGeneratorTests
             },
         };
 
-        var xml = NewznabApiEndpoints.Serialize(nzb);
+        var xml = NewznabXmlResult.Serialize(nzb);
         var doc = XDocument.Parse(xml);
         var file = doc.Root!.Element(_ns + "file")!;
 

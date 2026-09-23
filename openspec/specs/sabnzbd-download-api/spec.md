@@ -53,11 +53,11 @@ The system SHALL respond to `GET /download/api?mode=get_config` with a JSON obje
 - **THEN** `config.sorters` SHALL be an empty array
 
 ### Requirement: Full status endpoint
-The system SHALL respond to `GET /download/api?mode=fullstatus` with a JSON status object. This endpoint is called by Sonarr/Radarr during connection testing.
+The system SHALL respond to `GET /download/api?mode=fullstatus` by delegating to `SabnzbdQueueService` which queries the DownloadManager actor for speed and status.
 
-#### Scenario: Full status response structure
+#### Scenario: Full status response
 - **WHEN** `?mode=fullstatus` is requested
-- **THEN** the response SHALL be JSON with a `status` object containing `paused` (bool, default false), `speedlimit` (string, default ""), `diskspace1` (string, free GB), `diskspace2` (string, free GB), `completedir` (string, `DownloadOptions.CompletePath`), and `speed` (string, aggregate bytes/second of active downloads)
+- **THEN** `SabnzbdQueueService` SHALL return the status object via the controller
 
 #### Scenario: Skip dashboard parameter accepted
 - **WHEN** `?mode=fullstatus&skip_dashboard=1` is requested
@@ -68,12 +68,11 @@ The system SHALL respond to `GET /download/api?mode=fullstatus` with a JSON stat
 - **THEN** the response SHALL include `status.speed` as the sum of all active download speeds formatted as bytes/second string
 
 ### Requirement: Queue endpoint
-The system SHALL respond to `GET /download/api?mode=queue` by querying the DownloadManager for current queue state and translating the response to SABnzbd JSON format. It SHALL accept optional `start` (int), `limit` (int), `category` (string), and `name` (string, subcommand) parameters.
+The system SHALL respond to `GET /download/api?mode=queue` by delegating to `SabnzbdQueueService` which queries the DownloadManager actor and translates the response to SABnzbd JSON format via `SabnzbdResponseMapper`. The controller SHALL NOT contain inline response mapping logic. It SHALL accept optional `start` (int), `limit` (int), `category` (string), and `name` (string, subcommand) parameters.
 
 #### Scenario: Queue with active downloads
 - **WHEN** the DownloadManager has items in Queued or Processing status
-- **THEN** each slot SHALL contain `nzo_id` (DownloadId string), `status` ("Queued" or "Downloading"), `filename` (title), `cat` (category), `mb` (total MB), `mbleft` (remaining MB), `percentage` (0-100), `timeleft` (formatted), `speed` (bytes/second string), `priority` ("Normal"), `index` (position)
-- **AND** the slot SHALL NOT contain a file path field
+- **THEN** `SabnzbdQueueService` SHALL query the actor and `SabnzbdResponseMapper` SHALL build each slot with `nzo_id`, `status`, `filename`, `cat`, `mb`, `mbleft`, `percentage`, `timeleft`, `speed`, `priority`, `index`
 
 #### Scenario: Queue progress mapping
 - **WHEN** a queue item has DownloadStatus Processing with progress data
@@ -90,12 +89,16 @@ The system SHALL respond to `GET /download/api?mode=queue` by querying the Downl
 - **WHEN** no downloads are in Queued or Processing status
 - **THEN** the response SHALL be JSON with `queue.slots` as empty array and `queue.noofslots_total` as 0
 
+#### Scenario: Queue category filter
+- **WHEN** `?mode=queue&category=sonarr` is requested
+- **THEN** the response SHALL contain only queue slots matching category "sonarr"
+
 ### Requirement: Queue delete subcommand
-The system SHALL respond to `GET /download/api?mode=queue&name=delete&value=<nzo_id>` by sending a `DeleteDownload` message to the DownloadManager. It SHALL accept an optional `del_files` parameter.
+The system SHALL respond to `GET /download/api?mode=queue&name=delete&value=<nzo_id>` by delegating to `SabnzbdDownloadService` which sends `DeleteDownload` to the DownloadManager actor. It SHALL accept an optional `del_files` parameter.
 
 #### Scenario: Successful queue item deletion
 - **WHEN** `?mode=queue&name=delete&value=existing-id` is requested
-- **THEN** the system SHALL send DeleteDownload to the Manager, and respond with JSON `{"status":true}` on success
+- **THEN** `SabnzbdDownloadService` SHALL send DeleteDownload and return `{"status":true}`
 
 #### Scenario: Queue delete with del_files
 - **WHEN** `?mode=queue&name=delete&value=existing-id&del_files=1` is requested
@@ -103,14 +106,14 @@ The system SHALL respond to `GET /download/api?mode=queue&name=delete&value=<nzo
 
 #### Scenario: Queue delete non-existent item
 - **WHEN** `?mode=queue&name=delete&value=non-existent-id` is requested
-- **THEN** the response SHALL be JSON `{"status":false,"error":"Item not found"}`
+- **THEN** the response SHALL be `{"status":false,"error":"Item not found"}`
 
 ### Requirement: History endpoint
-The system SHALL respond to `GET /download/api?mode=history` by querying the DownloadManager for history and translating the response to SABnzbd JSON format. The `storage` field SHALL be derived by resolving `RelativePath` against `DownloadOptions.CompletePath` and extracting the directory. It SHALL accept optional `start` (int), `limit` (int), `category` (string), and `name` (string, subcommand) parameters.
+The system SHALL respond to `GET /download/api?mode=history` by delegating to `SabnzbdQueueService` which queries the DownloadHistoryManager actor and translates the response to SABnzbd JSON format via `SabnzbdResponseMapper`. The `storage` field SHALL be derived by resolving `RelativePath` against `DownloadOptions.CompletePath` and extracting the directory. It SHALL accept optional `start` (int), `limit` (int), `category` (string), and `name` (string, subcommand) parameters.
 
 #### Scenario: History with completed downloads
-- **WHEN** the DownloadManager has items in history
-- **THEN** each slot SHALL contain `nzo_id` (DownloadId string), `name` (title), `nzb_name` (title + ".nzb"), `category` (category), `bytes` (total bytes), `download_time` (seconds), `storage` (resolved directory path), `status` ("Completed", "Failed", "Extracting", "Moving", or "Verifying"), `fail_message` (error string or empty), `completed_on` (Unix timestamp)
+- **WHEN** the DownloadHistoryManager has items in history
+- **THEN** `SabnzbdQueueService` SHALL query the actor and `SabnzbdResponseMapper` SHALL build each slot with `nzo_id`, `name`, `nzb_name`, `category`, `bytes`, `download_time`, `storage`, `status`, `fail_message`, `completed_on`
 
 #### Scenario: Completed download storage path
 - **WHEN** the history endpoint builds a `HistorySlot` for a completed download
@@ -127,11 +130,11 @@ The system SHALL respond to `GET /download/api?mode=history` by querying the Dow
 - **THEN** the response SHALL be JSON `{"history":{"noofslots":0,"slots":[]}}`
 
 ### Requirement: Delete history item
-The system SHALL respond to `GET /download/api?mode=history&name=delete&value=<nzo_id>` by sending a `DeleteDownload` message to the DownloadManager. It SHALL accept optional `del_files` and `archive` parameters.
+The system SHALL respond to `GET /download/api?mode=history&name=delete&value=<nzo_id>` by delegating to `SabnzbdDownloadService` which sends `RemoveHistoryEntry` to the DownloadHistoryManager actor. It SHALL accept optional `del_files` and `archive` parameters.
 
 #### Scenario: Successful history deletion
 - **WHEN** `?mode=history&name=delete&value=existing-id` is requested
-- **THEN** the system SHALL send DeleteDownload to the Manager, and respond with JSON `{"status":true}` on success
+- **THEN** `SabnzbdDownloadService` SHALL send RemoveHistoryEntry and return `{"status":true}`
 
 #### Scenario: History delete with del_files
 - **WHEN** `?mode=history&name=delete&value=existing-id&del_files=1` is requested
@@ -146,30 +149,22 @@ The system SHALL respond to `GET /download/api?mode=history&name=delete&value=<n
 - **THEN** the response SHALL be JSON `{"status":false,"error":"Item not found"}`
 
 ### Requirement: Add file endpoint
-The system SHALL respond to `POST /download/api?mode=addfile&cat=<category>` by accepting an NZB file as a multipart/form-data upload (field name `nzbfile`), parsing all metadata from the NZB XML, sending an `AddDownload` message to the DownloadManager, and returning the assigned download ID. It SHALL forward the `priority` parameter.
+The system SHALL respond to `POST /download/api?mode=addfile` by delegating to `SabnzbdDownloadService` which parses the NZB via `NzbService`, extracts metadata, and sends `AddDownload` to the DownloadManager actor. It SHALL accept an NZB file as a multipart/form-data upload (field name `nzbfile`) and forward the `cat` and `priority` parameters.
 
-#### Scenario: Successful addfile via multipart
-- **WHEN** a valid NZB is POSTed as multipart/form-data with field `nzbfile` and `?mode=addfile&cat=sonarr`
-- **THEN** the system SHALL parse the NZB, extract VideoUrl, SubtitleUrl, Title, Channel, Duration, and Size from meta elements, send AddDownload to the DownloadManager, and respond with JSON `{"status":true,"nzo_ids":["<download-id>"]}`
-
-#### Scenario: Addfile with priority
-- **WHEN** a valid NZB is POSTed with `?mode=addfile&cat=sonarr&priority=-100`
-- **THEN** the system SHALL send AddDownload with Priority=-100 to the DownloadManager
+#### Scenario: Successful addfile
+- **WHEN** a valid NZB is POSTed as multipart/form-data
+- **THEN** `SabnzbdDownloadService` SHALL use `NzbService` for parsing, extract metadata, send `AddDownload`, and return `{"status":true,"nzo_ids":["<id>"]}`
 
 #### Scenario: Missing NZB file
-- **WHEN** a POST is made with `?mode=addfile` but no `nzbfile` form field
-- **THEN** the response SHALL be JSON `{"status":false,"error":"No NZB file uploaded"}` with HTTP 400
-
-#### Scenario: Invalid NZB format
-- **WHEN** the uploaded NZB file does not contain a parseable `X-FunkArr-Url` meta element
-- **THEN** the response SHALL be JSON `{"status":false,"error":"Invalid NZB format"}` with HTTP 400
+- **WHEN** no `nzbfile` form field is provided
+- **THEN** the response SHALL be `{"status":false,"error":"No NZB file uploaded"}` with HTTP 400
 
 ### Requirement: Retry failed download
-The system SHALL respond to `GET /download/api?mode=retry&value=<nzo_id>` by sending a `RetryDownload` message to the DownloadManager.
+The system SHALL respond to `GET /download/api?mode=retry&value=<nzo_id>` by delegating to `SabnzbdDownloadService` which sends `RetryDownload` to the DownloadManager actor.
 
 #### Scenario: Successful retry
-- **WHEN** `?mode=retry&value=failed-item-id` is requested and the item exists in history with status Failed
-- **THEN** the system SHALL send RetryDownload to the Manager, and respond with JSON `{"status":true}` on success
+- **WHEN** `?mode=retry&value=failed-item-id` is requested
+- **THEN** `SabnzbdDownloadService` SHALL send RetryDownload and return `{"status":true}`
 
 #### Scenario: Retry non-failed item
 - **WHEN** `?mode=retry&value=completed-item-id` is requested and the item has status Completed

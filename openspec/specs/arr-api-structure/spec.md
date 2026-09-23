@@ -7,7 +7,7 @@ Defines the unified ArrApi adapter project that consolidates Newznab indexer and
 ## Requirements
 
 ### Requirement: Unified ArrApi project
-`FunkArr.ArrApi` SHALL be a single adapter project containing both the Newznab indexer API and SABnzbd download client API. It SHALL replace the separate `FunkArr.IndexerApi` and `FunkArr.DownloadApi` projects.
+`FunkArr.ArrApi` SHALL be a single adapter project containing both the Newznab indexer API and SABnzbd download client API. It SHALL use ASP.NET MVC Controllers with constructor-injected services instead of Minimal API static extension methods. Services SHALL be registered via an `AddArrApiServices()` IServiceCollection extension method.
 
 #### Scenario: Project exists and compiles
 - **WHEN** `dotnet build FunkArr.slnx` is run
@@ -15,25 +15,33 @@ Defines the unified ArrApi adapter project that consolidates Newznab indexer and
 
 #### Scenario: Both endpoint groups registered
 - **WHEN** the application starts
-- **THEN** `/index/api` (Newznab) and `/download/api` (SABnzbd) endpoint groups SHALL both be available
+- **THEN** `/index/api` (Newznab) and `/download/api` (SABnzbd) endpoint groups SHALL both be available via controller routing
+
+#### Scenario: Services registered via extension method
+- **WHEN** the host calls `services.AddArrApiServices(configuration)`
+- **THEN** `SearchResultCache`, `NewznabSearchService`, `NzbService`, `SabnzbdQueueService`, `SabnzbdDownloadService`, and `ArrApiOptions` SHALL be registered in the DI container
+
+#### Scenario: Controllers discovered
+- **WHEN** `services.AddControllers()` is called and `app.MapControllers()` is called
+- **THEN** `NewznabController` and `SabnzbdController` SHALL be discovered and mapped
 
 ### Requirement: Namespace separation
-Newznab-specific types SHALL reside in `FunkArr.ArrApi.Newznab` namespace. SABnzbd-specific types SHALL reside in `FunkArr.ArrApi.Sabnzbd` namespace. Shared types (NZB model, ApiKeyEndpointFilter, XmlHelper) SHALL reside in `FunkArr.ArrApi` root namespace.
+Newznab-specific types SHALL reside in `FunkArr.ArrApi.Newznab` namespace. SABnzbd-specific types SHALL reside in `FunkArr.ArrApi.Sabnzbd` namespace. Shared types (ApiKeyActionFilter, ArrApiOptions) SHALL reside in `FunkArr.ArrApi` root namespace.
 
 #### Scenario: Newznab types in correct namespace
-- **WHEN** examining IndexerApiEndpoints, IndexerRequest, Caps, Rss, RssJsonProjection, CapsJsonProjection, NewznabError
+- **WHEN** examining NewznabController, NewznabSearchService, NzbService, Nzb, Caps, Rss, NewznabError, SearchResultCache
 - **THEN** all SHALL be in `FunkArr.ArrApi.Newznab` or `FunkArr.ArrApi.Newznab.Models`
 
 #### Scenario: SABnzbd types in correct namespace
-- **WHEN** examining DownloadApiEndpoints, DownloadGetRequest, DownloadPostRequest, QueueResponse, HistoryResponse, FullStatusResponse
+- **WHEN** examining SabnzbdController, SabnzbdQueueService, SabnzbdDownloadService, SabnzbdResponseMapper, QueueResponse, HistoryResponse, FullStatusResponse
 - **THEN** all SHALL be in `FunkArr.ArrApi.Sabnzbd` or `FunkArr.ArrApi.Sabnzbd.Models`
 
 #### Scenario: Shared types in root namespace
-- **WHEN** examining Nzb, NzbHead, NzbMeta, NzbFile, ApiKeyEndpointFilter, XmlHelper
+- **WHEN** examining ApiKeyActionFilter, ArrApiOptions, ServiceCollectionExtensions
 - **THEN** all SHALL be in `FunkArr.ArrApi`
 
 ### Requirement: Unified ApiKeyEndpointFilter
-A single `ApiKeyEndpointFilter` SHALL validate the `apikey` query parameter for both API surfaces. It SHALL accept an error result factory (`Func<IResult>`) to produce format-appropriate error responses.
+A single `ApiKeyActionFilter` base class SHALL validate the `apikey` query parameter for both API surfaces using constructor-injected `IOptions<FunkArrOptions>`. Two thin subclasses (`NewznabApiKeyFilter`, `SabnzbdApiKeyFilter`) SHALL produce format-appropriate error responses.
 
 #### Scenario: Newznab error format
 - **WHEN** authentication fails on a `/index/api` endpoint
@@ -45,45 +53,53 @@ A single `ApiKeyEndpointFilter` SHALL validate the `apikey` query parameter for 
 
 #### Scenario: Valid API key passes through
 - **WHEN** a request includes a valid `apikey` parameter
-- **THEN** the request SHALL proceed to the endpoint handler regardless of API surface
+- **THEN** the request SHALL proceed to the controller action regardless of API surface
+
+#### Scenario: API key resolved from options
+- **WHEN** the filter validates the API key
+- **THEN** it SHALL read the expected key from `IOptions<FunkArrOptions>.Value.ApiKey` via constructor injection, not service location
 
 ### Requirement: Co-located NZB generation and parsing
-NZB generation (title+url -> NZB XML) and NZB parsing (NZB XML -> title+url) SHALL use the same `Nzb` model class. Both operations SHALL reside in the `FunkArr.ArrApi` root namespace.
+NZB generation and parsing SHALL be encapsulated in `NzbService` within the `FunkArr.ArrApi.Newznab` namespace. The `Nzb` model class SHALL reside in `FunkArr.ArrApi.Newznab` namespace.
 
 #### Scenario: Round-trip integrity
 - **WHEN** an NZB is generated with title "Test Show" and url "https://example.com/video.mp4"
 - **AND** the generated NZB XML is parsed back
 - **THEN** the parsed title SHALL be "Test Show" and the parsed url SHALL be "https://example.com/video.mp4"
 
-#### Scenario: Generator accessible from Newznab endpoints
-- **WHEN** IndexerApiEndpoints handles a `t=get` request
-- **THEN** it SHALL use the shared NZB generation to produce the NZB file
+#### Scenario: Generator accessible from controller
+- **WHEN** NewznabController handles a `t=get` request
+- **THEN** it SHALL delegate to `NzbService` for NZB generation
 
-#### Scenario: Parser accessible from SABnzbd endpoints
-- **WHEN** DownloadApiEndpoints handles an `addfile` POST
-- **THEN** it SHALL use the shared NZB parsing to extract title and url
+#### Scenario: Parser accessible from download service
+- **WHEN** SabnzbdDownloadService handles an `addfile` POST
+- **THEN** it SHALL use `NzbService` for NZB parsing
 
 ### Requirement: No business logic in adapter
-`FunkArr.ArrApi` SHALL NOT contain queue management, history tracking, retry logic, or any other domain state. All stateful operations SHALL be delegated to domain projects via Messages.
+`FunkArr.ArrApi` SHALL NOT contain queue management, history tracking, retry logic, or any other domain state. All stateful operations SHALL be delegated to domain projects via Messages. Controllers SHALL be thin dispatchers delegating to services. Services SHALL handle protocol translation only.
 
 #### Scenario: No DownloadState class
 - **WHEN** examining the ArrApi project
 - **THEN** no class managing download queue or history state SHALL exist
 
-#### Scenario: Download endpoints return stubs without domain actors
-- **WHEN** download API endpoints are called and no domain actors are wired
-- **THEN** queue SHALL return zero slots, history SHALL return zero slots, and addfile SHALL acknowledge receipt without processing
+#### Scenario: Controller methods are thin dispatchers
+- **WHEN** examining controller action methods
+- **THEN** each method SHALL delegate to an injected service and return the result, with no inline business logic
 
-### Requirement: No hardcoded categories
-Category definitions (IDs, names, subcategories) SHALL NOT be hardcoded in the adapter. The adapter SHALL receive category information from the RuleSet domain via Messages.
+### Requirement: ArrApiOptions configuration
+`ArrApiOptions` SHALL be a configuration class bound to `FunkArr:ArrApi` section providing configurable timeouts and cache TTL.
 
-#### Scenario: Caps categories not hardcoded
-- **WHEN** examining the Caps response construction
-- **THEN** category data SHALL NOT be defined as literals in the adapter code
+#### Scenario: Default values
+- **WHEN** no `FunkArr:ArrApi` configuration is provided
+- **THEN** `SearchTimeoutSeconds` SHALL default to 30, `DownloadTimeoutSeconds` SHALL default to 10, `SearchCacheTtlSeconds` SHALL default to 60
 
-#### Scenario: Config categories not hardcoded
-- **WHEN** examining the SABnzbd get_config response construction
-- **THEN** category entries SHALL NOT be defined as literals in the adapter code
+#### Scenario: Custom values
+- **WHEN** `FunkArr__ArrApi__SearchTimeoutSeconds=45` environment variable is set
+- **THEN** `ArrApiOptions.SearchTimeoutSeconds` SHALL be 45
+
+#### Scenario: Options registered in DI
+- **WHEN** `AddArrApiServices()` is called
+- **THEN** `IOptions<ArrApiOptions>` SHALL be available for injection
 
 ### Requirement: SABnzbd queue manipulation operations
 The SABnzbd API queue mode handler SHALL support `name=priority` and `name=switch` operations in addition to the existing `name=delete`.

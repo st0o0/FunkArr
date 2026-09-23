@@ -1,4 +1,5 @@
 using System.Xml.Serialization;
+using FunkArr.ArrApi.Newznab;
 
 namespace FunkArr.ArrApi.Tests.Sabnzbd;
 

@@ -51,6 +51,9 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
+        services.AddControllers()
+            .AddApplicationPart(typeof(FunkArr.ArrApi.AssemblyMarker).Assembly);
+
         services.AddHealthChecks();
     }
 }

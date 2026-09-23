@@ -78,14 +78,25 @@ public sealed class SearchResultCacheTests
     }
 
     [Fact]
-    public void BuildKey_different_season_produces_different_key()
+    public void BuildKey_different_season_same_series_shares_key()
     {
         var cmd1 = new SearchCommand(SearchSource.Sonarr, null, null, 100, 0,
             new SearchCommand.TvParams(2026, 18, 83214, null));
         var cmd2 = new SearchCommand(SearchSource.Sonarr, null, null, 100, 0,
             new SearchCommand.TvParams(2025, 18, 83214, null));
 
-        Assert.NotEqual(SearchResultCache.BuildKey(cmd1), SearchResultCache.BuildKey(cmd2));
+        Assert.Equal(SearchResultCache.BuildKey(cmd1), SearchResultCache.BuildKey(cmd2));
+    }
+
+    [Fact]
+    public void BuildKey_different_episode_same_series_shares_key()
+    {
+        var cmd1 = new SearchCommand(SearchSource.Sonarr, null, null, 100, 0,
+            new SearchCommand.TvParams(2026, 17, 83214, null));
+        var cmd2 = new SearchCommand(SearchSource.Sonarr, null, null, 100, 0,
+            new SearchCommand.TvParams(2026, 18, 83214, null));
+
+        Assert.Equal(SearchResultCache.BuildKey(cmd1), SearchResultCache.BuildKey(cmd2));
     }
 
     [Fact]

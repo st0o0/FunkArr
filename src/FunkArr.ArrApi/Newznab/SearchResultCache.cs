@@ -3,7 +3,7 @@ using FunkArr.Messages.Search;
 
 namespace FunkArr.ArrApi.Newznab;
 
-internal sealed class SearchResultCache(TimeSpan ttl, TimeProvider timeProvider)
+public sealed class SearchResultCache(TimeSpan ttl, TimeProvider timeProvider)
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
     private readonly ConcurrentDictionary<string, Lazy<Task<SearchResultItem[]>>> _pending = new();
@@ -40,11 +40,6 @@ internal sealed class SearchResultCache(TimeSpan ttl, TimeProvider timeProvider)
             Set(key, result);
             return result;
         }
-        catch
-        {
-            _pending.TryRemove(key, out _);
-            throw;
-        }
         finally
         {
             _pending.TryRemove(key, out _);
@@ -54,7 +49,7 @@ internal sealed class SearchResultCache(TimeSpan ttl, TimeProvider timeProvider)
     public static string BuildKey(SearchCommand cmd) => cmd.Params switch
     {
         SearchCommand.TvParams tv =>
-            $"tv:{Normalize(cmd.Query)}:{tv.TvdbId}:{tv.ImdbId}:{tv.Season}:{tv.Episode}",
+            $"tv:{Normalize(cmd.Query)}:{tv.TvdbId}:{tv.ImdbId}",
         SearchCommand.MovieParams movie =>
             $"movie:{Normalize(cmd.Query)}:{movie.ImdbId}:{movie.TmdbId}",
         _ =>

@@ -27,6 +27,7 @@ public sealed record NewznabCategory
     public static NewznabCategory? FromCat(int? cat) => cat switch
     {
         >= 2000 and < 3000 => Movie,
+        >= 5000 and < 6000 => Tv,
         _ => null,
     };
 }

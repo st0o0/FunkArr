@@ -1,6 +1,5 @@
 using FunkArr.Api;
-using FunkArr.ArrApi.Newznab;
-using FunkArr.ArrApi.Sabnzbd;
+using FunkArr.ArrApi;
 using FunkArr.Core;
 using FunkArr.Download;
 using Microsoft.Extensions.Options;
@@ -20,12 +19,11 @@ public sealed class DownloadSetupContainer : ApplicationSetupContainer<WebApplic
             .ValidateOnStart();
 
         services.AddDownloadServices();
+        services.AddArrApiServices(configuration);
     }
 
     protected override void SetupApplication(WebApplication app)
     {
         app.MapDownloadsApi();
-        app.MapNewznabApi();
-        app.MapSabnzbdApi();
     }
 }

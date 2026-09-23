@@ -39,6 +39,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
 
         app.MapSystemApi();
         app.MapSetupArrApi();
+        app.MapControllers();
 
         app.MapFallbackToFile("index.html");
     }

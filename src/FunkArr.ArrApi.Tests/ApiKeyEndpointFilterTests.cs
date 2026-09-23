@@ -25,7 +25,7 @@ public sealed class ApiKeyEndpointFilterTests
 
     private static IResult NewznabErrorFactory() =>
         Results.Content(
-            NewznabApiEndpoints.Serialize(NewznabError.InvalidApiKey),
+            NewznabXmlResult.Serialize(NewznabError.InvalidApiKey),
             "application/xml",
             Encoding.UTF8,
             403);

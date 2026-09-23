@@ -9,7 +9,7 @@ public sealed class NewznabErrorTests
     [Fact]
     public void Error_xml_has_correct_structure()
     {
-        var xml = NewznabApiEndpoints.Serialize(NewznabError.InvalidApiKey);
+        var xml = NewznabXmlResult.Serialize(NewznabError.InvalidApiKey);
         var doc = XDocument.Parse(xml);
         var root = doc.Root!;
 
@@ -21,7 +21,7 @@ public sealed class NewznabErrorTests
     [Fact]
     public void Missing_parameter_error()
     {
-        var xml = NewznabApiEndpoints.Serialize(NewznabError.MissingParameter);
+        var xml = NewznabXmlResult.Serialize(NewznabError.MissingParameter);
         var doc = XDocument.Parse(xml);
 
         Assert.Equal("200", doc.Root!.Attribute("code")!.Value);
@@ -31,7 +31,7 @@ public sealed class NewznabErrorTests
     [Fact]
     public void Incorrect_parameter_error()
     {
-        var xml = NewznabApiEndpoints.Serialize(NewznabError.IncorrectParameter);
+        var xml = NewznabXmlResult.Serialize(NewznabError.IncorrectParameter);
         var doc = XDocument.Parse(xml);
 
         Assert.Equal("201", doc.Root!.Attribute("code")!.Value);
@@ -40,7 +40,7 @@ public sealed class NewznabErrorTests
     [Fact]
     public void No_such_function_error()
     {
-        var xml = NewznabApiEndpoints.Serialize(NewznabError.NoSuchFunction);
+        var xml = NewznabXmlResult.Serialize(NewznabError.NoSuchFunction);
         var doc = XDocument.Parse(xml);
 
         Assert.Equal("202", doc.Root!.Attribute("code")!.Value);
