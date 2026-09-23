@@ -1,6 +1,6 @@
 {
   "topic": "Die Rosenheim-Cops",
-  "aliases": [],
+  "aliases": ["Die Rosenheim-Cops Staffel 5", "Die Rosenheim-Cops Staffel 4", "Die Rosenheim-Cops Staffel 3"],
   "media": {
     "tvdbId": 101221,
     "imdbId": "tt0305095",
@@ -27,7 +27,7 @@
       "titleRules": []
     },
     {
-      "id": "title-exact",
+      "id": "title-includes",
       "priority": 1,
       "filters": {
         "all": [
@@ -36,14 +36,21 @@
             "op": "greaterThan",
             "value": "35"
           }
+        ],
+        "not": [
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Audiodeskription"
+          }
         ]
       },
-      "strategy": "itemTitleExact",
+      "strategy": "itemTitleIncludes",
       "titleRules": [
         {
           "type": "regex",
           "field": "title",
-          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+          "pattern": "(?<=:\\s*)\\S.*"
         }
       ]
     }

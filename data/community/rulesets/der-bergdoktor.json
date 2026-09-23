@@ -1,6 +1,6 @@
 {
   "topic": "Der Bergdoktor",
-  "aliases": [],
+  "aliases": ["Der Bergdoktor Staffel 5", "Der Bergdoktor Staffel 4", "Der Bergdoktor Staffel 3", "Der Bergdoktor Staffel 2", "Der Bergdoktor Staffel 1"],
   "media": {
     "tvdbId": 195681,
     "imdbId": "tt1177054",
@@ -25,6 +25,34 @@
       "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
       "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
       "titleRules": []
+    },
+    {
+      "id": "title-includes",
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ],
+        "not": [
+          {
+            "field": "title",
+            "op": "contains",
+            "value": "Audiodeskription"
+          }
+        ]
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(?<=:\\s*)\\S.*"
+        }
+      ]
     }
   ]
 }

@@ -10,9 +10,9 @@
   "confidence": 1,
   "rules": [
     {
-      "id": "absolute-episode",
+      "id": "title-includes",
       "priority": 0,
-      "strategy": "byAbsoluteEpisodeNumber",
+      "strategy": "itemTitleIncludes",
       "filters": {
         "all": [
           {
@@ -22,37 +22,13 @@
           }
         ]
       },
-      "episodeRegex": "\\((\\d{3,5})\\)"
-    },
-    {
-      "id": "absolute-episode-prefix",
-      "priority": 1,
-      "strategy": "byAbsoluteEpisodeNumber",
-      "filters": {
-        "all": [
-          {
-            "field": "duration",
-            "op": "greaterThan",
-            "value": "15"
-          }
-        ]
-      },
-      "episodeRegex": "^(\\d{3,5})\\."
-    },
-    {
-      "id": "absolute-episode-p1",
-      "priority": 2,
-      "strategy": "byAbsoluteEpisodeNumber",
-      "filters": {
-        "all": [
-          {
-            "field": "duration",
-            "op": "greaterThan",
-            "value": "15"
-          }
-        ]
-      },
-      "episodeRegex": "\\(Folge (\\d{3,5})\\)"
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "(?<=\\d{3,5}\\.?\\s*)\\D.*"
+        }
+      ]
     }
   ]
 }
