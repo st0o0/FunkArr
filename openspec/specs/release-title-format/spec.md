@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Scene-style release title construction from media metadata. Defines the MetadataSpec record for carrying identification results and the ReleaseTitleBuilder formatter that produces titles compatible with Sonarr/Radarr parsing.
+Scene-style release title formatting from pre-resolved display data. Defines the MetadataSpec record for carrying identification results and the ReleaseTitleBuilder formatter that produces titles compatible with Sonarr/Radarr parsing.
 
 ## Requirements
 
@@ -27,32 +27,44 @@ FunkArr.Messages.Scoring SHALL define a `MetadataSpec` sealed record carrying ex
 
 ### Requirement: ReleaseTitleBuilder formats scene-style titles
 
-FunkArr.Core SHALL define a `ReleaseTitleBuilder` static class with a `Build` method that produces scene-style release titles from media metadata. The format SHALL be compatible with Sonarr/Radarr title parsing.
+FunkArr.Core SHALL define a `ReleaseTitleBuilder` static class with a `Format` method that produces scene-style release titles from pre-resolved display data. The method SHALL accept a media name, an optional identifier string (S##E##, date, or year), an episode title, and a quality value. The method SHALL perform only formatting (sanitization, dot-separation, quality mapping) — no title resolution, topic stripping, or S##E## deduplication. The format SHALL be compatible with Sonarr/Radarr title parsing.
 
 #### Scenario: TV episode with season and episode
 
-- **WHEN** Build is called with topic "Tatort", title "Der letzte Schrei", metadata (Season "01", Episode "05"), quality 720, category "tv"
+- **WHEN** Format is called with mediaName "Tatort", identifier "S01E05", episodeTitle "Der letzte Schrei", quality 720
 - **THEN** the result SHALL be `Tatort.S01E05.Der.letzte.Schrei.GERMAN.720p.WEB.h264-FunkArr`
 
-#### Scenario: TV daily show with airdate only
+#### Scenario: TV daily show with airdate
 
-- **WHEN** Build is called with topic "heute-show", title "heute-show vom 20. September 2024", metadata (AiredAt 2024-09-20), quality 480, category "tv"
-- **THEN** the result SHALL be `heute-show.2024-09-20.heute-show.vom.20.September.2024.GERMAN.480p.WEB.h264-FunkArr`
+- **WHEN** Format is called with mediaName "heute-show", identifier "2024-09-20", episodeTitle "vom 20. September 2024", quality 480
+- **THEN** the result SHALL be `heute-show.2024-09-20.vom.20.September.2024.GERMAN.480p.WEB.h264-FunkArr`
 
-#### Scenario: TV episode with no metadata
+#### Scenario: TV episode with no identifier
 
-- **WHEN** Build is called with topic "Tagesschau", title "Tagesschau 20 Uhr", metadata null, quality 720, category "tv"
-- **THEN** the result SHALL be `Tagesschau.Tagesschau.20.Uhr.GERMAN.720p.WEB.h264-FunkArr`
+- **WHEN** Format is called with mediaName "Tagesschau", identifier null, episodeTitle "20 Uhr", quality 720
+- **THEN** the result SHALL be `Tagesschau.20.Uhr.GERMAN.720p.WEB.h264-FunkArr`
 
-#### Scenario: Movie with airdate (year extraction)
+#### Scenario: Movie with year
 
-- **WHEN** Build is called with topic "Der Alte", title "Todfeinde", metadata (AiredAt 2024-03-15), quality 1080, category "movie"
+- **WHEN** Format is called with mediaName "Der Alte", identifier "2024", episodeTitle "Todfeinde", quality 1080
 - **THEN** the result SHALL be `Der.Alte.2024.Todfeinde.GERMAN.1080p.WEB.h264-FunkArr`
 
-#### Scenario: Movie without airdate
+#### Scenario: Movie without year
 
-- **WHEN** Build is called with topic "Polizeiruf 110", title "Blutige Fährte", metadata null, quality 720, category "movie"
+- **WHEN** Format is called with mediaName "Polizeiruf 110", identifier null, episodeTitle "Blutige Fährte", quality 720
 - **THEN** the result SHALL be `Polizeiruf.110.Blutige.Fährte.GERMAN.720p.WEB.h264-FunkArr`
+
+#### Scenario: Identifier not duplicated in episode title
+
+- **WHEN** Format is called with mediaName "Leschs Kosmos", identifier "S2026E10", episodeTitle "Jahrhunderthitze", quality 1080
+- **THEN** the result SHALL be `Leschs.Kosmos.S2026E10.Jahrhunderthitze.GERMAN.1080p.WEB.h264-FunkArr`
+- **AND** S2026E10 SHALL appear exactly once
+
+#### Scenario: MediaName not duplicated in episode title
+
+- **WHEN** Format is called with mediaName "Lieselotte", identifier "S01E30", episodeTitle "hat den Dreh raus", quality 1080
+- **THEN** the result SHALL be `Lieselotte.S01E30.hat.den.Dreh.raus.GERMAN.1080p.WEB.h264-FunkArr`
+- **AND** "Lieselotte" SHALL appear exactly once
 
 ### Requirement: Umlaut preservation
 
@@ -60,7 +72,7 @@ ReleaseTitleBuilder SHALL preserve German Umlauts and special characters (ä, ö
 
 #### Scenario: Umlauts preserved in title
 
-- **WHEN** Build is called with a topic containing "ö"
+- **WHEN** Format is called with a mediaName containing "ö"
 - **THEN** the "ö" SHALL remain as "ö" in the output, not be replaced with "oe"
 
 #### Scenario: All German special characters preserved
@@ -70,7 +82,7 @@ ReleaseTitleBuilder SHALL preserve German Umlauts and special characters (ä, ö
 
 #### Scenario: Eszett preserved
 
-- **WHEN** Build is called with topic "Straße", title "Spaß"
+- **WHEN** Format is called with mediaName "Straße", episodeTitle "Spaß"
 - **THEN** the result SHALL be `Straße.Spaß.GERMAN.720p.WEB.h264-FunkArr`
 
 ### Requirement: Special character handling
@@ -120,27 +132,3 @@ ReleaseTitleBuilder SHALL map integer quality values to scene-style quality labe
 
 - **WHEN** quality is 720
 - **THEN** the label SHALL be "720p"
-
-### Requirement: Season and episode zero-padding
-
-ReleaseTitleBuilder SHALL zero-pad season and episode numbers to at least 2 digits, preserving longer values.
-
-#### Scenario: Single digit season and episode
-
-- **WHEN** season is "1" and episode is "5"
-- **THEN** the formatted S/E SHALL be "S01E05"
-
-#### Scenario: Already padded values
-
-- **WHEN** season is "01" and episode is "27"
-- **THEN** the formatted S/E SHALL be "S01E27"
-
-#### Scenario: Year-based season
-
-- **WHEN** season is "2024" and episode is "27"
-- **THEN** the formatted S/E SHALL be "S2024E27"
-
-#### Scenario: Absolute episode number (no season)
-
-- **WHEN** season is null and episode is "312"
-- **THEN** the formatted identifier SHALL be "E312" (no season prefix)

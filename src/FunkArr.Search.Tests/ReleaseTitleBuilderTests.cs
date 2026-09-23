@@ -1,6 +1,6 @@
 using FunkArr.Core;
 using FunkArr.Messages;
-using FunkArr.Messages.Scoring;
+using FunkArr.Search;
 
 namespace FunkArr.Search.Tests;
 
@@ -9,45 +9,39 @@ public sealed class ReleaseTitleBuilderTests
     [Fact]
     public void TvWithSeasonAndEpisode()
     {
-        var metadata = new MetadataSpec("01", "05", null);
-
-        var result = ReleaseTitleBuilder.Build("Tatort", "Der letzte Schrei", metadata, 720, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Tatort", "S01E05", "Der letzte Schrei", 720);
 
         Assert.Equal("Tatort.S01E05.Der.letzte.Schrei.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
-    public void TvDailyShowWithAirdateOnly()
+    public void TvDailyShowWithAirdate()
     {
-        var metadata = new MetadataSpec(null, null, new DateTimeOffset(2024, 9, 20, 0, 0, 0, TimeSpan.Zero));
+        var result = ReleaseTitleBuilder.Format("heute-show", "2024-09-20", "vom 20. September 2024", 480);
 
-        var result = ReleaseTitleBuilder.Build("heute-show", "heute-show vom 20. September 2024", metadata, 480, MediaType.Show);
-
-        Assert.Equal("heute-show.2024-09-20.heute-show.vom.20.September.2024.GERMAN.480p.WEB.h264-FunkArr", result);
+        Assert.Equal("heute-show.2024-09-20.vom.20.September.2024.GERMAN.480p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
-    public void TvWithoutMetadata()
+    public void TvWithoutIdentifier()
     {
-        var result = ReleaseTitleBuilder.Build("Tagesschau", "Tagesschau 20 Uhr", null, 720, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Tagesschau", null, "20 Uhr", 720);
 
-        Assert.Equal("Tagesschau.Tagesschau.20.Uhr.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("Tagesschau.20.Uhr.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
-    public void MovieWithAirdate()
+    public void MovieWithYear()
     {
-        var metadata = new MetadataSpec(null, null, new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero));
-
-        var result = ReleaseTitleBuilder.Build("Der Alte", "Todfeinde", metadata, 1080, MediaType.Movie);
+        var result = ReleaseTitleBuilder.Format("Der Alte", "2024", "Todfeinde", 1080);
 
         Assert.Equal("Der.Alte.2024.Todfeinde.GERMAN.1080p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
-    public void MovieWithoutAirdate()
+    public void MovieWithoutYear()
     {
-        var result = ReleaseTitleBuilder.Build("Polizeiruf 110", "Blutige Fährte", null, 720, MediaType.Movie);
+        var result = ReleaseTitleBuilder.Format("Polizeiruf 110", null, "Blutige Fährte", 720);
 
         Assert.Equal("Polizeiruf.110.Blutige.Fährte.GERMAN.720p.WEB.h264-FunkArr", result);
     }
@@ -55,69 +49,39 @@ public sealed class ReleaseTitleBuilderTests
     [Fact]
     public void UmlautsPreserved()
     {
-        var result = ReleaseTitleBuilder.Build("Überführung", "Schöne Grüße", null, 720, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Überführung", null, "Schöne Grüße", 720);
 
         Assert.Equal("Überführung.Schöne.Grüße.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
-    public void AllUmlauts()
+    public void SzligPreserved()
     {
-        var result = ReleaseTitleBuilder.Build("äöüÄÖÜß", "Test", null, 720, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Straße", null, "Spaß", 720);
 
-        Assert.Equal("äöüÄÖÜß.Test.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("Straße.Spaß.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
-    public void SpecialCharsRemoved()
+    public void SpecialCharsRemovedFromEpisodeTitle()
     {
-        var result = ReleaseTitleBuilder.Build("Show", "Title: (Special) Edition!", null, 720, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Show", "S01E01", "Title: (Special) Edition!", 720);
 
-        Assert.Equal("Show.Title.Special.Edition.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("Show.S01E01.Title.Special.Edition.GERMAN.720p.WEB.h264-FunkArr", result);
     }
 
     [Fact]
     public void ConsecutiveDotsCollapsed()
     {
-        var result = ReleaseTitleBuilder.Build("Show", "A & B", null, 720, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Show", null, "A & B", 720);
 
         Assert.Contains("Show.A.B", result);
     }
 
     [Fact]
-    public void SingleDigitSeasonAndEpisodePadded()
-    {
-        var metadata = new MetadataSpec("1", "5", null);
-
-        var result = ReleaseTitleBuilder.Build("Show", "Title", metadata, 720, MediaType.Show);
-
-        Assert.Equal("Show.S01E05.Title.GERMAN.720p.WEB.h264-FunkArr", result);
-    }
-
-    [Fact]
-    public void YearBasedSeason()
-    {
-        var metadata = new MetadataSpec("2024", "27", null);
-
-        var result = ReleaseTitleBuilder.Build("heute-show", "Title", metadata, 480, MediaType.Show);
-
-        Assert.Equal("heute-show.S2024E27.Title.GERMAN.480p.WEB.h264-FunkArr", result);
-    }
-
-    [Fact]
-    public void AbsoluteEpisodeNumberNoSeason()
-    {
-        var metadata = new MetadataSpec(null, "312", null);
-
-        var result = ReleaseTitleBuilder.Build("Löwenzahn", "Folge 312", metadata, 720, MediaType.Show);
-
-        Assert.Equal("Löwenzahn.S01E312.Folge.312.GERMAN.720p.WEB.h264-FunkArr", result);
-    }
-
-    [Fact]
     public void QualityMapping1080()
     {
-        var result = ReleaseTitleBuilder.Build("Show", "Title", null, 1080, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Show", null, "Title", 1080);
 
         Assert.Contains("1080p", result);
     }
@@ -125,7 +89,7 @@ public sealed class ReleaseTitleBuilderTests
     [Fact]
     public void QualityMapping480()
     {
-        var result = ReleaseTitleBuilder.Build("Show", "Title", null, 480, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Show", null, "Title", 480);
 
         Assert.Contains("480p", result);
     }
@@ -133,93 +97,160 @@ public sealed class ReleaseTitleBuilderTests
     [Fact]
     public void QualityMapping270()
     {
-        var result = ReleaseTitleBuilder.Build("Show", "Title", null, 270, MediaType.Show);
+        var result = ReleaseTitleBuilder.Format("Show", null, "Title", 270);
 
         Assert.Contains("270p", result);
     }
 
     [Fact]
-    public void SeasonEpisodeTakesPriorityOverAirdate()
+    public void FormatSeasonEpisodePadsSingleDigits()
     {
-        var metadata = new MetadataSpec("01", "05", new DateTimeOffset(2024, 9, 20, 0, 0, 0, TimeSpan.Zero));
+        var result = ReleaseTitleBuilder.FormatSeasonEpisode("1", "5");
 
-        var result = ReleaseTitleBuilder.Build("Tatort", "Title", metadata, 720, MediaType.Show);
-
-        Assert.StartsWith("Tatort.S01E05.", result);
-        Assert.DoesNotContain("2024-09-20", result);
+        Assert.Equal("S01E05", result);
     }
 
     [Fact]
-    public void SzligPreserved()
+    public void FormatSeasonEpisodePreservesYearBased()
     {
-        var result = ReleaseTitleBuilder.Build("Straße", "Spaß", null, 720, MediaType.Show);
+        var result = ReleaseTitleBuilder.FormatSeasonEpisode("2024", "27");
 
-        Assert.Equal("Straße.Spaß.GERMAN.720p.WEB.h264-FunkArr", result);
+        Assert.Equal("S2024E27", result);
     }
 
     [Fact]
-    public void StripTopicFromTitle_PrefixWithColon()
+    public void IdentifierNotDuplicatedInTitle()
     {
-        var result = ReleaseTitleBuilder.StripTopicFromTitle("Tatort", "Tatort: Virus");
+        var result = ReleaseTitleBuilder.Format("Leschs Kosmos", "S2026E10", "Jahrhunderthitze", 1080);
+
+        Assert.Equal("Leschs.Kosmos.S2026E10.Jahrhunderthitze.GERMAN.1080p.WEB.h264-FunkArr", result);
+        Assert.Equal(1, CountOccurrences(result, "S2026E10"));
+    }
+
+    [Fact]
+    public void MediaNameNotDuplicatedInTitle()
+    {
+        var result = ReleaseTitleBuilder.Format("Lieselotte", "S01E30", "hat den Dreh raus", 1080);
+
+        Assert.Equal("Lieselotte.S01E30.hat.den.Dreh.raus.GERMAN.1080p.WEB.h264-FunkArr", result);
+        Assert.Equal(1, CountOccurrences(result, "Lieselotte"));
+    }
+
+    [Fact]
+    public void CleanTitle_PrefixWithColon()
+    {
+        var result = ReleaseVariant.CleanTitle("Tatort: Virus", "Tatort");
 
         Assert.Equal("Virus", result);
     }
 
     [Fact]
-    public void StripTopicFromTitle_SuffixWithDash()
+    public void CleanTitle_SuffixWithDash()
     {
-        var result = ReleaseTitleBuilder.StripTopicFromTitle("Donna Leon", "Die dunkle Stunde - Donna Leon");
+        var result = ReleaseVariant.CleanTitle("Die dunkle Stunde - Donna Leon", "Donna Leon");
 
         Assert.Equal("Die dunkle Stunde", result);
     }
 
     [Fact]
-    public void StripTopicFromTitle_SuffixWithEnDash()
+    public void CleanTitle_SuffixWithEnDash()
     {
-        var result = ReleaseTitleBuilder.StripTopicFromTitle("Donna Leon", "Die dunkle Stunde – Donna Leon");
+        var result = ReleaseVariant.CleanTitle("Die dunkle Stunde – Donna Leon", "Donna Leon");
 
         Assert.Equal("Die dunkle Stunde", result);
     }
 
     [Fact]
-    public void StripTopicFromTitle_NoMatch()
+    public void CleanTitle_PrefixWithSpace()
     {
-        var result = ReleaseTitleBuilder.StripTopicFromTitle("Tatort", "Mord am See");
+        var result = ReleaseVariant.CleanTitle("Lieselotte hat den Dreh raus", "Lieselotte");
+
+        Assert.Equal("hat den Dreh raus", result);
+    }
+
+    [Fact]
+    public void CleanTitle_PrefixAndSuffix()
+    {
+        var result = ReleaseVariant.CleanTitle(
+            "ZDF Magazin Royale Zehn Jahre Ehrenfeld - ZDF Magazin Royale",
+            "ZDF Magazin Royale");
+
+        Assert.Equal("Zehn Jahre Ehrenfeld", result);
+    }
+
+    [Fact]
+    public void CleanTitle_NoMatch()
+    {
+        var result = ReleaseVariant.CleanTitle("Mord am See", "Tatort");
 
         Assert.Equal("Mord am See", result);
     }
 
     [Fact]
-    public void StripTopicFromTitle_WouldLeaveEmpty()
+    public void CleanTitle_CaseInsensitive()
     {
-        var result = ReleaseTitleBuilder.StripTopicFromTitle("Tatort", "Tatort");
-
-        Assert.Equal("Tatort", result);
-    }
-
-    [Fact]
-    public void StripTopicFromTitle_CaseInsensitive()
-    {
-        var result = ReleaseTitleBuilder.StripTopicFromTitle("tatort", "Tatort: Virus");
+        var result = ReleaseVariant.CleanTitle("Tatort: Virus", "tatort");
 
         Assert.Equal("Virus", result);
     }
 
     [Fact]
-    public void BuildStripsTopicPrefix()
+    public void BuildIdentifier_SeasonAndEpisode()
     {
-        var metadata = new MetadataSpec("01", "05", null);
+        var identity = new MediaIdentity(null, null, null, "2026", "17");
+        var result = ReleaseVariant.BuildIdentifier(identity, null, MediaType.Show);
 
-        var result = ReleaseTitleBuilder.Build("Tatort", "Tatort: Virus", metadata, 1080, MediaType.Show);
-
-        Assert.Equal("Tatort.S01E05.Virus.GERMAN.1080p.WEB.h264-FunkArr", result);
+        Assert.Equal("S2026E17", result);
     }
 
     [Fact]
-    public void BuildStripsTopicSuffix()
+    public void BuildIdentifier_EpisodeOnly()
     {
-        var result = ReleaseTitleBuilder.Build("Donna Leon", "Die dunkle Stunde - Donna Leon", null, 1080, MediaType.Movie);
+        var identity = new MediaIdentity(null, null, null, null, "312");
+        var result = ReleaseVariant.BuildIdentifier(identity, null, MediaType.Show);
 
-        Assert.Equal("Donna.Leon.Die.dunkle.Stunde.GERMAN.1080p.WEB.h264-FunkArr", result);
+        Assert.Equal("S01E312", result);
+    }
+
+    [Fact]
+    public void BuildIdentifier_AirdateForShow()
+    {
+        var identity = new MediaIdentity(null, null, null, null, null);
+        var airedAt = new DateTimeOffset(2024, 9, 20, 0, 0, 0, TimeSpan.Zero);
+        var result = ReleaseVariant.BuildIdentifier(identity, airedAt, MediaType.Show);
+
+        Assert.Equal("2024-09-20", result);
+    }
+
+    [Fact]
+    public void BuildIdentifier_YearForMovie()
+    {
+        var identity = new MediaIdentity(null, null, null, null, null);
+        var airedAt = new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero);
+        var result = ReleaseVariant.BuildIdentifier(identity, airedAt, MediaType.Movie);
+
+        Assert.Equal("2024", result);
+    }
+
+    [Fact]
+    public void BuildIdentifier_NullWhenNoData()
+    {
+        var identity = new MediaIdentity(null, null, null, null, null);
+        var result = ReleaseVariant.BuildIdentifier(identity, null, MediaType.Show);
+
+        Assert.Null(result);
+    }
+
+    private static int CountOccurrences(string text, string pattern)
+    {
+        var count = 0;
+        var idx = 0;
+        while ((idx = text.IndexOf(pattern, idx, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            idx += pattern.Length;
+        }
+
+        return count;
     }
 }

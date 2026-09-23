@@ -1,6 +1,6 @@
+using System.Text.RegularExpressions;
 using FunkArr.Core;
 using FunkArr.Messages;
-using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 
 namespace FunkArr.Search;
@@ -23,12 +23,14 @@ public sealed record ReleaseVariant(
             return [];
         }
 
-        var metadata = new MetadataSpec(
-            item.Identity.Season, item.Identity.Episode, item.Source.AiredAt);
+        var display = item.Display ?? new ReleaseDisplay(
+            mediaName ?? item.Source.Topic,
+            CleanTitle(item.Source.Title, mediaName ?? item.Source.Topic));
+
+        var identifier = BuildIdentifier(item.Identity, item.Source.AiredAt, mediaType);
 
         return variants.Select(v => new ReleaseVariant(
-            ReleaseTitleBuilder.Build(
-                mediaName ?? item.Source.Topic, item.Source.Title, metadata, v.Quality, mediaType),
+            ReleaseTitleBuilder.Format(display.MediaName, identifier, display.EpisodeTitle, v.Quality),
             v.Url,
             item.Source,
             item.Identity,
@@ -36,6 +38,64 @@ public sealed record ReleaseVariant(
             v.Quality,
             item.Source.Size > 0 ? item.Source.Size : v.EstimatedSize,
             item.Match)).ToArray();
+    }
+
+    internal static string? BuildIdentifier(MediaIdentity identity, DateTimeOffset? airedAt, MediaType mediaType) =>
+        (identity.Season, identity.Episode, airedAt, mediaType) switch
+        {
+            ({ } s, { } e, _, MediaType.Show) => ReleaseTitleBuilder.FormatSeasonEpisode(s, e),
+            (null, { } e, _, MediaType.Show) => $"S01E{ReleaseTitleBuilder.PadNumber(e)}",
+            (_, _, { } at, MediaType.Show) => at.ToString("yyyy-MM-dd"),
+            (_, _, { } at, MediaType.Movie) => at.Year.ToString(),
+            _ => null,
+        };
+
+    private static readonly Regex _seasonEpisodePattern = new(@"\(?\s*S\d{1,4}\s*/?\s*E\d{1,4}\s*\)?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    public static string CleanTitle(string title, string mediaName)
+    {
+        if (string.IsNullOrEmpty(mediaName) || string.IsNullOrEmpty(title))
+        {
+            return title;
+        }
+
+        var result = title;
+
+        string[] prefixSeparators = [": ", ": ", " - ", " "];
+        foreach (var sep in prefixSeparators)
+        {
+            var prefix = mediaName + sep;
+            if (result.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var stripped = result[prefix.Length..].Trim();
+                if (stripped.Length > 0)
+                {
+                    result = stripped;
+                }
+
+                break;
+            }
+        }
+
+        string[] suffixSeparators = [" - ", " – "];
+        foreach (var sep in suffixSeparators)
+        {
+            var suffix = sep + mediaName;
+            if (result.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                var stripped = result[..^suffix.Length].Trim();
+                if (stripped.Length > 0)
+                {
+                    result = stripped;
+                }
+
+                break;
+            }
+        }
+
+        result = _seasonEpisodePattern.Replace(result, "").Trim();
+
+        return result;
     }
 
     public SearchResultItem ToResultItem() => new(

@@ -7,4 +7,5 @@ public sealed record EnrichedItem(
     bool Matched,
     bool HasScoringMetadata,
     MediaIdentity Identity,
-    MatchInfo? Match);
+    MatchInfo? Match,
+    ReleaseDisplay? Display = null);

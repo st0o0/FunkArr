@@ -59,18 +59,26 @@ public sealed class MovieSearchWorkerState
 
     public void Apply(ScoreCompleted scored)
     {
-        Items = scored.Results.Select(s => new EnrichedItem(
-            s.Index,
-            Sources[s.Index],
-            s.Score,
-            s.Matched,
-            s.Metadata is not null,
-            BaseIdentity with
-            {
-                Season = s.Metadata?.Season,
-                Episode = s.Metadata?.Episode,
-            },
-            Match: null)).ToArray();
+        var effectiveMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
+
+        Items = scored.Results.Select(s =>
+        {
+            var episodeTitle = s.Metadata?.ConstructedTitle
+                ?? ReleaseVariant.CleanTitle(Sources[s.Index].Title, effectiveMediaName);
+            return new EnrichedItem(
+                s.Index,
+                Sources[s.Index],
+                s.Score,
+                s.Matched,
+                s.Metadata is not null,
+                BaseIdentity with
+                {
+                    Season = s.Metadata?.Season,
+                    Episode = s.Metadata?.Episode,
+                },
+                Match: null,
+                Display: s.Matched ? new ReleaseDisplay(effectiveMediaName, episodeTitle) : null);
+        }).ToArray();
 
         ItemTraces = scored.ItemTraces;
     }
@@ -80,17 +88,29 @@ public sealed class MovieSearchWorkerState
         var lookup = enriched.Movies.ToDictionary(m => m.Index);
 
         Items = Items.Select(item =>
-            lookup.TryGetValue(item.Index, out var movie)
-                ? item with
+        {
+            if (!lookup.TryGetValue(item.Index, out var movie))
+            {
+                return item;
+            }
+
+            var display = item.Display;
+            if (display is not null && movie.Confidence >= 0.9f && !string.IsNullOrEmpty(movie.Title))
+            {
+                display = display with { EpisodeTitle = movie.Title };
+            }
+
+            return item with
+            {
+                Identity = item.Identity with
                 {
-                    Identity = item.Identity with
-                    {
-                        ImdbId = movie.ImdbId ?? item.Identity.ImdbId,
-                        TmdbId = movie.TmdbId ?? item.Identity.TmdbId,
-                    },
-                    Match = new MatchInfo(movie.Confidence, movie.Method),
-                }
-                : item).ToArray();
+                    ImdbId = movie.ImdbId ?? item.Identity.ImdbId,
+                    TmdbId = movie.TmdbId ?? item.Identity.TmdbId,
+                },
+                Match = new MatchInfo(movie.Confidence, movie.Method),
+                Display = display,
+            };
+        }).ToArray();
     }
 
     public bool TryGetMediathekQuery([NotNullWhen(true)] out QueryMediathek? query)
@@ -204,7 +224,7 @@ public sealed class MovieSearchWorkerState
 
     public SearchMovieCompleted ToSearchCompleted()
     {
-        var items = Items.Length > 0 ? Items : UnscoredItems();
+        var items = Items.Length > 0 ? EnsureDisplay(Items) : UnscoredItems();
 
         var variants = items
             .SelectMany(e => ReleaseVariant.Expand(e, MediaType.Movie, MediaName))
@@ -267,6 +287,27 @@ public sealed class MovieSearchWorkerState
             ItemTraces);
     }
 
-    private EnrichedItem[] UnscoredItems() =>
-        Sources.Select((s, i) => new EnrichedItem(i, s, 0.0, false, false, BaseIdentity, null)).ToArray();
+    private EnrichedItem[] EnsureDisplay(EnrichedItem[] items)
+    {
+        var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
+        return items.Select(item =>
+            item.Display is not null
+                ? item
+                : item with
+                {
+                    Display = new ReleaseDisplay(
+                        fallbackMediaName,
+                        ReleaseVariant.CleanTitle(item.Source.Title, fallbackMediaName)),
+                }).ToArray();
+    }
+
+    private EnrichedItem[] UnscoredItems()
+    {
+        var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
+        return Sources.Select((s, i) => new EnrichedItem(
+            i, s, 0.0, false, false, BaseIdentity, null,
+            Display: new ReleaseDisplay(
+                fallbackMediaName,
+                ReleaseVariant.CleanTitle(s.Title, fallbackMediaName)))).ToArray();
+    }
 }
