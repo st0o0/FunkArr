@@ -28,7 +28,7 @@ public sealed class SabnzbdQueueService(
             SabnzbdResponseMapper.BuildQueueSlot(item, start + index)).ToArray();
 
         return new SabnzbdResult.Ok(new Models.QueueResponse(new QueueData(
-            Paused: false,
+            Paused: result.IsPaused,
             Speedlimit: "",
             NoofSlotsTotal: result.TotalItems,
             Diskspace1: "0",
@@ -62,12 +62,30 @@ public sealed class SabnzbdQueueService(
             .Sum(i => i.TotalBytes > 0 ? i.BytesDownloaded / Math.Max(1.0, i.CurrentTimeUs / 1_000_000.0) : 0);
 
         return new SabnzbdResult.Ok(new FullStatusResponse(new FullStatusData(
-            Paused: false,
+            Paused: result.IsPaused,
             Speedlimit: "",
             Diskspace1: "0",
             Diskspace2: "0",
             Completedir: dataPaths.Complete.Replace('\\', '/'),
             Speed: ((long)totalSpeed).ToString())));
+    }
+
+    internal async Task<SabnzbdResult> PauseQueue()
+    {
+        var manager = await registry.GetAsync<IDownloadManager>();
+        var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), Timeout);
+        return result.Success
+            ? new SabnzbdResult.Ok(new { status = true })
+            : new SabnzbdResult.Error("Pause failed");
+    }
+
+    internal async Task<SabnzbdResult> ResumeQueue()
+    {
+        var manager = await registry.GetAsync<IDownloadManager>();
+        var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), Timeout);
+        return result.Success
+            ? new SabnzbdResult.Ok(new { status = true })
+            : new SabnzbdResult.Error("Resume failed");
     }
 
     internal SabnzbdResult GetConfig()

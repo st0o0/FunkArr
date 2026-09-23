@@ -33,6 +33,8 @@ public sealed class SabnzbdController(
             "retry" when string.IsNullOrEmpty(req.Value) =>
                 BadRequest(new { status = false, error = "Missing value parameter" }),
             "retry" => MapResult(await downloads.Retry(req.Value)),
+            "pause" => MapResult(await queue.PauseQueue()),
+            "resume" => MapResult(await queue.ResumeQueue()),
             _ => BadRequest(new { status = false, error = "Invalid mode" }),
         };
     }
