@@ -1,4 +1,5 @@
 using FunkArr.Messages.Download;
+using static FunkArr.Messages.Download.DownloadPhaseExtensions;
 using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api.Extensions;
@@ -20,9 +21,8 @@ internal static class DownloadMappingExtensions
             ? ApiModels.QueueStatus.Processing
             : ApiModels.QueueStatus.Queued;
 
-        var percentage = item.TotalDuration > 0
-            ? Math.Clamp((int)(item.CurrentTimeUs / 1_000_000.0 / item.TotalDuration * 100), 0, 100)
-            : 0;
+        var phase = DerivePhase(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs);
+        var percentage = phase.CalculatePercentage(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs, item.TotalDuration);
 
         var elapsedSeconds = item.CurrentTimeUs / 1_000_000.0;
         var speed = elapsedSeconds > 0 ? (long)(item.BytesDownloaded / elapsedSeconds) : 0;
@@ -46,6 +46,7 @@ internal static class DownloadMappingExtensions
             item.TotalBytes,
             item.BytesDownloaded,
             percentage,
+            phase.ToString().ToLowerInvariant(),
             speed,
             eta,
             item.Priority.ToString());

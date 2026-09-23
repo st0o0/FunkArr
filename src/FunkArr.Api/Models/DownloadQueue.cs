@@ -26,6 +26,7 @@ public sealed record DownloadQueueItem(
     long TotalBytes,
     long BytesDownloaded,
     int Percentage,
+    string Phase,
     long Speed,
     string Eta,
     string Priority);

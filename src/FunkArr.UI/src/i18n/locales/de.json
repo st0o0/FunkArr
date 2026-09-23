@@ -52,7 +52,9 @@
     "entryDeleted": "Eintrag gelöscht",
     "failedToDelete": "Eintrag konnte nicht gelöscht werden",
     "retryStarted": "Wiederholung gestartet",
-    "failedToRetry": "Wiederholung fehlgeschlagen"
+    "failedToRetry": "Wiederholung fehlgeschlagen",
+    "phaseDownloading": "Download",
+    "phaseRemuxing": "Remux"
   },
   "setup": {
     "title": "Einrichtung",

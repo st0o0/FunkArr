@@ -147,11 +147,17 @@ The system SHALL respond to `POST /api/downloads/{id}/retry` by sending a `Retry
 - **THEN** the response SHALL be HTTP 400 with JSON `{"success":false,"error":"<message>"}`
 
 ### Requirement: API response models
-The internal API SHALL use its own response model records in `FunkArr.Api/Models/`, decoupled from the actor message types. The API layer SHALL compute derived fields (percentage, speed, ETA) from the raw actor data.
+The internal API SHALL use its own response model records in `FunkArr.Api/Models/`, decoupled from the actor message types. The API layer SHALL compute derived fields (percentage, phase, speed, ETA) from the raw actor data. The `DownloadQueueItem` SHALL include a `phase` field of type string with value `"downloading"` or `"remuxing"`.
 
 #### Scenario: Queue item percentage calculation
-- **WHEN** a queue item has `CurrentTimeUs` and `TotalDuration`
+- **WHEN** a queue item is in the downloading phase (`BytesDownloaded < TotalBytes`, or `BytesDownloaded >= TotalBytes` and `CurrentTimeUs == 0`)
+- **THEN** `percentage` SHALL be calculated as `BytesDownloaded * 100 / TotalBytes`, clamped to 0-100
+- **WHEN** a queue item is in the remuxing phase (`BytesDownloaded >= TotalBytes` and `CurrentTimeUs > 0`)
 - **THEN** `percentage` SHALL be calculated as `(CurrentTimeUs / 1_000_000) / TotalDuration * 100`, clamped to 0-100
+
+#### Scenario: Phase field present in queue response
+- **WHEN** the client requests `GET /api/downloads/queue`
+- **THEN** each queue item SHALL include a `phase` field with value `"downloading"` or `"remuxing"`
 
 #### Scenario: Queue item speed calculation
 - **WHEN** a queue item has `BytesDownloaded` and `CurrentTimeUs > 0`
@@ -193,5 +199,4 @@ The system SHALL respond to `GET /api/downloads/history/categories` with distinc
 #### Scenario: Actor timeout
 - **WHEN** the DownloadHistoryManager does not respond within the ask timeout
 - **THEN** the response SHALL be HTTP 504 Gateway Timeout
-
 

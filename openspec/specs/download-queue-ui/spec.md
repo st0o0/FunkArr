@@ -3,9 +3,7 @@
 ## Purpose
 
 Global SSE composable for reactive download queue state, dashboard active downloads widget, and shared formatting utilities for size and speed display.
-
 ## Requirements
-
 ### Requirement: Global SSE composable
 The application SHALL provide a `useQueueStream` composable that connects to the SSE endpoint and exposes reactive queue state. This composable is unchanged and remains shared.
 
@@ -79,3 +77,15 @@ Queue cards SHALL NOT display a priority badge — the section header provides t
 #### Scenario: No badge on Normal item
 - **WHEN** a Normal-priority item is rendered inside the Normal section
 - **THEN** no priority badge or label SHALL appear on the card itself
+
+### Requirement: Active download phase label
+The ActiveDownloadCard SHALL display the current download phase alongside the progress percentage. During the "downloading" phase, the label SHALL read the localized equivalent of "Downloading". During the "remuxing" phase, the label SHALL read the localized equivalent of "Remuxing".
+
+#### Scenario: Downloading phase shows download label
+- **WHEN** a queue item has `phase = "downloading"`
+- **THEN** the progress line SHALL show "Downloading" (or localized equivalent) before the percentage
+
+#### Scenario: Remuxing phase shows remux label
+- **WHEN** a queue item has `phase = "remuxing"`
+- **THEN** the progress line SHALL show "Remuxing" (or localized equivalent) before the percentage
+

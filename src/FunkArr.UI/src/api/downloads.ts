@@ -9,6 +9,7 @@ export interface QueueItem {
   totalBytes: number
   bytesDownloaded: number
   percentage: number
+  phase: string
   speed: number
   eta: string
   priority: string

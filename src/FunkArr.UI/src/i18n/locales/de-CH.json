@@ -28,7 +28,9 @@
     "entryDeleted": "Iitrag glöscht",
     "failedToDelete": "Lösche het nid funktioniert",
     "retryStarted": "Nomou gstartet",
-    "failedToRetry": "Nomou probiere het nid funktioniert"
+    "failedToRetry": "Nomou probiere het nid funktioniert",
+    "phaseDownloading": "Download",
+    "phaseRemuxing": "Remux"
   },
   "setup": {
     "title": "Iirichtig",

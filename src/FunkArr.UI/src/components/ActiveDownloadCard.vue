@@ -34,7 +34,10 @@
         <div class="h-full bg-accent rounded-full transition-all duration-700 ease-out" :style="{ width: `${item.percentage}%` }" />
       </div>
       <div class="flex justify-between text-xs text-text-secondary mt-1.5">
-        <span class="tabular-nums">{{ item.percentage }}% · {{ formatSize(item.bytesDownloaded) }} / {{ formatSize(item.totalBytes) }}</span>
+        <span class="tabular-nums">
+          <span class="text-text-muted">{{ item.phase === 'remuxing' ? t('activity.phaseRemuxing') : t('activity.phaseDownloading') }}</span>
+          {{ item.percentage }}% · {{ formatSize(item.bytesDownloaded) }} / {{ formatSize(item.totalBytes) }}
+        </span>
         <span class="tabular-nums">{{ formatSpeed(item.speed) }} · ETA {{ item.eta }}</span>
       </div>
     </div>
@@ -42,10 +45,12 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { QueueItem } from '../api/downloads'
 import { formatSize, formatSpeed } from '../utils/format'
 import ReleaseTitle from './ReleaseTitle.vue'
 
+const { t } = useI18n()
 defineProps<{ item: QueueItem }>()
 defineEmits<{ menu: [event: MouseEvent, item: QueueItem] }>()
 </script>

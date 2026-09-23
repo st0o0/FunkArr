@@ -28,7 +28,9 @@
     "entryDeleted": "Eintrag glöscht",
     "failedToDelete": "Löschen hot ned funktioniert",
     "retryStarted": "Nochmal gestartet",
-    "failedToRetry": "Wiederholen hot ned funktioniert"
+    "failedToRetry": "Wiederholen hot ned funktioniert",
+    "phaseDownloading": "Download",
+    "phaseRemuxing": "Remux"
   },
   "setup": {
     "title": "Einrichtung",

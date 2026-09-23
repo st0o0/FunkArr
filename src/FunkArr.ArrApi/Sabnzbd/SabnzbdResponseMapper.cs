@@ -1,6 +1,7 @@
 using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using static FunkArr.Messages.Download.DownloadPhaseExtensions;
 
 namespace FunkArr.ArrApi.Sabnzbd;
 
@@ -15,9 +16,9 @@ internal static class SabnzbdResponseMapper
         Filename: item.Title,
         Cat: MapMediaTypeToCategory(item.Category),
         Mbleft: ((item.TotalBytes - item.BytesDownloaded) / 1_048_576.0).ToString("F0"),
-        Percentage: item.TotalDuration > 0
-            ? ((int)(item.CurrentTimeUs / 1_000_000.0 / item.TotalDuration * 100)).ToString()
-            : "0",
+        Percentage: DerivePhase(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs)
+            .CalculatePercentage(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs, item.TotalDuration)
+            .ToString(),
         Priority: item.Priority.ToString(),
         Speed: FormatSpeed(item));
 

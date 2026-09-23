@@ -52,7 +52,9 @@
     "entryDeleted": "Entry deleted",
     "failedToDelete": "Failed to delete entry",
     "retryStarted": "Retry started",
-    "failedToRetry": "Failed to retry download"
+    "failedToRetry": "Failed to retry download",
+    "phaseDownloading": "Downloading",
+    "phaseRemuxing": "Remuxing"
   },
   "setup": {
     "title": "Setup Guide",
