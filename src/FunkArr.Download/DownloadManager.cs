@@ -371,7 +371,9 @@ public sealed class DownloadManager : ReceivePersistentActor
     {
         var entry = state.Queued.FirstOrDefault(e => e.Id == downloadId);
         if (entry != default)
+        {
             return entry.Priority;
+        }
 
         return state.Dispatched.TryGetValue(downloadId, out var priority)
             ? priority

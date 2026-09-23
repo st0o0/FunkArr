@@ -60,7 +60,10 @@ public static class DownloadManagerStateExtensions
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadMoved evt)
     {
         var idx = state.Queued.ToList().FindIndex(e => e.Id == evt.DownloadId);
-        if (idx < 0) return state;
+        if (idx < 0)
+        {
+            return state;
+        }
 
         var entry = state.Queued[idx];
         var list = state.Queued.ToList();
@@ -77,7 +80,10 @@ public static class DownloadManagerStateExtensions
         var list = state.Queued.ToList();
         var idx1 = list.FindIndex(e => e.Id == evt.DownloadId1);
         var idx2 = list.FindIndex(e => e.Id == evt.DownloadId2);
-        if (idx1 < 0 || idx2 < 0) return state;
+        if (idx1 < 0 || idx2 < 0)
+        {
+            return state;
+        }
 
         (list[idx1], list[idx2]) = (list[idx2], list[idx1]);
         return state with { Queued = list };
@@ -86,7 +92,10 @@ public static class DownloadManagerStateExtensions
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadPriorityChanged evt)
     {
         var idx = state.Queued.ToList().FindIndex(e => e.Id == evt.DownloadId);
-        if (idx < 0) return state;
+        if (idx < 0)
+        {
+            return state;
+        }
 
         var priority = evt.Priority.ToDomain();
         var list = state.Queued.ToList();
@@ -135,7 +144,9 @@ public static class DownloadManagerStateExtensions
         for (var i = 0; i < list.Count; i++)
         {
             if (list[i].Priority >= priority)
+            {
                 lastIdx = i;
+            }
         }
 
         return lastIdx + 1;
@@ -149,13 +160,19 @@ public static class DownloadManagerStateExtensions
         {
             if (list[i].Priority == priority)
             {
-                if (start < 0) start = i;
+                if (start < 0)
+                {
+                    start = i;
+                }
+
                 end = i + 1;
             }
         }
 
         if (start < 0)
+        {
             return (FindBucketEnd(list, priority), FindBucketEnd(list, priority));
+        }
 
         return (start, end);
     }

@@ -39,7 +39,9 @@ internal static class SabnzbdResponseMapper
     internal static string FormatSpeed(QueueItem item)
     {
         if (item.Status != DownloadStatus.Processing || item.CurrentTimeUs <= 0)
+        {
             return "0";
+        }
 
         var elapsedSeconds = item.CurrentTimeUs / 1_000_000.0;
         var bytesPerSecond = item.BytesDownloaded / elapsedSeconds;
@@ -49,12 +51,16 @@ internal static class SabnzbdResponseMapper
     internal static string FormatTimeLeft(QueueItem item)
     {
         if (item.TotalDuration <= 0 || item.Speed <= 0)
+        {
             return "00:00:00";
+        }
 
         var elapsedSeconds = item.CurrentTimeUs / 1_000_000.0;
         var remainingSeconds = (item.TotalDuration - elapsedSeconds) / item.Speed;
         if (remainingSeconds < 0)
+        {
             remainingSeconds = 0;
+        }
 
         var ts = TimeSpan.FromSeconds(remainingSeconds);
         return $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
@@ -83,7 +89,9 @@ internal static class SabnzbdResponseMapper
     internal static DownloadPriority MapSabnzbdPriority(string? value)
     {
         if (!int.TryParse(value, out var intVal))
+        {
             return DownloadPriority.Normal;
+        }
 
         return intVal switch
         {

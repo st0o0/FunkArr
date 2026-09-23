@@ -14,7 +14,7 @@ public sealed class NzbServiceTests
     {
         var id = EncodeNzbId("Test Title", "https://example.com/video.mp4");
 
-        var result = _service.GetNzb(id);
+        var result = NzbService.GetNzb(id);
 
         var success = Assert.IsType<NzbGetResult.Success>(result);
         Assert.NotEmpty(success.Content);
@@ -24,7 +24,7 @@ public sealed class NzbServiceTests
     [Fact]
     public void GetNzb_returns_error_for_null_id()
     {
-        var result = _service.GetNzb(null);
+        var result = NzbService.GetNzb(null);
 
         var error = Assert.IsType<NzbGetResult.Error>(result);
         Assert.Equal(200, error.ErrorDetail.Code);
@@ -33,7 +33,7 @@ public sealed class NzbServiceTests
     [Fact]
     public void GetNzb_returns_error_for_empty_id()
     {
-        var result = _service.GetNzb("");
+        var result = NzbService.GetNzb("");
 
         Assert.IsType<NzbGetResult.Error>(result);
     }
@@ -41,7 +41,7 @@ public sealed class NzbServiceTests
     [Fact]
     public void GetNzb_returns_error_for_invalid_base64()
     {
-        var result = _service.GetNzb("not-valid-base64!!!");
+        var result = NzbService.GetNzb("not-valid-base64!!!");
 
         var error = Assert.IsType<NzbGetResult.Error>(result);
         Assert.Equal(201, error.ErrorDetail.Code);
@@ -52,7 +52,7 @@ public sealed class NzbServiceTests
     {
         var id = Convert.ToBase64String(Encoding.UTF8.GetBytes("title-only"));
 
-        var result = _service.GetNzb(id);
+        var result = NzbService.GetNzb(id);
 
         Assert.IsType<NzbGetResult.Error>(result);
     }
@@ -62,7 +62,7 @@ public sealed class NzbServiceTests
     {
         var id = Convert.ToBase64String(Encoding.UTF8.GetBytes("title\t"));
 
-        var result = _service.GetNzb(id);
+        var result = NzbService.GetNzb(id);
 
         Assert.IsType<NzbGetResult.Error>(result);
     }
@@ -72,7 +72,7 @@ public sealed class NzbServiceTests
     {
         var id = EncodeNzbId("Title", "https://example.com/v.mp4", "https://example.com/sub.vtt");
 
-        var result = _service.GetNzb(id);
+        var result = NzbService.GetNzb(id);
         var success = Assert.IsType<NzbGetResult.Success>(result);
         var xml = Encoding.UTF8.GetString(success.Content);
 
@@ -85,7 +85,7 @@ public sealed class NzbServiceTests
     {
         var id = EncodeNzbId("Title", "https://example.com/v.mp4", category: "movie");
 
-        var result = _service.GetNzb(id);
+        var result = NzbService.GetNzb(id);
         var success = Assert.IsType<NzbGetResult.Success>(result);
         var xml = Encoding.UTF8.GetString(success.Content);
 
@@ -109,7 +109,7 @@ public sealed class NzbServiceTests
         });
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(nzbXml));
-        var result = _service.ParseNzb(stream);
+        var result = NzbService.ParseNzb(stream);
 
         Assert.NotNull(result);
         Assert.Equal("Test Title", result.Meta("title"));
@@ -122,7 +122,7 @@ public sealed class NzbServiceTests
         var nzbXml = NewznabXmlResult.Serialize(new Nzb());
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(nzbXml));
-        var result = _service.ParseNzb(stream);
+        var result = NzbService.ParseNzb(stream);
 
         Assert.NotNull(result);
         Assert.Null(result.Meta("nonexistent"));

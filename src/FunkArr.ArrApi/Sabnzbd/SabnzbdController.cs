@@ -46,7 +46,9 @@ public sealed class SabnzbdController(
         IFormFile? name)
     {
         if ((req.Mode ?? "") != "addfile")
+        {
             return BadRequest(new { status = false, error = "Invalid mode" });
+        }
 
         return MapResult(await downloads.AddFile(name, req.Cat, req.Priority));
     }
