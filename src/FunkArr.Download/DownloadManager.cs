@@ -215,7 +215,7 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        if (!_state.Queued.Any(e => e.Id == cmd.DownloadId))
+        if (_state.Queued.All(e => e.Id != cmd.DownloadId))
         {
             Sender.Tell(new ForceStartDownloadResult(false, "Item not queued"));
             return;
@@ -233,7 +233,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void HandleMove(MoveDownload cmd)
     {
-        if (!_state.Queued.Any(e => e.Id == cmd.DownloadId))
+        if (_state.Queued.All(e => e.Id != cmd.DownloadId))
         {
             Sender.Tell(new MoveDownloadFailed("Item not queued"));
             return;
@@ -375,8 +375,6 @@ public sealed class DownloadManager : ReceivePersistentActor
             return entry.Priority;
         }
 
-        return state.Dispatched.TryGetValue(downloadId, out var priority)
-            ? priority
-            : DownloadPriority.Normal;
+        return state.Dispatched.GetValueOrDefault(downloadId, DownloadPriority.Normal);
     }
 }

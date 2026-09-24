@@ -215,7 +215,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
         _cts = new CancellationTokenSource();
         var self = Self;
         _remuxer.RunAsync(videoUrl, subtitleUrl, outputPath,
-            progress => self.Tell(progress), _cts.Token)
+            self.Tell, _cts.Token)
             .PipeTo(self, failure: ex => new FfmpegResult(false, -1, ex.Message, 0));
     }
 
