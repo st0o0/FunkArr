@@ -8,6 +8,12 @@ services:
       - funkarr-data:/app/data
       - /path/to/media:/media
     environment:
+      # -- User / Group --
+      # UID/GID the FunkArr process runs as. Must have write access to download paths.
+      # Default: 1654
+      #- PUID=1000
+      #- PGID=1000
+
       # -- API Key --
       # Used by Prowlarr/Sonarr/Radarr to authenticate requests.
       # Default: funkarr-default-api-key

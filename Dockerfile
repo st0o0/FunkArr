@@ -34,7 +34,7 @@ RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/pu
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f62a272ac1b46e83f56b8ed0416572f31cd1128e2c4a5e63eb34d348e4a36095
 # hadolint ignore=DL3018
-RUN apk add --no-cache ffmpeg icu-libs
+RUN apk add --no-cache ffmpeg icu-libs su-exec
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 ARG VERSION=0.0.0-dev
 LABEL org.opencontainers.image.title="funkarr" \
@@ -42,13 +42,15 @@ LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.source="https://github.com/st0o0/funkarr" \
       org.opencontainers.image.documentation="https://github.com/st0o0/funkarr#readme"
-RUN mkdir -p /app/data/temp && chown 1654:1654 /app/data /app/data/temp
+RUN mkdir -p /app/data/temp
 WORKDIR /app
 COPY --from=build /app/publish .
 COPY data/community/rulesets/ /app/data/rulesets/community/
 COPY data/community/version.txt /app/data/rulesets/version.txt
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 VOLUME /app/data
 VOLUME /media
 ENV ASPNETCORE_URLS=http://+:6969
 EXPOSE 6969
-ENTRYPOINT ["/bin/sh", "-c", "umask 000 && exec dotnet FunkArr.dll"]
+ENTRYPOINT ["/entrypoint.sh"]

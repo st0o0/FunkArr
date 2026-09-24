@@ -8,6 +8,8 @@ services:
       - funkarr-data:/app/data
       - media:/shared
     environment:
+      - PUID=1654
+      - PGID=1654
       - Serilog__MinimumLevel__Default=Debug
       - Serilog__MinimumLevel__Override__Akka=Information
       - FunkArr__ApiKey=funkarr-dev-api-key-01
