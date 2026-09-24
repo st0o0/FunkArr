@@ -1,5 +1,63 @@
 # Changelog
 
+## [0.2.0](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.6...funkarr-v0.2.0) (2026-09-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate ArrApi from Minimal API to MVC Controllers with extracted services
+* rebuild download queue UI with priority buckets, drag-and-drop, and context menu
+* add download queue reordering with priority buckets and SABnzbd compatibility
+* extract DownloadScheduler, add pause/resume/force-start to DownloadManager
+* replace string fields with enums in persistence trace DTOs
+* restructure type ownership across Persistence, Api, and Messages layers
+
+### Features
+
+* add airdate match guard with MinTitleAffinity threshold and season-less fallback ([39fabac](https://github.com/st0o0/FunkArr/commit/39fabac4479c9845cfec2f0f5d42b17e6491cfb6))
+* add DataAnnotation validation with SafeUrl SSRF protection and wire dead request models ([88171e9](https://github.com/st0o0/FunkArr/commit/88171e9e55f86571785e9c0503f4e2a3fa8ca87c))
+* add download queue reordering with priority buckets and SABnzbd compatibility ([76ef4f4](https://github.com/st0o0/FunkArr/commit/76ef4f4b5cb68cc802d49b918dff86059291fc34))
+* add download scheduling and speed limiting ([5fd44c8](https://github.com/st0o0/FunkArr/commit/5fd44c8df98fd675c1bcece880393986a0725efe))
+* add PUID/PGID support for Docker file permissions ([8ae56d3](https://github.com/st0o0/FunkArr/commit/8ae56d3d8e3aae567d44bb4edbf42d77b9b2823d))
+* always run TVDB enrichment to override regex-extracted S/E and fix 5 wrong TMDB IDs ([d1c499f](https://github.com/st0o0/FunkArr/commit/d1c499f136f09f6af05b121b7ff6a64546854fb5))
+* rebuild download queue UI with priority buckets, drag-and-drop, and context menu ([5bf3858](https://github.com/st0o0/FunkArr/commit/5bf3858ee8cc691b481c3828e36bb800482ffc31))
+* restructure type ownership across Persistence, Api, and Messages layers ([c47f5d8](https://github.com/st0o0/FunkArr/commit/c47f5d8e1b9ffd3cb79ec9c9a4e39c227f7c4480))
+* **sabnzbd:** Add pause and resume queue functionality ([f6cb31f](https://github.com/st0o0/FunkArr/commit/f6cb31f5d9afc307dfdaacc259a89001a5ec1c3a))
+* show download/remux phase in activity UI with phase-aware progress percentage ([961c9a3](https://github.com/st0o0/FunkArr/commit/961c9a329b723ec71f8d757163b56a7f56276fec))
+
+
+### Bug Fixes
+
+* await both watchers in RuleSetManager tests to prevent race condition ([50f1832](https://github.com/st0o0/FunkArr/commit/50f1832c4dc823d09f1a8bbc8d28308ee7be9b07))
+* compare season/episode as integers in Newznab filter to handle zero-padded values ([6908514](https://github.com/st0o0/FunkArr/commit/69085147955a234aef529be35175988f8d8270e2))
+* remove explicit Passivate from DownloadWorker, use idle passivation ([6952760](https://github.com/st0o0/FunkArr/commit/69527600f1f05ad25640a98da7967009d1828964))
+* remove SafeUrl validation from setup endpoint to allow Docker-internal URLs ([5925411](https://github.com/st0o0/FunkArr/commit/5925411e82c04c7b5951f319ee07c7cade70dea7))
+* update Verify snapshots for enum-typed persistence trace fields ([91399c8](https://github.com/st0o0/FunkArr/commit/91399c84d1d11bb28a3f4aff6a4543b9118c73c6))
+* use numeric enum values throughout UI for API compatibility ([f3fa9ef](https://github.com/st0o0/FunkArr/commit/f3fa9efd0a1b3f3cf883f102e9155bce9bb135ee))
+* wrap Ask calls with timeout handling and stop leaking exception details ([4857d75](https://github.com/st0o0/FunkArr/commit/4857d7541e38263c1ddcc5dc34f7be040b8e4534))
+
+
+### Documentation
+
+* add how-it-works, web-ui, troubleshooting, comparison pages and fix en dashes ([aadaadd](https://github.com/st0o0/FunkArr/commit/aadaadd159e9c9577cdf5c368913f97f14c123f1))
+* archive changes, sync ruleset-store and ruleset-disk-model specs ([9379f28](https://github.com/st0o0/FunkArr/commit/9379f282b7886465b6bd29ba9336217d335d5b4c))
+* sync api-hardening delta specs to main specs ([cdeb7bd](https://github.com/st0o0/FunkArr/commit/cdeb7bd520e167913b868dd726f997c73e4e9a79))
+* sync specs for download-queue-ui-reorder change ([b08d0ea](https://github.com/st0o0/FunkArr/commit/b08d0ea2df669b51d25845e5cea6fc801335f808))
+
+
+### Refactoring
+
+* decouple ArrApi services from IActionResult with domain result types ([cc5955e](https://github.com/st0o0/FunkArr/commit/cc5955e9bd26b56b44fe92517f580dedee84e4d4))
+* extract DownloadScheduler, add pause/resume/force-start to DownloadManager ([19db4c5](https://github.com/st0o0/FunkArr/commit/19db4c5b615d06a4f1bc95924dcde540d7e96cf3))
+* extract ReleaseDisplay from title building and simplify ReleaseTitleBuilder ([4998b7b](https://github.com/st0o0/FunkArr/commit/4998b7b053339076fe49b24cd4239a6d3730dce0))
+* extract RuleSetStore, DiskModel, expand Worker with CRUD and in-memory state ([2492c6a](https://github.com/st0o0/FunkArr/commit/2492c6aad6070166ae441666ef054092a881b64f))
+* migrate ArrApi from Minimal API to MVC Controllers with extracted services ([0de4122](https://github.com/st0o0/FunkArr/commit/0de41220e7d09b025c7d47803cb9fecae95dc901))
+* pass API key through HttpContext.Items instead of double-reading query string ([95a01b8](https://github.com/st0o0/FunkArr/commit/95a01b8f6a0bc7a2fcc19616d163d60470b75fac))
+* remove broken speed limit, inject TimeProvider into DownloadManager ([7ff6c6a](https://github.com/st0o0/FunkArr/commit/7ff6c6a1daf797295da4562cad429d69d3048933))
+* replace magic strings with enums in ScoringEngine trace model ([cb107ed](https://github.com/st0o0/FunkArr/commit/cb107ed217ef91c7ed9ac15b80b5b89db892d420))
+* replace string fields with enums in persistence trace DTOs ([ad7461d](https://github.com/st0o0/FunkArr/commit/ad7461d531bb0b8f70d93fb30f17ada79b2069d3))
+* use IOptions&lt;T&gt; in DataPaths and validate write access on startup ([bd90ded](https://github.com/st0o0/FunkArr/commit/bd90ded3dce78f9dee1a587bfb203916074f6c01))
+
 ## [0.1.6](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.5...funkarr-v0.1.6) (2026-09-21)
 
 
