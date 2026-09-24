@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.2.0...rulesets-v0.3.0) (2026-09-24)
+
+
+### New Rulesets
+
+* add Terra X community rulesets ([f9d5168](https://github.com/st0o0/FunkArr/commit/f9d51683a2412041a3c36cf674a4d990134f98a4))
+* add VitePress docs site with dynamic ruleset catalog ([671fe2c](https://github.com/st0o0/FunkArr/commit/671fe2cd5e158b909ae0d939409e1cc4451c11e2))
+* always run TVDB enrichment to override regex-extracted S/E and fix 5 wrong TMDB IDs ([d1c499f](https://github.com/st0o0/FunkArr/commit/d1c499f136f09f6af05b121b7ff6a64546854fb5))
+* bundle ruleset version in Docker image to skip redundant update on startup ([83c40b4](https://github.com/st0o0/FunkArr/commit/83c40b402e6b7413ec5862bd0dda1752bb992c03))
+
+
+### Ruleset Fixes
+
+* optimize 23 community rulesets and fix JSON export encoding ([08586a9](https://github.com/st0o0/FunkArr/commit/08586a9a232f427bd1ba909dba21a93f1b34b984))
+
+
+### Documentation
+
+* sync openspec specs for history domain and state patterns ([3dbaffd](https://github.com/st0o0/FunkArr/commit/3dbaffd753af7c1c04e41bb3889381842fdd3390))
+
 ## [0.2.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.1.0...rulesets-v0.2.0) (2026-09-12)
 
 
