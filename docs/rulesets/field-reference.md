@@ -9,7 +9,7 @@ Alle Felder im FunkArr-Regelwerk-JSON-Format, nach Abschnitt geordnet.
 | `topic` | string | Ja | - | Anzeigename der Sendung oder des Films. Muss exakt mit dem Mediathek-Themenfeld übereinstimmen. Wird für die themenbasierte Suche verwendet, wenn Sonarr/Radarr eine Suche starten. |
 | `aliases` | string[] | Nein | `[]` | Alternative Themennamen. FunkArr prüft Aliase, wenn das primäre Thema nicht passt. Nützlich, wenn eine Sendung unter verschiedenen Namen bei verschiedenen Sendern erscheint (z.B. „Tatort aus Österreich"). |
 | `media` | object | Ja | - | Externe Metadaten-IDs und Medientyp. Siehe [Media-Felder](#media-felder). |
-| `confidence` | number | Nein | `0` | Standard-Konfidenzwert (0.0–1.0), der auf Regeln angewendet wird, die keinen eigenen setzen. Höhere Werte bedeuten, dass Sonarr/Radarr dem Match mehr vertrauen. Verwende `1.0` für zuverlässige Matches, niedrigere Werte für unsichere. |
+| `confidence` | number | Nein | `0` | Standard-Konfidenzwert (0.0-1.0), der auf Regeln angewendet wird, die keinen eigenen setzen. Höhere Werte bedeuten, dass Sonarr/Radarr dem Match mehr vertrauen. Verwende `1.0` für zuverlässige Matches, niedrigere Werte für unsichere. |
 | `rules` | array | Ja | - | Geordnete Liste von Matching-Regeln. Siehe [Regel-Felder](#regel-felder). |
 | `standalone` | boolean | Nein | `false` | **Nur lokal.** Wenn `true`, wird das lokale Regelwerk unverändert verwendet - die Community-Basis wird komplett ignoriert. Kein Zusammenführen findet statt. |
 | `disable` | string[] | Nein | `[]` | **Nur lokal.** Liste von Community-Regel-IDs, die beim Zusammenführen übersprungen werden. Die Regeln werden entfernt, bevor lokale Regeln angewendet werden. Jeder Wert muss einer Regel-`id` in der Community-Basis entsprechen. |

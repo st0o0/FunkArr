@@ -15,14 +15,19 @@ export default defineConfig({
         nav: [
           { text: 'Anleitung', link: '/getting-started' },
           { text: 'Konfiguration', link: '/configuration' },
-          { text: 'Regelwerke', link: '/rulesets/' }
+          { text: 'Regelwerke', link: '/rulesets/' },
+          { text: 'Vergleich', link: '/comparison' }
         ],
         sidebar: [
           {
             text: 'Anleitung',
             items: [
               { text: 'Erste Schritte', link: '/getting-started' },
-              { text: 'Konfiguration', link: '/configuration' }
+              { text: 'Konfiguration', link: '/configuration' },
+              { text: 'So funktioniert FunkArr', link: '/how-it-works' },
+              { text: 'Web-Oberflaeche', link: '/web-ui' },
+              { text: 'Fehlerbehebung', link: '/troubleshooting' },
+              { text: 'Vergleich mit Alternativen', link: '/comparison' }
             ]
           },
           {
@@ -48,14 +53,19 @@ export default defineConfig({
         nav: [
           { text: 'Guide', link: '/en/getting-started' },
           { text: 'Config', link: '/en/configuration' },
-          { text: 'Rulesets', link: '/en/rulesets/' }
+          { text: 'Rulesets', link: '/en/rulesets/' },
+          { text: 'Comparison', link: '/en/comparison' }
         ],
         sidebar: [
           {
             text: 'Guide',
             items: [
               { text: 'Getting Started', link: '/en/getting-started' },
-              { text: 'Configuration', link: '/en/configuration' }
+              { text: 'Configuration', link: '/en/configuration' },
+              { text: 'How FunkArr Works', link: '/en/how-it-works' },
+              { text: 'Web UI', link: '/en/web-ui' },
+              { text: 'Troubleshooting', link: '/en/troubleshooting' },
+              { text: 'Comparison', link: '/en/comparison' }
             ]
           },
           {

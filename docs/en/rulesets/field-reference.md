@@ -9,7 +9,7 @@ Every field in the FunkArr ruleset JSON format, organized by section.
 | `topic` | string | Yes | - | Display name of the show or movie. Must match the Mediathek topic field exactly. Used for topic-based lookup when Sonarr/Radarr trigger a search. |
 | `aliases` | string[] | No | `[]` | Alternative topic names. FunkArr checks aliases when the primary topic doesn't match. Useful when a show appears under different names across broadcasters (e.g., "Tatort aus Österreich"). |
 | `media` | object | Yes | - | External metadata IDs and media type. See [Media Fields](#media-fields). |
-| `confidence` | number | No | `0` | Default confidence score (0.0–1.0) applied to rules that don't set their own. Higher values mean Sonarr/Radarr trust the match more. Use `1.0` for reliable matches, lower for fuzzy ones. |
+| `confidence` | number | No | `0` | Default confidence score (0.0-1.0) applied to rules that don't set their own. Higher values mean Sonarr/Radarr trust the match more. Use `1.0` for reliable matches, lower for fuzzy ones. |
 | `rules` | array | Yes | - | Ordered list of matching rules. See [Rule Fields](#rule-fields). |
 | `standalone` | boolean | No | `false` | **Local only.** When `true`, the local ruleset is used as-is - the community base is ignored entirely. No merging happens. |
 | `disable` | string[] | No | `[]` | **Local only.** List of community rule IDs to skip during merge. The rules are removed before local rules are applied. Each value must match a rule `id` in the community base. |
