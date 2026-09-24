@@ -8,6 +8,7 @@ using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.RuleSet.Tests;
 
@@ -25,9 +26,9 @@ public sealed class RuleSetManagerTests : TestKit
         Directory.CreateDirectory(Path.Combine(_tempDir, "rulesets", "local"));
         Directory.CreateDirectory(Path.Combine(_tempDir, "temp"));
 
-        var funkArrOptions = new FunkArrOptions { DataPath = _tempDir };
-        var downloadOptions = new DownloadOptions();
-        _dataPaths = new DataPaths(funkArrOptions, downloadOptions);
+        _dataPaths = new DataPaths(
+            Options.Create(new FunkArrOptions { DataPath = _tempDir }),
+            Options.Create(new DownloadOptions()));
         _dataPaths.EnsureDirectories();
         _dataFiles = new TestDataFiles(new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance));
         _store = new RuleSetStore(_dataFiles, _dataPaths);

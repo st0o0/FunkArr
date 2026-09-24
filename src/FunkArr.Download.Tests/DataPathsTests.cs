@@ -1,12 +1,13 @@
 using FunkArr.Core;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.Download.Tests;
 
 public sealed class DataPathsTests
 {
     private static DataPaths Create(string dataPath = "data", string downloadPath = "data/downloads") =>
-        new(new FunkArrOptions { DataPath = dataPath },
-            new DownloadOptions { Path = downloadPath });
+        new(Options.Create(new FunkArrOptions { DataPath = dataPath }),
+            Options.Create(new DownloadOptions { Path = downloadPath }));
 
     [Fact]
     public void DataRoot_is_absolute()

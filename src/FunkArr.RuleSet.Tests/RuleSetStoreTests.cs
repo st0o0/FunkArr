@@ -3,6 +3,7 @@ using FunkArr.Core;
 using FunkArr.RuleSet.DiskModel;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.RuleSet.Tests;
 
@@ -14,9 +15,9 @@ public sealed class RuleSetStoreTests : IDisposable
     public RuleSetStoreTests()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}");
-        var funkArrOptions = new FunkArrOptions { DataPath = _tempDir };
-        var downloadOptions = new DownloadOptions();
-        var dataPaths = new DataPaths(funkArrOptions, downloadOptions);
+        var dataPaths = new DataPaths(
+            Options.Create(new FunkArrOptions { DataPath = _tempDir }),
+            Options.Create(new DownloadOptions()));
         dataPaths.EnsureDirectories();
         Directory.CreateDirectory(Path.Combine(_tempDir, "rulesets", "community"));
         Directory.CreateDirectory(Path.Combine(_tempDir, "rulesets", "local"));

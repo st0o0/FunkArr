@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using Akka.Actor;
 using Akka.Hosting;
+using Akka.TestKit;
 using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages;
@@ -8,7 +9,7 @@ using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
-using Akka.TestKit;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.RuleSet.Tests;
 
@@ -27,9 +28,9 @@ public sealed class RuleSetWorkerTests : TestKit
         _tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(_tempDir, "rulesets", "community"));
         Directory.CreateDirectory(Path.Combine(_tempDir, "rulesets", "local"));
-        var funkArrOptions = new FunkArrOptions { DataPath = _tempDir };
-        var downloadOptions = new DownloadOptions();
-        var dataPaths = new DataPaths(funkArrOptions, downloadOptions);
+        var dataPaths = new DataPaths(
+            Options.Create(new FunkArrOptions { DataPath = _tempDir }),
+            Options.Create(new DownloadOptions()));
         dataPaths.EnsureDirectories();
         _dataFiles = new TestDataFiles(new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance));
         _store = new RuleSetStore(_dataFiles, dataPaths);

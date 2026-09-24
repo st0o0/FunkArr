@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.Core;
 
@@ -15,24 +16,49 @@ public sealed partial class DataPaths
     public string Incomplete { get; }
     public string Complete { get; }
 
-    public DataPaths(FunkArrOptions funkArrOptions, DownloadOptions downloadOptions)
+    public DataPaths(IOptions<FunkArrOptions> funkArrOptions, IOptions<DownloadOptions> downloadOptions)
     {
-        DataRoot = Path.GetFullPath(funkArrOptions.DataPath);
+        DataRoot = Path.GetFullPath(funkArrOptions.Value.DataPath);
         Database = Path.Join(DataRoot, "funkarr.db");
         CommunityRuleSets = Path.Join(DataRoot, "rulesets", "community");
         LocalRuleSets = Path.Join(DataRoot, "rulesets", "local");
         RuleSetVersion = Path.Join(DataRoot, "rulesets", "version.txt");
         Temp = Path.Join(DataRoot, "temp");
 
-        DownloadRoot = Path.GetFullPath(downloadOptions.Path);
+        DownloadRoot = Path.GetFullPath(downloadOptions.Value.Path);
         Incomplete = Path.Join(DownloadRoot, "incomplete");
         Complete = Path.Join(DownloadRoot, "complete");
     }
 
     public void EnsureDirectories()
     {
-        Directory.CreateDirectory(Incomplete);
-        Directory.CreateDirectory(Complete);
+        EnsureWritableDirectory(Incomplete);
+        EnsureWritableDirectory(Complete);
+    }
+
+    private static void EnsureWritableDirectory(string path)
+    {
+        try
+        {
+            Directory.CreateDirectory(path);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            throw new InvalidOperationException(
+                $"Cannot create directory '{path}'. Ensure PUID/PGID has write access to the parent directory.", ex);
+        }
+
+        var probe = Path.Join(path, $".write-test-{Guid.NewGuid():N}");
+        try
+        {
+            File.WriteAllBytes(probe, []);
+            File.Delete(probe);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            throw new InvalidOperationException(
+                $"Cannot write to '{path}'. Ensure PUID/PGID has write access to this directory.", ex);
+        }
     }
 
     public sealed record ResolvedDownload(

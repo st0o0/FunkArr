@@ -29,8 +29,8 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
         services.AddSingleton(sp =>
         {
             var dataPaths = new DataPaths(
-                sp.GetRequiredService<IOptions<FunkArrOptions>>().Value,
-                sp.GetRequiredService<IOptions<DownloadOptions>>().Value);
+                sp.GetRequiredService<IOptions<FunkArrOptions>>(),
+                sp.GetRequiredService<IOptions<DownloadOptions>>());
             dataPaths.EnsureDirectories();
             return dataPaths;
         });

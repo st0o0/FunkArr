@@ -24,7 +24,7 @@ public static partial class RuleSetApiEndpoints
     private static readonly TimeSpan _testTimeout = TimeSpan.FromSeconds(15);
     private static readonly Regex _ruleSetIdPattern = RuleSetIdRegex();
 
-public static WebApplication MapRuleSetApi(this WebApplication app)
+    public static WebApplication MapRuleSetApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/rulesets")
             .WithTags("Rulesets")
