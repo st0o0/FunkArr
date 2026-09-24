@@ -1,0 +1,53 @@
+{
+  "topic": "Eine kurze Geschichte über...",
+  "aliases": [
+    "Eine kurze Geschichte",
+    "Ein Moment in der Geschichte"
+  ],
+  "media": {
+    "tvdbId": 406527,
+    "name": "Eine kurze Geschichte über…",
+    "type": "show"
+  },
+  "confidence": 1,
+  "rules": [
+    {
+      "id": "season-episode",
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "14"
+          }
+        ]
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "id": "title-includes",
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "14"
+          }
+        ]
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}

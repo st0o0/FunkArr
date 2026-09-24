@@ -1,0 +1,53 @@
+{
+  "topic": "Terra X: Macht der Götter",
+  "aliases": [
+    "Macht der Götter",
+    "Terra X: Macht der Götter - Weltgeschichte der Religionen"
+  ],
+  "media": {
+    "tvdbId": 449268,
+    "name": "Terra X: Macht der Götter - Weltgeschichte der Religionen",
+    "type": "show"
+  },
+  "confidence": 1,
+  "rules": [
+    {
+      "id": "season-episode",
+      "priority": 0,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ]
+      },
+      "strategy": "seasonAndEpisodeNumber",
+      "seasonRegex": "(?<=S)(\\d{2,4})(?=\\s*/E\\d{2,4})",
+      "episodeRegex": "(?<=\\bS\\d{2,4}\\s*/E)(\\d{2,4})(?=\\))",
+      "titleRules": []
+    },
+    {
+      "id": "title-includes",
+      "priority": 1,
+      "filters": {
+        "all": [
+          {
+            "field": "duration",
+            "op": "greaterThan",
+            "value": "35"
+          }
+        ]
+      },
+      "strategy": "itemTitleIncludes",
+      "titleRules": [
+        {
+          "type": "regex",
+          "field": "title",
+          "pattern": "^(.*?)(?:\\s*\\([^)]*\\))?$"
+        }
+      ]
+    }
+  ]
+}
