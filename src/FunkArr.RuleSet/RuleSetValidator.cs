@@ -103,7 +103,7 @@ public sealed class RuleSetValidator : IRuleSetValidator
                 foreach (var titleRule in titleRulesEl.EnumerateArray())
                 {
                     if (titleRule.TryGetProperty("type", out var typeEl) &&
-                        typeEl.GetString() == "regex")
+                        IsRegexType(typeEl))
                     {
                         ValidateRegexField(titleRule, "pattern",
                             $"rules[{ruleRef}].titleRules[{titleIndex}].pattern", errors);
@@ -116,6 +116,11 @@ public sealed class RuleSetValidator : IRuleSetValidator
             ruleIndex++;
         }
     }
+
+    private static bool IsRegexType(JsonElement el) =>
+        el.ValueKind == JsonValueKind.String
+            ? el.GetString() == "regex"
+            : el.ValueKind == JsonValueKind.Number && el.TryGetInt32(out var n) && n == 1;
 
     private static void ValidateRegexField(JsonElement element, string propertyName, string path,
         List<RuleSetValidationError> errors)

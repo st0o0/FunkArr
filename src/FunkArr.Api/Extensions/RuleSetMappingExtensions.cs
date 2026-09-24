@@ -48,6 +48,42 @@ internal static class RuleSetMappingExtensions
             new ApiModels.RuntimeMatchConfigOutput(config.Runtime.Tolerance, (ApiModels.RuntimeMode)(int)config.Runtime.Mode),
             new ApiModels.YearMatchConfigOutput(config.Year.Tolerance));
 
+    internal static CreateLocalRuleSet ToCommand(this ApiModels.CreateRuleSetRequest request) =>
+        new(request.RuleSetId, ToBody(request, request.Enrichment));
+
+    internal static UpdateLocalRuleSet ToCommand(this ApiModels.UpdateRuleSetRequest request, string id) =>
+        new(id, ToBody(request, request.Enrichment));
+
+    private static RuleSetBody ToBody(ApiModels.IRuleSetBody request, ApiModels.EnrichmentConfigInput? enrichment) =>
+        new(request.Topic,
+            request.Aliases,
+            new RuleSetMediaInput(
+                request.Media.Name,
+                (Messages.MediaType)(int)Enum.Parse<ApiModels.MediaType>(request.Media.Type, true),
+                request.Media.TvdbId, request.Media.ImdbId, request.Media.TmdbId),
+            request.Confidence,
+            request.Rules.Select(r => new RuleSetRuleInput(
+                r.Id, r.Priority, r.Confidence,
+                r.Strategy is not null ? (MsgScoring.IdentificationStrategy)(int)r.Strategy : null,
+                r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
+                r.Filters is not null ? MapFilters(r.Filters) : null,
+                r.TitleRules?.Select(t => new RuleSetTitleRuleInput(
+                    (MsgScoring.TitlePartType)(int)t.Type,
+                    t.Field is not null ? (MsgScoring.FilterField)(int)t.Field : null,
+                    t.Pattern, t.CaptureGroup, t.Value)).ToArray())).ToArray(),
+            request.Standalone, request.Disable,
+            enrichment?.ToMessage());
+
+    private static RuleSetFilterGroupInput MapFilters(ApiModels.FilterGroupInput input) =>
+        new(input.All?.Select(MapCondition).ToArray(),
+            input.Any?.Select(MapCondition).ToArray(),
+            input.Not?.Select(MapCondition).ToArray());
+
+    private static RuleSetFilterConditionInput MapCondition(ApiModels.FilterNodeInput c) =>
+        new((MsgScoring.FilterField)(int)(c.Field ?? 0),
+            (MsgScoring.FilterOp)(int)(c.Op ?? 0),
+            c.Value ?? "");
+
     internal static EnrichmentConfig ToMessage(this ApiModels.EnrichmentConfigInput input) =>
         new(input.Enabled ?? true,
             (input.Methods ?? [ApiModels.EnrichmentMethod.Title, ApiModels.EnrichmentMethod.Airdate])

@@ -16,6 +16,7 @@ public sealed class RuleSetManagerTests : TestKit
     private readonly string _tempDir;
     private readonly TestDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
+    private readonly RuleSetStore _store;
 
     public RuleSetManagerTests()
     {
@@ -29,6 +30,7 @@ public sealed class RuleSetManagerTests : TestKit
         _dataPaths = new DataPaths(funkArrOptions, downloadOptions);
         _dataPaths.EnsureDirectories();
         _dataFiles = new TestDataFiles(new DataFiles(new FileSystem(), NullLogger<DataFiles>.Instance));
+        _store = new RuleSetStore(_dataFiles, _dataPaths);
     }
 
     private const string _sampleJson = """
@@ -61,7 +63,7 @@ public sealed class RuleSetManagerTests : TestKit
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
 
         var msg1 = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
         var msg2 = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
@@ -88,7 +90,7 @@ public sealed class RuleSetManagerTests : TestKit
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
         File.WriteAllText(Path.Combine(_dataPaths.LocalRuleSets, "show-a.json"), _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
 
         var msg = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
         Assert.Equal("show-a", msg.RuleSetId);
@@ -110,7 +112,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IScoringManager>(scoringProbe);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
         shardProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
         AwaitCondition(() => _dataFiles.Watchers.Count >= 2);
@@ -140,7 +142,7 @@ public sealed class RuleSetManagerTests : TestKit
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "temp-show.json");
         File.WriteAllText(filePath, _sampleJson);
 
-        Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
+        Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
         AwaitCondition(() => _dataFiles.Watchers.Count >= 2);
@@ -155,7 +157,7 @@ public sealed class RuleSetManagerTests : TestKit
     }
 
     [Fact]
-    public void QueryDetail_returns_detail_for_known_ruleset()
+    public void QueryDetail_forwards_to_ShardRegion()
     {
         var shardProbe = CreateTestProbe();
         var resolverProbe = CreateTestProbe();
@@ -168,43 +170,12 @@ public sealed class RuleSetManagerTests : TestKit
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "test-show.json"), _sampleJson);
 
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
 
         manager.Tell(new QueryRuleSetDetail("test-show"));
-        var result = ExpectMsg<RuleSetDetailResult>();
-
-        Assert.Equal("test-show", result.RuleSetId);
-        Assert.Equal("Test Show", result.Identity.Topic);
-        Assert.Equal(0.9f, result.DefaultConfidence);
-        Assert.Single(result.Rules);
-        Assert.Equal("airdate", result.Rules[0].Id);
-        Assert.Equal(IdentificationStrategy.AirdateExtraction, result.Rules[0].Strategy);
-        Assert.NotNull(result.Source.CommunityPath);
-        Assert.Null(result.Source.LocalPath);
-
-        Cleanup();
-    }
-
-    [Fact]
-    public void QueryDetail_returns_not_found_for_unknown_ruleset()
-    {
-        var shardProbe = CreateTestProbe();
-        var resolverProbe = CreateTestProbe();
-        var scoringProbe = CreateTestProbe();
-
-        var registry = ActorRegistry.For(Sys);
-        registry.Register<IRuleSetRegion>(shardProbe);
-        registry.Register<IRuleSetResolver>(resolverProbe);
-        registry.Register<IScoringManager>(scoringProbe);
-
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
-
-        manager.Tell(new QueryRuleSetDetail("nonexistent"));
-        var result = ExpectMsg<RuleSetDetailFailed>();
-
-        var notFound = Assert.IsType<RuleSetNotFoundException>(result.Cause);
-        Assert.Equal("nonexistent", notFound.TopicOrAlias);
+        var forwarded = shardProbe.ExpectMsg<QueryRuleSetDetail>();
+        Assert.Equal("test-show", forwarded.RuleSetId);
 
         Cleanup();
     }
@@ -224,16 +195,14 @@ public sealed class RuleSetManagerTests : TestKit
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "deleted-show.json");
         File.WriteAllText(filePath, _sampleJson);
 
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
 
         File.Delete(filePath);
 
         manager.Tell(new QueryRuleSetDetail("deleted-show"));
-        var result = ExpectMsg<RuleSetDetailFailed>();
-
-        var notFound = Assert.IsType<RuleSetNotFoundException>(result.Cause);
-        Assert.Equal("deleted-show", notFound.TopicOrAlias);
+        var forwarded = shardProbe.ExpectMsg<QueryRuleSetDetail>();
+        Assert.Equal("deleted-show", forwarded.RuleSetId);
 
         Cleanup();
     }
@@ -255,9 +224,12 @@ public sealed class RuleSetManagerTests : TestKit
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
 
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
+
+        manager.Tell(new WorkerReady("show-a", 1, "community"));
+        manager.Tell(new WorkerReady("show-b", 1, "community"));
 
         manager.Tell(new QueryRuleSetListWithStats());
 
@@ -300,8 +272,10 @@ public sealed class RuleSetManagerTests : TestKit
 
         File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
 
-        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_dataFiles, _dataPaths)));
+        var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>();
+
+        manager.Tell(new WorkerReady("show-a", 1, "community"));
 
         manager.Tell(new QueryRuleSetListWithStats());
 

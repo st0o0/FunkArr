@@ -1,550 +1,145 @@
-using FunkArr.Messages;
-using FunkArr.Messages.Scoring;
+using FunkArr.RuleSet.DiskModel;
 
 namespace FunkArr.RuleSet.Tests;
 
 public sealed class RuleSetMergerTests
 {
-    private const string _communityJson = """
+    [Fact]
+    public void Resolve_both_null_returns_null()
+    {
+        Assert.Null(RuleSetMerger.Resolve(null, null));
+    }
+
+    [Fact]
+    public void Resolve_community_only_returns_community()
+    {
+        var community = new DiskRuleSet { Topic = "Community" };
+        var result = RuleSetMerger.Resolve(community, null);
+        Assert.Equal("Community", result!.Topic);
+    }
+
+    [Fact]
+    public void Resolve_local_only_returns_local()
+    {
+        var local = new DiskRuleSet { Topic = "Local" };
+        var result = RuleSetMerger.Resolve(null, local);
+        Assert.Equal("Local", result!.Topic);
+    }
+
+    [Fact]
+    public void Resolve_standalone_local_ignores_community()
+    {
+        var community = new DiskRuleSet
         {
-          "topic": "Test Show",
-          "aliases": ["Test Alias"],
-          "confidence": 0.9,
-          "rules": [
-            {
-              "id": "airdate",
-              "priority": 0,
-              "strategy": "itemTitleEqualsAirdate",
-              "filters": {
-                "all": [
-                  { "field": "duration", "op": "greaterThan", "value": "30" }
-                ]
-              }
-            },
-            {
-              "id": "season-ep",
-              "priority": 1,
-              "strategy": "seasonAndEpisodeNumber",
-              "seasonRegex": "S(\\d+)",
-              "episodeRegex": "E(\\d+)",
-              "filters": {
-                "all": [
-                  { "field": "duration", "op": "greaterThan", "value": "20" }
-                ]
-              }
-            }
-          ]
-        }
-        """;
+            Topic = "Community",
+            Rules = [new DiskRule { Id = "comm-rule" }],
+        };
+        var local = new DiskRuleSet
+        {
+            Topic = "Local",
+            Standalone = true,
+            Rules = [new DiskRule { Id = "local-rule" }],
+        };
 
-    [Fact]
-    public void Build_community_only_produces_valid_config()
-    {
-        var config = RuleSetMerger.Build("test-show", _communityJson, null);
-
-        Assert.NotNull(config);
-        Assert.Equal("test-show", config.RuleSetId);
-        Assert.Equal(0.9f, config.DefaultConfidence);
-        Assert.Equal(2, config.Rules.Length);
+        var result = RuleSetMerger.Resolve(community, local);
+        Assert.Equal("Local", result!.Topic);
+        Assert.Single(result.Rules!);
+        Assert.Equal("local-rule", result.Rules![0].Id);
     }
 
     [Fact]
-    public void Build_local_only_produces_valid_config()
+    public void Resolve_merge_combines_rules()
     {
-        var localJson = """
-            {
-              "topic": "Local Show",
-              "confidence": 0.8,
-              "rules": [
-                {
-                  "id": "title-rule",
-                  "priority": 0,
-                  "strategy": "itemTitleExact",
-                  "titleRules": [
-                    { "type": "regex", "field": "title", "pattern": "(.*)" }
-                  ]
-                }
-              ]
-            }
-            """;
+        var community = new DiskRuleSet
+        {
+            Topic = "Show",
+            Rules =
+            [
+                new DiskRule { Id = "comm-1", Priority = 0 },
+                new DiskRule { Id = "comm-2", Priority = 1 },
+            ],
+        };
+        var local = new DiskRuleSet
+        {
+            Topic = "Show",
+            Rules = [new DiskRule { Id = "local-3", Priority = 2 }],
+        };
 
-        var config = RuleSetMerger.Build("local-show", null, localJson);
-
-        Assert.NotNull(config);
-        Assert.Equal("local-show", config.RuleSetId);
-        Assert.Single(config.Rules);
+        var result = RuleSetMerger.Resolve(community, local);
+        Assert.Equal(3, result!.Rules!.Count);
     }
 
     [Fact]
-    public void Build_merge_local_overrides_rule_by_id()
+    public void Resolve_merge_local_rule_replaces_community()
     {
-        var localJson = """
-            {
-              "topic": "Test Show",
-              "rules": [
-                {
-                  "id": "airdate",
-                  "priority": 0,
-                  "confidence": 0.5,
-                  "strategy": "itemTitleEqualsAirdate"
-                }
-              ]
-            }
-            """;
+        var community = new DiskRuleSet
+        {
+            Topic = "Show",
+            Rules = [new DiskRule { Id = "shared-rule", Priority = 0, Strategy = "itemTitleExact" }],
+        };
+        var local = new DiskRuleSet
+        {
+            Topic = "Show",
+            Rules = [new DiskRule { Id = "shared-rule", Priority = 0, Strategy = "itemTitleIncludes" }],
+        };
 
-        var config = RuleSetMerger.Build("test-show", _communityJson, localJson);
-
-        Assert.NotNull(config);
-        Assert.Equal(2, config.Rules.Length);
-        var airdateRule = config.Rules.First(r => r.Id == "airdate");
-        Assert.Equal(0.5f, airdateRule.Confidence);
+        var result = RuleSetMerger.Resolve(community, local);
+        Assert.Single(result!.Rules!);
+        Assert.Equal("itemTitleIncludes", result.Rules![0].Strategy);
     }
 
     [Fact]
-    public void Build_standalone_local_ignores_community()
+    public void Resolve_merge_disables_community_rules()
     {
-        var localJson = """
-            {
-              "topic": "Standalone Show",
-              "standalone": true,
-              "confidence": 0.7,
-              "rules": [
-                {
-                  "id": "local-only",
-                  "priority": 0,
-                  "strategy": "itemTitleEqualsAirdate"
-                }
-              ]
-            }
-            """;
+        var community = new DiskRuleSet
+        {
+            Topic = "Show",
+            Rules =
+            [
+                new DiskRule { Id = "keep-rule", Priority = 0 },
+                new DiskRule { Id = "skip-rule", Priority = 1 },
+            ],
+        };
+        var local = new DiskRuleSet
+        {
+            Topic = "Show",
+            Disable = ["skip-rule"],
+            Rules = [],
+        };
 
-        var config = RuleSetMerger.Build("test-show", _communityJson, localJson);
-
-        Assert.NotNull(config);
-        Assert.Single(config.Rules);
-        Assert.Equal("local-only", config.Rules[0].Id);
-        Assert.Equal(0.7f, config.DefaultConfidence);
+        var result = RuleSetMerger.Resolve(community, local);
+        Assert.Single(result!.Rules!);
+        Assert.Equal("keep-rule", result.Rules![0].Id);
     }
 
     [Fact]
-    public void Build_disable_excludes_community_rules()
+    public void Resolve_merge_combines_aliases()
     {
-        var localJson = """
-            {
-              "topic": "Test Show",
-              "disable": ["airdate"],
-              "rules": []
-            }
-            """;
+        var community = new DiskRuleSet { Topic = "Show", Aliases = ["Alias A"], Rules = [] };
+        var local = new DiskRuleSet { Topic = "Show", Aliases = ["Alias B"], Rules = [] };
 
-        var config = RuleSetMerger.Build("test-show", _communityJson, localJson);
-
-        Assert.NotNull(config);
-        Assert.Single(config.Rules);
-        Assert.Equal("season-ep", config.Rules[0].Id);
+        var result = RuleSetMerger.Resolve(community, local);
+        Assert.Equal(2, result!.Aliases!.Count);
     }
 
     [Fact]
-    public void Build_maps_seasonAndEpisodeNumber_to_SeasonAndEpisodeNumber()
+    public void Resolve_merge_local_media_overrides_community()
     {
-        var config = RuleSetMerger.Build("test", _communityJson, null);
+        var community = new DiskRuleSet
+        {
+            Topic = "Show",
+            Media = new DiskMedia { TvdbId = 100, Name = "Comm" },
+            Rules = [],
+        };
+        var local = new DiskRuleSet
+        {
+            Topic = "Show",
+            Media = new DiskMedia { TvdbId = 200 },
+            Rules = [],
+        };
 
-        Assert.NotNull(config);
-        var rule = config.Rules.First(r => r.Id == "season-ep");
-        Assert.Equal(IdentificationStrategy.SeasonAndEpisodeNumber, rule.Identification.Strategy);
-        Assert.Equal("S(\\d+)", rule.Identification.SeasonPattern);
-        Assert.Equal("E(\\d+)", rule.Identification.EpisodePattern);
-    }
-
-    [Fact]
-    public void Build_maps_byAbsoluteEpisodeNumber_to_AbsoluteEpisodeNumber()
-    {
-        var json = """
-            {
-              "topic": "Test",
-              "rules": [
-                {
-                  "id": "abs",
-                  "priority": 0,
-                  "strategy": "byAbsoluteEpisodeNumber",
-                  "episodeRegex": "\\((\\d+)\\)"
-                }
-              ]
-            }
-            """;
-
-        var config = RuleSetMerger.Build("test", json, null);
-
-        Assert.NotNull(config);
-        Assert.Single(config.Rules);
-        Assert.Equal(IdentificationStrategy.AbsoluteEpisodeNumber, config.Rules[0].Identification.Strategy);
-        Assert.Null(config.Rules[0].Identification.SeasonPattern);
-        Assert.NotNull(config.Rules[0].Identification.EpisodePattern);
-    }
-
-    [Fact]
-    public void Build_maps_itemTitleExact_to_TitleExact()
-    {
-        var json = """
-            {
-              "topic": "Test",
-              "rules": [
-                {
-                  "id": "exact",
-                  "priority": 0,
-                  "strategy": "itemTitleExact",
-                  "titleRules": [
-                    { "type": "regex", "field": "title", "pattern": "(.*)" }
-                  ]
-                }
-              ]
-            }
-            """;
-
-        var config = RuleSetMerger.Build("test", json, null);
-
-        Assert.NotNull(config);
-        var rule = config.Rules[0];
-        Assert.Equal(IdentificationStrategy.TitleExact, rule.Identification.Strategy);
-        Assert.NotNull(rule.Identification.TitleParts);
-    }
-
-    [Fact]
-    public void Build_maps_itemTitleIncludes_to_TitleIncludes()
-    {
-        var json = """
-            {
-              "topic": "Test",
-              "rules": [
-                {
-                  "id": "includes",
-                  "priority": 0,
-                  "strategy": "itemTitleIncludes",
-                  "titleRules": [
-                    { "type": "regex", "field": "title", "pattern": "(.*)" }
-                  ]
-                }
-              ]
-            }
-            """;
-
-        var config = RuleSetMerger.Build("test", json, null);
-
-        Assert.NotNull(config);
-        Assert.Equal(IdentificationStrategy.TitleIncludes, config.Rules[0].Identification.Strategy);
-    }
-
-    [Fact]
-    public void Build_maps_itemTitleEqualsAirdate_to_AirdateExtraction()
-    {
-        var config = RuleSetMerger.Build("test", _communityJson, null);
-
-        Assert.NotNull(config);
-        var rule = config.Rules.First(r => r.Id == "airdate");
-        Assert.Equal(IdentificationStrategy.AirdateExtraction, rule.Identification.Strategy);
-    }
-
-    [Fact]
-    public void Build_transforms_filter_field_and_op_to_enums()
-    {
-        var config = RuleSetMerger.Build("test", _communityJson, null);
-
-        Assert.NotNull(config);
-        var rule = config.Rules.First(r => r.Id == "airdate");
-        Assert.NotNull(rule.Filters);
-        Assert.NotNull(rule.Filters.All);
-
-        var condition = Assert.IsType<FilterNode.ConditionNode>(rule.Filters.All[0]);
-        Assert.Equal(FilterField.Duration, condition.Condition.Field);
-        Assert.Equal(FilterOp.GreaterThan, condition.Condition.Op);
-        Assert.Equal("30", condition.Condition.Value);
-    }
-
-    [Fact]
-    public void Build_transforms_title_rules_to_enums()
-    {
-        var json = """
-            {
-              "topic": "Test",
-              "rules": [
-                {
-                  "id": "title",
-                  "priority": 0,
-                  "strategy": "itemTitleExact",
-                  "titleRules": [
-                    { "type": "static", "value": "Folge " },
-                    { "type": "regex", "field": "title", "pattern": "\\((\\d+)\\)" }
-                  ]
-                }
-              ]
-            }
-            """;
-
-        var config = RuleSetMerger.Build("test", json, null);
-
-        Assert.NotNull(config);
-        var parts = config.Rules[0].Identification.TitleParts;
-        Assert.NotNull(parts);
-        Assert.Equal(2, parts.Length);
-        Assert.Equal(TitlePartType.Static, parts[0].Type);
-        Assert.Equal("Folge ", parts[0].Value);
-        Assert.Equal(TitlePartType.Regex, parts[1].Type);
-        Assert.Equal(FilterField.Title, parts[1].Field);
-    }
-
-    [Fact]
-    public void Build_skips_rule_with_invalid_strategy()
-    {
-        var json = """
-            {
-              "topic": "Test",
-              "rules": [
-                {
-                  "id": "valid",
-                  "priority": 0,
-                  "strategy": "itemTitleEqualsAirdate"
-                },
-                {
-                  "id": "invalid",
-                  "priority": 1,
-                  "strategy": "nonExistentStrategy"
-                }
-              ]
-            }
-            """;
-
-        var config = RuleSetMerger.Build("test", json, null);
-
-        Assert.NotNull(config);
-        Assert.Single(config.Rules);
-        Assert.Equal("valid", config.Rules[0].Id);
-    }
-
-    [Fact]
-    public void ExtractIdentity_returns_topic_and_aliases()
-    {
-        var identity = RuleSetMerger.ExtractIdentity(_communityJson, null);
-
-        Assert.NotNull(identity);
-        Assert.Equal("Test Show", identity.Value.Topic);
-        Assert.Single(identity.Value.Aliases);
-        Assert.Equal("Test Alias", identity.Value.Aliases[0]);
-    }
-
-    [Fact]
-    public void ExtractIdentity_returns_null_for_null_inputs()
-    {
-        var identity = RuleSetMerger.ExtractIdentity(null, null);
-
-        Assert.Null(identity);
-    }
-
-    [Fact]
-    public void Build_returns_null_for_null_inputs()
-    {
-        var config = RuleSetMerger.Build("test", null, null);
-
-        Assert.Null(config);
-    }
-
-    [Fact]
-    public void ExtractIdentity_returns_media_ids_from_community()
-    {
-        var json = """
-            {
-              "topic": "Tatort",
-              "aliases": [],
-              "media": {
-                "tvdbId": 83214,
-                "imdbId": "tt0806910",
-                "tmdbId": 2116
-              },
-              "rules": []
-            }
-            """;
-
-        var identity = RuleSetMerger.ExtractIdentity(json, null);
-
-        Assert.NotNull(identity);
-        Assert.Equal(83214, identity.Value.TvdbId);
-        Assert.Equal("tt0806910", identity.Value.ImdbId);
-        Assert.Equal(2116, identity.Value.TmdbId);
-    }
-
-    [Fact]
-    public void ExtractIdentity_local_overrides_community_media_ids()
-    {
-        var communityJson = """
-            {
-              "topic": "Tatort",
-              "media": { "tvdbId": 83214, "imdbId": "tt0806910" },
-              "rules": []
-            }
-            """;
-        var localJson = """
-            {
-              "topic": "Tatort",
-              "media": { "tvdbId": 99999 },
-              "rules": []
-            }
-            """;
-
-        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
-
-        Assert.NotNull(identity);
-        Assert.Equal(99999, identity.Value.TvdbId);
-        Assert.Equal("tt0806910", identity.Value.ImdbId);
-    }
-
-    [Fact]
-    public void ExtractIdentity_standalone_local_uses_local_media()
-    {
-        var communityJson = """
-            {
-              "topic": "Tatort",
-              "media": { "tvdbId": 83214 },
-              "rules": []
-            }
-            """;
-        var localJson = """
-            {
-              "topic": "Custom",
-              "standalone": true,
-              "media": { "imdbId": "tt1234567" },
-              "rules": []
-            }
-            """;
-
-        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
-
-        Assert.NotNull(identity);
-        Assert.Null(identity.Value.TvdbId);
-        Assert.Equal("tt1234567", identity.Value.ImdbId);
-    }
-
-    [Fact]
-    public void ExtractIdentity_no_media_block_returns_null_ids()
-    {
-        var identity = RuleSetMerger.ExtractIdentity(_communityJson, null);
-
-        Assert.NotNull(identity);
-        Assert.Null(identity.Value.TvdbId);
-        Assert.Null(identity.Value.ImdbId);
-        Assert.Null(identity.Value.TmdbId);
-    }
-
-    [Fact]
-    public void ExtractIdentity_merge_preserves_media_name_and_type()
-    {
-        var communityJson = """
-            {
-              "topic": "Tatort",
-              "media": { "tvdbId": 83214, "name": "Tatort", "type": "show" },
-              "rules": []
-            }
-            """;
-        var localJson = """
-            {
-              "topic": "Tatort",
-              "media": { "tvdbId": 99999 },
-              "rules": []
-            }
-            """;
-
-        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
-
-        Assert.NotNull(identity);
-        Assert.Equal(99999, identity.Value.TvdbId);
-        Assert.Equal("Tatort", identity.Value.MediaName);
-        Assert.Equal(MediaType.Show, identity.Value.MediaType);
-    }
-
-    [Fact]
-    public void ExtractIdentity_local_overrides_media_name_and_type()
-    {
-        var communityJson = """
-            {
-              "topic": "Spielfilm",
-              "media": { "name": "Apocalypse Now", "type": "movie" },
-              "rules": []
-            }
-            """;
-        var localJson = """
-            {
-              "topic": "Spielfilm",
-              "media": { "name": "Apocalypse Now - Final Cut", "type": "movie" },
-              "rules": []
-            }
-            """;
-
-        var identity = RuleSetMerger.ExtractIdentity(communityJson, localJson);
-
-        Assert.NotNull(identity);
-        Assert.Equal("Apocalypse Now - Final Cut", identity.Value.MediaName);
-        Assert.Equal(MediaType.Movie, identity.Value.MediaType);
-    }
-
-    [Fact]
-    public void ResolveToJson_merge_preserves_media_name_and_type()
-    {
-        var communityJson = """
-            {
-              "topic": "Tatort",
-              "media": { "tvdbId": 83214, "name": "Tatort", "type": "show" },
-              "rules": []
-            }
-            """;
-        var localJson = """
-            {
-              "topic": "Tatort",
-              "media": { "tvdbId": 99999 },
-              "rules": []
-            }
-            """;
-
-        var json = RuleSetMerger.ResolveToJson(communityJson, localJson);
-
-        Assert.NotNull(json);
-        Assert.Contains("\"name\": \"Tatort\"", json);
-        Assert.Contains("\"type\": \"show\"", json);
-    }
-
-    [Fact]
-    public void Build_handles_nested_filter_groups()
-    {
-        var json = """
-            {
-              "topic": "Test",
-              "rules": [
-                {
-                  "id": "nested",
-                  "priority": 0,
-                  "strategy": "itemTitleEqualsAirdate",
-                  "filters": {
-                    "all": [
-                      { "field": "duration", "op": "greaterThan", "value": "30" },
-                      {
-                        "any": [
-                          { "field": "channel", "op": "eq", "value": "ZDF" },
-                          { "field": "channel", "op": "eq", "value": "ARD" }
-                        ]
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-            """;
-
-        var config = RuleSetMerger.Build("test", json, null);
-
-        Assert.NotNull(config);
-        var filters = config.Rules[0].Filters;
-        Assert.NotNull(filters?.All);
-        Assert.Equal(2, filters.All.Length);
-        Assert.IsType<FilterNode.ConditionNode>(filters.All[0]);
-        var group = Assert.IsType<FilterNode.GroupNode>(filters.All[1]);
-        Assert.NotNull(group.Group.Any);
-        Assert.Equal(2, group.Group.Any.Length);
+        var result = RuleSetMerger.Resolve(community, local);
+        Assert.Equal(200, result!.Media!.TvdbId);
+        Assert.Equal("Comm", result.Media!.Name);
     }
 }

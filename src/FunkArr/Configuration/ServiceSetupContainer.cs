@@ -35,6 +35,7 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
             return dataPaths;
         });
         services.AddSingleton<IDataFiles, DataFiles>();
+        services.AddSingleton<RuleSet.RuleSetStore>();
 
         services.AddOpenApi();
 

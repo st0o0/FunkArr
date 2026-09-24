@@ -25,7 +25,6 @@ public sealed class RuleSetSetupContainer : ApplicationSetupContainer<WebApplica
             .ValidateOnStart();
 
         services.AddSingleton<IRuleSetValidator, RuleSetValidator>();
-        services.AddSingleton<IRuleSetExporter, RuleSetExporter>();
 
         var version = typeof(RuleSetSetupContainer).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         services.AddHttpClient(HttpClientNames.GitHub, client =>

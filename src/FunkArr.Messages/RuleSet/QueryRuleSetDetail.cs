@@ -3,7 +3,7 @@ using FunkArr.Messages.Scoring;
 
 namespace FunkArr.Messages.RuleSet;
 
-public sealed record QueryRuleSetDetail(string RuleSetId);
+public sealed record QueryRuleSetDetail(string RuleSetId) : IWithRuleSetId;
 
 public abstract record RuleSetDetailResponse;
 

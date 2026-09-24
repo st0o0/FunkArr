@@ -45,17 +45,4 @@ public sealed class RuleSetResolverStateSnapshotTests
         Assert.Equal("tatort", ((RuleSetResolved)resolved).RuleSetId);
     }
 
-    [Fact]
-    public void ManagerState_GetSnapshot_ReturnsSelf()
-    {
-        var state = RuleSetManagerState.Empty;
-        Assert.Same(state, state.GetSnapshot());
-    }
-
-    [Fact]
-    public void ManagerState_FromSnapshot_ReturnsSame()
-    {
-        var state = RuleSetManagerState.Empty;
-        Assert.Same(state, RuleSetManagerStateExtensions.FromSnapshot(state));
-    }
 }

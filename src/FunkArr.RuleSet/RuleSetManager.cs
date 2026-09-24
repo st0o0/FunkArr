@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Akka.Actor;
 using Akka.Event;
@@ -21,16 +22,20 @@ public sealed class RuleSetManager : ReceiveActor
     private static readonly TimeSpan _defaultDebounceWindow = TimeSpan.FromSeconds(2);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly RuleSetStore _store;
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
     private readonly TimeSpan _debounceWindow;
     private RuleSetManagerState _state = RuleSetManagerState.Empty;
+    private ImmutableDictionary<string, WorkerSummary> _summaries =
+        ImmutableDictionary<string, WorkerSummary>.Empty.WithComparers(StringComparer.Ordinal);
     private IFileSystemWatcher? _communityWatcher;
     private IFileSystemWatcher? _localWatcher;
     private ICancelable? _flushSchedule;
 
-    public RuleSetManager(IDataFiles dataFiles, DataPaths dataPaths, TimeSpan? debounceWindow = null)
+    public RuleSetManager(RuleSetStore store, IDataFiles dataFiles, DataPaths dataPaths, TimeSpan? debounceWindow = null)
     {
+        _store = store;
         _dataFiles = dataFiles;
         _dataPaths = dataPaths;
         _debounceWindow = debounceWindow ?? _defaultDebounceWindow;
@@ -40,13 +45,15 @@ public sealed class RuleSetManager : ReceiveActor
         Receive<FullRescanRequested>(_ => HandleFullRescanRequested());
         Receive<FlushChanges>(_ => HandleFlush());
         Receive<QueryRuleSetDetail>(HandleQueryDetail);
-        Receive<QueryRuleSetSummaries>(_ => Sender.Tell(_state.ToSummaries(_dataFiles, _log)));
+        Receive<QueryRuleSetSummaries>(_ => HandleQuerySummaries());
+        Receive<WorkerReady>(HandleWorkerReady);
+        Receive<WorkerRemoved>(HandleWorkerRemoved);
         ReceiveAsync<QueryRuleSetListWithStats>(_ => HandleQueryListWithStats());
     }
 
     protected override void PreStart()
     {
-        var current = ScanDirectories();
+        var current = _store.Scan();
 
         var shardRegion = Context.GetActor<IRuleSetRegion>();
         foreach (var (id, paths) in current)
@@ -62,7 +69,7 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void HandleScan()
     {
-        var current = ScanDirectories();
+        var current = _store.Scan();
 
         var shardRegion = Context.GetActor<IRuleSetRegion>();
         foreach (var (id, paths) in current)
@@ -112,7 +119,7 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void HandleFullRescan()
     {
-        var current = ScanDirectories();
+        var current = _store.Scan();
         var shardRegion = Context.GetActor<IRuleSetRegion>();
         var added = 0;
         var updated = 0;
@@ -159,8 +166,7 @@ public sealed class RuleSetManager : ReceiveActor
 
         foreach (var id in _state.PendingIds)
         {
-            var current = RuleSetManagerStateExtensions.CheckRuleSetPaths(
-                id, _dataPaths.CommunityRuleSets, _dataPaths.LocalRuleSets, _dataFiles);
+            var current = _store.CheckPaths(id);
             var hasFiles = current.CommunityPath is not null || current.LocalPath is not null;
 
             if (!knownRuleSets.TryGetValue(id, out var known))
@@ -200,25 +206,34 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void HandleQueryDetail(QueryRuleSetDetail msg)
     {
-        var result = _state.BuildDetail(msg.RuleSetId, _dataFiles);
-        if (result is null)
-        {
-            _state = _state with { KnownRuleSets = _state.KnownRuleSets.Remove(msg.RuleSetId) };
-            Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(msg.RuleSetId)));
-            return;
-        }
+        var shardRegion = Context.GetActor<IRuleSetRegion>();
+        shardRegion.Forward(msg);
+    }
 
-        Sender.Tell(result);
+    private void HandleQuerySummaries()
+    {
+        var entries = _summaries.Select(kv =>
+            new RuleSetSummaryEntry(kv.Key, kv.Value.RuleCount, kv.Value.SourceType)).ToArray();
+        Sender.Tell(new RuleSetSummaryResult(entries));
+    }
+
+    private void HandleWorkerReady(WorkerReady msg)
+    {
+        _summaries = _summaries.SetItem(msg.RuleSetId, new WorkerSummary(msg.RuleCount, msg.SourceType));
+    }
+
+    private void HandleWorkerRemoved(WorkerRemoved msg)
+    {
+        _summaries = _summaries.Remove(msg.RuleSetId);
+        _state = _state with { KnownRuleSets = _state.KnownRuleSets.Remove(msg.RuleSetId) };
     }
 
     private async Task HandleQueryListWithStats()
     {
-        var summaries = _state.ToSummaries(_dataFiles, _log);
-        var summaryMap = summaries.Entries.ToDictionary(s => s.RuleSetId);
         var historyRegion = Context.GetActor<IHistoryRegion>();
         var statsTimeout = TimeSpan.FromSeconds(3);
 
-        var statsTasks = summaryMap.Keys.Select(async ruleSetId =>
+        var statsTasks = _summaries.Keys.Select(async ruleSetId =>
         {
             try
             {
@@ -235,7 +250,7 @@ public sealed class RuleSetManager : ReceiveActor
         var results = await Task.WhenAll(statsTasks);
         var statsMap = results.ToDictionary(r => r.RuleSetId, r => r.Stats);
 
-        var entries = summaryMap.Select(kv =>
+        var entries = _summaries.Select(kv =>
         {
             statsMap.TryGetValue(kv.Key, out var stats);
             return new RuleSetListWithStatsEntry(
@@ -244,35 +259,6 @@ public sealed class RuleSetManager : ReceiveActor
         }).ToArray();
 
         Sender.Tell(new RuleSetListWithStatsResult(entries));
-    }
-
-    private System.Collections.Immutable.ImmutableDictionary<string, RuleSetPaths> ScanDirectories()
-    {
-        var communityFiles = _dataFiles.ListFiles(_dataPaths.CommunityRuleSets, "*.json");
-        var localFiles = _dataFiles.ListFiles(_dataPaths.LocalRuleSets, "*.json");
-
-        var result = System.Collections.Immutable.ImmutableDictionary.CreateBuilder<string, RuleSetPaths>(StringComparer.Ordinal);
-
-        foreach (var file in communityFiles)
-        {
-            var id = Path.GetFileNameWithoutExtension(file);
-            result[id] = new RuleSetPaths(file, null, File.GetLastWriteTimeUtc(file), null);
-        }
-
-        foreach (var file in localFiles)
-        {
-            var id = Path.GetFileNameWithoutExtension(file);
-            if (result.TryGetValue(id, out var existing))
-            {
-                result[id] = existing with { LocalPath = file, LocalModified = File.GetLastWriteTimeUtc(file) };
-            }
-            else
-            {
-                result[id] = new RuleSetPaths(null, file, null, File.GetLastWriteTimeUtc(file));
-            }
-        }
-
-        return result.ToImmutable();
     }
 
     private void SetupWatchers()
@@ -306,3 +292,5 @@ public sealed class RuleSetManager : ReceiveActor
         _flushSchedule?.Cancel();
     }
 }
+
+internal sealed record WorkerSummary(int RuleCount, string SourceType);

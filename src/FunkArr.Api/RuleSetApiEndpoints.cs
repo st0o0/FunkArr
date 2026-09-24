@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Hosting;
@@ -26,14 +24,7 @@ public static partial class RuleSetApiEndpoints
     private static readonly TimeSpan _testTimeout = TimeSpan.FromSeconds(15);
     private static readonly Regex _ruleSetIdPattern = RuleSetIdRegex();
 
-    private static readonly JsonSerializerOptions _diskJsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = true,
-    };
-
-    public static WebApplication MapRuleSetApi(this WebApplication app)
+public static WebApplication MapRuleSetApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/rulesets")
             .WithTags("Rulesets")
@@ -89,8 +80,8 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}", async (string id, IActorRegistry registry) =>
         {
-            var manager = await registry.GetAsync<IRuleSetManager>();
-            var result = await manager.Ask<RuleSetDetailResponse>(
+            var region = await registry.GetAsync<IRuleSetRegion>();
+            var result = await region.Ask<RuleSetDetailResponse>(
                 new QueryRuleSetDetail(id), _queryTimeout);
             return result switch
             {
@@ -190,77 +181,35 @@ public static partial class RuleSetApiEndpoints
     private static async Task EvictRuleSetCache(IOutputCacheStore cache) =>
         await cache.EvictByTagAsync("rulesets", default);
 
-    private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
+    private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache)
     {
-        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{request.RuleSetId}.json");
-        if (dataFiles.Exists(localPath))
-        {
-            return Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists"));
-        }
-
-        var json = SerializeForDisk(request);
-        var validationErrors = validator.Validate(json);
-        if (validationErrors.Count > 0)
-        {
-            return Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(validationErrors));
-        }
-
-        dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
-        dataFiles.WriteAtomic(localPath, json);
+        var region = await registry.GetAsync<IRuleSetRegion>();
+        var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), _queryTimeout);
 
         await EvictRuleSetCache(cache);
-        return Results.Created($"/api/rulesets/{request.RuleSetId}", new ApiModels.CreatedRuleSetResponse(request.RuleSetId));
+        return result switch
+        {
+            CreateLocalRuleSetCompleted completed => Results.Created($"/api/rulesets/{completed.RuleSetId}", new ApiModels.CreatedRuleSetResponse(completed.RuleSetId)),
+            CreateLocalRuleSetFailed { Reason: CreateLocalRuleSetFailureReason.AlreadyExists } => Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists")),
+            CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new { errors = failed.Errors }),
+            _ => ApiResults.GatewayTimeout(),
+        };
     }
 
-    private static async Task<IResult> HandleUpdate(string id, ApiModels.UpdateRuleSetRequest request, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache, IRuleSetValidator validator)
+    private static async Task<IResult> HandleUpdate(string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache)
     {
-        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
-        var communityPath = Path.Join(dataPaths.CommunityRuleSets, $"{id}.json");
-
-        if (!dataFiles.Exists(localPath) && !dataFiles.Exists(communityPath))
-        {
-            return Results.NotFound();
-        }
-
-        var json = SerializeForDisk(request);
-        var validationErrors = validator.Validate(json);
-        if (validationErrors.Count > 0)
-        {
-            return Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(validationErrors));
-        }
-
-        dataFiles.CreateDirectory(dataPaths.LocalRuleSets);
-        dataFiles.WriteAtomic(localPath, json);
+        var region = await registry.GetAsync<IRuleSetRegion>();
+        var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), _queryTimeout);
 
         await EvictRuleSetCache(cache);
-        return Results.Ok();
+        return result switch
+        {
+            UpdateLocalRuleSetCompleted => Results.Ok(),
+            UpdateLocalRuleSetFailed { Reason: UpdateLocalRuleSetFailureReason.NotFound } => Results.NotFound(),
+            UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new { errors = failed.Errors }),
+            _ => ApiResults.GatewayTimeout(),
+        };
     }
-
-    private static string SerializeForDisk(ApiModels.CreateRuleSetRequest request) =>
-        JsonSerializer.Serialize(new
-        {
-            request.Topic,
-            request.Aliases,
-            request.Media,
-            request.Confidence,
-            request.Rules,
-            request.Standalone,
-            request.Disable,
-            request.Enrichment,
-        }, _diskJsonOptions);
-
-    private static string SerializeForDisk(ApiModels.UpdateRuleSetRequest request) =>
-        JsonSerializer.Serialize(new
-        {
-            request.Topic,
-            request.Aliases,
-            request.Media,
-            request.Confidence,
-            request.Rules,
-            request.Standalone,
-            request.Disable,
-            request.Enrichment,
-        }, _diskJsonOptions);
 
     private static IResult HandleGetRaw(string id, IDataFiles dataFiles, DataPaths dataPaths)
     {
@@ -282,37 +231,38 @@ public static partial class RuleSetApiEndpoints
         return Results.NotFound();
     }
 
-    private static async Task<IResult> HandleDelete(string id, IDataFiles dataFiles, DataPaths dataPaths, IOutputCacheStore cache)
+    private static async Task<IResult> HandleDelete(string id, IActorRegistry registry, IOutputCacheStore cache)
     {
-        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
-
-        if (!dataFiles.Exists(localPath))
-        {
-            return Results.NotFound();
-        }
-
-        dataFiles.Remove(localPath);
+        var region = await registry.GetAsync<IRuleSetRegion>();
+        var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), _queryTimeout);
 
         await EvictRuleSetCache(cache);
-        return Results.Ok();
+        return result switch
+        {
+            DeleteLocalRuleSetCompleted => Results.Ok(),
+            DeleteLocalRuleSetFailed => Results.NotFound(),
+            _ => ApiResults.GatewayTimeout(),
+        };
     }
 
-    private static IResult HandleExport(string id, IRuleSetExporter exporter, HttpContext httpContext)
+    private static async Task<IResult> HandleExport(string id, IActorRegistry registry, HttpContext httpContext)
     {
-        var result = exporter.Export(id);
+        var region = await registry.GetAsync<IRuleSetRegion>();
+        var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), _queryTimeout);
 
-        if (result.Error is not null)
+        return result switch
         {
-            return Results.NotFound(new ApiModels.ErrorResponse(result.Error));
-        }
+            ExportRuleSetCompleted completed => ExportResult(id, completed.Json, httpContext),
+            ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new { errors = failed.Errors }),
+            ExportRuleSetFailed => Results.NotFound(),
+            _ => ApiResults.GatewayTimeout(),
+        };
+    }
 
-        if (result.Errors is { Count: > 0 })
-        {
-            return Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(result.Errors));
-        }
-
+    private static IResult ExportResult(string id, string json, HttpContext httpContext)
+    {
         httpContext.Response.Headers.ContentDisposition = $"attachment; filename=\"{id}.json\"";
-        return Results.Content(result.Json!, "application/json");
+        return Results.Content(json, "application/json");
     }
 
     private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
