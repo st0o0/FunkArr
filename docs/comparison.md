@@ -1,72 +1,93 @@
 # Vergleich mit Alternativen
 
-Drei Projekte loesen dasselbe Problem: Inhalte aus deutschsprachigen oeffentlich-rechtlichen Mediatheken in Sonarr und Radarr verfuegbar machen. Alle drei stellen eine Newznab-Indexer-API und eine SABnzbd-Download-Client-API bereit, sodass die *arr-Apps sie wie eine normale Usenet-Quelle behandeln.
+Drei Projekte lösen dasselbe Problem: Inhalte aus deutschsprachigen öffentlich-rechtlichen Mediatheken in Sonarr und Radarr verfügbar machen. Alle drei nutzen die [MediathekViewWeb](https://mediathekviewweb.de/) API als Datenquelle und stellen eine Newznab-Indexer-API und eine SABnzbd-Download-Client-API bereit, sodass die *arr-Apps sie wie eine normale Usenet-Quelle behandeln.
+
+::: info Gleiche Datenquelle
+Alle drei Projekte nutzen dieselbe MediathekViewWeb API. Die verfügbaren Inhalte (ARD, ZDF, ORF, SRF usw.) sind identisch — der Unterschied liegt darin, wie jedes Projekt die Inhalte matched, bewertet und herunterlädt.
+:::
 
 ## Kurzvergleich
 
 |                        | FunkArr              | MediathekArr           | RundfunkArr             |
 |------------------------|----------------------|------------------------|-------------------------|
-| **Tech-Stack**         | .NET 10 / Akka.NET   | .NET (C#)              | TypeScript / Next.js    |
-| **Status**             | Aktiv                | Beta (letztes Release Feb 2025) | Aktiv (v1.3.0, Sep 2026) |
-| **Mediatheken**        | ARD, ZDF, ORF, SRF + weitere | ARD, ZDF, ORF, SRF (Beta) | ARD, ZDF, ORF, SRF     |
+| **Tech-Stack**         | .NET 10 / Akka.NET   | .NET (C#)              | Node.js / Next.js       |
+| **Status**             | Aktiv                | Beta (letztes Release Feb 2025) | Aktiv (v1.3.0)   |
+| **GitHub Stars**       | Neues Projekt        | ~374                   | ~40                     |
 | **Sonarr**             | Ja                   | Ja                     | Ja                      |
-| **Radarr**             | Ja                   | Eingeschraenkt (wenige Filme) | Ja                |
-| **Regelwerke**         | Community + eigene   | Nur internes Matching  | JSON-Regelwerke (PR-basiert) |
-| **Metadaten**          | TMDB + TVDB          | TVDB + UmlautAdaptarr  | TVDB + TMDB             |
+| **Radarr**             | Ja                   | Eingeschränkt (WIP)    | Ja (seit v1.1.0)        |
+| **Regelwerke**         | Community + eigene, Web-UI-Editor | Internes Matching | Community-Regelwerke, Auto-Update von GitHub |
+| **Metadaten**          | TMDB + TVDB (erfordert API-Keys) | Nur TVDB    | Lokale shows.json → TVDB → TMDB |
 | **Download**           | FFmpeg (HLS + direkt)| Direkter HTTP-Download | Direkter HTTP-Download + yt-dlp |
 | **Ausgabe**            | MKV (Remux, keine Neucodierung) | MKV         | MKV (optionales FFmpeg) |
 | **Untertitel**         | SRT aus HLS oder separater Download | Ja        | Ja                      |
 | **Datenbank**          | SQLite oder PostgreSQL | SQLite                | SQLite (Prisma)         |
-| **Web-UI**             | Ja (Vue.js)          | Ja (Setup-Assistent)   | Ja (Next.js)            |
-| **Docker**             | Ein Container        | x86 + ARM64            | Multi-Arch (amd64, arm64) |
+| **Web-UI**             | Ja (Vue.js, mit Setup-Assistent) | Ja (mit Setup-Assistent) | Ja (Next.js, mit Setup-Assistent) |
 | **Port**               | 6969                 | 5007                   | 6767                    |
+| **Docker**             | Multi-Arch (amd64, arm64, armv7) | Ja          | Multi-Arch (amd64, arm64) |
+| **Auto-Konfiguration** | Ja (erstellt Indexer + Download-Client in Prowlarr/Sonarr/Radarr) | Ja (Setup-Assistent) | Nein |
+| **Proxy-Support**      | Nein                 | Nein                   | Ja (für Downloads + yt-dlp) |
+| **Umlaut-Behandlung**  | Eingebaut            | Via UmlautAdaptarr (separater Dienst) | Nicht dokumentiert |
+| **Match-Verlauf**      | Ja (Diagnose + Statistiken) | Nein            | Nein                    |
+| **PUID/PGID**          | Ja                   | Nicht dokumentiert      | Ja                      |
+| **ORF/SRF**            | Via MediathekViewWeb | M3U-Download (beta.12) | HLS via yt-dlp (SRF braucht SRG-SSR-Credentials) |
 
 ## MediathekArr
 
-[MediathekArr](https://github.com/PCJones/MediathekArr) von PCJones ist das populaerste Projekt in diesem Bereich (370+ Stars). Es verwendet ein .NET-Backend mit einer Mehrkomponenten-Architektur (MediathekArr, MediathekArrLib, MediathekArrServer).
+[MediathekArr](https://github.com/PCJones/MediathekArr) von PCJones ist das populärste Projekt in diesem Bereich (~374 Stars). Es verwendet ein .NET-Backend und integriert MediathekViewWeb, UmlautAdaptarr und TheTVDB.
 
-### Staerken
+### Stärken
 
-- Groesste Community mit aktivem Discord- und Telegram-Kanal
-- UmlautAdaptarr als Begleittool, das deutsche Umlaut-Variationen in Titeln im gesamten *arr-Oekosystem behandelt
-- Dreistufiges Match-Konfidenzsystem (CERTAIN / UNCERTAIN / NO.MATCH), das die Sicherheit jedes Ergebnisses anzeigt
-- Auto-Konfigurationsassistent, der Indexer und Download-Clients in Sonarr/Prowlarr automatisch einrichten kann
+- **Größte Community** mit aktivem Discord-Kanal (UsenetDE Server) und Telegram — beste Anlaufstelle bei Problemen
+- **[UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr)** (~306 Stars) — Begleittool das Suchanfragen zwischen *arr-Apps und Indexern abfängt und modifiziert, um deutsches Umlaut-Matching, Titelerkennung und Release-Benennung in Sonarr, Lidarr und Readarr zu verbessern (Radarr-Support in Arbeit)
+- **Setup-Assistent** im Web-Interface der durch die Ersteinrichtung führt
+- **Erweitertes Filter- und Matching-System** für Serien, Staffeln und Episoden
 
-### Unterschiede zu FunkArr
+### Einschränkungen
 
-- **Kein Community-Regelwerk-System.** Das Titel-Matching verwendet eingebaute Logik mit drei Konfidenzstufen. Funktioniert gut fuer gaengige Sendungen, kann aber von Nutzern nicht fuer Nischeninhalte erweitert werden.
-- **Radarr-Filmunterstuetzung ist eingeschraenkt.** Die interaktive Suche findet einige Filme, automatische Grabs sind aber unzuverlaessig.
-- **ORF- und SRF-Unterstuetzung** wurde in beta.12 (Februar 2025) ueber M3U-Download hinzugefuegt, ist aber weniger ausgereift als ARD/ZDF.
-- **Benoetigt UmlautAdaptarr** als separaten Begleitdienst fuer korrekte deutsche Titelaufloesung. FunkArr behandelt das nativ.
-- **Noch in der Beta** nach ueber 2 Jahren. Das letzte Release (beta.12) enthielt Sicherheitsfixes fuer Command-Injection- und Path-Traversal-Schwachstellen.
-- **Kein TMDB.** Nutzt nur TVDB (mit 12h-Caching fuer fehlgeschlagene Abfragen).
-- **Kein PostgreSQL.** Die Datenbank ist nicht konfigurierbar.
-- **Kein Match-Verlauf oder Scoring.** Jede Suche startet ohne Lerneffekt aus frueheren Ergebnissen.
+- Kein erweiterbares Regelwerk-System — Titel-Matching verwendet eingebaute Logik. Funktioniert gut für gängige Sendungen, kann aber von Nutzern nicht für Nischeninhalte erweitert werden.
+- Radarr-Filmunterstützung ist eingeschränkt/WIP. Das README sagt: "You can find a few movies via interactive search, but not a lot."
+- ORF- und SRF-Unterstützung wurde in beta.12 (Februar 2025) über M3U-Download hinzugefügt. Issue #77 fordert ORF standardmäßig zu deaktivieren wegen Geoblocking.
+- Benötigt [UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) als separaten Begleitdienst für korrekte deutsche Titelauflösung.
+- Noch in der Beta — das README warnt: "use the beta image until 1.0 is released. Latest/Main is not working." Letztes Release (beta.12) ist von Februar 2025. V2 wird in Issues geplant.
+- Nur TVDB, keine TMDB-Integration.
+- Nur SQLite, Datenbank nicht konfigurierbar.
+- Downloads nur per direktem HTTP (kein HLS/FFmpeg).
 
 ## RundfunkArr
 
-[RundfunkArr](https://github.com/rundfunkarr/rundfunkarr) ist ein TypeScript/Next.js-Projekt mit einem anderen architektonischen Ansatz.
+[RundfunkArr](https://github.com/rundfunkarr/rundfunkarr) (~40 Stars) ist ein Node.js/Next.js-Projekt. Hieß ursprünglich ebenfalls "MediathekArr" und wurde umbenannt um Verwechslungen zu vermeiden.
 
-### Staerken
+### Stärken
 
-- Verwendet yt-dlp fuer die HLS-Stream-Aufloesung, was SRF- und ORF-Streams gut handhabt
-- Optionale Proxy-Unterstuetzung fuer regionsbeschraenkte Inhalte (nuetzlich fuer SRF/ORF-Zugriff ausserhalb der Schweiz/Oesterreich)
-- Sauberes Next.js App Router UI mit direkter Mediathek-Suche, Download-Warteschlange und gefuehrtem Setup-Assistenten
-- Aktive Entwicklung mit regelmaessigen Releases, taeglichen Docker-Nightly-Builds und null offenen Issues
-- PUID/PGID-Unterstuetzung in Docker fuer korrekte Dateiberechtigungen
-- Hierarchische Metadaten-Suche: lokale shows.json, dann TVDB, dann TMDB
+- **yt-dlp-Integration** für HLS-Stream-Auflösung — handhabt SRF- und ORF-Streams und unterstützt mehr Randfall-Formate als FFmpeg allein. Version-Pinning mit Checksum-Verifikation in Docker.
+- **Proxy-Unterstützung** für yt-dlp und Downloads (nicht Metadaten-APIs) — nützlich für Zugriff auf geoblockierte Inhalte aus dem Ausland
+- **Voller Radarr-Support** seit v1.1.0 mit TMDB/IMDB-ID-Unterstützung und intelligentem Titel-Parsing
+- Aktive Entwicklung mit regelmäßigen Releases, null offene Issues und einem Setup-Assistenten
+- PUID/PGID-Unterstützung und Multi-Arch-Docker-Images (amd64, arm64)
+- Mehrere Metadatenquellen: lokale shows.json → TVDB → TMDB
+- Community-Regelwerke mit Auto-Update von GitHub (seit v1.2.0)
 
-### Unterschiede zu FunkArr
+### Einschränkungen
 
-- **Regelwerke in einer einzelnen Datei.** Gespeichert als `rulesets.json` mit Regex-basierter Episoden-/Staffel-Erkennung. Neue Regeln hinzufuegen erfordert einen PR zum Repository statt eines eigenstaendigen Release-Zyklus oder Web-UI-Editors.
-- **Metadaten-Aufloesung** prueft zuerst eine lokale `shows.json`, dann TVDB/TMDB. Funktioniert gut fuer bekannte Sendungen, erfordert aber manuelle Updates fuer neue.
-- **SRF- und ORF-Streams** werden erst beim Download ueber yt-dlp aufgeloest, nicht bei der Suche. Suchergebnisse koennen daher Eintraege enthalten, deren Download fehlschlaegt, wenn die Stream-URL abgelaufen ist.
-- **Kein Scoring oder Match-Intelligence.** Ergebnisse basieren auf dem aktuellen Regelwerk-Match ohne historische Gewichtung.
-- **Node.js-Laufzeit** hat hoehere Basis-Speichernutzung im Vergleich zu .NET.
-- War urspruenglich ebenfalls "MediathekArr" genannt, wurde aber umbenannt, um Verwechslungen mit dem Projekt von PCJones zu vermeiden.
+- Regelwerke werden per PR zum Repository gepflegt — kein Web-UI-Editor zum Erstellen oder Ändern von Regeln.
+- Metadaten-Auflösung prüft zuerst eine lokale `shows.json`, die bei neuen Sendungen manuell aktualisiert werden muss, wenn sie nicht in TVDB/TMDB sind.
+- SRF-Support erfordert Credentials vom SRG-SSR Developer-Portal.
+- yt-dlp löst Video-Referenzen erst beim Download auf, nicht bei der Suche — regionale Einschränkungen hängen vom Proxy-Standort und der Verfügbarkeit beim Sender ab.
+- Kein Scoring, Match-Verlauf oder Diagnose.
+- Kleinere Community (~40 Stars, kein Discord/Telegram).
 
-## Welches Projekt fuer welchen Einsatz?
+## FunkArr — Ehrliche Einschränkungen
 
-- **FunkArr** wenn du Community-getriebene Regelwerke mit visuellem Editor brauchst, Match-Scoring das sich ueber die Zeit verbessert, PostgreSQL fuer groessere Setups oder zuverlaessige ORF/SRF-Abdeckung.
-- **MediathekArr** wenn du hauptsaechlich ARD/ZDF-Inhalte schaust und die groesste Community fuer Support willst.
-- **RundfunkArr** wenn du einen Node.js-Stack bevorzugst, Proxy-Unterstuetzung fuer regionsbeschraenkte Inhalte brauchst oder yt-dlps breitere Formatunterstuetzung nutzen moechtest.
+Der Fairness halber hat FunkArr ebenfalls Einschränkungen:
+
+- **Kein Proxy-Support** — anders als RundfunkArr gibt es keine Möglichkeit, einen Proxy für geoblockierte ORF/SRF-Inhalte zu nutzen.
+- **Kein yt-dlp** — verwendet ausschließlich FFmpeg für HLS und direkte Downloads. Wenn ein Stream-Format nicht vom nativen FFmpeg-HLS-Demuxer unterstützt wird, schlägt es fehl. yt-dlp handhabt mehr Randfälle.
+- **Jüngstes und kleinstes Projekt** — MediathekArr hat Jahre Vorsprung und die größte Nutzerbasis. Es gibt noch keinen Discord- oder Telegram-Kanal.
+- **TVDB- und TMDB-API-Keys erforderlich** für Metadaten-Anreicherung — sie sind optional, aber für volle Funktionalität nötig.
+- **Match-Verlauf ist diagnostisch, nicht adaptiv** — die Scoring-Engine führt Regeln deterministisch aus. Der Verlauf zeichnet vergangene Durchläufe auf und aggregiert Statistiken zur Fehlersuche, aber er lernt nicht und passt keine Gewichtungen an.
+
+## Welches Projekt für welchen Einsatz?
+
+- **MediathekArr** wenn du hauptsächlich ARD/ZDF-Inhalte schaust und die größte Community für Support willst.
+- **RundfunkArr** wenn du Proxy-Unterstützung für geoblockierte Inhalte brauchst (SRF/ORF aus dem Ausland), vollen Radarr-Filmsupport willst oder yt-dlps breitere Formatunterstützung nutzen möchtest.
+- **FunkArr** wenn du Community-getriebene Regelwerke mit einem visuellen Web-Editor willst, Match-Scoring-Diagnose, PostgreSQL-Unterstützung oder TMDB-Metadaten neben TVDB.

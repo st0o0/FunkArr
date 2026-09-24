@@ -25,7 +25,7 @@ export default defineConfig({
               { text: 'Erste Schritte', link: '/getting-started' },
               { text: 'Konfiguration', link: '/configuration' },
               { text: 'So funktioniert FunkArr', link: '/how-it-works' },
-              { text: 'Web-Oberflaeche', link: '/web-ui' },
+              { text: 'Web-Oberfläche', link: '/web-ui' },
               { text: 'Fehlerbehebung', link: '/troubleshooting' },
               { text: 'Vergleich mit Alternativen', link: '/comparison' }
             ]

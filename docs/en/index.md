@@ -8,10 +8,10 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /getting-started
+      link: /en/getting-started
     - theme: alt
       text: Browse Rulesets
-      link: /rulesets/catalog
+      link: /en/rulesets/catalog
 
 features:
   - title: Newznab Indexer
