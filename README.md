@@ -5,7 +5,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/st0o0/FunkArr/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/st0o0/FunkArr/ci.yml?style=flat-square&label=CI" alt="CI" /></a>
   <a href="https://github.com/st0o0/funkarr/releases"><img src="https://img.shields.io/github/v/release/st0o0/funkarr?style=flat-square" alt="Release" /></a>
   <a href="https://ghcr.io/st0o0/funkarr"><img src="https://img.shields.io/badge/ghcr.io-st0o0%2Ffunkarr-2496ED?style=flat-square&logo=docker&logoColor=white" alt="GHCR" /></a>
   <a href="https://github.com/st0o0/funkarr/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License" /></a>
