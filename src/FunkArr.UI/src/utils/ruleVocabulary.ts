@@ -1,19 +1,22 @@
-export function opSymbol(op: string): string {
+import { FilterOp, filterFieldName, filterOpName, titlePartTypeName } from '../api/enumMaps'
+
+export function opSymbol(op: number): string {
   switch (op) {
-    case 'eq': return '='
-    case 'contains': return '∋'
-    case 'notContains': return '∌'
-    case 'greaterThan': return '>'
-    case 'lessThan': return '<'
-    case 'regex': return '≈'
-    default: return op
+    case FilterOp.Eq: return '='
+    case FilterOp.Contains: return '∋'
+    case FilterOp.NotContains: return '∌'
+    case FilterOp.GreaterThan: return '>'
+    case FilterOp.LessThan: return '<'
+    case FilterOp.Regex: return '≈'
+    default: return String(op)
   }
 }
 
-export function opLabel(op: string, t: (key: string) => string): string {
-  const key = `rule.op.${op}`
+export function opLabel(op: number, t: (key: string) => string): string {
+  const s = filterOpName(op)
+  const key = `rule.op.${s}`
   const result = t(key)
-  return result !== key ? result : op
+  return result !== key ? result : s
 }
 
 export function groupLabel(group: string, t: (key: string) => string): string {
@@ -22,14 +25,16 @@ export function groupLabel(group: string, t: (key: string) => string): string {
   return result !== key ? result : group
 }
 
-export function fieldLabel(field: string, t: (key: string) => string): string {
-  const key = `rule.field.${field}`
+export function fieldLabel(field: number, t: (key: string) => string): string {
+  const s = filterFieldName(field)
+  const key = `rule.field.${s}`
   const result = t(key)
-  return result !== key ? result : field
+  return result !== key ? result : s
 }
 
-export function titlePartLabel(type: string, t: (key: string) => string): string {
-  const key = `rule.titlePart.${type}`
+export function titlePartLabel(type: number, t: (key: string) => string): string {
+  const s = titlePartTypeName(type)
+  const key = `rule.titlePart.${s}`
   const result = t(key)
-  return result !== key ? result : type
+  return result !== key ? result : s
 }

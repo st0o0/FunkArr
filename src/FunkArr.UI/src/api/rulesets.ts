@@ -15,8 +15,8 @@ export interface RuleSetEntry {
 }
 
 export interface FilterConditionOutput {
-  field: string
-  op: string
+  field: number
+  op: number
   value: string
 }
 
@@ -27,8 +27,8 @@ export interface FilterGroupOutput {
 }
 
 export interface TitleRuleOutput {
-  type: string
-  field: string | null
+  type: number
+  field: number | null
   pattern: string | null
   captureGroup: number | null
   value: string | null
@@ -38,7 +38,7 @@ export interface RuleSetDetailRule {
   id: string
   priority: number
   confidence: number | null
-  strategy: string
+  strategy: number
   seasonRegex: string | null
   episodeRegex: string | null
   captureGroup: number | null
@@ -63,10 +63,10 @@ export interface RuleSetSource {
 
 export interface EnrichmentConfig {
   enabled: boolean
-  methods: string[]
+  methods: number[]
   title: { threshold: number }
   airdate: { tolerance: number }
-  runtime: { tolerance: number; mode: string }
+  runtime: { tolerance: number; mode: number }
   year: { tolerance: number }
 }
 
@@ -81,7 +81,7 @@ export interface RuleSetDetail {
 
 export interface ScoringSnapshot {
   requestId: string
-  source: string
+  source: number
   query: string
   timestamp: string
   candidateCount: number
@@ -95,8 +95,8 @@ export interface ScoringHistoryResult {
 }
 
 export interface FilterNodeTrace {
-  field: string | null
-  op: string | null
+  field: number | null
+  op: number | null
   expectedValue: string | null
   actualValue: string | null
   passed: boolean
@@ -111,7 +111,7 @@ export interface FilterGroupTrace {
 }
 
 export interface IdentificationTraceDetail {
-  strategy: string | null
+  strategy: number | null
   attempted: boolean
   detail: string | null
 }
@@ -125,13 +125,13 @@ export interface TracedIdentification {
 export interface RuleTrace {
   ruleId: string
   priority: number
-  outcome: 'matched' | 'filterFailed' | 'identificationFailed'
+  outcome: number
   filterTrace: FilterGroupTrace | null
   identificationTrace: IdentificationTraceDetail | null
 }
 
 export interface EnrichmentTrace {
-  method: string
+  method: number
   confidence: number
   enriched: boolean
   resolvedSeason: string | null
@@ -160,7 +160,7 @@ export interface ItemTrace {
 
 export interface ScoringDetail {
   requestId: string
-  source: string
+  source: number
   query: string
   timestamp: string
   itemTraces: ItemTrace[]
@@ -168,10 +168,10 @@ export interface ScoringDetail {
 
 export interface EnrichmentConfigInput {
   enabled?: boolean
-  methods?: string[]
+  methods?: number[]
   title?: { threshold?: number }
   airdate?: { tolerance?: number }
-  runtime?: { tolerance?: number; mode?: string }
+  runtime?: { tolerance?: number; mode?: number }
   year?: { tolerance?: number }
 }
 
@@ -197,7 +197,7 @@ export interface RuleSetWriteRule {
   id: string
   priority: number
   confidence?: number
-  strategy: string
+  strategy: number
   seasonRegex?: string
   episodeRegex?: string
   captureGroup?: number
@@ -210,14 +210,14 @@ export interface RuleSetWriteRule {
 }
 
 export interface FilterConditionInput {
-  field: string
-  op: string
+  field: number
+  op: number
   value: string
 }
 
 export interface TitleRuleInput {
-  type: string
-  field?: string
+  type: number
+  field?: number
   pattern?: string
   captureGroup?: number
   value?: string

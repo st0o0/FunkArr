@@ -1,14 +1,15 @@
 import { ref, watch, type Ref } from 'vue'
 import type { MediathekCandidate } from '../api/rulesets'
+import { Strategy, TitlePartType, FilterField } from '../api/enumMaps'
 
 interface BuilderRule {
   id: string
   priority: number
-  strategy: string
+  strategy: number
   seasonRegex: string
   episodeRegex: string
   captureGroup: number | null
-  titleRules: { type: string; field: string; pattern: string; captureGroup: number | null; value: string }[]
+  titleRules: { type: number; field: number; pattern: string; captureGroup: number | null; value: string }[]
 }
 
 export interface MatchExtractions {
@@ -69,15 +70,15 @@ function matchCandidate(candidate: MediathekCandidate, rules: BuilderRule[]): Ma
 
 function tryMatch(candidate: MediathekCandidate, rule: BuilderRule): MatchExtractions | null {
   switch (rule.strategy) {
-    case 'seasonAndEpisodeNumber':
+    case Strategy.SeasonAndEpisodeNumber:
       return matchSeasonEpisode(candidate.title, rule)
-    case 'byAbsoluteEpisodeNumber':
+    case Strategy.AbsoluteEpisodeNumber:
       return matchAbsoluteEpisode(candidate.title, rule)
-    case 'itemTitleExact':
+    case Strategy.TitleExact:
       return matchTitle(candidate, rule, 'exact')
-    case 'itemTitleIncludes':
+    case Strategy.TitleIncludes:
       return matchTitle(candidate, rule, 'includes')
-    case 'itemTitleEqualsAirdate':
+    case Strategy.AirdateExtraction:
       return matchAirdate(candidate, rule)
     default:
       return null
@@ -122,10 +123,10 @@ function matchTitle(candidate: MediathekCandidate, rule: BuilderRule, mode: 'exa
   const parts: string[] = []
 
   for (const tr of rule.titleRules) {
-    if (tr.type === 'static') {
+    if (tr.type === TitlePartType.Static) {
       if (!tr.value) return null
       parts.push(tr.value)
-    } else if (tr.type === 'regex') {
+    } else if (tr.type === TitlePartType.Regex) {
       const fieldValue = getField(candidate, tr.field)
       if (!fieldValue || !tr.pattern) return null
       const group = tr.captureGroup ?? 1
@@ -146,7 +147,7 @@ function matchTitle(candidate: MediathekCandidate, rule: BuilderRule, mode: 'exa
 
 function matchAirdate(candidate: MediathekCandidate, rule: BuilderRule): MatchExtractions | null {
   for (const tr of rule.titleRules) {
-    if (tr.type === 'regex' && tr.pattern) {
+    if (tr.type === TitlePartType.Regex && tr.pattern) {
       const fieldValue = getField(candidate, tr.field) ?? candidate.title
       const m = safeExec(tr.pattern, fieldValue)
       if (m) {
@@ -157,12 +158,12 @@ function matchAirdate(candidate: MediathekCandidate, rule: BuilderRule): MatchEx
   return null
 }
 
-function getField(candidate: MediathekCandidate, field: string): string | null {
+function getField(candidate: MediathekCandidate, field: number): string | null {
   switch (field) {
-    case 'title': return candidate.title
-    case 'topic': return candidate.topic
-    case 'channel': return candidate.channel
-    case 'description': return candidate.description
+    case FilterField.Title: return candidate.title
+    case FilterField.Topic: return candidate.topic
+    case FilterField.Channel: return candidate.channel
+    case FilterField.Description: return candidate.description
     default: return candidate.title
   }
 }

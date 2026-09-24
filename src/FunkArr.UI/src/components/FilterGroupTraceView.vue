@@ -24,14 +24,14 @@
           <span v-else class="text-status-fail">&cross;</span>
 
           <template v-if="node.skipped">
-            <span class="text-text-muted">{{ fieldLabelLocal(node.field ?? '') }}</span>
-            <span class="text-text-muted font-mono">{{ opSymbol(node.op ?? '') }}</span>
+            <span class="text-text-muted">{{ fieldLabelLocal(node.field) }}</span>
+            <span class="text-text-muted font-mono">{{ opSymbolLocal(node.op) }}</span>
             <span class="text-text-muted font-mono">{{ node.expectedValue }}</span>
             <span class="text-text-muted italic ml-1">{{ $t('filter.skipped') }}</span>
           </template>
           <template v-else>
-            <span class="text-text-secondary">{{ fieldLabelLocal(node.field ?? '') }}</span>
-            <span class="font-mono text-text-secondary">{{ opSymbol(node.op ?? '') }}</span>
+            <span class="text-text-secondary">{{ fieldLabelLocal(node.field) }}</span>
+            <span class="font-mono text-text-secondary">{{ opSymbolLocal(node.op) }}</span>
             <span class="font-mono text-text-secondary">{{ node.expectedValue }}</span>
             <span class="text-text-secondary mx-0.5">&rarr;</span>
             <span class="font-mono" :class="node.passed ? 'text-status-ok' : 'text-status-fail'">{{ node.actualValue ?? 'null' }}</span>
@@ -57,7 +57,11 @@ function groupLabelLocal(group: string): string {
   return groupLabel(group, t)
 }
 
-function fieldLabelLocal(field: string): string {
-  return fieldLabel(field, t)
+function fieldLabelLocal(field: number | null): string {
+  return fieldLabel(field ?? 0, t)
+}
+
+function opSymbolLocal(op: number | null): string {
+  return opSymbol(op ?? 0)
 }
 </script>

@@ -159,39 +159,39 @@
               <div class="mb-3">
                 <label class="block text-xs text-text-body mb-1.5 font-medium">{{ $t('builder.enrichmentMethods') }}</label>
                 <div class="flex flex-wrap gap-2">
-                  <label v-for="method in ['title', 'airdate', 'runtime', 'year']" :key="method" class="flex items-center gap-1.5 text-xs text-text-body cursor-pointer">
+                  <label v-for="m in enrichmentMethodOptions" :key="m.value" class="flex items-center gap-1.5 text-xs text-text-body cursor-pointer">
                     <input
                       type="checkbox"
-                      :checked="form.enrichment.methods.includes(method)"
+                      :checked="form.enrichment.methods.includes(m.value)"
                       class="rounded border-border-default text-accent focus:ring-accent"
-                      @change="toggleMethod(method)"
+                      @change="toggleMethod(m.value)"
                     />
-                    {{ $t(`builder.method${method.charAt(0).toUpperCase() + method.slice(1)}`) }}
+                    {{ m.label }}
                   </label>
                 </div>
               </div>
 
               <div class="grid grid-cols-2 gap-3">
-                <div v-if="form.enrichment.methods.includes('title')">
+                <div v-if="form.enrichment.methods.includes(EnrichmentMethod.Title)">
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.titleThreshold') }}</label>
                   <input v-model.number="form.enrichment.titleThreshold" type="number" min="0" max="1" step="0.05" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
                 </div>
-                <div v-if="form.enrichment.methods.includes('airdate')">
+                <div v-if="form.enrichment.methods.includes(EnrichmentMethod.Airdate)">
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.airdateTolerance') }}</label>
                   <input v-model.number="form.enrichment.airdateTolerance" type="number" min="0" step="1" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
                 </div>
-                <div v-if="form.enrichment.methods.includes('runtime')">
+                <div v-if="form.enrichment.methods.includes(RUNTIME_METHOD)">
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.runtimeTolerance') }}</label>
                   <input v-model.number="form.enrichment.runtimeTolerance" type="number" min="0" max="1" step="0.05" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
                 </div>
-                <div v-if="form.enrichment.methods.includes('runtime')">
+                <div v-if="form.enrichment.methods.includes(RUNTIME_METHOD)">
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.runtimeMode') }}</label>
-                  <select v-model="form.enrichment.runtimeMode" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus">
-                    <option value="tiebreaker">{{ $t('builder.runtimeModeTiebreaker') }}</option>
-                    <option value="filter">{{ $t('builder.runtimeModeFilter') }}</option>
+                  <select v-model.number="form.enrichment.runtimeMode" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus">
+                    <option :value="RuntimeMode.Tiebreaker">{{ $t('builder.runtimeModeTiebreaker') }}</option>
+                    <option :value="RuntimeMode.Filter">{{ $t('builder.runtimeModeFilter') }}</option>
                   </select>
                 </div>
-                <div v-if="form.enrichment.methods.includes('year')">
+                <div v-if="form.enrichment.methods.includes(YEAR_METHOD)">
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.yearTolerance') }}</label>
                   <input v-model.number="form.enrichment.yearTolerance" type="number" min="0" step="1" class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus" />
                 </div>
@@ -222,7 +222,6 @@
               v-for="(rule, rIdx) in form.rules"
               :key="rIdx"
               class="bg-surface-raised rounded-lg border border-border-default overflow-hidden"
-              :class="rule.expanded ? '' : ''"
             >
               <!-- Rule header (click to toggle) -->
               <div
@@ -231,7 +230,7 @@
               >
                 <div class="flex items-baseline gap-3">
                   <span class="font-mono text-sm font-medium text-text-primary">{{ rule.id || $t('builder.noId') }}</span>
-                  <span class="text-text-secondary text-xs">{{ strategyLabelLocal(rule.strategy) }}</span>
+                  <span class="text-text-secondary text-xs">{{ strategyLabel(rule.strategy, t) }}</span>
                   <span class="text-text-secondary text-xs">prio {{ rule.priority }}</span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -261,22 +260,22 @@
                 <div>
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.strategy') }}</label>
                   <select
-                    v-model="rule.strategy"
+                    v-model.number="rule.strategy"
                     class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body focus:outline-none focus:border-border-focus"
                     @change="onStrategyChange(rule)"
                   >
-                    <option value="">{{ $t('builder.selectStrategy') }}</option>
-                    <option value="seasonAndEpisodeNumber">{{ $t('builder.seasonEpisodeNumber') }}</option>
-                    <option value="byAbsoluteEpisodeNumber">{{ $t('builder.absoluteEpisodeNumber') }}</option>
-                    <option value="itemTitleExact">{{ $t('builder.titleExactMatch') }}</option>
-                    <option value="itemTitleIncludes">{{ $t('builder.titleIncludes') }}</option>
-                    <option value="itemTitleEqualsAirdate">{{ $t('builder.titleEqualsAirdate') }}</option>
+                    <option :value="-1">{{ $t('builder.selectStrategy') }}</option>
+                    <option :value="Strategy.SeasonAndEpisodeNumber">{{ $t('builder.seasonEpisodeNumber') }}</option>
+                    <option :value="Strategy.AbsoluteEpisodeNumber">{{ $t('builder.absoluteEpisodeNumber') }}</option>
+                    <option :value="Strategy.TitleExact">{{ $t('builder.titleExactMatch') }}</option>
+                    <option :value="Strategy.TitleIncludes">{{ $t('builder.titleIncludes') }}</option>
+                    <option :value="Strategy.AirdateExtraction">{{ $t('builder.titleEqualsAirdate') }}</option>
                   </select>
                 </div>
 
                 <!-- Strategy-specific fields: RegexCapture -->
-                <div v-if="rule.strategy === 'seasonAndEpisodeNumber' || rule.strategy === 'byAbsoluteEpisodeNumber'" class="space-y-2">
-                  <div v-if="rule.strategy === 'seasonAndEpisodeNumber'">
+                <div v-if="rule.strategy === Strategy.SeasonAndEpisodeNumber || rule.strategy === Strategy.AbsoluteEpisodeNumber" class="space-y-2">
+                  <div v-if="rule.strategy === Strategy.SeasonAndEpisodeNumber">
                     <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.seasonRegex') }}</label>
                     <input v-model="rule.seasonRegex" type="text" placeholder="(?<=S)(\d{2,4})(?=/E)" class="w-full bg-surface-elevated border border-border-default rounded-lg px-3 py-2 text-sm text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                   </div>
@@ -291,22 +290,22 @@
                 </div>
 
                 <!-- Strategy-specific fields: TitleConstruction -->
-                <div v-if="rule.strategy === 'itemTitleExact' || rule.strategy === 'itemTitleIncludes'" class="space-y-2">
+                <div v-if="rule.strategy === Strategy.TitleExact || rule.strategy === Strategy.TitleIncludes" class="space-y-2">
                   <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.titleRules') }}</label>
                   <div v-for="(tp, tIdx) in rule.titleRules" :key="tIdx" class="flex items-start gap-2 p-2 bg-surface-elevated/50 rounded-lg">
-                    <select v-model="tp.type" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                      <option value="static">{{ titlePartLabel('static', t) }}</option>
-                      <option value="regex">{{ titlePartLabel('regex', t) }}</option>
+                    <select v-model.number="tp.type" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
+                      <option :value="TitlePartType.Static">{{ titlePartLabel(TitlePartType.Static, t) }}</option>
+                      <option :value="TitlePartType.Regex">{{ titlePartLabel(TitlePartType.Regex, t) }}</option>
                     </select>
-                    <template v-if="tp.type === 'static'">
+                    <template v-if="tp.type === TitlePartType.Static">
                       <input v-model="tp.value" type="text" placeholder="static text" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                     </template>
                     <template v-else>
-                      <select v-model="tp.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                        <option value="title">{{ fieldLabel('title', t) }}</option>
-                        <option value="topic">{{ fieldLabel('topic', t) }}</option>
-                        <option value="channel">{{ fieldLabel('channel', t) }}</option>
-                        <option value="description">{{ fieldLabel('description', t) }}</option>
+                      <select v-model.number="tp.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
+                        <option :value="FF.Title">{{ fieldLabel(FF.Title, t) }}</option>
+                        <option :value="FF.Topic">{{ fieldLabel(FF.Topic, t) }}</option>
+                        <option :value="FF.Channel">{{ fieldLabel(FF.Channel, t) }}</option>
+                        <option :value="FF.Description">{{ fieldLabel(FF.Description, t) }}</option>
                       </select>
                       <input v-model="tp.pattern" type="text" placeholder="regex pattern" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body font-mono placeholder-text-muted focus:outline-none focus:border-border-focus" />
                       <input v-model.number="tp.captureGroup" type="number" placeholder="grp" class="w-14 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
@@ -326,21 +325,21 @@
                     </div>
                     <div v-if="rule.filters[section].length === 0 && section === 'all'" class="text-text-secondary text-xs pl-2">{{ $t('builder.noConditions') }}</div>
                     <div v-for="(cond, cIdx) in rule.filters[section]" :key="cIdx" class="flex items-center gap-1.5">
-                      <select v-model="cond.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                        <option value="title">{{ fieldLabel('title', t) }}</option>
-                        <option value="topic">{{ fieldLabel('topic', t) }}</option>
-                        <option value="channel">{{ fieldLabel('channel', t) }}</option>
-                        <option value="description">{{ fieldLabel('description', t) }}</option>
-                        <option value="duration">{{ fieldLabel('duration', t) }}</option>
-                        <option value="timestamp">{{ fieldLabel('timestamp', t) }}</option>
+                      <select v-model.number="cond.field" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
+                        <option :value="FF.Title">{{ fieldLabel(FF.Title, t) }}</option>
+                        <option :value="FF.Topic">{{ fieldLabel(FF.Topic, t) }}</option>
+                        <option :value="FF.Channel">{{ fieldLabel(FF.Channel, t) }}</option>
+                        <option :value="FF.Description">{{ fieldLabel(FF.Description, t) }}</option>
+                        <option :value="FF.Duration">{{ fieldLabel(FF.Duration, t) }}</option>
+                        <option :value="FF.Timestamp">{{ fieldLabel(FF.Timestamp, t) }}</option>
                       </select>
-                      <select v-model="cond.op" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
-                        <option value="eq">{{ opLabel('eq', t) }}</option>
-                        <option value="contains">{{ opLabel('contains', t) }}</option>
-                        <option value="notContains">{{ opLabel('notContains', t) }}</option>
-                        <option value="greaterThan">{{ opLabel('greaterThan', t) }}</option>
-                        <option value="lessThan">{{ opLabel('lessThan', t) }}</option>
-                        <option value="regex">{{ opLabel('regex', t) }}</option>
+                      <select v-model.number="cond.op" class="bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body focus:outline-none focus:border-border-focus">
+                        <option :value="FO.Eq">{{ opLabel(FO.Eq, t) }}</option>
+                        <option :value="FO.Contains">{{ opLabel(FO.Contains, t) }}</option>
+                        <option :value="FO.NotContains">{{ opLabel(FO.NotContains, t) }}</option>
+                        <option :value="FO.GreaterThan">{{ opLabel(FO.GreaterThan, t) }}</option>
+                        <option :value="FO.LessThan">{{ opLabel(FO.LessThan, t) }}</option>
+                        <option :value="FO.Regex">{{ opLabel(FO.Regex, t) }}</option>
                       </select>
                       <input v-model="cond.value" type="text" placeholder="value" class="flex-1 bg-surface-elevated border border-border-default rounded-lg px-2 py-1.5 text-xs text-text-body placeholder-text-muted focus:outline-none focus:border-border-focus" />
                       <button class="text-status-fail/60 hover:text-status-fail text-xs transition-colors" @click="rule.filters[section].splice(cIdx, 1)">×</button>
@@ -391,6 +390,9 @@ import {
   type RuleSetWriteRequest, type RuleSetWriteRule, type FilterConditionInput, type TitleRuleInput,
   type ValidationError,
 } from '../api/rulesets'
+import {
+  Strategy, TitlePartType, FilterField, FilterOp, EnrichmentMethod, RuntimeMode,
+} from '../api/enumMaps'
 import { strategyLabel } from '../utils/strategy'
 import { opLabel, groupLabel, fieldLabel, titlePartLabel } from '../utils/ruleVocabulary'
 import LiveMatchPreview from '../components/LiveMatchPreview.vue'
@@ -398,18 +400,24 @@ import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 import { useToast } from '../composables/useToast'
 
+const FF = FilterField
+const FO = FilterOp
+
+const RUNTIME_METHOD = 2
+const YEAR_METHOD = 3
+
 const { t } = useI18n()
 const { toast } = useToast()
 
 interface FormFilterCondition {
-  field: string
-  op: string
+  field: number
+  op: number
   value: string
 }
 
 interface FormTitleRule {
-  type: string
-  field: string
+  type: number
+  field: number
   pattern: string
   captureGroup: number | null
   value: string
@@ -419,7 +427,7 @@ interface FormRule {
   id: string
   priority: number
   confidence: number | null
-  strategy: string
+  strategy: number
   seasonRegex: string
   episodeRegex: string
   captureGroup: number | null
@@ -460,11 +468,11 @@ const validationErrors = ref<ValidationError[]>([])
 
 interface FormEnrichment {
   enabled: boolean
-  methods: string[]
+  methods: number[]
   titleThreshold: number
   airdateTolerance: number
   runtimeTolerance: number
-  runtimeMode: string
+  runtimeMode: number
   yearTolerance: number
 }
 
@@ -483,14 +491,21 @@ const form = reactive({
   rules: [] as FormRule[],
   enrichment: {
     enabled: true,
-    methods: ['title', 'airdate'],
+    methods: [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
     titleThreshold: 0.7,
     airdateTolerance: 7,
     runtimeTolerance: 0.35,
-    runtimeMode: 'tiebreaker',
+    runtimeMode: RuntimeMode.Tiebreaker,
     yearTolerance: 1,
   } as FormEnrichment,
 })
+
+const enrichmentMethodOptions = computed(() => [
+  { value: EnrichmentMethod.Title, label: t('builder.methodTitle') },
+  { value: EnrichmentMethod.Airdate, label: t('builder.methodAirdate') },
+  { value: RUNTIME_METHOD, label: t('builder.methodRuntime') },
+  { value: YEAR_METHOD, label: t('builder.methodYear') },
+])
 
 const mediaNameEdited = ref(false)
 const isCommunitySource = ref(false)
@@ -514,7 +529,7 @@ const enrichmentHint = computed(() => {
   return ''
 })
 
-function toggleMethod(method: string) {
+function toggleMethod(method: number) {
   const idx = form.enrichment.methods.indexOf(method)
   if (idx >= 0) {
     form.enrichment.methods.splice(idx, 1)
@@ -538,7 +553,7 @@ function createEmptyRule(): FormRule {
     id: `rule-${form.rules.length + 1}`,
     priority: form.rules.length * 10,
     confidence: null,
-    strategy: '',
+    strategy: -1,
     seasonRegex: '',
     episodeRegex: '',
     captureGroup: null,
@@ -560,15 +575,11 @@ function onStrategyChange(rule: FormRule) {
 }
 
 function addTitleRule(rule: FormRule) {
-  rule.titleRules.push({ type: 'regex', field: 'title', pattern: '', captureGroup: null, value: '' })
+  rule.titleRules.push({ type: TitlePartType.Regex, field: FilterField.Title, pattern: '', captureGroup: null, value: '' })
 }
 
 function addFilterCondition(rule: FormRule, section: 'all' | 'any' | 'not') {
-  rule.filters[section].push({ field: 'title', op: 'contains', value: '' })
-}
-
-function strategyLabelLocal(strategy: string): string {
-  return strategyLabel(strategy, t)
+  rule.filters[section].push({ field: FilterField.Title, op: FilterOp.Contains, value: '' })
 }
 
 function serializeForm(): RuleSetWriteRequest {
@@ -582,8 +593,8 @@ function serializeForm(): RuleSetWriteRequest {
     const titleRules: TitleRuleInput[] | undefined = r.titleRules.length > 0
       ? r.titleRules.map(tp => {
           const rule: TitleRuleInput = { type: tp.type }
-          if (tp.type === 'regex') {
-            if (tp.field) rule.field = tp.field
+          if (tp.type === TitlePartType.Regex) {
+            rule.field = tp.field
             if (tp.pattern) rule.pattern = tp.pattern
             if (tp.captureGroup != null) rule.captureGroup = tp.captureGroup
           } else {
@@ -712,18 +723,18 @@ onMounted(async () => {
       id: r.id || `rule-${idx + 1}`,
       priority: r.priority ?? idx * 10,
       confidence: r.confidence ?? null,
-      strategy: r.strategy ?? '',
+      strategy: r.strategy,
       seasonRegex: r.seasonRegex ?? '',
       episodeRegex: r.episodeRegex ?? '',
       captureGroup: r.captureGroup ?? null,
       filters: {
-        all: (r.filters?.all || []).map(f => ({ field: f.field ?? '', op: f.op ?? '', value: f.value ?? '' })),
-        any: (r.filters?.any || []).map(f => ({ field: f.field ?? '', op: f.op ?? '', value: f.value ?? '' })),
-        not: (r.filters?.not || []).map(f => ({ field: f.field ?? '', op: f.op ?? '', value: f.value ?? '' })),
+        all: (r.filters?.all || []).map(f => ({ field: f.field, op: f.op, value: f.value ?? '' })),
+        any: (r.filters?.any || []).map(f => ({ field: f.field, op: f.op, value: f.value ?? '' })),
+        not: (r.filters?.not || []).map(f => ({ field: f.field, op: f.op, value: f.value ?? '' })),
       },
       titleRules: (r.titleRules || []).map(tr => ({
-        type: tr.type ?? 'static',
-        field: tr.field ?? 'title',
+        type: tr.type,
+        field: tr.field ?? FilterField.Title,
         pattern: tr.pattern ?? '',
         captureGroup: tr.captureGroup ?? null,
         value: tr.value ?? '',

@@ -5,7 +5,7 @@
         <div class="text-text-secondary font-medium text-[11px] mb-1">{{ section.label }}</div>
         <div class="space-y-0.5">
           <div v-for="(cond, idx) in section.conditions" :key="idx" class="flex items-center gap-1.5 py-0.5">
-            <span class="text-text-body">{{ fieldLabelLocal(cond.field) }}</span>
+            <span class="text-text-body">{{ fieldLabel(cond.field, t) }}</span>
             <span class="font-mono text-text-secondary">{{ opSymbol(cond.op) }}</span>
             <span class="font-mono text-text-body">{{ cond.value }}</span>
           </div>
@@ -26,10 +26,6 @@ const { t } = useI18n()
 const props = defineProps<{
   filters: FilterGroupOutput
 }>()
-
-function fieldLabelLocal(field: string): string {
-  return fieldLabel(field, t)
-}
 
 const sections = computed(() => [
   { key: 'all', label: groupLabel('all', t), conditions: props.filters.all },

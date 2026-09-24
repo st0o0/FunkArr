@@ -78,19 +78,19 @@
             </template>
           </div>
           <div v-if="detail.enrichment.enabled" class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-xs text-text-secondary">
-            <template v-if="detail.enrichment.methods.includes('title')">
+            <template v-if="detail.enrichment.methods.includes(EnrichmentMethod.Title)">
               <span>Title Threshold</span>
               <span class="font-mono text-text-body">{{ detail.enrichment.title.threshold }}</span>
             </template>
-            <template v-if="detail.enrichment.methods.includes('airdate')">
+            <template v-if="detail.enrichment.methods.includes(EnrichmentMethod.Airdate)">
               <span>Airdate Tolerance</span>
               <span class="font-mono text-text-body">{{ detail.enrichment.airdate.tolerance }}d</span>
             </template>
-            <template v-if="detail.enrichment.methods.includes('runtime')">
+            <template v-if="detail.enrichment.runtime">
               <span>Runtime</span>
               <span class="font-mono text-text-body">{{ detail.enrichment.runtime.tolerance }} ({{ detail.enrichment.runtime.mode }})</span>
             </template>
-            <template v-if="detail.enrichment.methods.includes('year')">
+            <template v-if="detail.enrichment.year">
               <span>Year Tolerance</span>
               <span class="font-mono text-text-body">±{{ detail.enrichment.year.tolerance }}</span>
             </template>
@@ -207,6 +207,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getRuleSetDetail, deleteRuleSet, exportRuleSet, ValidationFailedError, type RuleSetDetail, type RuleSetDetailRule } from '../api/rulesets'
+import { EnrichmentMethod } from '../api/enumMaps'
 import { strategyLabel } from '../utils/strategy'
 import { useToast } from '../composables/useToast'
 import FilterConditionDisplay from '../components/FilterConditionDisplay.vue'

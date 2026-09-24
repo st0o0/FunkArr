@@ -131,14 +131,14 @@
                 v-for="(rt, ri) in item.ruleTraces"
                 :key="ri"
                 class="pl-3 border-l-2"
-                :class="outcomeBorderClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
+                :class="outcomeBorderClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === RuleOutcome.Matched))"
               >
                 <div class="flex items-center gap-2 text-xs mb-1">
                   <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
                   <span class="text-text-secondary">prio {{ rt.priority }}</span>
                   <span
                     class="px-1.5 py-0.5 rounded text-[11px] font-medium"
-                    :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === 'matched'))"
+                    :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === RuleOutcome.Matched))"
                   >{{ isSkipped(rt, item, ri) ? $t('preview.skipped') : outcomeLabel(rt.outcome) }}</span>
                 </div>
 
@@ -149,7 +149,7 @@
                 <div v-if="rt.identificationTrace && !isSkipped(rt, item, ri)" class="ml-2 text-xs">
                   <div class="flex items-center gap-2">
                     <span class="text-text-secondary">{{ $t('preview.identification') }}:</span>
-                    <span class="font-mono text-text-secondary">{{ strategyLabel(rt.identificationTrace.strategy ?? '', t) }}</span>
+                    <span class="font-mono text-text-secondary">{{ strategyLabel(rt.identificationTrace.strategy ?? -1, t) }}</span>
                   </div>
                   <div v-if="!rt.identificationTrace.attempted" class="text-text-secondary ml-4">{{ $t('preview.notAttempted') }}</div>
                   <div v-else-if="rt.identificationTrace.detail" class="text-status-fail ml-4">{{ rt.identificationTrace.detail }}</div>
@@ -176,10 +176,10 @@
                   <span
                     class="px-1.5 py-0.5 rounded text-[11px] font-medium"
                     :class="item.enrichmentTrace.enriched
-                      ? (item.enrichmentTrace.method === 'RegexExtracted' ? 'bg-blue-500/10 text-blue-500' : 'bg-status-ok/10 text-status-ok')
+                      ? (item.enrichmentTrace.method === MatchMethod.RegexExtracted ? 'bg-blue-500/10 text-blue-500' : 'bg-status-ok/10 text-status-ok')
                       : 'bg-amber-500/10 text-amber-500'"
                   >{{ item.enrichmentTrace.enriched
-                      ? (item.enrichmentTrace.method === 'RegexExtracted' ? $t('preview.confirmedViaTvdb') : enrichmentMethodLabel(item.enrichmentTrace.method))
+                      ? (item.enrichmentTrace.method === MatchMethod.RegexExtracted ? $t('preview.confirmedViaTvdb') : enrichmentMethodLabel(item.enrichmentTrace.method))
                       : $t('preview.notEnriched') }}</span>
                   <span v-if="item.enrichmentTrace.enriched" class="text-text-secondary">
                     {{ (item.enrichmentTrace.confidence * 100).toFixed(0) }}%
@@ -220,6 +220,7 @@ import {
   type ItemTrace,
   type TestEnrichmentParams,
 } from '../api/rulesets'
+import { RuleOutcome, MatchMethod, TitlePartType, matchMethodName } from '../api/enumMaps'
 import { useMediathekAutoFetch } from '../composables/useMediathekAutoFetch'
 import { useRulesetMatcher } from '../composables/useRulesetMatcher'
 import { strategyLabel } from '../utils/strategy'
@@ -235,24 +236,24 @@ const props = defineProps<{
       id: string
       priority: number
       confidence: number | null
-      strategy: string
+      strategy: number
       seasonRegex: string
       episodeRegex: string
       captureGroup: number | null
       filters: {
-        all: { field: string; op: string; value: string }[]
-        any: { field: string; op: string; value: string }[]
-        not: { field: string; op: string; value: string }[]
+        all: { field: number; op: number; value: string }[]
+        any: { field: number; op: number; value: string }[]
+        not: { field: number; op: number; value: string }[]
       }
-      titleRules: { type: string; field: string; pattern: string; captureGroup: number | null; value: string }[]
+      titleRules: { type: number; field: number; pattern: string; captureGroup: number | null; value: string }[]
     }[]
     enrichment?: {
       enabled: boolean
-      methods: string[]
+      methods: number[]
       titleThreshold: number
       airdateTolerance: number
       runtimeTolerance: number
-      runtimeMode: string
+      runtimeMode: number
       yearTolerance: number
     }
     tvdbId?: number | null
@@ -337,8 +338,11 @@ async function runFullTest() {
         not: r.filters.not.length > 0 ? r.filters.not : undefined,
       } : undefined,
       titleRules: r.titleRules.length > 0 ? r.titleRules.map(tr => ({
-        ...tr,
+        type: tr.type,
+        field: tr.type === TitlePartType.Regex ? tr.field : undefined,
+        pattern: tr.pattern || undefined,
         captureGroup: tr.captureGroup ?? undefined,
+        value: tr.type === TitlePartType.Static ? tr.value : undefined,
       })) : undefined,
     })),
   }
@@ -380,45 +384,46 @@ function toggleExpand(idx: number) {
 
 function isSkipped(_rt: ItemTrace['ruleTraces'][0], item: ItemTrace, ri: number): boolean {
   if (!item.matched) return false
-  const matchIdx = item.ruleTraces.findIndex(r => r.outcome === 'matched')
+  const matchIdx = item.ruleTraces.findIndex(r => r.outcome === RuleOutcome.Matched)
   return matchIdx >= 0 && ri > matchIdx
 }
 
-function outcomeLabel(outcome: string): string {
+function outcomeLabel(outcome: number): string {
   switch (outcome) {
-    case 'matched': return t('preview.matched')
-    case 'filterFailed': return t('preview.filterFailed')
-    case 'identificationFailed': return t('preview.idFailed')
-    default: return outcome
+    case RuleOutcome.Matched: return t('preview.matched')
+    case RuleOutcome.FilterFailed: return t('preview.filterFailed')
+    case RuleOutcome.IdentificationFailed: return t('preview.idFailed')
+    default: return String(outcome)
   }
 }
 
-function outcomeBorderClass(outcome: string, skipped: boolean): string {
+function outcomeBorderClass(outcome: number, skipped: boolean): string {
   if (skipped) return 'border-border-default'
   switch (outcome) {
-    case 'matched': return 'border-status-ok'
-    case 'filterFailed': return 'border-status-fail'
-    case 'identificationFailed': return 'border-amber-500'
+    case RuleOutcome.Matched: return 'border-status-ok'
+    case RuleOutcome.FilterFailed: return 'border-status-fail'
+    case RuleOutcome.IdentificationFailed: return 'border-amber-500'
     default: return 'border-border-default'
   }
 }
 
-function enrichmentMethodLabel(method: string): string {
-  switch (method) {
+function enrichmentMethodLabel(method: number): string {
+  const name = matchMethodName(method)
+  switch (name) {
     case 'TitleMatch': return t('preview.titleMatch')
     case 'AirdateMatch': return t('preview.airdateMatch')
     case 'YearMatch': return t('preview.yearMatch')
     case 'RegexExtracted': return t('preview.regexExtracted')
-    default: return method
+    default: return name
   }
 }
 
-function outcomeBadgeClass(outcome: string, skipped: boolean): string {
+function outcomeBadgeClass(outcome: number, skipped: boolean): string {
   if (skipped) return 'bg-surface-elevated text-text-secondary'
   switch (outcome) {
-    case 'matched': return 'bg-status-ok/10 text-status-ok'
-    case 'filterFailed': return 'bg-status-fail/10 text-status-fail'
-    case 'identificationFailed': return 'bg-amber-500/10 text-amber-500'
+    case RuleOutcome.Matched: return 'bg-status-ok/10 text-status-ok'
+    case RuleOutcome.FilterFailed: return 'bg-status-fail/10 text-status-fail'
+    case RuleOutcome.IdentificationFailed: return 'bg-amber-500/10 text-amber-500'
     default: return 'bg-surface-elevated text-text-secondary'
   }
 }

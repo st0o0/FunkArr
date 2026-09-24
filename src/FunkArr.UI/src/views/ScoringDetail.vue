@@ -71,9 +71,9 @@
                 :key="ri"
                 class="pl-3 border-l-2 text-xs"
                 :class="{
-                  'border-status-ok': rt.outcome === 'matched',
-                  'border-status-fail': rt.outcome === 'filterFailed',
-                  'border-border-default': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
+                  'border-status-ok': rt.outcome === RuleOutcome.Matched,
+                  'border-status-fail': rt.outcome === RuleOutcome.FilterFailed,
+                  'border-border-default': rt.outcome !== RuleOutcome.Matched && rt.outcome !== RuleOutcome.FilterFailed
                 }"
               >
                 <div class="flex gap-2 items-center">
@@ -82,15 +82,15 @@
                   <span
                     class="font-medium"
                     :class="{
-                      'text-status-ok': rt.outcome === 'matched',
-                      'text-status-fail': rt.outcome === 'filterFailed',
-                      'text-text-secondary': rt.outcome !== 'matched' && rt.outcome !== 'filterFailed'
+                      'text-status-ok': rt.outcome === RuleOutcome.Matched,
+                      'text-status-fail': rt.outcome === RuleOutcome.FilterFailed,
+                      'text-text-secondary': rt.outcome !== RuleOutcome.Matched && rt.outcome !== RuleOutcome.FilterFailed
                     }"
                   >{{ outcomeLabel(rt.outcome) }}</span>
                 </div>
                 <FilterGroupTraceView v-if="rt.filterTrace" :group="rt.filterTrace" class="mt-1" />
                 <div v-if="rt.identificationTrace" class="text-xs text-text-secondary mt-1 bg-surface-elevated/50 rounded p-2 space-y-0.5">
-                  <div><span class="text-text-secondary">{{ $t('preview.identification') }}:</span> {{ strategyLabel(rt.identificationTrace.strategy ?? '', t) }}</div>
+                  <div><span class="text-text-secondary">{{ $t('preview.identification') }}:</span> {{ strategyLabel(rt.identificationTrace.strategy ?? -1, t) }}</div>
                   <div><span class="text-text-secondary">Attempted:</span> {{ rt.identificationTrace.attempted }}</div>
                   <div v-if="rt.identificationTrace.detail"><span class="text-text-secondary">Detail:</span> {{ rt.identificationTrace.detail }}</div>
                 </div>
@@ -108,6 +108,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getScoringDetail, type ScoringDetail } from '../api/rulesets'
+import { RuleOutcome } from '../api/enumMaps'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 import { strategyLabel } from '../utils/strategy'
@@ -141,12 +142,12 @@ const filterOptions = computed(() => {
   ]
 })
 
-function outcomeLabel(outcome: string): string {
+function outcomeLabel(outcome: number): string {
   switch (outcome) {
-    case 'matched': return t('preview.matched')
-    case 'filterFailed': return t('preview.filterFailed')
-    case 'identificationFailed': return t('preview.idFailed')
-    default: return outcome
+    case RuleOutcome.Matched: return t('preview.matched')
+    case RuleOutcome.FilterFailed: return t('preview.filterFailed')
+    case RuleOutcome.IdentificationFailed: return t('preview.idFailed')
+    default: return String(outcome)
   }
 }
 
