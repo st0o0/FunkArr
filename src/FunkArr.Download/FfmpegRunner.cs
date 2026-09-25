@@ -10,12 +10,12 @@ internal sealed class FfmpegRunner : IFfmpegRunner
 {
     public async Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitlePath, string outputPath,
-        Action<ProgressUpdate> onProgress, CancellationToken ct)
+        string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var progressBlock = new Dictionary<string, string>();
 
-        var processor = BuildArguments(videoUrl, subtitlePath, outputPath)
+        var processor = BuildArguments(videoUrl, subtitlePath, outputPath, proxyUrl)
             .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
             .CancellableThrough(ct);
 
@@ -38,11 +38,15 @@ internal sealed class FfmpegRunner : IFfmpegRunner
     }
 
     internal static FFMpegArgumentProcessor BuildArguments(
-        string videoUrl, string? subtitlePath, string outputPath)
+        string videoUrl, string? subtitlePath, string outputPath, string? proxyUrl = null)
     {
+        Action<FFMpegArgumentOptions>? inputOptions = proxyUrl is not null
+            ? opts => opts.WithCustomArgument($"-http_proxy {proxyUrl}")
+            : null;
+
         var arguments = subtitlePath is not null
             ? FFMpegArguments
-                .FromUrlInput(new Uri(videoUrl))
+                .FromUrlInput(new Uri(videoUrl), inputOptions)
                 .AddFileInput(subtitlePath)
                 .OutputToFile(outputPath, overwrite: true, options =>
                 {
@@ -55,7 +59,7 @@ internal sealed class FfmpegRunner : IFfmpegRunner
                         .WithCustomArgument("-progress pipe:1");
                 })
             : FFMpegArguments
-                .FromUrlInput(new Uri(videoUrl))
+                .FromUrlInput(new Uri(videoUrl), inputOptions)
                 .OutputToFile(outputPath, overwrite: true, options =>
                 {
                     options

@@ -71,6 +71,127 @@ FunkArr__Download__Categories__1__Dir=movies
 
 When Sonarr sends a download request with category `tv`, the finished file ends up in `complete/tv/`. The `N` in the variable name is a zero-based index - use `0`, `1`, `2`, etc. for each category.
 
+## Network Routes
+
+FunkArr can reach different Mediatheken via different network paths. This is necessary to access geo-restricted content from ORF (Austria) or SRF (Switzerland). FunkArr only supports HTTP proxies - VPN infrastructure (e.g. WireGuard + AirVPN) runs outside of FunkArr in Docker.
+
+### Route Definitions
+
+Named network paths with an optional HTTP proxy:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FunkArr__Routes__Definitions__N__Name` | `Direct` | Route name |
+| `FunkArr__Routes__Definitions__N__Proxy` | _(empty)_ | HTTP proxy URI (empty = direct connection) |
+| `FunkArr__Routes__Default` | `Direct` | Default route for unmapped channels |
+
+### Channel Mapping
+
+Glob patterns map Mediathek channels to a route. The first matching pattern wins. Channels without a match use the default route.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FunkArr__Routes__ChannelRoutes__N__Pattern` | - | Glob pattern for the channel name (e.g. `ORF*`) |
+| `FunkArr__Routes__ChannelRoutes__N__Route` | - | Name of the assigned route |
+
+Patterns use simple glob matching (`*` for any characters). MediathekViewWeb returns these channel names: `ARD`, `ARD-alpha`, `BR`, `ZDF`, `ZDFneo`, `ZDFinfo`, `3Sat`, `ARTE.DE`, `ORF`, `SRF`, `Funk.net`, `KiKA`, `DW`, and more.
+
+Example configuration:
+
+```
+FunkArr__Routes__Definitions__0__Name=Direct
+FunkArr__Routes__Definitions__1__Name=Austria
+FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+FunkArr__Routes__Definitions__2__Name=Switzerland
+FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+
+FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
+FunkArr__Routes__ChannelRoutes__0__Route=Austria
+FunkArr__Routes__ChannelRoutes__1__Pattern=SRF*
+FunkArr__Routes__ChannelRoutes__1__Route=Switzerland
+
+FunkArr__Routes__Default=Direct
+```
+
+With this configuration, ORF content is downloaded through an Austrian proxy, SRF content through a Swiss proxy, and all other channels (ARD, ZDF, 3Sat, ...) connect directly.
+
+::: warning
+If a proxy is unreachable, the download fails - there is no automatic fallback to a direct connection. This is intentional: a silent fallback would bypass the geo-restriction you explicitly configured.
+:::
+
+The route applies to the entire download pipeline: both subtitle downloads and FFmpeg use the configured proxy.
+
+### Docker Compose with Proxy Infrastructure
+
+A complete example with FunkArr, HTTP proxies, and WireGuard VPN gateways:
+
+```yaml
+services:
+  funkarr:
+    image: ghcr.io/st0o0/funkarr:latest
+    restart: unless-stopped
+    ports:
+      - "8080:6969"
+    volumes:
+      - funkarr-data:/app/data
+      - /path/to/media:/media
+    environment:
+      - FunkArr__Download__Path=/media/downloads
+      # Route definitions
+      - FunkArr__Routes__Definitions__0__Name=Direct
+      - FunkArr__Routes__Definitions__1__Name=Austria
+      - FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+      - FunkArr__Routes__Definitions__2__Name=Switzerland
+      - FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+      # Channel mapping
+      - FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
+      - FunkArr__Routes__ChannelRoutes__0__Route=Austria
+      - FunkArr__Routes__ChannelRoutes__1__Pattern=SRF*
+      - FunkArr__Routes__ChannelRoutes__1__Route=Switzerland
+      - FunkArr__Routes__Default=Direct
+
+  # Austria: HTTP proxy in front of WireGuard gateway
+  tinyproxy-at:
+    image: monokal/tinyproxy
+    restart: unless-stopped
+    network_mode: "service:wireguard-at"
+
+  wireguard-at:
+    image: lscr.io/linuxserver/wireguard
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./wireguard/at:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+
+  # Switzerland: HTTP proxy in front of WireGuard gateway
+  tinyproxy-ch:
+    image: monokal/tinyproxy
+    restart: unless-stopped
+    network_mode: "service:wireguard-ch"
+
+  wireguard-ch:
+    image: lscr.io/linuxserver/wireguard
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./wireguard/ch:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+
+volumes:
+  funkarr-data:
+```
+
+::: tip
+The proxy containers (`tinyproxy-at`, `tinyproxy-ch`) use `network_mode: "service:wireguard-*"`, so all their network traffic flows through the respective WireGuard tunnel. FunkArr reaches them via the internal Docker network - the proxies don't need to be publicly accessible.
+:::
+
 ## Rulesets
 
 | Variable | Default | Description |
@@ -183,7 +304,7 @@ FFmpeg must be available on `PATH` - it is included in the official Docker image
 - Remux to MKV (copies video/audio codecs without re-encoding)
 - Embed subtitles as SRT tracks with German language tag
 
-There are no configuration options for FFmpeg behavior. The setup health check (`/api/system/setup`) verifies FFmpeg is available.
+When a [network route](#network-routes) with a proxy is configured for the channel, FFmpeg is automatically started with the corresponding HTTP proxy (`-http_proxy`). There are no separate configuration options for FFmpeg behavior. The setup health check (`/api/system/setup`) verifies FFmpeg is available.
 
 ## Health Checks
 

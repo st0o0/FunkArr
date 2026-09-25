@@ -15,13 +15,15 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
+    private readonly IRouteResolver _routeResolver;
     private int _maxConcurrent;
     private DownloadManagerState _state = DownloadManagerState.Empty;
 
     public override string PersistenceId => "download-manager";
 
-    public DownloadManager(IOptionsMonitor<DownloadOptions> options)
+    public DownloadManager(IOptionsMonitor<DownloadOptions> options, IRouteResolver routeResolver)
     {
+        _routeResolver = routeResolver;
         _maxConcurrent = options.CurrentValue.ConcurrentDownloads;
 
         Command<AddDownload>(HandleAdd);
@@ -63,14 +65,16 @@ public sealed class DownloadManager : ReceivePersistentActor
     {
         var downloadId = Guid.NewGuid();
 
-        _log.Info("Enqueuing download {DownloadId}: {Title}", downloadId, cmd.Title);
+        var route = _routeResolver.Resolve(cmd.Channel);
+
+        _log.Info("Enqueuing download {DownloadId}: {Title} (route: {Route})", downloadId, cmd.Title, route.Name);
         Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
 
             _downloadRegion.Tell(new InitDownload(
                 downloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
-                cmd.Channel, cmd.Duration, cmd.Size, cmd.Category));
+                cmd.Channel, cmd.Duration, cmd.Size, cmd.Category, route.Name, route.ProxyUrl));
 
             Sender.Tell(new DownloadAdded(downloadId));
             _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);

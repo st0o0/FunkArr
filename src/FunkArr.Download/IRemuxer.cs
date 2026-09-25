@@ -4,5 +4,5 @@ public interface IRemuxer
 {
     Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitleUrl, string outputPath,
-        Action<ProgressUpdate> onProgress, CancellationToken ct);
+        string routeName, string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct);
 }

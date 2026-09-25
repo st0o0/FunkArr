@@ -2,14 +2,15 @@ using Microsoft.Extensions.Logging;
 
 namespace FunkArr.Download;
 
-internal sealed class SubtitlePreparer(HttpClient http, ILogger<SubtitlePreparer> logger) : ISubtitlePreparer
+internal sealed class SubtitlePreparer(IHttpClientFactory httpClientFactory, ILogger<SubtitlePreparer> logger) : ISubtitlePreparer
 {
-    public async Task<string?> PrepareAsync(string url, string outputDirectory, CancellationToken ct)
+    public async Task<string?> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
     {
         string content;
         try
         {
-            var response = await http.GetAsync(url, ct);
+            using var client = httpClientFactory.CreateClient($"route:{routeName}");
+            var response = await client.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
             {
                 return null;

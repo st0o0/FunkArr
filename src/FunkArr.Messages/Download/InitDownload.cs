@@ -8,4 +8,6 @@ public sealed record InitDownload(
     string Channel,
     int Duration,
     long Size,
-    MediaType Category) : IWithDownloadId;
+    MediaType Category,
+    string RouteName = "Direct",
+    string? ProxyUrl = null) : IWithDownloadId;

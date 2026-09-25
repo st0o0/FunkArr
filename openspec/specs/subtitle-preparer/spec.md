@@ -3,9 +3,7 @@
 ## Purpose
 
 Downloads subtitle content from a remote URL, detects the format by content sniffing, converts TTML/EBU-TT-D to SRT when needed, and writes a local file that FFmpeg can consume.
-
 ## Requirements
-
 ### Requirement: SubtitlePreparer downloads and converts subtitles
 The SubtitlePreparer SHALL download subtitle content from a URL, detect its format, convert if necessary, and write a local SRT or VTT file. It SHALL return the local file path on success or null on failure.
 
@@ -88,16 +86,30 @@ The SubtitlePreparer SHALL convert TTML/EBU-TT-D XML to SubRip (SRT) format by e
 - **THEN** the converter SHALL extract paragraphs from the same XML structure
 
 ### Requirement: SubtitlePreparer interface
-The `ISubtitlePreparer` interface SHALL define a single async method for preparing subtitles.
+The `ISubtitlePreparer` interface SHALL define a single async method for preparing subtitles, accepting a route name for HttpClient selection.
 
 #### Scenario: Interface signature
 - **WHEN** a consumer needs to prepare a subtitle
-- **THEN** the interface SHALL expose `Task<string?> PrepareAsync(string url, string outputDirectory, CancellationToken ct)`
+- **THEN** the interface SHALL expose `Task<string?> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct)`
 - **AND** return the local file path on success or null when subtitles are unavailable
 
 ### Requirement: SubtitlePreparer uses HttpClient via DI
-The `SubtitlePreparer` SHALL receive `HttpClient` through dependency injection for HTTP operations.
+The `SubtitlePreparer` SHALL receive `IHttpClientFactory` through dependency injection and create clients by route name.
 
 #### Scenario: DI registration
 - **WHEN** the SubtitlePreparer is registered in DI
 - **THEN** it SHALL use `IHttpClientFactory` for HttpClient creation
+
+### Requirement: SubtitlePreparer routes through proxy
+When a route with a proxy is configured, the SubtitlePreparer SHALL use the named HttpClient registered for that route, which already has the correct proxy handler configured.
+
+#### Scenario: Subtitle download with proxy
+- **WHEN** `routeName` is "Austria" and a named HttpClient "route:Austria" is registered with a proxy handler
+- **THEN** the SubtitlePreparer SHALL call `httpClientFactory.CreateClient("route:Austria")`
+- **AND** the returned client SHALL route traffic through the configured proxy
+
+#### Scenario: Subtitle download without proxy
+- **WHEN** `routeName` is "Direct" and a named HttpClient "route:Direct" is registered without a proxy
+- **THEN** the SubtitlePreparer SHALL call `httpClientFactory.CreateClient("route:Direct")`
+- **AND** the returned client SHALL connect directly
+

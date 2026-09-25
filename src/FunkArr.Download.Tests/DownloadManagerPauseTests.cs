@@ -23,7 +23,9 @@ public sealed class DownloadManagerPauseTests : TestKit
     private IActorRef CreateManager(int concurrentDownloads = 3) =>
         Sys.ActorOf(Props.Create(() => new DownloadManager(
             new TestOptionsMonitor<DownloadOptions>(
-                new DownloadOptions { ConcurrentDownloads = concurrentDownloads }))));
+                new DownloadOptions { ConcurrentDownloads = concurrentDownloads }),
+            new RouteResolver(
+                new TestOptionsMonitor<RoutingOptions>(new RoutingOptions())))));
 
     [Fact]
     public void Pause_stops_new_dispatches()

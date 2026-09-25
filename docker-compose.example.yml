@@ -62,6 +62,22 @@ services:
       # Interval between snapshots. Default: 20
       #- FunkArr__ScoringHistory__SnapshotInterval=20
 
+      # -- Network Routes --
+      # Named network paths with optional HTTP proxy for geo-restricted Mediatheken.
+      # Route definitions: Name + optional Proxy URI
+      #- FunkArr__Routes__Definitions__0__Name=Direct
+      #- FunkArr__Routes__Definitions__1__Name=Austria
+      #- FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+      #- FunkArr__Routes__Definitions__2__Name=Switzerland
+      #- FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+      # Channel-to-route patterns (first match wins, glob via FileSystemName)
+      #- FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
+      #- FunkArr__Routes__ChannelRoutes__0__Route=Austria
+      #- FunkArr__Routes__ChannelRoutes__1__Pattern=SRF*
+      #- FunkArr__Routes__ChannelRoutes__1__Route=Switzerland
+      # Default route for unmatched channels. Default: Direct
+      #- FunkArr__Routes__Default=Direct
+
       # -- Persistence (PostgreSQL) --
       # Default: SQLite at data/funkarr.db (no extra config needed).
       # Set Postgres__Host to switch to PostgreSQL.

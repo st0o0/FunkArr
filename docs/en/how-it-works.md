@@ -110,7 +110,7 @@ Each download is processed by a DownloadWorker:
    - **WebVTT** - used directly as a VTT file
    - **SRT** - used directly
 
-2. **Video download and remux:** FFmpeg downloads the video (direct URL or HLS stream) and packages it as an MKV container:
+2. **Video download and remux:** FFmpeg downloads the video (direct URL or HLS stream) and packages it as an MKV container. When a network route with a proxy is configured for the channel, both the subtitle download and FFmpeg are routed through the configured HTTP proxy (see [Configuration - Network Routes](/en/configuration#network-routes)):
    - Video and audio codecs are copied (no re-encoding)
    - Subtitles are embedded as an SRT track with German language tag (`language=deu`)
    - Progress is reported live (downloaded bytes, time position, speed)

@@ -256,6 +256,32 @@ public sealed class FfmpegRunnerTests
     }
 
     [Fact]
+    public void BuildArguments_with_proxy_includes_http_proxy_before_input()
+    {
+        var processor = FfmpegRunner.BuildArguments(
+            "https://example.com/video.mp4", null, "/tmp/out.mkv",
+            "http://proxy-at:8888");
+
+        var args = processor.Arguments;
+
+        Assert.Contains("-http_proxy http://proxy-at:8888", args);
+        var proxyIndex = args.IndexOf("-http_proxy", StringComparison.Ordinal);
+        var inputIndex = args.IndexOf("-i \"https://example.com/video.mp4\"", StringComparison.Ordinal);
+        Assert.True(proxyIndex < inputIndex, "proxy argument must appear before -i");
+    }
+
+    [Fact]
+    public void BuildArguments_without_proxy_omits_http_proxy()
+    {
+        var processor = FfmpegRunner.BuildArguments(
+            "https://example.com/video.mp4", null, "/tmp/out.mkv");
+
+        var args = processor.Arguments;
+
+        Assert.DoesNotContain("-http_proxy", args);
+    }
+
+    [Fact]
     public void ExtractError_http_403()
     {
         var stderr = "ffmpeg version 6.1.1\nlibavutil 58.29\n[https] HTTP error 403 Forbidden\nError opening input file https://example.com/video.mp4\nError opening input files: Server returned 403 Forbidden (access denied)";
