@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.1](https://github.com/st0o0/FunkArr/compare/funkarr-v0.2.0...funkarr-v0.2.1) (2026-09-25)
+
+
+### Features
+
+* add Terra X community rulesets ([f9d5168](https://github.com/st0o0/FunkArr/commit/f9d51683a2412041a3c36cf674a4d990134f98a4))
+
+
+### Bug Fixes
+
+* notify RuleSetManager after community ruleset download ([011cb8c](https://github.com/st0o0/FunkArr/commit/011cb8ca4c751694fb17098f3756d1ca302e0f4d))
+
+
+### Documentation
+
+* fix umlauts, typos, and EN hero links ([833366f](https://github.com/st0o0/FunkArr/commit/833366f45168076f1edc33ac442c1b005603850a))
+* update EN comparison page with expanded details and proper structure ([8cbbfed](https://github.com/st0o0/FunkArr/commit/8cbbfed7a23be80748e54dd9bde0958b7c7ffed5))
+
+
+### Refactoring
+
+* simplify LINQ and use GetValueOrDefault in download pipeline ([6a5fc70](https://github.com/st0o0/FunkArr/commit/6a5fc707f48cfd7c5e8244e0ae7e8c46b90426cb))
+
 ## [0.2.0](https://github.com/st0o0/FunkArr/compare/funkarr-v0.1.6...funkarr-v0.2.0) (2026-09-24)
 
 
