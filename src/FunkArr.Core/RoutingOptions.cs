@@ -4,7 +4,7 @@ public sealed class RoutingOptions
 {
     public const string SectionName = "FunkArr:Routes";
 
-    public List<RouteDefinition> Definitions { get; set; } = [new() { Name = "Direct" }];
+    public List<RouteDefinition> Definitions { get; set; } = [];
     public List<ChannelRoute> ChannelRoutes { get; set; } = [];
     public string Default { get; set; } = "Direct";
 }

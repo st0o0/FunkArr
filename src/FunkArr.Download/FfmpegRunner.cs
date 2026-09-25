@@ -37,12 +37,19 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         }
     }
 
+    private const string UserAgent = "Mozilla/5.0";
+
     internal static FFMpegArgumentProcessor BuildArguments(
         string videoUrl, string? subtitlePath, string outputPath, string? proxyUrl = null)
     {
-        Action<FFMpegArgumentOptions>? inputOptions = proxyUrl is not null
-            ? opts => opts.WithCustomArgument($"-http_proxy {proxyUrl}")
-            : null;
+        Action<FFMpegArgumentOptions> inputOptions = opts =>
+        {
+            opts.WithCustomArgument($"-user_agent \"{UserAgent}\"");
+            if (proxyUrl is not null)
+            {
+                opts.WithCustomArgument($"-http_proxy {proxyUrl}");
+            }
+        };
 
         var arguments = subtitlePath is not null
             ? FFMpegArguments

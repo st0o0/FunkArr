@@ -17,6 +17,13 @@ services:
       - FunkArr__Tmdb__ApiKey=${TMDB_API_KEY:-}
       - FunkArr__Download__Path=/shared/downloads
       - FunkArr__Download__ConcurrentDownloads=50
+      # Network routes (requires proxy profile: docker compose -f docker-compose.dev.yml --profile proxy up -d)
+      - FunkArr__Routes__Definitions__0__Name=Direct
+      - FunkArr__Routes__Definitions__1__Name=Austria
+      - FunkArr__Routes__Definitions__1__Proxy=http://gluetun-at:8888
+      - FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
+      - FunkArr__Routes__ChannelRoutes__0__Route=Austria
+      - FunkArr__Routes__Default=Direct
     depends_on:
       - sonarr
       - radarr
@@ -59,6 +66,36 @@ services:
       PROWLARR__AUTH__APIKEY: funkarr-dev-api-key-01
       PROWLARR__AUTH__METHOD: External
       PROWLARR__AUTH__REQUIRED: DisabledForLocalAddresses
+
+  tinyproxy-at:
+    container_name: tinyproxy-at
+    image: kalaksi/tinyproxy
+    restart: unless-stopped
+    network_mode: "service:gluetun-at"
+    environment:
+      - PORT=8888
+      - TIMEOUT=600
+      - LOGLEVEL=Info
+    profiles:
+      - proxy
+
+  gluetun-at:
+    container_name: gluetun-at
+    image: qmcgaw/gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - VPN_SERVICE_PROVIDER=${VPN_PROVIDER:-}
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WG_PRIVATE_KEY:-}
+      - WIREGUARD_PRESHARED_KEY=${WG_PRESHARED_KEY:-}
+      - WIREGUARD_ADDRESSES=${WG_ADDRESSES:-}
+      - SERVER_COUNTRIES=Austria
+    profiles:
+      - proxy
 
 volumes:
   funkarr-data:

@@ -37,7 +37,7 @@ public sealed class RoutingOptionsValidator : IValidateOptions<RoutingOptions>
             }
         }
 
-        if (!definedNames.Contains(options.Default))
+        if (definedNames.Count > 0 && !definedNames.Contains(options.Default))
         {
             failures.Add($"Default route '{options.Default}' does not reference a defined route.");
         }
