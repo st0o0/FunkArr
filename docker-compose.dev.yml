@@ -69,7 +69,7 @@ services:
 
   tinyproxy-at:
     container_name: tinyproxy-at
-    image: kalaksi/tinyproxy
+    image: kalaksi/tinyproxy@sha256:fafafc7079ca29c6704564de1353f61d038f2166f09b01d4e460e8e499bf6b57
     restart: unless-stopped
     network_mode: "service:gluetun-at"
     environment:
@@ -81,7 +81,7 @@ services:
 
   gluetun-at:
     container_name: gluetun-at
-    image: qmcgaw/gluetun
+    image: qmcgaw/gluetun@sha256:5cedd587404f96202060385d541faa4a73e51544ea098ec8d31c614f4d9c6ee0
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
