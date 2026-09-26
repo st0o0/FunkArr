@@ -1,6 +1,6 @@
-using System.Diagnostics;
 using Akka.Actor;
 using Akka.Hosting;
+using FunkArr.Api.HealthChecks;
 using FunkArr.Api.Models;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
@@ -35,13 +35,13 @@ public static class SystemApiEndpoints
             var selfBaseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
 
             var apiKeyCheck = CheckApiKey(opts);
-            var mediathekTask = CheckMediathekViewWeb(httpClientFactory);
+            var mediathekTask = CheckMediathekViewWebAsync(httpClientFactory);
             var dataCheck = CheckDirectory(dataPaths.DataRoot, dataFiles);
             var completeCheck = CheckDirectory(dataPaths.Complete, dataFiles);
             var incompleteCheck = CheckDirectory(dataPaths.Incomplete, dataFiles);
             var indexerTask = CheckSelfEndpoint(httpClientFactory, selfBaseUrl, opts, "/index/api?t=caps&apikey=");
             var downloadApiTask = CheckSelfEndpoint(httpClientFactory, selfBaseUrl, opts, "/download/api?mode=version&apikey=");
-            var ffmpegTask = CheckFfmpeg();
+            var ffmpegTask = CheckFfmpegAsync();
 
             await Task.WhenAll(mediathekTask, indexerTask, downloadApiTask, ffmpegTask);
 
@@ -130,29 +130,16 @@ public static class SystemApiEndpoints
             : new CheckResult(CheckStatus.Ok, Value: key, Masked: masked);
     }
 
-    private static async Task<CheckResult> CheckMediathekViewWeb(IHttpClientFactory factory)
+    private static async Task<CheckResult> CheckMediathekViewWebAsync(IHttpClientFactory factory)
     {
-        try
-        {
-            using var client = factory.CreateClient();
-            client.Timeout = _httpTimeout;
-            using var request = new HttpRequestMessage(HttpMethod.Head, "https://mediathekviewweb.de/");
-            using var response = await client.SendAsync(request);
-
-            return response.IsSuccessStatusCode
-                ? CheckResult.Ok()
-                : CheckResult.Fail($"MediathekViewWeb returned HTTP {(int)response.StatusCode}");
-        }
-        catch (Exception ex)
-        {
-            return CheckResult.Fail($"MediathekViewWeb unreachable: {ex.Message}");
-        }
+        var (reachable, message) = await MediathekViewWebHealthCheck.ProbeAsync(factory);
+        return reachable ? CheckResult.Ok() : CheckResult.Fail(message!);
     }
 
     internal static CheckResult CheckDirectory(string path, IDataFiles dataFiles)
     {
-        var fullPath = Path.GetFullPath(path);
-        return dataFiles.CanWrite(fullPath)
+        var (writable, fullPath) = DirectoryHealthCheck.Probe(path, dataFiles);
+        return writable
             ? new CheckResult(CheckStatus.Ok, Path: fullPath)
             : new CheckResult(CheckStatus.Fail, $"Directory not writable or does not exist: {fullPath}", Path: fullPath);
     }
@@ -178,38 +165,11 @@ public static class SystemApiEndpoints
         }
     }
 
-    internal static async Task<CheckResult> CheckFfmpeg()
+    internal static async Task<CheckResult> CheckFfmpegAsync()
     {
-        try
-        {
-            using var process = new Process();
-            process.StartInfo = new ProcessStartInfo
-            {
-                FileName = "ffmpeg",
-                Arguments = "-version",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
-            process.Start();
-
-            var output = await process.StandardOutput.ReadLineAsync();
-            await process.WaitForExitAsync();
-
-            if (process.ExitCode == 0 && output is not null)
-            {
-                var version = output.Contains("version")
-                    ? output.Split(' ').SkipWhile(s => s != "version").Skip(1).FirstOrDefault() ?? "unknown"
-                    : "unknown";
-                return new CheckResult(CheckStatus.Ok, Version: version);
-            }
-
-            return CheckResult.Warn("FFmpeg not working correctly — needed for downloads");
-        }
-        catch
-        {
-            return CheckResult.Warn("FFmpeg not found on PATH — needed for downloads");
-        }
+        var (available, version) = await FfmpegHealthCheck.ProbeAsync();
+        return available
+            ? new CheckResult(CheckStatus.Ok, Version: version)
+            : CheckResult.Warn("FFmpeg not found on PATH — needed for downloads");
     }
 }

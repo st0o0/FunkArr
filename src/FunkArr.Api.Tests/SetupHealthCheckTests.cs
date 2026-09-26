@@ -84,7 +84,7 @@ public sealed class SetupHealthCheckTests
     [Fact]
     public async Task Ffmpeg_check_returns_result()
     {
-        var result = await SystemApiEndpoints.CheckFfmpeg();
+        var result = await SystemApiEndpoints.CheckFfmpegAsync();
 
         Assert.True(result.Status is CheckStatus.Ok or CheckStatus.Warn);
     }

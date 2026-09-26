@@ -1,7 +1,9 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using FunkArr.Api;
+using FunkArr.Api.HealthChecks;
 using FunkArr.Core;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
 
@@ -55,6 +57,32 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
         services.AddControllers()
             .AddApplicationPart(typeof(FunkArr.ArrApi.AssemblyMarker).Assembly);
 
-        services.AddHealthChecks();
+        services.AddHealthChecks()
+            .AddCheck<FfmpegHealthCheck>("ffmpeg", failureStatus: HealthStatus.Unhealthy)
+            .AddCheck<MediathekViewWebHealthCheck>("mediathekviewweb", failureStatus: HealthStatus.Degraded)
+            .Add(new HealthCheckRegistration(
+                "data-directory",
+                sp => new DirectoryHealthCheck(
+                    sp.GetRequiredService<DataPaths>(),
+                    sp.GetRequiredService<IDataFiles>(),
+                    p => p.DataRoot),
+                failureStatus: HealthStatus.Unhealthy,
+                tags: null))
+            .Add(new HealthCheckRegistration(
+                "complete-directory",
+                sp => new DirectoryHealthCheck(
+                    sp.GetRequiredService<DataPaths>(),
+                    sp.GetRequiredService<IDataFiles>(),
+                    p => p.Complete),
+                failureStatus: HealthStatus.Unhealthy,
+                tags: null))
+            .Add(new HealthCheckRegistration(
+                "incomplete-directory",
+                sp => new DirectoryHealthCheck(
+                    sp.GetRequiredService<DataPaths>(),
+                    sp.GetRequiredService<IDataFiles>(),
+                    p => p.Incomplete),
+                failureStatus: HealthStatus.Unhealthy,
+                tags: null));
     }
 }
