@@ -51,6 +51,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         Recover<RecoveryCompleted>(_ =>
         {
             _state = _state.ResetDispatched();
+            UpdateGauges();
             DispatchNext();
         });
 
@@ -78,6 +79,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
             Sender.Tell(new DownloadAdded(downloadId));
             _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
+            UpdateGauges();
             DispatchNext();
         });
     }
@@ -94,6 +96,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             _state = _state.Apply(e);
             _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
+            UpdateGauges();
             DispatchNext();
         });
     }
@@ -153,6 +156,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         Persist(new DownloadDequeued(cmd.DownloadId), e =>
         {
             _state = _state.Apply(e);
+            UpdateGauges();
             _downloadRegion.Tell(new CancelDownload(cmd.DownloadId));
             sender.Tell(new DeleteDownloadResult(true, null));
         });
@@ -361,14 +365,21 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var events = toDispatch.Select(object (id) => new DownloadDispatched(id)).ToArray();
-        PersistAll(events, evt => _state = _state.Apply((DownloadDispatched)evt));
+        var events = toDispatch.Select(id => new DownloadDispatched(id)).ToArray();
+        PersistAll(events, evt => _state = _state.Apply(evt));
+        UpdateGauges();
 
         foreach (var downloadId in toDispatch)
         {
             _log.Info("Dispatching download {DownloadId}", downloadId);
             _downloadRegion.Tell(new StartDownload(downloadId));
         }
+    }
+
+    private void UpdateGauges()
+    {
+        Telemetry.SetQueueSize(_state.Queued.Count);
+        Telemetry.SetActiveDownloads(_state.Dispatched.Count);
     }
 
     private static DownloadPriority LookupPriority(DownloadManagerState state, Guid downloadId)

@@ -22,12 +22,14 @@ public sealed class MetadataSetupContainer : IServiceSetupContainer
         {
             client.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
         })
+        .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("tvdb"))
         .AddStandardResilienceHandler();
 
         services.AddHttpClient<TmdbClient>(client =>
         {
             client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
         })
+        .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("tmdb"))
         .AddStandardResilienceHandler();
     }
 }

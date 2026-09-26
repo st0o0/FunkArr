@@ -26,14 +26,12 @@ public sealed class MovieSearchWorker : ReceiveActor
     private readonly IActorRef _metadataResolver = Context.GetActor<IEnrichmentManager>();
     private readonly IActorRef _historyRegion = Context.GetActor<IHistoryRegion>();
 
-    private readonly System.Diagnostics.Stopwatch _searchStopwatch = new();
 
     public MovieSearchWorker()
     {
         Receive<SearchMovie>(cmd =>
         {
             _log.Info("Movie search started: Query={Query}, TmdbId={TmdbId}", cmd.Query, cmd.TmdbId);
-            _searchStopwatch.Restart();
             _state.Init(cmd, Sender);
 
             var hasQuery = !string.IsNullOrWhiteSpace(cmd.Query);
@@ -176,12 +174,12 @@ public sealed class MovieSearchWorker : ReceiveActor
 
     private void Reply(SearchMovieResponse response)
     {
-        _searchStopwatch.Stop();
-        Telemetry.SearchDuration.Record(_searchStopwatch.Elapsed.TotalSeconds);
-        if (response is SearchMovieCompleted completed)
-        {
-            Telemetry.SearchResults.Record(completed.Items.Length);
-        }
+        var sourceTag = new KeyValuePair<string, object?>("source", _state.Source.ToString().ToLowerInvariant());
+        Telemetry.SearchRequests.Add(1, sourceTag);
+        if (response is SearchMovieCompleted { Items.Length: > 0 })
+            Telemetry.SearchMatches.Add(1, sourceTag);
+        else
+            Telemetry.SearchNoMatch.Add(1, sourceTag);
 
         _state.ReplyTo.Tell(response);
     }

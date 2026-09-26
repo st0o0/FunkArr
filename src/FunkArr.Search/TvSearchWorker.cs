@@ -26,14 +26,12 @@ public sealed class TvSearchWorker : ReceiveActor
     private readonly IActorRef _metadataResolver = Context.GetActor<IEnrichmentManager>();
     private readonly IActorRef _historyRegion = Context.GetActor<IHistoryRegion>();
 
-    private readonly System.Diagnostics.Stopwatch _searchStopwatch = new();
 
     public TvSearchWorker()
     {
         Receive<SearchSeries>(cmd =>
         {
             _log.Info("TV search started: Query={Query}, TvdbId={TvdbId}", cmd.Query, cmd.TvdbId);
-            _searchStopwatch.Restart();
             _state.Init(cmd, Sender);
 
             var hasQuery = !string.IsNullOrWhiteSpace(cmd.Query);
@@ -176,12 +174,12 @@ public sealed class TvSearchWorker : ReceiveActor
 
     private void Reply(SearchSeriesResponse response)
     {
-        _searchStopwatch.Stop();
-        Telemetry.SearchDuration.Record(_searchStopwatch.Elapsed.TotalSeconds);
-        if (response is SearchSeriesCompleted completed)
-        {
-            Telemetry.SearchResults.Record(completed.Items.Length);
-        }
+        var sourceTag = new KeyValuePair<string, object?>("source", _state.Source.ToString().ToLowerInvariant());
+        Telemetry.SearchRequests.Add(1, sourceTag);
+        if (response is SearchSeriesCompleted { Items.Length: > 0 })
+            Telemetry.SearchMatches.Add(1, sourceTag);
+        else
+            Telemetry.SearchNoMatch.Add(1, sourceTag);
 
         _state.ReplyTo.Tell(response);
     }

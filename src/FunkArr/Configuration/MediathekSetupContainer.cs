@@ -14,6 +14,7 @@ public sealed class MediathekSetupContainer : ApplicationSetupContainer<WebAppli
             client.BaseAddress = new Uri("https://mediathekviewweb.de/api/query");
             client.DefaultRequestHeaders.Add("Accept", MediaTypeNames.Application.Json);
         })
+        .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("mediathekviewweb"))
         .AddStandardResilienceHandler(options =>
         {
             options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(45);

@@ -41,6 +41,8 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
         app.MapSetupArrApi();
         app.MapControllers();
 
+        app.MapPrometheusScrapingEndpoint("/metrics");
+
         app.MapFallbackToFile("index.html");
     }
 }

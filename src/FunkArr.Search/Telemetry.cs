@@ -6,9 +6,12 @@ internal static class Telemetry
 {
     internal static readonly Meter Meter = new("FunkArr.Search");
 
-    internal static readonly Histogram<double> SearchDuration = Meter.CreateHistogram<double>(
-        "funkarr.search.duration", "s", "Search request duration in seconds");
+    internal static readonly Counter<long> SearchRequests = Meter.CreateCounter<long>(
+        "funkarr.search.requests_total", description: "Total search requests");
 
-    internal static readonly Histogram<int> SearchResults = Meter.CreateHistogram<int>(
-        "funkarr.search.results", "{results}", "Number of search results returned");
+    internal static readonly Counter<long> SearchMatches = Meter.CreateCounter<long>(
+        "funkarr.search.matches_total", description: "Search requests with accepted results");
+
+    internal static readonly Counter<long> SearchNoMatch = Meter.CreateCounter<long>(
+        "funkarr.search.no_match_total", description: "Search requests with no accepted results");
 }
