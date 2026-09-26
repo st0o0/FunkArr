@@ -156,6 +156,12 @@ const navItems = computed<NavItem[]>(() => [
     exact: false,
     icon: '<path d="M2 4h12M2 8h12M2 12h8"/><circle cx="13" cy="12" r="1.5"/>',
   },
+  {
+    to: '/settings',
+    label: t('nav.settings'),
+    exact: false,
+    icon: '<path d="M6.5 1.5h3l.5 2.1a5.5 5.5 0 011.3.8l2-.7 1.5 2.6-1.5 1.4a5.5 5.5 0 010 1.6l1.5 1.4-1.5 2.6-2-.7a5.5 5.5 0 01-1.3.8l-.5 2.1h-3l-.5-2.1a5.5 5.5 0 01-1.3-.8l-2 .7-1.5-2.6 1.5-1.4a5.5 5.5 0 010-1.6L1.2 6.3l1.5-2.6 2 .7A5.5 5.5 0 016 3.6z"/><circle cx="8" cy="8" r="2"/>',
+  },
 ])
 
 function isRouteActive(item: NavItem, isActive: boolean, isExactActive: boolean): boolean {

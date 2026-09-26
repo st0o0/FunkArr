@@ -67,3 +67,35 @@ export function getCacheStats(): Promise<CacheStatsResponse> {
 export function getSystemVersion(): Promise<VersionResponse> {
   return fetchJson('/api/system/version')
 }
+
+export interface RouteDefinition {
+  name: string
+  proxy: string | null
+}
+
+export interface ChannelRouteMapping {
+  pattern: string
+  route: string
+}
+
+export interface RoutesResponse {
+  definitions: RouteDefinition[]
+  channelRoutes: ChannelRouteMapping[]
+  defaultRoute: string
+}
+
+export function getRoutes(): Promise<RoutesResponse> {
+  return fetchJson('/api/system/routes')
+}
+
+export interface LogEntry {
+  timestamp: string
+  level: string
+  message: string
+  sourceContext: string | null
+  exception: string | null
+}
+
+export function getLogs(): Promise<LogEntry[]> {
+  return fetchJson('/api/system/logs')
+}

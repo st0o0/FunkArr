@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="cursor-pointer" @click="$router.push(`/activity/${item.downloadId}`)">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0 flex-1">
         <ReleaseTitle :title="item.title" />

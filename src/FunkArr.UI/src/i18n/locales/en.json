@@ -3,6 +3,7 @@
     "overview": "Overview",
     "activity": "Activity",
     "rulesets": "RuleSets",
+    "settings": "Settings",
     "setup": "Setup",
     "collapse": "Collapse",
     "expand": "Expand"
@@ -389,6 +390,41 @@
       "static": "Static",
       "regex": "Regex"
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "downloads": "Downloads",
+    "concurrentDownloads": "Concurrent Downloads",
+    "schedule": "Download Schedule",
+    "noSchedule": "Always active",
+    "metadataCache": "Metadata Cache",
+    "entries": "entries",
+    "oldestEntry": "Oldest Entry",
+    "networkRoutes": "Network Routes",
+    "noRoutes": "No routes configured",
+    "default": "default",
+    "directConnection": "Direct connection",
+    "channelMappings": "Channel Mappings",
+    "system": "System",
+    "appVersion": "App Version",
+    "communityRulesets": "Community Rulesets",
+    "apiKey": "API Key",
+    "logs": "Logs",
+    "noLogs": "No log entries"
+  },
+  "downloadDetail": {
+    "loading": "Loading...",
+    "notFound": "Download not found",
+    "category": "Category",
+    "size": "Size",
+    "phase": "Phase",
+    "priority": "Priority",
+    "filePath": "File Path",
+    "duration": "Duration",
+    "completedAt": "Completed",
+    "forceStart": "Force Start",
+    "retry": "Retry",
+    "delete": "Delete"
   },
   "common": {
     "loading": "Loading...",

@@ -78,6 +78,7 @@ public sealed class FunkArrTestServer : IAsyncDisposable
         services.AddSingleton<RuleSet.RuleSetStore>();
         services.AddSingleton<IRuleSetValidator, RuleSet.RuleSetValidator>();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
+        services.AddSingleton(new RingBufferSink());
 
         services.AddHttpClient();
         services.AddHttpClient<ArrApiClient>();

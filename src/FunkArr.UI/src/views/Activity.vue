@@ -165,7 +165,8 @@
               <tr
                 v-for="item in filteredHistoryItems"
                 :key="item.downloadId"
-                class="border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/40 transition-colors"
+                class="border-b border-border-subtle last:border-b-0 hover:bg-surface-elevated/40 transition-colors cursor-pointer"
+                @click="$router.push(`/activity/${item.downloadId}`)"
               >
                 <td class="px-4 py-2.5 max-w-0">
                   <ReleaseTitle :title="item.title" hideQuality />

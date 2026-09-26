@@ -100,6 +100,41 @@ public static class SystemApiEndpoints
         .Produces<CacheStatsResponse>()
         .ProducesProblem(504);
 
+        group.MapGet("/logs", (RingBufferSink sink) =>
+        {
+            return Results.Ok(sink.GetEntries());
+        })
+        .WithSummary("Get recent log entries")
+        .Produces<LogEntry[]>();
+
+        group.MapGet("/logs/stream", async (HttpContext ctx, RingBufferSink sink) =>
+        {
+            ctx.Response.ContentType = "text/event-stream";
+            ctx.Response.Headers.CacheControl = "no-cache";
+            ctx.Response.Headers.Connection = "keep-alive";
+
+            var ct = ctx.RequestAborted;
+            await foreach (var entry in sink.Reader.ReadAllAsync(ct))
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(entry,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+                await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
+                await ctx.Response.Body.FlushAsync(ct);
+            }
+        })
+        .WithSummary("Stream log entries via SSE")
+        .ExcludeFromDescription();
+
+        group.MapGet("/routes", (IOptionsMonitor<RoutingOptions> routes) =>
+        {
+            var opts = routes.CurrentValue;
+            var definitions = opts.Definitions.Select(d => new RouteDefinitionResponse(d.Name, d.Proxy)).ToArray();
+            var channelRoutes = opts.ChannelRoutes.Select(c => new ChannelRouteResponse(c.Pattern, c.Route)).ToArray();
+            return Results.Ok(new RoutesResponse(definitions, channelRoutes, opts.Default));
+        })
+        .WithSummary("Get network route configuration")
+        .Produces<RoutesResponse>();
+
         return app;
     }
 

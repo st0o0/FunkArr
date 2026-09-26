@@ -123,3 +123,12 @@ export function pauseDownloads() {
 export function resumeDownloads() {
   return fetchAction('/api/downloads/resume', 'POST')
 }
+
+export interface DownloadSettingsResponse {
+  concurrentDownloads: number
+  schedule: { start: string; end: string }[]
+}
+
+export function getDownloadSettings(): Promise<DownloadSettingsResponse> {
+  return fetchJson('/api/downloads/settings')
+}
