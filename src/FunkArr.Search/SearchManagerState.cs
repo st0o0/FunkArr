@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Akka.Actor;
+using FunkArr.Messages;
 using FunkArr.Messages.Search;
 
 namespace FunkArr.Search;
@@ -12,6 +13,7 @@ public sealed record SearchManagerState(
 
     public sealed record PendingSearch(
         IActorRef OriginalSender,
+        SearchSource Source,
         SearchManager.SearchType Type,
         SearchCommandCompleted? TvResult,
         SearchCommandCompleted? MovieResult);

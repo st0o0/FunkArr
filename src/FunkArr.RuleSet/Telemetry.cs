@@ -14,8 +14,10 @@ internal static class Telemetry
 
     private static int _activeCount;
 
-    internal static readonly ObservableGauge<int> Active = Meter.CreateObservableGauge(
-        "funkarr.ruleset.active", () => _activeCount, description: "Active ruleset count");
+    static Telemetry()
+    {
+        Meter.CreateObservableGauge("funkarr.ruleset.active", () => _activeCount, description: "Active ruleset count");
+    }
 
     internal static readonly Counter<long> UpdateChecks = Meter.CreateCounter<long>(
         "funkarr.ruleset.update_checks_total", description: "Total community update checks");

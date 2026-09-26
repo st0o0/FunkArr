@@ -8,6 +8,8 @@ namespace FunkArr.Download;
 internal static partial class TtmlToSrtConverter
 {
     private static readonly XNamespace _tt = "http://www.w3.org/ns/ttml";
+    private static readonly XNamespace _ebuttm = "urn:ebu:tt:metadata";
+    private static readonly TimeSpan _offsetThreshold = TimeSpan.FromMinutes(30);
 
     public static string Convert(string ttml)
     {
@@ -18,15 +20,18 @@ internal static partial class TtmlToSrtConverter
                         && (p.Attribute("end") is not null || p.Attribute("dur") is not null))
             .ToList();
 
+        var offset = DetectOffset(doc, paragraphs);
         var sb = new StringBuilder();
         var index = 1;
 
         foreach (var p in paragraphs)
         {
-            var begin = ParseTimestamp(p.Attribute("begin")!.Value);
+            var begin = ParseTimestamp(p.Attribute("begin")!.Value) - offset;
+            if (begin < TimeSpan.Zero) begin = TimeSpan.Zero;
             var end = p.Attribute("end") is { } endAttr
-                ? ParseTimestamp(endAttr.Value)
+                ? ParseTimestamp(endAttr.Value) - offset
                 : begin + ParseTimestamp(p.Attribute("dur")!.Value);
+            if (end < TimeSpan.Zero) end = TimeSpan.Zero;
             var text = ExtractText(p);
 
             if (string.IsNullOrWhiteSpace(text))
@@ -45,6 +50,26 @@ internal static partial class TtmlToSrtConverter
         }
 
         return sb.ToString();
+    }
+
+    private static TimeSpan DetectOffset(XDocument doc, List<XElement> paragraphs)
+    {
+        var startOfProgramme = doc.Descendants(_ebuttm + "documentStartOfProgramme").FirstOrDefault();
+        if (startOfProgramme is not null)
+        {
+            var offset = ParseTimestamp(startOfProgramme.Value.Trim());
+            if (offset > TimeSpan.Zero)
+                return offset;
+        }
+
+        if (paragraphs.Count == 0)
+            return TimeSpan.Zero;
+
+        var minBegin = paragraphs
+            .Select(p => ParseTimestamp(p.Attribute("begin")!.Value))
+            .Min();
+
+        return minBegin > _offsetThreshold ? minBegin : TimeSpan.Zero;
     }
 
     internal static TimeSpan ParseTimestamp(string value)

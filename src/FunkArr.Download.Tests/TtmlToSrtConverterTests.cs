@@ -226,4 +226,169 @@ public sealed class TtmlToSrtConverterTests
 
         Assert.Equal("", srt);
     }
+
+    [Fact]
+    public void Convert_10h_offset_with_documentStartOfProgramme()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt:tt xmlns:tt="http://www.w3.org/ns/ttml"
+                   xmlns:ebuttm="urn:ebu:tt:metadata">
+              <tt:head>
+                <tt:metadata>
+                  <ebuttm:documentMetadata>
+                    <ebuttm:documentStartOfProgramme>10:00:00.000</ebuttm:documentStartOfProgramme>
+                  </ebuttm:documentMetadata>
+                </tt:metadata>
+              </tt:head>
+              <tt:body>
+                <tt:div>
+                  <tt:p begin="10:00:34.480" end="10:00:36.920">
+                    <tt:span>Hauptkommissarin Inga Luersen</tt:span>
+                  </tt:p>
+                  <tt:p begin="10:01:02.000" end="10:01:05.500">
+                    <tt:span>Was ist passiert?</tt:span>
+                  </tt:p>
+                </tt:div>
+              </tt:body>
+            </tt:tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("1\n00:00:34,480 --> 00:00:36,920\nHauptkommissarin Inga Luersen", srt);
+        Assert.Contains("2\n00:01:02,000 --> 00:01:05,500\nWas ist passiert?", srt);
+    }
+
+    [Fact]
+    public void Convert_10h_offset_auto_detect_without_metadata()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt:tt xmlns:tt="http://www.w3.org/ns/ttml">
+              <tt:body>
+                <tt:div>
+                  <tt:p begin="10:00:00.000" end="10:00:02.000">
+                    <tt:span>Erster Untertitel</tt:span>
+                  </tt:p>
+                  <tt:p begin="10:00:05.000" end="10:00:08.000">
+                    <tt:span>Zweiter Untertitel</tt:span>
+                  </tt:p>
+                </tt:div>
+              </tt:body>
+            </tt:tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("1\n00:00:00,000 --> 00:00:02,000\nErster Untertitel", srt);
+        Assert.Contains("2\n00:00:05,000 --> 00:00:08,000\nZweiter Untertitel", srt);
+    }
+
+    [Fact]
+    public void Convert_no_offset_when_timestamps_start_near_zero()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt:tt xmlns:tt="http://www.w3.org/ns/ttml">
+              <tt:body>
+                <tt:div>
+                  <tt:p begin="00:00:03.000" end="00:00:05.000">
+                    <tt:span>Near zero start</tt:span>
+                  </tt:p>
+                  <tt:p begin="00:05:00.000" end="00:05:03.000">
+                    <tt:span>Five minutes in</tt:span>
+                  </tt:p>
+                </tt:div>
+              </tt:body>
+            </tt:tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("1\n00:00:03,000 --> 00:00:05,000\nNear zero start", srt);
+        Assert.Contains("2\n00:05:00,000 --> 00:05:03,000\nFive minutes in", srt);
+    }
+
+    [Fact]
+    public void Convert_20h_offset()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt:tt xmlns:tt="http://www.w3.org/ns/ttml"
+                   xmlns:ebuttm="urn:ebu:tt:metadata">
+              <tt:head>
+                <tt:metadata>
+                  <ebuttm:documentMetadata>
+                    <ebuttm:documentStartOfProgramme>20:00:00.000</ebuttm:documentStartOfProgramme>
+                  </ebuttm:documentMetadata>
+                </tt:metadata>
+              </tt:head>
+              <tt:body>
+                <tt:div>
+                  <tt:p begin="20:00:10.000" end="20:00:13.000">
+                    <tt:span>Twenty hour offset</tt:span>
+                  </tt:p>
+                </tt:div>
+              </tt:body>
+            </tt:tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("1\n00:00:10,000 --> 00:00:13,000\nTwenty hour offset", srt);
+    }
+
+    [Fact]
+    public void Convert_offset_clamps_negative_timestamps()
+    {
+        var ttml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <tt:tt xmlns:tt="http://www.w3.org/ns/ttml"
+                   xmlns:ebuttm="urn:ebu:tt:metadata">
+              <tt:head>
+                <tt:metadata>
+                  <ebuttm:documentMetadata>
+                    <ebuttm:documentStartOfProgramme>10:00:05.000</ebuttm:documentStartOfProgramme>
+                  </ebuttm:documentMetadata>
+                </tt:metadata>
+              </tt:head>
+              <tt:body>
+                <tt:div>
+                  <tt:p begin="10:00:02.000" end="10:00:04.000">
+                    <tt:span>Before programme start</tt:span>
+                  </tt:p>
+                  <tt:p begin="10:00:10.000" end="10:00:12.000">
+                    <tt:span>After programme start</tt:span>
+                  </tt:p>
+                </tt:div>
+              </tt:body>
+            </tt:tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("00:00:00,000 --> 00:00:00,000\nBefore programme start", srt);
+        Assert.Contains("00:00:05,000 --> 00:00:07,000\nAfter programme start", srt);
+    }
+
+    [Fact]
+    public void Convert_xml_comment_preamble()
+    {
+        var ttml = """
+            <!-- Profile: EBU-TT-D-Basic-DE --><tt:tt xmlns:tt="http://www.w3.org/ns/ttml">
+              <tt:body>
+                <tt:div>
+                  <tt:p begin="00:00:01.000" end="00:00:03.000">
+                    <tt:span>After comment</tt:span>
+                  </tt:p>
+                </tt:div>
+              </tt:body>
+            </tt:tt>
+            """;
+
+        var srt = TtmlToSrtConverter.Convert(ttml);
+
+        Assert.Contains("1\n00:00:01,000 --> 00:00:03,000\nAfter comment", srt);
+    }
 }

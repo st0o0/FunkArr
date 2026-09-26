@@ -35,17 +35,13 @@ internal static class Telemetry
     private static int _paused;
     private static int _scheduleEnabled = 1;
 
-    internal static readonly ObservableGauge<int> QueueSize = Meter.CreateObservableGauge(
-        "funkarr.download.queue_size", () => _queueSize, description: "Current download queue depth");
-
-    internal static readonly ObservableGauge<int> ActiveDownloads = Meter.CreateObservableGauge(
-        "funkarr.download.active", () => _activeDownloads, description: "Currently active downloads");
-
-    internal static readonly ObservableGauge<int> Paused = Meter.CreateObservableGauge(
-        "funkarr.download.paused", () => _paused, description: "Whether downloads are paused");
-
-    internal static readonly ObservableGauge<int> ScheduleEnabled = Meter.CreateObservableGauge(
-        "funkarr.download.schedule_enabled", () => _scheduleEnabled, description: "Whether download schedule is active");
+    static Telemetry()
+    {
+        Meter.CreateObservableGauge("funkarr.download.queue_size", () => _queueSize, description: "Current download queue depth");
+        Meter.CreateObservableGauge("funkarr.download.active", () => _activeDownloads, description: "Currently active downloads");
+        Meter.CreateObservableGauge("funkarr.download.paused", () => _paused, description: "Whether downloads are paused");
+        Meter.CreateObservableGauge("funkarr.download.schedule_enabled", () => _scheduleEnabled, description: "Whether download schedule is active");
+    }
 
     internal static void SetQueueSize(int size) => _queueSize = size;
     internal static void SetActiveDownloads(int count) => _activeDownloads = count;

@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 
 namespace FunkArr.Download;
@@ -31,15 +32,28 @@ internal sealed class SubtitlePreparer(IHttpClientFactory httpClientFactory, ILo
 
         var trimmed = content.TrimStart('﻿').TrimStart();
 
+        try
+        {
+            var doc = XDocument.Parse(content);
+            if (doc.Root?.Name.LocalName == "tt")
+            {
+                var srt = TtmlToSrtConverter.Convert(content);
+                if (string.IsNullOrWhiteSpace(srt))
+                {
+                    logger.LogWarning("Subtitle conversion produced empty result for {Url}", url);
+                    return null;
+                }
+
+                return WriteFile(outputDirectory, ".srt", srt);
+            }
+        }
+        catch (System.Xml.XmlException)
+        {
+        }
+
         if (trimmed.StartsWith("WEBVTT", StringComparison.Ordinal))
         {
             return WriteFile(outputDirectory, ".vtt", content);
-        }
-
-        if (trimmed.StartsWith("<?xml", StringComparison.Ordinal) || trimmed.StartsWith("<tt", StringComparison.Ordinal))
-        {
-            var srt = TtmlToSrtConverter.Convert(content);
-            return string.IsNullOrWhiteSpace(srt) ? null : WriteFile(outputDirectory, ".srt", srt);
         }
 
         if (IsSrt(trimmed))
