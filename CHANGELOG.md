@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.3.0](https://github.com/st0o0/FunkArr/compare/funkarr-v0.2.1...funkarr-v0.3.0) (2026-09-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename persistence events, expand metrics across all domains, fix Docker permissions
+
+### Features
+
+* add API integration tests with custom FunkArrTestServer and TestProbe-backed actors ([22478cd](https://github.com/st0o0/FunkArr/commit/22478cd5eaa57bbc5f214cad10fb77545ed29c95))
+* add Download Detail, Settings page with log viewer, and clickable queue cards ([fb43ebb](https://github.com/st0o0/FunkArr/commit/fb43ebb3657c3fcdb36da84da85826479b1cc3c2))
+* add network routing and proxy support for geo-restricted Mediatheken ([84dc3b6](https://github.com/st0o0/FunkArr/commit/84dc3b6bf186eac8992356397c756f161f6b4fb9))
+* add OpenTelemetry tracing, metrics, and Aspire Dashboard for observability ([65611af](https://github.com/st0o0/FunkArr/commit/65611af898b122088fb44f51a3ef81e8729d13fd))
+* promote /healthz to real health checks (FFmpeg, MVW, directories) ([4cb4ced](https://github.com/st0o0/FunkArr/commit/4cb4cedae0153463c9ae13d2f9cecde9d0d74184))
+* redesign metrics for Prometheus /metrics endpoint with operational focus ([a4a3471](https://github.com/st0o0/FunkArr/commit/a4a34713c50f34911c56e5357be51b331414b91f))
+
+
+### Bug Fixes
+
+* use tinyproxy for CONNECT support and set user-agent for ORF streams ([88b0880](https://github.com/st0o0/FunkArr/commit/88b0880c87131fddbdb81775c35144f29ca9a40a))
+
+
+### Documentation
+
+* add observability page, update README with scheduling and health checks ([37c62df](https://github.com/st0o0/FunkArr/commit/37c62df8e7601793f74a9f629ac0e8a67ff99b9e))
+* fix ScoringHistory env vars, proxy support claim, add ArrApi and DownloadSchedule config ([cd780c2](https://github.com/st0o0/FunkArr/commit/cd780c21faaec770d50498d3f764ec8a9f5ae0f8))
+* replace emdashes with regular dashes in comparison pages ([4c5511c](https://github.com/st0o0/FunkArr/commit/4c5511c886ae69fe038592c6d8090f6188b49d51))
+* update AGENTS.md with architecture guardrails, actor topology, and Akka conventions ([7b4f8ae](https://github.com/st0o0/FunkArr/commit/7b4f8ae40e5d852fc49d985ececf2d67a7f8c3d7))
+* update observability docs for Prometheus /metrics endpoint ([889697a](https://github.com/st0o0/FunkArr/commit/889697a7ce911a26970af9a7a73d3d3365d5c80c))
+
+
+### Refactoring
+
+* DeferAsync, SaveSnapshot, Akka.Streams queue, typed enum mappings, TimeProvider ([497842a](https://github.com/st0o0/FunkArr/commit/497842a022c75b1cacfc57d92759d8c9f66a5dc9))
+* remove distributed tracing from all domains ([78b490a](https://github.com/st0o0/FunkArr/commit/78b490a152ab64481fce4a930a48b7ec813f18dc))
+* rename persistence events, expand metrics across all domains, fix Docker permissions ([684d31b](https://github.com/st0o0/FunkArr/commit/684d31b983c0da5aa267275d9f59286c1ee9be5e))
+* replace OTLP exporter with Prometheus, add Process/Runtime instrumentation ([66c28c4](https://github.com/st0o0/FunkArr/commit/66c28c4e5dec9b2e754f80f5511d481a74312156))
+* rewrite DownloadWorker with phases, retry, route persistence and refactor DownloadHistoryManager ([d969b74](https://github.com/st0o0/FunkArr/commit/d969b74b42606711ce52fce63fc41ce470e3e5bb))
+
 ## [0.2.1](https://github.com/st0o0/FunkArr/compare/funkarr-v0.2.0...funkarr-v0.2.1) (2026-09-25)
 
 
