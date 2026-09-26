@@ -32,7 +32,7 @@ services:
 
   aspire-dashboard:
     container_name: aspire-dashboard
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.2
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.2@sha256:d1bbfaac492267ed070ab07989aea5e43dd3bcede08981765851aca2ee0e3d1b
     ports:
       - "18888:18888"
     environment:
