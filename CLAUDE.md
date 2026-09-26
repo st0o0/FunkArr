@@ -11,27 +11,39 @@ a change (proposal/design/specs/tasks) - `/opsx:apply` to implement - `/opsx:arc
 
 ### Project skills (FunkArr-specific)
 
-- New actor: `funkarr-actor` (Pathfinder pattern with FunkArr namespaces)
-- New message: `funkarr-message` (commands, queries, events)
-- New endpoint: `funkarr-endpoint` (Minimal API + actor Ask, for FunkArr.Api only)
-- New test: `funkarr-test` (TestKit with DataPaths, TestDataFiles)
+- `funkarr-actor` -- **Load before creating/modifying any actor.** Pathfinder
+  pattern with FunkArr namespaces, Persist/DeferAsync/SaveSnapshot pattern.
+- `funkarr-message` -- **Load before creating/modifying messages or persistence
+  DTOs.** Commands, queries, events, three type worlds (Messages, Persistence, API).
+- `funkarr-endpoint` -- **Load before creating/modifying API endpoints.** Minimal
+  API + actor Ask, for FunkArr.Api only.
+- `funkarr-test` -- **Load before writing tests.** TestKit with DataPaths,
+  TestDataFiles.
 
-### Akka.NET skills (akka-skills plugin)
+### Akka.NET skills -- when to load
 
-- Actor state pattern: `akka-skills:actor-state` (state records, Apply/GetSnapshot, persistence)
-- Persistence separation: `akka-skills:persistence` (three-tier state model, SaveSnapshot, extend-only DTOs)
-- Project structure: `akka-skills:project-structure` (solution layout, domain isolation, ArchUnitNET)
-- Message conventions: `akka-skills:messages` (VerbNoun commands, QueryNoun queries) - this project uses Pattern A (dedicated Messages project)
-- Actor testing: `akka-skills:testing` (Classic + Hosting TestKit, async assertions, persistence testing)
-- Logging: `akka-skills:logging` (ILoggingAdapter in actors, ILogger in services, Serilog setup)
-- Setup containers: `akka-skills:setup-container` (Servus AppBuilder, DI/Actor/App composition)
-- Cluster hosting: `akka-skills:cluster-hosting` (Singletons, ShardRegions, MessageExtractor)
-- Actor pools: `akka-skills:actor-pools` (Router-Pools, DI-Pools, Stash-Capacity)
-- Persistence setup: `akka-skills:persistence-setup` (WithSqlPersistence, Provider, Clustering)
-- Become state machines: `akka-skills:become-state-machines` (multi-phase workflows, stash-during-init, connection lifecycle)
-- Advanced patterns: `akka-skills:advanced-patterns` (IWithTimers, ReceiveAsync, PipeTo, DeathWatch, Passivation, PersistAll)
-- Streams: `akka-skills:streams` (Source/Flow/Sink, MergeHub/BroadcastHub, StreamRefs, custom GraphStage, supervision)
-- Supervision: `akka-skills:supervision` (BackoffSupervisor, custom SupervisorStrategy, escalation)
+**Always load the relevant skill before writing Akka code.** The project skills
+above are FunkArr-specific templates; the akka-skills below provide deep pattern
+knowledge. Load both when applicable.
+
+| Task | Load these skills |
+|------|-------------------|
+| New actor (any type) | `funkarr-actor` + `akka-skills:actor-state` |
+| Actor with persistence | + `akka-skills:persistence` |
+| Sharded entity / Singleton | + `akka-skills:cluster-hosting` |
+| Actor with timers, PipeTo, DeathWatch | + `akka-skills:advanced-patterns` |
+| Become/Unbecome state machine | + `akka-skills:become-state-machines` |
+| Akka.Streams pipeline | + `akka-skills:streams` |
+| Supervision strategy | + `akka-skills:supervision` |
+| Actor pools / routing | + `akka-skills:actor-pools` |
+| New message / command / query | `funkarr-message` + `akka-skills:messages` |
+| Persistence DTOs / events | `funkarr-message` + `akka-skills:persistence` |
+| Persistence infrastructure setup | `akka-skills:persistence-setup` |
+| Actor tests | `funkarr-test` + `akka-skills:testing` |
+| Servus setup containers | `akka-skills:setup-container` |
+| Logging in actors | `akka-skills:logging` |
+| API endpoints | `funkarr-endpoint` |
+| Solution structure questions | `akka-skills:project-structure` |
 
 ### Plugin skills
 
