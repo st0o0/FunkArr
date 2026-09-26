@@ -1,3 +1,5 @@
+using FunkArr.Messages.Download;
+
 namespace FunkArr.Download.Tests;
 
 public sealed class FfmpegRunnerTests
@@ -309,6 +311,48 @@ public sealed class FfmpegRunnerTests
     {
         var stderr = "ffmpeg version 6.1.1\nlots of build info\nServer returned 404 Not Found";
         Assert.Equal("Server returned 404 Not Found", FfmpegRunner.ExtractError(stderr));
+    }
+
+    [Fact]
+    public void ClassifyFailure_503_is_transient()
+    {
+        Assert.Equal(FailureKind.Transient, FfmpegRunner.ClassifyFailure("Server returned 503"));
+    }
+
+    [Fact]
+    public void ClassifyFailure_timeout_is_transient()
+    {
+        Assert.Equal(FailureKind.Transient, FfmpegRunner.ClassifyFailure("Connection timed out"));
+    }
+
+    [Fact]
+    public void ClassifyFailure_connection_reset_is_transient()
+    {
+        Assert.Equal(FailureKind.Transient, FfmpegRunner.ClassifyFailure("Connection reset by peer"));
+    }
+
+    [Fact]
+    public void ClassifyFailure_404_is_permanent()
+    {
+        Assert.Equal(FailureKind.Permanent, FfmpegRunner.ClassifyFailure("Server returned 404 Not Found"));
+    }
+
+    [Fact]
+    public void ClassifyFailure_null_is_permanent()
+    {
+        Assert.Equal(FailureKind.Permanent, FfmpegRunner.ClassifyFailure(null));
+    }
+
+    [Fact]
+    public void ClassifyFailure_empty_is_permanent()
+    {
+        Assert.Equal(FailureKind.Permanent, FfmpegRunner.ClassifyFailure(""));
+    }
+
+    [Fact]
+    public void ClassifyFailure_unknown_error_is_permanent()
+    {
+        Assert.Equal(FailureKind.Permanent, FfmpegRunner.ClassifyFailure("Some unknown error"));
     }
 
     private static void FeedBlock(

@@ -1,8 +1,10 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Persistence;
+using FunkArr.Core;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.Download;
 
@@ -11,12 +13,15 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
     private const int SnapshotInterval = 25;
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
     private DownloadHistoryManagerState _state = DownloadHistoryManagerState.Empty;
 
     public override string PersistenceId => "download-history";
 
-    public DownloadHistoryManager()
+    public DownloadHistoryManager(IOptionsMonitor<DownloadOptions> optionsMonitor)
     {
+        _optionsMonitor = optionsMonitor;
+
         Command<RecordDownload>(HandleRecord);
         Command<RemoveHistoryEntry>(HandleRemove);
         Command<QueryHistory>(HandleQueryHistory);
@@ -34,14 +39,13 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         });
         Recover<HistoryRecorded>(evt => _state = _state.Apply(evt));
         Recover<HistoryRemoved>(evt => _state = _state.Apply(evt));
+        Recover<HistoryTrimmed>(evt => _state = _state.Apply(evt));
     }
 
     private void HandleRecord(RecordDownload cmd)
     {
         if (_state.Contains(cmd.DownloadId))
-        {
             return;
-        }
 
         var evt = new HistoryRecorded(
             cmd.DownloadId, cmd.Title, cmd.Category.ToPersistence(), cmd.Size,
@@ -51,6 +55,15 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         Persist(evt, e =>
         {
             _state = _state.Apply(e);
+
+            var maxRecords = _optionsMonitor.CurrentValue.MaxHistoryRecords;
+            var (trimmed, trimCount) = _state.TrimIfNeeded(maxRecords);
+            if (trimCount > 0)
+            {
+                var trimEvt = new HistoryTrimmed(trimCount);
+                Persist(trimEvt, t => _state = _state.Apply(t));
+            }
+
             MaybeSnapshot();
 
             if (cmd.Status == DownloadStatus.Completed)

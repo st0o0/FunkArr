@@ -12,4 +12,6 @@ public sealed record WorkerStatusResult(
     long CurrentTimeUs,
     int TotalDuration,
     double Speed,
-    string? FailMessage);
+    string? FailMessage,
+    DownloadPhase Phase,
+    int Attempt);

@@ -12,29 +12,35 @@ The DownloadHistoryManager SHALL be registered as a Cluster Singleton actor name
 - **THEN** exactly one DownloadHistoryManager instance SHALL exist in the cluster
 
 ### Requirement: DownloadHistoryManager handles RecordDownload
-The DownloadHistoryManager SHALL handle `RecordDownload` messages from Workers by persisting a `HistoryRecorded` event (with `RelativePath` instead of `FilePath`) and updating its in-memory state.
+The DownloadHistoryManager SHALL handle `RecordDownload` messages from Workers by persisting a `HistoryRecorded` event, updating its in-memory state, and trimming if the record count exceeds MaxHistoryRecords.
 
 #### Scenario: Record completed download
 - **WHEN** a `RecordDownload` message is received with Completed status
-- **THEN** the HistoryManager SHALL persist a `HistoryRecorded` event with DownloadId, Title, Category, Size, Status, RelativePath, DownloadTimeSeconds, and CompletedAt
+- **THEN** the HistoryManager SHALL persist a `HistoryRecorded` event
 - **AND** add the record to its in-memory history list
+- **AND** update pre-aggregated stats (increment TotalCompleted, add to TotalBytes and TotalDownloadTimeSeconds)
+- **AND** trim oldest records if count exceeds MaxHistoryRecords
 
 #### Scenario: Record failed download
 - **WHEN** a `RecordDownload` message is received with Failed status
-- **THEN** the HistoryManager SHALL persist a `HistoryRecorded` event with DownloadId, Title, Category, Size, Status, null RelativePath, FailMessage, and CompletedAt
+- **THEN** the HistoryManager SHALL persist a `HistoryRecorded` event
 - **AND** add the record to its in-memory history list
+- **AND** update pre-aggregated stats (increment TotalFailed)
+- **AND** trim oldest records if count exceeds MaxHistoryRecords
 
 #### Scenario: Duplicate record
 - **WHEN** a `RecordDownload` message is received for a DownloadId that already exists in the history
 - **THEN** the HistoryManager SHALL ignore the message
 
 ### Requirement: DownloadHistoryManager handles RemoveHistoryEntry
-The DownloadHistoryManager SHALL handle `RemoveHistoryEntry` messages by persisting a `HistoryRemoved` event and removing the entry from its in-memory state.
+The DownloadHistoryManager SHALL handle `RemoveHistoryEntry` messages by persisting a `HistoryRemoved` event, removing the entry from its in-memory state, and updating pre-aggregated stats.
 
 #### Scenario: Remove existing entry
 - **WHEN** a `RemoveHistoryEntry` message is received for a known DownloadId
 - **THEN** the HistoryManager SHALL persist a `HistoryRemoved` event
 - **AND** remove the record from its in-memory history list
+- **AND** remove the DownloadId from the HashSet index
+- **AND** update pre-aggregated stats (decrement appropriate counters)
 - **AND** respond with `DeleteDownloadResult(true, null)`
 
 #### Scenario: Remove unknown entry
@@ -62,11 +68,11 @@ The DownloadHistoryManager SHALL handle `QueryHistory` messages by applying `Cat
 - **THEN** the HistoryManager SHALL return all items (after category filter and start offset)
 
 ### Requirement: DownloadHistoryManager state
-The DownloadHistoryManager SHALL maintain a persistent state containing a list of history records with `RelativePath` instead of `FilePath`.
+The DownloadHistoryManagerState SHALL maintain a list of history records, a HashSet index for O(1) Contains checks, and pre-aggregated stat counters.
 
 #### Scenario: State structure
 - **WHEN** the HistoryManager state is inspected
-- **THEN** the state SHALL contain a list of HistoryRecord entries (DownloadId, Title, Category, Size, Status, RelativePath?, FailMessage?, DownloadTimeSeconds, CompletedAt)
+- **THEN** the state SHALL contain a list of HistoryRecord entries, a `HashSet<Guid>` index, and running counters (TotalCompleted, TotalFailed, TotalBytes, TotalDownloadTimeSeconds)
 
 ### Requirement: DownloadHistoryManager persistence is T2 event-sourced
 The DownloadHistoryManager SHALL persist state changes using Akka.Persistence event sourcing with two event types: `HistoryRecorded` and `HistoryRemoved`.
@@ -77,11 +83,11 @@ The DownloadHistoryManager SHALL persist state changes using Akka.Persistence ev
 - **AND** the in-memory history list SHALL be immediately available for queries
 
 ### Requirement: DownloadHistoryManager handles QueryHistoryStats
-The DownloadHistoryManager SHALL handle `QueryHistoryStats` messages by computing aggregate statistics from its in-memory state and responding with `HistoryStatsResult`.
+The DownloadHistoryManager SHALL handle `QueryHistoryStats` messages by responding with pre-aggregated stats from running counters.
 
 #### Scenario: Stats with records
 - **WHEN** a `QueryHistoryStats` message is received and history records exist
-- **THEN** the HistoryManager SHALL respond with `HistoryStatsResult` containing `TotalCompleted` (count of Completed records), `TotalFailed` (count of Failed records), `TotalBytes` (sum of all record sizes), `AverageDownloadTimeSeconds` (average of DownloadTimeSeconds over Completed records), `SuccessRate` (TotalCompleted / total records as double)
+- **THEN** the HistoryManager SHALL respond with `HistoryStatsResult` computed from running counters: `TotalCompleted`, `TotalFailed`, `TotalBytes`, `AverageDownloadTimeSeconds` (TotalDownloadTimeSeconds / TotalCompleted), `SuccessRate` (TotalCompleted / (TotalCompleted + TotalFailed))
 
 #### Scenario: Stats with no records
 - **WHEN** a `QueryHistoryStats` message is received and no history records exist

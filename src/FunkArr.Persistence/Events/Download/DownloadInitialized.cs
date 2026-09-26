@@ -8,4 +8,6 @@ public sealed record DownloadInitialized(
     string Channel,
     int Duration,
     long Size,
-    PersistedMediaType Category);
+    PersistedMediaType Category,
+    string RouteName = "Direct",
+    string? ProxyUrl = null);

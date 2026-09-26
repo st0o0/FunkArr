@@ -143,7 +143,8 @@ public sealed class DownloadManager : ReceivePersistentActor
                     r.Status == WorkerStatus.Downloading ? DownloadStatus.Processing : DownloadStatus.Queued,
                     r.Channel, r.HasSubtitles,
                     r.Size, r.BytesDownloaded, r.CurrentTimeUs,
-                    r.TotalDuration, r.Speed, r.Category, priority);
+                    r.TotalDuration, r.Speed, r.Category, priority,
+                    r.Phase, r.Attempt);
             })
             .RunWith(Sink.Seq<QueueItem>(), Context.Materializer())
             .PipeTo(Sender, Self,

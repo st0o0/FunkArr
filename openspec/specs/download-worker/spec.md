@@ -12,40 +12,49 @@ The DownloadWorker SHALL be registered as a Persistent Sharded Entity with the D
 - **THEN** a DownloadWorker shard region SHALL be registered with persistence enabled
 
 ### Requirement: DownloadWorker handles InitDownload
-The DownloadWorker SHALL handle `InitDownload` messages by persisting all download metadata as a `DownloadInitialized` event and setting status to Initialized. The message SHALL include a route name and optional proxy URL resolved from the channel's route.
+The DownloadWorker SHALL handle `InitDownload` messages by persisting all download metadata as a `DownloadInitialized` event and setting status to Initialized. The message SHALL include a route name and optional proxy URL resolved from the channel's route. Route info SHALL be persisted in the event.
 
 #### Scenario: First initialization
 - **WHEN** an InitDownload message is received and the Worker has no persisted state
-- **THEN** the Worker SHALL persist a DownloadInitialized event with domain metadata (Title, VideoUrl, SubtitleUrl, Channel, Duration, Size, Category)
-- **AND** store the RouteName and ProxyUrl in-memory (not persisted) for use during download
-- **AND** set status to Initialized
+- **THEN** the Worker SHALL persist a DownloadInitialized event with domain metadata (Title, VideoUrl, SubtitleUrl, Channel, Duration, Size, Category, RouteName, ProxyUrl)
+- **AND** set phase to Initialized
+- **AND** set attempt count to 0
 
 #### Scenario: Already initialized
 - **WHEN** an InitDownload message is received but the Worker already has persisted state
 - **THEN** the Worker SHALL ignore the message
 
 ### Requirement: DownloadWorker handles StartDownload
-The DownloadWorker SHALL handle `StartDownload` as a bare go-signal (DownloadId only, no payload). It SHALL delegate media remuxing to `IRemuxer.RunAsync` and pass both the stored route name and proxy URL. It SHALL store the returned `CancellationTokenSource`.
+The DownloadWorker SHALL handle `StartDownload` as a bare go-signal (DownloadId only, no payload). It SHALL persist a `DownloadAttemptStarted` event, delegate media remuxing to `IRemuxer.RunAsync` using persisted route info, and store the returned `CancellationTokenSource`.
 
 #### Scenario: Start with proxy
-- **WHEN** a StartDownload is received and the Worker has a non-null ProxyUrl and RouteName stored from InitDownload
-- **THEN** the Worker SHALL pass both RouteName and ProxyUrl through to `IRemuxer.RunAsync`
+- **WHEN** a StartDownload is received and the Worker has a non-null ProxyUrl and RouteName persisted in state
+- **THEN** the Worker SHALL persist a `DownloadAttemptStarted` event with attempt number 1
+- **AND** pass both RouteName and ProxyUrl through to `IRemuxer.RunAsync`
 
 #### Scenario: Start without proxy
-- **WHEN** a StartDownload is received and the Worker has RouteName "Direct" and null ProxyUrl
-- **THEN** the Worker SHALL pass RouteName "Direct" and null ProxyUrl to `IRemuxer.RunAsync`
+- **WHEN** a StartDownload is received and the Worker has RouteName "Direct" and null ProxyUrl in persisted state
+- **THEN** the Worker SHALL persist a `DownloadAttemptStarted` event
+- **AND** pass RouteName "Direct" and null ProxyUrl to `IRemuxer.RunAsync`
 
 #### Scenario: Start with persisted subtitle
 - **WHEN** a StartDownload is received and the persisted metadata has a non-null SubtitleUrl
-- **THEN** the Worker SHALL persist a `DownloadStarted` event and call `IRemuxer.RunAsync(videoUrl, subtitleUrl, outputPath, routeName, proxyUrl, onProgress, ct)`
+- **THEN** the Worker SHALL call `IRemuxer.RunAsync(videoUrl, subtitleUrl, outputPath, routeName, proxyUrl, onProgress, ct)`
 
 #### Scenario: Start without subtitle
 - **WHEN** a StartDownload is received and the persisted metadata has a null SubtitleUrl
-- **THEN** the Worker SHALL persist a `DownloadStarted` event and call `IRemuxer.RunAsync(videoUrl, null, outputPath, routeName, proxyUrl, onProgress, ct)`
+- **THEN** the Worker SHALL call `IRemuxer.RunAsync(videoUrl, null, outputPath, routeName, proxyUrl, onProgress, ct)`
 
 #### Scenario: Start when not initialized
 - **WHEN** a StartDownload is received but no InitDownload has been processed
 - **THEN** the Worker SHALL ignore the message
+
+#### Scenario: Start with empty video URL
+- **WHEN** a StartDownload is received and the video URL is empty
+- **THEN** the Worker SHALL persist a `DownloadFaulted` event with `FailureKind.Permanent`
+- **AND** send `SlotFree` to the Manager
+- **AND** send `RecordDownload` via state extension method
+- **AND** NOT start FFmpeg
 
 ### Requirement: DownloadWorker handles CancelDownload
 The DownloadWorker SHALL handle `CancelDownload` messages by cancelling the stored CancellationTokenSource and passivating.
@@ -90,36 +99,30 @@ The DownloadWorker SHALL receive `ProgressUpdate` messages from `FfmpegRunner` a
 - **THEN** the Worker SHALL update its in-memory progress fields (BytesDownloaded from TotalSize, CurrentTimeUs from OutTimeUs, Speed)
 - **AND** the Worker SHALL NOT send progress messages to the Manager
 
-### Requirement: DownloadWorker notifies HistoryActor on completion
-The DownloadWorker SHALL send a `RecordDownload` message to the DownloadHistoryActor when a download completes or fails, with `RelativePath` instead of absolute `FilePath`.
+### Requirement: DownloadWorker constructs RecordDownload via state extension
+The DownloadWorker SHALL use a single `ToRecordDownload` extension method on `DownloadWorkerState` to construct `RecordDownload` messages, eliminating the current 3-site duplication.
 
-#### Scenario: Successful completion notification
-- **WHEN** the FFmpeg process exits with code 0
-- **THEN** the Worker SHALL send `RecordDownload` with DownloadId, Title, Category, Size, Completed status, `RelativePath` (from `DownloadPaths`), DownloadTimeSeconds, and CompletedAt to the HistoryActor
+#### Scenario: RecordDownload for success
+- **WHEN** a download succeeds
+- **THEN** `_state.ToRecordDownload(timeProvider, resolvedPaths)` SHALL produce a RecordDownload with status Completed, the relative path, and no fail message
 
-#### Scenario: Failure notification
-- **WHEN** the FFmpeg process exits with a non-zero code
-- **THEN** the Worker SHALL send `RecordDownload` with DownloadId, Title, Category, Size, Failed status, FailMessage, null RelativePath, and CompletedAt to the HistoryActor
+#### Scenario: RecordDownload for failure
+- **WHEN** a download fails
+- **THEN** `_state.ToRecordDownload(timeProvider, null)` SHALL produce a RecordDownload with status Failed, null path, and the fail message
 
 ### Requirement: DownloadWorker reports completion
-The DownloadWorker SHALL receive `ProcessExited` messages from `FfmpegRunner` and handle success and failure cases.
+The DownloadWorker SHALL receive `FfmpegResult` messages and handle success and failure cases. RecordDownload SHALL be constructed via a single state extension method.
 
 #### Scenario: Successful completion
-- **WHEN** a `ProcessExited` message is received with ExitCode 0
-- **THEN** the Worker SHALL persist a DownloadSucceeded event
+- **WHEN** an `FfmpegResult` is received with Success true
+- **THEN** the Worker SHALL persist a `DownloadSucceeded` event
 - **AND** send `SlotFree(DownloadId)` to the Manager
-- **AND** send `RecordDownload` to the HistoryActor
-- **AND** passivate
-
-### Requirement: DownloadWorker reports failure
-The DownloadWorker SHALL handle `ProcessExited` messages with non-zero exit codes by persisting failure.
+- **AND** send `RecordDownload` (constructed via `_state.ToRecordDownload(...)`) to the HistoryManager
 
 #### Scenario: FFmpeg failure
-- **WHEN** a `ProcessExited` message is received with a non-zero ExitCode
-- **THEN** the Worker SHALL persist a `DownloadFaulted` event with the ErrorOutput
-- **AND** send `SlotFree(DownloadId)` to the Manager
-- **AND** send `RecordDownload` to the HistoryActor
-- **AND** passivate
+- **WHEN** an `FfmpegResult` is received with Success false
+- **THEN** the Worker SHALL persist a `DownloadFaulted` event with the classified FailureKind
+- **AND** handle retry or failure notification based on FailureKind and retry configuration
 
 ### Requirement: DownloadWorker cancellation
 The DownloadWorker SHALL cancel the `CancellationTokenSource` returned by `FfmpegRunner.Run` to stop an active download.
@@ -133,42 +136,71 @@ The DownloadWorker SHALL cancel the `CancellationTokenSource` returned by `Ffmpe
 - **WHEN** the Worker's PostStop is called while a CancellationTokenSource exists
 - **THEN** the Worker SHALL cancel and dispose the CancellationTokenSource
 
+### Requirement: DownloadWorker uses TimeProvider
+The DownloadWorker SHALL use `TimeProvider` for all timestamp generation instead of `DateTimeOffset.UtcNow`.
+
+#### Scenario: TimeProvider injection
+- **WHEN** the DownloadWorker is created
+- **THEN** it SHALL receive `TimeProvider` via constructor injection
+
+#### Scenario: Completion timestamp
+- **WHEN** a download completes or fails
+- **THEN** the completion timestamp SHALL be generated via `_timeProvider.GetUtcNow().ToUnixTimeSeconds()`
+
+### Requirement: DownloadWorker state includes route info
+The DownloadWorkerState SHALL include `RouteName` (string) and `ProxyUrl` (string?) fields that are populated from the `DownloadInitialized` persistence event and survive recovery.
+
+#### Scenario: Route info persisted
+- **WHEN** a DownloadInitialized event is applied
+- **THEN** the state SHALL contain the RouteName and ProxyUrl from the event
+
+#### Scenario: Route info survives recovery
+- **WHEN** the Worker recovers from a crash
+- **THEN** the RouteName and ProxyUrl SHALL be available from the recovered state
+
 ### Requirement: DownloadWorker state
 The DownloadWorker SHALL maintain a persistent state record containing the full download specification and current status, but NOT infrastructure paths. A separate non-persisted field holds resolved download paths from `DataPaths.ResolveDownload()`.
 
 #### Scenario: State structure
 - **WHEN** the Worker state is inspected
-- **THEN** it SHALL contain Title, VideoUrl, SubtitleUrl (nullable), Channel, Duration, Size, Category, WorkerStatus (Initialized/Downloading/Completed/Failed), FailMessage (nullable), and in-memory progress fields (BytesDownloaded, CurrentTimeUs, Speed)
+- **THEN** it SHALL contain Title, VideoUrl, SubtitleUrl (nullable), Channel, Duration, Size, Category, WorkerStatus (Initialized/Downloading/Completed/Failed), FailMessage (nullable), RouteName (string), ProxyUrl (string?), Phase (DownloadPhase), Attempt (int), and in-memory progress fields (BytesDownloaded, CurrentTimeUs, Speed)
 - **AND** it SHALL NOT contain IncompletePath or OutputPath
 - **AND** the Worker SHALL hold resolved paths separate from the state record
 
-### Requirement: DownloadWorker recovery
-The DownloadWorker SHALL recover its full state from persisted events on restart and recompute paths using `DataPaths.ResolveDownload()`.
+### Requirement: DownloadWorker recovery resets transient phases
+The DownloadWorker SHALL recover its full state from persisted events on restart, recompute paths using `DataPaths.ResolveDownload()`, and reset to Initialized phase if the recovered phase is a transient in-flight phase.
 
 #### Scenario: Recovery from Initialized
 - **WHEN** the Worker recovers with status Initialized
 - **THEN** it SHALL call `DataPaths.ResolveDownload()` to recompute paths and wait for a StartDownload message
 
 #### Scenario: Recovery from Downloading
-- **WHEN** the Worker recovers with status Downloading (FFmpeg was running at crash time)
-- **THEN** it SHALL reset status to Initialized, recompute paths using `DataPaths.ResolveDownload()`, and wait for a StartDownload message
+- **WHEN** the Worker recovers with phase VideoDownload, SubtitleDownload, Remuxing, or Moving
+- **THEN** it SHALL reset phase to Initialized and wait for a StartDownload message
 
 #### Scenario: Recovery from Completed
-- **WHEN** the Worker recovers with status Completed
-- **THEN** it SHALL passivate immediately
+- **WHEN** the Worker recovers with phase Completed
+- **THEN** it SHALL remain in Completed phase
 
 #### Scenario: Recovery from Failed
-- **WHEN** the Worker recovers with status Failed
-- **THEN** it SHALL passivate immediately
+- **WHEN** the Worker recovers with phase Failed
+- **THEN** it SHALL remain in Failed phase
 
 ### Requirement: DownloadWorker receives IDataFiles and DataPaths via DI
-The DownloadWorker SHALL receive `IRemuxer`, `IDataFiles`, `DataPaths`, and `IOptions<DownloadOptions>` via constructor injection.
+The DownloadWorker SHALL receive `IRemuxer`, `IDataFiles`, `DataPaths`, `TimeProvider`, and `IOptions<DownloadOptions>` via constructor injection.
 
 #### Scenario: DI injection
 - **WHEN** the DownloadWorker is created
-- **THEN** it SHALL receive `IRemuxer`, `IDataFiles`, `DataPaths`, and `IOptions<DownloadOptions>` via its constructor
+- **THEN** it SHALL receive `IRemuxer`, `IDataFiles`, `DataPaths`, `TimeProvider`, and `IOptions<DownloadOptions>` via its constructor
 - **AND** use `DataPaths.ResolveDownload()` with the options categories for path resolution
 - **AND** use `IDataFiles` for all filesystem operations
+
+### Requirement: DownloadWorker implements IWithTimers
+The DownloadWorker SHALL implement `IWithTimers` to support retry backoff scheduling.
+
+#### Scenario: Timer available
+- **WHEN** the Worker needs to schedule a retry
+- **THEN** it SHALL use `Timers.StartSingleTimer` to schedule a `RetryAttempt` message
 
 ### Requirement: DownloadWorker Persist handlers separate state from side-effects
 DownloadWorker SHALL use DeferAsync for handlers with multiple Tell targets
@@ -187,12 +219,12 @@ or external process launches. Clean state-only handlers SHALL remain unchanged.
 #### Scenario: HandleFfmpegResult success
 - **WHEN** FFmpeg completes successfully
 - **THEN** Persist callback SHALL contain only `_state.Apply`
-- **AND** DeferAsync SHALL contain file cleanup, `_downloadManager.Tell`, and `_downloadHistory.Tell`
+- **AND** DeferAsync SHALL contain file cleanup, `_downloadManager.Tell`, and `_downloadHistory.Tell` (using `_state.ToRecordDownload(...)`)
 
 #### Scenario: HandleFfmpegResult failure
 - **WHEN** FFmpeg fails
 - **THEN** Persist callback SHALL contain only `_state.Apply`
-- **AND** DeferAsync SHALL contain `_downloadManager.Tell` and `_downloadHistory.Tell`
+- **AND** DeferAsync SHALL handle retry scheduling or `_downloadManager.Tell` and `_downloadHistory.Tell` based on FailureKind and retry config
 
 #### Scenario: HandleInit and HandleReset unchanged
 - **WHEN** a download is initialized or reset

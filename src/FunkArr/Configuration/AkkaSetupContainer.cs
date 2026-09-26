@@ -50,6 +50,7 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 journalBuilder: journal => journal.WithHealthCheck(),
                 snapshotBuilder: snapshot => snapshot.WithHealthCheck())
             .WithActorSystemLivenessCheck()
+            .WithAkkaClusterReadinessCheck()
             .WithRemoting(new RemoteOptions
             {
                 HostName = "localhost",

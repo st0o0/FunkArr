@@ -1,8 +1,10 @@
+using FunkArr.Messages.Download;
+
 namespace FunkArr.Download;
 
 public sealed record ProgressUpdate(long TotalSize, long OutTimeUs, double Speed);
 
-public sealed record FfmpegResult(bool Success, int ExitCode, string? Error, int ElapsedSeconds);
+public sealed record FfmpegResult(bool Success, int ExitCode, string? Error, int ElapsedSeconds, FailureKind FailureKind = FailureKind.Permanent);
 
 public interface IFfmpegRunner
 {

@@ -59,4 +59,46 @@ internal static class PersistenceMapping
             PersistedDownloadStatus.Failed => DownloadStatus.Failed,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
         };
+
+    public static PersistedFailureKind ToPersistence(this FailureKind kind) =>
+        kind switch
+        {
+            FailureKind.Transient => PersistedFailureKind.Transient,
+            FailureKind.Permanent => PersistedFailureKind.Permanent,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+        };
+
+    public static FailureKind ToDomain(this PersistedFailureKind kind) =>
+        kind switch
+        {
+            PersistedFailureKind.Transient => FailureKind.Transient,
+            PersistedFailureKind.Permanent => FailureKind.Permanent,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+        };
+
+    public static PersistedDownloadPhase ToPersistence(this DownloadPhase phase) =>
+        phase switch
+        {
+            DownloadPhase.Initialized => PersistedDownloadPhase.Initialized,
+            DownloadPhase.SubtitleDownload => PersistedDownloadPhase.SubtitleDownload,
+            DownloadPhase.VideoDownload => PersistedDownloadPhase.VideoDownload,
+            DownloadPhase.Remuxing => PersistedDownloadPhase.Remuxing,
+            DownloadPhase.Moving => PersistedDownloadPhase.Moving,
+            DownloadPhase.Completed => PersistedDownloadPhase.Completed,
+            DownloadPhase.Failed => PersistedDownloadPhase.Failed,
+            _ => throw new ArgumentOutOfRangeException(nameof(phase), phase, null),
+        };
+
+    public static DownloadPhase ToDomain(this PersistedDownloadPhase phase) =>
+        phase switch
+        {
+            PersistedDownloadPhase.Initialized => DownloadPhase.Initialized,
+            PersistedDownloadPhase.SubtitleDownload => DownloadPhase.SubtitleDownload,
+            PersistedDownloadPhase.VideoDownload => DownloadPhase.VideoDownload,
+            PersistedDownloadPhase.Remuxing => DownloadPhase.Remuxing,
+            PersistedDownloadPhase.Moving => DownloadPhase.Moving,
+            PersistedDownloadPhase.Completed => DownloadPhase.Completed,
+            PersistedDownloadPhase.Failed => DownloadPhase.Failed,
+            _ => throw new ArgumentOutOfRangeException(nameof(phase), phase, null),
+        };
 }

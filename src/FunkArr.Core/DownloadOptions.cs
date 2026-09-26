@@ -8,6 +8,10 @@ public sealed class DownloadOptions
     public int ConcurrentDownloads { get; set; } = 3;
     public List<DownloadCategory> Categories { get; set; } = [];
     public List<DownloadTimeSlot> DownloadSchedule { get; set; } = [];
+    public bool RetryEnabled { get; set; }
+    public int MaxRetries { get; set; } = 3;
+    public TimeSpan RetryBackoffBase { get; set; } = TimeSpan.FromSeconds(30);
+    public int MaxHistoryRecords { get; set; } = 1000;
 }
 
 public sealed class DownloadCategory

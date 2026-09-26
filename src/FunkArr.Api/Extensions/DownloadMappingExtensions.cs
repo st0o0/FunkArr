@@ -21,7 +21,9 @@ internal static class DownloadMappingExtensions
             ? ApiModels.QueueStatus.Processing
             : ApiModels.QueueStatus.Queued;
 
-        var phase = DerivePhase(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs);
+        var phase = item.Phase is DownloadPhase.Initialized or DownloadPhase.Completed or DownloadPhase.Failed
+            ? DerivePhase(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs)
+            : item.Phase;
         var percentage = phase.CalculatePercentage(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs, item.TotalDuration);
 
         var elapsedSeconds = item.CurrentTimeUs / 1_000_000.0;

@@ -3,6 +3,7 @@ using System.Globalization;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using FFMpegCore.Exceptions;
+using FunkArr.Messages.Download;
 
 namespace FunkArr.Download;
 
@@ -30,23 +31,24 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         {
             sw.Stop();
             Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds);
-            return new FfmpegResult(false, 1, ExtractError(ex.FFMpegErrorOutput), (int)sw.Elapsed.TotalSeconds);
+            var error = ExtractError(ex.FFMpegErrorOutput);
+            return new FfmpegResult(false, 1, error, (int)sw.Elapsed.TotalSeconds, ClassifyFailure(error));
         }
         catch (OperationCanceledException)
         {
             sw.Stop();
-            return new FfmpegResult(false, -1, "Cancelled", (int)sw.Elapsed.TotalSeconds);
+            return new FfmpegResult(false, -1, "Cancelled", (int)sw.Elapsed.TotalSeconds, FailureKind.Permanent);
         }
     }
 
-    private const string UserAgent = "Mozilla/5.0";
+    private const string _userAgent = "Mozilla/5.0";
 
     internal static FFMpegArgumentProcessor BuildArguments(
         string videoUrl, string? subtitlePath, string outputPath, string? proxyUrl = null)
     {
         Action<FFMpegArgumentOptions> inputOptions = opts =>
         {
-            opts.WithCustomArgument($"-user_agent \"{UserAgent}\"");
+            opts.WithCustomArgument($"-user_agent \"{_userAgent}\"");
             if (proxyUrl is not null)
             {
                 opts.WithCustomArgument($"-http_proxy {proxyUrl}");
@@ -122,6 +124,23 @@ internal sealed class FfmpegRunner : IFfmpegRunner
 
         var trimmed = value.TrimEnd('x');
         return double.TryParse(trimmed, CultureInfo.InvariantCulture, out var result) ? result : 0.0;
+    }
+
+    internal static FailureKind ClassifyFailure(string? error)
+    {
+        if (string.IsNullOrWhiteSpace(error))
+            return FailureKind.Permanent;
+
+        if (error.Contains("503", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("502", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("timed out", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("Connection reset", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("Connection refused", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("Network is unreachable", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("Temporary failure", StringComparison.OrdinalIgnoreCase))
+            return FailureKind.Transient;
+
+        return FailureKind.Permanent;
     }
 
     internal static string ExtractError(string? stderr)

@@ -175,7 +175,7 @@ public sealed class DownloadHistoryManagerStateTests
 
         Assert.Equal(2, result.TotalCompleted);
         Assert.Equal(1, result.TotalFailed);
-        Assert.Equal(3_500_000L, result.TotalBytes);
+        Assert.Equal(3_000_000L, result.TotalBytes);
         Assert.Equal(150, result.AverageDownloadTimeSeconds);
         Assert.Equal(2.0 / 3.0, result.SuccessRate, 0.001);
     }
@@ -202,5 +202,95 @@ public sealed class DownloadHistoryManagerStateTests
         Assert.Equal(2, result.Categories.Length);
         Assert.Equal("movie", result.Categories[0]);
         Assert.Equal("show", result.Categories[1]);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_removes_oldest_when_over_max()
+    {
+        var state = DownloadHistoryManagerState.Empty;
+        for (var i = 0; i < 5; i++)
+            state = state.Apply(MakeRecorded(Guid.NewGuid(), $"Record {i}"));
+
+        var (trimmed, count) = state.TrimIfNeeded(3);
+
+        Assert.Equal(2, count);
+        Assert.Equal(3, trimmed.Records.Count);
+        Assert.Equal("Record 2", trimmed.Records[0].Title);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_no_trim_when_under_max()
+    {
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(MakeRecorded(Guid.NewGuid(), "A"))
+            .Apply(MakeRecorded(Guid.NewGuid(), "B"));
+
+        var (trimmed, count) = state.TrimIfNeeded(5);
+
+        Assert.Equal(0, count);
+        Assert.Equal(2, trimmed.Records.Count);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_updates_stats()
+    {
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1_000, PersistedDownloadStatus.Completed, null, null, 100, 1))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Show, 2_000, PersistedDownloadStatus.Completed, null, null, 200, 2))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Show, 3_000, PersistedDownloadStatus.Completed, null, null, 300, 3));
+
+        var (trimmed, _) = state.TrimIfNeeded(1);
+
+        Assert.Equal(1, trimmed.Stats.TotalCompleted);
+        Assert.Equal(3_000L, trimmed.Stats.TotalBytes);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_updates_index()
+    {
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var id3 = Guid.NewGuid();
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(MakeRecorded(id1, "A"))
+            .Apply(MakeRecorded(id2, "B"))
+            .Apply(MakeRecorded(id3, "C"));
+
+        var (trimmed, _) = state.TrimIfNeeded(1);
+
+        Assert.False(trimmed.Contains(id1));
+        Assert.False(trimmed.Contains(id2));
+        Assert.True(trimmed.Contains(id3));
+    }
+
+    [Fact]
+    public void Stats_updated_on_remove()
+    {
+        var id = Guid.NewGuid();
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(new HistoryRecorded(id, "A", PersistedMediaType.Show, 1_000, PersistedDownloadStatus.Completed, null, null, 100, 1));
+
+        Assert.Equal(1, state.Stats.TotalCompleted);
+
+        state = state.Apply(new HistoryRemoved(id));
+
+        Assert.Equal(0, state.Stats.TotalCompleted);
+        Assert.Equal(0L, state.Stats.TotalBytes);
+    }
+
+    [Fact]
+    public void Roundtrip_persistence_preserves_state()
+    {
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(MakeRecorded(Guid.NewGuid(), "A"))
+            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Movie, 500, PersistedDownloadStatus.Failed, null, "Error", 0, 2));
+
+        var persisted = state.GetPersistenceState();
+        var restored = DownloadHistoryManagerStateExtensions.FromPersistence(persisted);
+
+        Assert.Equal(state.Records.Count, restored.Records.Count);
+        Assert.Equal(state.Stats.TotalCompleted, restored.Stats.TotalCompleted);
+        Assert.Equal(state.Stats.TotalFailed, restored.Stats.TotalFailed);
+        Assert.Equal(state.Stats.TotalBytes, restored.Stats.TotalBytes);
     }
 }

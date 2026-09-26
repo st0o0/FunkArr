@@ -13,6 +13,10 @@ public sealed class DownloadWorkerStateTests
         new(_testId, "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
             "ARD", 3600, 1_000_000, PersistedMediaType.Show);
 
+    private static DownloadInitialized MakeInitializedWithRoute() =>
+        new(_testId, "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
+            "ARD", 3600, 1_000_000, PersistedMediaType.Show, "ProxyRoute", "http://proxy:8080");
+
     [Fact]
     public void Empty_is_not_initialized()
     {
@@ -106,5 +110,100 @@ public sealed class DownloadWorkerStateTests
         Assert.Equal(0L, state.BytesDownloaded);
         Assert.Equal(0L, state.CurrentTimeUs);
         Assert.Equal(0.0, state.Speed);
+    }
+
+    [Fact]
+    public void Apply_Initialized_sets_route_info()
+    {
+        var state = DownloadWorkerState.Empty.Apply(MakeInitializedWithRoute());
+        Assert.Equal("ProxyRoute", state.RouteName);
+        Assert.Equal("http://proxy:8080", state.ProxyUrl);
+    }
+
+    [Fact]
+    public void Apply_Initialized_default_route()
+    {
+        var state = DownloadWorkerState.Empty.Apply(MakeInitialized());
+        Assert.Equal("Direct", state.RouteName);
+        Assert.Null(state.ProxyUrl);
+    }
+
+    [Fact]
+    public void Apply_Initialized_sets_phase_initialized()
+    {
+        var state = DownloadWorkerState.Empty.Apply(MakeInitialized());
+        Assert.Equal(DownloadPhase.Initialized, state.Phase);
+        Assert.Equal(0, state.Attempt);
+    }
+
+    [Fact]
+    public void Apply_AttemptStarted_sets_attempt_and_phase()
+    {
+        var state = DownloadWorkerState.Empty
+            .Apply(MakeInitialized())
+            .Apply(new DownloadAttemptStarted(_testId, 1));
+
+        Assert.Equal(1, state.Attempt);
+        Assert.Equal(WorkerStatus.Downloading, state.Status);
+        Assert.Equal(DownloadPhase.VideoDownload, state.Phase);
+    }
+
+    [Fact]
+    public void Apply_AttemptStarted_resets_progress()
+    {
+        var state = DownloadWorkerState.Empty
+            .Apply(MakeInitialized())
+            .Apply(new DownloadAttemptStarted(_testId, 1));
+        state = state with { BytesDownloaded = 500_000, CurrentTimeUs = 1_000_000, Speed = 1.5 };
+        state = state.Apply(new DownloadAttemptStarted(_testId, 2));
+
+        Assert.Equal(2, state.Attempt);
+        Assert.Equal(0L, state.BytesDownloaded);
+        Assert.Equal(0L, state.CurrentTimeUs);
+        Assert.Equal(0.0, state.Speed);
+    }
+
+    [Fact]
+    public void Apply_PhaseChanged_updates_phase()
+    {
+        var state = DownloadWorkerState.Empty
+            .Apply(MakeInitialized())
+            .Apply(new DownloadPhaseChanged(_testId, PersistedDownloadPhase.Remuxing));
+
+        Assert.Equal(DownloadPhase.Remuxing, state.Phase);
+    }
+
+    [Fact]
+    public void Apply_Faulted_sets_failure_kind()
+    {
+        var state = DownloadWorkerState.Empty
+            .Apply(MakeInitialized())
+            .Apply(new DownloadAttemptStarted(_testId, 1))
+            .Apply(new DownloadFaulted(_testId, "Server returned 503", PersistedFailureKind.Transient));
+
+        Assert.Equal(WorkerStatus.Failed, state.Status);
+        Assert.Equal(FailureKind.Transient, state.LastFailureKind);
+    }
+
+    [Fact]
+    public void Apply_Faulted_defaults_to_permanent()
+    {
+        var state = DownloadWorkerState.Empty
+            .Apply(MakeInitialized())
+            .Apply(new DownloadFaulted(_testId, "Old event without kind"));
+
+        Assert.Equal(FailureKind.Permanent, state.LastFailureKind);
+    }
+
+    [Fact]
+    public void Transient_phase_is_detected()
+    {
+        Assert.True(DownloadPhase.VideoDownload.IsTransient());
+        Assert.True(DownloadPhase.Remuxing.IsTransient());
+        Assert.True(DownloadPhase.Moving.IsTransient());
+        Assert.True(DownloadPhase.SubtitleDownload.IsTransient());
+        Assert.False(DownloadPhase.Initialized.IsTransient());
+        Assert.False(DownloadPhase.Completed.IsTransient());
+        Assert.False(DownloadPhase.Failed.IsTransient());
     }
 }
