@@ -168,9 +168,9 @@ Die Konfigurationsoptionen für den Verlauf:
 
 | Variable | Standard | Beschreibung |
 |----------|----------|-------------|
-| `FunkArr__MatchHistory__MaxSnapshots` | `100` | Maximale Anzahl gespeicherter Snapshots pro Regelwerk |
-| `FunkArr__MatchHistory__MaxAgeDays` | `30` | Snapshots älter als diese Anzahl Tage werden gelöscht |
-| `FunkArr__MatchHistory__SnapshotInterval` | `20` | Intervall zwischen Snapshot-Persistierungen |
+| `FunkArr__ScoringHistory__MaxSnapshots` | `100` | Maximale Anzahl gespeicherter Snapshots pro Regelwerk |
+| `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Snapshots älter als diese Anzahl Tage werden gelöscht |
+| `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Intervall zwischen Snapshot-Persistierungen |
 
 ## Metadaten-Anreicherung
 

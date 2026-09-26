@@ -25,7 +25,7 @@ All three projects query the same MediathekViewWeb API. The available content (A
 | **Port**               | 6969                 | 5007                   | 6767                    |
 | **Docker**             | Multi-arch (amd64, arm64, armv7) | Yes         | Multi-arch (amd64, arm64) |
 | **Auto-config**        | Yes (creates indexer + download client in Prowlarr/Sonarr/Radarr) | Yes (setup wizard) | No |
-| **Proxy support**      | No                   | No                     | Yes (for downloads + yt-dlp) |
+| **Proxy support**      | Yes (network routes with HTTP proxy) | No                     | Yes (for downloads + yt-dlp) |
 | **Umlaut handling**    | Built-in             | Via UmlautAdaptarr (separate service) | Not specified |
 | **Match history**      | Yes (diagnostics + stats) | No                | No                      |
 | **PUID/PGID**          | Yes                  | Not documented         | Yes                     |
@@ -80,7 +80,6 @@ All three projects query the same MediathekViewWeb API. The available content (A
 
 In fairness, FunkArr also has limitations:
 
-- **No proxy support** - unlike RundfunkArr, there's no way to use a proxy for geo-restricted ORF/SRF content.
 - **No yt-dlp** - uses FFmpeg only for HLS and direct downloads. If a stream format isn't supported by FFmpeg's native HLS demuxer, it fails. yt-dlp handles more edge cases.
 - **Newest and smallest community** - MediathekArr has years of head start and the largest user base. If you need help, there's no Discord or Telegram channel yet.
 - **TVDB and TMDB API keys required** for metadata enrichment - they're optional but needed for full functionality.
@@ -89,5 +88,5 @@ In fairness, FunkArr also has limitations:
 ## When to Use Which
 
 - **MediathekArr** if you primarily watch ARD/ZDF content and want the largest community for support.
-- **RundfunkArr** if you need proxy support for geo-restricted content (SRF/ORF from abroad), want full Radarr movie support, or prefer yt-dlp's broader format handling.
-- **FunkArr** if you want community-driven rulesets with a visual web editor, match scoring diagnostics, PostgreSQL support, or TMDB metadata alongside TVDB.
+- **RundfunkArr** if you prefer yt-dlp's broader format handling or want full Radarr movie support.
+- **FunkArr** if you want community-driven rulesets with a visual web editor, match scoring diagnostics, proxy support for geo-restricted content (ORF/SRF), PostgreSQL support, or TMDB metadata alongside TVDB.

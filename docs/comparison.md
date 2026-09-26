@@ -25,7 +25,7 @@ Alle drei Projekte nutzen dieselbe MediathekViewWeb API. Die verfügbaren Inhalt
 | **Port**               | 6969                 | 5007                   | 6767                    |
 | **Docker**             | Multi-Arch (amd64, arm64, armv7) | Ja          | Multi-Arch (amd64, arm64) |
 | **Auto-Konfiguration** | Ja (erstellt Indexer + Download-Client in Prowlarr/Sonarr/Radarr) | Ja (Setup-Assistent) | Nein |
-| **Proxy-Support**      | Nein                 | Nein                   | Ja (für Downloads + yt-dlp) |
+| **Proxy-Support**      | Ja (Netzwerk-Routen mit HTTP-Proxy) | Nein                   | Ja (für Downloads + yt-dlp) |
 | **Umlaut-Behandlung**  | Eingebaut            | Via UmlautAdaptarr (separater Dienst) | Nicht dokumentiert |
 | **Match-Verlauf**      | Ja (Diagnose + Statistiken) | Nein            | Nein                    |
 | **PUID/PGID**          | Ja                   | Nicht dokumentiert      | Ja                      |
@@ -80,7 +80,6 @@ Alle drei Projekte nutzen dieselbe MediathekViewWeb API. Die verfügbaren Inhalt
 
 Der Fairness halber hat FunkArr ebenfalls Einschränkungen:
 
-- **Kein Proxy-Support** - anders als RundfunkArr gibt es keine Möglichkeit, einen Proxy für geoblockierte ORF/SRF-Inhalte zu nutzen.
 - **Kein yt-dlp** - verwendet ausschließlich FFmpeg für HLS und direkte Downloads. Wenn ein Stream-Format nicht vom nativen FFmpeg-HLS-Demuxer unterstützt wird, schlägt es fehl. yt-dlp handhabt mehr Randfälle.
 - **Jüngstes und kleinstes Projekt** - MediathekArr hat Jahre Vorsprung und die größte Nutzerbasis. Es gibt noch keinen Discord- oder Telegram-Kanal.
 - **TVDB- und TMDB-API-Keys erforderlich** für Metadaten-Anreicherung - sie sind optional, aber für volle Funktionalität nötig.
@@ -89,5 +88,5 @@ Der Fairness halber hat FunkArr ebenfalls Einschränkungen:
 ## Welches Projekt für welchen Einsatz?
 
 - **MediathekArr** wenn du hauptsächlich ARD/ZDF-Inhalte schaust und die größte Community für Support willst.
-- **RundfunkArr** wenn du Proxy-Unterstützung für geoblockierte Inhalte brauchst (SRF/ORF aus dem Ausland), vollen Radarr-Filmsupport willst oder yt-dlps breitere Formatunterstützung nutzen möchtest.
-- **FunkArr** wenn du Community-getriebene Regelwerke mit einem visuellen Web-Editor willst, Match-Scoring-Diagnose, PostgreSQL-Unterstützung oder TMDB-Metadaten neben TVDB.
+- **RundfunkArr** wenn du yt-dlps breitere Formatunterstützung bevorzugst oder vollen Radarr-Filmsupport willst.
+- **FunkArr** wenn du Community-getriebene Regelwerke mit einem visuellen Web-Editor willst, Match-Scoring-Diagnose, Proxy-Unterstützung für geoblockierte Inhalte (ORF/SRF), PostgreSQL-Unterstützung oder TMDB-Metadaten neben TVDB.

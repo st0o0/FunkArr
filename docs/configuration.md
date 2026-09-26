@@ -71,6 +71,22 @@ FunkArr__Download__Categories__1__Dir=movies
 
 Wenn Sonarr eine Download-Anfrage mit der Kategorie `tv` sendet, landet die fertige Datei in `complete/tv/`. Das `N` im Variablennamen ist ein nullbasierter Index - verwende `0`, `1`, `2` usw. für jede Kategorie.
 
+### Download-Zeitplan
+
+Optionale Zeitfenster, in denen Downloads gestartet werden duerfen. Ausserhalb der Fenster bleiben Downloads in der Warteschlange und starten automatisch, sobald das naechste Fenster beginnt. Ohne konfigurierte Zeitfenster laeuft der Download rund um die Uhr.
+
+| Variable | Standard | Beschreibung |
+|----------|----------|-------------|
+| `FunkArr__Download__DownloadSchedule__N__Start` | - | Startzeit des Zeitfensters (Format: `HH:mm`) |
+| `FunkArr__Download__DownloadSchedule__N__End` | - | Endzeit des Zeitfensters (Format: `HH:mm`) |
+
+Das `N` ist ein nullbasierter Index. Zeitfenster koennen Mitternacht ueberbruecken (z.B. `23:00` bis `02:00`). Mehrere Zeitfenster sind moeglich.
+
+```
+FunkArr__Download__DownloadSchedule__0__Start=23:00
+FunkArr__Download__DownloadSchedule__0__End=06:00
+```
+
 ## Netzwerk-Routen
 
 FunkArr kann verschiedene Mediatheken uber verschiedene Netzwerkwege erreichen. Das ist notwendig, um auf geo-beschrankte Inhalte von ORF (Osterreich) oder SRF (Schweiz) zuzugreifen. FunkArr selbst unterstuzt nur HTTP-Proxys - die VPN-Infrastruktur (z.B. WireGuard + AirVPN) wird ausserhalb von FunkArr in Docker betrieben.
@@ -247,15 +263,25 @@ Der Scoring-Pool verarbeitet Mediathek-Suchergebnisse parallel gegen Regelwerke.
 
 | Variable | Standard | Beschreibung |
 |----------|----------|-------------|
-| `FunkArr__MatchHistory__MaxSnapshots` | `100` | Maximale Anzahl von Match-History-Snapshots |
-| `FunkArr__MatchHistory__MaxAgeDays` | `30` | Tage, bevor alte Snapshots gelöscht werden |
-| `FunkArr__MatchHistory__SnapshotInterval` | `20` | Intervall zwischen Snapshots |
+| `FunkArr__ScoringHistory__MaxSnapshots` | `100` | Maximale Anzahl von Match-History-Snapshots |
+| `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Tage, bevor alte Snapshots gelöscht werden |
+| `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Intervall zwischen Snapshots |
 
 Der Match-Verlauf verfolgt, welche Regelwerk-Zuordnungen erfolgreiche Downloads erzeugt haben. Diese Daten fließen zurück in das Scoring - Regeln, die historisch korrekte Matches erzeugt haben, erhalten einen Konfidenz-Boost.
 
 - **MaxSnapshots** - begrenzt den Speicher für den Match-Verlauf. Höhere Werte liefern mehr historische Daten für das Scoring, verbrauchen aber mehr Speicherplatz.
 - **MaxAgeDays** - entfernt Snapshots, die älter als diese Anzahl Tage sind. Mediathek-Inhalte ändern sich regelmäßig, sodass alte Match-Daten weniger relevant werden.
 - **SnapshotInterval** - steuert, wie oft neue Snapshots erstellt werden. Niedrigere Werte erfassen detailliertere Daten, erhöhen aber die Datenbankschreibvorgänge.
+
+## Arr-API
+
+| Variable | Standard | Beschreibung |
+|----------|----------|-------------|
+| `FunkArr__ArrApi__SearchTimeoutSeconds` | `30` | Timeout in Sekunden fuer Newznab-Suchanfragen |
+| `FunkArr__ArrApi__DownloadTimeoutSeconds` | `10` | Timeout in Sekunden fuer SABnzbd-Download-Anfragen |
+| `FunkArr__ArrApi__SearchCacheTtlSeconds` | `60` | Dauer in Sekunden, die Suchergebnisse zwischengespeichert werden |
+
+Diese Timeouts gelten fuer die externen API-Endpunkte (`/index/api` und `/download/api`), die Prowlarr, Sonarr und Radarr ansprechen. Der Search-Cache verhindert, dass eine Pagination-Folgeanfrage die gesamte Suche erneut ausloest.
 
 ## PostgreSQL
 

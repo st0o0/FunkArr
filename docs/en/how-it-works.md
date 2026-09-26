@@ -168,9 +168,9 @@ Configuration options for the history:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `FunkArr__MatchHistory__MaxSnapshots` | `100` | Maximum number of stored snapshots per ruleset |
-| `FunkArr__MatchHistory__MaxAgeDays` | `30` | Snapshots older than this many days are removed |
-| `FunkArr__MatchHistory__SnapshotInterval` | `20` | Interval between snapshot persistences |
+| `FunkArr__ScoringHistory__MaxSnapshots` | `100` | Maximum number of stored snapshots per ruleset |
+| `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Snapshots older than this many days are removed |
+| `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Interval between snapshot persistences |
 
 ## Metadata Enrichment
 
