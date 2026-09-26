@@ -4,7 +4,6 @@ using Akka.Hosting;
 using Akka.TestKit;
 using Akka.TestKit.Xunit;
 using FunkArr.Api;
-using FunkArr.ArrApi;
 using FunkArr.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;

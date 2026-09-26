@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
@@ -19,6 +20,7 @@ public sealed class MovieSearchWorker : ReceiveActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly MovieSearchWorkerState _state = new();
+    private readonly Stopwatch _stopwatch = new();
 
     private readonly IActorRef _mediathekManager = Context.GetActor<IMediathekManager>();
     private readonly IActorRef _scoringManager = Context.GetActor<IScoringManager>();
@@ -32,6 +34,7 @@ public sealed class MovieSearchWorker : ReceiveActor
         Receive<SearchMovie>(cmd =>
         {
             _log.Info("Movie search started: Query={Query}, TmdbId={TmdbId}", cmd.Query, cmd.TmdbId);
+            _stopwatch.Restart();
             _state.Init(cmd, Sender);
 
             var hasQuery = !string.IsNullOrWhiteSpace(cmd.Query);
@@ -174,12 +177,27 @@ public sealed class MovieSearchWorker : ReceiveActor
 
     private void Reply(SearchMovieResponse response)
     {
+        _stopwatch.Stop();
         var sourceTag = new KeyValuePair<string, object?>("source", _state.Source.ToString().ToLowerInvariant());
+        var typeTag = new KeyValuePair<string, object?>("type", "movie");
         Telemetry.SearchRequests.Add(1, sourceTag);
-        if (response is SearchMovieCompleted { Items.Length: > 0 })
-            Telemetry.SearchMatches.Add(1, sourceTag);
+        Telemetry.SearchDuration.Record(_stopwatch.Elapsed.TotalSeconds, sourceTag, typeTag);
+        if (response is SearchMovieCompleted completed)
+        {
+            Telemetry.ResultsPerRequest.Record(completed.Items.Length);
+            if (completed.Items.Length > 0)
+            {
+                Telemetry.SearchMatches.Add(1, sourceTag);
+            }
+            else
+            {
+                Telemetry.SearchNoMatch.Add(1, sourceTag);
+            }
+        }
         else
+        {
             Telemetry.SearchNoMatch.Add(1, sourceTag);
+        }
 
         _state.ReplyTo.Tell(response);
     }

@@ -23,7 +23,7 @@ internal sealed class TvdbEnrichmentActor : ReceiveActor
             var episodes = await _tvdbClient.GetEpisodesAsync(msg.TvdbId);
 
             var filtered = msg.Season is not null
-                ? episodes.Where(e => e.SeasonNumber == msg.Season.Value).ToArray()
+                ? [.. episodes.Where(e => e.SeasonNumber == msg.Season.Value)]
                 : episodes;
 
             var enriched = EpisodeEnricher.Resolve(filtered, msg.Candidates, msg.Config);
@@ -41,10 +41,12 @@ internal sealed class TvdbEnrichmentActor : ReceiveActor
                 }
             }
 
+            Telemetry.ItemsEnriched.Add(enriched.Length, new KeyValuePair<string, object?>("api", "tvdb"));
             Sender.Tell(new EnrichEpisodesCompleted(enriched));
         }
         catch (Exception ex)
         {
+            Telemetry.Failed.Add(1, new KeyValuePair<string, object?>("api", "tvdb"));
             _log.Warning(ex, "TVDB enrichment failed for series {TvdbId}", msg.TvdbId);
             Sender.Tell(new EnrichEpisodesFailed(ex));
         }

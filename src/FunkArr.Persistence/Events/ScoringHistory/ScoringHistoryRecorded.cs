@@ -1,6 +1,6 @@
 namespace FunkArr.Persistence.Events.ScoringHistory;
 
-public sealed record HistoryRecorded(
+public sealed record ScoringHistoryRecorded(
     Guid RequestId,
     PersistedSearchSource Source,
     string Query,

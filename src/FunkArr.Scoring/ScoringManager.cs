@@ -31,6 +31,7 @@ public sealed class ScoringManager : ReceiveActor
         var config = _state.GetConfig(msg.RuleSetId);
         if (config is null)
         {
+            Telemetry.NoConfig.Add(1);
             _log.Debug("No matching config for ruleset {RuleSetId}, returning unscored defaults", msg.RuleSetId);
             var defaults = msg.Candidates.Select((_, i) => new ScoredItem(i, 0.0, false)).ToArray();
             Sender.Tell(new ScoreCompleted(msg.RequestId, defaults, []));

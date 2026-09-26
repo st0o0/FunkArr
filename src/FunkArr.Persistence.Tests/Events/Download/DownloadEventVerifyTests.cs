@@ -143,9 +143,9 @@ public sealed class DownloadEventVerifyTests
     }
 
     [Fact]
-    public Task HistoryRecorded_shape()
+    public Task DownloadHistoryRecorded_shape()
     {
-        var evt = new HistoryRecorded(
+        var evt = new DownloadHistoryRecorded(
             _testId, "Tatort: Der letzte Schrei", PersistedMediaType.Show,
             1073741824, PersistedDownloadStatus.Completed, "/downloads/tatort.mkv", null, 120, 1700000000);
         var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
@@ -153,13 +153,13 @@ public sealed class DownloadEventVerifyTests
     }
 
     [Fact]
-    public void HistoryRecorded_roundtrip()
+    public void DownloadHistoryRecorded_roundtrip()
     {
-        var original = new HistoryRecorded(
+        var original = new DownloadHistoryRecorded(
             _testId, "Tatort: Der letzte Schrei", PersistedMediaType.Show,
             1073741824, PersistedDownloadStatus.Completed, "/downloads/tatort.mkv", null, 120, 1700000000);
         var json = JsonConvert.SerializeObject(original);
-        var result = JsonConvert.DeserializeObject<HistoryRecorded>(json)!;
+        var result = JsonConvert.DeserializeObject<DownloadHistoryRecorded>(json)!;
         Assert.Equal(original.DownloadId, result.DownloadId);
         Assert.Equal(original.Title, result.Title);
         Assert.Equal(original.Category, result.Category);

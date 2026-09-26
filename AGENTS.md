@@ -243,6 +243,34 @@ Do NOT use:
 - `dotnet format` enforced - run after editing `.cs` files. CI rejects violations.
 - `TimeProvider` everywhere, never `DateTime.Now` or `DateTime.UtcNow` directly.
 
+## Metrics conventions
+
+- **Pattern**: Each domain has a static `Telemetry` class with `internal static
+  readonly Meter` named `FunkArr.<Domain>` and `internal static readonly`
+  instruments. No base class, no abstraction.
+- **Registration**: All meters registered in `TelemetrySetupContainer.cs` via
+  `.AddMeter("FunkArr.<Domain>")`. Export via Prometheus.
+- **Naming**: `funkarr.<domain>.<metric_name>` with snake_case. Counters end
+  with `_total`, time histograms end with `_seconds`.
+- **Tags**: Short lowercase names (`reason`, `source`, `type`, `api`, `status`,
+  `phase`). Keep cardinality bounded - never use unbounded IDs or query strings.
+- **ObservableGauge**: Static backing field with `internal static void Set*()`
+  setter. Actor sets the value; gauge callback reads it.
+- **Instrument at operation boundary**: Record metrics where the operation
+  completes (success or failure), not at the call site.
+
+### Meters by domain
+
+| Domain     | Meter               | Instruments |
+|------------|---------------------|-------------|
+| Download   | `FunkArr.Download`  | completed, failed, duration, bytes, enqueued, cancelled, retries, move_failed, queue_size, active, paused, schedule_enabled |
+| Search     | `FunkArr.Search`    | requests, matches, no_match, duration, timeouts, failed, mediathek_errors, results_per_request |
+| Scoring    | `FunkArr.Scoring`   | accepted, rejected, duration, runs, regex_timeouts, no_config |
+| Enrichment | `FunkArr.Enrichment`| requests, failed, duration, items_enriched, cache_entries |
+| History    | `FunkArr.History`   | recordings, trimmed, queries |
+| RuleSet    | `FunkArr.RuleSet`   | loaded, removed, active, update_checks, updates_applied, update_errors, validation_errors, scans, file_events |
+| Host       | `FunkArr.ExternalApi`| requests, duration (HTTP client delegating handler) |
+
 ## Dev environment
 
 Run via `docker compose -f docker-compose.dev.yml up -d --build`, never `dotnet run`.

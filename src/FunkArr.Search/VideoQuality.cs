@@ -23,7 +23,7 @@ internal static class VideoQuality
             variants.Add(new VideoVariant(source.UrlLow, 480, EstimateSize(source.Duration, 100_000L)));
         }
 
-        return variants.ToArray();
+        return [.. variants];
     }
 
     private static long EstimateSize(int durationSeconds, long bytesPerSecond)

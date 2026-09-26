@@ -21,6 +21,8 @@ public sealed class TelemetrySetupContainer : IServiceSetupContainer
                 .AddMeter("FunkArr.Download")
                 .AddMeter("FunkArr.Scoring")
                 .AddMeter("FunkArr.Enrichment")
+                .AddMeter("FunkArr.History")
+                .AddMeter("FunkArr.RuleSet")
                 .AddMeter("FunkArr.ExternalApi")
                 .AddPrometheusExporter());
     }

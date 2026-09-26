@@ -79,12 +79,15 @@ public sealed class NewznabSearchService(
         if (hasEpisode)
         {
             var episode = tvParams.Episode!.Value;
-            return items.Where(i =>
-                int.TryParse(i.Season, out var s) && s == season &&
-                int.TryParse(i.Episode, out var e) && e == episode).ToArray();
+            return
+            [
+                .. items.Where(i =>
+                    int.TryParse(i.Season, out var s) && s == season &&
+                    int.TryParse(i.Episode, out var e) && e == episode)
+            ];
         }
 
-        return items.Where(i => int.TryParse(i.Season, out var s) && s == season).ToArray();
+        return [.. items.Where(i => int.TryParse(i.Season, out var s) && s == season)];
     }
 
     internal static Rss ToRss(

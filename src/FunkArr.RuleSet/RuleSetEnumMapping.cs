@@ -51,7 +51,10 @@ public static class RuleSetEnumMapping
     public static bool TryParseFilterField(string? value, out FilterField field)
     {
         field = default;
-        if (value is null) return false;
+        if (value is null)
+        {
+            return false;
+        }
 
         (field, var valid) = value switch
         {
@@ -81,7 +84,10 @@ public static class RuleSetEnumMapping
     public static bool TryParseFilterOp(string? value, out FilterOp op)
     {
         op = default;
-        if (value is null) return false;
+        if (value is null)
+        {
+            return false;
+        }
 
         (op, var valid) = value switch
         {
@@ -107,7 +113,10 @@ public static class RuleSetEnumMapping
     public static bool TryParseTitlePartType(string? value, out TitlePartType type)
     {
         type = default;
-        if (value is null) return false;
+        if (value is null)
+        {
+            return false;
+        }
 
         (type, var valid) = value switch
         {
@@ -143,7 +152,10 @@ public static class RuleSetEnumMapping
     public static bool TryParseMediaType(string? value, out MediaType type)
     {
         type = default;
-        if (value is null) return false;
+        if (value is null)
+        {
+            return false;
+        }
 
         (type, var valid) = value switch
         {

@@ -97,6 +97,7 @@ public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
 
     private void HandleHttpFailed(HttpFailed msg)
     {
+        Telemetry.MediathekErrors.Add(1);
         _log.Warning(msg.Cause, "MediathekViewWeb query failed");
         Sender.Tell(new QueryMediathekFailed(msg.Cause));
         SlotFreed();

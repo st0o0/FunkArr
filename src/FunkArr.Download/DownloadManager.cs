@@ -19,6 +19,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
+    private readonly IMaterializer _materializer = Context.Materializer();
     private readonly IRouteResolver _routeResolver;
     private int _maxConcurrent;
     private DownloadManagerState _state = DownloadManagerState.Empty;
@@ -92,6 +93,7 @@ public sealed class DownloadManager : ReceivePersistentActor
                 downloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
                 cmd.Channel, cmd.Duration, cmd.Size, cmd.Category, route.Name, route.ProxyUrl));
 
+            Telemetry.Enqueued.Add(1);
             Sender.Tell(new DownloadAdded(downloadId));
             _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
             UpdateGauges();
@@ -146,7 +148,7 @@ public sealed class DownloadManager : ReceivePersistentActor
                     r.TotalDuration, r.Speed, r.Category, priority,
                     r.Phase, r.Attempt);
             })
-            .RunWith(Sink.Seq<QueueItem>(), Context.Materializer())
+            .RunWith(Sink.Seq<QueueItem>(), _materializer)
             .PipeTo(Sender, Self,
                 success: items => new QueueResult(
                     [.. items], maxConcurrent, totalItems,
@@ -169,6 +171,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         });
         DeferAsync("notify", _ =>
         {
+            Telemetry.Cancelled.Add(1);
             UpdateGauges();
             _downloadRegion.Tell(new CancelDownload(cmd.DownloadId));
             Sender.Tell(new DeleteDownloadResult(true, null));
@@ -205,6 +208,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             _state = _state.Apply(e);
             MaybeSnapshot();
+            Telemetry.SetPaused(true);
             _log.Info("Downloads paused by user");
             Sender.Tell(new PauseDownloadsResult(true));
         });
@@ -222,6 +226,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             _state = _state.Apply(e);
             MaybeSnapshot();
+            Telemetry.SetPaused(false);
             _log.Info("Downloads resumed by user");
             Sender.Tell(new ResumeDownloadsResult(true));
             DispatchNext();

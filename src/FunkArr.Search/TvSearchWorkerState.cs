@@ -50,7 +50,7 @@ public sealed class TvSearchWorkerState
 
     public void Apply(QueryMediathekCompleted result)
     {
-        Sources = result.Items.Select(SourceInfo.From).ToArray();
+        Sources = [.. result.Items.Select(SourceInfo.From)];
     }
 
     public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
@@ -73,24 +73,27 @@ public sealed class TvSearchWorkerState
             }
         }
 
-        Items = scored.Results.Select(s =>
-        {
-            var episodeTitle = _constructedTitles.GetValueOrDefault(s.Index)
-                ?? ReleaseVariant.CleanTitle(Sources[s.Index].Title, effectiveMediaName);
-            return new EnrichedItem(
-                s.Index,
-                Sources[s.Index],
-                s.Score,
-                s.Matched,
-                s.Metadata is not null,
-                BaseIdentity with
-                {
-                    Season = s.Metadata?.Season,
-                    Episode = s.Metadata?.Episode,
-                },
-                Match: null,
-                Display: s.Matched ? new ReleaseDisplay(effectiveMediaName, episodeTitle) : null);
-        }).ToArray();
+        Items =
+        [
+            .. scored.Results.Select(s =>
+            {
+                var episodeTitle = _constructedTitles.GetValueOrDefault(s.Index)
+                                   ?? ReleaseVariant.CleanTitle(Sources[s.Index].Title, effectiveMediaName);
+                return new EnrichedItem(
+                    s.Index,
+                    Sources[s.Index],
+                    s.Score,
+                    s.Matched,
+                    s.Metadata is not null,
+                    BaseIdentity with
+                    {
+                        Season = s.Metadata?.Season,
+                        Episode = s.Metadata?.Episode,
+                    },
+                    Match: null,
+                    Display: s.Matched ? new ReleaseDisplay(effectiveMediaName, episodeTitle) : null);
+            })
+        ];
 
         ItemTraces = scored.ItemTraces;
     }
@@ -99,26 +102,29 @@ public sealed class TvSearchWorkerState
     {
         var lookup = enriched.Episodes.ToDictionary(e => e.Index);
 
-        Items = Items.Select(item =>
-        {
-            if (!lookup.TryGetValue(item.Index, out var ep))
+        Items =
+        [
+            .. Items.Select(item =>
             {
-                return item;
-            }
+                if (!lookup.TryGetValue(item.Index, out var ep))
+                {
+                    return item;
+                }
 
-            var display = item.Display;
-            if (display is not null && ep.Confidence >= 0.9f && !string.IsNullOrEmpty(ep.EpisodeName))
-            {
-                display = display with { EpisodeTitle = ep.EpisodeName };
-            }
+                var display = item.Display;
+                if (display is not null && ep.Confidence >= 0.9f && !string.IsNullOrEmpty(ep.EpisodeName))
+                {
+                    display = display with { EpisodeTitle = ep.EpisodeName };
+                }
 
-            return item with
-            {
-                Identity = item.Identity with { Season = ep.Season, Episode = ep.Episode },
-                Match = new MatchInfo(ep.Confidence, ep.Method),
-                Display = display,
-            };
-        }).ToArray();
+                return item with
+                {
+                    Identity = item.Identity with { Season = ep.Season, Episode = ep.Episode },
+                    Match = new MatchInfo(ep.Confidence, ep.Method),
+                    Display = display,
+                };
+            })
+        ];
     }
 
     public bool TryGetMediathekQuery([NotNullWhen(true)] out QueryMediathek? query)
@@ -130,7 +136,7 @@ public sealed class TvSearchWorkerState
         }
 
         query = new QueryMediathek(
-            Fields: fields.ToArray(),
+            Fields: [.. fields],
             SortBy: "timestamp",
             SortOrder: "desc",
             Future: false,
@@ -248,36 +254,39 @@ public sealed class TvSearchWorkerState
     public void MergeEnrichmentIntoTraces(EnrichedEpisode[] enriched)
     {
         var lookup = enriched.ToDictionary(e => e.Index);
-        ItemTraces = ItemTraces.Select(trace =>
-        {
-            if (!trace.Matched)
+        ItemTraces =
+        [
+            .. ItemTraces.Select(trace =>
             {
-                return trace;
-            }
+                if (!trace.Matched)
+                {
+                    return trace;
+                }
 
-            var candidateIndex = Array.FindIndex(Items, i => i.Source.Title == trace.CandidateTitle && i.Matched);
-            if (candidateIndex < 0)
-            {
-                return trace;
-            }
+                var candidateIndex = Array.FindIndex(Items, i => i.Source.Title == trace.CandidateTitle && i.Matched);
+                if (candidateIndex < 0)
+                {
+                    return trace;
+                }
 
-            if (lookup.TryGetValue(candidateIndex, out var ep))
-            {
+                if (lookup.TryGetValue(candidateIndex, out var ep))
+                {
+                    return trace with
+                    {
+                        EnrichmentTrace = new EnrichmentTrace(
+                            ep.Method, ep.Confidence, true,
+                            ep.Season, ep.Episode, ep.EpisodeName)
+                    };
+                }
+
                 return trace with
                 {
                     EnrichmentTrace = new EnrichmentTrace(
-                        ep.Method, ep.Confidence, true,
-                        ep.Season, ep.Episode, ep.EpisodeName)
+                        MatchMethod.TitleMatch, 0f, false,
+                        Detail: "no matching episode found")
                 };
-            }
-
-            return trace with
-            {
-                EnrichmentTrace = new EnrichmentTrace(
-                    MatchMethod.TitleMatch, 0f, false,
-                    Detail: "no matching episode found")
-            };
-        }).ToArray();
+            })
+        ];
     }
 
     public RecordHistory? BuildRecordHistory()
@@ -300,24 +309,30 @@ public sealed class TvSearchWorkerState
     private EnrichedItem[] EnsureDisplay(EnrichedItem[] items)
     {
         var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
-        return items.Select(item =>
-            item.Display is not null
-                ? item
-                : item with
-                {
-                    Display = new ReleaseDisplay(
-                        fallbackMediaName,
-                        ReleaseVariant.CleanTitle(item.Source.Title, fallbackMediaName)),
-                }).ToArray();
+        return
+        [
+            .. items.Select(item =>
+                item.Display is not null
+                    ? item
+                    : item with
+                    {
+                        Display = new ReleaseDisplay(
+                            fallbackMediaName,
+                            ReleaseVariant.CleanTitle(item.Source.Title, fallbackMediaName)),
+                    })
+        ];
     }
 
     private EnrichedItem[] UnscoredItems()
     {
         var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
-        return Sources.Select((s, i) => new EnrichedItem(
-            i, s, 0.0, false, false, BaseIdentity, null,
-            Display: new ReleaseDisplay(
-                fallbackMediaName,
-                ReleaseVariant.CleanTitle(s.Title, fallbackMediaName)))).ToArray();
+        return
+        [
+            .. Sources.Select((s, i) => new EnrichedItem(
+                i, s, 0.0, false, false, BaseIdentity, null,
+                Display: new ReleaseDisplay(
+                    fallbackMediaName,
+                    ReleaseVariant.CleanTitle(s.Title, fallbackMediaName))))
+        ];
     }
 }

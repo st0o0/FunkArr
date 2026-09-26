@@ -12,7 +12,7 @@ internal static class ScoringMappingExtensions
             msg.Identification is not null
                 ? new ApiModels.TracedIdentification(msg.Identification.Season, msg.Identification.Episode, msg.Identification.Title)
                 : null,
-            msg.RuleTraces.Select(rt => rt.ToApi()).ToArray(),
+            [.. msg.RuleTraces.Select(rt => rt.ToApi())],
             msg.EnrichmentTrace is not null
                 ? new ApiModels.EnrichmentTraceOutput(
                     (ApiModels.MatchMethod)(int)msg.EnrichmentTrace.Method, msg.EnrichmentTrace.Confidence, msg.EnrichmentTrace.Enriched,
@@ -30,9 +30,11 @@ internal static class ScoringMappingExtensions
 
     internal static ApiModels.FilterGroupTrace ToApi(this FilterGroupTrace msg) =>
         new(msg.Operator.ToString(), msg.Passed,
-            msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
+        [
+            .. msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
                 n.Field, n.Op, n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,
-                n.Group is not null ? n.Group.ToApi() : null)).ToArray());
+                n.Group is not null ? n.Group.ToApi() : null))
+        ]);
 
     internal static ApiModels.RuleOutcome ToApi(this RuleOutcome msg) => msg switch
     {

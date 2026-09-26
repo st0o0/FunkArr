@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
@@ -81,6 +80,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
         var manager = Context.GetActor<IRuleSetManager>();
         manager.Tell(new WorkerReady(msg.RuleSetId, config?.Rules.Length ?? 0, sourceType));
+        Telemetry.Loaded.Add(1, new KeyValuePair<string, object?>("source", sourceType));
     }
 
     private void HandleRemove(RemoveRuleSet msg)
@@ -95,6 +95,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
         var manager = Context.GetActor<IRuleSetManager>();
         manager.Tell(new WorkerRemoved(msg.RuleSetId));
+        Telemetry.Removed.Add(1);
     }
 
     private void HandleQueryDetail(QueryRuleSetDetail msg)
@@ -147,7 +148,8 @@ public sealed class RuleSetWorker : ReceiveActor
         if (errors.Count > 0)
         {
             _store.DeleteLocal(msg.RuleSetId);
-            Sender.Tell(new CreateLocalRuleSetValidationFailed(errors.Select(e => e.Message).ToList()));
+            Telemetry.ValidationErrors.Add(1);
+            Sender.Tell(new CreateLocalRuleSetValidationFailed([.. errors.Select(e => e.Message)]));
             return;
         }
 
@@ -169,7 +171,8 @@ public sealed class RuleSetWorker : ReceiveActor
         if (errors.Count > 0)
         {
             _store.DeleteLocal(msg.RuleSetId);
-            Sender.Tell(new UpdateLocalRuleSetValidationFailed(errors.Select(e => e.Message).ToList()));
+            Telemetry.ValidationErrors.Add(1);
+            Sender.Tell(new UpdateLocalRuleSetValidationFailed([.. errors.Select(e => e.Message)]));
             return;
         }
 
@@ -223,7 +226,8 @@ public sealed class RuleSetWorker : ReceiveActor
         var errors = _validator.Validate(json);
         if (errors.Count > 0)
         {
-            Sender.Tell(new ExportRuleSetValidationFailed(errors.Select(e => e.Message).ToList()));
+            Telemetry.ValidationErrors.Add(1);
+            Sender.Tell(new ExportRuleSetValidationFailed([.. errors.Select(e => e.Message)]));
             return;
         }
 

@@ -33,7 +33,7 @@ public sealed record HistoryState(
                 e.CandidateCount,
                 e.MatchedCount,
                 e.EnrichedCount,
-                e.ItemTraces.Select(t => t.ToDomain()).ToArray()))
+                [.. e.ItemTraces.Select(t => t.ToDomain())]))
             .ToImmutableList();
 
         return new HistoryState(snapshots, ComputeStats(snapshots));
@@ -64,10 +64,10 @@ public sealed record HistoryState(
 
 public static class HistoryStateExtensions
 {
-    public static (HistoryState State, HistoryRecorded Event) ProcessCommand(
+    public static (HistoryState State, ScoringHistoryRecorded Event) ProcessCommand(
         this HistoryState state, RecordHistory cmd)
     {
-        var evt = new HistoryRecorded(
+        var evt = new ScoringHistoryRecorded(
             cmd.RequestId,
             cmd.Origin.Source.ToPersistence(),
             cmd.Origin.Query,
@@ -75,12 +75,12 @@ public static class HistoryStateExtensions
             cmd.CandidateCount,
             cmd.MatchedCount,
             cmd.EnrichedCount,
-            cmd.ItemTraces.Select(t => t.ToPersistence()).ToArray());
+            [.. cmd.ItemTraces.Select(t => t.ToPersistence())]);
 
         return (state.Apply(evt), evt);
     }
 
-    public static HistoryState Apply(this HistoryState state, HistoryRecorded evt)
+    public static HistoryState Apply(this HistoryState state, ScoringHistoryRecorded evt)
     {
         var snapshot = new HistoryState.HistoryEntry(
             evt.RequestId,
@@ -89,7 +89,7 @@ public static class HistoryStateExtensions
             evt.CandidateCount,
             evt.MatchedCount,
             evt.EnrichedCount,
-            evt.ItemTraces.Select(t => t.ToDomain()).ToArray());
+            [.. evt.ItemTraces.Select(t => t.ToDomain())]);
 
         var snapshots = state.Snapshots.Add(snapshot);
         var stats = HistoryState.ComputeStats(snapshots);
@@ -106,7 +106,7 @@ public static class HistoryStateExtensions
 
         if (trimmed.Count > maxSnapshots)
         {
-            trimmed = trimmed.Skip(trimmed.Count - maxSnapshots).ToImmutableList();
+            trimmed = [.. trimmed.Skip(trimmed.Count - maxSnapshots)];
         }
 
         if (trimmed.Count == state.Snapshots.Count)
@@ -157,15 +157,16 @@ public static class HistoryStateExtensions
         state.GetPersistenceState();
 
     public static PersistedHistoryState GetPersistenceState(this HistoryState state) =>
-        new(state.Snapshots
-            .Select(s => new HistoryRecorded(
-                s.RequestId,
-                s.Origin.Source.ToPersistence(),
-                s.Origin.Query,
-                s.Timestamp,
-                s.CandidateCount,
-                s.MatchedCount,
-                s.EnrichedCount,
-                s.ItemTraces.Select(t => t.ToPersistence()).ToArray()))
-            .ToArray());
+        new([
+            .. state.Snapshots
+                .Select(s => new ScoringHistoryRecorded(
+                    s.RequestId,
+                    s.Origin.Source.ToPersistence(),
+                    s.Origin.Query,
+                    s.Timestamp,
+                    s.CandidateCount,
+                    s.MatchedCount,
+                    s.EnrichedCount,
+                    [.. s.ItemTraces.Select(t => t.ToPersistence())]))
+        ]);
 }

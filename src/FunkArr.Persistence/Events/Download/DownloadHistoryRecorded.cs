@@ -1,6 +1,6 @@
 namespace FunkArr.Persistence.Events.Download;
 
-public sealed record HistoryRecorded(
+public sealed record DownloadHistoryRecorded(
     Guid DownloadId,
     string Title,
     PersistedMediaType Category,

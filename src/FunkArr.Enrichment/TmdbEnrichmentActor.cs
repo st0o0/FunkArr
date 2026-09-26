@@ -38,10 +38,12 @@ internal sealed class TmdbEnrichmentActor : ReceiveActor
             }
 
             var enriched = MovieEnricher.Resolve(data.Movie, data.AltTitles, msg.Candidates, msg.Config);
+            Telemetry.ItemsEnriched.Add(enriched.Length, new KeyValuePair<string, object?>("api", "tmdb"));
             Sender.Tell(new EnrichMoviesCompleted(enriched));
         }
         catch (Exception ex)
         {
+            Telemetry.Failed.Add(1, new KeyValuePair<string, object?>("api", "tmdb"));
             _log.Warning(ex, "TMDB enrichment failed");
             Sender.Tell(new EnrichMoviesFailed(ex));
         }

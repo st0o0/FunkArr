@@ -19,7 +19,7 @@ public sealed class RuleSetWorkerTests : TestKit
     private readonly TestDataFiles _dataFiles;
     private readonly RuleSetStore _store;
 
-    private static readonly string SampleJson = """
+    private static readonly string _sampleJson = """
         {"topic":"Test Show","aliases":[],"media":{"name":"Test","type":"show","tvdbId":12345},"confidence":0.9,"rules":[{"id":"test-rule","priority":0,"strategy":"itemTitleIncludes"}]}
         """;
 
@@ -57,7 +57,7 @@ public sealed class RuleSetWorkerTests : TestKit
         var worker = CreateWorkerWithProbes(out var scoringProbe, out var resolverProbe, out var managerProbe);
 
         var communityPath = Path.Combine(_tempDir, "rulesets", "community", "test-show.json");
-        _dataFiles.WriteText(communityPath, SampleJson);
+        _dataFiles.WriteText(communityPath, _sampleJson);
 
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", communityPath, null));
 
@@ -75,7 +75,7 @@ public sealed class RuleSetWorkerTests : TestKit
         var worker = CreateWorkerWithProbes(out var scoringProbe, out var resolverProbe, out var managerProbe);
 
         var communityPath = Path.Combine(_tempDir, "rulesets", "community", "test-show.json");
-        _dataFiles.WriteText(communityPath, SampleJson);
+        _dataFiles.WriteText(communityPath, _sampleJson);
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", communityPath, null));
 
         scoringProbe.ExpectMsg<MatchingConfig>();
@@ -125,7 +125,7 @@ public sealed class RuleSetWorkerTests : TestKit
     {
         var worker = CreateWorkerWithProbes(out var scoringProbe, out var resolverProbe, out var managerProbe);
 
-        _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "local", "test-show.json"), SampleJson);
+        _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "local", "test-show.json"), _sampleJson);
 
         worker.Tell(new DeleteLocalRuleSet("test-show"), TestActor);
         ExpectMsg<DeleteLocalRuleSetCompleted>();
@@ -151,7 +151,7 @@ public sealed class RuleSetWorkerTests : TestKit
     {
         var worker = CreateWorkerWithProbes(out _, out _, out _);
 
-        _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "community", "test-show.json"), SampleJson);
+        _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "community", "test-show.json"), _sampleJson);
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", null, null));
 
         worker.Tell(new ExportRuleSet("test-show"), TestActor);
@@ -164,7 +164,7 @@ public sealed class RuleSetWorkerTests : TestKit
     {
         var worker = CreateWorkerWithProbes(out var scoringProbe, out var resolverProbe, out var managerProbe);
 
-        _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "local", "test-show.json"), SampleJson);
+        _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "local", "test-show.json"), _sampleJson);
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", null, null));
 
         scoringProbe.ExpectMsg<MatchingConfig>();

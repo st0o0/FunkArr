@@ -49,12 +49,15 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
 
     private async Task HandleCheckForUpdates()
     {
+        Telemetry.UpdateChecks.Add(1);
+
         try
         {
             await DoCheckForUpdates();
         }
         catch (Exception ex)
         {
+            Telemetry.UpdateErrors.Add(1);
             _log.Warning(ex, "Failed to check for community ruleset updates");
         }
 
@@ -114,12 +117,14 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
             _dataFiles.WriteText(versionFile, release.Value.Version);
 
             _log.Info("Community rulesets updated to version {Version}", release.Value.Version);
+            Telemetry.UpdatesApplied.Add(1);
 
             var manager = Context.GetActor<IRuleSetManager>();
             manager.Tell(new RuleSetManager.ScanRuleSets());
         }
         catch (Exception ex)
         {
+            Telemetry.UpdateErrors.Add(1);
             _log.Error(ex, "Failed to extract community rulesets");
         }
         finally

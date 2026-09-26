@@ -167,7 +167,7 @@ public static partial class RuleSetApiEndpoints
             }
 
             return Results.Ok(new ApiModels.TestScoreResponse(
-                itemTraces.Select(t => t.ToApi()).ToArray()));
+                [.. itemTraces.Select(t => t.ToApi())]));
         })
         .WithSummary("Test ruleset scoring")
         .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration with optional enrichment. Returns per-item traces.")
@@ -337,7 +337,7 @@ public static partial class RuleSetApiEndpoints
 
         var enrichRequest = new EnrichEpisodes(
             request.TvdbId!.Value, Season: null,
-            matchedIndices.Select(m => m.Candidate).ToArray(), config);
+            [.. matchedIndices.Select(m => m.Candidate)], config);
 
         var response = await enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout);
         if (response is not EnrichEpisodesCompleted completed)
@@ -407,7 +407,7 @@ public static partial class RuleSetApiEndpoints
 
         var enrichRequest = new EnrichMovies(
             request.ImdbId, request.TmdbId,
-            matchedIndices.Select(m => m.Candidate).ToArray(), config);
+            [.. matchedIndices.Select(m => m.Candidate)], config);
 
         var response = await enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout);
         if (response is not EnrichMoviesCompleted completed)

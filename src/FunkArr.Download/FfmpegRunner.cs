@@ -24,13 +24,15 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         {
             await processor.ProcessAsynchronously(throwOnError: true);
             sw.Stop();
-            Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds);
+            Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds,
+                new KeyValuePair<string, object?>("status", "completed"));
             return new FfmpegResult(true, 0, null, (int)sw.Elapsed.TotalSeconds);
         }
         catch (FFMpegException ex)
         {
             sw.Stop();
-            Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds);
+            Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds,
+                new KeyValuePair<string, object?>("status", "failed"));
             var error = ExtractError(ex.FFMpegErrorOutput);
             return new FfmpegResult(false, 1, error, (int)sw.Elapsed.TotalSeconds, ClassifyFailure(error));
         }
@@ -129,7 +131,9 @@ internal sealed class FfmpegRunner : IFfmpegRunner
     internal static FailureKind ClassifyFailure(string? error)
     {
         if (string.IsNullOrWhiteSpace(error))
+        {
             return FailureKind.Permanent;
+        }
 
         if (error.Contains("503", StringComparison.OrdinalIgnoreCase) ||
             error.Contains("502", StringComparison.OrdinalIgnoreCase) ||
@@ -138,7 +142,9 @@ internal sealed class FfmpegRunner : IFfmpegRunner
             error.Contains("Connection refused", StringComparison.OrdinalIgnoreCase) ||
             error.Contains("Network is unreachable", StringComparison.OrdinalIgnoreCase) ||
             error.Contains("Temporary failure", StringComparison.OrdinalIgnoreCase))
+        {
             return FailureKind.Transient;
+        }
 
         return FailureKind.Permanent;
     }

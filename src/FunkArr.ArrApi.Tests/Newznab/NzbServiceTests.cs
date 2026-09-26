@@ -1,6 +1,5 @@
 using System.Text;
 using FunkArr.ArrApi.Newznab;
-using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
 
 namespace FunkArr.ArrApi.Tests.Newznab;

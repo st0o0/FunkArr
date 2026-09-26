@@ -2,14 +2,14 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace FunkArr.Api.HealthChecks;
 
-public sealed class MediathekViewWebHealthCheck(IHttpClientFactory _httpClientFactory) : IHealthCheck
+public sealed class MediathekViewWebHealthCheck(IHttpClientFactory httpClientFactory) : IHealthCheck
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(3);
 
     public async Task<HealthCheckResult> CheckHealthAsync(
         HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        var (reachable, message) = await ProbeAsync(_httpClientFactory, cancellationToken);
+        var (reachable, message) = await ProbeAsync(httpClientFactory, cancellationToken);
 
         return reachable
             ? HealthCheckResult.Healthy()

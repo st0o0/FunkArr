@@ -1,7 +1,6 @@
 using FunkArr.Persistence.Events.ScoringHistory;
 using FunkArr.Tests.Shared;
 using Newtonsoft.Json;
-using static VerifyXunit.Verifier;
 
 namespace FunkArr.Persistence.Tests.Events.ScoringHistory;
 
@@ -11,9 +10,9 @@ public sealed class ScoringHistoryEventVerifyTests
     private static readonly DateTimeOffset _testTimestamp = new(2024, 11, 15, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public Task HistoryRecorded_shape()
+    public Task ScoringHistoryRecorded_shape()
     {
-        var evt = new HistoryRecorded(
+        var evt = new ScoringHistoryRecorded(
             _testRequestId,
             PersistedSearchSource.Sonarr,
             "Tatort",
@@ -27,9 +26,9 @@ public sealed class ScoringHistoryEventVerifyTests
     }
 
     [Fact]
-    public void HistoryRecorded_roundtrip()
+    public void ScoringHistoryRecorded_roundtrip()
     {
-        var original = new HistoryRecorded(
+        var original = new ScoringHistoryRecorded(
             _testRequestId,
             PersistedSearchSource.Sonarr,
             "Tatort",
@@ -40,7 +39,7 @@ public sealed class ScoringHistoryEventVerifyTests
             ItemTraces: [TestItemTraceBuilder.CreateSampleTrace()]);
 
         var json = JsonConvert.SerializeObject(original);
-        var result = JsonConvert.DeserializeObject<HistoryRecorded>(json)!;
+        var result = JsonConvert.DeserializeObject<ScoringHistoryRecorded>(json)!;
 
         Assert.Equal(original.RequestId, result.RequestId);
         Assert.Equal(original.Source, result.Source);

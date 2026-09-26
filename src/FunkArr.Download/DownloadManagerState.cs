@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence;
 using FunkArr.Persistence.Events.Download;
@@ -18,7 +17,11 @@ public sealed record DownloadManagerState(
 
     public static DownloadManagerState FromPersistence(PersistedDownloadManagerState persisted) =>
         new(
-            Queued: persisted.Queued.Select(e => new QueueEntry(e.DownloadId, e.Priority.ToDomain(), e.Category.ToDomain())).ToArray(),
+            Queued:
+            [
+                .. persisted.Queued.Select(e =>
+                    new QueueEntry(e.DownloadId, e.Priority.ToDomain(), e.Category.ToDomain()))
+            ],
             Dispatched: persisted.Dispatched.ToImmutableDictionary(
                 e => e.DownloadId,
                 e => new DispatchedEntry(e.Priority.ToDomain(), e.Category.ToDomain())),
@@ -46,7 +49,7 @@ public static class DownloadManagerStateExtensions
             [evt.DownloadId] = new(entry.Priority, entry.Category),
         };
         return new(
-            Queued: state.Queued.Where(e => e.Id != evt.DownloadId).ToArray(),
+            Queued: [.. state.Queued.Where(e => e.Id != evt.DownloadId)],
             Dispatched: dict);
     }
 
@@ -55,7 +58,7 @@ public static class DownloadManagerStateExtensions
         var dict = new Dictionary<Guid, DispatchedEntry>(state.Dispatched);
         dict.Remove(evt.DownloadId);
         return new(
-            Queued: state.Queued.Where(e => e.Id != evt.DownloadId).ToArray(),
+            Queued: [.. state.Queued.Where(e => e.Id != evt.DownloadId)],
             Dispatched: dict);
     }
 
@@ -147,19 +150,25 @@ public static class DownloadManagerStateExtensions
         var allIds = ids.ToArray();
         var totalItems = allIds.Length;
 
-        var paged = allIds.AsEnumerable().Skip(query.Start);
+        var paged = allIds.Skip(query.Start);
         if (query.Limit > 0)
         {
             paged = paged.Take(query.Limit);
         }
 
-        return (paged.ToArray(), totalItems);
+        return ([.. paged], totalItems);
     }
 
     public static PersistedDownloadManagerState GetPersistenceState(this DownloadManagerState state) =>
         new(
-            state.Queued.Select(e => new PersistedQueueEntry(e.Id, e.Priority.ToPersistence(), e.Category.ToPersistence())).ToArray(),
-            state.Dispatched.Select(kv => new PersistedDispatchedEntry(kv.Key, kv.Value.Priority.ToPersistence(), kv.Value.Category.ToPersistence())).ToArray(),
+            [
+                .. state.Queued.Select(e =>
+                    new PersistedQueueEntry(e.Id, e.Priority.ToPersistence(), e.Category.ToPersistence()))
+            ],
+            [
+                .. state.Dispatched.Select(kv => new PersistedDispatchedEntry(kv.Key, kv.Value.Priority.ToPersistence(),
+                    kv.Value.Category.ToPersistence()))
+            ],
             state.Paused);
 
 

@@ -34,7 +34,7 @@ internal static class PersistenceMapping
             trace.CandidateDuration, trace.CandidateQuality, trace.CandidateDescription,
             trace.CandidateTimestamp, trace.Matched, trace.Score, trace.MatchedRuleId,
             trace.Identification?.ToPersistence(),
-            trace.RuleTraces.Select(r => r.ToPersistence()).ToArray(),
+            [.. trace.RuleTraces.Select(r => r.ToPersistence())],
             trace.EnrichmentTrace?.ToPersistence());
 
     public static ItemTrace ToDomain(this PersistedItemTrace trace) =>
@@ -42,7 +42,7 @@ internal static class PersistenceMapping
             trace.CandidateDuration, trace.CandidateQuality, trace.CandidateDescription,
             trace.CandidateTimestamp, trace.Matched, trace.Score, trace.MatchedRuleId,
             trace.Identification?.ToDomain(),
-            trace.RuleTraces.Select(r => r.ToDomain()).ToArray(),
+            [.. trace.RuleTraces.Select(r => r.ToDomain())],
             trace.EnrichmentTrace?.ToDomain());
 
     public static PersistedRuleTrace ToPersistence(this RuleTrace trace) =>
@@ -54,10 +54,10 @@ internal static class PersistenceMapping
             trace.FilterTrace?.ToDomain(), trace.IdentificationTrace?.ToDomain());
 
     public static PersistedFilterGroupTrace ToPersistence(this FilterGroupTrace trace) =>
-        new((PersistedFilterGroupOp)(int)trace.Operator, trace.Passed, trace.Nodes.Select(n => n.ToPersistence()).ToArray());
+        new((PersistedFilterGroupOp)(int)trace.Operator, trace.Passed, [.. trace.Nodes.Select(n => n.ToPersistence())]);
 
     public static FilterGroupTrace ToDomain(this PersistedFilterGroupTrace trace) =>
-        new((FilterGroupOp)(int)trace.Operator, trace.Passed, trace.Nodes.Select(n => n.ToDomain()).ToArray());
+        new((FilterGroupOp)(int)trace.Operator, trace.Passed, [.. trace.Nodes.Select(n => n.ToDomain())]);
 
     public static PersistedFilterNodeTrace ToPersistence(this FilterNodeTrace trace) =>
         new(trace.Field, trace.Op, trace.ExpectedValue, trace.ActualValue,

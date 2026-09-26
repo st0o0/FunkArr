@@ -7,11 +7,11 @@ namespace FunkArr.Download.Tests;
 
 public sealed class DownloadHistoryManagerStateTests
 {
-    private static HistoryRecorded MakeRecorded(Guid id, string title = "Test", PersistedDownloadStatus status = PersistedDownloadStatus.Completed) =>
+    private static DownloadHistoryRecorded MakeRecorded(Guid id, string title = "Test", PersistedDownloadStatus status = PersistedDownloadStatus.Completed) =>
         new(id, title, PersistedMediaType.Show, 1_000_000, status, "/downloads/test.mkv", null, 120, 1234567890);
 
     [Fact]
-    public void Apply_HistoryRecorded_adds_record()
+    public void Apply_DownloadHistoryRecorded_adds_record()
     {
         var id = Guid.NewGuid();
         var state = DownloadHistoryManagerState.Empty
@@ -66,7 +66,7 @@ public sealed class DownloadHistoryManagerStateTests
         var id2 = Guid.NewGuid();
         var state = DownloadHistoryManagerState.Empty
             .Apply(MakeRecorded(id1, "Completed Video"))
-            .Apply(new HistoryRecorded(id2, "Failed Video", PersistedMediaType.Show, 500_000,
+            .Apply(new DownloadHistoryRecorded(id2, "Failed Video", PersistedMediaType.Show, 500_000,
                 PersistedDownloadStatus.Failed, null, "Connection refused", 0, 1234567890));
 
         var result = state.ToHistoryResult(new QueryHistory());
@@ -84,7 +84,7 @@ public sealed class DownloadHistoryManagerStateTests
     {
         var id = Guid.NewGuid();
         var state = DownloadHistoryManagerState.Empty
-            .Apply(new HistoryRecorded(id, "Broken", PersistedMediaType.Movie, 2_000_000,
+            .Apply(new DownloadHistoryRecorded(id, "Broken", PersistedMediaType.Movie, 2_000_000,
                 PersistedDownloadStatus.Failed, null, "Timeout", 0, 9999999999));
 
         var result = state.ToHistoryResult(new QueryHistory());
@@ -130,9 +130,9 @@ public sealed class DownloadHistoryManagerStateTests
     public void ToHistoryResult_filters_by_category()
     {
         var state = DownloadHistoryManagerState.Empty
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Movie, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123));
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Movie, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123));
 
         var result = state.ToHistoryResult(new QueryHistory(Category: MediaType.Show));
 
@@ -144,7 +144,7 @@ public sealed class DownloadHistoryManagerStateTests
     public void ToHistoryResult_category_filter_is_case_insensitive()
     {
         var state = DownloadHistoryManagerState.Empty
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123));
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123));
 
         var result = state.ToHistoryResult(new QueryHistory(Category: MediaType.Show));
 
@@ -167,9 +167,9 @@ public sealed class DownloadHistoryManagerStateTests
     public void ToHistoryStats_computes_aggregates()
     {
         var state = DownloadHistoryManagerState.Empty
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1_000_000, PersistedDownloadStatus.Completed, "/a.mkv", null, 100, 123))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Show, 2_000_000, PersistedDownloadStatus.Completed, "/b.mkv", null, 200, 456))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Movie, 500_000, PersistedDownloadStatus.Failed, null, "Error", 0, 789));
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1_000_000, PersistedDownloadStatus.Completed, "/a.mkv", null, 100, 123))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Show, 2_000_000, PersistedDownloadStatus.Completed, "/b.mkv", null, 200, 456))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Movie, 500_000, PersistedDownloadStatus.Failed, null, "Error", 0, 789));
 
         var result = state.ToHistoryStats();
 
@@ -192,10 +192,10 @@ public sealed class DownloadHistoryManagerStateTests
     public void ToHistoryCategories_returns_distinct_sorted()
     {
         var state = DownloadHistoryManagerState.Empty
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Movie, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "D", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123));
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Movie, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "D", PersistedMediaType.Show, 1000, PersistedDownloadStatus.Completed, null, null, 100, 123));
 
         var result = state.ToHistoryCategories();
 
@@ -209,7 +209,9 @@ public sealed class DownloadHistoryManagerStateTests
     {
         var state = DownloadHistoryManagerState.Empty;
         for (var i = 0; i < 5; i++)
+        {
             state = state.Apply(MakeRecorded(Guid.NewGuid(), $"Record {i}"));
+        }
 
         var (trimmed, count) = state.TrimIfNeeded(3);
 
@@ -235,9 +237,9 @@ public sealed class DownloadHistoryManagerStateTests
     public void TrimIfNeeded_updates_stats()
     {
         var state = DownloadHistoryManagerState.Empty
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1_000, PersistedDownloadStatus.Completed, null, null, 100, 1))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Show, 2_000, PersistedDownloadStatus.Completed, null, null, 200, 2))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Show, 3_000, PersistedDownloadStatus.Completed, null, null, 300, 3));
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "A", PersistedMediaType.Show, 1_000, PersistedDownloadStatus.Completed, null, null, 100, 1))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Show, 2_000, PersistedDownloadStatus.Completed, null, null, 200, 2))
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "C", PersistedMediaType.Show, 3_000, PersistedDownloadStatus.Completed, null, null, 300, 3));
 
         var (trimmed, _) = state.TrimIfNeeded(1);
 
@@ -268,7 +270,7 @@ public sealed class DownloadHistoryManagerStateTests
     {
         var id = Guid.NewGuid();
         var state = DownloadHistoryManagerState.Empty
-            .Apply(new HistoryRecorded(id, "A", PersistedMediaType.Show, 1_000, PersistedDownloadStatus.Completed, null, null, 100, 1));
+            .Apply(new DownloadHistoryRecorded(id, "A", PersistedMediaType.Show, 1_000, PersistedDownloadStatus.Completed, null, null, 100, 1));
 
         Assert.Equal(1, state.Stats.TotalCompleted);
 
@@ -283,7 +285,7 @@ public sealed class DownloadHistoryManagerStateTests
     {
         var state = DownloadHistoryManagerState.Empty
             .Apply(MakeRecorded(Guid.NewGuid(), "A"))
-            .Apply(new HistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Movie, 500, PersistedDownloadStatus.Failed, null, "Error", 0, 2));
+            .Apply(new DownloadHistoryRecorded(Guid.NewGuid(), "B", PersistedMediaType.Movie, 500, PersistedDownloadStatus.Failed, null, "Error", 0, 2));
 
         var persisted = state.GetPersistenceState();
         var restored = DownloadHistoryManagerStateExtensions.FromPersistence(persisted);

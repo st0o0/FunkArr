@@ -34,7 +34,7 @@ public sealed record DownloadHistoryManagerState(
 
 public static class DownloadHistoryManagerStateExtensions
 {
-    public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, HistoryRecorded evt)
+    public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, DownloadHistoryRecorded evt)
     {
         var record = new HistoryRecord(
             evt.DownloadId, evt.Title, evt.Category.ToDomain(), evt.Size,
@@ -62,7 +62,9 @@ public static class DownloadHistoryManagerStateExtensions
     public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, HistoryTrimmed evt)
     {
         if (evt.Count <= 0 || state.Records.Count == 0)
+        {
             return state;
+        }
 
         var trimCount = Math.Min(evt.Count, state.Records.Count);
         var trimmed = state.Records.Take(trimCount).ToArray();
@@ -70,7 +72,9 @@ public static class DownloadHistoryManagerStateExtensions
         var index = new HashSet<Guid>(remaining.Select(r => r.DownloadId));
         var stats = state.Stats;
         foreach (var record in trimmed)
+        {
             stats = RemoveFromStats(stats, record);
+        }
 
         return new(remaining, index, stats);
     }
@@ -79,7 +83,9 @@ public static class DownloadHistoryManagerStateExtensions
         this DownloadHistoryManagerState state, int maxRecords)
     {
         if (maxRecords <= 0 || state.Records.Count <= maxRecords)
+        {
             return (state, 0);
+        }
 
         var trimCount = state.Records.Count - maxRecords;
         return (state.Apply(new HistoryTrimmed(trimCount)), trimCount);
@@ -89,10 +95,12 @@ public static class DownloadHistoryManagerStateExtensions
         state.Index.Contains(downloadId);
 
     public static PersistedDownloadHistoryManagerState GetPersistenceState(this DownloadHistoryManagerState state) =>
-        new(state.Records.Select(r => new HistoryRecorded(
-            r.DownloadId, r.Title, r.Category.ToPersistence(), r.Size,
-            r.Status.ToPersistence(), r.RelativePath, r.FailMessage,
-            r.DownloadTimeSeconds, r.CompletedAt)).ToArray());
+        new([
+            .. state.Records.Select(r => new DownloadHistoryRecorded(
+                r.DownloadId, r.Title, r.Category.ToPersistence(), r.Size,
+                r.Status.ToPersistence(), r.RelativePath, r.FailMessage,
+                r.DownloadTimeSeconds, r.CompletedAt))
+        ]);
 
     public static DownloadHistoryManagerState FromPersistence(PersistedDownloadHistoryManagerState persisted)
     {
@@ -104,7 +112,9 @@ public static class DownloadHistoryManagerStateExtensions
         var index = new HashSet<Guid>(records.Select(r => r.DownloadId));
         var stats = HistoryStats.Empty;
         foreach (var record in records)
+        {
             stats = AddToStats(stats, record);
+        }
 
         return new(records, index, stats);
     }
@@ -114,7 +124,9 @@ public static class DownloadHistoryManagerStateExtensions
         var s = state.Stats;
         var total = s.TotalCompleted + s.TotalFailed;
         if (total == 0)
+        {
             return new HistoryStatsResult(0, 0, 0, 0, 0.0);
+        }
 
         var avgTime = s.TotalCompleted > 0
             ? (int)(s.TotalDownloadTimeSeconds / s.TotalCompleted)
@@ -139,21 +151,26 @@ public static class DownloadHistoryManagerStateExtensions
     {
         IEnumerable<HistoryRecord> filtered = state.Records;
         if (query.Category is not null)
+        {
             filtered = filtered.Where(r => r.Category == query.Category);
+        }
 
         var materialized = filtered.ToArray();
         var totalItems = materialized.Length;
 
         var paged = materialized.Skip(query.Start);
         if (query.Limit > 0)
+        {
             paged = paged.Take(query.Limit);
+        }
 
         return new HistoryResult(
-            paged.Select(r => new HistoryItem(
-                r.DownloadId, r.Title, r.Category, r.Size,
-                r.DownloadTimeSeconds, r.RelativePath ?? "", r.Status,
-                r.FailMessage ?? "", r.CompletedAt))
-            .ToArray(),
+            [
+                .. paged.Select(r => new HistoryItem(
+                    r.DownloadId, r.Title, r.Category, r.Size,
+                    r.DownloadTimeSeconds, r.RelativePath ?? "", r.Status,
+                    r.FailMessage ?? "", r.CompletedAt))
+            ],
             totalItems);
     }
 

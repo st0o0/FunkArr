@@ -24,7 +24,7 @@ public static class MovieEnricher
             }
         }
 
-        return results.ToArray();
+        return [.. results];
     }
 
     private static EnrichedMovie? ResolveCandidate(

@@ -1,7 +1,6 @@
 using System.IO.Abstractions;
 using FunkArr.Core;
 using FunkArr.RuleSet.DiskModel;
-using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -25,7 +24,7 @@ public sealed class RuleSetStoreTests : IDisposable
         _store = new RuleSetStore(dataFiles, dataPaths);
     }
 
-    private static readonly string SampleJson = """
+    private static readonly string _sampleJson = """
         {"topic":"Test","media":{"name":"Test","type":"show"},"rules":[{"id":"test-rule","strategy":"itemTitleIncludes"}]}
         """;
 
@@ -40,7 +39,7 @@ public sealed class RuleSetStoreTests : IDisposable
     [Fact]
     public void Load_returns_community_when_exists()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "test-show.json"), SampleJson);
+        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "test-show.json"), _sampleJson);
         var (community, local) = _store.Load("test-show");
         Assert.NotNull(community);
         Assert.Null(local);
@@ -50,7 +49,7 @@ public sealed class RuleSetStoreTests : IDisposable
     [Fact]
     public void LoadMerged_merges_community_and_local()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "merged-show.json"), SampleJson);
+        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "merged-show.json"), _sampleJson);
         File.WriteAllText(Path.Combine(_tempDir, "rulesets", "local", "merged-show.json"),
             """{"topic":"Local Override","media":{"name":"Test","type":"show"},"rules":[{"id":"local-rule","strategy":"itemTitleExact"}]}""");
 
@@ -95,10 +94,10 @@ public sealed class RuleSetStoreTests : IDisposable
     [Fact]
     public void Scan_discovers_community_and_local_files()
     {
-        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "show-a.json"), SampleJson);
-        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "show-b.json"), SampleJson);
-        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "local", "show-b.json"), SampleJson);
-        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "local", "show-c.json"), SampleJson);
+        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "show-a.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "community", "show-b.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "local", "show-b.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_tempDir, "rulesets", "local", "show-c.json"), _sampleJson);
 
         var result = _store.Scan();
         Assert.Equal(3, result.Count);

@@ -67,9 +67,6 @@ public static class DownloadWorkerStateExtensions
             Speed = 0.0,
         };
 
-    public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadPhaseChanged evt) =>
-        state with { Phase = evt.Phase.ToDomain() };
-
     public static RecordDownload ToRecordDownload(
         this DownloadWorkerState state, Guid downloadId, TimeProvider timeProvider,
         int elapsedSeconds, DataPaths.ResolvedDownload? paths)

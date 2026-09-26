@@ -53,7 +53,7 @@ public sealed class SafeUrlAttribute : ValidationAttribute
     }
 }
 
-internal static class IPAddressExtensions
+internal static class IpAddressExtensions
 {
     internal static bool IsInPrivateRange(this IPAddress address)
     {

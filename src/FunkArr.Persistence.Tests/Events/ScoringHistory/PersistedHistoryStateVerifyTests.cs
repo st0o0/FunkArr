@@ -1,7 +1,6 @@
 using FunkArr.Persistence.Events.ScoringHistory;
 using FunkArr.Tests.Shared;
 using Newtonsoft.Json;
-using static VerifyXunit.Verifier;
 
 namespace FunkArr.Persistence.Tests.Events.ScoringHistory;
 
@@ -16,11 +15,11 @@ public sealed class PersistedHistoryStateVerifyTests
     {
         var state = new PersistedHistoryState(
         [
-            new HistoryRecorded(
+            new ScoringHistoryRecorded(
                 _testRequestId1, PersistedSearchSource.Sonarr, "Tatort",
                 _testTimestamp, 10, 3, 2,
                 [TestItemTraceBuilder.CreateSampleTrace()]),
-            new HistoryRecorded(
+            new ScoringHistoryRecorded(
                 _testRequestId2, PersistedSearchSource.Radarr, "Film",
                 _testTimestamp.AddHours(1), 5, 1, 0, []),
         ]);
@@ -33,7 +32,7 @@ public sealed class PersistedHistoryStateVerifyTests
     {
         var original = new PersistedHistoryState(
         [
-            new HistoryRecorded(
+            new ScoringHistoryRecorded(
                 _testRequestId1, PersistedSearchSource.Sonarr, "Tatort",
                 _testTimestamp, 10, 3, 2,
                 [TestItemTraceBuilder.CreateSampleTrace()]),

@@ -24,7 +24,7 @@ public static class EpisodeEnricher
             }
         }
 
-        return results.ToArray();
+        return [.. results];
     }
 
     private static EnrichedEpisode? ResolveCandidate(
@@ -99,7 +99,7 @@ public static class EpisodeEnricher
 
     private static readonly string[] _titleSeparator = [" - "];
 
-    internal static float CandidateEpisodeSimilarity(string candidateTitle, string? constructedTitle, string episodeName)
+    private static float CandidateEpisodeSimilarity(string candidateTitle, string? constructedTitle, string episodeName)
     {
         var best = SimilarityWithSegments(candidateTitle, episodeName);
 
@@ -200,7 +200,7 @@ public static class EpisodeEnricher
 
             if (tieBreakers.Length > 1)
             {
-                bestMatch = BreakTieByRuntime(tieBreakers.Select(t => t.Episode).ToArray(), candidate.Duration, runtimeTolerance)
+                bestMatch = BreakTieByRuntime([.. tieBreakers.Select(t => t.Episode)], candidate.Duration, runtimeTolerance)
                             ?? bestMatch;
             }
         }

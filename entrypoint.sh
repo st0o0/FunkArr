@@ -22,4 +22,10 @@ user=$(getent passwd "$PUID" | cut -d: -f1)
 
 chown -R "$PUID:$PGID" /app/data
 
+download_path="${FunkArr__Download__Path:-/shared/downloads}"
+if [ -n "$download_path" ]; then
+    mkdir -p "$download_path"
+    chown "$PUID:$PGID" "$download_path"
+fi
+
 exec su-exec "$user" dotnet FunkArr.dll

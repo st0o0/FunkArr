@@ -164,16 +164,6 @@ public sealed class DownloadWorkerStateTests
     }
 
     [Fact]
-    public void Apply_PhaseChanged_updates_phase()
-    {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadPhaseChanged(_testId, PersistedDownloadPhase.Remuxing));
-
-        Assert.Equal(DownloadPhase.Remuxing, state.Phase);
-    }
-
-    [Fact]
     public void Apply_Faulted_sets_failure_kind()
     {
         var state = DownloadWorkerState.Empty

@@ -40,7 +40,11 @@ public sealed class RuleSetStore(IDataFiles dataFiles, DataPaths dataPaths)
     public bool DeleteLocal(string ruleSetId)
     {
         var path = LocalPath(ruleSetId);
-        if (!dataFiles.Exists(path)) return false;
+        if (!dataFiles.Exists(path))
+        {
+            return false;
+        }
+
         dataFiles.Remove(path);
         return true;
     }
@@ -53,7 +57,10 @@ public sealed class RuleSetStore(IDataFiles dataFiles, DataPaths dataPaths)
     {
         var (community, local) = Load(ruleSetId);
         var resolved = RuleSetMerger.Resolve(community, local);
-        if (resolved is null) return null;
+        if (resolved is null)
+        {
+            return null;
+        }
 
         var node = JsonSerializer.SerializeToNode(resolved, DiskJsonOptions.WriteFormatted);
         if (node is JsonObject obj)

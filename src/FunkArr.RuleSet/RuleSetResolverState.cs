@@ -222,6 +222,6 @@ public static class RuleSetResolverStateExtensions
             entries.Add(new RegisteredRuleSetEntry(ruleSetId, topic, aliases, tvdbId, imdbId, tmdbId, mediaName, mediaType));
         }
 
-        return new RegisteredRuleSetsResult(entries.ToArray());
+        return new RegisteredRuleSetsResult([.. entries]);
     }
 }

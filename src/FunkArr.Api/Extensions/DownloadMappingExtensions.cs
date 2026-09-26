@@ -55,7 +55,7 @@ internal static class DownloadMappingExtensions
     }
 
     internal static ApiModels.DownloadHistoryResponse ToApi(this HistoryResult result) =>
-        new(result.Items.Select(i => i.ToApi()).ToArray(), result.TotalItems);
+        new([.. result.Items.Select(i => i.ToApi())], result.TotalItems);
 
     internal static ApiModels.DownloadHistoryItem ToApi(this HistoryItem item) =>
         new(item.DownloadId.ToString(),

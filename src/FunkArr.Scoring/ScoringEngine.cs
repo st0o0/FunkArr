@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using FunkArr.Messages.Scoring;
@@ -14,6 +15,8 @@ public static class ScoringEngine
     public static (ScoredItem[] Scored, ItemTrace[] Traces) Score(
         MatchingConfig config, ScoreCandidate[] items)
     {
+        var sw = Stopwatch.StartNew();
+        Telemetry.Runs.Add(1);
         var sortedRules = config.Rules.OrderBy(r => r.Priority).ToArray();
         var scored = new ScoredItem[items.Length];
         var itemTraces = new ItemTrace[items.Length];
@@ -70,13 +73,16 @@ public static class ScoringEngine
                 candidate.Duration, candidate.Quality,
                 candidate.Description, candidate.Timestamp,
                 matched, scored[i].Score, matchedRuleId,
-                identification, ruleTraces.ToArray());
+                identification, [.. ruleTraces]);
         }
 
         var accepted = scored.Count(s => s.Matched);
         var rejected = scored.Length - accepted;
-        Telemetry.Accepted.Add(accepted);
-        Telemetry.Rejected.Add(rejected);
+        var ruleSetTag = new KeyValuePair<string, object?>("ruleSetId", config.RuleSetId);
+        Telemetry.Accepted.Add(accepted, ruleSetTag);
+        Telemetry.Rejected.Add(rejected, ruleSetTag);
+        sw.Stop();
+        Telemetry.Duration.Record(sw.Elapsed.TotalSeconds);
         return (scored, itemTraces);
     }
 
@@ -125,7 +131,7 @@ public static class ScoringEngine
         {
             0 => (true, null),
             1 => (overallPassed, subGroups[0].Group),
-            _ => (overallPassed, new FilterGroupTrace(All, overallPassed, subGroups.ToArray()))
+            _ => (overallPassed, new FilterGroupTrace(All, overallPassed, [.. subGroups]))
         };
     }
 
@@ -208,7 +214,7 @@ public static class ScoringEngine
                 break;
         }
 
-        return (groupPassed, new FilterGroupTrace(op, groupPassed, nodeTraces.ToArray()));
+        return (groupPassed, new FilterGroupTrace(op, groupPassed, [.. nodeTraces]));
     }
 
     private static FilterNodeTrace CreateSkippedNodeTrace(FilterNode node) => node switch
@@ -295,6 +301,7 @@ public static class ScoringEngine
         }
         catch (RegexMatchTimeoutException)
         {
+            Telemetry.RegexTimeouts.Add(1);
             return false;
         }
     }
@@ -465,6 +472,7 @@ public static class ScoringEngine
         }
         catch (RegexMatchTimeoutException)
         {
+            Telemetry.RegexTimeouts.Add(1);
             return null;
         }
     }
@@ -506,7 +514,7 @@ public static class ScoringEngine
         }
         catch (RegexMatchTimeoutException)
         {
-            // Fall through
+            Telemetry.RegexTimeouts.Add(1);
         }
 
         return null;

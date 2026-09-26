@@ -57,14 +57,15 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         Recover<DownloadSucceeded>(evt => _state = _state.Apply(evt));
         Recover<DownloadFaulted>(evt => _state = _state.Apply(evt));
         Recover<DownloadAttemptStarted>(evt => _state = _state.Apply(evt));
-        Recover<DownloadPhaseChanged>(evt => _state = _state.Apply(evt));
         Recover<RecoveryCompleted>(_ => OnRecoveryCompleted());
     }
 
     private void HandleInit(InitDownload cmd)
     {
         if (_state.IsInitialized)
+        {
             return;
+        }
 
         var evt = new DownloadInitialized(
             cmd.DownloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
@@ -77,7 +78,9 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private void HandleStart(StartDownload cmd)
     {
         if (!_state.IsInitialized || _state.Status != WorkerStatus.Initialized)
+        {
             return;
+        }
 
         if (string.IsNullOrEmpty(_state.VideoUrl))
         {
@@ -106,7 +109,9 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private void HandleReset(ResetDownload _)
     {
         if (_state.Status is not (WorkerStatus.Failed or WorkerStatus.Completed))
+        {
             return;
+        }
 
         Timers.Cancel(_retryTimerKey);
 
@@ -123,7 +128,9 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private void HandleQueryStatus(QueryWorkerStatus _)
     {
         if (!_state.IsInitialized)
+        {
             return;
+        }
 
         Sender.Tell(new WorkerStatusResult(
             _downloadId,
@@ -145,7 +152,9 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private void HandleProgress(ProgressUpdate msg)
     {
         if (!_state.IsInitialized)
+        {
             return;
+        }
 
         var phase = DownloadPhaseExtensions.DerivePhase(msg.TotalSize, _state.Size, msg.OutTimeUs);
 
@@ -162,7 +171,9 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private void HandleFfmpegResult(FfmpegResult msg)
     {
         if (!_state.IsInitialized)
+        {
             return;
+        }
 
         var paths = ResolvePaths();
 
@@ -177,6 +188,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             }
             catch (Exception ex)
             {
+                Telemetry.MoveFailed.Add(1);
                 _log.Warning(ex, "Download {DownloadId} move failed: {Title}", _downloadId, _state.Title);
                 msg = msg with { Success = false, Error = $"Move failed: {ex.Message}" };
             }
@@ -224,12 +236,16 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private void HandleRetry()
     {
         if (!_state.IsInitialized || _state.Status != WorkerStatus.Failed)
+        {
             return;
+        }
 
         var paths = ResolvePaths();
         _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
         var attempt = _state.Attempt + 1;
+        Telemetry.Retries.Add(1, new KeyValuePair<string, object?>("reason",
+            _state.LastFailureKind?.ToString().ToLowerInvariant() ?? "unknown"));
         _log.Info("Download {DownloadId} retry attempt {Attempt}: {Title}", _downloadId, attempt, _state.Title);
         var evt = new DownloadAttemptStarted(_downloadId, attempt);
         Persist(evt, e => _state = _state.Apply(e));

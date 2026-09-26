@@ -6,10 +6,26 @@ internal static class RuleSetMerger
 {
     public static DiskRuleSet? Resolve(DiskRuleSet? community, DiskRuleSet? local)
     {
-        if (community is null && local is null) return null;
-        if (community is null) return local;
-        if (local is null) return community;
-        if (local.Standalone) return local;
+        if (community is null && local is null)
+        {
+            return null;
+        }
+
+        if (community is null)
+        {
+            return local;
+        }
+
+        if (local is null)
+        {
+            return community;
+        }
+
+        if (local.Standalone)
+        {
+            return local;
+        }
+
         return Merge(community, local);
     }
 
@@ -25,9 +41,21 @@ internal static class RuleSetMerger
 
     private static DiskMedia? MergeMedia(DiskMedia? community, DiskMedia? local)
     {
-        if (community is null && local is null) return null;
-        if (community is null) return local;
-        if (local is null) return community;
+        if (community is null && local is null)
+        {
+            return null;
+        }
+
+        if (community is null)
+        {
+            return local;
+        }
+
+        if (local is null)
+        {
+            return community;
+        }
+
         return new DiskMedia
         {
             TvdbId = local.TvdbId ?? community.TvdbId,
@@ -45,13 +73,20 @@ internal static class RuleSetMerger
             : null;
 
         var localById = new Dictionary<string, DiskRule>(StringComparer.Ordinal);
-        foreach (var rule in localRules) localById[rule.Id] = rule;
+        foreach (var rule in localRules)
+        {
+            localById[rule.Id] = rule;
+        }
 
         var merged = new List<DiskRule>();
 
         foreach (var rule in communityRules)
         {
-            if (disabledIds is not null && disabledIds.Contains(rule.Id)) continue;
+            if (disabledIds is not null && disabledIds.Contains(rule.Id))
+            {
+                continue;
+            }
+
             if (localById.TryGetValue(rule.Id, out var replacement))
             {
                 merged.Add(replacement);
@@ -65,7 +100,10 @@ internal static class RuleSetMerger
 
         foreach (var rule in localRules)
         {
-            if (localById.ContainsKey(rule.Id)) merged.Add(rule);
+            if (localById.ContainsKey(rule.Id))
+            {
+                merged.Add(rule);
+            }
         }
 
         merged.Sort((a, b) => a.Priority.CompareTo(b.Priority));
@@ -74,19 +112,47 @@ internal static class RuleSetMerger
 
     private static List<string>? MergeAliases(List<string>? community, List<string>? local)
     {
-        if (community is null or { Count: 0 } && local is null or { Count: 0 }) return null;
+        if (community is null or { Count: 0 } && local is null or { Count: 0 })
+        {
+            return null;
+        }
 
         var set = new HashSet<string>(StringComparer.Ordinal);
-        if (community is { Count: > 0 }) foreach (var alias in community) set.Add(alias);
-        if (local is { Count: > 0 }) foreach (var alias in local) set.Add(alias);
-        return set.ToList();
+        if (community is { Count: > 0 })
+        {
+            foreach (var alias in community)
+            {
+                set.Add(alias);
+            }
+        }
+
+        if (local is { Count: > 0 })
+        {
+            foreach (var alias in local)
+            {
+                set.Add(alias);
+            }
+        }
+
+        return [.. set];
     }
 
     private static DiskEnrichment? MergeEnrichment(DiskEnrichment? community, DiskEnrichment? local)
     {
-        if (community is null && local is null) return null;
-        if (community is null) return local;
-        if (local is null) return community;
+        if (community is null && local is null)
+        {
+            return null;
+        }
+
+        if (community is null)
+        {
+            return local;
+        }
+
+        if (local is null)
+        {
+            return community;
+        }
 
         return new DiskEnrichment
         {

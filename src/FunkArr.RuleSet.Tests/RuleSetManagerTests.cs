@@ -5,7 +5,6 @@ using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
-using FunkArr.Messages.Scoring;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

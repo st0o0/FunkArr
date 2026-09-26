@@ -332,7 +332,7 @@ public sealed class HistoryStateTests
     private static Guid ParseGuid(string shortId) =>
         Guid.Parse($"00000000-0000-0000-0000-{shortId.PadLeft(12, '0')}");
 
-    private static HistoryRecorded CreateEvent(
+    private static ScoringHistoryRecorded CreateEvent(
         string requestId = "a0000001",
         int candidateCount = 5,
         int matchedCount = 2,

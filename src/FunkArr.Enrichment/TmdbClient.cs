@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -32,15 +33,19 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
 
         log.LogDebug("TMDB cache miss for movie {TmdbId}, fetching", tmdbId);
         Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "miss"));
+        var sw = Stopwatch.StartNew();
         var movie = await FetchMovieAsync(tmdbId);
         if (movie is null)
         {
+            Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, new KeyValuePair<string, object?>("api", "tmdb"));
             return null;
         }
 
         var altTitles = await FetchAlternativeTitlesAsync(tmdbId);
+        Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, new KeyValuePair<string, object?>("api", "tmdb"));
         var data = new TmdbMovieData(movie, altTitles);
         cache.Set(cacheKey, data, _movieTtl);
+        Telemetry.SetTmdbCacheEntries(CacheEntryCount);
         return data;
     }
 
@@ -68,6 +73,7 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         var altTitles = await FetchAlternativeTitlesAsync(movie.Id);
         var data = new TmdbMovieData(movie, altTitles);
         cache.Set(cacheKey, data, _movieTtl);
+        Telemetry.SetTmdbCacheEntries(CacheEntryCount);
         return data;
     }
 

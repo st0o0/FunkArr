@@ -118,7 +118,7 @@ internal static class TestScoreMappingExtensions
             }
         }
 
-        return result.Count > 0 ? result.ToArray() : null;
+        return result.Count > 0 ? [.. result] : null;
     }
 
     private static MsgScoring.ScoreCandidate ToMessage(this TestCandidate c) =>

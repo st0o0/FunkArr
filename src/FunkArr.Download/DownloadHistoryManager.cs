@@ -10,7 +10,7 @@ namespace FunkArr.Download;
 
 public sealed class DownloadHistoryManager : ReceivePersistentActor
 {
-    private const int SnapshotInterval = 25;
+    private const int _snapshotInterval = 25;
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
@@ -37,7 +37,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
                 _state = DownloadHistoryManagerStateExtensions.FromPersistence(persisted);
             }
         });
-        Recover<HistoryRecorded>(evt => _state = _state.Apply(evt));
+        Recover<DownloadHistoryRecorded>(evt => _state = _state.Apply(evt));
         Recover<HistoryRemoved>(evt => _state = _state.Apply(evt));
         Recover<HistoryTrimmed>(evt => _state = _state.Apply(evt));
     }
@@ -45,9 +45,11 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
     private void HandleRecord(RecordDownload cmd)
     {
         if (_state.Contains(cmd.DownloadId))
+        {
             return;
+        }
 
-        var evt = new HistoryRecorded(
+        var evt = new DownloadHistoryRecorded(
             cmd.DownloadId, cmd.Title, cmd.Category.ToPersistence(), cmd.Size,
             cmd.Status.ToPersistence(), cmd.RelativePath, cmd.FailMessage,
             cmd.DownloadTimeSeconds, cmd.CompletedAt);
@@ -70,7 +72,9 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
             {
                 Telemetry.DownloadsCompleted.Add(1);
                 if (cmd.Size > 0)
+                {
                     Telemetry.DownloadBytes.Add(cmd.Size);
+                }
             }
             else if (cmd.Status == DownloadStatus.Failed)
             {
@@ -101,7 +105,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
     private void MaybeSnapshot()
     {
-        if (LastSequenceNr % SnapshotInterval == 0)
+        if (LastSequenceNr % _snapshotInterval == 0)
         {
             SaveSnapshot(_state.GetPersistenceState());
         }

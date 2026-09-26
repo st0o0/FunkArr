@@ -29,15 +29,18 @@ public sealed record ReleaseVariant(
 
         var identifier = BuildIdentifier(item.Identity, item.Source.AiredAt, mediaType);
 
-        return variants.Select(v => new ReleaseVariant(
-            ReleaseTitleBuilder.Format(display.MediaName, identifier, display.EpisodeTitle, v.Quality),
-            v.Url,
-            item.Source,
-            item.Identity,
-            item.Score,
-            v.Quality,
-            item.Source.Size > 0 ? item.Source.Size : v.EstimatedSize,
-            item.Match)).ToArray();
+        return
+        [
+            .. variants.Select(v => new ReleaseVariant(
+                ReleaseTitleBuilder.Format(display.MediaName, identifier, display.EpisodeTitle, v.Quality),
+                v.Url,
+                item.Source,
+                item.Identity,
+                item.Score,
+                v.Quality,
+                item.Source.Size > 0 ? item.Source.Size : v.EstimatedSize,
+                item.Match))
+        ];
     }
 
     internal static string? BuildIdentifier(MediaIdentity identity, DateTimeOffset? airedAt, MediaType mediaType) =>

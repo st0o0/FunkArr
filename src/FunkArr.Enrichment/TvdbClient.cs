@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -13,6 +14,8 @@ namespace FunkArr.Enrichment;
 
 public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IMemoryCache cache, ILogger<TvdbClient> log, TimeProvider timeProvider)
 {
+    private static readonly KeyValuePair<string, object?> _apiTag = new("api", "tvdb");
+
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -28,15 +31,18 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         if (cache.TryGetValue(cacheKey, out TvdbEpisode[]? cached))
         {
             log.LogDebug("TVDB cache hit for series {SeriesId}", seriesId);
-            Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tvdb"), new KeyValuePair<string, object?>("status", "hit"));
+            Telemetry.Requests.Add(1, _apiTag, new KeyValuePair<string, object?>("status", "hit"));
             return cached!;
         }
 
         log.LogDebug("TVDB cache miss for series {SeriesId}, fetching", seriesId);
-        Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tvdb"), new KeyValuePair<string, object?>("status", "miss"));
+        Telemetry.Requests.Add(1, _apiTag, new KeyValuePair<string, object?>("status", "miss"));
+        var sw = Stopwatch.StartNew();
         var episodes = await FetchEpisodesAsync(seriesId);
+        Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, _apiTag);
         var ttl = DetermineShowTtl(episodes);
         cache.Set(cacheKey, episodes, ttl);
+        Telemetry.SetTvdbCacheEntries(CacheEntryCount);
         return episodes;
     }
 
@@ -94,7 +100,7 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
             page++;
         }
 
-        return episodes.ToArray();
+        return [.. episodes];
     }
 
     private TimeSpan DetermineShowTtl(TvdbEpisode[] episodes)

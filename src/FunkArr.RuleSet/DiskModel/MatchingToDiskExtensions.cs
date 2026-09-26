@@ -19,7 +19,7 @@ internal static class MatchingToDiskExtensions
             }
             : null,
         Confidence = body.Confidence,
-        Rules = body.Rules.Select(MapRule).ToList(),
+        Rules = [.. body.Rules.Select(MapRule)],
         Standalone = body.Standalone ?? false,
         Disable = body.Disable?.ToList(),
         Enrichment = body.Enrichment is not null ? MapEnrichment(body.Enrichment) : null,
@@ -69,7 +69,7 @@ internal static class MatchingToDiskExtensions
     private static DiskEnrichment MapEnrichment(Messages.Enrichment.EnrichmentConfig config) => new()
     {
         Enabled = config.Enabled,
-        Methods = config.Methods.ToList(),
+        Methods = [.. config.Methods],
         Title = new DiskTitleMatch { Threshold = config.Title.Threshold },
         Airdate = new DiskAirdateMatch { Tolerance = config.Airdate.Tolerance, MinTitleAffinity = config.Airdate.MinTitleAffinity },
         Runtime = new DiskRuntimeMatch { Tolerance = config.Runtime.Tolerance, Mode = config.Runtime.Mode },

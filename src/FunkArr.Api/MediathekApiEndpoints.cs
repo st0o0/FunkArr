@@ -49,7 +49,7 @@ public static class MediathekApiEndpoints
 
             var manager = await registry.GetAsync<IMediathekManager>();
             var query = new QueryMediathek(
-                fields.ToArray(),
+                [.. fields],
                 SortBy: req.SortBy,
                 SortOrder: req.SortOrder,
                 Future: false,
@@ -63,7 +63,7 @@ public static class MediathekApiEndpoints
             {
                 QueryMediathekCompleted completed => Results.Ok(
                     new ApiModels.MediathekSearchResponse(
-                        completed.Items.Select(i => i.ToApi()).ToArray(),
+                        [.. completed.Items.Select(i => i.ToApi())],
                         completed.Total)),
                 QueryMediathekFailed failed => Results.Problem(
                     statusCode: 502, title: "MediathekViewWeb Error", detail: failed.Cause.Message),

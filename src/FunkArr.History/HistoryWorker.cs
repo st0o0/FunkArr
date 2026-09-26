@@ -31,7 +31,7 @@ public sealed class HistoryWorker : ReceivePersistentActor
             }
         });
 
-        Recover<HistoryRecorded>(evt =>
+        Recover<ScoringHistoryRecorded>(evt =>
         {
             _state = _state.Apply(evt);
         });
@@ -42,20 +42,40 @@ public sealed class HistoryWorker : ReceivePersistentActor
             Persist(evt, _ =>
             {
                 var opts = _optionsMonitor.CurrentValue;
+                var beforeCount = newState.Snapshots.Count;
                 _state = newState.Trim(opts.MaxSnapshots, opts.MaxAgeDays);
+                var trimCount = beforeCount - _state.Snapshots.Count;
+
+                if (trimCount > 0)
+                {
+                    Telemetry.Trimmed.Add(trimCount);
+                }
 
                 if (LastSequenceNr % opts.SnapshotInterval == 0)
                 {
                     SaveSnapshot(_state.GetPersistenceState());
                 }
 
+                Telemetry.Recordings.Add(1);
                 _statsCollector.Tell(new UpdateStats(ruleSetId, _state.Stats));
             });
         });
 
-        Command<QueryScoringHistory>(query => Sender.Tell(_state.QueryHistory(query)));
-        Command<QueryScoringDetail>(query => Sender.Tell(_state.QueryDetail(query)));
-        Command<QueryScoringStats>(_ => Sender.Tell(_state.Stats));
+        Command<QueryScoringHistory>(query =>
+        {
+            Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "history"));
+            Sender.Tell(_state.QueryHistory(query));
+        });
+        Command<QueryScoringDetail>(query =>
+        {
+            Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "detail"));
+            Sender.Tell(_state.QueryDetail(query));
+        });
+        Command<QueryScoringStats>(_ =>
+        {
+            Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "stats"));
+            Sender.Tell(_state.Stats);
+        });
         Command<SaveSnapshotSuccess>(_ => { });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
     }

@@ -45,17 +45,20 @@ internal static class DiskToMatchingExtensions
             return [];
         }
 
-        return disk.Rules.Select(r =>
-        {
-            RuleSetEnumMapping.TryParseStrategy(r.Strategy, out var strategy);
+        return
+        [
+            .. disk.Rules.Select(r =>
+            {
+                RuleSetEnumMapping.TryParseStrategy(r.Strategy, out var strategy);
 
-            return new RuleSetDetailRule(
-                r.Id, r.Priority, r.Confidence, strategy,
-                r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
-                r.Filters.ToFilterGroupOutput(),
-                r.TitleRules?.Select(t => new TitleRuleOutput(
-                    t.Type ?? TitlePartType.Static, t.Field, t.Pattern, t.CaptureGroup, t.Value)).ToArray());
-        }).ToArray();
+                return new RuleSetDetailRule(
+                    r.Id, r.Priority, r.Confidence, strategy,
+                    r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
+                    r.Filters.ToFilterGroupOutput(),
+                    r.TitleRules?.Select(t => new TitleRuleOutput(
+                        t.Type ?? TitlePartType.Static, t.Field, t.Pattern, t.CaptureGroup, t.Value)).ToArray());
+            })
+        ];
     }
 
     private static FilterGroupOutput? ToFilterGroupOutput(this DiskFilterGroup? group)
@@ -89,7 +92,7 @@ internal static class DiskToMatchingExtensions
             }
         }
 
-        return results.Count > 0 ? results.ToArray() : null;
+        return results.Count > 0 ? [.. results] : null;
     }
 
     private static MatchingRule[] TransformRules(List<DiskRule> rawRules)
@@ -126,7 +129,7 @@ internal static class DiskToMatchingExtensions
             results.Add(new MatchingRule(raw.Id, raw.Priority, raw.Confidence, filters, identification));
         }
 
-        return results.ToArray();
+        return [.. results];
     }
 
     private static TitlePart[]? TransformTitleRules(List<DiskTitleRule>? titleRules)
@@ -181,6 +184,6 @@ internal static class DiskToMatchingExtensions
             }
         }
 
-        return results.Count > 0 ? results.ToArray() : null;
+        return results.Count > 0 ? [.. results] : null;
     }
 }

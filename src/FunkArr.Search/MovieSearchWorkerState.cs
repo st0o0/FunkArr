@@ -47,7 +47,7 @@ public sealed class MovieSearchWorkerState
 
     public void Apply(QueryMediathekCompleted result)
     {
-        Sources = result.Items.Select(SourceInfo.From).ToArray();
+        Sources = [.. result.Items.Select(SourceInfo.From)];
     }
 
     public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
@@ -61,24 +61,27 @@ public sealed class MovieSearchWorkerState
     {
         var effectiveMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
 
-        Items = scored.Results.Select(s =>
-        {
-            var episodeTitle = s.Metadata?.ConstructedTitle
-                ?? ReleaseVariant.CleanTitle(Sources[s.Index].Title, effectiveMediaName);
-            return new EnrichedItem(
-                s.Index,
-                Sources[s.Index],
-                s.Score,
-                s.Matched,
-                s.Metadata is not null,
-                BaseIdentity with
-                {
-                    Season = s.Metadata?.Season,
-                    Episode = s.Metadata?.Episode,
-                },
-                Match: null,
-                Display: s.Matched ? new ReleaseDisplay(effectiveMediaName, episodeTitle) : null);
-        }).ToArray();
+        Items =
+        [
+            .. scored.Results.Select(s =>
+            {
+                var episodeTitle = s.Metadata?.ConstructedTitle
+                                   ?? ReleaseVariant.CleanTitle(Sources[s.Index].Title, effectiveMediaName);
+                return new EnrichedItem(
+                    s.Index,
+                    Sources[s.Index],
+                    s.Score,
+                    s.Matched,
+                    s.Metadata is not null,
+                    BaseIdentity with
+                    {
+                        Season = s.Metadata?.Season,
+                        Episode = s.Metadata?.Episode,
+                    },
+                    Match: null,
+                    Display: s.Matched ? new ReleaseDisplay(effectiveMediaName, episodeTitle) : null);
+            })
+        ];
 
         ItemTraces = scored.ItemTraces;
     }
@@ -87,30 +90,33 @@ public sealed class MovieSearchWorkerState
     {
         var lookup = enriched.Movies.ToDictionary(m => m.Index);
 
-        Items = Items.Select(item =>
-        {
-            if (!lookup.TryGetValue(item.Index, out var movie))
+        Items =
+        [
+            .. Items.Select(item =>
             {
-                return item;
-            }
-
-            var display = item.Display;
-            if (display is not null && movie.Confidence >= 0.9f && !string.IsNullOrEmpty(movie.Title))
-            {
-                display = display with { EpisodeTitle = movie.Title };
-            }
-
-            return item with
-            {
-                Identity = item.Identity with
+                if (!lookup.TryGetValue(item.Index, out var movie))
                 {
-                    ImdbId = movie.ImdbId ?? item.Identity.ImdbId,
-                    TmdbId = movie.TmdbId ?? item.Identity.TmdbId,
-                },
-                Match = new MatchInfo(movie.Confidence, movie.Method),
-                Display = display,
-            };
-        }).ToArray();
+                    return item;
+                }
+
+                var display = item.Display;
+                if (display is not null && movie.Confidence >= 0.9f && !string.IsNullOrEmpty(movie.Title))
+                {
+                    display = display with { EpisodeTitle = movie.Title };
+                }
+
+                return item with
+                {
+                    Identity = item.Identity with
+                    {
+                        ImdbId = movie.ImdbId ?? item.Identity.ImdbId,
+                        TmdbId = movie.TmdbId ?? item.Identity.TmdbId,
+                    },
+                    Match = new MatchInfo(movie.Confidence, movie.Method),
+                    Display = display,
+                };
+            })
+        ];
     }
 
     public bool TryGetMediathekQuery([NotNullWhen(true)] out QueryMediathek? query)
@@ -122,7 +128,7 @@ public sealed class MovieSearchWorkerState
         }
 
         query = new QueryMediathek(
-            Fields: fields.ToArray(),
+            Fields: [.. fields],
             SortBy: "timestamp",
             SortOrder: "desc",
             Future: false,
@@ -238,36 +244,39 @@ public sealed class MovieSearchWorkerState
     public void MergeEnrichmentIntoTraces(EnrichedMovie[] enriched)
     {
         var lookup = enriched.ToDictionary(m => m.Index);
-        ItemTraces = ItemTraces.Select(trace =>
-        {
-            if (!trace.Matched)
+        ItemTraces =
+        [
+            .. ItemTraces.Select(trace =>
             {
-                return trace;
-            }
+                if (!trace.Matched)
+                {
+                    return trace;
+                }
 
-            var candidateIndex = Array.FindIndex(Items, i => i.Source.Title == trace.CandidateTitle && i.Matched);
-            if (candidateIndex < 0)
-            {
-                return trace;
-            }
+                var candidateIndex = Array.FindIndex(Items, i => i.Source.Title == trace.CandidateTitle && i.Matched);
+                if (candidateIndex < 0)
+                {
+                    return trace;
+                }
 
-            if (lookup.TryGetValue(candidateIndex, out var movie))
-            {
+                if (lookup.TryGetValue(candidateIndex, out var movie))
+                {
+                    return trace with
+                    {
+                        EnrichmentTrace = new EnrichmentTrace(
+                            movie.Method, movie.Confidence, true,
+                            ResolvedTitle: movie.Title, ResolvedYear: movie.Year)
+                    };
+                }
+
                 return trace with
                 {
                     EnrichmentTrace = new EnrichmentTrace(
-                        movie.Method, movie.Confidence, true,
-                        ResolvedTitle: movie.Title, ResolvedYear: movie.Year)
+                        MatchMethod.TitleMatch, 0f, false,
+                        Detail: "no matching movie found")
                 };
-            }
-
-            return trace with
-            {
-                EnrichmentTrace = new EnrichmentTrace(
-                    MatchMethod.TitleMatch, 0f, false,
-                    Detail: "no matching movie found")
-            };
-        }).ToArray();
+            })
+        ];
     }
 
     public RecordHistory? BuildRecordHistory()
@@ -290,24 +299,30 @@ public sealed class MovieSearchWorkerState
     private EnrichedItem[] EnsureDisplay(EnrichedItem[] items)
     {
         var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
-        return items.Select(item =>
-            item.Display is not null
-                ? item
-                : item with
-                {
-                    Display = new ReleaseDisplay(
-                        fallbackMediaName,
-                        ReleaseVariant.CleanTitle(item.Source.Title, fallbackMediaName)),
-                }).ToArray();
+        return
+        [
+            .. items.Select(item =>
+                item.Display is not null
+                    ? item
+                    : item with
+                    {
+                        Display = new ReleaseDisplay(
+                            fallbackMediaName,
+                            ReleaseVariant.CleanTitle(item.Source.Title, fallbackMediaName)),
+                    })
+        ];
     }
 
     private EnrichedItem[] UnscoredItems()
     {
         var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
-        return Sources.Select((s, i) => new EnrichedItem(
-            i, s, 0.0, false, false, BaseIdentity, null,
-            Display: new ReleaseDisplay(
-                fallbackMediaName,
-                ReleaseVariant.CleanTitle(s.Title, fallbackMediaName)))).ToArray();
+        return
+        [
+            .. Sources.Select((s, i) => new EnrichedItem(
+                i, s, 0.0, false, false, BaseIdentity, null,
+                Display: new ReleaseDisplay(
+                    fallbackMediaName,
+                    ReleaseVariant.CleanTitle(s.Title, fallbackMediaName))))
+        ];
     }
 }

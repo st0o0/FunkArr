@@ -17,11 +17,13 @@ internal static class RuleSetMappingExtensions
                 msg.Source.CommunityPath, msg.Source.LocalPath,
                 msg.Source.CommunityModified, msg.Source.LocalModified),
             msg.DefaultConfidence,
-            msg.Rules.Select(r => new ApiModels.RuleSetDetailRule(
-                r.Id, r.Priority, r.Confidence,
-                (ApiModels.IdentificationStrategy)(int)r.Strategy,
-                r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
-                r.Filters.ToApi(), r.TitleRules?.Select(t => t.ToApi()).ToArray())).ToArray(),
+            [
+                .. msg.Rules.Select(r => new ApiModels.RuleSetDetailRule(
+                    r.Id, r.Priority, r.Confidence,
+                    (ApiModels.IdentificationStrategy)(int)r.Strategy,
+                    r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
+                    r.Filters.ToApi(), r.TitleRules?.Select(t => t.ToApi()).ToArray()))
+            ],
             msg.Enrichment.ToApi());
 
     internal static ApiModels.FilterGroupOutput? ToApi(this MsgScoring.FilterGroupOutput? output) =>
@@ -42,7 +44,7 @@ internal static class RuleSetMappingExtensions
 
     internal static ApiModels.EnrichmentConfigOutput ToApi(this EnrichmentConfig config) =>
         new(config.Enabled,
-            config.Methods.Select(m => (ApiModels.EnrichmentMethod)(int)m).ToArray(),
+            [.. config.Methods.Select(m => (ApiModels.EnrichmentMethod)(int)m)],
             new ApiModels.TitleMatchConfigOutput(config.Title.Threshold),
             new ApiModels.AirdateMatchConfigOutput(config.Airdate.Tolerance, config.Airdate.MinTitleAffinity),
             new ApiModels.RuntimeMatchConfigOutput(config.Runtime.Tolerance, (ApiModels.RuntimeMode)(int)config.Runtime.Mode),
@@ -62,15 +64,17 @@ internal static class RuleSetMappingExtensions
                 (Messages.MediaType)(int)Enum.Parse<ApiModels.MediaType>(request.Media.Type, true),
                 request.Media.TvdbId, request.Media.ImdbId, request.Media.TmdbId),
             request.Confidence,
-            request.Rules.Select(r => new RuleSetRuleInput(
-                r.Id, r.Priority, r.Confidence,
-                r.Strategy is not null ? (MsgScoring.IdentificationStrategy)(int)r.Strategy : null,
-                r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
-                r.Filters is not null ? MapFilters(r.Filters) : null,
-                r.TitleRules?.Select(t => new RuleSetTitleRuleInput(
-                    (MsgScoring.TitlePartType)(int)t.Type,
-                    t.Field is not null ? (MsgScoring.FilterField)(int)t.Field : null,
-                    t.Pattern, t.CaptureGroup, t.Value)).ToArray())).ToArray(),
+            [
+                .. request.Rules.Select(r => new RuleSetRuleInput(
+                    r.Id, r.Priority, r.Confidence,
+                    r.Strategy is not null ? (MsgScoring.IdentificationStrategy)(int)r.Strategy : null,
+                    r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
+                    r.Filters is not null ? MapFilters(r.Filters) : null,
+                    r.TitleRules?.Select(t => new RuleSetTitleRuleInput(
+                        (MsgScoring.TitlePartType)(int)t.Type,
+                        t.Field is not null ? (MsgScoring.FilterField)(int)t.Field : null,
+                        t.Pattern, t.CaptureGroup, t.Value)).ToArray()))
+            ],
             request.Standalone, request.Disable,
             enrichment?.ToMessage());
 
@@ -86,8 +90,10 @@ internal static class RuleSetMappingExtensions
 
     internal static EnrichmentConfig ToMessage(this ApiModels.EnrichmentConfigInput input) =>
         new(input.Enabled ?? true,
-            (input.Methods ?? [ApiModels.EnrichmentMethod.Title, ApiModels.EnrichmentMethod.Airdate])
-                .Select(m => (EnrichmentMethod)(int)m).ToArray(),
+            [
+                .. (input.Methods ?? [ApiModels.EnrichmentMethod.Title, ApiModels.EnrichmentMethod.Airdate])
+                .Select(m => (EnrichmentMethod)(int)m)
+            ],
             new TitleMatchConfig(input.Title?.Threshold ?? 0.7f),
             new AirdateMatchConfig(input.Airdate?.Tolerance ?? 7, input.Airdate?.MinTitleAffinity ?? 0.3f),
             new RuntimeMatchConfig(
@@ -97,13 +103,15 @@ internal static class RuleSetMappingExtensions
 
     internal static ApiModels.ScoringHistory ToApi(this ScoringHistoryResult msg) =>
         new(msg.RuleSetId, msg.TotalCount,
-            msg.Snapshots.Select(s => new ApiModels.ScoringSnapshotSummary(
+        [
+            .. msg.Snapshots.Select(s => new ApiModels.ScoringSnapshotSummary(
                 s.RequestId, (ApiModels.SearchSource)(int)s.Source, s.Query, s.Timestamp,
-                s.CandidateCount, s.MatchedCount)).ToArray());
+                s.CandidateCount, s.MatchedCount))
+        ]);
 
     internal static ApiModels.ScoringDetail ToApi(this ScoringDetailResult msg) =>
         new(msg.RequestId, (ApiModels.SearchSource)(int)msg.Source, msg.Query, msg.Timestamp,
-            msg.ItemTraces.Select(t => t.ToApi()).ToArray());
+            [.. msg.ItemTraces.Select(t => t.ToApi())]);
 
     internal static ApiModels.SourceType ToApi(this string? sourceType) => sourceType switch
     {

@@ -157,6 +157,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             }
         }
 
+        Telemetry.Failed.Add(1);
         pending.OriginalSender.Tell(new SearchCommandFailed(searchId, cause));
         _state = _state.Apply(new SearchManagerState.RemoveSearch(searchId));
     }
@@ -180,6 +181,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             }
         }
 
+        Telemetry.Timeouts.Add(1);
         _log.Warning("Search {SearchId} timed out after {Timeout}s", timeout.SearchId, _searchTimeout.TotalSeconds);
         pending.OriginalSender.Tell(new SearchCommandFailed(timeout.SearchId, new TimeoutException("Search timed out")));
         _state = _state.Apply(new SearchManagerState.RemoveSearch(timeout.SearchId));
