@@ -26,8 +26,12 @@ No Usenet account needed. No torrents. Just direct downloads from public media l
 - **Metadata resolution** - resolves series and movies via TMDB and TVDB for accurate matching
 - **Match intelligence** - tracks which mappings worked so results improve over time
 - **Subtitle handling** - downloads or extracts subtitles from HLS streams, converts to SRT
-- **Web UI** - download queue, history, ruleset management, and setup health checks
-- **Single container** - runs on any Docker host, SQLite by default
+- **Network routing and proxy** - route channel-specific traffic through VPN or proxy for geo-restricted content (ORF, SRF, etc.)
+- **Download scheduling** - define time windows for downloads to run, pause automatically outside schedule
+- **Health checks** - real health checks for FFmpeg, MediathekViewWeb connectivity, and directory write access
+- **Observability** - OpenTelemetry tracing and metrics, works with Aspire Dashboard or any OTLP backend
+- **Web UI** - download queue with detail view, history, ruleset management, settings with log viewer, and setup health checks
+- **Single container** - runs on any Docker host, SQLite by default, PUID/PGID support
 
 ## Quick Start
 
@@ -96,6 +100,13 @@ All configuration is via environment variables. Defaults work out of the box - t
 | `FunkArr__Download__ConcurrentDownloads` | `3` | Max parallel downloads |
 | `FunkArr__Download__Categories__0__Name` | - | Category name (e.g. `tv`) - map Sonarr/Radarr categories to subdirectories |
 | `FunkArr__Download__Categories__0__Dir` | - | Subdirectory for this category (e.g. `tv`) |
+| `FunkArr__Download__DownloadSchedule__0__Start` | - | Schedule window start time (e.g. `02:00`) |
+| `FunkArr__Download__DownloadSchedule__0__End` | - | Schedule window end time (e.g. `06:00`) |
+| **Container** | | |
+| `PUID` | `1654` | User ID for file ownership |
+| `PGID` | `1654` | Group ID for file ownership |
+| **Observability** | | |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | _(empty)_ | OTLP receiver URL for OpenTelemetry export (e.g. `http://aspire-dashboard:18889`) |
 | **RuleSets** | | |
 | `FunkArr__RuleSet__Repository` | `st0o0/funkarr` | GitHub repo for community rulesets |
 | `FunkArr__RuleSet__Version` | `latest` | Pin ruleset version or `latest` |
@@ -105,10 +116,10 @@ All configuration is via environment variables. Defaults work out of the box - t
 | `FunkArr__Tvdb__ApiKey` | _(empty)_ | TVDB API key for episode guide resolution |
 | **Scoring** | | |
 | `FunkArr__Scoring__PoolSize` | `4` | Parallel scoring workers |
-| **Match History** | | |
-| `FunkArr__MatchHistory__MaxSnapshots` | `100` | Max match history snapshots to retain |
-| `FunkArr__MatchHistory__MaxAgeDays` | `30` | Days before old snapshots are pruned |
-| `FunkArr__MatchHistory__SnapshotInterval` | `20` | Interval between snapshots |
+| **Scoring History** | | |
+| `FunkArr__ScoringHistory__MaxSnapshots` | `100` | Max scoring history snapshots to retain |
+| `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Days before old snapshots are pruned |
+| `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Interval between snapshots |
 | **PostgreSQL** | | |
 | `FunkArr__Postgres__Host` | _(empty)_ | PostgreSQL host - set to switch from SQLite to Postgres |
 | `FunkArr__Postgres__Port` | `5432` | PostgreSQL port |
@@ -116,7 +127,7 @@ All configuration is via environment variables. Defaults work out of the box - t
 | `FunkArr__Postgres__Password` | _(empty)_ | PostgreSQL password |
 | `FunkArr__Postgres__Database` | `funkarr` | PostgreSQL database name |
 
-See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options.
+See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://st0o0.github.io/funkarr/configuration).
 
 ## Build & Test
 
@@ -132,8 +143,9 @@ Tests use xUnit v3 on Microsoft Testing Platform - run with `dotnet run`, not `d
 dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
 dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
 dotnet run --project src/FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj
-dotnet run --project src/FunkArr.MatchMagic.Tests/FunkArr.MatchMagic.Tests.csproj
-dotnet run --project src/FunkArr.MetadataResolver.Tests/FunkArr.MetadataResolver.Tests.csproj
+dotnet run --project src/FunkArr.Scoring.Tests/FunkArr.Scoring.Tests.csproj
+dotnet run --project src/FunkArr.History.Tests/FunkArr.History.Tests.csproj
+dotnet run --project src/FunkArr.Enrichment.Tests/FunkArr.Enrichment.Tests.csproj
 dotnet run --project src/FunkArr.Api.Tests/FunkArr.Api.Tests.csproj
 dotnet run --project src/FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj
 dotnet run --project src/FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj

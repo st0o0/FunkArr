@@ -26,6 +26,7 @@ export default defineConfig({
               { text: 'Konfiguration', link: '/configuration' },
               { text: 'So funktioniert FunkArr', link: '/how-it-works' },
               { text: 'Web-Oberfläche', link: '/web-ui' },
+              { text: 'Observability', link: '/observability' },
               { text: 'Fehlerbehebung', link: '/troubleshooting' },
               { text: 'Vergleich mit Alternativen', link: '/comparison' }
             ]
@@ -64,6 +65,7 @@ export default defineConfig({
               { text: 'Configuration', link: '/en/configuration' },
               { text: 'How FunkArr Works', link: '/en/how-it-works' },
               { text: 'Web UI', link: '/en/web-ui' },
+              { text: 'Observability', link: '/en/observability' },
               { text: 'Troubleshooting', link: '/en/troubleshooting' },
               { text: 'Comparison', link: '/en/comparison' }
             ]

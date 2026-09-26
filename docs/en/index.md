@@ -20,6 +20,10 @@ features:
     details: Add it as a SABnzbd download client - Sonarr and Radarr manage downloads natively.
   - title: Community Rulesets
     details: Map messy Mediathek titles to structured season/episode format. Auto-synced from GitHub.
+  - title: Proxy and Geo-Routing
+    details: Route channel-specific traffic through VPN or proxy - ideal for geo-restricted content from ORF, SRF, and others.
+  - title: Observability
+    details: OpenTelemetry tracing and metrics for downloads, scoring, and enrichment. Aspire Dashboard or any OTLP backend.
   - title: Single Container
-    details: Runs on any Docker host with SQLite by default. Optional PostgreSQL for larger setups.
+    details: Runs on any Docker host with SQLite by default. Optional PostgreSQL for larger setups. PUID/PGID support.
 ---

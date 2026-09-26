@@ -35,6 +35,24 @@ You can drag and drop downloads between priority levels and reorder them within 
 
 The top-right corner lets you pause and resume the entire download pipeline. If a schedule is active, the next window is displayed.
 
+### Download Detail
+
+Click a card in the queue or an entry in the history to open the detail view (`/activity/:id`). It shows:
+
+- **Header** - Title, status badge (phase/Completed/Failed), channel badge, subtitle indicator (SUB)
+- **Progress bar** - Downloaded bytes / total size, speed, and ETA (for active downloads)
+- **Details grid** - Category, size, phase (active), priority, file path (history), duration (history), completed timestamp (history)
+- **Failure message** - Highlighted in red for failed downloads
+
+Available actions depending on status:
+
+| Status | Actions |
+|--------|---------|
+| Active/Queued | Force start, Delete |
+| Failed | Retry, Delete |
+
+For active downloads the view updates live via Server-Sent Events.
+
 ### History
 
 Table view of all completed and failed downloads with:
@@ -110,6 +128,42 @@ A visual editor for creating and editing rulesets. The page is split in two:
 - **Right: Live preview** - Shows in real time which Mediathek entries the current configuration would match
 
 Changes in the form update the preview instantly, so you can test rules directly against live Mediathek data.
+
+## Settings
+
+The settings page shows the current configuration and system information in five sections.
+
+### Downloads
+
+Shows the number of concurrent downloads and the configured schedule. When download time slots are defined, the active periods are displayed.
+
+### Metadata Cache
+
+Statistics for the TVDB and TMDB cache: number of entries and age of the oldest entry.
+
+### Network Routes
+
+Shows configured routes (name, proxy address, default route) and channel-to-route mappings.
+
+### System
+
+General system information:
+
+- App version
+- Community ruleset version
+- FFmpeg version
+- API key (masked)
+
+### Logs
+
+Real-time log viewer using Server-Sent Events. Features:
+
+- **Filter by level** - Information, Warning, Error
+- **Structured display** - Timestamp, level, source context, and message per entry
+- **Auto-scroll** - Automatically scrolls to the latest entries
+- **Buffer** - Shows the last 500 entries
+
+On page load the most recent entries are fetched via HTTP, after which new entries are streamed live.
 
 ## Scoring
 

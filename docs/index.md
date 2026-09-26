@@ -20,6 +20,10 @@ features:
     details: Als SABnzbd-Download-Client hinzufügen - Sonarr und Radarr verwalten Downloads nativ.
   - title: Community-Regelwerke
     details: Chaotische Mediathek-Titel werden in strukturiertes Staffel-/Episodenformat umgewandelt. Automatisch von GitHub synchronisiert.
+  - title: Proxy und Geo-Routing
+    details: Leite Sender-spezifischen Traffic uber VPN oder Proxy - ideal fur geo-eingeschrankte Inhalte von ORF, SRF und anderen.
+  - title: Observability
+    details: OpenTelemetry-Tracing und -Metriken fur Downloads, Scoring und Enrichment. Aspire Dashboard oder jedes OTLP-Backend.
   - title: Ein Container
-    details: Läuft auf jedem Docker-Host mit SQLite als Standard. Optionales PostgreSQL für größere Setups.
+    details: Läuft auf jedem Docker-Host mit SQLite als Standard. Optionales PostgreSQL fur grossere Setups. PUID/PGID-Support.
 ---

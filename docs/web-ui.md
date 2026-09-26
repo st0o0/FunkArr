@@ -35,6 +35,24 @@ Per Drag-and-Drop kannst du Downloads zwischen Prioritätsstufen verschieben und
 
 Oben rechts kann die gesamte Download-Pipeline pausiert und wieder fortgesetzt werden. Wenn ein Zeitplan aktiv ist, wird das nächste Fenster angezeigt.
 
+### Download-Detail
+
+Klick auf eine Karte in der Warteschlange oder einen Eintrag im Verlauf offnet die Detailansicht (`/activity/:id`). Sie zeigt:
+
+- **Kopfbereich** - Titel, Status-Badge (Phase/Abgeschlossen/Fehlgeschlagen), Sender-Badge, Untertitel-Indikator (SUB)
+- **Fortschrittsbalken** - Heruntergeladene Bytes / Gesamtgrose, Geschwindigkeit und verbleibende Zeit (bei aktiven Downloads)
+- **Details-Raster** - Kategorie, Grose, Phase (aktiv), Prioritat, Dateipfad (Verlauf), Dauer (Verlauf), Abschlusszeitpunkt (Verlauf)
+- **Fehlermeldung** - Rot hervorgehoben bei fehlgeschlagenen Downloads
+
+Verfugbare Aktionen je nach Status:
+
+| Status | Aktionen |
+|--------|----------|
+| Aktiv/Wartend | Sofort starten, Loschen |
+| Fehlgeschlagen | Erneut versuchen, Loschen |
+
+Bei aktiven Downloads aktualisiert sich die Ansicht live uber Server-Sent Events.
+
 ### Verlauf
 
 Tabellarische Übersicht aller abgeschlossenen und fehlgeschlagenen Downloads mit:
@@ -110,6 +128,42 @@ Ein visueller Editor zum Erstellen und Bearbeiten von Regelwerken. Die Seite ist
 - **Rechts: Live-Vorschau** - Zeigt in Echtzeit, welche Mediathek-Einträge die aktuelle Konfiguration matchen würde
 
 Änderungen im Formular aktualisieren die Vorschau sofort, sodass du Regeln direkt gegen echte Mediathek-Daten testen kannst.
+
+## Einstellungen
+
+Die Einstellungen-Seite zeigt die aktuelle Konfiguration und System-Informationen in funf Bereichen.
+
+### Downloads
+
+Zeigt die Anzahl gleichzeitiger Downloads und den konfigurierten Zeitplan. Wenn Download-Zeitfenster definiert sind, werden die aktiven Perioden angezeigt.
+
+### Metadaten-Cache
+
+Statistiken zum TVDB- und TMDB-Cache: Anzahl der Eintrge und Alter des altesten Eintrags.
+
+### Netzwerk-Routen
+
+Zeigt die konfigurierten Routen (Name, Proxy-Adresse, Standard-Route) und die Sender-zu-Route-Zuordnungen.
+
+### System
+
+Allgemeine Systeminformationen:
+
+- App-Version
+- Community-Regelwerk-Version
+- FFmpeg-Version
+- API-Schlussel (maskiert)
+
+### Logs
+
+Echtzeit-Log-Viewer mit Server-Sent Events. Features:
+
+- **Filterung nach Level** - Information, Warning, Error
+- **Strukturierte Anzeige** - Zeitstempel, Level, Quell-Kontext und Nachricht pro Eintrag
+- **Auto-Scroll** - Springt automatisch zu den neuesten Eintrgen
+- **Puffer** - Zeigt die letzten 500 Eintrge
+
+Beim Laden der Seite werden die letzten Eintrge per HTTP-Anfrage geladen, danach werden neue Eintrge live gestreamt.
 
 ## Scoring
 
