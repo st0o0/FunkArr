@@ -1,6 +1,0 @@
-- [x] Create `FunkArrTestServer` in test projects with minimal WebApplication, ActorSystem, TestProbe registry, and HttpClient
-- [x] Add project references and `Microsoft.AspNetCore.Mvc.Testing` package to `FunkArr.Api.Tests` and `FunkArr.ArrApi.Tests`
-- [x] Write download API integration tests (GET queue, GET history, POST pause/resume)
-- [x] Write system API integration tests (GET version, GET storage, GET /alive)
-- [x] Write ArrApi integration tests (Newznab caps, SABnzbd version, API key rejection)
-- [x] Verify all tests pass (existing + new)
