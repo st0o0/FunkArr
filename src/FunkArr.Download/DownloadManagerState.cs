@@ -1,17 +1,28 @@
+using System.Collections.Immutable;
+using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Persistence;
 using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download;
 
 public sealed record DownloadManagerState(
     IReadOnlyList<QueueEntry> Queued,
-    IReadOnlyDictionary<Guid, DownloadPriority> Dispatched,
+    IReadOnlyDictionary<Guid, DispatchedEntry> Dispatched,
     bool Paused = false,
     bool ScheduleEnabled = true,
     DateTimeOffset? NextWindow = null)
 {
     public static readonly DownloadManagerState Empty =
-        new([], new Dictionary<Guid, DownloadPriority>());
+        new([], new Dictionary<Guid, DispatchedEntry>());
+
+    public static DownloadManagerState FromPersistence(PersistedDownloadManagerState persisted) =>
+        new(
+            Queued: persisted.Queued.Select(e => new QueueEntry(e.DownloadId, e.Priority.ToDomain(), e.Category.ToDomain())).ToArray(),
+            Dispatched: persisted.Dispatched.ToImmutableDictionary(
+                e => e.DownloadId,
+                e => new DispatchedEntry(e.Priority.ToDomain(), e.Category.ToDomain())),
+            Paused: persisted.Paused);
 }
 
 public static class DownloadManagerStateExtensions
@@ -19,7 +30,8 @@ public static class DownloadManagerStateExtensions
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadEnqueued evt)
     {
         var priority = evt.Priority.ToDomain();
-        var entry = new QueueEntry(evt.DownloadId, priority);
+        var category = (evt.Category ?? PersistedMediaType.Show).ToDomain();
+        var entry = new QueueEntry(evt.DownloadId, priority, category);
         var list = state.Queued.ToList();
         var insertAt = FindBucketEnd(list, priority);
         list.Insert(insertAt, entry);
@@ -29,9 +41,9 @@ public static class DownloadManagerStateExtensions
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadDispatched evt)
     {
         var entry = state.Queued.First(e => e.Id == evt.DownloadId);
-        var dict = new Dictionary<Guid, DownloadPriority>(state.Dispatched)
+        var dict = new Dictionary<Guid, DispatchedEntry>(state.Dispatched)
         {
-            [evt.DownloadId] = entry.Priority,
+            [evt.DownloadId] = new(entry.Priority, entry.Category),
         };
         return new(
             Queued: state.Queued.Where(e => e.Id != evt.DownloadId).ToArray(),
@@ -40,7 +52,7 @@ public static class DownloadManagerStateExtensions
 
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadDequeued evt)
     {
-        var dict = new Dictionary<Guid, DownloadPriority>(state.Dispatched);
+        var dict = new Dictionary<Guid, DispatchedEntry>(state.Dispatched);
         dict.Remove(evt.DownloadId);
         return new(
             Queued: state.Queued.Where(e => e.Id != evt.DownloadId).ToArray(),
@@ -50,11 +62,11 @@ public static class DownloadManagerStateExtensions
     public static DownloadManagerState ResetDispatched(this DownloadManagerState state)
     {
         var resetEntries = state.Dispatched
-            .Select(kv => new QueueEntry(kv.Key, kv.Value));
+            .Select(kv => new QueueEntry(kv.Key, kv.Value.Priority, kv.Value.Category));
         var merged = new List<QueueEntry>(resetEntries);
         merged.AddRange(state.Queued);
         merged.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-        return new(Queued: merged, Dispatched: new Dictionary<Guid, DownloadPriority>());
+        return new(Queued: merged, Dispatched: new Dictionary<Guid, DispatchedEntry>());
     }
 
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadMoved evt)
@@ -98,10 +110,11 @@ public static class DownloadManagerStateExtensions
         }
 
         var priority = evt.Priority.ToDomain();
+        var category = state.Queued[idx].Category;
         var list = state.Queued.ToList();
         list.RemoveAt(idx);
 
-        var newEntry = new QueueEntry(evt.DownloadId, priority);
+        var newEntry = new QueueEntry(evt.DownloadId, priority, category);
         var insertAt = FindBucketEnd(list, priority);
         list.Insert(insertAt, newEntry);
         return state with { Queued = list };
@@ -116,27 +129,40 @@ public static class DownloadManagerStateExtensions
     public static bool Contains(this DownloadManagerState state, Guid downloadId)
         => state.Queued.Any(e => e.Id == downloadId) || state.Dispatched.ContainsKey(downloadId);
 
-    public static QueueResult PaginateQueue(QueueItem[] items, QueryQueue query, int totalSlots, DownloadManagerState state)
+    public static (Guid[] PageIds, int TotalItems) GetPage(this DownloadManagerState state, QueryQueue query)
     {
-        IEnumerable<QueueItem> filtered = items;
-        if (query.Category is not null)
+        var ids = state.Dispatched.Keys
+            .Concat(state.Queued.Select(e => e.Id));
+
+        if (query.Category is { } category)
         {
-            filtered = filtered
-                .Where(i => i.Category == query.Category);
+            ids = state.Dispatched
+                .Where(kv => kv.Value.Category == category)
+                .Select(kv => kv.Key)
+                .Concat(state.Queued
+                    .Where(e => e.Category == category)
+                    .Select(e => e.Id));
         }
 
-        var materialized = filtered.ToArray();
-        var totalItems = materialized.Length;
+        var allIds = ids.ToArray();
+        var totalItems = allIds.Length;
 
-        var paged = materialized.Skip(query.Start);
+        var paged = allIds.AsEnumerable().Skip(query.Start);
         if (query.Limit > 0)
         {
             paged = paged.Take(query.Limit);
         }
 
-        return new QueueResult(paged.ToArray(), totalSlots, totalItems,
-            state.Paused, state.ScheduleEnabled, state.NextWindow);
+        return (paged.ToArray(), totalItems);
     }
+
+    public static PersistedDownloadManagerState GetPersistenceState(this DownloadManagerState state) =>
+        new(
+            state.Queued.Select(e => new PersistedQueueEntry(e.Id, e.Priority.ToPersistence(), e.Category.ToPersistence())).ToArray(),
+            state.Dispatched.Select(kv => new PersistedDispatchedEntry(kv.Key, kv.Value.Priority.ToPersistence(), kv.Value.Category.ToPersistence())).ToArray(),
+            state.Paused);
+
+
 
     private static int FindBucketEnd(List<QueueEntry> list, DownloadPriority priority)
     {

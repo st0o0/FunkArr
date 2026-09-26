@@ -1,6 +1,9 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Persistence;
+using Akka.Streams;
+using Akka.Streams.Dsl;
+using Akka.Streams.Supervision;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
@@ -11,6 +14,7 @@ namespace FunkArr.Download;
 
 public sealed class DownloadManager : ReceivePersistentActor
 {
+    private const int _snapshotInterval = 25;
     private static readonly TimeSpan _fanOutTimeout = TimeSpan.FromSeconds(2);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
@@ -40,6 +44,13 @@ public sealed class DownloadManager : ReceivePersistentActor
         Command<ScheduleEnabled>(HandleScheduleEnabled);
         Command<ScheduleDisabled>(HandleScheduleDisabled);
 
+        Recover<SnapshotOffer>(offer =>
+        {
+            if (offer.Snapshot is PersistedDownloadManagerState persisted)
+            {
+                _state = DownloadManagerState.FromPersistence(persisted);
+            }
+        });
         Recover<DownloadEnqueued>(evt => _state = _state.Apply(evt));
         Recover<DownloadDispatched>(evt => _state = _state.Apply(evt));
         Recover<DownloadDequeued>(evt => _state = _state.Apply(evt));
@@ -55,6 +66,9 @@ public sealed class DownloadManager : ReceivePersistentActor
             DispatchNext();
         });
 
+        Command<SaveSnapshotSuccess>(_ => { });
+        Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
+
         options.OnChange(opts =>
         {
             _maxConcurrent = opts.ConcurrentDownloads;
@@ -69,9 +83,10 @@ public sealed class DownloadManager : ReceivePersistentActor
         var route = _routeResolver.Resolve(cmd.Channel);
 
         _log.Info("Enqueuing download {DownloadId}: {Title} (route: {Route})", downloadId, cmd.Title, route.Name);
-        Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence()), e =>
+        Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence(), cmd.Category.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
 
             _downloadRegion.Tell(new InitDownload(
                 downloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
@@ -95,6 +110,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         Persist(new DownloadDequeued(msg.DownloadId), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
             _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
             UpdateGauges();
             DispatchNext();
@@ -103,45 +119,38 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void HandleQueryQueue(QueryQueue query)
     {
-        var allIds = _state.Dispatched.Keys
-            .Concat(_state.Queued.Select(e => e.Id))
-            .ToArray();
+        var (pageIds, totalItems) = _state.GetPage(query);
 
-        if (allIds.Length == 0)
+        if (pageIds.Length == 0)
         {
-            Sender.Tell(new QueueResult([], _maxConcurrent, 0,
+            Sender.Tell(new QueueResult([], _maxConcurrent, totalItems,
                 _state.Paused, _state.ScheduleEnabled, _state.NextWindow));
             return;
         }
 
-        var sender = Sender;
-        var self = Self;
-        var region = _downloadRegion;
         var maxConcurrent = _maxConcurrent;
         var state = _state;
 
-        var tasks = allIds.Select(id =>
-            region.Ask<WorkerStatusResult>(new QueryWorkerStatus(id), _fanOutTimeout)
-                .ContinueWith(t => t.IsCompletedSuccessfully ? t.Result : null));
-
-        Task.WhenAll(tasks).PipeTo(sender, self, success: results =>
-        {
-            var items = results
-                .Where(r => r is not null)
-                .Select(r =>
-                {
-                    var priority = LookupPriority(state, r!.DownloadId);
-                    return new QueueItem(
-                        r.DownloadId, r.Title,
-                        r.Status == (int)WorkerStatus.Downloading ? DownloadStatus.Processing : DownloadStatus.Queued,
-                        r.Channel, r.HasSubtitles,
-                        r.Size, r.BytesDownloaded, r.CurrentTimeUs,
-                        r.TotalDuration, r.Speed, r.Category, priority);
-                })
-                .ToArray();
-
-            return DownloadManagerStateExtensions.PaginateQueue(items, query, maxConcurrent, state);
-        }, failure: ex => new QueueFailed(ex));
+        Source.From(pageIds)
+            .Select(id => new QueryWorkerStatus(id))
+            .Ask<WorkerStatusResult>(_downloadRegion, _fanOutTimeout, 8)
+            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .Select(r =>
+            {
+                var priority = LookupPriority(state, r.DownloadId);
+                return new QueueItem(
+                    r.DownloadId, r.Title,
+                    r.Status == WorkerStatus.Downloading ? DownloadStatus.Processing : DownloadStatus.Queued,
+                    r.Channel, r.HasSubtitles,
+                    r.Size, r.BytesDownloaded, r.CurrentTimeUs,
+                    r.TotalDuration, r.Speed, r.Category, priority);
+            })
+            .RunWith(Sink.Seq<QueueItem>(), Context.Materializer())
+            .PipeTo(Sender, Self,
+                success: items => new QueueResult(
+                    [.. items], maxConcurrent, totalItems,
+                    state.Paused, state.ScheduleEnabled, state.NextWindow),
+                failure: ex => new QueueFailed(ex));
     }
 
     private void HandleDelete(DeleteDownload cmd)
@@ -152,13 +161,16 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new DownloadDequeued(cmd.DownloadId), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
+        });
+        DeferAsync("notify", _ =>
+        {
             UpdateGauges();
             _downloadRegion.Tell(new CancelDownload(cmd.DownloadId));
-            sender.Tell(new DeleteDownloadResult(true, null));
+            Sender.Tell(new DeleteDownloadResult(true, null));
         });
     }
 
@@ -170,12 +182,12 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new DownloadEnqueued(cmd.DownloadId, DownloadPriority.Normal.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
             _downloadRegion.Tell(new ResetDownload(cmd.DownloadId));
-            sender.Tell(new RetryDownloadResult(true, null));
+            Sender.Tell(new RetryDownloadResult(true, null));
             DispatchNext();
         });
     }
@@ -188,12 +200,12 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new DownloadsPaused(), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
             _log.Info("Downloads paused by user");
-            sender.Tell(new PauseDownloadsResult(true));
+            Sender.Tell(new PauseDownloadsResult(true));
         });
     }
 
@@ -205,12 +217,12 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new DownloadsResumed(), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
             _log.Info("Downloads resumed by user");
-            sender.Tell(new ResumeDownloadsResult(true));
+            Sender.Tell(new ResumeDownloadsResult(true));
             DispatchNext();
         });
     }
@@ -229,13 +241,16 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new DownloadDispatched(cmd.DownloadId), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
             _log.Info("Force-starting download {DownloadId}", cmd.DownloadId);
+        });
+        DeferAsync("notify", _ =>
+        {
             _downloadRegion.Tell(new StartDownload(cmd.DownloadId));
-            sender.Tell(new ForceStartDownloadResult(true, null));
+            Sender.Tell(new ForceStartDownloadResult(true, null));
         });
     }
 
@@ -247,8 +262,6 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
-
         if (cmd.Priority is { } newPriority)
         {
             var prioEvt = new DownloadPriorityChanged(cmd.DownloadId, newPriority.ToPersistence());
@@ -258,18 +271,20 @@ public sealed class DownloadManager : ReceivePersistentActor
                 Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), m =>
                 {
                     _state = _state.Apply(m);
+                    MaybeSnapshot();
                     _log.Info("Moved download {DownloadId} to position {Position} with priority {Priority}", cmd.DownloadId, cmd.Position, newPriority);
-                    sender.Tell(new MoveDownloadCompleted());
                 });
             });
+            DeferAsync("notify", _ => Sender.Tell(new MoveDownloadCompleted()));
         }
         else
         {
             Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), e =>
             {
                 _state = _state.Apply(e);
+                MaybeSnapshot();
                 _log.Info("Moved download {DownloadId} to position {Position}", cmd.DownloadId, cmd.Position);
-                sender.Tell(new MoveDownloadCompleted());
+                Sender.Tell(new MoveDownloadCompleted());
             });
         }
     }
@@ -291,12 +306,12 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new DownloadSwapped(cmd.DownloadId1, cmd.DownloadId2), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
             _log.Info("Swapped downloads {Id1} and {Id2}", cmd.DownloadId1, cmd.DownloadId2);
-            sender.Tell(new SwapDownloadsCompleted());
+            Sender.Tell(new SwapDownloadsCompleted());
         });
     }
 
@@ -315,12 +330,12 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new DownloadPriorityChanged(cmd.DownloadId, cmd.Priority.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
             _log.Info("Changed download {DownloadId} priority to {Priority}", cmd.DownloadId, cmd.Priority);
-            sender.Tell(new SetDownloadPriorityCompleted());
+            Sender.Tell(new SetDownloadPriorityCompleted());
             DispatchNext();
         });
     }
@@ -382,6 +397,14 @@ public sealed class DownloadManager : ReceivePersistentActor
         Telemetry.SetActiveDownloads(_state.Dispatched.Count);
     }
 
+    private void MaybeSnapshot()
+    {
+        if (LastSequenceNr % _snapshotInterval == 0)
+        {
+            SaveSnapshot(_state.GetPersistenceState());
+        }
+    }
+
     private static DownloadPriority LookupPriority(DownloadManagerState state, Guid downloadId)
     {
         var entry = state.Queued.FirstOrDefault(e => e.Id == downloadId);
@@ -390,6 +413,8 @@ public sealed class DownloadManager : ReceivePersistentActor
             return entry.Priority;
         }
 
-        return state.Dispatched.GetValueOrDefault(downloadId, DownloadPriority.Normal);
+        return state.Dispatched.TryGetValue(downloadId, out var dispatched)
+            ? dispatched.Priority
+            : DownloadPriority.Normal;
     }
 }

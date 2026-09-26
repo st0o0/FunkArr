@@ -1,4 +1,5 @@
 using Akka.Actor;
+using Akka.Event;
 using Akka.Persistence;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
@@ -7,6 +8,9 @@ namespace FunkArr.Download;
 
 public sealed class DownloadHistoryManager : ReceivePersistentActor
 {
+    private const int SnapshotInterval = 25;
+
+    private readonly ILoggingAdapter _log = Context.GetLogger();
     private DownloadHistoryManagerState _state = DownloadHistoryManagerState.Empty;
 
     public override string PersistenceId => "download-history";
@@ -18,7 +22,16 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         Command<QueryHistory>(HandleQueryHistory);
         Command<QueryHistoryStats>(_ => Sender.Tell(_state.ToHistoryStats()));
         Command<QueryHistoryCategories>(_ => Sender.Tell(_state.ToHistoryCategories()));
+        Command<SaveSnapshotSuccess>(_ => { });
+        Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
 
+        Recover<SnapshotOffer>(offer =>
+        {
+            if (offer.Snapshot is PersistedDownloadHistoryManagerState persisted)
+            {
+                _state = DownloadHistoryManagerStateExtensions.FromPersistence(persisted);
+            }
+        });
         Recover<HistoryRecorded>(evt => _state = _state.Apply(evt));
         Recover<HistoryRemoved>(evt => _state = _state.Apply(evt));
     }
@@ -32,12 +45,13 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
         var evt = new HistoryRecorded(
             cmd.DownloadId, cmd.Title, cmd.Category.ToPersistence(), cmd.Size,
-            (int)cmd.Status, cmd.RelativePath, cmd.FailMessage,
+            cmd.Status.ToPersistence(), cmd.RelativePath, cmd.FailMessage,
             cmd.DownloadTimeSeconds, cmd.CompletedAt);
 
         Persist(evt, e =>
         {
             _state = _state.Apply(e);
+            MaybeSnapshot();
 
             if (cmd.Status == DownloadStatus.Completed)
             {
@@ -61,16 +75,24 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
             return;
         }
 
-        var sender = Sender;
         Persist(new HistoryRemoved(cmd.DownloadId), e =>
         {
             _state = _state.Apply(e);
-            sender.Tell(new DeleteDownloadResult(true, null));
+            MaybeSnapshot();
+            Sender.Tell(new DeleteDownloadResult(true, null));
         });
     }
 
     private void HandleQueryHistory(QueryHistory query) =>
         Sender.Tell(_state.ToHistoryResult(query));
+
+    private void MaybeSnapshot()
+    {
+        if (LastSequenceNr % SnapshotInterval == 0)
+        {
+            SaveSnapshot(_state.GetPersistenceState());
+        }
+    }
 
     private static string ClassifyFailure(string? message) => message switch
     {

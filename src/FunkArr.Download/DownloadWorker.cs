@@ -77,11 +77,11 @@ public sealed class DownloadWorker : ReceivePersistentActor
         if (string.IsNullOrEmpty(_state.VideoUrl))
         {
             _log.Warning("Download {DownloadId} failed - video URL is empty: {Title}", cmd.DownloadId, _state.Title);
-            var reason = "Video URL is empty";
+            const string reason = "Video URL is empty";
             var completedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            Persist(new DownloadFaulted(cmd.DownloadId, reason), e =>
+            Persist(new DownloadFaulted(cmd.DownloadId, reason), e => _state = _state.Apply(e));
+            DeferAsync("notify", _ =>
             {
-                _state = _state.Apply(e);
                 _downloadManager.Tell(new SlotFree(cmd.DownloadId));
                 _downloadHistory.Tell(new RecordDownload(
                     cmd.DownloadId, _state.Title!, _state.Category!.Value, _state.Size,
@@ -94,11 +94,8 @@ public sealed class DownloadWorker : ReceivePersistentActor
         _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
         _log.Info("Download {DownloadId} started: {Title}", cmd.DownloadId, _state.Title);
-        Persist(new DownloadStarted(cmd.DownloadId), e =>
-        {
-            _state = _state.Apply(e);
-            StartFfmpeg(_state.VideoUrl!, _state.SubtitleUrl, paths.IncompletePath);
-        });
+        Persist(new DownloadStarted(cmd.DownloadId), e => _state = _state.Apply(e));
+        DeferAsync("start", _ => StartFfmpeg(_state.VideoUrl, _state.SubtitleUrl, paths.IncompletePath));
     }
 
     private void HandleCancel(CancelDownload _) => CancelRunning();
@@ -133,7 +130,7 @@ public sealed class DownloadWorker : ReceivePersistentActor
             _state.Channel ?? "",
             _state.SubtitleUrl is not null,
             _state.Size,
-            (int)_state.Status,
+            _state.Status,
             _state.BytesDownloaded,
             _state.CurrentTimeUs,
             _state.Duration,
@@ -186,9 +183,9 @@ public sealed class DownloadWorker : ReceivePersistentActor
             var evt = new DownloadSucceeded(_downloadId, msg.ElapsedSeconds, completedAt);
 
             _log.Info("Download {DownloadId} completed in {Elapsed}s: {Title}", _downloadId, msg.ElapsedSeconds, _state.Title);
-            Persist(evt, e =>
+            Persist(evt, e => _state = _state.Apply(e));
+            DeferAsync("notify", _ =>
             {
-                _state = _state.Apply(e);
                 _dataFiles.Remove(Path.GetDirectoryName(paths.IncompletePath)!);
                 _downloadManager.Tell(new SlotFree(_downloadId));
                 _downloadHistory.Tell(new RecordDownload(
@@ -204,9 +201,9 @@ public sealed class DownloadWorker : ReceivePersistentActor
             var evt = new DownloadFaulted(_downloadId, reason);
 
             _log.Warning("Download {DownloadId} failed: {Reason} - {Title}", _downloadId, reason, _state.Title);
-            Persist(evt, e =>
+            Persist(evt, e => _state = _state.Apply(e));
+            DeferAsync("notify", _ =>
             {
-                _state = _state.Apply(e);
                 _downloadManager.Tell(new SlotFree(_downloadId));
                 _downloadHistory.Tell(new RecordDownload(
                     _downloadId, _state.Title!, _state.Category!.Value, _state.Size,

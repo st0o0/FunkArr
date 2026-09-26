@@ -11,7 +11,7 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.Enrichment;
 
-public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IMemoryCache cache, ILogger<TvdbClient> log)
+public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IMemoryCache cache, ILogger<TvdbClient> log, TimeProvider timeProvider)
 {
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -97,9 +97,9 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         return episodes.ToArray();
     }
 
-    private static TimeSpan DetermineShowTtl(TvdbEpisode[] episodes)
+    private TimeSpan DetermineShowTtl(TvdbEpisode[] episodes)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         var hasUpcoming = episodes.Any(e =>
             e.Aired is not null &&
             DateOnly.TryParseExact(e.Aired, "yyyy-MM-dd", CultureInfo.InvariantCulture,

@@ -6,7 +6,7 @@ namespace FunkArr.ArrApi.Newznab;
 [ApiController]
 [Route("/index/api")]
 [ServiceFilter(typeof(NewznabApiKeyFilter))]
-public sealed class NewznabController(NewznabSearchService search) : ControllerBase
+public sealed class NewznabController(NewznabSearchService search, TimeProvider timeProvider) : ControllerBase
 {
     private const string _applicationNzb = "application/x-nzb";
 
@@ -17,7 +17,7 @@ public sealed class NewznabController(NewznabSearchService search) : ControllerB
         {
             "caps" => NewznabXmlResult.From(new Caps()),
             "tvsearch" or "movie" or "search" => MapSearchResult(await search.Search(req, BaseUrl, ApiKey)),
-            "get" => MapNzbResult(NzbService.GetNzb(req.Id)),
+            "get" => MapNzbResult(NzbService.GetNzb(req.Id, timeProvider)),
             _ => NewznabXmlResult.Error(NewznabError.NoSuchFunction),
         };
     }

@@ -5,7 +5,7 @@ public sealed record HistoryRecorded(
     string Title,
     PersistedMediaType Category,
     long Size,
-    int Status,
+    PersistedDownloadStatus Status,
     string? RelativePath,
     string? FailMessage,
     int DownloadTimeSeconds,

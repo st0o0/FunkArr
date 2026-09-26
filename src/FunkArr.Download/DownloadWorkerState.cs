@@ -1,15 +1,8 @@
 using FunkArr.Messages;
+using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download;
-
-public enum WorkerStatus
-{
-    Initialized,
-    Downloading,
-    Completed,
-    Failed,
-}
 
 public sealed record DownloadWorkerState(
     string? Title,

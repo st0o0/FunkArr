@@ -11,7 +11,7 @@ public sealed class NzbService
     private static readonly XmlSerializer _nzbSerializer = new(typeof(Nzb));
     private static readonly XmlReaderSettings _xmlSettings = new() { DtdProcessing = DtdProcessing.Ignore };
 
-    internal static NzbGetResult GetNzb(string? id)
+    internal static NzbGetResult GetNzb(string? id, TimeProvider timeProvider)
     {
         if (string.IsNullOrEmpty(id))
         {
@@ -72,7 +72,7 @@ public sealed class NzbService
 
         return new NzbGetResult.Success(
             Encoding.UTF8.GetBytes(xml),
-            $"funkarr-{DateTime.UtcNow:yyyy-MM-dd_HH-mm-ss}.nzb");
+            $"funkarr-{timeProvider.GetUtcNow().UtcDateTime:yyyy-MM-dd_HH-mm-ss}.nzb");
     }
 
     internal static NzbParseResult? ParseNzb(Stream stream)

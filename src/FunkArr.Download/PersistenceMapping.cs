@@ -23,8 +23,40 @@ internal static class PersistenceMapping
         };
 
     public static PersistedDownloadPriority ToPersistence(this DownloadPriority priority) =>
-        (PersistedDownloadPriority)(int)priority;
+        priority switch
+        {
+            DownloadPriority.Low => PersistedDownloadPriority.Low,
+            DownloadPriority.Normal => PersistedDownloadPriority.Normal,
+            DownloadPriority.High => PersistedDownloadPriority.High,
+            _ => throw new ArgumentOutOfRangeException(nameof(priority), priority, null),
+        };
 
     public static DownloadPriority ToDomain(this PersistedDownloadPriority priority) =>
-        (DownloadPriority)(int)priority;
+        priority switch
+        {
+            PersistedDownloadPriority.Low => DownloadPriority.Low,
+            PersistedDownloadPriority.Normal => DownloadPriority.Normal,
+            PersistedDownloadPriority.High => DownloadPriority.High,
+            _ => throw new ArgumentOutOfRangeException(nameof(priority), priority, null),
+        };
+
+    public static PersistedDownloadStatus ToPersistence(this DownloadStatus status) =>
+        status switch
+        {
+            DownloadStatus.Queued => PersistedDownloadStatus.Queued,
+            DownloadStatus.Processing => PersistedDownloadStatus.Processing,
+            DownloadStatus.Completed => PersistedDownloadStatus.Completed,
+            DownloadStatus.Failed => PersistedDownloadStatus.Failed,
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+        };
+
+    public static DownloadStatus ToDomain(this PersistedDownloadStatus status) =>
+        status switch
+        {
+            PersistedDownloadStatus.Queued => DownloadStatus.Queued,
+            PersistedDownloadStatus.Processing => DownloadStatus.Processing,
+            PersistedDownloadStatus.Completed => DownloadStatus.Completed,
+            PersistedDownloadStatus.Failed => DownloadStatus.Failed,
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+        };
 }

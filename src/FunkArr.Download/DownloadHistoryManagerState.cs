@@ -25,7 +25,7 @@ public static class DownloadHistoryManagerStateExtensions
     public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, HistoryRecorded evt) =>
         new(Records: [.. state.Records, new HistoryRecord(
             evt.DownloadId, evt.Title, evt.Category.ToDomain(), evt.Size,
-            (DownloadStatus)evt.Status, evt.RelativePath, evt.FailMessage,
+            evt.Status.ToDomain(), evt.RelativePath, evt.FailMessage,
             evt.DownloadTimeSeconds, evt.CompletedAt)]);
 
     public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, HistoryRemoved evt) =>
@@ -33,6 +33,18 @@ public static class DownloadHistoryManagerStateExtensions
 
     public static bool Contains(this DownloadHistoryManagerState state, Guid downloadId) =>
         state.Records.Any(r => r.DownloadId == downloadId);
+
+    public static PersistedDownloadHistoryManagerState GetPersistenceState(this DownloadHistoryManagerState state) =>
+        new(state.Records.Select(r => new HistoryRecorded(
+            r.DownloadId, r.Title, r.Category.ToPersistence(), r.Size,
+            r.Status.ToPersistence(), r.RelativePath, r.FailMessage,
+            r.DownloadTimeSeconds, r.CompletedAt)).ToArray());
+
+    public static DownloadHistoryManagerState FromPersistence(PersistedDownloadHistoryManagerState persisted) =>
+        new(persisted.Records.Select(r => new HistoryRecord(
+            r.DownloadId, r.Title, r.Category.ToDomain(), r.Size,
+            r.Status.ToDomain(), r.RelativePath, r.FailMessage,
+            r.DownloadTimeSeconds, r.CompletedAt)).ToArray());
 
     public static HistoryStatsResult ToHistoryStats(this DownloadHistoryManagerState state)
     {

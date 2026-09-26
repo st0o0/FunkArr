@@ -7,7 +7,7 @@ public sealed record WorkerStatusResult(
     string Channel,
     bool HasSubtitles,
     long Size,
-    int Status,
+    WorkerStatus Status,
     long BytesDownloaded,
     long CurrentTimeUs,
     int TotalDuration,
