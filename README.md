@@ -29,7 +29,7 @@ No Usenet account needed. No torrents. Just direct downloads from public media l
 - **Network routing and proxy** - route channel-specific traffic through VPN or proxy for geo-restricted content (ORF, SRF, etc.)
 - **Download scheduling** - define time windows for downloads to run, pause automatically outside schedule
 - **Health checks** - real health checks for FFmpeg, MediathekViewWeb connectivity, and directory write access
-- **Observability** - OpenTelemetry tracing and metrics, works with Aspire Dashboard or any OTLP backend
+- **Observability** - Prometheus `/metrics` endpoint with download queue, scoring, and external API health metrics
 - **Web UI** - download queue with detail view, history, ruleset management, settings with log viewer, and setup health checks
 - **Single container** - runs on any Docker host, SQLite by default, PUID/PGID support
 
@@ -105,8 +105,6 @@ All configuration is via environment variables. Defaults work out of the box - t
 | **Container** | | |
 | `PUID` | `1654` | User ID for file ownership |
 | `PGID` | `1654` | Group ID for file ownership |
-| **Observability** | | |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | _(empty)_ | OTLP receiver URL for OpenTelemetry export (e.g. `http://aspire-dashboard:18889`) |
 | **RuleSets** | | |
 | `FunkArr__RuleSet__Repository` | `st0o0/funkarr` | GitHub repo for community rulesets |
 | `FunkArr__RuleSet__Version` | `latest` | Pin ruleset version or `latest` |

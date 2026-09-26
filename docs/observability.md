@@ -1,77 +1,50 @@
 # Observability
 
-FunkArr exportiert Traces und Metriken via [OpenTelemetry](https://opentelemetry.io/) (OTLP). Damit lassen sich Download-Pipelines, Scoring-Durchlaufe und Enrichment-Anfragen in jedem OTLP-kompatiblen Backend verfolgen.
+FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit lassen sich Download-Queues, Scoring-Ergebnisse und externe API-Gesundheit mit jedem Prometheus-kompatiblen Monitoring-Stack uberwachen.
 
-## Was wird instrumentiert?
+## Metriken
 
-### Tracing
+### Anwendungsmetriken
 
-| Quelle | Beschreibung |
-|--------|-------------|
-| ASP.NET Core | Eingehende HTTP-Anfragen (alle API-Endpunkte) |
-| HttpClient | Ausgehende HTTP-Anfragen (MVW, TMDB, TVDB, etc.) |
-| `FunkArr.Download` | Download-Pipeline: Queue, Fetch, FFmpeg-Remux |
-| `FunkArr.Scoring` | Scoring-Durchlaufe: Regelwerk-Matching, Score-Berechnung |
-| `FunkArr.Enrichment` | Metadaten-Anreicherung: TMDB/TVDB-Lookups |
+| Metrik | Typ | Beschreibung |
+|--------|-----|-------------|
+| `funkarr_search_requests_total` | Counter | Suchanfragen (Tag: `source`) |
+| `funkarr_search_matches_total` | Counter | Suchanfragen mit Ergebnissen |
+| `funkarr_search_no_match_total` | Counter | Suchanfragen ohne Ergebnis |
+| `funkarr_download_queue_size` | Gauge | Aktuelle Queue-Tiefe |
+| `funkarr_download_active` | Gauge | Aktuell laufende Downloads |
+| `funkarr_download_completed_total` | Counter | Abgeschlossene Downloads |
+| `funkarr_download_failed_total` | Counter | Fehlgeschlagene Downloads (Tag: `reason`) |
+| `funkarr_download_bytes_total` | Counter | Heruntergeladene Bytes |
+| `funkarr_download_duration_seconds` | Histogram | Download-Dauer |
+| `funkarr_scoring_accepted_total` | Counter | Vom Scoring akzeptierte Ergebnisse |
+| `funkarr_scoring_rejected_total` | Counter | Vom Scoring abgelehnte Ergebnisse |
+| `funkarr_enrichment_requests_total` | Counter | Enrichment-Anfragen (Tags: `api`, `status`) |
+| `funkarr_external_api_requests_total` | Counter | Externe API-Aufrufe (Tags: `api`, `status_code`) |
+| `funkarr_external_api_duration_seconds` | Histogram | Externe API-Latenz (Tag: `api`) |
 
-### Metriken
+### Standardmetriken
 
-| Meter | Beschreibung |
-|-------|-------------|
-| ASP.NET Core | Request-Rate, Latenz, Fehlerrate |
-| `FunkArr.Search` | Suchanfragen, Ergebnisse, Dauer |
-| `FunkArr.Download` | Downloads, Bytes, Geschwindigkeit |
-| `FunkArr.Scoring` | Scoring-Durchlaufe, Matches, Dauer |
-| `FunkArr.Enrichment` | TMDB/TVDB-Lookups, Cache-Hits |
+Zusatzlich werden ASP.NET Core HTTP-Metriken und .NET Runtime-Metriken (CPU, Speicher, GC, Threads) unter ihren Standard-OpenTelemetry-Namen exportiert. Die Unterscheidung zu anderen .NET-Services erfolgt uber das Prometheus `job`-Label in der Scrape-Konfiguration.
 
 ## Konfiguration
 
-FunkArr verwendet den Standard-OTLP-Exporter. Die Konfiguration erfolgt uber die offizielle OpenTelemetry-Umgebungsvariable:
+Der `/metrics`-Endpunkt ist immer aktiv und erfordert keine Konfiguration. Er ist unter `http://<host>:6969/metrics` erreichbar.
 
-| Variable | Standard | Beschreibung |
-|----------|----------|-------------|
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | _(leer)_ | OTLP-Empfanger-URL (z.B. `http://aspire-dashboard:18889`). Ohne Wert ist der Export deaktiviert. |
-
-::: tip
-Ohne gesetzte `OTEL_EXPORTER_OTLP_ENDPOINT` startet FunkArr normal, exportiert aber keine Telemetrie-Daten. Es gibt keinen Overhead, wenn kein Empfanger konfiguriert ist.
-:::
-
-## Aspire Dashboard
-
-Der einfachste Weg, Traces und Metriken zu betrachten, ist das [.NET Aspire Dashboard](https://learn.microsoft.com/dotnet/aspire/fundamentals/dashboard/standalone). Es lauft als einzelner Container neben FunkArr.
-
-### Docker Compose Setup
+## Prometheus Scrape-Konfiguration
 
 ```yaml
-services:
-  funkarr:
-    image: ghcr.io/st0o0/funkarr:latest
-    environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
-    # ... restliche FunkArr-Konfiguration
-
-  aspire-dashboard:
-    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
-    ports:
-      - "18888:18888"
-    environment:
-      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+scrape_configs:
+  - job_name: funkarr
+    static_configs:
+      - targets: ['funkarr:6969']
 ```
 
-Nach dem Start ist das Dashboard unter `http://localhost:18888` erreichbar.
+## Grafana
 
-### Was du dort siehst
+Die Metriken lassen sich direkt in Grafana visualisieren. Beispiel-Queries:
 
-- **Traces** - Verteilte Traces fur jeden Request-Durchlauf: von der Suchanfrage uber Scoring und Enrichment bis zum Download
-- **Metrics** - Live-Dashboards fur Request-Raten, Download-Geschwindigkeiten und Scoring-Statistiken
-- **Structured Logs** - Alle Serilog-Logeintrge als strukturierte Daten (wenn ein OTLP-Log-Exporter konfiguriert ist)
-
-## Andere Backends
-
-Jedes OTLP-kompatible Backend funktioniert - setze `OTEL_EXPORTER_OTLP_ENDPOINT` auf den jeweiligen Receiver:
-
-- **Grafana Tempo/Mimir** - `http://tempo:4317`
-- **Jaeger** - `http://jaeger:4317`
-- **Seq** - `http://seq:5341/ingest/otlp`
-
-Weitere OpenTelemetry-Umgebungsvariablen (z.B. `OTEL_EXPORTER_OTLP_PROTOCOL`, `OTEL_SERVICE_NAME`) werden ebenfalls unterstutzt. Siehe die [OpenTelemetry SDK-Dokumentation](https://opentelemetry.io/docs/languages/net/configuration/) fur alle Optionen.
+- **Queue-Tiefe**: `funkarr_download_queue_size`
+- **Download-Rate**: `rate(funkarr_download_completed_total[5m])`
+- **Sucherfolgsrate**: `rate(funkarr_search_matches_total[5m]) / rate(funkarr_search_requests_total[5m])`
+- **Externe API-Latenz (p95)**: `histogram_quantile(0.95, rate(funkarr_external_api_duration_seconds_bucket[5m]))`
