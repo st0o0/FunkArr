@@ -24,10 +24,19 @@ services:
       - FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
       - FunkArr__Routes__ChannelRoutes__0__Route=Austria
       - FunkArr__Routes__Default=Direct
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
     depends_on:
       - sonarr
       - radarr
       - prowlarr
+
+  aspire-dashboard:
+    container_name: aspire-dashboard
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.2
+    ports:
+      - "18888:18888"
+    environment:
+      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
 
   sonarr:
     container_name: sonarr

@@ -35,7 +35,15 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
             (int)cmd.Status, cmd.RelativePath, cmd.FailMessage,
             cmd.DownloadTimeSeconds, cmd.CompletedAt);
 
-        Persist(evt, e => _state = _state.Apply(e));
+        Persist(evt, e =>
+        {
+            _state = _state.Apply(e);
+
+            if (cmd.Status == DownloadStatus.Completed)
+                Telemetry.DownloadsCompleted.Add(1);
+            else if (cmd.Status == DownloadStatus.Failed)
+                Telemetry.DownloadsFailed.Add(1);
+        });
     }
 
     private void HandleRemove(RemoveHistoryEntry cmd)

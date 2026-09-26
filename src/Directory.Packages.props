@@ -30,8 +30,14 @@
     <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
     <PackageVersion Include="System.IO.Abstractions" Version="22.2.0" />
   </ItemGroup>
-  <ItemGroup Label="Transitive pins (security)">
+  <ItemGroup Label="OpenTelemetry">
     <PackageVersion Include="OpenTelemetry.Api" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+  </ItemGroup>
+  <ItemGroup Label="Transitive pins (security)">
     <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.53.3" />
   </ItemGroup>
   <ItemGroup Label="Serialization (testing)">

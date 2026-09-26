@@ -12,6 +12,7 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         string videoUrl, string? subtitlePath, string outputPath,
         string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
+        using var activity = Telemetry.Source.StartActivity("download.ffmpeg");
         var sw = Stopwatch.StartNew();
         var progressBlock = new Dictionary<string, string>();
 
@@ -23,11 +24,14 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         {
             await processor.ProcessAsynchronously(throwOnError: true);
             sw.Stop();
+            Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds);
             return new FfmpegResult(true, 0, null, (int)sw.Elapsed.TotalSeconds);
         }
         catch (FFMpegException ex)
         {
             sw.Stop();
+            activity?.SetStatus(System.Diagnostics.ActivityStatusCode.Error, ExtractError(ex.FFMpegErrorOutput));
+            Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds);
             return new FfmpegResult(false, 1, ExtractError(ex.FFMpegErrorOutput), (int)sw.Elapsed.TotalSeconds);
         }
         catch (OperationCanceledException)

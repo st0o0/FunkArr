@@ -15,6 +15,7 @@ try
 
     var runner = AppBuilder.Create(builder, b => b.Build())
         .WithSetup<LoggingSetupContainer>()
+        .WithSetup<TelemetrySetupContainer>()
         .WithSetup<ServiceSetupContainer>()
         .WithSetup<DownloadSetupContainer>()
         .WithSetup<MetadataSetupContainer>()

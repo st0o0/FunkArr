@@ -24,14 +24,19 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
 
     public async Task<TvdbEpisode[]> GetEpisodesAsync(int seriesId)
     {
+        using var activity = Telemetry.Source.StartActivity("enrichment.tvdb");
         var cacheKey = $"tvdb:episodes:{seriesId}";
         if (cache.TryGetValue(cacheKey, out TvdbEpisode[]? cached))
         {
             log.LogDebug("TVDB cache hit for series {SeriesId}", seriesId);
+            activity?.SetTag("cache", "hit");
+            Telemetry.CacheHits.Add(1, new KeyValuePair<string, object?>("source", "tvdb"));
             return cached!;
         }
 
         log.LogDebug("TVDB cache miss for series {SeriesId}, fetching", seriesId);
+        activity?.SetTag("cache", "miss");
+        Telemetry.CacheMisses.Add(1, new KeyValuePair<string, object?>("source", "tvdb"));
         var episodes = await FetchEpisodesAsync(seriesId);
         var ttl = DetermineShowTtl(episodes);
         cache.Set(cacheKey, episodes, ttl);
