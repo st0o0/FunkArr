@@ -6,7 +6,6 @@ internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner 
         string videoUrl, string? subtitleUrl, string outputPath,
         string routeName, string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
-        using var activity = Telemetry.Source.StartActivity("download.remux");
         string? subtitlePath = null;
         try
         {

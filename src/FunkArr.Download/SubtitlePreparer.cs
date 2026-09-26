@@ -6,7 +6,6 @@ internal sealed class SubtitlePreparer(IHttpClientFactory httpClientFactory, ILo
 {
     public async Task<string?> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
     {
-        using var activity = Telemetry.Source.StartActivity("download.subtitle");
         string content;
         try
         {

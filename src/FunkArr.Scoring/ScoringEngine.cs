@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using FunkArr.Messages.Scoring;
@@ -15,9 +14,6 @@ public static class ScoringEngine
     public static (ScoredItem[] Scored, ItemTrace[] Traces) Score(
         MatchingConfig config, ScoreCandidate[] items)
     {
-        using var activity = Telemetry.Source.StartActivity("scoring.evaluate");
-        activity?.SetTag("scoring.candidates", items.Length);
-        var sw = Stopwatch.StartNew();
         var sortedRules = config.Rules.OrderBy(r => r.Priority).ToArray();
         var scored = new ScoredItem[items.Length];
         var itemTraces = new ItemTrace[items.Length];
@@ -77,8 +73,10 @@ public static class ScoringEngine
                 identification, ruleTraces.ToArray());
         }
 
-        sw.Stop();
-        Telemetry.ScoringDuration.Record(sw.Elapsed.TotalSeconds);
+        var accepted = scored.Count(s => s.Matched);
+        var rejected = scored.Length - accepted;
+        Telemetry.Accepted.Add(accepted);
+        Telemetry.Rejected.Add(rejected);
         return (scored, itemTraces);
     }
 

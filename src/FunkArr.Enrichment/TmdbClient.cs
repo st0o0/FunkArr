@@ -22,19 +22,16 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
 
     public async Task<TmdbMovieData?> GetMovieDataAsync(int tmdbId)
     {
-        using var activity = Telemetry.Source.StartActivity("enrichment.tmdb");
         var cacheKey = $"tmdb:movie:{tmdbId}";
         if (cache.TryGetValue(cacheKey, out TmdbMovieData? cached))
         {
             log.LogDebug("TMDB cache hit for movie {TmdbId}", tmdbId);
-            activity?.SetTag("cache", "hit");
-            Telemetry.CacheHits.Add(1, new KeyValuePair<string, object?>("source", "tmdb"));
+            Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "hit"));
             return cached;
         }
 
         log.LogDebug("TMDB cache miss for movie {TmdbId}, fetching", tmdbId);
-        activity?.SetTag("cache", "miss");
-        Telemetry.CacheMisses.Add(1, new KeyValuePair<string, object?>("source", "tmdb"));
+        Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "miss"));
         var movie = await FetchMovieAsync(tmdbId);
         if (movie is null)
         {
