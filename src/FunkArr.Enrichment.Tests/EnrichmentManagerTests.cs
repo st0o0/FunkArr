@@ -20,6 +20,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
         services.AddSingleton<Microsoft.Extensions.Options.IOptionsMonitor<TmdbOptions>>(sp =>
             sp.GetRequiredService<TestOptionsMonitor<TmdbOptions>>());
         services.AddMemoryCache();
+        services.AddSingleton(TimeProvider.System);
         services.AddHttpClient<TvdbClient>();
         services.AddHttpClient<TmdbClient>();
         var provider = services.BuildServiceProvider();

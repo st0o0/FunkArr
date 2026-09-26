@@ -147,7 +147,7 @@ public sealed class DownloadEventVerifyTests
     {
         var evt = new HistoryRecorded(
             _testId, "Tatort: Der letzte Schrei", PersistedMediaType.Show,
-            1073741824, 2, "/downloads/tatort.mkv", null, 120, 1700000000);
+            1073741824, PersistedDownloadStatus.Completed, "/downloads/tatort.mkv", null, 120, 1700000000);
         var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
         return Verify(json);
     }
@@ -157,7 +157,7 @@ public sealed class DownloadEventVerifyTests
     {
         var original = new HistoryRecorded(
             _testId, "Tatort: Der letzte Schrei", PersistedMediaType.Show,
-            1073741824, 2, "/downloads/tatort.mkv", null, 120, 1700000000);
+            1073741824, PersistedDownloadStatus.Completed, "/downloads/tatort.mkv", null, 120, 1700000000);
         var json = JsonConvert.SerializeObject(original);
         var result = JsonConvert.DeserializeObject<HistoryRecorded>(json)!;
         Assert.Equal(original.DownloadId, result.DownloadId);

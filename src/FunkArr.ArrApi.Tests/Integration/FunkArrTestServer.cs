@@ -80,6 +80,7 @@ public sealed class FunkArrTestServer : IAsyncDisposable
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
         services.AddSingleton(new RingBufferSink());
 
+        services.AddSingleton(TimeProvider.System);
         services.AddHttpClient();
         services.AddHttpClient<ArrApiClient>();
         services.AddOutputCache();

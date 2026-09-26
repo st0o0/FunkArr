@@ -14,7 +14,7 @@ public sealed class NzbServiceTests
     {
         var id = EncodeNzbId("Test Title", "https://example.com/video.mp4");
 
-        var result = NzbService.GetNzb(id);
+        var result = NzbService.GetNzb(id, TimeProvider.System);
 
         var success = Assert.IsType<NzbGetResult.Success>(result);
         Assert.NotEmpty(success.Content);
@@ -24,7 +24,7 @@ public sealed class NzbServiceTests
     [Fact]
     public void GetNzb_returns_error_for_null_id()
     {
-        var result = NzbService.GetNzb(null);
+        var result = NzbService.GetNzb(null, TimeProvider.System);
 
         var error = Assert.IsType<NzbGetResult.Error>(result);
         Assert.Equal(200, error.ErrorDetail.Code);
@@ -33,7 +33,7 @@ public sealed class NzbServiceTests
     [Fact]
     public void GetNzb_returns_error_for_empty_id()
     {
-        var result = NzbService.GetNzb("");
+        var result = NzbService.GetNzb("", TimeProvider.System);
 
         Assert.IsType<NzbGetResult.Error>(result);
     }
@@ -41,7 +41,7 @@ public sealed class NzbServiceTests
     [Fact]
     public void GetNzb_returns_error_for_invalid_base64()
     {
-        var result = NzbService.GetNzb("not-valid-base64!!!");
+        var result = NzbService.GetNzb("not-valid-base64!!!", TimeProvider.System);
 
         var error = Assert.IsType<NzbGetResult.Error>(result);
         Assert.Equal(201, error.ErrorDetail.Code);
@@ -52,7 +52,7 @@ public sealed class NzbServiceTests
     {
         var id = Convert.ToBase64String(Encoding.UTF8.GetBytes("title-only"));
 
-        var result = NzbService.GetNzb(id);
+        var result = NzbService.GetNzb(id, TimeProvider.System);
 
         Assert.IsType<NzbGetResult.Error>(result);
     }
@@ -62,7 +62,7 @@ public sealed class NzbServiceTests
     {
         var id = Convert.ToBase64String(Encoding.UTF8.GetBytes("title\t"));
 
-        var result = NzbService.GetNzb(id);
+        var result = NzbService.GetNzb(id, TimeProvider.System);
 
         Assert.IsType<NzbGetResult.Error>(result);
     }
@@ -72,7 +72,7 @@ public sealed class NzbServiceTests
     {
         var id = EncodeNzbId("Title", "https://example.com/v.mp4", "https://example.com/sub.vtt");
 
-        var result = NzbService.GetNzb(id);
+        var result = NzbService.GetNzb(id, TimeProvider.System);
         var success = Assert.IsType<NzbGetResult.Success>(result);
         var xml = Encoding.UTF8.GetString(success.Content);
 
@@ -85,7 +85,7 @@ public sealed class NzbServiceTests
     {
         var id = EncodeNzbId("Title", "https://example.com/v.mp4", category: "movie");
 
-        var result = NzbService.GetNzb(id);
+        var result = NzbService.GetNzb(id, TimeProvider.System);
         var success = Assert.IsType<NzbGetResult.Success>(result);
         var xml = Encoding.UTF8.GetString(success.Content);
 

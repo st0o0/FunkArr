@@ -11,7 +11,7 @@ public sealed class TvdbClientTests
     {
         var options = new TvdbOptions { ApiKey = apiKey };
         var monitor = new TestOptionsMonitor<TvdbOptions>(options);
-        return new TvdbClient(new HttpClient(), monitor, new MemoryCache(new MemoryCacheOptions()), NullLogger<TvdbClient>.Instance);
+        return new TvdbClient(new HttpClient(), monitor, new MemoryCache(new MemoryCacheOptions()), NullLogger<TvdbClient>.Instance, TimeProvider.System);
     }
 
     [Fact]

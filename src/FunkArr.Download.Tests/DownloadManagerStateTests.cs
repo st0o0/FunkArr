@@ -7,8 +7,8 @@ namespace FunkArr.Download.Tests;
 
 public sealed class DownloadManagerStateTests
 {
-    private static DownloadEnqueued Enqueue(Guid id, PersistedDownloadPriority priority = PersistedDownloadPriority.Normal)
-        => new(id, priority);
+    private static DownloadEnqueued Enqueue(Guid id, PersistedDownloadPriority priority = PersistedDownloadPriority.Normal, PersistedMediaType category = PersistedMediaType.Show)
+        => new(id, priority, category);
 
     [Fact]
     public void Apply_Enqueued_adds_to_queue()
@@ -162,76 +162,107 @@ public sealed class DownloadManagerStateTests
     }
 
     [Fact]
-    public void PaginateQueue_includes_pipeline_status()
+    public void GetPage_returns_all_ids_when_limit_zero()
     {
-        var state = DownloadManagerState.Empty with { Paused = true, ScheduleEnabled = false, NextWindow = DateTimeOffset.UtcNow };
-        var items = new[] { MakeItem("A") };
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(), 3, state);
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var id3 = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(Enqueue(id1))
+            .Apply(Enqueue(id2))
+            .Apply(Enqueue(id3));
 
-        Assert.True(result.IsPaused);
-        Assert.False(result.IsScheduleActive);
-        Assert.NotNull(result.NextWindow);
-    }
+        var (pageIds, totalItems) = state.GetPage(new QueryQueue());
 
-    private static QueueItem MakeItem(string title, MediaType category = MediaType.Show, DownloadPriority priority = DownloadPriority.Normal) =>
-        new(Guid.NewGuid(), title, DownloadStatus.Queued, "", false, 1000, 0, 0, 100, 0, category, priority);
-
-    [Fact]
-    public void PaginateQueue_returns_all_when_limit_zero()
-    {
-        var items = new[] { MakeItem("A"), MakeItem("B"), MakeItem("C") };
-
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(), 3, DownloadManagerState.Empty);
-
-        Assert.Equal(3, result.Items.Length);
-        Assert.Equal(3, result.TotalItems);
-        Assert.Equal(3, result.TotalSlots);
+        Assert.Equal(3, pageIds.Length);
+        Assert.Equal(3, totalItems);
     }
 
     [Fact]
-    public void PaginateQueue_applies_start_and_limit()
+    public void GetPage_applies_start_and_limit()
     {
-        var items = new[] { MakeItem("A"), MakeItem("B"), MakeItem("C"), MakeItem("D") };
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var id3 = Guid.NewGuid();
+        var id4 = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(Enqueue(id1))
+            .Apply(Enqueue(id2))
+            .Apply(Enqueue(id3))
+            .Apply(Enqueue(id4));
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 2), 3, DownloadManagerState.Empty);
+        var (pageIds, totalItems) = state.GetPage(new QueryQueue(Start: 1, Limit: 2));
 
-        Assert.Equal(2, result.Items.Length);
-        Assert.Equal("B", result.Items[0].Title);
-        Assert.Equal("C", result.Items[1].Title);
-        Assert.Equal(4, result.TotalItems);
+        Assert.Equal(2, pageIds.Length);
+        Assert.Equal(id2, pageIds[0]);
+        Assert.Equal(id3, pageIds[1]);
+        Assert.Equal(4, totalItems);
     }
 
     [Fact]
-    public void PaginateQueue_filters_by_category()
+    public void GetPage_filters_by_category()
     {
-        var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Movie), MakeItem("C", MediaType.Show) };
+        var show1 = Guid.NewGuid();
+        var movie1 = Guid.NewGuid();
+        var show2 = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(Enqueue(show1, category: PersistedMediaType.Show))
+            .Apply(Enqueue(movie1, category: PersistedMediaType.Movie))
+            .Apply(Enqueue(show2, category: PersistedMediaType.Show));
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3, DownloadManagerState.Empty);
+        var (pageIds, totalItems) = state.GetPage(new QueryQueue(Category: MediaType.Show));
 
-        Assert.Equal(2, result.Items.Length);
-        Assert.Equal(2, result.TotalItems);
+        Assert.Equal(2, pageIds.Length);
+        Assert.Equal(2, totalItems);
+        Assert.Contains(show1, pageIds);
+        Assert.Contains(show2, pageIds);
     }
 
     [Fact]
-    public void PaginateQueue_category_filter_is_case_insensitive()
+    public void GetPage_category_filter_with_pagination()
     {
-        var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Movie) };
+        var show1 = Guid.NewGuid();
+        var show2 = Guid.NewGuid();
+        var show3 = Guid.NewGuid();
+        var movie1 = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(Enqueue(show1, category: PersistedMediaType.Show))
+            .Apply(Enqueue(show2, category: PersistedMediaType.Show))
+            .Apply(Enqueue(show3, category: PersistedMediaType.Show))
+            .Apply(Enqueue(movie1, category: PersistedMediaType.Movie));
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Category: MediaType.Show), 3, DownloadManagerState.Empty);
+        var (pageIds, totalItems) = state.GetPage(new QueryQueue(Start: 1, Limit: 1, Category: MediaType.Show));
 
-        Assert.Single(result.Items);
+        Assert.Single(pageIds);
+        Assert.Equal(show2, pageIds[0]);
+        Assert.Equal(3, totalItems);
     }
 
     [Fact]
-    public void PaginateQueue_category_filter_with_pagination()
+    public void GetPage_includes_dispatched_ids_first()
     {
-        var items = new[] { MakeItem("A", MediaType.Show), MakeItem("B", MediaType.Show), MakeItem("C", MediaType.Show), MakeItem("D", MediaType.Movie) };
+        var dispatched1 = Guid.NewGuid();
+        var queued1 = Guid.NewGuid();
+        var state = DownloadManagerState.Empty
+            .Apply(Enqueue(dispatched1))
+            .Apply(Enqueue(queued1))
+            .Apply(new DownloadDispatched(dispatched1));
 
-        var result = DownloadManagerStateExtensions.PaginateQueue(items, new QueryQueue(Start: 1, Limit: 1, Category: MediaType.Show), 3, DownloadManagerState.Empty);
+        var (pageIds, totalItems) = state.GetPage(new QueryQueue());
 
-        Assert.Single(result.Items);
-        Assert.Equal("B", result.Items[0].Title);
-        Assert.Equal(3, result.TotalItems);
+        Assert.Equal(2, pageIds.Length);
+        Assert.Equal(2, totalItems);
+        Assert.Equal(dispatched1, pageIds[0]);
+        Assert.Equal(queued1, pageIds[1]);
+    }
+
+    [Fact]
+    public void GetPage_empty_queue_returns_empty()
+    {
+        var (pageIds, totalItems) = DownloadManagerState.Empty.GetPage(new QueryQueue());
+
+        Assert.Empty(pageIds);
+        Assert.Equal(0, totalItems);
     }
 
     [Fact]
@@ -356,7 +387,7 @@ public sealed class DownloadManagerStateTests
             .Apply(new DownloadDispatched(id));
 
         Assert.True(state.Dispatched.ContainsKey(id));
-        Assert.Equal(DownloadPriority.High, state.Dispatched[id]);
+        Assert.Equal(DownloadPriority.High, state.Dispatched[id].Priority);
     }
 
     [Fact]
