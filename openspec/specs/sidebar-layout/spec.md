@@ -16,7 +16,7 @@ The application layout SHALL use a CSS Grid with a collapsible sidebar and fluid
 
 #### Scenario: Sidebar sections
 - **WHEN** the sidebar renders in expanded state
-- **THEN** it SHALL contain sections top-to-bottom: logo mark with "FunkArr" text, navigation links, and a bottom utility area with Setup gear icon, collapse toggle, and community ruleset version text
+- **THEN** it SHALL contain sections top-to-bottom: logo mark with "FunkArr" text, navigation links, and a bottom utility area with Setup gear icon, language selector, version number, powered-by attribution link, and collapse toggle
 
 #### Scenario: Sidebar toggle button
 - **WHEN** the sidebar renders
@@ -68,6 +68,17 @@ The RuleSets navigation item SHALL be active for the `/rulesets` route and all n
 #### Scenario: Nested route keeps parent active
 - **WHEN** the user navigates to `/rulesets/tagesschau/history`
 - **THEN** the RuleSets navigation item is active
+
+### Requirement: Sidebar footer content
+The sidebar footer area SHALL display, in order from top to bottom: setup link, language selector (expanded only), version number (expanded only), powered-by attribution link (expanded only), and collapse toggle.
+
+#### Scenario: Expanded sidebar footer with attribution
+- **WHEN** the sidebar is expanded
+- **THEN** the footer shows setup link, language selector, version number, "Powered by MediathekViewWeb" link, and collapse toggle in that order
+
+#### Scenario: Collapsed sidebar hides text elements
+- **WHEN** the sidebar is collapsed
+- **THEN** the footer shows only the setup icon and collapse toggle
 
 ### Requirement: Main content area
 

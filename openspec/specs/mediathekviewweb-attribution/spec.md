@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+MediathekViewWeb attribution across docs and UI, crediting it as FunkArr's search data source.
+
+## Requirements
 
 ### Requirement: Docs landing page feature tile
 The docs landing page (`index.md`) SHALL include a feature tile crediting MediathekViewWeb as FunkArr's data source. The tile SHALL link to `https://mediathekviewweb.de/#everywhere=true`. The tile MUST exist in both DE and EN locale versions.

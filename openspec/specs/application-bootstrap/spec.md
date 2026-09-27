@@ -5,24 +5,30 @@ Host bootstrap configuration using Servus AppBuilder, Serilog structured logging
 ## Requirements
 
 ### Requirement: Servus AppBuilder startup
-The host SHALL use `AppBuilder.Create(builder, b => b.Build())` with four setup
-containers chained via `.WithSetup<T>()`:
-1. `LoggingSetupContainer : IServiceSetupContainer`
-2. `FunkArrServiceSetup : IServiceSetupContainer`
-3. `FunkArrActorSystemSetup : ActorSystemSetupContainer`
-4. `FunkArrApplicationSetup : ApplicationSetupContainer<WebApplication>`
+The host SHALL use `AppBuilder.Create(builder, b => b.Build())` with setup containers chained via `.WithSetup<T>()` in this order:
+1. `LoggingSetupContainer`
+2. `TelemetrySetupContainer`
+3. `CoreSetupContainer`
+4. `AkkaSetupContainer`
+5. `SearchSetupContainer`
+6. `DownloadSetupContainer`
+7. `ScoringSetupContainer`
+8. `RuleSetSetupContainer`
+9. `EnrichmentSetupContainer`
+10. `ArrApiSetupContainer`
+11. `ApplicationSetupContainer`
 
 The AppBuilder chain and `await runner.RunAsync()` SHALL be wrapped in a
 try/catch/finally block. The catch block SHALL call `Log.Fatal(ex, ...)` and
 the finally block SHALL call `await Log.CloseAndFlushAsync()`.
 
-#### Scenario: Host boots with Servus AppBuilder
+#### Scenario: Host boots with updated container chain
 - **WHEN** `dotnet run` is executed from `src/FunkArr/`
-- **THEN** the application starts without errors and logs startup messages to the console
+- **THEN** the application starts without errors using the updated container chain
 
 #### Scenario: Setup containers are invoked in order
 - **WHEN** the host boots
-- **THEN** `LoggingSetupContainer` runs first, then `FunkArrServiceSetup`, then `FunkArrActorSystemSetup`, then `FunkArrApplicationSetup`
+- **THEN** containers execute in the order listed above, with infrastructure before domains and ApplicationSetupContainer last
 
 ### Requirement: Serilog structured logging
 The host SHALL create a bootstrap logger before the AppBuilder chain via

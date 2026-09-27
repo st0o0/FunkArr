@@ -2,96 +2,11 @@
 
 ## Purpose
 
-Static facade that encapsulates FFmpeg process lifecycle, progress parsing, and result reporting. Sends `ProgressUpdate` and `ProcessExited` messages to the calling actor.
+~~Removed.~~ FfmpegRunner functionality has been absorbed into Remuxer. The class and its IFfmpegRunner interface are deleted.
+
+BuildArguments, ParseProgressLine, ClassifyFailure, ExtractError move to internal static methods in the Remuxer or a companion helper class. RunAsync logic moves into Remuxer.RunAsync. Language is passed via RemuxOptions record internally. Progress reporting, result handling, and cancellation are handled by Remuxer directly.
+
 ## Requirements
-### Requirement: FfmpegRunner is a static facade
-The FfmpegRunner SHALL be a static class that encapsulates FFmpeg process lifecycle, progress parsing, and result reporting behind a single `Run` method. The `Run` method SHALL accept an optional proxy URL for routing traffic through an HTTP proxy.
 
-#### Scenario: Run signature
-- **WHEN** a caller invokes `FfmpegRunner.Run`
-- **THEN** it SHALL accept `IActorRef self`, `string videoUrl`, `string? subtitlePath`, `string outputPath`, `string? proxyUrl`
-- **AND** `subtitlePath` SHALL be a local file path (not a URL), or null
-- **AND** `proxyUrl` SHALL be an HTTP proxy URI or null for direct connection
-- **AND** return a `CancellationTokenSource` for cancellation control
-
-### Requirement: FfmpegRunner sends ProgressUpdate messages
-The FfmpegRunner SHALL parse FFmpeg's progress output and send `ProgressUpdate` messages to the provided `IActorRef` for each complete progress block.
-
-#### Scenario: Progress block parsed
-- **WHEN** FFmpeg emits a complete progress block containing `out_time_us`, `total_size`, and `speed`
-- **THEN** the runner SHALL send a `ProgressUpdate(TotalSize, OutTimeUs, Speed)` to the caller via `self.Tell`
-
-#### Scenario: Incomplete progress block
-- **WHEN** FFmpeg emits lines that do not form a complete progress block
-- **THEN** the runner SHALL accumulate them without sending a message
-
-### Requirement: FfmpegRunner sends ProcessExited on completion
-The FfmpegRunner SHALL send a `ProcessExited` message to the provided `IActorRef` when the FFmpeg process terminates.
-
-#### Scenario: Process exits successfully
-- **WHEN** the FFmpeg process exits with code 0
-- **THEN** the runner SHALL send `ProcessExited(ExitCode: 0, ErrorOutput: null, ElapsedSeconds)` to the caller
-
-#### Scenario: Process exits with error
-- **WHEN** the FFmpeg process exits with a non-zero code
-- **THEN** the runner SHALL send `ProcessExited(ExitCode, ErrorOutput: <stderr>, ElapsedSeconds)` to the caller
-
-#### Scenario: Process fails to start
-- **WHEN** the FFmpeg process cannot be spawned
-- **THEN** the runner SHALL send `ProcessExited(ExitCode: -1, ErrorOutput: <exception message>, ElapsedSeconds: 0)` to the caller
-
-### Requirement: FfmpegRunner supports cancellation
-The FfmpegRunner SHALL observe the returned CancellationTokenSource for cancellation and kill the FFmpeg process when cancelled.
-
-#### Scenario: Cancellation during download
-- **WHEN** the CancellationTokenSource is cancelled while FFmpeg is running
-- **THEN** the runner SHALL kill the FFmpeg process
-- **AND** send `ProcessExited(ExitCode: -1, ErrorOutput: "Cancelled", ElapsedSeconds)` to the caller
-
-### Requirement: ProgressUpdate message shape
-The `ProgressUpdate` record SHALL be a flat internal record with three fields: `TotalSize` (long), `OutTimeUs` (long), `Speed` (double).
-
-#### Scenario: Message fields
-- **WHEN** a ProgressUpdate is constructed
-- **THEN** it SHALL contain `TotalSize`, `OutTimeUs`, and `Speed` without any nested records
-
-### Requirement: ProcessExited message shape
-The `ProcessExited` record SHALL be an internal record with three fields: `ExitCode` (int), `ErrorOutput` (string?, nullable), `ElapsedSeconds` (int).
-
-#### Scenario: Message fields
-- **WHEN** a ProcessExited is constructed
-- **THEN** it SHALL contain `ExitCode`, `ErrorOutput` (nullable), and `ElapsedSeconds`
-
-### Requirement: FfmpegRunner accepts subtitle language parameter
-The `FfmpegRunner.RunAsync` and `BuildArguments` methods SHALL accept an optional `subtitleLanguage` parameter instead of hardcoding `"deu"`.
-
-#### Scenario: Language from parameter
-- **WHEN** `subtitlePath` is not null and `subtitleLanguage` is `"deu"`
-- **THEN** FFmpeg SHALL be invoked with `-metadata:s:s:0 language=deu`
-
-#### Scenario: Default language when not provided
-- **WHEN** `subtitlePath` is not null and `subtitleLanguage` is null
-- **THEN** FFmpeg SHALL use `"deu"` as the default language
-
-#### Scenario: No language when no subtitle
-- **WHEN** `subtitlePath` is null
-- **THEN** no subtitle language metadata SHALL be added
-
-### Requirement: FfmpegRunner interface includes language
-The `IFfmpegRunner.RunAsync` method SHALL accept an optional `subtitleLanguage` parameter.
-
-#### Scenario: Interface signature
-- **WHEN** a caller invokes `IFfmpegRunner.RunAsync`
-- **THEN** the method SHALL accept `string videoUrl`, `string? subtitlePath`, `string outputPath`, `string? proxyUrl`, `string? subtitleLanguage`, `Action<ProgressUpdate> onProgress`, `CancellationToken ct`
-
-### Requirement: FfmpegRunner injects proxy as input-level argument
-When a proxy URL is provided, the FfmpegRunner SHALL inject it as a `-http_proxy` custom argument on the `FromUrlInput` call so it appears before the `-i` flag in the FFmpeg command line.
-
-#### Scenario: Download with proxy
-- **WHEN** `proxyUrl` is "http://proxy-at:8888" and `videoUrl` is "https://example.com/stream.m3u8"
-- **THEN** FFmpeg SHALL be invoked with `-http_proxy http://proxy-at:8888` before `-i https://example.com/stream.m3u8`
-
-#### Scenario: Download without proxy
-- **WHEN** `proxyUrl` is null
-- **THEN** FFmpeg SHALL be invoked without any `-http_proxy` argument
+_All requirements removed. See remuxer and ffmpeg-process specs for the replacement._
 
