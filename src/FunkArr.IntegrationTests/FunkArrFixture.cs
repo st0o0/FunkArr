@@ -3,6 +3,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using Akka.TestKit;
 using Akka.TestKit.Xunit;
+using FunkArr.Api;
 using FunkArr.ArrApi;
 using FunkArr.Core;
 using Microsoft.AspNetCore.Builder;
@@ -14,37 +15,27 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace FunkArr.Api.Tests.Integration;
+namespace FunkArr.IntegrationTests;
 
-public sealed class FunkArrTestServer : IAsyncDisposable
+public sealed class FunkArrFixture : IAsyncLifetime
 {
-    private readonly WebApplication _app;
-    private readonly ActorSystem _actorSystem;
-    private readonly Dictionary<Type, TestProbe> _probes;
-    private readonly string _tempDir;
+    private WebApplication _app = null!;
+    private ActorSystem _actorSystem = null!;
+    private Dictionary<Type, TestProbe> _probes = null!;
+    private string _tempDir = null!;
 
-    public HttpClient Client { get; }
-
-    private FunkArrTestServer(WebApplication app, ActorSystem actorSystem,
-        Dictionary<Type, TestProbe> probes, HttpClient client, string tempDir)
-    {
-        _app = app;
-        _actorSystem = actorSystem;
-        _probes = probes;
-        _tempDir = tempDir;
-        Client = client;
-    }
+    public HttpClient Client { get; private set; } = null!;
 
     public TestProbe GetProbe<TKey>() => _probes[typeof(TKey)];
 
-    public static async Task<FunkArrTestServer> CreateAsync()
+    public async ValueTask InitializeAsync()
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
+        _tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-int-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_tempDir);
 
-        var actorSystem = ActorSystem.Create("test");
-        var registry = ActorRegistry.For(actorSystem);
-        var probes = RegisterProbes(actorSystem, registry);
+        _actorSystem = ActorSystem.Create("test");
+        var registry = ActorRegistry.For(_actorSystem);
+        _probes = RegisterProbes(_actorSystem, registry);
 
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -54,8 +45,8 @@ public sealed class FunkArrTestServer : IAsyncDisposable
 
         services.AddSingleton<IActorRegistry>(registry);
 
-        var funkArrOptions = new FunkArrOptions { ApiKey = "test-key", DataPath = tempDir };
-        var downloadOptions = new DownloadOptions { Path = Path.Combine(tempDir, "downloads") };
+        var funkArrOptions = new FunkArrOptions { ApiKey = "test-key", DataPath = _tempDir };
+        var downloadOptions = new DownloadOptions { Path = Path.Combine(_tempDir, "downloads") };
         services.Configure<FunkArrOptions>(o =>
         {
             o.ApiKey = funkArrOptions.ApiKey;
@@ -78,9 +69,10 @@ public sealed class FunkArrTestServer : IAsyncDisposable
         services.AddSingleton<IRuleSetValidator, RuleSet.RuleSetValidator>();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
         services.AddSingleton(new RingBufferSink());
+        services.AddSingleton(TimeProvider.System);
 
         services.AddHttpClient();
-        services.AddHttpClient<ArrApiClient>();
+        services.AddHttpClient<ArrSetupClient>();
         services.AddOutputCache();
         services.AddHealthChecks();
 
@@ -94,9 +86,9 @@ public sealed class FunkArrTestServer : IAsyncDisposable
             options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         });
 
-        var app = builder.Build();
+        _app = builder.Build();
 
-        app.MapHealthChecks("/healthz", new HealthCheckOptions
+        _app.MapHealthChecks("/healthz", new HealthCheckOptions
         {
             ResultStatusCodes =
             {
@@ -106,19 +98,34 @@ public sealed class FunkArrTestServer : IAsyncDisposable
             },
         });
 
-        app.MapGet("/alive", () => Microsoft.AspNetCore.Http.Results.Ok("Alive"));
-        app.MapSystemApi();
-        app.MapDownloadsApi();
-        app.MapRuleSetApi();
-        app.MapMediathekApi();
-        app.MapSetupArrApi();
-        app.MapControllers();
+        _app.MapGet("/alive", () => Microsoft.AspNetCore.Http.Results.Ok("Alive"));
+        _app.MapSystemApi();
+        _app.MapDownloadsApi();
+        _app.MapRuleSetApi();
+        _app.MapMediathekApi();
+        _app.MapSetupArrApi();
+        _app.MapControllers();
 
-        await app.StartAsync();
+        await _app.StartAsync();
 
-        var client = app.GetTestClient();
+        Client = _app.GetTestClient();
+    }
 
-        return new FunkArrTestServer(app, actorSystem, probes, client, tempDir);
+    public async ValueTask DisposeAsync()
+    {
+        Client.Dispose();
+        await _app.StopAsync();
+        await _app.DisposeAsync();
+        await _actorSystem.Terminate();
+
+        try
+        {
+            Directory.Delete(_tempDir, true);
+        }
+        catch
+        {
+            // noop
+        }
     }
 
     private static Dictionary<Type, TestProbe> RegisterProbes(ActorSystem system, ActorRegistry registry)
@@ -148,15 +155,5 @@ public sealed class FunkArrTestServer : IAsyncDisposable
             registry.Register<TKey>(probe);
             probes[typeof(TKey)] = probe;
         }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        Client.Dispose();
-        await _app.StopAsync();
-        await _app.DisposeAsync();
-        await _actorSystem.Terminate();
-
-        try { Directory.Delete(_tempDir, true); } catch { }
     }
 }
