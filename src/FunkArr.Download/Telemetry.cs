@@ -30,6 +30,12 @@ internal static class Telemetry
     internal static readonly Counter<long> MoveFailed = Meter.CreateCounter<long>(
         "funkarr.download.move_failed_total", description: "Total file move failures");
 
+    internal static readonly Counter<long> SubtitleTotal = Meter.CreateCounter<long>(
+        "funkarr.download.subtitle_total", description: "Total subtitle preparation attempts");
+
+    internal static readonly Histogram<double> SubtitleDuration = Meter.CreateHistogram<double>(
+        "funkarr.download.subtitle_duration_seconds", "s", "Subtitle preparation duration in seconds");
+
     private static int _queueSize;
     private static int _activeDownloads;
     private static int _paused;
