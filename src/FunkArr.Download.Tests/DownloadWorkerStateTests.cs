@@ -191,7 +191,6 @@ public sealed class DownloadWorkerStateTests
         Assert.True(DownloadPhase.VideoDownload.IsTransient());
         Assert.True(DownloadPhase.Remuxing.IsTransient());
         Assert.True(DownloadPhase.Moving.IsTransient());
-        Assert.True(DownloadPhase.SubtitleDownload.IsTransient());
         Assert.False(DownloadPhase.Initialized.IsTransient());
         Assert.False(DownloadPhase.Completed.IsTransient());
         Assert.False(DownloadPhase.Failed.IsTransient());

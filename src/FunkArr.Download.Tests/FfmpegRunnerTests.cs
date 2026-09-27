@@ -258,6 +258,35 @@ public sealed class FfmpegRunnerTests
     }
 
     [Fact]
+    public void BuildArguments_with_subtitle_language_uses_parameter()
+    {
+        var processor = FfmpegRunner.BuildArguments(
+            "https://example.com/video.mp4",
+            "/tmp/subtitle.srt",
+            "/tmp/out.mkv",
+            subtitleLanguage: "eng");
+
+        var args = processor.Arguments;
+
+        Assert.Contains("-metadata:s:s:0 language=eng", args);
+        Assert.DoesNotContain("language=deu", args);
+    }
+
+    [Fact]
+    public void BuildArguments_with_null_subtitle_language_defaults_to_deu()
+    {
+        var processor = FfmpegRunner.BuildArguments(
+            "https://example.com/video.mp4",
+            "/tmp/subtitle.srt",
+            "/tmp/out.mkv",
+            subtitleLanguage: null);
+
+        var args = processor.Arguments;
+
+        Assert.Contains("-metadata:s:s:0 language=deu", args);
+    }
+
+    [Fact]
     public void BuildArguments_with_proxy_includes_http_proxy_before_input()
     {
         var processor = FfmpegRunner.BuildArguments(
