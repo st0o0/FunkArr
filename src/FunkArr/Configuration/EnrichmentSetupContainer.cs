@@ -4,7 +4,7 @@ using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
 
-public sealed class MetadataSetupContainer : IServiceSetupContainer
+public sealed class EnrichmentSetupContainer : IServiceSetupContainer
 {
     public void SetupServices(IServiceCollection services, IConfiguration configuration)
     {

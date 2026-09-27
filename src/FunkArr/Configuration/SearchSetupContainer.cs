@@ -1,11 +1,13 @@
 using System.Net.Mime;
 using FunkArr.Api;
+using FunkArr.Api.HealthChecks;
 using FunkArr.Core;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
 
-public sealed class MediathekSetupContainer : ApplicationSetupContainer<WebApplication>, IServiceSetupContainer
+public sealed class SearchSetupContainer : ApplicationSetupContainer<WebApplication>, IServiceSetupContainer
 {
     public void SetupServices(IServiceCollection services, IConfiguration configuration)
     {
@@ -20,6 +22,9 @@ public sealed class MediathekSetupContainer : ApplicationSetupContainer<WebAppli
             options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(45);
             options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(15);
         });
+
+        services.AddHealthChecks()
+            .AddCheck<MediathekViewWebHealthCheck>("mediathekviewweb", failureStatus: HealthStatus.Degraded);
     }
 
     protected override void SetupApplication(WebApplication app)

@@ -59,29 +59,22 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithClustering(new ClusterOptions
             {
                 SeedNodes = ["akka.tcp://funkarr@localhost:2552"],
-            })
+            });
+
+        RegisterSearchActors(builder);
+        RegisterDownloadActors(builder);
+        RegisterScoringActors(builder);
+        RegisterRuleSetActors(builder);
+        RegisterEnrichmentActors(builder);
+    }
+
+    private static void RegisterSearchActors(AkkaConfigurationBuilder builder)
+    {
+        builder
             .WithSingleton<IMediathekManager>("mediathek-view-web-manager",
                 (_, _, resolver) => resolver.Props<MediathekViewWebManager>())
-            .WithSingleton<IRuleSetResolver>("ruleset-resolver",
-                (_, _, resolver) => resolver.Props<RuleSetResolver>())
-            .WithSingleton<IRuleSetManager>("ruleset-manager",
-                (_, _, resolver) => resolver.Props<RuleSetManager>())
-            .WithSingleton<IRuleSetUpdater>("ruleset-updater",
-                (_, _, resolver) => resolver.Props<RuleSetUpdater>())
             .WithSingleton<ISearchManager>("search-manager",
                 (_, _, resolver) => resolver.Props<SearchManager>())
-            .WithSingleton<IDownloadManager>("download-manager",
-                (_, _, resolver) => resolver.Props<DownloadManager>())
-            .WithSingleton<IDownloadScheduler>("download-scheduler",
-                (_, _, resolver) => resolver.Props<DownloadScheduler>())
-            .WithSingleton<IDownloadHistoryManager>("download-history",
-                (_, _, resolver) => resolver.Props<DownloadHistoryManager>())
-            .WithSingleton<IScoringManager>("scoring-manager",
-                (_, _, resolver) => resolver.Props<ScoringManager>())
-            .WithSingleton<IEnrichmentManager>("enrichment-manager",
-                (_, _, resolver) => resolver.Props<EnrichmentManager>())
-            .WithSingleton<IStatsCollector>("stats-collector",
-                (_, _, resolver) => resolver.Props<StatsCollector>())
             .WithShardRegion<ITvSearchRegion>("tv-search",
                 (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
                 new ShardMessageExtractor(),
@@ -89,18 +82,56 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithShardRegion<IMovieSearchRegion>("movie-search",
                 (_, _, resolver) => _ => resolver.Props<MovieSearchWorker>(),
                 new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30) })
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30) });
+    }
+
+    private static void RegisterDownloadActors(AkkaConfigurationBuilder builder)
+    {
+        builder
+            .WithSingleton<IDownloadManager>("download-manager",
+                (_, _, resolver) => resolver.Props<DownloadManager>())
+            .WithSingleton<IDownloadScheduler>("download-scheduler",
+                (_, _, resolver) => resolver.Props<DownloadScheduler>())
+            .WithSingleton<IDownloadHistoryManager>("download-history",
+                (_, _, resolver) => resolver.Props<DownloadHistoryManager>())
             .WithShardRegion<IDownloadRegion>("download-worker",
                 (_, _, resolver) => entityId => resolver.Props<DownloadWorker>(entityId),
                 new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) })
-            .WithShardRegion<IRuleSetRegion>("ruleset-worker",
-                (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
-                new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) })
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) });
+    }
+
+    private static void RegisterScoringActors(AkkaConfigurationBuilder builder)
+    {
+        builder
+            .WithSingleton<IScoringManager>("scoring-manager",
+                (_, _, resolver) => resolver.Props<ScoringManager>())
+            .WithSingleton<IStatsCollector>("stats-collector",
+                (_, _, resolver) => resolver.Props<StatsCollector>())
             .WithShardRegion<IHistoryRegion>("history",
                 (_, _, resolver) => entityId => resolver.Props<HistoryWorker>(entityId),
                 new ShardMessageExtractor(),
                 new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) });
+    }
+
+    private static void RegisterRuleSetActors(AkkaConfigurationBuilder builder)
+    {
+        builder
+            .WithSingleton<IRuleSetResolver>("ruleset-resolver",
+                (_, _, resolver) => resolver.Props<RuleSetResolver>())
+            .WithSingleton<IRuleSetManager>("ruleset-manager",
+                (_, _, resolver) => resolver.Props<RuleSetManager>())
+            .WithSingleton<IRuleSetUpdater>("ruleset-updater",
+                (_, _, resolver) => resolver.Props<RuleSetUpdater>())
+            .WithShardRegion<IRuleSetRegion>("ruleset-worker",
+                (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
+                new ShardMessageExtractor(),
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) });
+    }
+
+    private static void RegisterEnrichmentActors(AkkaConfigurationBuilder builder)
+    {
+        builder
+            .WithSingleton<IEnrichmentManager>("enrichment-manager",
+                (_, _, resolver) => resolver.Props<EnrichmentManager>());
     }
 }

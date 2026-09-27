@@ -1,7 +1,8 @@
 using FunkArr.Api;
-using FunkArr.ArrApi;
+using FunkArr.Api.HealthChecks;
 using FunkArr.Core;
 using FunkArr.Download;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
 
@@ -12,22 +13,16 @@ public sealed class DownloadSetupContainer : ApplicationSetupContainer<WebApplic
     public void SetupServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<IValidateOptions<DownloadOptions>, DownloadOptionsValidator>();
-        services.AddSingleton<IValidateOptions<RoutingOptions>, RoutingOptionsValidator>();
 
         services
             .AddOptions<DownloadOptions>()
             .Bind(configuration.GetSection(DownloadOptions.SectionName))
             .ValidateOnStart();
 
-        services
-            .AddOptions<RoutingOptions>()
-            .Bind(configuration.GetSection(RoutingOptions.SectionName))
-            .ValidateOnStart();
-
-        services.AddSingleton<IRouteResolver, RouteResolver>();
-
         services.AddDownloadServices(configuration);
-        services.AddArrApiServices(configuration);
+
+        services.AddHealthChecks()
+            .AddCheck<FfmpegHealthCheck>("ffmpeg", failureStatus: HealthStatus.Unhealthy);
     }
 
     protected override void SetupApplication(WebApplication app)
