@@ -398,5 +398,8 @@
     "of": "von",
     "app": "App",
     "rulesetVersion": "Regelwerke"
+  },
+  "attribution": {
+    "poweredBy": "Betrieben mit"
   }
 }

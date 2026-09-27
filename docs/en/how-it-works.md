@@ -28,6 +28,10 @@ Each search has a 30-second timeout. If one part of a combined search fails, the
 
 ### 3. MediathekViewWeb Query
 
+:::tip MediathekViewWeb
+[MediathekViewWeb](https://mediathekviewweb.de/#everywhere=true) is a free community project that makes the media libraries of German-language public broadcasters searchable. FunkArr uses their API as the data source for all search queries.
+:::
+
 The MediathekViewWebManager sends the search query to the MediathekViewWeb API. This searches the Mediathek database (ARD, ZDF, ORF, SRF and other broadcasters).
 
 Queries can filter by topic (show name), title and description. Each result contains:

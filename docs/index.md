@@ -26,4 +26,6 @@ features:
     details: OpenTelemetry-Tracing und -Metriken fur Downloads, Scoring und Enrichment. Aspire Dashboard oder jedes OTLP-Backend.
   - title: Ein Container
     details: Läuft auf jedem Docker-Host mit SQLite als Standard. Optionales PostgreSQL fur grossere Setups. PUID/PGID-Support.
+  - title: MediathekViewWeb
+    details: Suche wird von [MediathekViewWeb](https://mediathekviewweb.de/#everywhere=true) bereitgestellt - ein freies Community-Projekt, das die Mediatheken von ARD, ZDF, ORF, SRF und weiteren Sendern durchsuchbar macht.
 ---

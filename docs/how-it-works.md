@@ -28,6 +28,10 @@ Jede Suche hat ein Timeout von 30 Sekunden. Wenn bei einer kombinierten Suche ei
 
 ### 3. MediathekViewWeb-Abfrage
 
+:::tip MediathekViewWeb
+[MediathekViewWeb](https://mediathekviewweb.de/#everywhere=true) ist ein freies Community-Projekt, das die Mediatheken der deutschsprachigen öffentlich-rechtlichen Sender durchsuchbar macht. FunkArr nutzt deren API als Datenquelle für alle Suchanfragen.
+:::
+
 Der MediathekViewWebManager sendet die Suchanfrage an die MediathekViewWeb-API. Diese durchsucht die Mediathek-Datenbank (ARD, ZDF, ORF, SRF und weitere Sender).
 
 Suchanfragen können nach Topic (Sendungsname), Titel und Beschreibung filtern. Die Ergebnisse enthalten für jeden Eintrag:

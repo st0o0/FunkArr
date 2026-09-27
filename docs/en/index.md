@@ -26,4 +26,6 @@ features:
     details: OpenTelemetry tracing and metrics for downloads, scoring, and enrichment. Aspire Dashboard or any OTLP backend.
   - title: Single Container
     details: Runs on any Docker host with SQLite by default. Optional PostgreSQL for larger setups. PUID/PGID support.
+  - title: MediathekViewWeb
+    details: Search is powered by [MediathekViewWeb](https://mediathekviewweb.de/#everywhere=true) - a free community project that makes the media libraries of ARD, ZDF, ORF, SRF and more searchable.
 ---

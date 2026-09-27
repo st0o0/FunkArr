@@ -71,6 +71,13 @@
           <option value="de-CH">Schwizerdütsch</option>
         </select>
         <div v-if="!collapsed && appVersion" class="px-2.5 py-1 text-[11px] text-text-muted tabular-nums">v{{ appVersion }}</div>
+        <a
+          v-if="!collapsed"
+          href="https://mediathekviewweb.de/#everywhere=true"
+          target="_blank"
+          rel="noopener"
+          class="block px-2.5 py-1 text-[11px] text-text-muted hover:text-text-body transition-colors"
+        >{{ $t('attribution.poweredBy') }} MediathekViewWeb</a>
         <button
           @click="toggle"
           class="w-full flex items-center rounded-md text-text-secondary hover:text-text-body hover:bg-surface-elevated/50 transition-colors"

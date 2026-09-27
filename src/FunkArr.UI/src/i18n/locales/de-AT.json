@@ -78,5 +78,8 @@
   },
   "common": {
     "loading": "Laden..."
+  },
+  "attribution": {
+    "poweredBy": "Betrieben mit"
   }
 }

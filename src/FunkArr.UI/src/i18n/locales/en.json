@@ -432,5 +432,8 @@
     "of": "of",
     "app": "App",
     "rulesetVersion": "Rulesets"
+  },
+  "attribution": {
+    "poweredBy": "Powered by"
   }
 }
