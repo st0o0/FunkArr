@@ -5,15 +5,39 @@ using System.Xml.Linq;
 
 namespace FunkArr.Download;
 
-internal static partial class TtmlToSrtConverter
+internal sealed partial class TtmlFormat : ISubtitleFormat
 {
     private static readonly XNamespace _tt = "http://www.w3.org/ns/ttml";
     private static readonly XNamespace _ebuttm = "urn:ebu:tt:metadata";
     private static readonly TimeSpan _offsetThreshold = TimeSpan.FromMinutes(30);
 
-    public static string Convert(string ttml)
+    private XDocument? _cached;
+
+    public string Name => "TTML";
+
+    public bool CanParse(string content)
     {
-        var doc = XDocument.Parse(ttml);
+        try
+        {
+            var doc = XDocument.Parse(content);
+            if (doc.Root?.Name.LocalName == "tt")
+            {
+                _cached = doc;
+                return true;
+            }
+        }
+        catch (System.Xml.XmlException)
+        {
+        }
+
+        return false;
+    }
+
+    public List<SubtitleCue> Parse(string content)
+    {
+        var doc = _cached ?? XDocument.Parse(content);
+        _cached = null;
+
         var paragraphs = doc.Descendants(_tt + "p")
             .Concat(doc.Descendants("p"))
             .Where(p => p.Attribute("begin") is not null
@@ -21,35 +45,26 @@ internal static partial class TtmlToSrtConverter
             .ToList();
 
         var offset = DetectOffset(doc, paragraphs);
-        var sb = new StringBuilder();
-        var index = 1;
+        var cues = new List<SubtitleCue>();
 
         foreach (var p in paragraphs)
         {
             var begin = ParseTimestamp(p.Attribute("begin")!.Value) - offset;
             if (begin < TimeSpan.Zero) begin = TimeSpan.Zero;
+
             var end = p.Attribute("end") is { } endAttr
                 ? ParseTimestamp(endAttr.Value) - offset
                 : begin + ParseTimestamp(p.Attribute("dur")!.Value);
             if (end < TimeSpan.Zero) end = TimeSpan.Zero;
+
             var text = ExtractText(p);
-
             if (string.IsNullOrWhiteSpace(text))
-            {
                 continue;
-            }
 
-            sb.Append(index++);
-            sb.Append('\n');
-            sb.Append(FormatSrtTimestamp(begin));
-            sb.Append(" --> ");
-            sb.Append(FormatSrtTimestamp(end));
-            sb.Append('\n');
-            sb.Append(text);
-            sb.Append("\n\n");
+            cues.Add(new SubtitleCue(begin, end, text));
         }
 
-        return sb.ToString();
+        return cues;
     }
 
     private static TimeSpan DetectOffset(XDocument doc, List<XElement> paragraphs)
@@ -75,25 +90,16 @@ internal static partial class TtmlToSrtConverter
     internal static TimeSpan ParseTimestamp(string value)
     {
         if (value.EndsWith('s') && double.TryParse(value.AsSpan(0, value.Length - 1), CultureInfo.InvariantCulture, out var seconds))
-        {
             return TimeSpan.FromSeconds(seconds);
-        }
 
         if (TimeSpan.TryParseExact(value, [@"hh\:mm\:ss\.FFF", @"hh\:mm\:ss\,FFF", @"hh\:mm\:ss"], CultureInfo.InvariantCulture, out var ts))
-        {
             return ts;
-        }
 
         if (TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts))
-        {
             return ts;
-        }
 
         return TimeSpan.Zero;
     }
-
-    private static string FormatSrtTimestamp(TimeSpan ts) =>
-        $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2},{ts.Milliseconds:D3}";
 
     private static string ExtractText(XElement p)
     {
