@@ -10,5 +10,5 @@ public interface IFfmpegRunner
 {
     Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitlePath, string outputPath,
-        string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct);
+        string? proxyUrl, string? subtitleLanguage, Action<ProgressUpdate> onProgress, CancellationToken ct);
 }

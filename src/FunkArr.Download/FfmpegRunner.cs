@@ -11,12 +11,12 @@ internal sealed class FfmpegRunner : IFfmpegRunner
 {
     public async Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitlePath, string outputPath,
-        string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct)
+        string? proxyUrl, string? subtitleLanguage, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var progressBlock = new Dictionary<string, string>();
 
-        var processor = BuildArguments(videoUrl, subtitlePath, outputPath, proxyUrl)
+        var processor = BuildArguments(videoUrl, subtitlePath, outputPath, proxyUrl, subtitleLanguage)
             .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
             .CancellableThrough(ct);
 
@@ -46,7 +46,8 @@ internal sealed class FfmpegRunner : IFfmpegRunner
     private const string _userAgent = "Mozilla/5.0";
 
     internal static FFMpegArgumentProcessor BuildArguments(
-        string videoUrl, string? subtitlePath, string outputPath, string? proxyUrl = null)
+        string videoUrl, string? subtitlePath, string outputPath, string? proxyUrl = null,
+        string? subtitleLanguage = null)
     {
         Action<FFMpegArgumentOptions> inputOptions = opts =>
         {
@@ -68,7 +69,7 @@ internal sealed class FfmpegRunner : IFfmpegRunner
                         .CopyChannel(Channel.Audio)
                         .WithCustomArgument("-c:s srt")
                         .WithCustomArgument("-disposition:s:0 0")
-                        .WithCustomArgument("-metadata:s:s:0 language=deu")
+                        .WithCustomArgument($"-metadata:s:s:0 language={subtitleLanguage ?? "deu"}")
                         .WithCustomArgument("-progress pipe:1");
                 })
             : FFMpegArguments
