@@ -59,7 +59,7 @@ public sealed class SabnzbdDownloadService(
 
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var media = new DownloadMedia(title, videoUrl, subtitleUrl, channel, duration, size, category);
             var addCmd = new AddDownload(media, downloadPriority);
             var addResult = await manager.Ask<DownloadAdded>(addCmd, Timeout, ct);
@@ -92,7 +92,7 @@ public sealed class SabnzbdDownloadService(
 
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(downloadId), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
@@ -114,7 +114,7 @@ public sealed class SabnzbdDownloadService(
 
         try
         {
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(downloadId), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
@@ -136,8 +136,8 @@ public sealed class SabnzbdDownloadService(
 
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
 
             history.Tell(new RemoveHistoryEntry(downloadId));
             var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(downloadId), Timeout, ct);
@@ -166,7 +166,7 @@ public sealed class SabnzbdDownloadService(
 
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
 
             if (priorityInt == 2)
             {
@@ -198,7 +198,7 @@ public sealed class SabnzbdDownloadService(
 
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), Timeout, ct);
             return result is SwapDownloadsCompleted
                 ? new SabnzbdResult.Ok(new { status = true })

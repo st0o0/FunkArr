@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
@@ -17,7 +16,7 @@ using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
 
-public static partial class RuleSetApiEndpoints
+public static class RuleSetApiEndpoints
 {
     private static readonly TimeSpan _queryTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
@@ -32,9 +31,9 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/", async (IActorRegistry registry, IDataFiles dataFiles, DataPaths dataPaths, CancellationToken ct) =>
         {
-            var resolver = await registry.GetAsync<IRuleSetResolver>();
-            var manager = await registry.GetAsync<IRuleSetManager>();
-            var statsCollector = await registry.GetAsync<IStatsCollector>();
+            var resolver = await registry.GetAsync<IRuleSetResolver>(ct);
+            var manager = await registry.GetAsync<IRuleSetManager>(ct);
+            var statsCollector = await registry.GetAsync<IStatsCollector>(ct);
 
             var resolverTask = resolver.Ask<RegisteredRuleSetsResult>(
                 new QueryRegisteredRuleSets(), _queryTimeout, ct);
@@ -80,7 +79,7 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}", async (string id, IActorRegistry registry, CancellationToken ct) =>
         {
-            var region = await registry.GetAsync<IRuleSetRegion>();
+            var region = await registry.GetAsync<IRuleSetRegion>(ct);
             var result = await region.Ask<RuleSetDetailResponse>(
                 new QueryRuleSetDetail(id), _queryTimeout, ct);
             return result switch
@@ -98,7 +97,7 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}/history", async (string id, int? offset, int? limit, IActorRegistry registry, CancellationToken ct) =>
         {
-            var historyRegion = await registry.GetAsync<IHistoryRegion>();
+            var historyRegion = await registry.GetAsync<IHistoryRegion>(ct);
             var result = await historyRegion.Ask<ScoringHistoryResult>(
                 new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout, ct);
             return Results.Ok(result.ToApi());
@@ -110,7 +109,7 @@ public static partial class RuleSetApiEndpoints
 
         group.MapGet("/{id}/history/{requestId:guid}", async (string id, Guid requestId, IActorRegistry registry, CancellationToken ct) =>
         {
-            var historyRegion = await registry.GetAsync<IHistoryRegion>();
+            var historyRegion = await registry.GetAsync<IHistoryRegion>(ct);
             var result = await historyRegion.Ask<ScoringDetailResponse>(
                 new QueryScoringDetail(id, requestId), _queryTimeout, ct);
             return result switch
@@ -128,30 +127,40 @@ public static partial class RuleSetApiEndpoints
 
         group.MapPost("/", HandleCreate)
             .WithSummary("Create local ruleset")
+            .WithDescription("Creates a new local ruleset from the provided configuration. Returns 409 if a ruleset with the same ID already exists.")
             .Produces<ApiModels.CreatedRuleSetResponse>(201)
             .ProducesProblem(400)
             .ProducesProblem(409)
-            .ProducesProblem(422);
+            .Produces<ApiModels.ValidationErrorResponse>(422);
         group.MapPut("/{id}", HandleUpdate)
             .WithSummary("Update ruleset")
+            .WithDescription("Replaces the configuration of an existing local ruleset.")
             .Produces(200)
             .ProducesProblem(404)
-            .ProducesProblem(422);
+            .Produces<ApiModels.ValidationErrorResponse>(422);
         group.MapDelete("/{id}", HandleDelete)
             .WithSummary("Delete local ruleset")
+            .WithDescription("Permanently removes a local ruleset. Community rulesets cannot be deleted.")
             .Produces(200)
             .ProducesProblem(404);
         group.MapGet("/{id}/raw", HandleGetRaw)
-            .WithSummary("Get raw ruleset JSON");
+            .WithSummary("Get raw ruleset JSON")
+            .WithDescription("Returns the raw JSON definition of a ruleset as stored on disk.")
+            .Produces(200, contentType: "application/json")
+            .ProducesProblem(404);
 
         group.MapGet("/{id}/export", HandleExport)
-            .WithSummary("Export ruleset for community contribution");
+            .WithSummary("Export ruleset for community contribution")
+            .WithDescription("Downloads the ruleset as a JSON file suitable for contributing to the community repository.")
+            .Produces(200, contentType: "application/json")
+            .ProducesProblem(404)
+            .Produces<ApiModels.ValidationErrorResponse>(422);
 
         group.MapPost("/test", async (ApiModels.TestScoreRequest request, IActorRegistry registry, CancellationToken ct) =>
         {
             var (config, candidates) = request.ToMessage();
 
-            var manager = await registry.GetAsync<IScoringManager>();
+            var manager = await registry.GetAsync<IScoringManager>(ct);
             var result = await manager.Ask<TestScoreItemsResponse>(
                 new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout, ct);
 
@@ -178,34 +187,34 @@ public static partial class RuleSetApiEndpoints
         return app;
     }
 
-    private static async Task EvictRuleSetCache(IOutputCacheStore cache) => await cache.EvictByTagAsync("rulesets", default);
+    private static async Task EvictRuleSetCache(IOutputCacheStore cache, CancellationToken ct) => await cache.EvictByTagAsync("rulesets", ct);
 
     private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
     {
-        var region = await registry.GetAsync<IRuleSetRegion>();
+        var region = await registry.GetAsync<IRuleSetRegion>(ct);
         var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), _queryTimeout, ct);
 
-        await EvictRuleSetCache(cache);
+        await EvictRuleSetCache(cache, ct);
         return result switch
         {
             CreateLocalRuleSetCompleted completed => Results.Created($"/api/rulesets/{completed.RuleSetId}", new ApiModels.CreatedRuleSetResponse(completed.RuleSetId)),
             CreateLocalRuleSetFailed { Reason: CreateLocalRuleSetFailureReason.AlreadyExists } => Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists")),
-            CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new { errors = failed.Errors }),
+            CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors)),
             _ => ApiResults.GatewayTimeout(),
         };
     }
 
     private static async Task<IResult> HandleUpdate(string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
     {
-        var region = await registry.GetAsync<IRuleSetRegion>();
+        var region = await registry.GetAsync<IRuleSetRegion>(ct);
         var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), _queryTimeout, ct);
 
-        await EvictRuleSetCache(cache);
+        await EvictRuleSetCache(cache, ct);
         return result switch
         {
             UpdateLocalRuleSetCompleted => Results.Ok(),
             UpdateLocalRuleSetFailed { Reason: UpdateLocalRuleSetFailureReason.NotFound } => Results.NotFound(),
-            UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new { errors = failed.Errors }),
+            UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors)),
             _ => ApiResults.GatewayTimeout(),
         };
     }
@@ -232,10 +241,10 @@ public static partial class RuleSetApiEndpoints
 
     private static async Task<IResult> HandleDelete(string id, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
     {
-        var region = await registry.GetAsync<IRuleSetRegion>();
+        var region = await registry.GetAsync<IRuleSetRegion>(ct);
         var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), _queryTimeout, ct);
 
-        await EvictRuleSetCache(cache);
+        await EvictRuleSetCache(cache, ct);
         return result switch
         {
             DeleteLocalRuleSetCompleted => Results.Ok(),
@@ -246,13 +255,13 @@ public static partial class RuleSetApiEndpoints
 
     private static async Task<IResult> HandleExport(string id, IActorRegistry registry, HttpContext httpContext, CancellationToken ct)
     {
-        var region = await registry.GetAsync<IRuleSetRegion>();
+        var region = await registry.GetAsync<IRuleSetRegion>(ct);
         var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), _queryTimeout, ct);
 
         return result switch
         {
             ExportRuleSetCompleted completed => ExportResult(id, completed.Json, httpContext),
-            ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new { errors = failed.Errors }),
+            ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors)),
             ExportRuleSetFailed => Results.NotFound(),
             _ => ApiResults.GatewayTimeout(),
         };
@@ -275,7 +284,7 @@ public static partial class RuleSetApiEndpoints
 
         try
         {
-            var enrichmentManager = await registry.GetAsync<IEnrichmentManager>();
+            var enrichmentManager = await registry.GetAsync<IEnrichmentManager>(ct);
 
             if (isShow && request.TvdbId is not null)
             {
@@ -312,12 +321,6 @@ public static partial class RuleSetApiEndpoints
             var airedAt = trace.Candidate.Timestamp > 0
                 ? DateTimeOffset.FromUnixTimeSeconds(trace.Candidate.Timestamp)
                 : (DateTimeOffset?)null;
-
-            int? season = null;
-            if (trace.Identification?.Season is not null && int.TryParse(trace.Identification.Season, out var s))
-            {
-                season = s;
-            }
 
             matchedIndices.Add((i, new EpisodeCandidate(
                 matchedIndices.Count,
@@ -443,7 +446,4 @@ public static partial class RuleSetApiEndpoints
 
         return result;
     }
-
-    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$", RegexOptions.Compiled)]
-    private static partial Regex RuleSetIdRegex();
 }

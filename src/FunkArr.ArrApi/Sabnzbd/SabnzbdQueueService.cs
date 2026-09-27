@@ -22,7 +22,7 @@ public sealed class SabnzbdQueueService(
     {
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             if (await manager.Ask<DownloadQueueResponse>(
                     new QueryQueue(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout, ct)
                 is not QueueResult result)
@@ -53,7 +53,7 @@ public sealed class SabnzbdQueueService(
     {
         try
         {
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var response = await history.Ask<HistoryResult>(
                 new QueryHistory(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout, ct);
 
@@ -75,7 +75,7 @@ public sealed class SabnzbdQueueService(
     {
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(), Timeout, ct) is not QueueResult result)
             {
                 return new SabnzbdResult.Error("Queue query failed", 502);
@@ -104,7 +104,7 @@ public sealed class SabnzbdQueueService(
     {
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
@@ -121,7 +121,7 @@ public sealed class SabnzbdQueueService(
     {
         try
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })

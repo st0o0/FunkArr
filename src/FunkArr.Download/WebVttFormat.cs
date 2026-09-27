@@ -17,7 +17,10 @@ internal sealed partial class WebVttFormat : ISubtitleFormat
         var i = 0;
 
         while (i < lines.Length && !lines[i].TrimStart().StartsWith("WEBVTT", StringComparison.Ordinal))
+        {
             i++;
+        }
+
         i++;
 
         while (i < lines.Length)
@@ -29,7 +32,10 @@ internal sealed partial class WebVttFormat : ISubtitleFormat
             {
                 i++;
                 while (i < lines.Length && lines[i].Trim().Length > 0)
+                {
                     i++;
+                }
+
                 continue;
             }
 
@@ -53,7 +59,9 @@ internal sealed partial class WebVttFormat : ISubtitleFormat
 
             var text = string.Join('\n', textLines).Trim();
             if (text.Length > 0)
+            {
                 cues.Add(new SubtitleCue(start, end, text));
+            }
         }
 
         return cues;
@@ -64,10 +72,14 @@ internal sealed partial class WebVttFormat : ISubtitleFormat
         var parts = value.Split(':');
         if (parts.Length == 2 &&
             TimeSpan.TryParseExact(value, @"mm\:ss\.FFF", CultureInfo.InvariantCulture, out var ts2))
+        {
             return ts2;
+        }
 
         if (TimeSpan.TryParseExact(value, @"hh\:mm\:ss\.FFF", CultureInfo.InvariantCulture, out var ts))
+        {
             return ts;
+        }
 
         return TimeSpan.Zero;
     }

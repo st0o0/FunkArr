@@ -1,6 +1,6 @@
 namespace FunkArr.Api.Models;
 
-internal sealed record ArrField<T>(string Name, T Value);
+internal sealed record ArrField(string Name, object Value);
 
 internal sealed record ProwlarrIndexerPayload(
     string Name,
@@ -12,7 +12,7 @@ internal sealed record ProwlarrIndexerPayload(
     bool Redirect,
     int Priority,
     int AppProfileId,
-    ArrField<object>[] Fields)
+    ArrField[] Fields)
 {
     public static ProwlarrIndexerPayload Create(string funkArrUrl, string apiKey) => new(
         Name: "FunkArr",
@@ -43,7 +43,7 @@ internal sealed record SonarrRadarrIndexerPayload(
     bool EnableAutomaticSearch,
     bool EnableInteractiveSearch,
     int Priority,
-    ArrField<object>[] Fields)
+    ArrField[] Fields)
 {
     public static SonarrRadarrIndexerPayload Create(string funkArrUrl, string apiKey, int[] categories) => new(
         Name: "FunkArr",
@@ -72,7 +72,7 @@ internal sealed record SabnzbdDownloadClientPayload(
     string Protocol,
     bool Enable,
     int Priority,
-    ArrField<object>[] Fields)
+    ArrField[] Fields)
 {
     public static SabnzbdDownloadClientPayload Create(string funkArrUrl, string apiKey, string category)
     {

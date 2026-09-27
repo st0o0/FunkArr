@@ -34,7 +34,7 @@ public sealed class NewznabSearchService(
 
         try
         {
-            var gateway = await registry.GetAsync<ISearchManager>();
+            var gateway = await registry.GetAsync<ISearchManager>(ct);
             var allItems = await cache.GetOrAddAsync(key, async () =>
             {
                 var fullCmd = cmd with { Offset = null, Limit = null };

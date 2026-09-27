@@ -65,7 +65,9 @@ internal sealed class SubtitleDownloader(IHttpClientFactory httpClientFactory, I
             using var client = httpClientFactory.CreateClient($"route:{routeName}");
             var response = await client.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
+            {
                 return new SubtitleResult.Failed(SubtitleFailureReason.DownloadFailed, $"HTTP {(int)response.StatusCode}");
+            }
 
             content = await response.Content.ReadAsStringAsync(ct);
         }
@@ -75,18 +77,24 @@ internal sealed class SubtitleDownloader(IHttpClientFactory httpClientFactory, I
         }
 
         if (string.IsNullOrWhiteSpace(content))
+        {
             return new SubtitleResult.Failed(SubtitleFailureReason.EmptyContent);
+        }
 
         content = StripBom(content);
 
         foreach (var format in CreateFormats())
         {
             if (!format.CanParse(content))
+            {
                 continue;
+            }
 
             var cues = format.Parse(content);
             if (cues.Count == 0)
+            {
                 return new SubtitleResult.Failed(SubtitleFailureReason.ConversionFailed, $"{format.Name} parsed but produced no cues");
+            }
 
             var srt = SrtEmitter.Emit(cues);
             var path = Path.Combine(outputDirectory, "subtitle.srt");

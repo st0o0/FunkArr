@@ -50,16 +50,24 @@ internal sealed partial class TtmlFormat : ISubtitleFormat
         foreach (var p in paragraphs)
         {
             var begin = ParseTimestamp(p.Attribute("begin")!.Value) - offset;
-            if (begin < TimeSpan.Zero) begin = TimeSpan.Zero;
+            if (begin < TimeSpan.Zero)
+            {
+                begin = TimeSpan.Zero;
+            }
 
             var end = p.Attribute("end") is { } endAttr
                 ? ParseTimestamp(endAttr.Value) - offset
                 : begin + ParseTimestamp(p.Attribute("dur")!.Value);
-            if (end < TimeSpan.Zero) end = TimeSpan.Zero;
+            if (end < TimeSpan.Zero)
+            {
+                end = TimeSpan.Zero;
+            }
 
             var text = ExtractText(p);
             if (string.IsNullOrWhiteSpace(text))
+            {
                 continue;
+            }
 
             cues.Add(new SubtitleCue(begin, end, text));
         }
@@ -74,11 +82,15 @@ internal sealed partial class TtmlFormat : ISubtitleFormat
         {
             var offset = ParseTimestamp(startOfProgramme.Value.Trim());
             if (offset > TimeSpan.Zero)
+            {
                 return offset;
+            }
         }
 
         if (paragraphs.Count == 0)
+        {
             return TimeSpan.Zero;
+        }
 
         var minBegin = paragraphs
             .Select(p => ParseTimestamp(p.Attribute("begin")!.Value))
@@ -90,13 +102,19 @@ internal sealed partial class TtmlFormat : ISubtitleFormat
     internal static TimeSpan ParseTimestamp(string value)
     {
         if (value.EndsWith('s') && double.TryParse(value.AsSpan(0, value.Length - 1), CultureInfo.InvariantCulture, out var seconds))
+        {
             return TimeSpan.FromSeconds(seconds);
+        }
 
         if (TimeSpan.TryParseExact(value, [@"hh\:mm\:ss\.FFF", @"hh\:mm\:ss\,FFF", @"hh\:mm\:ss"], CultureInfo.InvariantCulture, out var ts))
+        {
             return ts;
+        }
 
         if (TimeSpan.TryParse(value, CultureInfo.InvariantCulture, out ts))
+        {
             return ts;
+        }
 
         return TimeSpan.Zero;
     }

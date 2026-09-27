@@ -22,10 +22,14 @@ internal sealed partial class SrtFormat : ISubtitleFormat
         while (i < lines.Length)
         {
             while (i < lines.Length && lines[i].Trim().Length == 0)
+            {
                 i++;
+            }
 
             if (i >= lines.Length)
+            {
                 break;
+            }
 
             var trimmed = lines[i].Trim();
             if (trimmed.Length == 0 || !char.IsDigit(trimmed[0]))
@@ -36,11 +40,15 @@ internal sealed partial class SrtFormat : ISubtitleFormat
             i++;
 
             if (i >= lines.Length)
+            {
                 break;
+            }
 
             var match = TimestampLine().Match(lines[i].Trim());
             if (!match.Success)
+            {
                 continue;
+            }
 
             var start = ParseSrtTimestamp(match.Groups[1].Value);
             var end = ParseSrtTimestamp(match.Groups[2].Value);
@@ -55,7 +63,9 @@ internal sealed partial class SrtFormat : ISubtitleFormat
 
             var text = string.Join('\n', textLines).Trim();
             if (text.Length > 0)
+            {
                 cues.Add(new SubtitleCue(start, end, text));
+            }
         }
 
         return cues;
@@ -65,10 +75,14 @@ internal sealed partial class SrtFormat : ISubtitleFormat
     {
         var normalized = value.Replace(',', '.');
         if (TimeSpan.TryParseExact(normalized, @"hh\:mm\:ss\.FFF", CultureInfo.InvariantCulture, out var ts))
+        {
             return ts;
+        }
 
         if (TimeSpan.TryParse(normalized, CultureInfo.InvariantCulture, out ts))
+        {
             return ts;
+        }
 
         return TimeSpan.Zero;
     }

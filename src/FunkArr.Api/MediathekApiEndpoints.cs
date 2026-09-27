@@ -47,7 +47,7 @@ public static class MediathekApiEndpoints
                 fields.Add(new MediathekQueryField(["topic"], req.Topic));
             }
 
-            var manager = await registry.GetAsync<IMediathekManager>();
+            var manager = await registry.GetAsync<IMediathekManager>(ct);
             var query = new QueryMediathek(
                 [.. fields],
                 SortBy: req.SortBy,

@@ -14,7 +14,7 @@
         <span class="text-lg font-semibold text-text-primary tabular-nums">{{ healthLabel }}</span>
       </router-link>
 
-      <router-link to="/activity/history" class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 hover:bg-surface-elevated/50 transition-colors">
+      <router-link to="/activity?tab=history" class="bg-surface-raised rounded-lg border border-border-default px-4 py-3 hover:bg-surface-elevated/50 transition-colors">
         <div class="text-xs text-text-secondary mb-1">{{ $t('home.recentDownloads') }}</div>
         <span class="text-lg font-semibold text-text-primary tabular-nums">{{ recentItems.length }}</span>
       </router-link>
@@ -65,7 +65,7 @@
     <div class="bg-surface-raised rounded-lg border border-border-default overflow-hidden">
       <div class="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
         <h2 class="text-sm font-medium text-text-primary">{{ $t('home.recentActivity') }}</h2>
-        <router-link to="/activity/history" class="text-xs text-accent hover:text-accent/80 transition-colors">{{ $t('home.viewAll') }}</router-link>
+        <router-link to="/activity?tab=history" class="text-xs text-accent hover:text-accent/80 transition-colors">{{ $t('home.viewAll') }}</router-link>
       </div>
       <div v-if="recentItems.length === 0" class="px-4 py-8 text-center">
         <svg class="w-6 h-6 mx-auto mb-2 text-text-muted" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">

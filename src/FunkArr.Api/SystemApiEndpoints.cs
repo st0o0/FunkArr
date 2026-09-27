@@ -16,6 +16,10 @@ public static class SystemApiEndpoints
     private const string _defaultApiKey = "funkarr-default-api-key";
     private static readonly TimeSpan _httpTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
+    private static readonly System.Text.Json.JsonSerializerOptions _sseJsonOptions = new()
+    {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+    };
 
     public static WebApplication MapSystemApi(this WebApplication app)
     {
@@ -65,7 +69,9 @@ public static class SystemApiEndpoints
 
             return Results.Ok(new SetupHealthCheck(checks, connectionInfo));
         })
-        .WithSummary("Run setup checks");
+        .WithSummary("Run setup checks")
+        .WithDescription("Checks API key, MediathekViewWeb connectivity, data directories, Arr API endpoints, and FFmpeg availability.")
+        .Produces<SetupHealthCheck>();
 
         group.MapGet("/version", (DataPaths dataPaths, IDataFiles dataFiles) =>
         {
@@ -76,6 +82,7 @@ public static class SystemApiEndpoints
             return Results.Ok(new VersionResponse(appVersion, communityVersion));
         })
         .WithSummary("Get application and ruleset version")
+        .WithDescription("Returns the application version and the installed community ruleset version.")
         .Produces<VersionResponse>();
 
         group.MapGet("/storage", (DataPaths dataPaths) =>
@@ -85,11 +92,12 @@ public static class SystemApiEndpoints
             return Results.Ok(new StorageStatusResponse(complete, incomplete));
         })
         .WithSummary("Get storage status")
+        .WithDescription("Returns disk space information for the complete and incomplete download directories.")
         .Produces<StorageStatusResponse>();
 
         group.MapGet("/cache", async (IActorRegistry registry, CancellationToken ct) =>
         {
-            var resolver = await registry.GetAsync<IEnrichmentManager>();
+            var resolver = await registry.GetAsync<IEnrichmentManager>(ct);
             var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout, ct);
             return Results.Ok(new CacheStatsResponse(
                 result.TvdbEntries,
@@ -97,13 +105,11 @@ public static class SystemApiEndpoints
                 result.OldestEntry?.ToString("o")));
         })
         .WithSummary("Get metadata cache stats")
+        .WithDescription("Returns the number of cached TVDB and TMDB entries and the oldest cache entry timestamp.")
         .Produces<CacheStatsResponse>()
         .ProducesProblem(504);
 
-        group.MapGet("/logs", (RingBufferSink sink) =>
-        {
-            return Results.Ok(sink.GetEntries());
-        })
+        group.MapGet("/logs", (RingBufferSink sink) => Results.Ok((object?)sink.GetEntries()))
         .WithSummary("Get recent log entries")
         .Produces<LogEntry[]>();
 
@@ -116,8 +122,7 @@ public static class SystemApiEndpoints
             var ct = ctx.RequestAborted;
             await foreach (var entry in sink.Reader.ReadAllAsync(ct))
             {
-                var json = System.Text.Json.JsonSerializer.Serialize(entry,
-                    new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+                var json = System.Text.Json.JsonSerializer.Serialize(entry, _sseJsonOptions);
                 await ctx.Response.WriteAsync($"data: {json}\n\n", ct);
                 await ctx.Response.Body.FlushAsync(ct);
             }
@@ -133,6 +138,7 @@ public static class SystemApiEndpoints
             return Results.Ok(new RoutesResponse(definitions, channelRoutes, opts.Default));
         })
         .WithSummary("Get network route configuration")
+        .WithDescription("Returns configured network routes including proxy definitions and channel-to-route mappings.")
         .Produces<RoutesResponse>();
 
         return app;

@@ -1,6 +1,5 @@
 using FunkArr.Api;
 using FunkArr.ArrApi;
-using FunkArr.Core;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
@@ -11,7 +10,7 @@ public sealed class ArrApiSetupContainer : IServiceSetupContainer
     {
         services.AddArrApiServices(configuration);
 
-        services.AddHttpClient<ArrApiClient>(client =>
+        services.AddHttpClient<ArrSetupClient>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(10);
         });

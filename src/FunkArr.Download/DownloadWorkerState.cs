@@ -1,5 +1,4 @@
 using FunkArr.Core;
-using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using FunkArr.Messages.Shared;
 using FunkArr.Persistence.Events.Download;

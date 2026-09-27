@@ -253,6 +253,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { usePriorityQueue } from '../composables/usePriorityQueue'
 import {
@@ -272,6 +273,7 @@ import { formatSpeed, formatSize, formatDuration, formatRelativeDate, formatAbso
 import { parseReleaseName } from '../utils/releaseTitle'
 import { HistoryStatus } from '../api/enums'
 
+const route = useRoute()
 const { t } = useI18n()
 const { toast } = useToast()
 const {
@@ -281,7 +283,7 @@ const {
   isDragging, flushBuffer, release,
 } = usePriorityQueue()
 
-const activeTab = ref<'queue' | 'history'>('queue')
+const activeTab = ref<'queue' | 'history'>(route.query.tab === 'history' ? 'history' : 'queue')
 const searchQuery = ref('')
 const isDragActive = ref(false)
 const contextMenu = ref<InstanceType<typeof QueueContextMenu> | null>(null)

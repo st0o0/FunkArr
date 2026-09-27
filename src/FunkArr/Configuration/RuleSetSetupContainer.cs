@@ -1,7 +1,6 @@
 using FunkArr.Api;
 using FunkArr.Core;
 using FunkArr.RuleSet;
-using Microsoft.Extensions.Caching.Memory;
 using Servus.Core.Application.Startup;
 
 namespace FunkArr.Configuration;
