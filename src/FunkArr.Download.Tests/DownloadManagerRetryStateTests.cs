@@ -17,8 +17,8 @@ public sealed class DownloadManagerRetryStateTests
             .Apply(new DownloadDequeued(id))
             .Apply(Enqueue(id));
 
-        Assert.Single(state.Queued);
-        Assert.Equal(id, state.Queued[0].Id);
+        var queued = Assert.Single(state.Queued);
+        Assert.Equal(id, queued.Id);
         Assert.Empty(state.Dispatched);
     }
 

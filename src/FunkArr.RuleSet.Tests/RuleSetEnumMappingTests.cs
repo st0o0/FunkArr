@@ -23,10 +23,7 @@ public sealed class RuleSetEnumMappingTests
     [InlineData("")]
     [InlineData("unknown")]
     [InlineData("TitleIncludes")]
-    public void TryParseStrategy_invalid_values(string? input)
-    {
-        Assert.False(RuleSetEnumMapping.TryParseStrategy(input, out _));
-    }
+    public void TryParseStrategy_invalid_values(string? input) => Assert.False(RuleSetEnumMapping.TryParseStrategy(input, out _));
 
     [Theory]
     [InlineData(IdentificationStrategy.SeasonAndEpisodeNumber, "seasonAndEpisodeNumber")]
@@ -34,10 +31,7 @@ public sealed class RuleSetEnumMappingTests
     [InlineData(IdentificationStrategy.TitleExact, "itemTitleExact")]
     [InlineData(IdentificationStrategy.TitleIncludes, "itemTitleIncludes")]
     [InlineData(IdentificationStrategy.AirdateExtraction, "itemTitleEqualsAirdate")]
-    public void Strategy_ToDiskValue(IdentificationStrategy strategy, string expected)
-    {
-        Assert.Equal(expected, strategy.ToDiskValue());
-    }
+    public void Strategy_ToDiskValue(IdentificationStrategy strategy, string expected) => Assert.Equal(expected, strategy.ToDiskValue());
 
     [Theory]
     [InlineData(FilterField.Title, "title")]
@@ -46,10 +40,7 @@ public sealed class RuleSetEnumMappingTests
     [InlineData(FilterField.Description, "description")]
     [InlineData(FilterField.Duration, "duration")]
     [InlineData(FilterField.Timestamp, "timestamp")]
-    public void FilterField_ToDiskValue(FilterField field, string expected)
-    {
-        Assert.Equal(expected, field.ToDiskValue());
-    }
+    public void FilterField_ToDiskValue(FilterField field, string expected) => Assert.Equal(expected, field.ToDiskValue());
 
     [Theory]
     [InlineData("title", FilterField.Title)]
@@ -61,10 +52,7 @@ public sealed class RuleSetEnumMappingTests
     }
 
     [Fact]
-    public void TryParseFilterField_null_returns_false()
-    {
-        Assert.False(RuleSetEnumMapping.TryParseFilterField(null, out _));
-    }
+    public void TryParseFilterField_null_returns_false() => Assert.False(RuleSetEnumMapping.TryParseFilterField(null, out _));
 
     [Theory]
     [InlineData(FilterOp.Eq, "eq")]
@@ -73,10 +61,7 @@ public sealed class RuleSetEnumMappingTests
     [InlineData(FilterOp.GreaterThan, "greaterThan")]
     [InlineData(FilterOp.LessThan, "lessThan")]
     [InlineData(FilterOp.Regex, "regex")]
-    public void FilterOp_ToDiskValue(FilterOp op, string expected)
-    {
-        Assert.Equal(expected, op.ToDiskValue());
-    }
+    public void FilterOp_ToDiskValue(FilterOp op, string expected) => Assert.Equal(expected, op.ToDiskValue());
 
     [Theory]
     [InlineData("greaterThan", FilterOp.GreaterThan)]
@@ -90,10 +75,7 @@ public sealed class RuleSetEnumMappingTests
     [Theory]
     [InlineData(TitlePartType.Static, "static")]
     [InlineData(TitlePartType.Regex, "regex")]
-    public void TitlePartType_ToDiskValue(TitlePartType type, string expected)
-    {
-        Assert.Equal(expected, type.ToDiskValue());
-    }
+    public void TitlePartType_ToDiskValue(TitlePartType type, string expected) => Assert.Equal(expected, type.ToDiskValue());
 
     [Theory]
     [InlineData("static", TitlePartType.Static)]
@@ -107,26 +89,17 @@ public sealed class RuleSetEnumMappingTests
     [Theory]
     [InlineData(EnrichmentMethod.Title, "title")]
     [InlineData(EnrichmentMethod.Airdate, "airdate")]
-    public void EnrichmentMethod_ToDiskValue(EnrichmentMethod method, string expected)
-    {
-        Assert.Equal(expected, method.ToDiskValue());
-    }
+    public void EnrichmentMethod_ToDiskValue(EnrichmentMethod method, string expected) => Assert.Equal(expected, method.ToDiskValue());
 
     [Theory]
     [InlineData(RuntimeMode.Tiebreaker, "tiebreaker")]
     [InlineData(RuntimeMode.Filter, "filter")]
-    public void RuntimeMode_ToDiskValue(RuntimeMode mode, string expected)
-    {
-        Assert.Equal(expected, mode.ToDiskValue());
-    }
+    public void RuntimeMode_ToDiskValue(RuntimeMode mode, string expected) => Assert.Equal(expected, mode.ToDiskValue());
 
     [Theory]
     [InlineData(MediaType.Show, "show")]
     [InlineData(MediaType.Movie, "movie")]
-    public void MediaType_ToDiskValue(MediaType type, string expected)
-    {
-        Assert.Equal(expected, type.ToDiskValue());
-    }
+    public void MediaType_ToDiskValue(MediaType type, string expected) => Assert.Equal(expected, type.ToDiskValue());
 
     [Theory]
     [InlineData("show", MediaType.Show)]
@@ -138,10 +111,7 @@ public sealed class RuleSetEnumMappingTests
     }
 
     [Fact]
-    public void TryParseMediaType_unknown_returns_false()
-    {
-        Assert.False(RuleSetEnumMapping.TryParseMediaType("podcast", out _));
-    }
+    public void TryParseMediaType_unknown_returns_false() => Assert.False(RuleSetEnumMapping.TryParseMediaType("podcast", out _));
 
     [Theory]
     [InlineData(IdentificationStrategy.SeasonAndEpisodeNumber)]

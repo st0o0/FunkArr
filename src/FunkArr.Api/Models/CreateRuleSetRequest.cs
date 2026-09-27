@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace FunkArr.Api.Models;
 
 public sealed record CreateRuleSetRequest(
-    [property: Required, RegularExpression(@"^[a-z0-9]+(-[a-z0-9]+)*$",
+    [property: Required, RegularExpression("^[a-z0-9]+(-[a-z0-9]+)*$",
         ErrorMessage = "ruleSetId must be kebab-case (lowercase letters, numbers, hyphens)")]
     string RuleSetId,
     [property: Required] string Topic,

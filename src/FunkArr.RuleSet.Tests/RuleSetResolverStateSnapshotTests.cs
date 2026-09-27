@@ -10,20 +10,20 @@ public sealed class RuleSetResolverStateSnapshotTests
     public void GetSnapshot_ReturnsRegisteredRuleSetsResult()
     {
         var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show, null));
+            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show));
 
         var snapshot = state.GetSnapshot();
 
-        Assert.Single(snapshot.Entries);
-        Assert.Equal("tatort", snapshot.Entries[0].RuleSetId);
-        Assert.Equal("Tatort", snapshot.Entries[0].Topic);
+        var item = Assert.Single(snapshot.Entries);
+        Assert.Equal("tatort", item.RuleSetId);
+        Assert.Equal("Tatort", item.Topic);
     }
 
     [Fact]
     public void SnapshotRoundTrip_PreservesEntries()
     {
         var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show, null))
+            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show))
             .Apply(new RegisterRuleSet("heute", "heute show", []));
 
         var snapshot = state.GetSnapshot();

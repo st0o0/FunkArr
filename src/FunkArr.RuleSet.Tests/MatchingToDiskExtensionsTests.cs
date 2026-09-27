@@ -19,7 +19,9 @@ public sealed class MatchingToDiskExtensionsTests
             null, null, null);
 
         var disk = body.ToDiskRuleSet();
-        Assert.Equal("itemTitleIncludes", disk.Rules![0].Strategy);
+        Assert.NotNull(disk.Rules);
+        var rule = Assert.Single(disk.Rules);
+        Assert.Equal("itemTitleIncludes", rule.Strategy);
     }
 
     [Fact]
@@ -33,7 +35,8 @@ public sealed class MatchingToDiskExtensionsTests
             null, null, null);
 
         var disk = body.ToDiskRuleSet();
-        Assert.Equal(MediaType.Movie, disk.Media!.Type);
+        Assert.NotNull(disk.Media);
+        Assert.Equal(MediaType.Movie, disk.Media.Type);
     }
 
     [Fact]
@@ -52,7 +55,10 @@ public sealed class MatchingToDiskExtensionsTests
         {
             var body = new RuleSetBody("T", null, new RuleSetMediaInput("T", MediaType.Show), null,
                 [new RuleSetRuleInput(Id: "rule-1", Strategy: strategy)], null, null, null);
-            Assert.Equal(expected, body.ToDiskRuleSet().Rules![0].Strategy);
+            var disk = body.ToDiskRuleSet();
+            Assert.NotNull(disk.Rules);
+            var rule = Assert.Single(disk.Rules);
+            Assert.Equal(expected, rule.Strategy);
         }
     }
 
@@ -69,9 +75,13 @@ public sealed class MatchingToDiskExtensionsTests
             null, null, null);
 
         var disk = body.ToDiskRuleSet();
-        Assert.NotNull(disk.Rules![0].Filters);
-        Assert.Single(disk.Rules[0].Filters!.All!);
-        Assert.Single(disk.Rules[0].Filters!.Not!);
+        Assert.NotNull(disk.Rules);
+        var rule = Assert.Single(disk.Rules);
+        Assert.NotNull(rule.Filters);
+        Assert.NotNull(rule.Filters.All);
+        Assert.Single(rule.Filters.All);
+        Assert.NotNull(rule.Filters.Not);
+        Assert.Single(rule.Filters.Not);
     }
 
     [Fact]
@@ -86,9 +96,11 @@ public sealed class MatchingToDiskExtensionsTests
 
         var disk = body.ToDiskRuleSet();
         Assert.NotNull(disk.Enrichment);
-        Assert.True(disk.Enrichment!.Enabled);
-        Assert.Equal(2, disk.Enrichment.Methods!.Count);
-        Assert.Equal(RuntimeMode.Tiebreaker, disk.Enrichment.Runtime!.Mode);
+        Assert.True(disk.Enrichment.Enabled);
+        Assert.NotNull(disk.Enrichment.Methods);
+        Assert.Equal(2, disk.Enrichment.Methods.Count);
+        Assert.NotNull(disk.Enrichment.Runtime);
+        Assert.Equal(RuntimeMode.Tiebreaker, disk.Enrichment.Runtime.Mode);
     }
 
     [Fact]
@@ -106,9 +118,12 @@ public sealed class MatchingToDiskExtensionsTests
             null, null, null);
 
         var disk = body.ToDiskRuleSet();
-        Assert.Equal(2, disk.Rules![0].TitleRules!.Count);
-        Assert.Equal(TitlePartType.Static, disk.Rules[0].TitleRules![0].Type);
-        Assert.Equal(TitlePartType.Regex, disk.Rules[0].TitleRules![1].Type);
-        Assert.Equal(FilterField.Title, disk.Rules[0].TitleRules![1].Field);
+        Assert.NotNull(disk.Rules);
+        var rule = Assert.Single(disk.Rules);
+        Assert.NotNull(rule.TitleRules);
+        Assert.Equal(2, rule.TitleRules.Count);
+        Assert.Equal(TitlePartType.Static, rule.TitleRules[0].Type);
+        Assert.Equal(TitlePartType.Regex, rule.TitleRules[1].Type);
+        Assert.Equal(FilterField.Title, rule.TitleRules[1].Field);
     }
 }

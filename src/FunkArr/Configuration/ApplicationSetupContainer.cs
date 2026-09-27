@@ -18,7 +18,8 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
             options.TagSorter = TagSorter.Alpha;
             options.DefaultOpenAllTags = true;
             options.HideModels = true;
-            options.DefaultHttpClient = new KeyValuePair<ScalarTarget, ScalarClient>(ScalarTarget.CSharp, ScalarClient.HttpClient);
+            options.DefaultHttpClient =
+                new KeyValuePair<ScalarTarget, ScalarClient>(ScalarTarget.CSharp, ScalarClient.HttpClient);
         });
 
         app.UseStaticFiles();
@@ -31,7 +32,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
                 [HealthStatus.Healthy] = 200,
                 [HealthStatus.Degraded] = 200,
                 [HealthStatus.Unhealthy] = 503,
-            },
+            }
         });
         app.MapGet("/alive", () => Results.Ok("Alive"))
             .WithTags("Health")

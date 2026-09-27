@@ -18,7 +18,7 @@ public sealed class NewznabSearchService(
     internal const int MaxLimit = 500;
     internal const int DefaultLimit = 100;
 
-    internal async Task<SearchServiceResult> Search(IndexerRequest req, string baseUrl, string apiKey)
+    internal async Task<SearchServiceResult> Search(IndexerRequest req, string baseUrl, string apiKey, CancellationToken ct)
     {
         var (cmd, category) = BuildCommand(req);
 
@@ -38,7 +38,7 @@ public sealed class NewznabSearchService(
             var allItems = await cache.GetOrAddAsync(key, async () =>
             {
                 var fullCmd = cmd with { Offset = null, Limit = null };
-                var response = await gateway.Ask<SearchCommandResponse>(fullCmd, timeout);
+                var response = await gateway.Ask<SearchCommandResponse>(fullCmd, timeout, ct);
                 return response is SearchCommandCompleted completed ? completed.Items : [];
             });
 

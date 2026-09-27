@@ -70,18 +70,18 @@ public sealed class HistoryStateTests
 
         var state = HistoryState.Empty.Apply(evt);
 
-        Assert.Single(state.Snapshots);
-        Assert.Equal(evt.RequestId, state.Snapshots[0].RequestId);
-        Assert.Equal(evt.CandidateCount, state.Snapshots[0].CandidateCount);
-        Assert.Equal(evt.MatchedCount, state.Snapshots[0].MatchedCount);
-        Assert.Equal(evt.EnrichedCount, state.Snapshots[0].EnrichedCount);
+        var snapshot = Assert.Single(state.Snapshots);
+        Assert.Equal(evt.RequestId, snapshot.RequestId);
+        Assert.Equal(evt.CandidateCount, snapshot.CandidateCount);
+        Assert.Equal(evt.MatchedCount, snapshot.MatchedCount);
+        Assert.Equal(evt.EnrichedCount, snapshot.EnrichedCount);
     }
 
     [Fact]
     public void Apply_MultipleEvents_AccumulatesEntries()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001"))
+            .Apply(CreateEvent())
             .Apply(CreateEvent("a0000002"))
             .Apply(CreateEvent("a0000003"));
 
@@ -97,8 +97,8 @@ public sealed class HistoryStateTests
 
         var (newState, evt) = HistoryState.Empty.ProcessCommand(cmd);
 
-        Assert.Single(newState.Snapshots);
-        Assert.Equal(requestId, newState.Snapshots[0].RequestId);
+        var snapshot = Assert.Single(newState.Snapshots);
+        Assert.Equal(requestId, snapshot.RequestId);
         Assert.Equal(requestId, evt.RequestId);
         Assert.Equal(PersistedSearchSource.Sonarr, evt.Source);
         Assert.Equal("test-query", evt.Query);
@@ -125,8 +125,10 @@ public sealed class HistoryStateTests
             .Apply(CreateEvent(candidateCount: 10, matchedCount: 4, enrichedCount: 2));
 
         Assert.NotNull(state.Stats.LastRun);
-        Assert.Equal(0.4, state.Stats.MatchRate!.Value, 0.001);
-        Assert.Equal(0.5, state.Stats.EnrichmentRate!.Value, 0.001);
+        Assert.NotNull(state.Stats.MatchRate);
+        Assert.Equal(0.4, state.Stats.MatchRate.Value, 0.001);
+        Assert.NotNull(state.Stats.EnrichmentRate);
+        Assert.Equal(0.5, state.Stats.EnrichmentRate.Value, 0.001);
         Assert.Equal(1, state.Stats.TotalRuns);
     }
 
@@ -134,10 +136,11 @@ public sealed class HistoryStateTests
     public void ComputeStats_ZeroCandidates_ExcludedFromMatchRate()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", candidateCount: 0, matchedCount: 0, enrichedCount: 0))
+            .Apply(CreateEvent(candidateCount: 0, matchedCount: 0, enrichedCount: 0))
             .Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 5, enrichedCount: 3));
 
-        Assert.Equal(0.5, state.Stats.MatchRate!.Value, 0.001);
+        Assert.NotNull(state.Stats.MatchRate);
+        Assert.Equal(0.5, state.Stats.MatchRate.Value, 0.001);
         Assert.Equal(2, state.Stats.TotalRuns);
     }
 
@@ -145,10 +148,11 @@ public sealed class HistoryStateTests
     public void ComputeStats_ZeroMatched_ExcludedFromEnrichmentRate()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", candidateCount: 10, matchedCount: 0, enrichedCount: 0))
+            .Apply(CreateEvent(candidateCount: 10, matchedCount: 0, enrichedCount: 0))
             .Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 4, enrichedCount: 2));
 
-        Assert.Equal(0.5, state.Stats.EnrichmentRate!.Value, 0.001);
+        Assert.NotNull(state.Stats.EnrichmentRate);
+        Assert.Equal(0.5, state.Stats.EnrichmentRate.Value, 0.001);
     }
 
     [Fact]
@@ -164,14 +168,16 @@ public sealed class HistoryStateTests
     public void ComputeStats_MultipleEntries_AveragesCorrectly()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", candidateCount: 10, matchedCount: 2, enrichedCount: 1))
+            .Apply(CreateEvent(candidateCount: 10, matchedCount: 2, enrichedCount: 1))
             .Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 8, enrichedCount: 4));
 
         var expectedMatchRate = (2.0 / 10 + 8.0 / 10) / 2;
         var expectedEnrichmentRate = (1.0 / 2 + 4.0 / 8) / 2;
 
-        Assert.Equal(expectedMatchRate, state.Stats.MatchRate!.Value, 0.001);
-        Assert.Equal(expectedEnrichmentRate, state.Stats.EnrichmentRate!.Value, 0.001);
+        Assert.NotNull(state.Stats.MatchRate);
+        Assert.Equal(expectedMatchRate, state.Stats.MatchRate.Value, 0.001);
+        Assert.NotNull(state.Stats.EnrichmentRate);
+        Assert.Equal(expectedEnrichmentRate, state.Stats.EnrichmentRate.Value, 0.001);
     }
 
     [Fact]
@@ -189,7 +195,7 @@ public sealed class HistoryStateTests
     public void Trim_ExceedsMaxCount_KeepsNewest()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", timestamp: DateTimeOffset.UtcNow.AddMinutes(-3)))
+            .Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddMinutes(-3)))
             .Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow.AddMinutes(-2)))
             .Apply(CreateEvent("a0000003", timestamp: DateTimeOffset.UtcNow.AddMinutes(-1)));
 
@@ -204,13 +210,13 @@ public sealed class HistoryStateTests
     public void Trim_OldEntries_RemovedByAge()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", timestamp: DateTimeOffset.UtcNow.AddDays(-10)))
+            .Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddDays(-10)))
             .Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow));
 
         var trimmed = state.Trim(maxSnapshots: 100, maxAgeDays: 5);
 
-        Assert.Single(trimmed.Snapshots);
-        Assert.Equal(ParseGuid("a0000002"), trimmed.Snapshots[0].RequestId);
+        var snapshot = Assert.Single(trimmed.Snapshots);
+        Assert.Equal(ParseGuid("a0000002"), snapshot.RequestId);
     }
 
     [Fact]
@@ -225,7 +231,7 @@ public sealed class HistoryStateTests
     public void Trim_AllExpired_ReturnsEmptyState()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", timestamp: DateTimeOffset.UtcNow.AddDays(-100)))
+            .Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddDays(-100)))
             .Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow.AddDays(-50)));
 
         var trimmed = state.Trim(maxSnapshots: 100, maxAgeDays: 30);
@@ -237,7 +243,7 @@ public sealed class HistoryStateTests
     public void QueryHistory_ReturnsNewestFirst()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", timestamp: _baseTime))
+            .Apply(CreateEvent(timestamp: _baseTime))
             .Apply(CreateEvent("a0000002", timestamp: _baseTime.AddHours(1)))
             .Apply(CreateEvent("a0000003", timestamp: _baseTime.AddHours(2)));
 
@@ -253,7 +259,7 @@ public sealed class HistoryStateTests
     public void QueryHistory_RespectsOffsetAndLimit()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", timestamp: _baseTime))
+            .Apply(CreateEvent(timestamp: _baseTime))
             .Apply(CreateEvent("a0000002", timestamp: _baseTime.AddHours(1)))
             .Apply(CreateEvent("a0000003", timestamp: _baseTime.AddHours(2)))
             .Apply(CreateEvent("a0000004", timestamp: _baseTime.AddHours(3)));
@@ -280,7 +286,7 @@ public sealed class HistoryStateTests
     public void QueryHistory_ReturnsTotalCount()
     {
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001"))
+            .Apply(CreateEvent())
             .Apply(CreateEvent("a0000002"))
             .Apply(CreateEvent("a0000003"));
 
@@ -295,7 +301,7 @@ public sealed class HistoryStateTests
     {
         var requestId = ParseGuid("a0000001");
         var state = HistoryState.Empty
-            .Apply(CreateEvent("a0000001", candidateCount: 10, matchedCount: 5, enrichedCount: 3));
+            .Apply(CreateEvent(candidateCount: 10, matchedCount: 5, enrichedCount: 3));
 
         var response = state.QueryDetail(new QueryScoringDetail("rs-1", requestId));
 

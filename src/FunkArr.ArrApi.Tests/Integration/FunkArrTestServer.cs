@@ -35,8 +35,6 @@ public sealed class FunkArrTestServer : IAsyncDisposable
         Client = client;
     }
 
-    public TestProbe GetProbe<TKey>() => _probes[typeof(TKey)];
-
     public static async Task<FunkArrTestServer> CreateAsync()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-test-{Guid.NewGuid():N}");
@@ -88,7 +86,7 @@ public sealed class FunkArrTestServer : IAsyncDisposable
         services.AddArrApiServices(builder.Configuration);
 
         services.AddControllers()
-            .AddApplicationPart(typeof(FunkArr.ArrApi.AssemblyMarker).Assembly);
+            .AddApplicationPart(typeof(AssemblyMarker).Assembly);
 
         services.ConfigureHttpJsonOptions(options =>
         {
@@ -158,6 +156,13 @@ public sealed class FunkArrTestServer : IAsyncDisposable
         await _app.DisposeAsync();
         await _actorSystem.Terminate();
 
-        try { Directory.Delete(_tempDir, true); } catch { }
+        try
+        {
+            Directory.Delete(_tempDir, true);
+        }
+        catch
+        {
+            // noop
+        }
     }
 }

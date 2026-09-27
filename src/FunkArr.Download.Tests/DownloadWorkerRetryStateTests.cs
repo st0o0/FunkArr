@@ -45,7 +45,8 @@ public sealed class DownloadWorkerRetryStateTests
     {
         var state = FailedState().Apply(MakeInitialized());
 
-        Assert.Equal("Test Video", state.Media!.Title);
+        Assert.NotNull(state.Media);
+        Assert.Equal("Test Video", state.Media.Title);
         Assert.Equal("https://example.com/video.mp4", state.Media.VideoUrl);
         Assert.Equal("https://example.com/sub.srt", state.Media.SubtitleUrl);
         Assert.Equal("ARD", state.Media.Channel);

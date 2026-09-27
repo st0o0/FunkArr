@@ -458,7 +458,7 @@ public static class ScoringEngine
                 return null;
             }
 
-            var groupIndex = captureGroup ?? (match.Groups.Count - 1);
+            var groupIndex = captureGroup ?? match.Groups.Count - 1;
             if (groupIndex < 0 || groupIndex >= match.Groups.Count)
             {
                 return null;

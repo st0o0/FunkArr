@@ -17,7 +17,7 @@ public sealed class TmdbClientTests
     [Fact]
     public void IsConfigured_returns_false_when_api_key_empty()
     {
-        var client = CreateClient("");
+        var client = CreateClient();
 
         Assert.False(client.IsConfigured);
     }
@@ -33,7 +33,7 @@ public sealed class TmdbClientTests
     [Fact]
     public async Task GetMovieDataAsync_throws_when_not_configured()
     {
-        var client = CreateClient("");
+        var client = CreateClient();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => client.GetMovieDataAsync(550));
@@ -42,7 +42,7 @@ public sealed class TmdbClientTests
     [Fact]
     public async Task FindByImdbIdAsync_throws_when_not_configured()
     {
-        var client = CreateClient("");
+        var client = CreateClient();
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => client.FindByImdbIdAsync("tt0137523"));

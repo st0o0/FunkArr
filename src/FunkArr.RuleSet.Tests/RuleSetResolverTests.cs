@@ -327,7 +327,7 @@ public sealed class RuleSetResolverTests : TestKit
 
         Assert.Equal(3, result.Entries.Length);
         Assert.Contains(result.Entries, e => e.RuleSetId == "show-a");
-        Assert.Contains(result.Entries, e => e.RuleSetId == "show-b" && e.Ids.TmdbId == 42);
+        Assert.Contains(result.Entries, e => e is { RuleSetId: "show-b", Ids.TmdbId: 42 });
         Assert.Contains(result.Entries, e => e.RuleSetId == "show-c");
     }
 

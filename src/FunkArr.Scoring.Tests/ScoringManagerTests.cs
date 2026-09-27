@@ -86,11 +86,13 @@ public sealed class ScoringManagerTests : TestKit
 
         manager.Tell(new ScoreItems(Guid.Empty, "show-a", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
         var resultA = ExpectMsg<ScoreCompleted>();
-        Assert.Equal(0.8, resultA.Results[0].Score, 0.001);
+        var itemA = Assert.Single(resultA.Results);
+        Assert.Equal(0.8, itemA.Score, 0.001);
 
         manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
         var resultB = ExpectMsg<ScoreCompleted>();
-        Assert.Equal(0.6, resultB.Results[0].Score, 0.001);
+        var itemB = Assert.Single(resultB.Results);
+        Assert.Equal(0.6, itemB.Score, 0.001);
     }
 
     [Fact]
@@ -111,7 +113,7 @@ public sealed class ScoringManagerTests : TestKit
     {
         var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
 
-        manager.Tell(CreateAirdateConfig("test", 0.9f));
+        manager.Tell(CreateAirdateConfig());
         manager.Tell(new RemoveMatchingConfig("test"));
 
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
@@ -152,7 +154,8 @@ public sealed class ScoringManagerTests : TestKit
 
         manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
         var result = ExpectMsg<ScoreCompleted>();
-        Assert.Equal(0.6, result.Results[0].Score, 0.001);
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.Equal(0.6, item.Score, 0.001);
+        Assert.True(item.Matched);
     }
 }

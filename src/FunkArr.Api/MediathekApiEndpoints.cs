@@ -21,7 +21,7 @@ public static class MediathekApiEndpoints
             .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
 
-        group.MapGet("/search", async ([AsParameters] ApiModels.MediathekSearchRequest req, IActorRegistry registry) =>
+        group.MapGet("/search", async ([AsParameters] ApiModels.MediathekSearchRequest req, IActorRegistry registry, CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(req.Q) && string.IsNullOrWhiteSpace(req.Channel) && string.IsNullOrWhiteSpace(req.Topic))
             {
@@ -58,7 +58,7 @@ public static class MediathekApiEndpoints
                 DurationMin: req.DurationMin,
                 DurationMax: req.DurationMax);
 
-            var result = await manager.Ask<QueryMediathekResponse>(query, _queryTimeout);
+            var result = await manager.Ask<QueryMediathekResponse>(query, _queryTimeout, ct);
             return result switch
             {
                 QueryMediathekCompleted completed => Results.Ok(

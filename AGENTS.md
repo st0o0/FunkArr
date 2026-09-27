@@ -102,6 +102,17 @@ dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
 dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
 ```
 
+## Test assertion conventions
+
+- **No `!.` in tests**: Never use the null-forgiving operator to access nullable
+  properties. Use `Assert.NotNull(value)` first, then access properties cleanly.
+  Exception: XLinq `Attribute("x")!.Value` is fine.
+- **`Assert.Single` for single-element collections**: Use
+  `var item = Assert.Single(collection)` instead of `collection[0]`. Asserts
+  count and binds the element.
+- **Count guard before indexing**: When accessing multiple elements by index,
+  assert the count first: `Assert.Equal(2, list.Count)` before `list[0]`/`list[1]`.
+
 ## Message naming convention
 
 - Commands: `VerbNoun` (e.g. `SearchSeries`, `AddDownload`). Response: `abstract record VerbNounResponse` with `VerbNounCompleted` / `VerbNounFailed`. Command + responses in one file.
@@ -238,10 +249,19 @@ Do NOT use:
 
 ## C# conventions
 
+- Allman style braces (opening brace on new line).
+- 4 spaces indentation, no tabs.
+- Private fields prefixed with underscore `_fieldName`. PascalCase for
+  public/protected members.
+- Use `var` when the type is apparent.
+- No `this.` qualifier unless necessary.
+- Sort `using` statements with `System.*` first.
 - `sealed` by default, `record` for messages/DTOs, nullable enabled everywhere.
 - No XML docs. Code speaks through naming.
-- `dotnet format` enforced - run after editing `.cs` files. CI rejects violations.
+- Never use `async void`, `.Result`, or `.Wait()` - these cause deadlocks.
+- Always pass `CancellationToken` through async call chains.
 - `TimeProvider` everywhere, never `DateTime.Now` or `DateTime.UtcNow` directly.
+- `dotnet format` enforced - run after editing `.cs` files. CI rejects violations.
 
 ## Metrics conventions
 

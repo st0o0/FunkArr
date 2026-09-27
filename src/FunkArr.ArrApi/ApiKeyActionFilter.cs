@@ -29,12 +29,12 @@ public abstract class ApiKeyActionFilter(IOptions<FunkArrOptions> options) : IAs
 
 public sealed class NewznabApiKeyFilter(IOptions<FunkArrOptions> options) : ApiKeyActionFilter(options)
 {
-    protected override IActionResult CreateErrorResult() =>
-        NewznabXmlResult.Error(NewznabError.InvalidApiKey);
+    protected override IActionResult CreateErrorResult()
+        => NewznabXmlResult.Error(NewznabError.InvalidApiKey);
 }
 
 public sealed class SabnzbdApiKeyFilter(IOptions<FunkArrOptions> options) : ApiKeyActionFilter(options)
 {
-    protected override IActionResult CreateErrorResult() =>
-        new JsonResult(new { status = false, error = "API Key Incorrect" }) { StatusCode = 403 };
+    protected override IActionResult CreateErrorResult()
+        => new JsonResult(new { status = false, error = "API Key Incorrect" }) { StatusCode = 403 };
 }

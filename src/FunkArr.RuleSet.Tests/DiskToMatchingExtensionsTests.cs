@@ -22,7 +22,7 @@ public sealed class DiskToMatchingExtensionsTests
 
         var config = disk.ToMatchingConfig("test-id");
         Assert.NotNull(config);
-        Assert.Equal("test-id", config!.RuleSetId);
+        Assert.Equal("test-id", config.RuleSetId);
         Assert.Equal(0.9f, config.DefaultConfidence);
         Assert.Equal(2, config.Rules.Length);
         Assert.Equal(IdentificationStrategy.TitleIncludes, config.Rules[0].Identification.Strategy);
@@ -40,7 +40,7 @@ public sealed class DiskToMatchingExtensionsTests
 
         var config = disk.ToMatchingConfig("test");
         Assert.NotNull(config);
-        Assert.Empty(config!.Rules);
+        Assert.Empty(config.Rules);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class DiskToMatchingExtensionsTests
 
         var identity = disk.ToIdentity();
         Assert.NotNull(identity);
-        Assert.Equal("Tatort", identity!.Value.Topic);
+        Assert.Equal("Tatort", identity.Value.Topic);
         Assert.Equal(["Tatort AT"], identity.Value.Aliases);
         Assert.Equal(83214, identity.Value.Ids.TvdbId);
         Assert.Equal("tt0806910", identity.Value.Ids.ImdbId);
@@ -102,9 +102,10 @@ public sealed class DiskToMatchingExtensionsTests
         };
 
         var rules = disk.ToDetailRules();
-        Assert.Single(rules);
-        Assert.Equal("rule-with-filters", rules[0].Id);
-        Assert.Single(rules[0].TitleRules!);
-        Assert.Equal(TitlePartType.Static, rules[0].TitleRules![0].Type);
+        var rule = Assert.Single(rules);
+        Assert.Equal("rule-with-filters", rule.Id);
+        Assert.NotNull(rule.TitleRules);
+        var titleRule = Assert.Single(rule.TitleRules);
+        Assert.Equal(TitlePartType.Static, titleRule.Type);
     }
 }

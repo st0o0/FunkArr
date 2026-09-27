@@ -84,7 +84,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         if (string.IsNullOrEmpty(_state.Media!.VideoUrl))
         {
             _log.Warning("Download {DownloadId} failed - video URL is empty: {Title}", cmd.DownloadId, _state.Media.Title);
-            Persist(new DownloadFaulted(cmd.DownloadId, "Video URL is empty", Persistence.PersistedFailureKind.Permanent),
+            Persist(new DownloadFaulted(cmd.DownloadId, "Video URL is empty"),
                 e => _state = _state.Apply(e));
             DeferAsync("notify", _ =>
             {

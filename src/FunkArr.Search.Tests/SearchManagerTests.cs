@@ -193,8 +193,8 @@ public sealed class SearchManagerTests : TestKit
         gateway.Tell(new SearchMovieFailed(movieCmd.SearchId, new Exception("Movie search failed")));
 
         var result = ExpectMsg<SearchCommandCompleted>();
-        Assert.Single(result.Items);
-        Assert.Equal("TV Show", result.Items[0].Title);
+        var item = Assert.Single(result.Items);
+        Assert.Equal("TV Show", item.Title);
     }
 
     [Fact]
@@ -238,7 +238,7 @@ public sealed class SearchManagerTests : TestKit
         gateway.Tell(new SearchSeriesCompleted(tvCmd.SearchId, [tvItem], 1));
 
         var result = ExpectMsg<SearchCommandCompleted>(TimeSpan.FromSeconds(5));
-        Assert.Single(result.Items);
-        Assert.Equal("TV Show", result.Items[0].Title);
+        var item = Assert.Single(result.Items);
+        Assert.Equal("TV Show", item.Title);
     }
 }

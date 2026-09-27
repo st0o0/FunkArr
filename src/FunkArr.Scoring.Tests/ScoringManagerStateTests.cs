@@ -15,8 +15,9 @@ public sealed class ScoringManagerStateTests
         var state = ScoringManagerState.Empty.Apply(config);
 
         Assert.Single(state.Configs);
-        Assert.NotNull(state.GetConfig("tatort"));
-        Assert.Equal(0.8f, state.GetConfig("tatort")!.DefaultConfidence);
+        var config2 = state.GetConfig("tatort");
+        Assert.NotNull(config2);
+        Assert.Equal(0.8f, config2.DefaultConfidence);
     }
 
     [Fact]

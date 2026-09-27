@@ -19,9 +19,9 @@ public sealed class RuleSetWorkerTests : TestKit
     private readonly TestDataFiles _dataFiles;
     private readonly RuleSetStore _store;
 
-    private static readonly string _sampleJson = """
-        {"topic":"Test Show","aliases":[],"media":{"name":"Test","type":"show","tvdbId":12345},"confidence":0.9,"rules":[{"id":"test-rule","priority":0,"strategy":"itemTitleIncludes"}]}
-        """;
+    private const string _sampleJson = """
+                                       {"topic":"Test Show","aliases":[],"media":{"name":"Test","type":"show","tvdbId":12345},"confidence":0.9,"rules":[{"id":"test-rule","priority":0,"strategy":"itemTitleIncludes"}]}
+                                       """;
 
     public RuleSetWorkerTests()
     {
@@ -179,6 +179,13 @@ public sealed class RuleSetWorkerTests : TestKit
     protected override void AfterAll()
     {
         base.AfterAll();
-        try { Directory.Delete(_tempDir, true); } catch { }
+        try
+        {
+            Directory.Delete(_tempDir, true);
+        }
+        catch
+        {
+            // noop
+        }
     }
 }

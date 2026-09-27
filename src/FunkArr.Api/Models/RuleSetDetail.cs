@@ -11,7 +11,9 @@ public sealed record RuleSetDetail(
     public sealed record RuleSetIdentity(
         string Topic,
         string[] Aliases,
-        ExternalIdsOutput Ids);
+        int? TvdbId,
+        string? ImdbId,
+        int? TmdbId);
 
     public sealed record RuleSetSource(
         string? CommunityPath,

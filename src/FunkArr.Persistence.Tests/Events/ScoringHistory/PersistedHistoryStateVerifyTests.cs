@@ -41,11 +41,12 @@ public sealed class PersistedHistoryStateVerifyTests
         var json = JsonConvert.SerializeObject(original);
         var result = JsonConvert.DeserializeObject<PersistedHistoryState>(json)!;
 
-        Assert.Single(result.Entries);
-        Assert.Equal(original.Entries[0].RequestId, result.Entries[0].RequestId);
-        Assert.Equal(original.Entries[0].Source, result.Entries[0].Source);
-        Assert.Equal(original.Entries[0].Query, result.Entries[0].Query);
-        Assert.Equal(original.Entries[0].CandidateCount, result.Entries[0].CandidateCount);
-        Assert.Single(result.Entries[0].ItemTraces);
+        var originalEntry = Assert.Single(original.Entries);
+        var resultEntry = Assert.Single(result.Entries);
+        Assert.Equal(originalEntry.RequestId, resultEntry.RequestId);
+        Assert.Equal(originalEntry.Source, resultEntry.Source);
+        Assert.Equal(originalEntry.Query, resultEntry.Query);
+        Assert.Equal(originalEntry.CandidateCount, resultEntry.CandidateCount);
+        Assert.Single(resultEntry.ItemTraces);
     }
 }

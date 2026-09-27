@@ -32,7 +32,7 @@ public sealed class StatsCollectorTests : TestKit
 
     private void HandlePreStartBackfill()
     {
-        var query = _ruleSetResolverProbe.ExpectMsg<QueryRegisteredRuleSets>();
+        _ruleSetResolverProbe.ExpectMsg<QueryRegisteredRuleSets>();
         _ruleSetResolverProbe.Reply(new RegisteredRuleSetsResult([]));
     }
 

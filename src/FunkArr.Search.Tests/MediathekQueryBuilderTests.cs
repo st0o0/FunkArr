@@ -15,8 +15,9 @@ public sealed class MediathekQueryBuilderTests
         var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        Assert.Equal(1, root.GetProperty("queries").GetArrayLength());
-        Assert.Equal("tatort", root.GetProperty("queries")[0].GetProperty("query").GetString());
+        var queries = root.GetProperty("queries");
+        Assert.Equal(1, queries.GetArrayLength());
+        Assert.Equal("tatort", queries[0].GetProperty("query").GetString());
         Assert.Equal("timestamp", root.GetProperty("sortBy").GetString());
         Assert.Equal("desc", root.GetProperty("sortOrder").GetString());
         Assert.False(root.GetProperty("future").GetBoolean());
@@ -57,7 +58,9 @@ public sealed class MediathekQueryBuilderTests
             .Build();
 
         var doc = JsonDocument.Parse(json);
-        var fields = doc.RootElement.GetProperty("queries")[0].GetProperty("fields");
+        var queries = doc.RootElement.GetProperty("queries");
+        Assert.Equal(1, queries.GetArrayLength());
+        var fields = queries[0].GetProperty("fields");
 
         Assert.Equal(2, fields.GetArrayLength());
         Assert.Equal("title", fields[0].GetString());

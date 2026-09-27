@@ -6,7 +6,7 @@ using FunkArr.Core;
 
 namespace FunkArr.ArrApi.Newznab;
 
-public sealed class NzbService
+public static class NzbService
 {
     private static readonly XmlSerializer _nzbSerializer = new(typeof(Nzb));
     private static readonly XmlReaderSettings _xmlSettings = new() { DtdProcessing = DtdProcessing.Ignore };

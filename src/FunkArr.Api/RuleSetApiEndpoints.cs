@@ -22,7 +22,6 @@ public static partial class RuleSetApiEndpoints
     private static readonly TimeSpan _queryTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _testTimeout = TimeSpan.FromSeconds(15);
-    private static readonly Regex _ruleSetIdPattern = RuleSetIdRegex();
 
     public static WebApplication MapRuleSetApi(this WebApplication app)
     {
@@ -31,18 +30,18 @@ public static partial class RuleSetApiEndpoints
             .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
 
-        group.MapGet("/", async (IActorRegistry registry, IDataFiles dataFiles, DataPaths dataPaths) =>
+        group.MapGet("/", async (IActorRegistry registry, IDataFiles dataFiles, DataPaths dataPaths, CancellationToken ct) =>
         {
             var resolver = await registry.GetAsync<IRuleSetResolver>();
             var manager = await registry.GetAsync<IRuleSetManager>();
             var statsCollector = await registry.GetAsync<IStatsCollector>();
 
             var resolverTask = resolver.Ask<RegisteredRuleSetsResult>(
-                new QueryRegisteredRuleSets(), _queryTimeout);
+                new QueryRegisteredRuleSets(), _queryTimeout, ct);
             var summaryTask = manager.Ask<RuleSetSummaryResult>(
-                new QueryRuleSetSummaries(), _queryTimeout);
+                new QueryRuleSetSummaries(), _queryTimeout, ct);
             var statsTask = statsCollector.Ask<AllStatsResult>(
-                new QueryAllStats(), _statsTimeout);
+                new QueryAllStats(), _statsTimeout, ct);
 
             await Task.WhenAll(resolverTask, summaryTask, statsTask);
 
@@ -58,7 +57,7 @@ public static partial class RuleSetApiEndpoints
 
                 return new ApiModels.RuleSetListEntry(
                     e.RuleSetId, e.Topic, e.Aliases,
-                    new ApiModels.ExternalIdsOutput(e.Ids.TvdbId, e.Ids.ImdbId, e.Ids.TmdbId),
+                    e.Ids.TvdbId, e.Ids.ImdbId, e.Ids.TmdbId,
                     e.MediaName, e.MediaType is not null ? (ApiModels.MediaType)(int)e.MediaType : null,
                     summary?.RuleCount ?? 0,
                     (summary?.SourceType).ToApi(),
@@ -79,11 +78,11 @@ public static partial class RuleSetApiEndpoints
         .Produces<ApiModels.RuleSetListResponse>()
         .ProducesProblem(504);
 
-        group.MapGet("/{id}", async (string id, IActorRegistry registry) =>
+        group.MapGet("/{id}", async (string id, IActorRegistry registry, CancellationToken ct) =>
         {
             var region = await registry.GetAsync<IRuleSetRegion>();
             var result = await region.Ask<RuleSetDetailResponse>(
-                new QueryRuleSetDetail(id), _queryTimeout);
+                new QueryRuleSetDetail(id), _queryTimeout, ct);
             return result switch
             {
                 RuleSetDetailResult detail => Results.Ok(detail.ToApi()),
@@ -97,11 +96,11 @@ public static partial class RuleSetApiEndpoints
         .ProducesProblem(404)
         .ProducesProblem(504);
 
-        group.MapGet("/{id}/history", async (string id, int? offset, int? limit, IActorRegistry registry) =>
+        group.MapGet("/{id}/history", async (string id, int? offset, int? limit, IActorRegistry registry, CancellationToken ct) =>
         {
             var historyRegion = await registry.GetAsync<IHistoryRegion>();
             var result = await historyRegion.Ask<ScoringHistoryResult>(
-                new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout);
+                new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout, ct);
             return Results.Ok(result.ToApi());
         })
         .WithSummary("Get scoring history")
@@ -109,11 +108,11 @@ public static partial class RuleSetApiEndpoints
         .Produces<ApiModels.ScoringHistory>()
         .ProducesProblem(504);
 
-        group.MapGet("/{id}/history/{requestId:guid}", async (string id, Guid requestId, IActorRegistry registry) =>
+        group.MapGet("/{id}/history/{requestId:guid}", async (string id, Guid requestId, IActorRegistry registry, CancellationToken ct) =>
         {
             var historyRegion = await registry.GetAsync<IHistoryRegion>();
             var result = await historyRegion.Ask<ScoringDetailResponse>(
-                new QueryScoringDetail(id, requestId), _queryTimeout);
+                new QueryScoringDetail(id, requestId), _queryTimeout, ct);
             return result switch
             {
                 ScoringDetailResult detail => Results.Ok(detail.ToApi()),
@@ -148,13 +147,13 @@ public static partial class RuleSetApiEndpoints
         group.MapGet("/{id}/export", HandleExport)
             .WithSummary("Export ruleset for community contribution");
 
-        group.MapPost("/test", async (ApiModels.TestScoreRequest request, IActorRegistry registry) =>
+        group.MapPost("/test", async (ApiModels.TestScoreRequest request, IActorRegistry registry, CancellationToken ct) =>
         {
             var (config, candidates) = request.ToMessage();
 
             var manager = await registry.GetAsync<IScoringManager>();
             var result = await manager.Ask<TestScoreItemsResponse>(
-                new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout);
+                new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout, ct);
 
             if (result is not TestScoreCompleted completed)
             {
@@ -164,7 +163,7 @@ public static partial class RuleSetApiEndpoints
             var itemTraces = completed.ItemTraces;
             if (request.Enrichment is not null && request.Enrichment.Enabled != false)
             {
-                itemTraces = await RunTestEnrichment(itemTraces, request, registry);
+                itemTraces = await RunTestEnrichment(itemTraces, request, registry, ct);
             }
 
             return Results.Ok(new ApiModels.TestScoreResponse(
@@ -179,13 +178,12 @@ public static partial class RuleSetApiEndpoints
         return app;
     }
 
-    private static async Task EvictRuleSetCache(IOutputCacheStore cache) =>
-        await cache.EvictByTagAsync("rulesets", default);
+    private static async Task EvictRuleSetCache(IOutputCacheStore cache) => await cache.EvictByTagAsync("rulesets", default);
 
-    private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache)
+    private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
     {
         var region = await registry.GetAsync<IRuleSetRegion>();
-        var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), _queryTimeout);
+        var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), _queryTimeout, ct);
 
         await EvictRuleSetCache(cache);
         return result switch
@@ -197,10 +195,10 @@ public static partial class RuleSetApiEndpoints
         };
     }
 
-    private static async Task<IResult> HandleUpdate(string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache)
+    private static async Task<IResult> HandleUpdate(string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
     {
         var region = await registry.GetAsync<IRuleSetRegion>();
-        var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), _queryTimeout);
+        var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), _queryTimeout, ct);
 
         await EvictRuleSetCache(cache);
         return result switch
@@ -232,10 +230,10 @@ public static partial class RuleSetApiEndpoints
         return Results.NotFound();
     }
 
-    private static async Task<IResult> HandleDelete(string id, IActorRegistry registry, IOutputCacheStore cache)
+    private static async Task<IResult> HandleDelete(string id, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
     {
         var region = await registry.GetAsync<IRuleSetRegion>();
-        var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), _queryTimeout);
+        var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), _queryTimeout, ct);
 
         await EvictRuleSetCache(cache);
         return result switch
@@ -246,10 +244,10 @@ public static partial class RuleSetApiEndpoints
         };
     }
 
-    private static async Task<IResult> HandleExport(string id, IActorRegistry registry, HttpContext httpContext)
+    private static async Task<IResult> HandleExport(string id, IActorRegistry registry, HttpContext httpContext, CancellationToken ct)
     {
         var region = await registry.GetAsync<IRuleSetRegion>();
-        var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), _queryTimeout);
+        var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), _queryTimeout, ct);
 
         return result switch
         {
@@ -269,7 +267,7 @@ public static partial class RuleSetApiEndpoints
     private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
 
     private static async Task<ItemTrace[]> RunTestEnrichment(
-        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request, IActorRegistry registry)
+        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request, IActorRegistry registry, CancellationToken ct)
     {
         var enrichmentConfig = request.Enrichment!.ToMessage();
         var isShow = string.Equals(request.MediaType, "show", StringComparison.OrdinalIgnoreCase);
@@ -281,12 +279,12 @@ public static partial class RuleSetApiEndpoints
 
             if (isShow && request.TvdbId is not null)
             {
-                return await EnrichEpisodes(itemTraces, request, enrichmentConfig, enrichmentManager);
+                return await EnrichEpisodes(itemTraces, request, enrichmentConfig, enrichmentManager, ct);
             }
 
             if (isMovie && (request.TmdbId is not null || request.ImdbId is not null))
             {
-                return await EnrichMovies(itemTraces, request, enrichmentConfig, enrichmentManager);
+                return await EnrichMovies(itemTraces, request, enrichmentConfig, enrichmentManager, ct);
             }
         }
         catch
@@ -299,7 +297,7 @@ public static partial class RuleSetApiEndpoints
 
     private static async Task<ItemTrace[]> EnrichEpisodes(
         ItemTrace[] itemTraces, ApiModels.TestScoreRequest request,
-        EnrichmentConfig config, IActorRef enrichmentManager)
+        EnrichmentConfig config, IActorRef enrichmentManager, CancellationToken ct)
     {
         var matchedIndices = new List<(int TraceIndex, EpisodeCandidate Candidate)>();
 
@@ -340,7 +338,7 @@ public static partial class RuleSetApiEndpoints
             request.TvdbId!.Value, Season: null,
             [.. matchedIndices.Select(m => m.Candidate)], config);
 
-        var response = await enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout);
+        var response = await enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout, ct);
         if (response is not EnrichEpisodesCompleted completed)
         {
             return itemTraces;
@@ -378,7 +376,7 @@ public static partial class RuleSetApiEndpoints
 
     private static async Task<ItemTrace[]> EnrichMovies(
         ItemTrace[] itemTraces, ApiModels.TestScoreRequest request,
-        EnrichmentConfig config, IActorRef enrichmentManager)
+        EnrichmentConfig config, IActorRef enrichmentManager, CancellationToken ct)
     {
         var matchedIndices = new List<(int TraceIndex, MovieCandidate Candidate)>();
 
@@ -410,7 +408,7 @@ public static partial class RuleSetApiEndpoints
             request.ImdbId, request.TmdbId,
             [.. matchedIndices.Select(m => m.Candidate)], config);
 
-        var response = await enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout);
+        var response = await enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout, ct);
         if (response is not EnrichMoviesCompleted completed)
         {
             return itemTraces;

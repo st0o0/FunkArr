@@ -18,13 +18,13 @@ public sealed class SabnzbdQueueService(
 {
     private TimeSpan Timeout => TimeSpan.FromSeconds(arrApiOptions.Value.DownloadTimeoutSeconds);
 
-    internal async Task<SabnzbdResult> GetQueue(int start, int limit, string? category)
+    internal async Task<SabnzbdResult> GetQueue(int start, int limit, string? category, CancellationToken ct)
     {
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>();
             if (await manager.Ask<DownloadQueueResponse>(
-                    new QueryQueue(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout)
+                    new QueryQueue(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout, ct)
                 is not QueueResult result)
             {
                 return new SabnzbdResult.Error("Queue query failed", 502);
@@ -49,13 +49,13 @@ public sealed class SabnzbdQueueService(
         }
     }
 
-    internal async Task<SabnzbdResult> GetHistory(int start, int limit, string? category)
+    internal async Task<SabnzbdResult> GetHistory(int start, int limit, string? category, CancellationToken ct)
     {
         try
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
             var response = await history.Ask<HistoryResult>(
-                new QueryHistory(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout);
+                new QueryHistory(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout, ct);
 
             var slots = response.Items.Select(item =>
                 SabnzbdResponseMapper.BuildHistorySlot(item, dataPaths.Complete)).ToArray();
@@ -71,12 +71,12 @@ public sealed class SabnzbdQueueService(
         }
     }
 
-    internal async Task<SabnzbdResult> GetFullStatus()
+    internal async Task<SabnzbdResult> GetFullStatus(CancellationToken ct)
     {
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(), Timeout) is not QueueResult result)
+            if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(), Timeout, ct) is not QueueResult result)
             {
                 return new SabnzbdResult.Error("Queue query failed", 502);
             }
@@ -100,12 +100,12 @@ public sealed class SabnzbdQueueService(
         }
     }
 
-    internal async Task<SabnzbdResult> PauseQueue()
+    internal async Task<SabnzbdResult> PauseQueue(CancellationToken ct)
     {
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), Timeout);
+            var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error("Pause failed");
@@ -117,12 +117,12 @@ public sealed class SabnzbdQueueService(
         }
     }
 
-    internal async Task<SabnzbdResult> ResumeQueue()
+    internal async Task<SabnzbdResult> ResumeQueue(CancellationToken ct)
     {
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), Timeout);
+            var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error("Resume failed");

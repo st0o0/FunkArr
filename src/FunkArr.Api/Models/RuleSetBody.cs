@@ -3,7 +3,9 @@ namespace FunkArr.Api.Models;
 public sealed record MediaInput(
     string Name,
     string Type,
-    ExternalIdsOutput? Ids = null);
+    int? TvdbId = null,
+    string? ImdbId = null,
+    int? TmdbId = null);
 
 public sealed record RuleInput(
     string Id,

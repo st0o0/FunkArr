@@ -17,9 +17,9 @@ public sealed class DownloadManagerStateTests
         var state = DownloadManagerState.Empty
             .Apply(Enqueue(id));
 
-        Assert.Single(state.Queued);
-        Assert.Equal(id, state.Queued[0].Id);
-        Assert.Equal(DownloadPriority.Normal, state.Queued[0].Priority);
+        var queued = Assert.Single(state.Queued);
+        Assert.Equal(id, queued.Id);
+        Assert.Equal(DownloadPriority.Normal, queued.Priority);
         Assert.Empty(state.Dispatched);
     }
 

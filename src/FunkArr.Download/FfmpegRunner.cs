@@ -39,7 +39,7 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         catch (OperationCanceledException)
         {
             sw.Stop();
-            return new FfmpegResult(false, -1, "Cancelled", (int)sw.Elapsed.TotalSeconds, FailureKind.Permanent);
+            return new FfmpegResult(false, -1, "Cancelled", (int)sw.Elapsed.TotalSeconds);
         }
     }
 

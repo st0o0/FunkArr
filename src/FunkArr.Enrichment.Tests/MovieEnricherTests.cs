@@ -17,14 +17,14 @@ public sealed class MovieEnricherTests
 
         var results = MovieEnricher.Resolve(_fightClub, [], candidates);
 
-        Assert.Single(results);
-        Assert.Equal(0, results[0].Index);
-        Assert.Equal("Fight Club", results[0].Title);
-        Assert.Equal(1999, results[0].Year);
-        Assert.Equal("tt0137523", results[0].ImdbId);
-        Assert.Equal(550, results[0].TmdbId);
-        Assert.True(results[0].Confidence > 0.95f);
-        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+        var item = Assert.Single(results);
+        Assert.Equal(0, item.Index);
+        Assert.Equal("Fight Club", item.Title);
+        Assert.Equal(1999, item.Year);
+        Assert.Equal("tt0137523", item.ImdbId);
+        Assert.Equal(550, item.TmdbId);
+        Assert.True(item.Confidence > 0.95f);
+        Assert.Equal(MatchMethod.TitleMatch, item.Method);
     }
 
     [Fact]
@@ -34,9 +34,9 @@ public sealed class MovieEnricherTests
 
         var results = MovieEnricher.Resolve(_fightClub, [], candidates);
 
-        Assert.Single(results);
-        Assert.True(results[0].Confidence >= 0.5f);
-        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+        var item = Assert.Single(results);
+        Assert.True(item.Confidence >= 0.5f);
+        Assert.Equal(MatchMethod.TitleMatch, item.Method);
     }
 
     [Fact]
@@ -46,9 +46,9 @@ public sealed class MovieEnricherTests
 
         var results = MovieEnricher.Resolve(_fightClub, _fightClubAltTitles, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("Fight Club", results[0].Title);
-        Assert.True(results[0].Confidence > 0.9f);
+        var item = Assert.Single(results);
+        Assert.Equal("Fight Club", item.Title);
+        Assert.True(item.Confidence > 0.9f);
     }
 
     [Fact]
@@ -81,9 +81,9 @@ public sealed class MovieEnricherTests
 
         var results = MovieEnricher.Resolve(_fightClub, [], candidates);
 
-        Assert.Single(results);
-        Assert.Equal(MatchMethod.YearMatch, results[0].Method);
-        Assert.True(results[0].Confidence < 0.8f);
+        var item = Assert.Single(results);
+        Assert.Equal(MatchMethod.YearMatch, item.Method);
+        Assert.True(item.Confidence < 0.8f);
     }
 
     [Fact]
@@ -94,8 +94,8 @@ public sealed class MovieEnricherTests
 
         var results = MovieEnricher.Resolve(_fightClub, [], candidates);
 
-        Assert.Single(results);
-        Assert.Equal(1999, results[0].Year);
+        var item = Assert.Single(results);
+        Assert.Equal(1999, item.Year);
     }
 
     [Fact]
@@ -106,8 +106,8 @@ public sealed class MovieEnricherTests
 
         var results = MovieEnricher.Resolve(movie, [], candidates);
 
-        Assert.Single(results);
-        Assert.Equal(0, results[0].Year);
+        var item = Assert.Single(results);
+        Assert.Equal(0, item.Year);
     }
 
     [Fact]

@@ -178,7 +178,7 @@ public static class RuleSetResolverStateExtensions
             state = state.Apply(new RegisterRuleSet(
                 entry.RuleSetId, entry.Topic, entry.Aliases,
                 entry.Ids,
-                entry.MediaName, entry.MediaType, null));
+                entry.MediaName, entry.MediaType));
         }
 
         return state;

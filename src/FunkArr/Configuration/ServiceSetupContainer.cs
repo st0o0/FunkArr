@@ -55,7 +55,7 @@ public sealed class ServiceSetupContainer : IServiceSetupContainer
         });
 
         services.AddControllers()
-            .AddApplicationPart(typeof(FunkArr.ArrApi.AssemblyMarker).Assembly);
+            .AddApplicationPart(typeof(ArrApi.AssemblyMarker).Assembly);
 
         services.AddHealthChecks()
             .AddCheck<FfmpegHealthCheck>("ffmpeg", failureStatus: HealthStatus.Unhealthy)

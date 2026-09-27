@@ -35,9 +35,9 @@ public sealed class MovieSearchWorkerStateTests
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem("ZDF", "Film", "Das Boot")], 1));
 
-        Assert.Single(state.Sources);
-        Assert.Equal("ZDF", state.Sources[0].Channel);
-        Assert.Equal("Film", state.Sources[0].Topic);
+        var source = Assert.Single(state.Sources);
+        Assert.Equal("ZDF", source.Channel);
+        Assert.Equal("Film", source.Topic);
     }
 
     [Fact]
@@ -48,12 +48,12 @@ public sealed class MovieSearchWorkerStateTests
 
         state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
 
-        Assert.Single(state.Items);
-        Assert.Equal(0.8, state.Items[0].Score);
-        Assert.Equal("tt0806910", state.Items[0].Identity.ImdbId);
-        Assert.Equal(550, state.Items[0].Identity.TmdbId);
-        Assert.Null(state.Items[0].Identity.TvdbId);
-        Assert.Null(state.Items[0].Match);
+        var item = Assert.Single(state.Items);
+        Assert.Equal(0.8, item.Score);
+        Assert.Equal("tt0806910", item.Identity.ImdbId);
+        Assert.Equal(550, item.Identity.TmdbId);
+        Assert.Null(item.Identity.TvdbId);
+        Assert.Null(item.Match);
     }
 
     [Fact]
@@ -66,11 +66,12 @@ public sealed class MovieSearchWorkerStateTests
         state.Apply(new EnrichMoviesCompleted(
             [new EnrichedMovie(0, "Das Boot", 1981, "tt0806910", 550, 0.92f, MatchMethod.TitleMatch)]));
 
-        Assert.Equal("tt0806910", state.Items[0].Identity.ImdbId);
-        Assert.Equal(550, state.Items[0].Identity.TmdbId);
-        Assert.NotNull(state.Items[0].Match);
-        Assert.Equal(0.92f, state.Items[0].Match!.Confidence);
-        Assert.Equal(MatchMethod.TitleMatch, state.Items[0].Match!.Method);
+        var item = Assert.Single(state.Items);
+        Assert.Equal("tt0806910", item.Identity.ImdbId);
+        Assert.Equal(550, item.Identity.TmdbId);
+        Assert.NotNull(item.Match);
+        Assert.Equal(0.92f, item.Match.Confidence);
+        Assert.Equal(MatchMethod.TitleMatch, item.Match.Method);
     }
 
     [Fact]
@@ -83,7 +84,8 @@ public sealed class MovieSearchWorkerStateTests
         state.Apply(new EnrichMoviesCompleted(
             [new EnrichedMovie(0, "Film", 2024, "tt999", 550, 0.9f, MatchMethod.TitleMatch)]));
 
-        Assert.Equal("tt999", state.Items[0].Identity.ImdbId);
+        var item = Assert.Single(state.Items);
+        Assert.Equal("tt999", item.Identity.ImdbId);
     }
 
     [Fact]
@@ -177,8 +179,9 @@ public sealed class MovieSearchWorkerStateTests
         Assert.True(result);
         Assert.NotNull(query);
         Assert.Equal(3600, query.DurationMin);
-        Assert.Contains("title", query.Fields[0].Fields);
-        Assert.Contains("topic", query.Fields[0].Fields);
+        var field = Assert.Single(query.Fields);
+        Assert.Contains("title", field.Fields);
+        Assert.Contains("topic", field.Fields);
     }
 
     [Fact]

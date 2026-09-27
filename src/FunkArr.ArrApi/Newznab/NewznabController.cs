@@ -11,12 +11,12 @@ public sealed class NewznabController(NewznabSearchService search, TimeProvider 
     private const string _applicationNzb = "application/x-nzb";
 
     [HttpGet]
-    public async Task<IActionResult> Handle([FromQuery] IndexerRequest req)
+    public async Task<IActionResult> Handle([FromQuery] IndexerRequest req, CancellationToken cancellationToken)
     {
         return (req.T ?? "") switch
         {
             "caps" => NewznabXmlResult.From(new Caps()),
-            "tvsearch" or "movie" or "search" => MapSearchResult(await search.Search(req, BaseUrl, ApiKey)),
+            "tvsearch" or "movie" or "search" => MapSearchResult(await search.Search(req, BaseUrl, ApiKey, cancellationToken)),
             "get" => MapNzbResult(NzbService.GetNzb(req.Id, timeProvider)),
             _ => NewznabXmlResult.Error(NewznabError.NoSuchFunction),
         };

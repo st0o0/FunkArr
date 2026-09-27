@@ -18,8 +18,10 @@ public sealed class MediathekApiModelTests
 
         Assert.Null(response.Err);
         Assert.NotNull(response.Result);
-        Assert.Equal(42, response.Result.QueryInfo!.TotalResults);
-        Assert.Equal(2, response.Result.Results!.Length);
+        Assert.NotNull(response.Result.QueryInfo);
+        Assert.Equal(42, response.Result.QueryInfo.TotalResults);
+        Assert.NotNull(response.Result.Results);
+        Assert.Equal(2, response.Result.Results.Length);
 
         var first = response.Result.Results[0];
         Assert.Equal("ARD", first.Channel);
@@ -42,7 +44,10 @@ public sealed class MediathekApiModelTests
         var json = LoadResource("mvw-full-response.json");
         var response = JsonSerializer.Deserialize<MediathekApiResponse>(json, _jsonOptions)!;
 
-        var second = response.Result!.Results![1];
+        Assert.NotNull(response.Result);
+        Assert.NotNull(response.Result.Results);
+        Assert.Equal(2, response.Result.Results.Length);
+        var second = response.Result.Results[1];
         Assert.Equal("Das Erste", second.Channel);
         Assert.Null(second.Description);
         Assert.Null(second.UrlVideoLow);
@@ -59,8 +64,10 @@ public sealed class MediathekApiModelTests
 
         Assert.Null(response.Err);
         Assert.NotNull(response.Result);
-        Assert.Empty(response.Result.Results!);
-        Assert.Equal(0, response.Result.QueryInfo!.TotalResults);
+        Assert.NotNull(response.Result.Results);
+        Assert.Empty(response.Result.Results);
+        Assert.NotNull(response.Result.QueryInfo);
+        Assert.Equal(0, response.Result.QueryInfo.TotalResults);
     }
 
     [Fact]

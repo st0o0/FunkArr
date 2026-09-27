@@ -12,11 +12,13 @@ public sealed class RouteResolver(IOptionsMonitor<RoutingOptions> options) : IRo
 
         foreach (var mapping in opts.ChannelRoutes)
         {
-            if (FileSystemName.MatchesSimpleExpression(mapping.Pattern, channel))
+            if (!FileSystemName.MatchesSimpleExpression(mapping.Pattern, channel))
             {
-                routeName = mapping.Route;
-                break;
+                continue;
             }
+
+            routeName = mapping.Route;
+            break;
         }
 
         var definition = opts.Definitions.Find(d =>

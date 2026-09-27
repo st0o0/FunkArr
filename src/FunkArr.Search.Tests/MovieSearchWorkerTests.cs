@@ -50,8 +50,9 @@ public sealed class MovieSearchWorkerTests : TestKit
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
         var mediathekQuery = probes.Mediathek.ExpectMsg<QueryMediathek>();
-        Assert.Contains("title", mediathekQuery.Fields[0].Fields);
-        Assert.Contains("topic", mediathekQuery.Fields[0].Fields);
+        var queryField = Assert.Single(mediathekQuery.Fields);
+        Assert.Contains("title", queryField.Fields);
+        Assert.Contains("topic", queryField.Fields);
         Assert.Equal(3600, mediathekQuery.DurationMin);
 
         probes.Mediathek.Reply(new QueryMediathekCompleted(
@@ -137,7 +138,8 @@ public sealed class MovieSearchWorkerTests : TestKit
         probes.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
 
         var mediathekQuery = probes.Mediathek.ExpectMsg<QueryMediathek>();
-        Assert.Contains("Tatort", mediathekQuery.Fields[0].Query);
+        var queryField = Assert.Single(mediathekQuery.Fields);
+        Assert.Contains("Tatort", queryField.Query);
         Assert.Equal(3600, mediathekQuery.DurationMin);
 
         probes.Mediathek.Reply(new QueryMediathekCompleted(
@@ -172,7 +174,8 @@ public sealed class MovieSearchWorkerTests : TestKit
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, 550, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
-        Assert.Equal(550, resolveRequest.Ids!.TmdbId);
+        Assert.NotNull(resolveRequest.Ids);
+        Assert.Equal(550, resolveRequest.Ids.TmdbId);
         probes.Resolver.Reply(new RuleSetResolved("fight-club", "Fight Club"));
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
@@ -192,10 +195,10 @@ public sealed class MovieSearchWorkerTests : TestKit
         ]));
 
         var result = ExpectMsg<SearchMovieCompleted>();
-        Assert.Single(result.Items);
-        Assert.Equal(550, result.Items[0].Metadata?.Ids?.TmdbId);
-        Assert.Equal(0.95f, result.Items[0].Metadata?.MatchConfidence);
-        Assert.Equal(MatchMethod.TitleMatch, result.Items[0].Metadata?.MatchMethod);
+        var item = Assert.Single(result.Items);
+        Assert.Equal(550, item.Metadata?.Ids?.TmdbId);
+        Assert.Equal(0.95f, item.Metadata?.MatchConfidence);
+        Assert.Equal(MatchMethod.TitleMatch, item.Metadata?.MatchMethod);
     }
 
     [Fact]
@@ -294,8 +297,8 @@ public sealed class MovieSearchWorkerTests : TestKit
         probes.Enrichment.Reply(new EnrichMoviesFailed(new Exception("TMDB unavailable")));
 
         var result = ExpectMsg<SearchMovieCompleted>();
-        Assert.Single(result.Items);
-        Assert.Null(result.Items[0].Metadata?.MatchConfidence);
+        var item = Assert.Single(result.Items);
+        Assert.Null(item.Metadata?.MatchConfidence);
     }
 
     [Fact]

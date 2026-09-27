@@ -36,8 +36,8 @@ public sealed class SrtFormatTests
 
         var cues = _format.Parse(srt);
 
-        Assert.Single(cues);
-        Assert.Equal(TimeSpan.FromMilliseconds(1500), cues[0].Start);
+        var cue = Assert.Single(cues);
+        Assert.Equal(TimeSpan.FromMilliseconds(1500), cue.Start);
     }
 
     [Fact]
@@ -47,7 +47,8 @@ public sealed class SrtFormatTests
 
         var cues = _format.Parse(srt);
 
-        Assert.Equal("Line one\nLine two", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Line one\nLine two", cue.Text);
     }
 
     [Fact]
@@ -57,7 +58,7 @@ public sealed class SrtFormatTests
 
         var cues = _format.Parse(srt);
 
-        Assert.Single(cues);
-        Assert.Equal("Real text", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Real text", cue.Text);
     }
 }

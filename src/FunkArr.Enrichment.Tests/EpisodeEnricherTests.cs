@@ -31,11 +31,11 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("2026", results[0].Season);
-        Assert.Equal("01", results[0].Episode);
-        Assert.Equal(1.0f, results[0].Confidence);
-        Assert.Equal(MatchMethod.RegexExtracted, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal("2026", result.Season);
+        Assert.Equal("01", result.Episode);
+        Assert.Equal(1.0f, result.Confidence);
+        Assert.Equal(MatchMethod.RegexExtracted, result.Method);
     }
 
     [Fact]
@@ -48,12 +48,12 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("2026", results[0].Season);
-        Assert.Equal("1", results[0].Episode);
-        Assert.Equal("Nachtschatten", results[0].EpisodeName);
-        Assert.True(results[0].Confidence >= 0.95f);
-        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal("2026", result.Season);
+        Assert.Equal("1", result.Episode);
+        Assert.Equal("Nachtschatten", result.EpisodeName);
+        Assert.True(result.Confidence >= 0.95f);
+        Assert.Equal(MatchMethod.TitleMatch, result.Method);
     }
 
     [Fact]
@@ -66,8 +66,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("Nachtschatten", results[0].EpisodeName);
+        var result = Assert.Single(results);
+        Assert.Equal("Nachtschatten", result.EpisodeName);
     }
 
     [Fact]
@@ -80,9 +80,9 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("Könige der Nacht", results[0].EpisodeName);
-        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal("Könige der Nacht", result.EpisodeName);
+        Assert.Equal(MatchMethod.TitleMatch, result.Method);
     }
 
     [Fact]
@@ -110,10 +110,10 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
-        Assert.Single(results);
-        Assert.Equal("2026", results[0].Season);
-        Assert.Equal("1", results[0].Episode);
-        Assert.Equal(MatchMethod.AirdateMatch, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal("2026", result.Season);
+        Assert.Equal("1", result.Episode);
+        Assert.Equal(MatchMethod.AirdateMatch, result.Method);
     }
 
     [Fact]
@@ -142,8 +142,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal(0, results[0].Index);
+        var result = Assert.Single(results);
+        Assert.Equal(0, result.Index);
     }
 
     [Fact]
@@ -173,8 +173,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("Nachtschatten", results[0].EpisodeName);
+        var result = Assert.Single(results);
+        Assert.Equal("Nachtschatten", result.EpisodeName);
     }
 
     [Fact]
@@ -189,8 +189,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
-        Assert.Single(results);
-        Assert.Equal(1.0f, results[0].Confidence);
+        var result = Assert.Single(results);
+        Assert.Equal(1.0f, result.Confidence);
     }
 
     [Fact]
@@ -220,8 +220,8 @@ public sealed class EpisodeEnricherTests
         var customResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
         Assert.Empty(defaultResults);
-        Assert.Single(customResults);
-        Assert.Equal(MatchMethod.TitleMatch, customResults[0].Method);
+        var customResult = Assert.Single(customResults);
+        Assert.Equal(MatchMethod.TitleMatch, customResult.Method);
     }
 
     [Fact]
@@ -236,8 +236,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, config);
 
-        Assert.Single(results);
-        Assert.Equal(MatchMethod.AirdateMatch, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal(MatchMethod.AirdateMatch, result.Method);
     }
 
     [Fact]
@@ -267,11 +267,11 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("2026", results[0].Season);
-        Assert.Equal("17", results[0].Episode);
-        Assert.True(results[0].Confidence >= 0.95f);
-        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal("2026", result.Season);
+        Assert.Equal("17", result.Episode);
+        Assert.True(result.Confidence >= 0.95f);
+        Assert.Equal(MatchMethod.TitleMatch, result.Method);
     }
 
     [Fact]
@@ -297,8 +297,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("1", results[0].Episode);
+        var result = Assert.Single(results);
+        Assert.Equal("1", result.Episode);
     }
 
     [Fact]
@@ -311,8 +311,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
 
-        Assert.Single(results);
-        Assert.Equal("17", results[0].Episode);
+        var result = Assert.Single(results);
+        Assert.Equal("17", result.Episode);
     }
 
     [Fact]
@@ -368,9 +368,9 @@ public sealed class EpisodeEnricherTests
 
         var allSeasons = season2025.Concat(season2026).ToArray();
         var fallback = EpisodeEnricher.Resolve(allSeasons, candidates);
-        Assert.Single(fallback);
-        Assert.Equal("2025", fallback[0].Season);
-        Assert.Equal("5", fallback[0].Episode);
+        var fallbackResult = Assert.Single(fallback);
+        Assert.Equal("2025", fallbackResult.Season);
+        Assert.Equal("5", fallbackResult.Episode);
     }
 
     [Fact]
@@ -387,10 +387,10 @@ public sealed class EpisodeEnricherTests
         };
 
         var results = EpisodeEnricher.Resolve(allEpisodes, candidates);
-        Assert.Single(results);
+        var result = Assert.Single(results);
 
-        var penalized = results[0] with { Confidence = results[0].Confidence * 0.9f };
-        Assert.True(penalized.Confidence < results[0].Confidence);
+        var penalized = result with { Confidence = result.Confidence * 0.9f };
+        Assert.True(penalized.Confidence < result.Confidence);
         Assert.True(penalized.Confidence > 0.8f);
     }
 
@@ -403,8 +403,8 @@ public sealed class EpisodeEnricherTests
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
-        Assert.Single(results);
-        Assert.Equal("17", results[0].Episode);
+        var result = Assert.Single(results);
+        Assert.Equal("17", result.Episode);
     }
 
     [Fact]
@@ -432,9 +432,9 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates, MakeConfig());
 
-        Assert.Single(results);
-        Assert.Equal("17", results[0].Episode);
-        Assert.Equal(MatchMethod.TitleMatch, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal("17", result.Episode);
+        Assert.Equal(MatchMethod.TitleMatch, result.Method);
     }
 
     [Fact]
@@ -449,8 +449,8 @@ public sealed class EpisodeEnricherTests
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates, config);
 
-        Assert.Single(results);
-        Assert.Equal(MatchMethod.AirdateMatch, results[0].Method);
+        var result = Assert.Single(results);
+        Assert.Equal(MatchMethod.AirdateMatch, result.Method);
     }
 
     private static EnrichmentConfig MakeConfig(

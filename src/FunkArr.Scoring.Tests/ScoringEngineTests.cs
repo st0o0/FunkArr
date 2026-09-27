@@ -19,10 +19,9 @@ public sealed class ScoringEngineTests
     private static MatchingRule ChannelRule(string channel, string id = "rule-1", int priority = 0) =>
         new(id, priority, null,
             new FilterSpec(
-                [new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, channel))],
-                null, null),
+                [new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, channel))]),
             new IdentificationSpec(IdentificationStrategy.TitleExact,
-                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.+)")]));
+                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")]));
 
     [Fact]
     public void Score_with_matching_rule_returns_matched()
@@ -32,11 +31,11 @@ public sealed class ScoringEngineTests
 
         var (scored, traces) = ScoringEngine.Score(config, candidates);
 
-        Assert.Single(scored);
-        Assert.True(scored[0].Matched);
-        Assert.Equal(0.9, scored[0].Score, 2);
-        Assert.Single(traces);
-        Assert.True(traces[0].Matched);
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
+        Assert.Equal(0.9, item.Score, 2);
+        var item2 = Assert.Single(traces);
+        Assert.True(item2.Matched);
     }
 
     [Fact]
@@ -47,9 +46,9 @@ public sealed class ScoringEngineTests
 
         var (scored, traces) = ScoringEngine.Score(config, candidates);
 
-        Assert.Single(scored);
-        Assert.False(scored[0].Matched);
-        Assert.Equal(0.0, scored[0].Score);
+        var item = Assert.Single(scored);
+        Assert.False(item.Matched);
+        Assert.Equal(0.0, item.Score);
     }
 
     [Fact]
@@ -69,22 +68,22 @@ public sealed class ScoringEngineTests
         var config = Config(0.5f,
             new MatchingRule("low-priority", 10, 0.3f,
                 new FilterSpec(
-                    [new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD"))],
-                    null, null),
+                    [new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD"))]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
-                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.+)")])),
+                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])),
             new MatchingRule("high-priority", 0, 0.95f,
                 new FilterSpec(
-                    [new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD"))],
-                    null, null),
+                    [new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD"))]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
-                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.+)")])));
+                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])));
 
         var (scored, traces) = ScoringEngine.Score(config, [Candidate()]);
 
-        Assert.True(scored[0].Matched);
-        Assert.Equal(0.95, scored[0].Score, 2);
-        Assert.Equal("high-priority", traces[0].MatchedRuleId);
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
+        Assert.Equal(0.95, item.Score, 2);
+        var trace = Assert.Single(traces);
+        Assert.Equal("high-priority", trace.MatchedRuleId);
     }
 
     [Fact]
@@ -97,16 +96,18 @@ public sealed class ScoringEngineTests
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ZDF")),
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Topic, FilterOp.Eq, "Tatort")),
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD")),
-                    ],
-                    null, null),
+                    ]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
-                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.+)")])));
+                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])));
 
         var (_, traces) = ScoringEngine.Score(config, [Candidate()]);
 
-        var ruleTrace = traces[0].RuleTraces[0];
+        var traceItem = Assert.Single(traces);
+        var ruleTrace = Assert.Single(traceItem.RuleTraces);
         Assert.Equal(RuleOutcome.FilterFailed, ruleTrace.Outcome);
-        var filterNodes = ruleTrace.FilterTrace!.Nodes;
+        Assert.NotNull(ruleTrace.FilterTrace);
+        var filterNodes = ruleTrace.FilterTrace.Nodes;
+        Assert.Equal(3, filterNodes.Length);
         Assert.False(filterNodes[0].Passed);
         Assert.True(filterNodes[1].Skipped);
         Assert.True(filterNodes[2].Skipped);
@@ -121,15 +122,19 @@ public sealed class ScoringEngineTests
                     [
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD")),
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ZDF")),
-                    ],
-                    null),
+                    ]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
-                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.+)")])));
+                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])));
 
         var (scored, traces) = ScoringEngine.Score(config, [Candidate()]);
 
-        Assert.True(scored[0].Matched);
-        var filterNodes = traces[0].RuleTraces[0].FilterTrace!.Nodes;
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
+        var traceItem = Assert.Single(traces);
+        var ruleTrace = Assert.Single(traceItem.RuleTraces);
+        Assert.NotNull(ruleTrace.FilterTrace);
+        var filterNodes = ruleTrace.FilterTrace.Nodes;
+        Assert.Equal(2, filterNodes.Length);
         Assert.True(filterNodes[0].Passed);
         Assert.True(filterNodes[1].Skipped);
     }
@@ -142,11 +147,12 @@ public sealed class ScoringEngineTests
                 new FilterSpec(null, null,
                     [new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD"))]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
-                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.+)")])));
+                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])));
 
         var (scored, _) = ScoringEngine.Score(config, [Candidate()]);
 
-        Assert.False(scored[0].Matched);
+        var item = Assert.Single(scored);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -160,9 +166,12 @@ public sealed class ScoringEngineTests
         var (scored, traces) = ScoringEngine.Score(config,
             [Candidate(title: "Show S02E05 - Title")]);
 
-        Assert.True(scored[0].Matched);
-        Assert.Equal("02", traces[0].Identification!.Season);
-        Assert.Equal("05", traces[0].Identification!.Episode);
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
+        var trace = Assert.Single(traces);
+        Assert.NotNull(trace.Identification);
+        Assert.Equal("02", trace.Identification.Season);
+        Assert.Equal("05", trace.Identification.Episode);
     }
 
     [Fact]
@@ -176,9 +185,12 @@ public sealed class ScoringEngineTests
         var (scored, traces) = ScoringEngine.Score(config,
             [Candidate(title: "Show Folge 42")]);
 
-        Assert.True(scored[0].Matched);
-        Assert.Null(traces[0].Identification!.Season);
-        Assert.Equal("42", traces[0].Identification!.Episode);
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
+        var trace = Assert.Single(traces);
+        Assert.NotNull(trace.Identification);
+        Assert.Null(trace.Identification.Season);
+        Assert.Equal("42", trace.Identification.Episode);
     }
 
     [Fact]
@@ -191,7 +203,8 @@ public sealed class ScoringEngineTests
 
         var (scored, _) = ScoringEngine.Score(config, [Candidate()]);
 
-        Assert.True(scored[0].Matched);
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -204,8 +217,11 @@ public sealed class ScoringEngineTests
         var (scored, traces) = ScoringEngine.Score(config,
             [Candidate(title: "Show vom 25.06.2024")]);
 
-        Assert.True(scored[0].Matched);
-        Assert.Equal("2024-06-25", traces[0].Identification!.Title);
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
+        var trace = Assert.Single(traces);
+        Assert.NotNull(trace.Identification);
+        Assert.Equal("2024-06-25", trace.Identification.Title);
     }
 
     [Fact]
@@ -219,8 +235,9 @@ public sealed class ScoringEngineTests
         var (scored, _) = ScoringEngine.Score(config,
             [Candidate(title: "Tatort: Roomservice")]);
 
-        Assert.True(scored[0].Matched);
-        Assert.Equal("Roomservice", scored[0].Metadata?.ConstructedTitle);
+        var item = Assert.Single(scored);
+        Assert.True(item.Matched);
+        Assert.Equal("Roomservice", item.Metadata?.ConstructedTitle);
     }
 
     [Fact]
@@ -230,14 +247,14 @@ public sealed class ScoringEngineTests
             new MatchingRule("r1", 0, null,
                 new FilterSpec(
                     [new FilterNode.ConditionNode(new FilterCondition(
-                        FilterField.Title, FilterOp.Regex, @"(a+)+$"))],
-                    null, null),
+                        FilterField.Title, FilterOp.Regex, "(a+)+$"))]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
-                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.+)")])));
+                    TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])));
 
         var pathologicalInput = new string('a', 30) + "!";
         var (scored, _) = ScoringEngine.Score(config, [Candidate(title: pathologicalInput)]);
 
-        Assert.False(scored[0].Matched);
+        var item = Assert.Single(scored);
+        Assert.False(item.Matched);
     }
 }

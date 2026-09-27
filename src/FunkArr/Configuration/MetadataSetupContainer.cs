@@ -10,11 +10,11 @@ public sealed class MetadataSetupContainer : IServiceSetupContainer
     {
         services
             .AddOptions<TvdbOptions>()
-            .Bind(configuration.GetSection("FunkArr:Tvdb"));
+            .BindConfiguration(TvdbOptions.SectionName);
 
         services
             .AddOptions<TmdbOptions>()
-            .Bind(configuration.GetSection("FunkArr:Tmdb"));
+            .BindConfiguration(TmdbOptions.SectionName);
 
         services.AddMemoryCache();
 

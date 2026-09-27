@@ -49,8 +49,9 @@ public sealed class TvSearchWorkerTests : TestKit
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
         var mediathekQuery = p.Mediathek.ExpectMsg<QueryMediathek>();
-        Assert.Equal("topic", mediathekQuery.Fields[0].Fields[0]);
-        Assert.Equal("Tatort", mediathekQuery.Fields[0].Query);
+        var field = Assert.Single(mediathekQuery.Fields);
+        Assert.Equal("topic", field.Fields[0]);
+        Assert.Equal("Tatort", field.Query);
         Assert.Equal(300, mediathekQuery.DurationMin);
 
         p.Mediathek.Reply(new QueryMediathekCompleted(
@@ -160,7 +161,8 @@ public sealed class TvSearchWorkerTests : TestKit
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
 
         var mediathekQuery = p.Mediathek.ExpectMsg<QueryMediathek>();
-        Assert.Equal("Tatort", mediathekQuery.Fields[0].Query);
+        var field = Assert.Single(mediathekQuery.Fields);
+        Assert.Equal("Tatort", field.Query);
 
         p.Mediathek.Reply(new QueryMediathekCompleted(
         [
@@ -250,8 +252,8 @@ public sealed class TvSearchWorkerTests : TestKit
         var enrichRequest = p.Enrichment.ExpectMsg<EnrichEpisodes>();
         Assert.Equal(83214, enrichRequest.TvdbId);
         Assert.Equal(2026, enrichRequest.Season);
-        Assert.Single(enrichRequest.Candidates);
-        Assert.Equal("Roomservice", enrichRequest.Candidates[0].Title);
+        var candidate = Assert.Single(enrichRequest.Candidates);
+        Assert.Equal("Roomservice", candidate.Title);
 
         p.Enrichment.Reply(new EnrichEpisodesCompleted(
         [
@@ -294,9 +296,9 @@ public sealed class TvSearchWorkerTests : TestKit
         ], []));
 
         var enrichMsg = p.Enrichment.ExpectMsg<EnrichEpisodes>();
-        Assert.Single(enrichMsg.Candidates);
-        Assert.Equal("2026", enrichMsg.Candidates[0].ExistingSeason);
-        Assert.Equal("01", enrichMsg.Candidates[0].ExistingEpisode);
+        var candidate = Assert.Single(enrichMsg.Candidates);
+        Assert.Equal("2026", candidate.ExistingSeason);
+        Assert.Equal("01", candidate.ExistingEpisode);
 
         p.Enrichment.Reply(new EnrichEpisodesCompleted(
         [

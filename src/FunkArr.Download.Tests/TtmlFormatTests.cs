@@ -113,9 +113,9 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Single(cues);
-        Assert.Contains("Erster", cues[0].Text);
-        Assert.Contains("Teil", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Contains("Erster", cue.Text);
+        Assert.Contains("Teil", cue.Text);
     }
 
     [Fact]
@@ -139,7 +139,8 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Contains("Zeile eins\nZeile zwei", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Contains("Zeile eins\nZeile zwei", cue.Text);
     }
 
     [Fact]
@@ -160,8 +161,8 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Single(cues);
-        Assert.Equal("Real text", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Real text", cue.Text);
     }
 
     [Fact]
@@ -177,7 +178,8 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Equal("Tom & Jerry <3", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Tom & Jerry <3", cue.Text);
     }
 
     [Fact]
@@ -196,6 +198,7 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
+        Assert.Equal(2, cues.Count);
         Assert.Equal(TimeSpan.FromSeconds(3), cues[0].End);
         Assert.Equal(TimeSpan.FromSeconds(8), cues[1].End);
     }
@@ -224,8 +227,9 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Equal(TimeSpan.FromMilliseconds(34480), cues[0].Start);
-        Assert.Equal(TimeSpan.FromMilliseconds(36920), cues[0].End);
+        var cue = Assert.Single(cues);
+        Assert.Equal(TimeSpan.FromMilliseconds(34480), cue.Start);
+        Assert.Equal(TimeSpan.FromMilliseconds(36920), cue.End);
     }
 
     [Fact]
@@ -246,6 +250,7 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
+        Assert.Equal(2, cues.Count);
         Assert.Equal(TimeSpan.Zero, cues[0].Start);
         Assert.Equal(TimeSpan.FromSeconds(5), cues[1].Start);
     }
@@ -267,7 +272,8 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Equal(TimeSpan.FromSeconds(3), cues[0].Start);
+        var cue = Assert.Single(cues);
+        Assert.Equal(TimeSpan.FromSeconds(3), cue.Start);
     }
 
     [Fact]
@@ -294,8 +300,9 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Equal(TimeSpan.Zero, cues[0].Start);
-        Assert.Equal(TimeSpan.Zero, cues[0].End);
+        var cue = Assert.Single(cues);
+        Assert.Equal(TimeSpan.Zero, cue.Start);
+        Assert.Equal(TimeSpan.Zero, cue.End);
     }
 
     [Fact]
@@ -314,8 +321,8 @@ public sealed class TtmlFormatTests
         _format.CanParse(ttml);
         var cues = _format.Parse(ttml);
 
-        Assert.Single(cues);
-        Assert.Equal("After comment", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("After comment", cue.Text);
     }
 
     [Fact]

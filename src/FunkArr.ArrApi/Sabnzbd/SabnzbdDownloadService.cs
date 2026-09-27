@@ -12,13 +12,12 @@ namespace FunkArr.ArrApi.Sabnzbd;
 
 public sealed class SabnzbdDownloadService(
     IActorRegistry registry,
-    NzbService nzbService,
     IOptions<ArrApiOptions> options,
     ILogger<SabnzbdDownloadService> logger)
 {
     private TimeSpan Timeout => TimeSpan.FromSeconds(options.Value.DownloadTimeoutSeconds);
 
-    internal async Task<SabnzbdResult> AddFile(IFormFile? file, string? cat, string? priority)
+    internal async Task<SabnzbdResult> AddFile(IFormFile? file, string? cat, string? priority, CancellationToken ct)
     {
         if (file is null)
         {
@@ -63,7 +62,7 @@ public sealed class SabnzbdDownloadService(
             var manager = await registry.GetAsync<IDownloadManager>();
             var media = new DownloadMedia(title, videoUrl, subtitleUrl, channel, duration, size, category);
             var addCmd = new AddDownload(media, downloadPriority);
-            var addResult = await manager.Ask<DownloadAdded>(addCmd, Timeout);
+            var addResult = await manager.Ask<DownloadAdded>(addCmd, Timeout, ct);
 
             if (priority == "2")
             {
@@ -84,7 +83,7 @@ public sealed class SabnzbdDownloadService(
         }
     }
 
-    internal async Task<SabnzbdResult> DeleteFromQueue(string? nzoId)
+    internal async Task<SabnzbdResult> DeleteFromQueue(string? nzoId, CancellationToken ct)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
         {
@@ -94,7 +93,7 @@ public sealed class SabnzbdDownloadService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(downloadId), Timeout);
+            var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(downloadId), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error(result.Error ?? "Delete failed");
@@ -106,7 +105,7 @@ public sealed class SabnzbdDownloadService(
         }
     }
 
-    internal async Task<SabnzbdResult> DeleteFromHistory(string? nzoId)
+    internal async Task<SabnzbdResult> DeleteFromHistory(string? nzoId, CancellationToken ct)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
         {
@@ -116,7 +115,7 @@ public sealed class SabnzbdDownloadService(
         try
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>();
-            var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(downloadId), Timeout);
+            var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(downloadId), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error(result.Error ?? "Delete failed");
@@ -128,7 +127,7 @@ public sealed class SabnzbdDownloadService(
         }
     }
 
-    internal async Task<SabnzbdResult> Retry(string? nzoId)
+    internal async Task<SabnzbdResult> Retry(string? nzoId, CancellationToken ct)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
         {
@@ -141,7 +140,7 @@ public sealed class SabnzbdDownloadService(
             var history = await registry.GetAsync<IDownloadHistoryManager>();
 
             history.Tell(new RemoveHistoryEntry(downloadId));
-            var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(downloadId), Timeout);
+            var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(downloadId), Timeout, ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error(result.Error ?? "Retry failed");
@@ -153,7 +152,7 @@ public sealed class SabnzbdDownloadService(
         }
     }
 
-    internal async Task<SabnzbdResult> SetPriority(string? nzoId, string? priorityValue)
+    internal async Task<SabnzbdResult> SetPriority(string? nzoId, string? priorityValue, CancellationToken ct)
     {
         if (!Guid.TryParse(nzoId, out var downloadId))
         {
@@ -171,14 +170,14 @@ public sealed class SabnzbdDownloadService(
 
             if (priorityInt == 2)
             {
-                var forceResult = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(downloadId), Timeout);
+                var forceResult = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(downloadId), Timeout, ct);
                 return forceResult.Success
                     ? new SabnzbdResult.Ok(new { status = true })
                     : new SabnzbdResult.Error(forceResult.Error ?? "Force start failed");
             }
 
             var priority = (DownloadPriority)Math.Clamp(priorityInt, -1, 1);
-            var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), Timeout);
+            var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), Timeout, ct);
             return result is SetDownloadPriorityCompleted
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error((result as SetDownloadPriorityFailed)?.Reason ?? "Priority change failed");
@@ -190,7 +189,7 @@ public sealed class SabnzbdDownloadService(
         }
     }
 
-    internal async Task<SabnzbdResult> Swap(string? nzoId1, string? nzoId2)
+    internal async Task<SabnzbdResult> Swap(string? nzoId1, string? nzoId2, CancellationToken ct)
     {
         if (!Guid.TryParse(nzoId1, out var id1) || !Guid.TryParse(nzoId2, out var id2))
         {
@@ -200,7 +199,7 @@ public sealed class SabnzbdDownloadService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), Timeout);
+            var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), Timeout, ct);
             return result is SwapDownloadsCompleted
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error((result as SwapDownloadsFailed)?.Reason ?? "Swap failed");

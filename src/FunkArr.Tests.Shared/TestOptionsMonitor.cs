@@ -6,7 +6,7 @@ public sealed class TestOptionsMonitor<T>(T value) : IOptionsMonitor<T>
 {
     private readonly List<Action<T, string?>> _listeners = [];
 
-    public T CurrentValue { get; set; } = value;
+    public T CurrentValue { get; private set; } = value;
 
     public T Get(string? name) => CurrentValue;
 

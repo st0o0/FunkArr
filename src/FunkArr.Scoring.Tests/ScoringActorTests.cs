@@ -34,9 +34,9 @@ public sealed class ScoringActorTests : TestKit
     {
         var result = Score(Config(0.9f), Candidate());
 
-        Assert.Single(result.Results);
-        Assert.False(result.Results[0].Matched);
-        Assert.Equal(0.0, result.Results[0].Score);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
+        Assert.Equal(0.0, item.Score);
     }
 
     [Fact]
@@ -51,7 +51,8 @@ public sealed class ScoringActorTests : TestKit
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
 
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -66,7 +67,8 @@ public sealed class ScoringActorTests : TestKit
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", channel: "ARD"));
 
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -81,7 +83,8 @@ public sealed class ScoringActorTests : TestKit
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
 
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -96,7 +99,8 @@ public sealed class ScoringActorTests : TestKit
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
 
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -109,10 +113,12 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var pass = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
-        Assert.True(pass.Results[0].Matched);
+        var passItem = Assert.Single(pass.Results);
+        Assert.True(passItem.Matched);
 
         var blocked = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024 (Audiodeskription)"));
-        Assert.False(blocked.Results[0].Matched);
+        var blockedItem = Assert.Single(blocked.Results);
+        Assert.False(blockedItem.Matched);
     }
 
     [Fact]
@@ -129,10 +135,12 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
-        Assert.True(result.Results[0].Matched);
+        var resultItem = Assert.Single(result.Results);
+        Assert.True(resultItem.Matched);
 
         var brResult = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", channel: "BR"));
-        Assert.False(brResult.Results[0].Matched);
+        var brItem = Assert.Single(brResult.Results);
+        Assert.False(brItem.Matched);
     }
 
     [Fact]
@@ -143,10 +151,12 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var pass = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", durationSeconds: 5400));
-        Assert.True(pass.Results[0].Matched);
+        var passItem = Assert.Single(pass.Results);
+        Assert.True(passItem.Matched);
 
         var fail = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", durationSeconds: 1800));
-        Assert.False(fail.Results[0].Matched);
+        var failItem = Assert.Single(fail.Results);
+        Assert.False(failItem.Matched);
     }
 
     [Fact]
@@ -155,10 +165,11 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(All: [Condition(FilterField.Title, FilterOp.Contains, "GOLDENE")]),
             new IdentificationSpec(IdentificationStrategy.TitleExact,
-                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
+                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -169,10 +180,12 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var pass = Score(Config(0.5f, rule), Candidate(title: "Tatort vom 24.10.2024"));
-        Assert.True(pass.Results[0].Matched);
+        var passItem = Assert.Single(pass.Results);
+        Assert.True(passItem.Matched);
 
         var fail = Score(Config(0.5f, rule), Candidate(title: "heute-show vom 24.10.2024"));
-        Assert.False(fail.Results[0].Matched);
+        var failItem = Assert.Single(fail.Results);
+        Assert.False(failItem.Matched);
     }
 
     [Fact]
@@ -183,10 +196,12 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var pass = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
-        Assert.True(pass.Results[0].Matched);
+        var passItem = Assert.Single(pass.Results);
+        Assert.True(passItem.Matched);
 
         var fail = Score(Config(0.5f, rule), Candidate(title: "Trailer vom 24.10.2024"));
-        Assert.False(fail.Results[0].Matched);
+        var failItem = Assert.Single(fail.Results);
+        Assert.False(failItem.Matched);
     }
 
     [Fact]
@@ -196,7 +211,8 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -208,8 +224,9 @@ public sealed class ScoringActorTests : TestKit
                 EpisodePattern: @"(?<=E)(\d{2,4})(?=\))"));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort (S01/E05)"));
-        Assert.True(result.Results[0].Matched);
-        Assert.Equal(0.95, result.Results[0].Score, 0.001);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
+        Assert.Equal(0.95, item.Score, 0.001);
     }
 
     [Fact]
@@ -221,7 +238,8 @@ public sealed class ScoringActorTests : TestKit
                 EpisodePattern: @"(?<=E)(\d{2,4})"));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -232,8 +250,9 @@ public sealed class ScoringActorTests : TestKit
                 EpisodePattern: @"Folge\s*(\d+)"));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Löwenzahn - Folge 312"));
-        Assert.True(result.Results[0].Matched);
-        Assert.Equal(0.9, result.Results[0].Score, 0.001);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
+        Assert.Equal(0.9, item.Score, 0.001);
     }
 
     [Fact]
@@ -244,7 +263,8 @@ public sealed class ScoringActorTests : TestKit
                 EpisodePattern: @"Folge\s*(\d+)"));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -257,7 +277,8 @@ public sealed class ScoringActorTests : TestKit
                 CaptureGroup: 2));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort S01E05"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -265,10 +286,11 @@ public sealed class ScoringActorTests : TestKit
     {
         var rule = new MatchingRule("r1", 0, null, null,
             new IdentificationSpec(IdentificationStrategy.TitleExact,
-                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
+                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -279,7 +301,8 @@ public sealed class ScoringActorTests : TestKit
                 TitleParts: [new TitlePart(TitlePartType.Static, Value: "Schwarzer Freitag")]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -292,7 +315,8 @@ public sealed class ScoringActorTests : TestKit
                 ]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Folge 42"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -307,10 +331,12 @@ public sealed class ScoringActorTests : TestKit
                 ]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort & Krimi", topic: "Krimi"));
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
 
         var result2 = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit", topic: "Krimi"));
-        Assert.False(result2.Results[0].Matched);
+        var item2 = Assert.Single(result2.Results);
+        Assert.False(item2.Matched);
     }
 
     [Fact]
@@ -323,7 +349,8 @@ public sealed class ScoringActorTests : TestKit
                 ]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -334,7 +361,8 @@ public sealed class ScoringActorTests : TestKit
                 TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @":\s*(.+)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -345,7 +373,8 @@ public sealed class ScoringActorTests : TestKit
                 TitleParts: [new TitlePart(TitlePartType.Static, Value: "Schwarzer Freitag")]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -356,7 +385,8 @@ public sealed class ScoringActorTests : TestKit
                 TitleParts: [new TitlePart(TitlePartType.Static, Value: "Löwenzähn")]));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Löwenzähn - Folge 312"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -366,8 +396,9 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "heute-show vom 24.10.2024"));
-        Assert.True(result.Results[0].Matched);
-        Assert.Equal(0.9, result.Results[0].Score, 0.001);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
+        Assert.Equal(0.9, item.Score, 0.001);
     }
 
     [Fact]
@@ -377,7 +408,8 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "Sendung vom 24.10.24"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -387,7 +419,8 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.9f, rule), Candidate(title: "heute-show vom 16. Juli 2024"));
-        Assert.True(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
     }
 
     [Fact]
@@ -397,7 +430,8 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.False(result.Results[0].Matched);
+        var item = Assert.Single(result.Results);
+        Assert.False(item.Matched);
     }
 
     [Fact]
@@ -410,11 +444,12 @@ public sealed class ScoringActorTests : TestKit
 
         var rule1 = new MatchingRule("r1", 10, 0.7f, null,
             new IdentificationSpec(IdentificationStrategy.TitleExact,
-                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
+                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.5f, rule0, rule1), Candidate(title: "Tatort (S01/E05)"));
-        Assert.True(result.Results[0].Matched);
-        Assert.Equal(0.95, result.Results[0].Score, 0.001);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
+        Assert.Equal(0.95, item.Score, 0.001);
     }
 
     [Fact]
@@ -427,11 +462,12 @@ public sealed class ScoringActorTests : TestKit
 
         var rule1 = new MatchingRule("r1", 10, 0.7f, null,
             new IdentificationSpec(IdentificationStrategy.TitleExact,
-                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: @"(.*)", Field: FilterField.Title)]));
+                TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.*)", Field: FilterField.Title)]));
 
         var result = Score(Config(0.5f, rule0, rule1), Candidate(title: "Tatort: Die goldene Zeit"));
-        Assert.True(result.Results[0].Matched);
-        Assert.Equal(0.7, result.Results[0].Score, 0.001);
+        var item = Assert.Single(result.Results);
+        Assert.True(item.Matched);
+        Assert.Equal(0.7, item.Score, 0.001);
     }
 
     [Fact]
@@ -441,7 +477,8 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
-        Assert.Equal(0.95, result.Results[0].Score, 0.001);
+        var item = Assert.Single(result.Results);
+        Assert.Equal(0.95, item.Score, 0.001);
     }
 
     [Fact]
@@ -451,7 +488,8 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var result = Score(Config(0.85f, rule), Candidate(title: "Sendung vom 24.10.2024"));
-        Assert.Equal(0.85, result.Results[0].Score, 0.001);
+        var item = Assert.Single(result.Results);
+        Assert.Equal(0.85, item.Score, 0.001);
     }
 
     [Fact]
@@ -481,10 +519,12 @@ public sealed class ScoringActorTests : TestKit
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
         var pass = Score(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
-        Assert.True(pass.Results[0].Matched);
+        var passItem = Assert.Single(pass.Results);
+        Assert.True(passItem.Matched);
 
         var fail = Score(Config(0.5f, rule), Candidate(title: "Trailer vom 24.10.2024"));
-        Assert.False(fail.Results[0].Matched);
+        var failItem = Assert.Single(fail.Results);
+        Assert.False(failItem.Matched);
     }
 
     private ScoreCompleted ScoreWithTrace(MatchingConfig config, params ScoreCandidate[] items)
@@ -503,20 +543,19 @@ public sealed class ScoringActorTests : TestKit
 
         var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024"));
 
-        Assert.Single(result.ItemTraces);
-        var trace = result.ItemTraces[0];
-        Assert.True(trace.Matched);
-        Assert.Equal("airdate", trace.MatchedRuleId);
-        Assert.NotNull(trace.Identification);
-        Assert.Equal("2024-10-24", trace.Identification!.Title);
+        var item = Assert.Single(result.ItemTraces);
+        Assert.True(item.Matched);
+        Assert.Equal("airdate", item.MatchedRuleId);
+        Assert.NotNull(item.Identification);
+        Assert.Equal("2024-10-24", item.Identification.Title);
 
-        Assert.Single(trace.RuleTraces);
-        Assert.Equal(RuleOutcome.Matched, trace.RuleTraces[0].Outcome);
-        Assert.NotNull(trace.RuleTraces[0].FilterTrace);
-        Assert.True(trace.RuleTraces[0].FilterTrace!.Passed);
-        Assert.NotNull(trace.RuleTraces[0].IdentificationTrace);
-        Assert.True(trace.RuleTraces[0].IdentificationTrace!.Attempted);
-        Assert.Null(trace.RuleTraces[0].IdentificationTrace!.Detail);
+        var traceItem = Assert.Single(item.RuleTraces);
+        Assert.Equal(RuleOutcome.Matched, traceItem.Outcome);
+        Assert.NotNull(traceItem.FilterTrace);
+        Assert.True(traceItem.FilterTrace.Passed);
+        Assert.NotNull(traceItem.IdentificationTrace);
+        Assert.True(traceItem.IdentificationTrace.Attempted);
+        Assert.Null(traceItem.IdentificationTrace.Detail);
     }
 
     [Fact]
@@ -528,19 +567,19 @@ public sealed class ScoringActorTests : TestKit
 
         var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", channel: "ARD"));
 
-        var trace = result.ItemTraces[0];
-        Assert.False(trace.Matched);
-        Assert.Single(trace.RuleTraces);
-        Assert.Equal(RuleOutcome.FilterFailed, trace.RuleTraces[0].Outcome);
+        var traceItem = Assert.Single(result.ItemTraces);
+        Assert.False(traceItem.Matched);
+        var ruleItem = Assert.Single(traceItem.RuleTraces);
+        Assert.Equal(RuleOutcome.FilterFailed, ruleItem.Outcome);
 
-        var filterTrace = trace.RuleTraces[0].FilterTrace!;
-        Assert.False(filterTrace.Passed);
-        Assert.Single(filterTrace.Nodes);
-        Assert.Equal("Channel", filterTrace.Nodes[0].Field);
-        Assert.Equal("Eq", filterTrace.Nodes[0].Op);
-        Assert.Equal("ZDF", filterTrace.Nodes[0].ExpectedValue);
-        Assert.Equal("ARD", filterTrace.Nodes[0].ActualValue);
-        Assert.False(filterTrace.Nodes[0].Passed);
+        Assert.NotNull(ruleItem.FilterTrace);
+        Assert.False(ruleItem.FilterTrace.Passed);
+        var filterNodeItem = Assert.Single(ruleItem.FilterTrace.Nodes);
+        Assert.Equal("Channel", filterNodeItem.Field);
+        Assert.Equal("Eq", filterNodeItem.Op);
+        Assert.Equal("ZDF", filterNodeItem.ExpectedValue);
+        Assert.Equal("ARD", filterNodeItem.ActualValue);
+        Assert.False(filterNodeItem.Passed);
     }
 
     [Fact]
@@ -555,12 +594,14 @@ public sealed class ScoringActorTests : TestKit
 
         var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Sendung vom 24.10.2024", channel: "ARD"));
 
-        var filterTrace = result.ItemTraces[0].RuleTraces[0].FilterTrace!;
-        Assert.Equal(2, filterTrace.Nodes.Length);
-        Assert.False(filterTrace.Nodes[0].Passed);
-        Assert.False(filterTrace.Nodes[0].Skipped);
-        Assert.True(filterTrace.Nodes[1].Skipped);
-        Assert.Null(filterTrace.Nodes[1].ActualValue);
+        var traceItem = Assert.Single(result.ItemTraces);
+        var ruleTrace = Assert.Single(traceItem.RuleTraces);
+        Assert.NotNull(ruleTrace.FilterTrace);
+        Assert.Equal(2, ruleTrace.FilterTrace.Nodes.Length);
+        Assert.False(ruleTrace.FilterTrace.Nodes[0].Passed);
+        Assert.False(ruleTrace.FilterTrace.Nodes[0].Skipped);
+        Assert.True(ruleTrace.FilterTrace.Nodes[1].Skipped);
+        Assert.Null(ruleTrace.FilterTrace.Nodes[1].ActualValue);
     }
 
     [Fact]
@@ -571,11 +612,12 @@ public sealed class ScoringActorTests : TestKit
 
         var result = ScoreWithTrace(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
 
-        var trace = result.ItemTraces[0];
-        Assert.Equal(RuleOutcome.IdentificationFailed, trace.RuleTraces[0].Outcome);
-        Assert.NotNull(trace.RuleTraces[0].IdentificationTrace);
-        Assert.True(trace.RuleTraces[0].IdentificationTrace!.Attempted);
-        Assert.Equal(IdentificationFailureReason.NoDateFoundInTitle, trace.RuleTraces[0].IdentificationTrace!.Detail);
+        var traceItem = Assert.Single(result.ItemTraces);
+        var ruleTrace = Assert.Single(traceItem.RuleTraces);
+        Assert.Equal(RuleOutcome.IdentificationFailed, ruleTrace.Outcome);
+        Assert.NotNull(ruleTrace.IdentificationTrace);
+        Assert.True(ruleTrace.IdentificationTrace.Attempted);
+        Assert.Equal(IdentificationFailureReason.NoDateFoundInTitle, ruleTrace.IdentificationTrace.Detail);
     }
 
     [Fact]
@@ -592,12 +634,12 @@ public sealed class ScoringActorTests : TestKit
         var result = ScoreWithTrace(Config(0.5f, rule0, rule1),
             Candidate(title: "Sendung vom 24.10.2024"));
 
-        var trace = result.ItemTraces[0];
-        Assert.True(trace.Matched);
-        Assert.Equal("airdate", trace.MatchedRuleId);
-        Assert.Equal(2, trace.RuleTraces.Length);
-        Assert.Equal(RuleOutcome.IdentificationFailed, trace.RuleTraces[0].Outcome);
-        Assert.Equal(RuleOutcome.Matched, trace.RuleTraces[1].Outcome);
+        var traceItem = Assert.Single(result.ItemTraces);
+        Assert.True(traceItem.Matched);
+        Assert.Equal("airdate", traceItem.MatchedRuleId);
+        Assert.Equal(2, traceItem.RuleTraces.Length);
+        Assert.Equal(RuleOutcome.IdentificationFailed, traceItem.RuleTraces[0].Outcome);
+        Assert.Equal(RuleOutcome.Matched, traceItem.RuleTraces[1].Outcome);
     }
 
 }

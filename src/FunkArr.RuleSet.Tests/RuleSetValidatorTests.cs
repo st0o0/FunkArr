@@ -40,12 +40,12 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_missing_topic_returns_error()
     {
-        var json = """
-            {
-              "media": { "name": "Test", "type": "show" },
-              "rules": []
-            }
-            """;
+        const string json = """
+                            {
+                              "media": { "name": "Test", "type": "show" },
+                              "rules": []
+                            }
+                            """;
 
         var errors = _validator.Validate(json);
 
@@ -56,12 +56,12 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_missing_media_returns_error()
     {
-        var json = """
-            {
-              "topic": "Test Show",
-              "rules": []
-            }
-            """;
+        const string json = """
+                            {
+                              "topic": "Test Show",
+                              "rules": []
+                            }
+                            """;
 
         var errors = _validator.Validate(json);
 
@@ -72,14 +72,14 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_confidence_as_string_returns_error()
     {
-        var json = """
-            {
-              "topic": "Test Show",
-              "media": { "name": "Test", "type": "show" },
-              "confidence": "high",
-              "rules": []
-            }
-            """;
+        const string json = """
+                            {
+                              "topic": "Test Show",
+                              "media": { "name": "Test", "type": "show" },
+                              "confidence": "high",
+                              "rules": []
+                            }
+                            """;
 
         var errors = _validator.Validate(json);
 
@@ -90,19 +90,19 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_invalid_strategy_returns_error()
     {
-        var json = """
-            {
-              "topic": "Test Show",
-              "media": { "name": "Test", "type": "show" },
-              "rules": [
-                {
-                  "id": "bad-rule",
-                  "priority": 0,
-                  "strategy": "nonExistentStrategy"
-                }
-              ]
-            }
-            """;
+        const string json = """
+                            {
+                              "topic": "Test Show",
+                              "media": { "name": "Test", "type": "show" },
+                              "rules": [
+                                {
+                                  "id": "bad-rule",
+                                  "priority": 0,
+                                  "strategy": "nonExistentStrategy"
+                                }
+                              ]
+                            }
+                            """;
 
         var errors = _validator.Validate(json);
 
@@ -113,22 +113,22 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_invalid_regex_in_title_rules_returns_error()
     {
-        var json = """
-            {
-              "topic": "Test Show",
-              "media": { "name": "Test", "type": "show" },
-              "rules": [
-                {
-                  "id": "title-rule",
-                  "priority": 0,
-                  "strategy": "itemTitleExact",
-                  "titleRules": [
-                    { "type": "regex", "field": "title", "pattern": "(unclosed" }
-                  ]
-                }
-              ]
-            }
-            """;
+        const string json = """
+                            {
+                              "topic": "Test Show",
+                              "media": { "name": "Test", "type": "show" },
+                              "rules": [
+                                {
+                                  "id": "title-rule",
+                                  "priority": 0,
+                                  "strategy": "itemTitleExact",
+                                  "titleRules": [
+                                    { "type": "regex", "field": "title", "pattern": "(unclosed" }
+                                  ]
+                                }
+                              ]
+                            }
+                            """;
 
         var errors = _validator.Validate(json);
 
@@ -139,21 +139,21 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_invalid_regex_in_season_regex_returns_error()
     {
-        var json = """
-            {
-              "topic": "Test Show",
-              "media": { "name": "Test", "type": "show" },
-              "rules": [
-                {
-                  "id": "season-rule",
-                  "priority": 0,
-                  "strategy": "seasonAndEpisodeNumber",
-                  "seasonRegex": "[invalid",
-                  "episodeRegex": "E(\\d+)"
-                }
-              ]
-            }
-            """;
+        const string json = """
+                            {
+                              "topic": "Test Show",
+                              "media": { "name": "Test", "type": "show" },
+                              "rules": [
+                                {
+                                  "id": "season-rule",
+                                  "priority": 0,
+                                  "strategy": "seasonAndEpisodeNumber",
+                                  "seasonRegex": "[invalid",
+                                  "episodeRegex": "E(\\d+)"
+                                }
+                              ]
+                            }
+                            """;
 
         var errors = _validator.Validate(json);
 
@@ -164,17 +164,17 @@ public sealed class RuleSetValidatorTests
     [Fact]
     public void Validate_multiple_errors_returned_at_once()
     {
-        var json = """
-            {
-              "confidence": "not-a-number",
-              "rules": [
-                {
-                  "id": "bad-rule",
-                  "strategy": "invalidStrategy"
-                }
-              ]
-            }
-            """;
+        const string json = """
+                            {
+                              "confidence": "not-a-number",
+                              "rules": [
+                                {
+                                  "id": "bad-rule",
+                                  "strategy": "invalidStrategy"
+                                }
+                              ]
+                            }
+                            """;
 
         var errors = _validator.Validate(json);
 
@@ -186,9 +186,9 @@ public sealed class RuleSetValidatorTests
     {
         var errors = _validator.Validate("not json at all");
 
-        Assert.Single(errors);
-        Assert.Equal("(root)", errors[0].Field);
-        Assert.Contains("Invalid JSON", errors[0].Message);
+        var item = Assert.Single(errors);
+        Assert.Equal("(root)", item.Field);
+        Assert.Contains("Invalid JSON", item.Message);
     }
 
     [Fact]

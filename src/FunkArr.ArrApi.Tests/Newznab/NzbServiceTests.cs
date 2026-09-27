@@ -6,8 +6,6 @@ namespace FunkArr.ArrApi.Tests.Newznab;
 
 public sealed class NzbServiceTests
 {
-    private readonly NzbService _service = new();
-
     [Fact]
     public void GetNzb_returns_success_for_valid_id()
     {

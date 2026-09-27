@@ -37,9 +37,9 @@ public sealed class WebVttFormatTests
 
         var cues = _format.Parse(vtt);
 
-        Assert.Single(cues);
-        Assert.Equal(TimeSpan.FromSeconds(90), cues[0].Start);
-        Assert.Equal(TimeSpan.FromSeconds(120), cues[0].End);
+        var cue = Assert.Single(cues);
+        Assert.Equal(TimeSpan.FromSeconds(90), cue.Start);
+        Assert.Equal(TimeSpan.FromSeconds(120), cue.End);
     }
 
     [Fact]
@@ -49,8 +49,8 @@ public sealed class WebVttFormatTests
 
         var cues = _format.Parse(vtt);
 
-        Assert.Single(cues);
-        Assert.Equal("Real text", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Real text", cue.Text);
     }
 
     [Fact]
@@ -60,8 +60,8 @@ public sealed class WebVttFormatTests
 
         var cues = _format.Parse(vtt);
 
-        Assert.Single(cues);
-        Assert.Equal("Styled", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Styled", cue.Text);
     }
 
     [Fact]
@@ -71,7 +71,8 @@ public sealed class WebVttFormatTests
 
         var cues = _format.Parse(vtt);
 
-        Assert.Equal("Bold and italic", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Bold and italic", cue.Text);
     }
 
     [Fact]
@@ -81,8 +82,8 @@ public sealed class WebVttFormatTests
 
         var cues = _format.Parse(vtt);
 
-        Assert.Single(cues);
-        Assert.Equal("Positioned", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Positioned", cue.Text);
     }
 
     [Fact]
@@ -92,6 +93,7 @@ public sealed class WebVttFormatTests
 
         var cues = _format.Parse(vtt);
 
-        Assert.Equal("Line one\nLine two", cues[0].Text);
+        var cue = Assert.Single(cues);
+        Assert.Equal("Line one\nLine two", cue.Text);
     }
 }

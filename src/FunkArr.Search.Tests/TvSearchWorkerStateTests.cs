@@ -45,6 +45,7 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal(2, state.Sources.Length);
         Assert.Equal("ARD", state.Sources[0].Channel);
         Assert.Equal("ZDF", state.Sources[1].Channel);
+
     }
 
     [Fact]
@@ -55,14 +56,14 @@ public sealed class TvSearchWorkerStateTests
 
         state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))], []));
 
-        Assert.Single(state.Items);
-        Assert.Equal(0.9, state.Items[0].Score);
-        Assert.True(state.Items[0].Matched);
-        Assert.True(state.Items[0].HasScoringMetadata);
-        Assert.Equal("1", state.Items[0].Identity.Season);
-        Assert.Equal("3", state.Items[0].Identity.Episode);
-        Assert.Equal(83214, state.Items[0].Identity.TvdbId);
-        Assert.Null(state.Items[0].Match);
+        var item = Assert.Single(state.Items);
+        Assert.Equal(0.9, item.Score);
+        Assert.True(item.Matched);
+        Assert.True(item.HasScoringMetadata);
+        Assert.Equal("1", item.Identity.Season);
+        Assert.Equal("3", item.Identity.Episode);
+        Assert.Equal(83214, item.Identity.TvdbId);
+        Assert.Null(item.Match);
     }
 
     [Fact]
@@ -76,11 +77,12 @@ public sealed class TvSearchWorkerStateTests
         state.Apply(new EnrichEpisodesCompleted(
             [new EnrichedEpisode(0, "2", "9", "Roomservice", 0.85f, MatchMethod.TitleMatch)]));
 
-        Assert.Equal("2", state.Items[0].Identity.Season);
-        Assert.Equal("9", state.Items[0].Identity.Episode);
-        Assert.NotNull(state.Items[0].Match);
-        Assert.Equal(0.85f, state.Items[0].Match!.Confidence);
-        Assert.Equal(MatchMethod.TitleMatch, state.Items[0].Match!.Method);
+        var item = Assert.Single(state.Items);
+        Assert.Equal("2", item.Identity.Season);
+        Assert.Equal("9", item.Identity.Episode);
+        Assert.NotNull(item.Match);
+        Assert.Equal(0.85f, item.Match.Confidence);
+        Assert.Equal(MatchMethod.TitleMatch, item.Match.Method);
     }
 
     [Fact]
@@ -97,6 +99,7 @@ public sealed class TvSearchWorkerStateTests
         state.Apply(new EnrichEpisodesCompleted(
             [new EnrichedEpisode(0, "1", "1", "Name", 0.9f, MatchMethod.TitleMatch)]));
 
+        Assert.Equal(2, state.Items.Length);
         Assert.NotNull(state.Items[0].Match);
         Assert.Null(state.Items[1].Match);
         Assert.Null(state.Items[1].Identity.Season);
@@ -106,7 +109,7 @@ public sealed class TvSearchWorkerStateTests
     public void TryGetRuleSetRequest_returns_true_when_sources_exist_and_no_ruleset()
     {
         var state = InitState();
-        state.Apply(new QueryMediathekCompleted([MakeMediathekItem("ARD", "Tatort")], 1));
+        state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
 
         var result = state.TryGetRuleSetRequest(out var request);
 
@@ -153,8 +156,8 @@ public sealed class TvSearchWorkerStateTests
         Assert.True(result);
         Assert.NotNull(request);
         Assert.Equal("tatort", request.RuleSetId);
-        Assert.Single(request.Candidates);
-        Assert.Equal("Ep1", request.Candidates[0].Title);
+        var candidate = Assert.Single(request.Candidates);
+        Assert.Equal("Ep1", candidate.Title);
     }
 
     [Fact]
@@ -220,9 +223,9 @@ public sealed class TvSearchWorkerStateTests
 
         Assert.True(result);
         Assert.NotNull(request);
-        Assert.Single(request!.Candidates);
-        Assert.Equal("1", request.Candidates[0].ExistingSeason);
-        Assert.Equal("3", request.Candidates[0].ExistingEpisode);
+        var candidate = Assert.Single(request.Candidates);
+        Assert.Equal("1", candidate.ExistingSeason);
+        Assert.Equal("3", candidate.ExistingEpisode);
     }
 
     [Fact]
@@ -267,8 +270,8 @@ public sealed class TvSearchWorkerStateTests
 
         var result = state.ToSearchCompleted();
 
-        Assert.Single(result.Items);
-        Assert.Equal(0.0, result.Items[0].Score);
+        var item = Assert.Single(result.Items);
+        Assert.Equal(0.0, item.Score);
     }
 
     [Fact]
@@ -328,7 +331,8 @@ public sealed class TvSearchWorkerStateTests
 
         Assert.True(result);
         Assert.NotNull(request);
-        Assert.Equal("Roomservice", request.Candidates[0].ConstructedTitle);
+        var candidate = Assert.Single(request.Candidates);
+        Assert.Equal("Roomservice", candidate.ConstructedTitle);
     }
 
     private static TvSearchWorkerState InitState(

@@ -24,7 +24,6 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<NewznabSearchService>();
-        services.AddSingleton<NzbService>();
         services.AddScoped<SabnzbdQueueService>();
         services.AddScoped<SabnzbdDownloadService>();
 

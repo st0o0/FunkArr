@@ -5,17 +5,15 @@ namespace FunkArr.RuleSet.Tests;
 public sealed class RuleSetMergerTests
 {
     [Fact]
-    public void Resolve_both_null_returns_null()
-    {
-        Assert.Null(RuleSetMerger.Resolve(null, null));
-    }
+    public void Resolve_both_null_returns_null() => Assert.Null(RuleSetMerger.Resolve(null, null));
 
     [Fact]
     public void Resolve_community_only_returns_community()
     {
         var community = new DiskRuleSet { Topic = "Community" };
         var result = RuleSetMerger.Resolve(community, null);
-        Assert.Equal("Community", result!.Topic);
+        Assert.NotNull(result);
+        Assert.Equal("Community", result.Topic);
     }
 
     [Fact]
@@ -23,7 +21,8 @@ public sealed class RuleSetMergerTests
     {
         var local = new DiskRuleSet { Topic = "Local" };
         var result = RuleSetMerger.Resolve(null, local);
-        Assert.Equal("Local", result!.Topic);
+        Assert.NotNull(result);
+        Assert.Equal("Local", result.Topic);
     }
 
     [Fact]
@@ -42,9 +41,11 @@ public sealed class RuleSetMergerTests
         };
 
         var result = RuleSetMerger.Resolve(community, local);
-        Assert.Equal("Local", result!.Topic);
-        Assert.Single(result.Rules!);
-        Assert.Equal("local-rule", result.Rules![0].Id);
+        Assert.NotNull(result);
+        Assert.Equal("Local", result.Topic);
+        Assert.NotNull(result.Rules);
+        var rule = Assert.Single(result.Rules);
+        Assert.Equal("local-rule", rule.Id);
     }
 
     [Fact]
@@ -66,7 +67,9 @@ public sealed class RuleSetMergerTests
         };
 
         var result = RuleSetMerger.Resolve(community, local);
-        Assert.Equal(3, result!.Rules!.Count);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Rules);
+        Assert.Equal(3, result.Rules.Count);
     }
 
     [Fact]
@@ -84,8 +87,10 @@ public sealed class RuleSetMergerTests
         };
 
         var result = RuleSetMerger.Resolve(community, local);
-        Assert.Single(result!.Rules!);
-        Assert.Equal("itemTitleIncludes", result.Rules![0].Strategy);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Rules);
+        var rule = Assert.Single(result.Rules);
+        Assert.Equal("itemTitleIncludes", rule.Strategy);
     }
 
     [Fact]
@@ -108,8 +113,10 @@ public sealed class RuleSetMergerTests
         };
 
         var result = RuleSetMerger.Resolve(community, local);
-        Assert.Single(result!.Rules!);
-        Assert.Equal("keep-rule", result.Rules![0].Id);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Rules);
+        var rule = Assert.Single(result.Rules);
+        Assert.Equal("keep-rule", rule.Id);
     }
 
     [Fact]
@@ -119,7 +126,9 @@ public sealed class RuleSetMergerTests
         var local = new DiskRuleSet { Topic = "Show", Aliases = ["Alias B"], Rules = [] };
 
         var result = RuleSetMerger.Resolve(community, local);
-        Assert.Equal(2, result!.Aliases!.Count);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Aliases);
+        Assert.Equal(2, result.Aliases.Count);
     }
 
     [Fact]
@@ -139,7 +148,9 @@ public sealed class RuleSetMergerTests
         };
 
         var result = RuleSetMerger.Resolve(community, local);
-        Assert.Equal(200, result!.Media!.TvdbId);
-        Assert.Equal("Comm", result.Media!.Name);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Media);
+        Assert.Equal(200, result.Media.TvdbId);
+        Assert.Equal("Comm", result.Media.Name);
     }
 }

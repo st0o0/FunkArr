@@ -43,7 +43,7 @@ public sealed class RuleSetStoreTests : IDisposable
         var (community, local) = _store.Load("test-show");
         Assert.NotNull(community);
         Assert.Null(local);
-        Assert.Equal("Test", community!.Topic);
+        Assert.Equal("Test", community.Topic);
     }
 
     [Fact]
@@ -55,8 +55,9 @@ public sealed class RuleSetStoreTests : IDisposable
 
         var merged = _store.LoadMerged("merged-show");
         Assert.NotNull(merged);
-        Assert.Equal("Test", merged!.Topic);
-        Assert.Equal(2, merged.Rules!.Count);
+        Assert.Equal("Test", merged.Topic);
+        Assert.NotNull(merged.Rules);
+        Assert.Equal(2, merged.Rules.Count);
     }
 
     [Fact]
@@ -86,10 +87,7 @@ public sealed class RuleSetStoreTests : IDisposable
     }
 
     [Fact]
-    public void DeleteLocal_returns_false_for_nonexistent()
-    {
-        Assert.False(_store.DeleteLocal("nonexistent"));
-    }
+    public void DeleteLocal_returns_false_for_nonexistent() => Assert.False(_store.DeleteLocal("nonexistent"));
 
     [Fact]
     public void Scan_discovers_community_and_local_files()
@@ -111,6 +109,13 @@ public sealed class RuleSetStoreTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_tempDir, true); } catch { }
+        try
+        {
+            Directory.Delete(_tempDir, true);
+        }
+        catch
+        {
+            // noop
+        }
     }
 }

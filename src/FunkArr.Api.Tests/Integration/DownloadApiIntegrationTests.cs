@@ -55,7 +55,8 @@ public sealed class DownloadApiIntegrationTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<OperationResult>();
-        Assert.True(result!.Success);
+        Assert.NotNull(result);
+        Assert.True(result.Success);
     }
 
     [Fact]
@@ -71,6 +72,7 @@ public sealed class DownloadApiIntegrationTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<OperationResult>();
-        Assert.True(result!.Success);
+        Assert.NotNull(result);
+        Assert.True(result.Success);
     }
 }

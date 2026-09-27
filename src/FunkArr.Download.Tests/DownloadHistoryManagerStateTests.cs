@@ -19,10 +19,10 @@ public sealed class DownloadHistoryManagerStateTests
         var state = DownloadHistoryManagerState.Empty
             .Apply(MakeRecorded(id));
 
-        Assert.Single(state.Records);
-        Assert.Equal(id, state.Records[0].DownloadId);
-        Assert.Equal("Test", state.Records[0].Completion.Title);
-        Assert.Equal(DownloadStatus.Completed, state.Records[0].Completion.Status);
+        var record = Assert.Single(state.Records);
+        Assert.Equal(id, record.DownloadId);
+        Assert.Equal("Test", record.Completion.Title);
+        Assert.Equal(DownloadStatus.Completed, record.Completion.Status);
     }
 
     [Fact]
@@ -91,10 +91,10 @@ public sealed class DownloadHistoryManagerStateTests
 
         var result = state.ToHistoryResult(new QueryHistory());
 
-        Assert.Single(result.Items);
-        Assert.Null(result.Items[0].Completion.RelativePath);
-        Assert.Equal("Timeout", result.Items[0].Completion.FailMessage);
-        Assert.Equal(9999999999L, result.Items[0].Completion.CompletedAt);
+        var item = Assert.Single(result.Items);
+        Assert.Null(item.Completion.RelativePath);
+        Assert.Equal("Timeout", item.Completion.FailMessage);
+        Assert.Equal(9999999999L, item.Completion.CompletedAt);
     }
 
     [Fact]

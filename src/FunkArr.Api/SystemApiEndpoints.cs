@@ -69,7 +69,7 @@ public static class SystemApiEndpoints
 
         group.MapGet("/version", (DataPaths dataPaths, IDataFiles dataFiles) =>
         {
-            var appVersion = FunkArr.Core.VersionInfo.Version;
+            var appVersion = VersionInfo.Version;
             var communityVersion = dataFiles.Exists(dataPaths.RuleSetVersion)
                 ? dataFiles.ReadText(dataPaths.RuleSetVersion).Trim()
                 : null;
@@ -87,10 +87,10 @@ public static class SystemApiEndpoints
         .WithSummary("Get storage status")
         .Produces<StorageStatusResponse>();
 
-        group.MapGet("/cache", async (IActorRegistry registry) =>
+        group.MapGet("/cache", async (IActorRegistry registry, CancellationToken ct) =>
         {
             var resolver = await registry.GetAsync<IEnrichmentManager>();
-            var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout);
+            var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout, ct);
             return Results.Ok(new CacheStatsResponse(
                 result.TvdbEntries,
                 result.TmdbEntries,

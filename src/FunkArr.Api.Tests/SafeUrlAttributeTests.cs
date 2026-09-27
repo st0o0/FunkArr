@@ -33,7 +33,9 @@ public sealed class SafeUrlAttributeTests
     {
         var result = Validate("https://nonexistent.invalid/api");
         Assert.NotEqual(ValidationResult.Success, result);
-        Assert.Contains("Cannot resolve", result!.ErrorMessage!);
+        Assert.NotNull(result);
+        Assert.NotNull(result.ErrorMessage);
+        Assert.Contains("Cannot resolve", result.ErrorMessage);
     }
 
     [Fact]
@@ -41,7 +43,9 @@ public sealed class SafeUrlAttributeTests
     {
         var result = Validate("ftp://example.com/file");
         Assert.NotEqual(ValidationResult.Success, result);
-        Assert.Contains("http or https", result!.ErrorMessage!);
+        Assert.NotNull(result);
+        Assert.NotNull(result.ErrorMessage);
+        Assert.Contains("http or https", result.ErrorMessage);
     }
 
     [Fact]
@@ -56,7 +60,9 @@ public sealed class SafeUrlAttributeTests
     {
         var result = Validate("http://127.0.0.1:8080/api");
         Assert.NotEqual(ValidationResult.Success, result);
-        Assert.Contains("private or loopback", result!.ErrorMessage!);
+        Assert.NotNull(result);
+        Assert.NotNull(result.ErrorMessage);
+        Assert.Contains("private or loopback", result.ErrorMessage);
     }
 
     [Fact]
