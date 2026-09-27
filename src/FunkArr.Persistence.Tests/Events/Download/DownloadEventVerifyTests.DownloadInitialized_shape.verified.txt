@@ -8,7 +8,5 @@
     "Duration": 5400,
     "Size": 1073741824,
     "Category": 0
-  },
-  "RouteName": "Direct",
-  "ProxyUrl": null
+  }
 }

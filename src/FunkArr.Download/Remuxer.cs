@@ -1,20 +1,29 @@
+using FunkArr.Core;
 using Microsoft.Extensions.Logging;
 
 namespace FunkArr.Download;
 
-internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner ffmpeg, ILogger<Remuxer> logger) : IRemuxer
+internal sealed class Remuxer(
+    IRouteResolver routeResolver,
+    ISubtitleDownloader subtitleDownloader,
+    IFfmpegProcess ffmpegProcess,
+    ILogger<Remuxer> logger) : IRemuxer
 {
     public async Task<FfmpegResult> RunAsync(
-        string videoUrl, string? subtitleUrl, string outputPath,
-        string routeName, string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct)
+        RemuxOptions options, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
+        var route = options.Channel is not null
+            ? routeResolver.Resolve(options.Channel)
+            : new ResolvedRoute("Direct", null);
+
         string? subtitlePath = null;
         string? subtitleLanguage = null;
         try
         {
-            if (subtitleUrl is not null)
+            if (options.SubtitleUrl is not null)
             {
-                var result = await subtitlePreparer.PrepareAsync(subtitleUrl, Path.GetDirectoryName(outputPath)!, routeName, ct);
+                var result = await subtitleDownloader.DownloadAsync(
+                    options.SubtitleUrl, Path.GetDirectoryName(options.OutputPath)!, route.Name, ct);
                 switch (result)
                 {
                     case SubtitleResult.Succeeded s:
@@ -22,12 +31,17 @@ internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner 
                         subtitleLanguage = s.Track.Language;
                         break;
                     case SubtitleResult.Failed f:
-                        logger.LogWarning("Subtitle failed for {Url}: {Reason} {Detail}", subtitleUrl, f.Reason, f.Detail);
+                        logger.LogWarning("Subtitle failed for {Url}: {Reason} {Detail}",
+                            options.SubtitleUrl, f.Reason, f.Detail);
                         break;
                 }
             }
 
-            return await ffmpeg.RunAsync(videoUrl, subtitlePath, outputPath, proxyUrl, subtitleLanguage, onProgress, ct);
+            var input = new FfmpegInput(
+                options.VideoUrl, subtitlePath, options.OutputPath,
+                route.ProxyUrl, subtitleLanguage, options.IsHls);
+
+            return await ffmpegProcess.ExecuteAsync(input, onProgress, ct);
         }
         finally
         {

@@ -25,9 +25,7 @@ public sealed class DownloadManagerRetryTests : TestKit
     {
         var options = new TestOptionsMonitor<DownloadOptions>(
             new DownloadOptions { ConcurrentDownloads = concurrentDownloads });
-        var routeResolver = new RouteResolver(
-            new TestOptionsMonitor<RoutingOptions>(new RoutingOptions()));
-        return Sys.ActorOf(Props.Create(() => new DownloadManager(options, routeResolver)));
+        return Sys.ActorOf(Props.Create(() => new DownloadManager(options)));
     }
 
     private Guid EnqueueAndComplete(IActorRef manager)

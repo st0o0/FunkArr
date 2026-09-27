@@ -3,24 +3,22 @@ using Microsoft.Extensions.Logging;
 
 namespace FunkArr.Download;
 
-internal sealed class SubtitlePreparer(IHttpClientFactory httpClientFactory, ILogger<SubtitlePreparer> logger) : ISubtitlePreparer
+internal sealed class SubtitleDownloader(IHttpClientFactory httpClientFactory, ILogger<SubtitleDownloader> logger) : ISubtitleDownloader
 {
     private static ISubtitleFormat[] CreateFormats() => [new TtmlFormat(), new WebVttFormat(), new SrtFormat()];
 
-    public async Task<SubtitleResult> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
+    public async Task<SubtitleResult> DownloadAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
-        string? detectedFormat = null;
 
         try
         {
-            var result = await PrepareInternalAsync(url, outputDirectory, routeName, ct);
+            var result = await DownloadAndConvertAsync(url, outputDirectory, routeName, ct);
             sw.Stop();
 
             switch (result)
             {
                 case SubtitleResult.Succeeded s:
-                    detectedFormat = s.Track.Format;
                     Telemetry.SubtitleTotal.Add(1,
                         new KeyValuePair<string, object?>("status", "succeeded"),
                         new KeyValuePair<string, object?>("format", s.Track.Format.ToLowerInvariant()));
@@ -58,7 +56,8 @@ internal sealed class SubtitlePreparer(IHttpClientFactory httpClientFactory, ILo
         }
     }
 
-    private async Task<SubtitleResult> PrepareInternalAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
+    private async Task<SubtitleResult> DownloadAndConvertAsync(
+        string url, string outputDirectory, string routeName, CancellationToken ct)
     {
         string content;
         try

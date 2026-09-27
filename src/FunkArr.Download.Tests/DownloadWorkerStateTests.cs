@@ -18,9 +18,6 @@ public sealed class DownloadWorkerStateTests
     private static DownloadInitialized MakeInitialized() =>
         new(_testId, _testMedia);
 
-    private static DownloadInitialized MakeInitializedWithRoute() =>
-        new(_testId, _testMedia, "ProxyRoute", "http://proxy:8080");
-
     [Fact]
     public void Empty_is_not_initialized()
     {
@@ -113,22 +110,6 @@ public sealed class DownloadWorkerStateTests
         Assert.Equal(0L, state.Progress.BytesDownloaded);
         Assert.Equal(0L, state.Progress.CurrentTimeUs);
         Assert.Equal(0.0, state.Progress.Speed);
-    }
-
-    [Fact]
-    public void Apply_Initialized_sets_route_info()
-    {
-        var state = DownloadWorkerState.Empty.Apply(MakeInitializedWithRoute());
-        Assert.Equal("ProxyRoute", state.RouteName);
-        Assert.Equal("http://proxy:8080", state.ProxyUrl);
-    }
-
-    [Fact]
-    public void Apply_Initialized_default_route()
-    {
-        var state = DownloadWorkerState.Empty.Apply(MakeInitialized());
-        Assert.Equal("Direct", state.RouteName);
-        Assert.Null(state.ProxyUrl);
     }
 
     [Fact]

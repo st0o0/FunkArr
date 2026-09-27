@@ -68,8 +68,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         }
 
         var evt = new DownloadInitialized(
-            cmd.DownloadId, cmd.Media.ToPersistence(),
-            cmd.RouteName, cmd.ProxyUrl);
+            cmd.DownloadId, cmd.Media.ToPersistence());
 
         Persist(evt, e => _state = _state.Apply(e));
     }
@@ -115,8 +114,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         Timers.Cancel(_retryTimerKey);
 
         var evt = new DownloadInitialized(
-            _downloadId, _state.Media!.ToPersistence(),
-            _state.RouteName, _state.ProxyUrl);
+            _downloadId, _state.Media!.ToPersistence());
 
         Persist(evt, e => _state = _state.Apply(e));
     }
@@ -263,8 +261,10 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     {
         _cts = new CancellationTokenSource();
         var self = Self;
-        _remuxer.RunAsync(_state.Media!.VideoUrl, _state.Media.SubtitleUrl, outputPath,
-            _state.RouteName, _state.ProxyUrl, self.Tell, _cts.Token)
+        var options = RemuxOptions.Create(_state.Media!.VideoUrl, outputPath)
+            .WithSubtitle(_state.Media.SubtitleUrl)
+            .WithChannel(_state.Media.Channel);
+        _remuxer.RunAsync(options, self.Tell, _cts.Token)
             .PipeTo(self, failure: ex => new FfmpegResult(false, -1, ex.Message, 0));
     }
 

@@ -13,13 +13,11 @@ public sealed record DownloadWorkerState(
     int Attempt,
     string? FailMessage,
     FailureKind? LastFailureKind,
-    string RouteName,
-    string? ProxyUrl,
     DownloadProgress Progress)
 {
     public static readonly DownloadWorkerState Empty = new(
         null, WorkerStatus.Initialized,
-        DownloadPhase.Initialized, 0, null, null, "Direct", null,
+        DownloadPhase.Initialized, 0, null, null,
         new DownloadProgress(0, 0, 0.0));
 
     public bool IsInitialized => Media is not null;
@@ -30,7 +28,6 @@ public static class DownloadWorkerStateExtensions
     public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadInitialized evt) =>
         new(evt.Media.ToDomain(), WorkerStatus.Initialized,
             DownloadPhase.Initialized, 0, null, null,
-            evt.RouteName, evt.ProxyUrl,
             new DownloadProgress(0, 0, 0.0));
 
     public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadStarted _) =>

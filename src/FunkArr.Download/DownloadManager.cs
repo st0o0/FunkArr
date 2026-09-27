@@ -20,15 +20,13 @@ public sealed class DownloadManager : ReceivePersistentActor
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
     private readonly IMaterializer _materializer = Context.Materializer();
-    private readonly IRouteResolver _routeResolver;
     private int _maxConcurrent;
     private DownloadManagerState _state = DownloadManagerState.Empty;
 
     public override string PersistenceId => "download-manager";
 
-    public DownloadManager(IOptionsMonitor<DownloadOptions> options, IRouteResolver routeResolver)
+    public DownloadManager(IOptionsMonitor<DownloadOptions> options)
     {
-        _routeResolver = routeResolver;
         _maxConcurrent = options.CurrentValue.ConcurrentDownloads;
 
         Command<AddDownload>(HandleAdd);
@@ -81,16 +79,13 @@ public sealed class DownloadManager : ReceivePersistentActor
     {
         var downloadId = Guid.NewGuid();
 
-        var route = _routeResolver.Resolve(cmd.Media.Channel);
-
-        _log.Info("Enqueuing download {DownloadId}: {Title} (route: {Route})", downloadId, cmd.Media.Title, route.Name);
+        _log.Info("Enqueuing download {DownloadId}: {Title} (channel: {Channel})", downloadId, cmd.Media.Title, cmd.Media.Channel);
         Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence(), cmd.Media.Category.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
             MaybeSnapshot();
 
-            _downloadRegion.Tell(new InitDownload(
-                downloadId, cmd.Media, route.Name, route.ProxyUrl));
+            _downloadRegion.Tell(new InitDownload(downloadId, cmd.Media));
 
             Telemetry.Enqueued.Add(1);
             Sender.Tell(new DownloadAdded(downloadId));

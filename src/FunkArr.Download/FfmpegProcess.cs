@@ -7,16 +7,17 @@ using FunkArr.Messages.Download;
 
 namespace FunkArr.Download;
 
-internal sealed class FfmpegRunner : IFfmpegRunner
+internal sealed class FfmpegProcess : IFfmpegProcess
 {
-    public async Task<FfmpegResult> RunAsync(
-        string videoUrl, string? subtitlePath, string outputPath,
-        string? proxyUrl, string? subtitleLanguage, Action<ProgressUpdate> onProgress, CancellationToken ct)
+    private const string _userAgent = "Mozilla/5.0";
+
+    public async Task<FfmpegResult> ExecuteAsync(
+        FfmpegInput input, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var progressBlock = new Dictionary<string, string>();
 
-        var processor = BuildArguments(videoUrl, subtitlePath, outputPath, proxyUrl, subtitleLanguage)
+        var processor = BuildArguments(input)
             .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
             .CancellableThrough(ct);
 
@@ -43,45 +44,47 @@ internal sealed class FfmpegRunner : IFfmpegRunner
         }
     }
 
-    private const string _userAgent = "Mozilla/5.0";
-
-    internal static FFMpegArgumentProcessor BuildArguments(
-        string videoUrl, string? subtitlePath, string outputPath, string? proxyUrl = null,
-        string? subtitleLanguage = null)
+    internal static FFMpegArgumentProcessor BuildArguments(FfmpegInput input)
     {
         Action<FFMpegArgumentOptions> inputOptions = opts =>
         {
             opts.WithCustomArgument($"-user_agent \"{_userAgent}\"");
-            if (proxyUrl is not null)
+            if (input.ProxyUrl is not null)
             {
-                opts.WithCustomArgument($"-http_proxy {proxyUrl}");
+                opts.WithCustomArgument($"-http_proxy {input.ProxyUrl}");
             }
         };
 
-        var arguments = subtitlePath is not null
-            ? FFMpegArguments
-                .FromUrlInput(new Uri(videoUrl), inputOptions)
-                .AddFileInput(subtitlePath)
-                .OutputToFile(outputPath, overwrite: true, options =>
-                {
-                    options
-                        .CopyChannel(Channel.Video)
-                        .CopyChannel(Channel.Audio)
-                        .WithCustomArgument("-c:s srt")
-                        .WithCustomArgument("-disposition:s:0 0")
-                        .WithCustomArgument($"-metadata:s:s:0 language={subtitleLanguage ?? "deu"}")
-                        .WithCustomArgument("-progress pipe:1");
-                })
-            : FFMpegArguments
-                .FromUrlInput(new Uri(videoUrl), inputOptions)
-                .OutputToFile(outputPath, overwrite: true, options =>
-                {
-                    options
-                        .WithCopyCodec()
-                        .WithCustomArgument("-progress pipe:1");
-                });
+        var arguments = FFMpegArguments.FromUrlInput(new Uri(input.VideoUrl), inputOptions);
 
-        return arguments;
+        if (input.SubtitlePath is not null)
+        {
+            arguments = arguments.AddFileInput(input.SubtitlePath);
+        }
+
+        return arguments.OutputToFile(input.OutputPath, overwrite: true, outputOptions =>
+        {
+            outputOptions
+                .SelectStream(0, 0, Channel.Video)
+                .SelectStream(0, 0, Channel.Audio)
+                .CopyChannel(Channel.Video)
+                .CopyChannel(Channel.Audio);
+
+            if (input.IsHls)
+            {
+                outputOptions.WithCustomArgument("-bsf:a aac_adtstoasc=no_validation=1");
+            }
+
+            if (input.SubtitlePath is not null)
+            {
+                outputOptions
+                    .WithCustomArgument("-c:s srt")
+                    .WithCustomArgument("-disposition:s:0 0")
+                    .WithCustomArgument($"-metadata:s:s:0 language={input.SubtitleLanguage ?? "deu"}");
+            }
+
+            outputOptions.WithCustomArgument("-progress pipe:1");
+        });
     }
 
     internal static void ParseProgressLine(
@@ -118,7 +121,7 @@ internal sealed class FfmpegRunner : IFfmpegRunner
             ? result
             : 0;
 
-    private static double ParseSpeed(string? value)
+    internal static double ParseSpeed(string? value)
     {
         if (value is null or "N/A")
         {

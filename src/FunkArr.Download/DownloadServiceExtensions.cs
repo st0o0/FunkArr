@@ -30,9 +30,9 @@ public static class DownloadServiceExtensions
             });
         }
 
-        services.AddTransient<ISubtitlePreparer, SubtitlePreparer>();
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IFfmpegRunner, FfmpegRunner>();
+        services.AddTransient<ISubtitleDownloader, SubtitleDownloader>();
+        services.AddSingleton<IFfmpegProcess, FfmpegProcess>();
         services.AddTransient<IRemuxer, Remuxer>();
         return services;
     }
