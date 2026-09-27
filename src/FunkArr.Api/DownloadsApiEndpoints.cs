@@ -28,7 +28,7 @@ public static class DownloadsApiEndpoints
 
         group.MapGet("/queue", async (IActorRegistry registry, CancellationToken ct) =>
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var response = await manager.Ask<QueueResponse>(new QueryQueue(), _askTimeout, ct);
             return response switch
             {
@@ -38,7 +38,9 @@ public static class DownloadsApiEndpoints
             };
         })
         .WithSummary("Get download queue")
+        .WithDescription("Returns all queued and active downloads with progress, speed, and priority information.")
         .Produces<ApiModels.DownloadQueueResponse>()
+        .ProducesProblem(502)
         .ProducesProblem(504);
 
         group.MapGet("/queue/stream", async (HttpContext ctx, IActorRegistry registry) =>
@@ -90,65 +92,72 @@ public static class DownloadsApiEndpoints
 
         group.MapGet("/history", async ([AsParameters] ApiModels.DownloadHistoryRequest req, IActorRegistry registry, CancellationToken ct) =>
         {
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var result = await history.Ask<HistoryResult>(
                 new QueryHistory(req.Start ?? 0, req.Limit ?? 25, ParseMediaType(req.Category)), _askTimeout, ct);
             return Results.Ok(result.ToApi());
         })
         .WithSummary("Get download history")
+        .WithDescription("Returns completed and failed downloads with pagination. Filter by category using the category parameter.")
         .Produces<ApiModels.DownloadHistoryResponse>()
         .ProducesProblem(504);
 
         group.MapGet("/history/stats", async (IActorRegistry registry, CancellationToken ct) =>
         {
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var result = await history.Ask<HistoryStatsResult>(new QueryHistoryStats(), _askTimeout, ct);
             return Results.Ok(new ApiModels.HistoryStatsResponse(
                 result.TotalCompleted, result.TotalFailed, result.TotalBytes,
                 result.AverageDownloadTimeSeconds, result.SuccessRate));
         })
         .WithSummary("Get download statistics")
+        .WithDescription("Returns aggregate statistics over all download history: completed/failed counts, total bytes, average download time, and success rate.")
         .Produces<ApiModels.HistoryStatsResponse>()
         .ProducesProblem(504);
 
         group.MapGet("/history/categories", async (IActorRegistry registry, CancellationToken ct) =>
         {
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var result = await history.Ask<HistoryCategoriesResult>(new QueryHistoryCategories(), _askTimeout, ct);
             return Results.Ok(result.Categories);
         })
         .WithSummary("List download categories")
+        .WithDescription("Returns the distinct categories present in download history, used for filtering.")
         .Produces<string[]>()
         .ProducesProblem(504);
 
         group.MapDelete("/queue/{id:guid}", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(id), _askTimeout, ct);
             return result.Success
                 ? Results.Ok(new ApiModels.OperationResult(true))
                 : Results.NotFound(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Cancel download")
+        .WithDescription("Removes a download from the queue by its ID. Returns 404 if not found.")
         .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(404)
         .ProducesProblem(504);
 
         group.MapDelete("/history/{id:guid}", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(id), _askTimeout, ct);
             return result.Success
                 ? Results.Ok(new ApiModels.OperationResult(true))
                 : Results.NotFound(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Delete history entry")
+        .WithDescription("Removes a completed or failed download from history by its ID. Returns 404 if not found.")
         .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(404)
         .ProducesProblem(504);
 
         group.MapPost("/{id:guid}/retry", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
-            var history = await registry.GetAsync<IDownloadHistoryManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             history.Tell(new RemoveHistoryEntry(id));
             var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(id), _askTimeout, ct);
             return result.Success
@@ -156,45 +165,51 @@ public static class DownloadsApiEndpoints
                 : Results.BadRequest(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Retry failed download")
+        .WithDescription("Re-enqueues a failed download for another attempt. Returns 400 if the download is not in a failed state.")
         .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(400)
         .ProducesProblem(504);
 
         group.MapPost("/pause", async (IActorRegistry registry, CancellationToken ct) =>
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), _askTimeout, ct);
             return Results.Ok(new ApiModels.OperationResult(result.Success));
         })
         .WithSummary("Pause download pipeline")
+        .WithDescription("Pauses all active and queued downloads. New downloads will be queued but not started.")
         .Produces<ApiModels.OperationResult>()
         .ProducesProblem(504);
 
         group.MapPost("/resume", async (IActorRegistry registry, CancellationToken ct) =>
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), _askTimeout, ct);
             return Results.Ok(new ApiModels.OperationResult(result.Success));
         })
         .WithSummary("Resume download pipeline")
+        .WithDescription("Resumes the download pipeline after a pause, starting queued downloads.")
         .Produces<ApiModels.OperationResult>()
         .ProducesProblem(504);
 
         group.MapPost("/queue/{id:guid}/force-start", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(id), _askTimeout, ct);
             return result.Success
                 ? Results.Ok(new ApiModels.OperationResult(true))
                 : Results.BadRequest(new ApiModels.OperationResult(false, result.Error));
         })
         .WithSummary("Force-start a queued download")
+        .WithDescription("Immediately starts a queued download, bypassing the concurrency limit. Returns 400 if the download is not queued.")
         .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(400)
         .ProducesProblem(504);
 
         group.MapPost("/queue/{id:guid}/move", async (Guid id, ApiModels.MoveRequest body, IActorRegistry registry, CancellationToken ct) =>
         {
             DownloadPriority? priority = null;
-            if (body.Priority is not null && !Enum.TryParse(body.Priority, true, out DownloadPriority parsed))
+            if (body.Priority is not null && !Enum.TryParse(body.Priority, true, out DownloadPriority _))
             {
                 return Results.BadRequest(new ApiModels.OperationResult(false, "Invalid priority. Use High, Normal, or Low."));
             }
@@ -203,7 +218,7 @@ public static class DownloadsApiEndpoints
                 priority = Enum.Parse<DownloadPriority>(body.Priority, true);
             }
 
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<MoveDownloadResponse>(new MoveDownload(id, body.Position, priority), _askTimeout, ct);
             return result switch
             {
@@ -213,7 +228,10 @@ public static class DownloadsApiEndpoints
             };
         })
         .WithSummary("Move download to position")
+        .WithDescription("Moves a download to a new position in the queue. Optionally changes its priority bucket.")
         .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(400)
+        .ProducesProblem(404)
         .ProducesProblem(504);
 
         group.MapPost("/queue/{id:guid}/priority", async (Guid id, ApiModels.PriorityRequest body, IActorRegistry registry, CancellationToken ct) =>
@@ -223,7 +241,7 @@ public static class DownloadsApiEndpoints
                 return Results.BadRequest(new ApiModels.OperationResult(false, "Invalid priority. Use High, Normal, or Low."));
             }
 
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(id, priority), _askTimeout, ct);
             return result switch
             {
@@ -233,12 +251,15 @@ public static class DownloadsApiEndpoints
             };
         })
         .WithSummary("Set download priority")
+        .WithDescription("Changes the priority of a queued download to High, Normal, or Low.")
         .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(400)
+        .ProducesProblem(404)
         .ProducesProblem(504);
 
         group.MapPost("/queue/swap", async (ApiModels.SwapRequest body, IActorRegistry registry, CancellationToken ct) =>
         {
-            var manager = await registry.GetAsync<IDownloadManager>();
+            var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(body.Id1, body.Id2), _askTimeout, ct);
             return result switch
             {
@@ -248,7 +269,9 @@ public static class DownloadsApiEndpoints
             };
         })
         .WithSummary("Swap two downloads")
+        .WithDescription("Swaps the queue positions of two downloads.")
         .Produces<ApiModels.OperationResult>()
+        .ProducesProblem(400)
         .ProducesProblem(504);
 
         group.MapGet("/settings", (IOptionsMonitor<DownloadOptions> options) =>
@@ -262,6 +285,7 @@ public static class DownloadsApiEndpoints
                 opts.ConcurrentDownloads, schedule));
         })
         .WithSummary("Get download settings")
+        .WithDescription("Returns current download configuration including concurrency limit and schedule time slots.")
         .Produces<ApiModels.DownloadSettingsResponse>();
 
         return app;
