@@ -5,11 +5,15 @@
 SABnzbd-compatible download client API exposing version, config, full status, queue (with delete subcommand), history, addfile, retry, pagination, and delete endpoints for integration with Sonarr and Radarr.
 ## Requirements
 ### Requirement: Version endpoint
-The system SHALL respond to `GET /download/api?mode=version` with a JSON object containing a SABnzbd version string. The version string SHALL be defined as a named constant, not an inline literal.
+The version endpoint SHALL return a typed `SabnzbdVersionResponse` record serialized as `{"version":"4.3.3"}`. The version string SHALL be defined as a named constant, not an inline literal.
 
-#### Scenario: Version response
-- **WHEN** `?mode=version` is requested
-- **THEN** the response SHALL be JSON `{"version":"4.3.3"}`
+#### Scenario: Valid API key returns version
+- **WHEN** a GET request with `mode=version` and a valid API key is received
+- **THEN** the response SHALL be `{"version":"4.3.3"}` produced from `new SabnzbdVersionResponse(SabnzbdConstants.Version)`, not an anonymous type
+
+#### Scenario: No API key returns unauthorized
+- **WHEN** a GET request with `mode=version` and no API key is received
+- **THEN** the response SHALL be 401 Unauthorized
 
 #### Scenario: Version string is a constant
 - **WHEN** the SABnzbd version endpoint code is inspected
@@ -212,15 +216,15 @@ The system SHALL accept the `output` query parameter on all download API endpoin
 - **THEN** the response SHALL be JSON `{"version":"4.3.3"}`
 
 ### Requirement: Unknown mode
-The system SHALL return HTTP 400 for unrecognized `mode` parameter values, including when `mode=queue` or `mode=history` receives an unrecognized `name` subcommand.
+The unknown mode handler SHALL return a typed `SabnzbdErrorResponse` record. The system SHALL return HTTP 400 for unrecognized `mode` parameter values, including when `mode=queue` or `mode=history` receives an unrecognized `name` subcommand.
 
-#### Scenario: Unknown mode
-- **WHEN** `?mode=unknown` is requested
-- **THEN** the response SHALL be JSON `{"status":false,"error":"Invalid mode"}` with HTTP 400
+#### Scenario: Invalid mode returns error
+- **WHEN** a GET request with an unrecognized mode is received
+- **THEN** the response SHALL be `{"status":false,"error":"Invalid mode"}` produced from `new SabnzbdErrorResponse(false, "Invalid mode")`, not an anonymous type
 
-#### Scenario: Unknown queue subcommand
-- **WHEN** `?mode=queue&name=unknown` is requested
-- **THEN** the response SHALL be JSON `{"status":false,"error":"Invalid queue command"}` with HTTP 400
+#### Scenario: Invalid queue command returns error
+- **WHEN** a GET request with `mode=queue` and an unrecognized `name` parameter is received
+- **THEN** the response SHALL be `{"status":false,"error":"Invalid queue command"}` produced from a typed record
 
 ### Requirement: Download GET request parameters
 The system SHALL bind the following query parameters on GET requests: `mode` (string), `name` (string), `value` (string), `start` (int), `limit` (int), `output` (string), `del_files` (int), `category` (string), `archive` (int).

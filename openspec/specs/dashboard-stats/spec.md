@@ -39,23 +39,31 @@ The Overview page SHALL display active/queued counts and total speed as a single
 - **THEN** the status line SHALL display "No active downloads"
 
 ### Requirement: Overview recent activity feed
-The Overview page SHALL display a recent activity feed showing the last 10 completed or failed downloads. The feed SHALL be fetched on mount via `GET /api/downloads/history?start=0&limit=10`. Each entry SHALL show a status indicator (green check for completed, red cross for failed), the download title, and a relative timestamp.
+The home page overview SHALL display the most recent downloads fetched via `GET /api/downloads/history?start=0&limit=10`. The "Recent Downloads" stats card and "View All" link SHALL navigate to the Activity page with the history tab active.
 
 #### Scenario: Feed with recent downloads
-- **WHEN** history contains completed and failed downloads
-- **THEN** the feed SHALL list up to 10 entries with status icon, title, and relative time (e.g., "2 hours ago")
+- **WHEN** the home page loads and there are recent downloads
+- **THEN** the feed SHALL display each item with status indicator, title, size, and relative date
 
 #### Scenario: Feed with failure details
-- **WHEN** a feed entry has status "Failed"
-- **THEN** it SHALL display with a red cross icon and the fail message as a tooltip
+- **WHEN** a download in the feed has a failure message
+- **THEN** the feed SHALL show a collapsible failure summary
 
 #### Scenario: Empty feed
-- **WHEN** no download history exists
-- **THEN** the feed section SHALL display "No recent activity"
+- **WHEN** the home page loads and there are no recent downloads
+- **THEN** the feed SHALL show an empty state with icon and hint text
 
 #### Scenario: Feed refresh on visibility
-- **WHEN** the browser tab regains focus (visibilitychange event)
-- **THEN** the feed SHALL refetch to show updated data
+- **WHEN** the browser tab becomes visible again
+- **THEN** the feed SHALL re-fetch recent downloads
+
+#### Scenario: Stats card navigates to history tab
+- **WHEN** the user clicks the "Recent Downloads" stats card on the home page
+- **THEN** the browser SHALL navigate to `/activity?tab=history` and the Activity page SHALL open with the history tab active
+
+#### Scenario: View All navigates to history tab
+- **WHEN** the user clicks "View All" in the recent activity section
+- **THEN** the browser SHALL navigate to `/activity?tab=history` and the Activity page SHALL open with the history tab active
 
 ### Requirement: Overview health status line
 The Overview page SHALL display a compact health status line summarizing system health. The line SHALL show a single status indicator (green dot for all healthy, amber dot for warnings, red dot for failures) with a short text summary. It SHALL link to the Setup page.

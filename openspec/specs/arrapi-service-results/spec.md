@@ -43,7 +43,15 @@ Defines domain result types for ArrApi services, ensuring services return typed 
 - **THEN** it SHALL return `NzbGetResult.Error` with `NewznabError.IncorrectParameter`
 
 ### Requirement: SABnzbd services return domain results
-`SabnzbdDownloadService` and `SabnzbdQueueService` SHALL wrap all `Ask<>` calls in try/catch blocks. `TimeoutException` SHALL be caught and translated to `SabnzbdResult.Error("Request timed out", 504)`. Other exceptions SHALL be caught and translated to `SabnzbdResult.Error` with an appropriate message and status code. No `Ask<>` call SHALL propagate exceptions to the controller.
+SABnzbd queue and download services SHALL return `SabnzbdResult` with typed response data. `SabnzbdResult.Ok` SHALL wrap named record types instead of anonymous types. Services SHALL use `SabnzbdVersionResponse(string Version)` for version responses and `SabnzbdErrorResponse(bool Status, string Error)` for error responses. Services SHALL wrap all `Ask<>` calls in try/catch blocks. `TimeoutException` SHALL be caught and translated to `SabnzbdResult.Error("Request timed out", 504)`. Other exceptions SHALL be caught and translated to `SabnzbdResult.Error` with an appropriate message and status code. No `Ask<>` call SHALL propagate exceptions to the controller.
+
+#### Scenario: Version response is typed
+- **WHEN** the version mode is requested
+- **THEN** the service SHALL return `SabnzbdResult.Ok(new SabnzbdVersionResponse(SabnzbdConstants.Version))`
+
+#### Scenario: Error response is typed
+- **WHEN** an invalid mode or missing parameter is detected
+- **THEN** the controller SHALL return `SabnzbdResult.Error(message)` or use `new SabnzbdErrorResponse(false, message)` instead of `new { status = false, error = message }`
 
 #### Scenario: Actor timeout in download service
 - **WHEN** `SabnzbdDownloadService` calls `Ask<>` and the actor does not respond within the timeout
@@ -58,9 +66,21 @@ Defines domain result types for ArrApi services, ensuring services return typed 
 - **WHEN** an `Ask<>` call throws a non-timeout exception
 - **THEN** the service logs the exception and returns `SabnzbdResult.Error` with a generic message
 
-#### Scenario: GetQueue returns Ok with queue data
-- **WHEN** `SabnzbdQueueService.GetQueue()` succeeds
-- **THEN** it SHALL return `SabnzbdResult.Ok` containing the queue response data
+#### Scenario: Queue and history responses are typed
+- **WHEN** queue or history mode is requested
+- **THEN** the service SHALL return `SabnzbdResult.Ok` wrapping `QueueResponse` or `HistoryResponse`
+
+#### Scenario: FullStatus response is typed
+- **WHEN** fullstatus mode is requested
+- **THEN** the service SHALL return `SabnzbdResult.Ok` wrapping `FullStatusResponse`
+
+#### Scenario: Queue config is typed
+- **WHEN** get_config mode is requested
+- **THEN** the service SHALL return `SabnzbdResult.Ok` wrapping a typed config record
+
+#### Scenario: Pause and resume responses are typed
+- **WHEN** pause or resume mode is requested
+- **THEN** the service SHALL return `SabnzbdResult.Ok` wrapping a typed status response
 
 #### Scenario: GetQueue actor failure returns Error
 - **WHEN** the actor does not return a `QueueResult`
@@ -68,7 +88,7 @@ Defines domain result types for ArrApi services, ensuring services return typed 
 
 #### Scenario: AddFile returns Ok with nzo_ids
 - **WHEN** `SabnzbdDownloadService.AddFile()` succeeds
-- **THEN** it SHALL return `SabnzbdResult.Ok` containing `{ status = true, nzo_ids = [...] }`
+- **THEN** it SHALL return `SabnzbdResult.Ok` containing a response with `nzo_ids`
 
 #### Scenario: AddFile with missing file returns Error
 - **WHEN** `SabnzbdDownloadService.AddFile()` is called with null file
@@ -106,20 +126,20 @@ Service classes in `FunkArr.ArrApi` SHALL NOT reference types from `Microsoft.As
 - **THEN** it SHALL NOT contain `using Microsoft.AspNetCore.Mvc`
 
 ### Requirement: Controllers own HTTP mapping
-`NewznabController` and `SabnzbdController` SHALL pattern-match on service result types and map them to appropriate `IActionResult` responses using `ControllerBase` helper methods where applicable.
+Controllers SHALL map `SabnzbdResult` variants to HTTP responses. `SabnzbdResult.Ok` SHALL map to `Ok(result.Data)`. `SabnzbdResult.Error` SHALL map to an `ObjectResult` with a `SabnzbdErrorResponse` record, not an anonymous type. `NewznabController` and `SabnzbdController` SHALL pattern-match on service result types and map them to appropriate `IActionResult` responses using `ControllerBase` helper methods where applicable.
 
-#### Scenario: Newznab search Ok mapped to XML result
-- **WHEN** `NewznabSearchService` returns `SearchServiceResult.Ok`
-- **THEN** the controller SHALL return `NewznabXmlResult.From(result.Rss)`
+#### Scenario: SABnzbd Ok maps to ObjectResult
+- **WHEN** a service returns `SabnzbdResult.Ok(data)` where data is a named record
+- **THEN** the controller SHALL return `Ok(data)`
 
-#### Scenario: Newznab search Failed mapped to XML error
-- **WHEN** `NewznabSearchService` returns `SearchServiceResult.Failed`
-- **THEN** the controller SHALL return `NewznabXmlResult.Error(...)`
+#### Scenario: SABnzbd Error maps to typed error
+- **WHEN** a service returns `SabnzbdResult.Error`
+- **THEN** the controller SHALL return an `ObjectResult` wrapping `new SabnzbdErrorResponse(false, error.Message)` with the appropriate status code
 
-#### Scenario: SABnzbd Ok mapped to Ok helper
-- **WHEN** a SABnzbd service returns `SabnzbdResult.Ok`
-- **THEN** the controller SHALL return `Ok(result.Data)`
+#### Scenario: Newznab success maps to XML
+- **WHEN** a search returns `SearchServiceResult.Success`
+- **THEN** the controller SHALL return an XML result
 
-#### Scenario: SABnzbd Error mapped to status code
-- **WHEN** a SABnzbd service returns `SabnzbdResult.Error`
-- **THEN** the controller SHALL return an `ObjectResult` with the error message and the specified status code
+#### Scenario: Newznab error maps to XML error
+- **WHEN** a search returns `SearchServiceResult.Failed`
+- **THEN** the controller SHALL return an XML error result
