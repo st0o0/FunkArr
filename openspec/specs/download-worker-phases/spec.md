@@ -13,10 +13,6 @@ The DownloadWorkerState SHALL contain a `Phase` field of type `DownloadPhase` th
 - **WHEN** a download is initialized via InitDownload
 - **THEN** the phase SHALL be `DownloadPhase.Initialized`
 
-#### Scenario: Phase during subtitle download
-- **WHEN** FFmpeg begins and progress indicates subtitle preparation
-- **THEN** the phase SHALL be `DownloadPhase.SubtitleDownload`
-
 #### Scenario: Phase during video download
 - **WHEN** FFmpeg progress shows bytes increasing but out_time_us is 0
 - **THEN** the phase SHALL be `DownloadPhase.VideoDownload`
@@ -42,7 +38,8 @@ The `DownloadPhase` enum in `FunkArr.Messages.Download` SHALL be extended with a
 
 #### Scenario: Enum values
 - **WHEN** the DownloadPhase enum is inspected
-- **THEN** it SHALL contain `Initialized` (0), `SubtitleDownload` (1), `VideoDownload` (2), `Remuxing` (3), `Moving` (4), `Completed` (5), `Failed` (6)
+- **THEN** it SHALL contain `Initialized` (0), `VideoDownload` (1), `Remuxing` (2), `Moving` (3), `Completed` (4), `Failed` (5)
+- **AND** `SubtitleDownload` SHALL NOT exist
 
 ### Requirement: Phase transitions persisted via DownloadPhaseChanged
 The DownloadWorker SHALL persist a `DownloadPhaseChanged` event on phase transitions except for transient in-flight phase changes derived from progress data.
@@ -68,7 +65,7 @@ The `WorkerStatusResult` response SHALL include the current `DownloadPhase` so c
 - **THEN** the `WorkerStatusResult` SHALL include the current `Phase` value
 
 ### Requirement: Phase recovery from persistence
-The DownloadWorker SHALL recover phase from persisted events. If the recovered phase is a transient phase (SubtitleDownload, VideoDownload, Remuxing, Moving), the Worker SHALL reset to Initialized.
+The DownloadWorker SHALL recover phase from persisted events. If the recovered phase is a transient phase (VideoDownload, Remuxing, Moving), the Worker SHALL reset to Initialized.
 
 #### Scenario: Recovery from VideoDownload phase
 - **WHEN** the Worker recovers with phase VideoDownload
