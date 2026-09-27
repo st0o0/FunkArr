@@ -96,7 +96,7 @@ public sealed class MovieSearchWorkerStateTests
         Assert.True(result);
         Assert.NotNull(request);
         Assert.Null(request.TopicOrAlias);
-        Assert.Equal("tt123", request.ImdbId);
+        Assert.Equal("tt123", request.Ids?.ImdbId);
     }
 
     [Fact]

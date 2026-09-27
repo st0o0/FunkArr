@@ -1,4 +1,5 @@
 using FunkArr.Persistence.Events.Download;
+using FunkArr.Persistence.Events.Shared;
 using Newtonsoft.Json;
 
 namespace FunkArr.Persistence.Tests.Events.Download;
@@ -78,10 +79,11 @@ public sealed class DownloadEventVerifyTests
     [Fact]
     public Task DownloadInitialized_shape()
     {
-        var evt = new DownloadInitialized(
-            _testId, "Tatort: Der letzte Schrei", "https://example.com/video.mp4",
+        var media = new PersistedDownloadMedia(
+            "Tatort: Der letzte Schrei", "https://example.com/video.mp4",
             "https://example.com/sub.vtt", "ARD", 5400, 1073741824,
             PersistedMediaType.Show);
+        var evt = new DownloadInitialized(_testId, media);
         var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
         return Verify(json);
     }
@@ -89,20 +91,21 @@ public sealed class DownloadEventVerifyTests
     [Fact]
     public void DownloadInitialized_roundtrip()
     {
-        var original = new DownloadInitialized(
-            _testId, "Tatort: Der letzte Schrei", "https://example.com/video.mp4",
+        var media = new PersistedDownloadMedia(
+            "Tatort: Der letzte Schrei", "https://example.com/video.mp4",
             "https://example.com/sub.vtt", "ARD", 5400, 1073741824,
             PersistedMediaType.Show);
+        var original = new DownloadInitialized(_testId, media);
         var json = JsonConvert.SerializeObject(original);
         var result = JsonConvert.DeserializeObject<DownloadInitialized>(json)!;
         Assert.Equal(original.DownloadId, result.DownloadId);
-        Assert.Equal(original.Title, result.Title);
-        Assert.Equal(original.VideoUrl, result.VideoUrl);
-        Assert.Equal(original.SubtitleUrl, result.SubtitleUrl);
-        Assert.Equal(original.Channel, result.Channel);
-        Assert.Equal(original.Duration, result.Duration);
-        Assert.Equal(original.Size, result.Size);
-        Assert.Equal(original.Category, result.Category);
+        Assert.Equal(original.Media.Title, result.Media.Title);
+        Assert.Equal(original.Media.VideoUrl, result.Media.VideoUrl);
+        Assert.Equal(original.Media.SubtitleUrl, result.Media.SubtitleUrl);
+        Assert.Equal(original.Media.Channel, result.Media.Channel);
+        Assert.Equal(original.Media.Duration, result.Media.Duration);
+        Assert.Equal(original.Media.Size, result.Media.Size);
+        Assert.Equal(original.Media.Category, result.Media.Category);
     }
 
     [Fact]
@@ -145,9 +148,10 @@ public sealed class DownloadEventVerifyTests
     [Fact]
     public Task DownloadHistoryRecorded_shape()
     {
-        var evt = new DownloadHistoryRecorded(
-            _testId, "Tatort: Der letzte Schrei", PersistedMediaType.Show,
+        var completion = new PersistedDownloadCompletion(
+            "Tatort: Der letzte Schrei", PersistedMediaType.Show,
             1073741824, PersistedDownloadStatus.Completed, "/downloads/tatort.mkv", null, 120, 1700000000);
+        var evt = new DownloadHistoryRecorded(_testId, completion);
         var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
         return Verify(json);
     }
@@ -155,20 +159,21 @@ public sealed class DownloadEventVerifyTests
     [Fact]
     public void DownloadHistoryRecorded_roundtrip()
     {
-        var original = new DownloadHistoryRecorded(
-            _testId, "Tatort: Der letzte Schrei", PersistedMediaType.Show,
+        var completion = new PersistedDownloadCompletion(
+            "Tatort: Der letzte Schrei", PersistedMediaType.Show,
             1073741824, PersistedDownloadStatus.Completed, "/downloads/tatort.mkv", null, 120, 1700000000);
+        var original = new DownloadHistoryRecorded(_testId, completion);
         var json = JsonConvert.SerializeObject(original);
         var result = JsonConvert.DeserializeObject<DownloadHistoryRecorded>(json)!;
         Assert.Equal(original.DownloadId, result.DownloadId);
-        Assert.Equal(original.Title, result.Title);
-        Assert.Equal(original.Category, result.Category);
-        Assert.Equal(original.Size, result.Size);
-        Assert.Equal(original.Status, result.Status);
-        Assert.Equal(original.RelativePath, result.RelativePath);
-        Assert.Null(result.FailMessage);
-        Assert.Equal(original.DownloadTimeSeconds, result.DownloadTimeSeconds);
-        Assert.Equal(original.CompletedAt, result.CompletedAt);
+        Assert.Equal(original.Completion.Title, result.Completion.Title);
+        Assert.Equal(original.Completion.Category, result.Completion.Category);
+        Assert.Equal(original.Completion.Size, result.Completion.Size);
+        Assert.Equal(original.Completion.Status, result.Completion.Status);
+        Assert.Equal(original.Completion.RelativePath, result.Completion.RelativePath);
+        Assert.Null(result.Completion.FailMessage);
+        Assert.Equal(original.Completion.DownloadTimeSeconds, result.Completion.DownloadTimeSeconds);
+        Assert.Equal(original.Completion.CompletedAt, result.Completion.CompletedAt);
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-using FunkArr.Messages.Enrichment;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.Messages.Search;
 
@@ -13,10 +13,4 @@ public sealed record SearchResultItem(
     DateTimeOffset? AiredAt,
     double Score,
     string? SubtitleUrl = null,
-    int? TvdbId = null,
-    string? ImdbId = null,
-    int? TmdbId = null,
-    string? Season = null,
-    string? Episode = null,
-    float? MatchConfidence = null,
-    MatchMethod? MatchMethod = null);
+    MatchMetadata? Metadata = null);

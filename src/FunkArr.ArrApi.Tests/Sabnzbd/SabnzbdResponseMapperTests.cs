@@ -1,6 +1,7 @@
 using FunkArr.ArrApi.Sabnzbd;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.ArrApi.Tests.Sabnzbd;
 
@@ -11,8 +12,8 @@ public sealed class SabnzbdResponseMapperTests
     {
         var item = new QueueItem(
             Guid.NewGuid(), "Test Download", DownloadStatus.Processing,
-            "ARD", false, 1_048_576_000, 524_288_000, 30_000_000, 60, 1.0,
-            MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1);
+            "ARD", false, 1_048_576_000, new DownloadProgress(524_288_000, 30_000_000, 1.0),
+            60, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1);
 
         var slot = SabnzbdResponseMapper.BuildQueueSlot(item, 0);
 
@@ -29,8 +30,8 @@ public sealed class SabnzbdResponseMapperTests
     {
         var item = new QueueItem(
             Guid.NewGuid(), "Queued", DownloadStatus.Queued,
-            "ZDF", false, 500_000_000, 0, 0, 0, 0,
-            MediaType.Movie, DownloadPriority.High, DownloadPhase.Initialized, 0);
+            "ZDF", false, 500_000_000, new DownloadProgress(0, 0, 0),
+            0, MediaType.Movie, DownloadPriority.High, DownloadPhase.Initialized, 0);
 
         var slot = SabnzbdResponseMapper.BuildQueueSlot(item, 3);
 
@@ -43,8 +44,8 @@ public sealed class SabnzbdResponseMapperTests
     public void BuildHistorySlot_maps_completed_item()
     {
         var item = new HistoryItem(
-            Guid.NewGuid(), "Completed Show", MediaType.Show,
-            1_000_000, 120, "shows/show.mkv", DownloadStatus.Completed, "", 1719360000);
+            Guid.NewGuid(), new DownloadCompletion("Completed Show", MediaType.Show,
+            1_000_000, DownloadStatus.Completed, "shows/show.mkv", null, 120, 1719360000));
 
         var slot = SabnzbdResponseMapper.BuildHistorySlot(item, "/data/complete");
 
@@ -59,8 +60,8 @@ public sealed class SabnzbdResponseMapperTests
     public void BuildHistorySlot_maps_failed_item()
     {
         var item = new HistoryItem(
-            Guid.NewGuid(), "Failed Show", MediaType.Show,
-            500_000, 0, "", DownloadStatus.Failed, "Download error", 1719360000);
+            Guid.NewGuid(), new DownloadCompletion("Failed Show", MediaType.Show,
+            500_000, DownloadStatus.Failed, null, "Download error", 0, 1719360000));
 
         var slot = SabnzbdResponseMapper.BuildHistorySlot(item, "/data/complete");
 
@@ -74,8 +75,8 @@ public sealed class SabnzbdResponseMapperTests
     {
         var item = new QueueItem(
             Guid.NewGuid(), "Test", DownloadStatus.Processing,
-            "ARD", false, 1_000_000, 500_000, 5_000_000, 60, 1.0,
-            MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1);
+            "ARD", false, 1_000_000, new DownloadProgress(500_000, 5_000_000, 1.0),
+            60, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1);
 
         var speed = SabnzbdResponseMapper.FormatSpeed(item);
 
@@ -87,8 +88,8 @@ public sealed class SabnzbdResponseMapperTests
     {
         var item = new QueueItem(
             Guid.NewGuid(), "Test", DownloadStatus.Queued,
-            "ARD", false, 1_000_000, 0, 0, 0, 0,
-            MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0);
+            "ARD", false, 1_000_000, new DownloadProgress(0, 0, 0),
+            0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0);
 
         Assert.Equal("0", SabnzbdResponseMapper.FormatSpeed(item));
     }
@@ -98,8 +99,8 @@ public sealed class SabnzbdResponseMapperTests
     {
         var item = new QueueItem(
             Guid.NewGuid(), "Test", DownloadStatus.Processing,
-            "ARD", false, 1_000_000, 500_000, 30_000_000, 120, 1.0,
-            MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1);
+            "ARD", false, 1_000_000, new DownloadProgress(500_000, 30_000_000, 1.0),
+            120, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1);
 
         var timeLeft = SabnzbdResponseMapper.FormatTimeLeft(item);
 
@@ -111,8 +112,8 @@ public sealed class SabnzbdResponseMapperTests
     {
         var item = new QueueItem(
             Guid.NewGuid(), "Test", DownloadStatus.Queued,
-            "ARD", false, 1_000_000, 0, 0, 0, 0,
-            MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0);
+            "ARD", false, 1_000_000, new DownloadProgress(0, 0, 0),
+            0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0);
 
         Assert.Equal("00:00:00", SabnzbdResponseMapper.FormatTimeLeft(item));
     }

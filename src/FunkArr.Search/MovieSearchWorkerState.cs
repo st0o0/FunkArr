@@ -8,6 +8,7 @@ using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using FunkArr.Messages.Search;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.Search;
 
@@ -170,7 +171,7 @@ public sealed class MovieSearchWorkerState
 
         if (ImdbId is not null || TmdbId is not null)
         {
-            request = new ResolveRuleSet(null, ImdbId: ImdbId, TmdbId: TmdbId);
+            request = new ResolveRuleSet(null, new ExternalIds(null, ImdbId, TmdbId));
             return true;
         }
 
@@ -253,7 +254,7 @@ public sealed class MovieSearchWorkerState
                     return trace;
                 }
 
-                var candidateIndex = Array.FindIndex(Items, i => i.Source.Title == trace.CandidateTitle && i.Matched);
+                var candidateIndex = Array.FindIndex(Items, i => i.Source.Title == trace.Candidate.Title && i.Matched);
                 if (candidateIndex < 0)
                 {
                     return trace;

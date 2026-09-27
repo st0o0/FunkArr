@@ -57,7 +57,8 @@ public static partial class RuleSetApiEndpoints
                 allStats.TryGetValue(e.RuleSetId, out var stat);
 
                 return new ApiModels.RuleSetListEntry(
-                    e.RuleSetId, e.Topic, e.Aliases, e.TvdbId, e.ImdbId, e.TmdbId,
+                    e.RuleSetId, e.Topic, e.Aliases,
+                    new ApiModels.ExternalIdsOutput(e.Ids.TvdbId, e.Ids.ImdbId, e.Ids.TmdbId),
                     e.MediaName, e.MediaType is not null ? (ApiModels.MediaType)(int)e.MediaType : null,
                     summary?.RuleCount ?? 0,
                     (summary?.SourceType).ToApi(),
@@ -310,8 +311,8 @@ public static partial class RuleSetApiEndpoints
                 continue;
             }
 
-            var airedAt = trace.CandidateTimestamp > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(trace.CandidateTimestamp)
+            var airedAt = trace.Candidate.Timestamp > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(trace.Candidate.Timestamp)
                 : (DateTimeOffset?)null;
 
             int? season = null;
@@ -322,10 +323,10 @@ public static partial class RuleSetApiEndpoints
 
             matchedIndices.Add((i, new EpisodeCandidate(
                 matchedIndices.Count,
-                trace.CandidateTitle,
+                trace.Candidate.Title,
                 trace.Identification?.Title,
                 airedAt,
-                trace.CandidateDuration,
+                trace.Candidate.Duration,
                 trace.Identification?.Season,
                 trace.Identification?.Episode)));
         }
@@ -389,15 +390,15 @@ public static partial class RuleSetApiEndpoints
                 continue;
             }
 
-            var airedAt = trace.CandidateTimestamp > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(trace.CandidateTimestamp)
+            var airedAt = trace.Candidate.Timestamp > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(trace.Candidate.Timestamp)
                 : (DateTimeOffset?)null;
 
             matchedIndices.Add((i, new MovieCandidate(
                 matchedIndices.Count,
-                trace.CandidateTitle,
+                trace.Candidate.Title,
                 airedAt,
-                trace.CandidateDuration)));
+                trace.Candidate.Duration)));
         }
 
         if (matchedIndices.Count == 0)

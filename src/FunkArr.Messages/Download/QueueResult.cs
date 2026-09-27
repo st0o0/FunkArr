@@ -1,3 +1,5 @@
+using FunkArr.Messages.Shared;
+
 namespace FunkArr.Messages.Download;
 
 public abstract record QueueResponse;
@@ -19,10 +21,8 @@ public sealed record QueueItem(
     string Channel,
     bool HasSubtitles,
     long TotalBytes,
-    long BytesDownloaded,
-    long CurrentTimeUs,
+    DownloadProgress Progress,
     int TotalDuration,
-    double Speed,
     MediaType Category,
     DownloadPriority Priority,
     DownloadPhase Phase,

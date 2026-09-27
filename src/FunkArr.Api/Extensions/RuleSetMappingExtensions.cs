@@ -1,6 +1,7 @@
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Shared;
 using ApiModels = FunkArr.Api.Models;
 using MsgScoring = FunkArr.Messages.Scoring;
 
@@ -12,7 +13,7 @@ internal static class RuleSetMappingExtensions
         new(msg.RuleSetId,
             new ApiModels.RuleSetDetail.RuleSetIdentity(
                 msg.Identity.Topic, msg.Identity.Aliases,
-                msg.Identity.TvdbId, msg.Identity.ImdbId, msg.Identity.TmdbId),
+                new ApiModels.ExternalIdsOutput(msg.Identity.Ids.TvdbId, msg.Identity.Ids.ImdbId, msg.Identity.Ids.TmdbId)),
             new ApiModels.RuleSetDetail.RuleSetSource(
                 msg.Source.CommunityPath, msg.Source.LocalPath,
                 msg.Source.CommunityModified, msg.Source.LocalModified),
@@ -62,7 +63,7 @@ internal static class RuleSetMappingExtensions
             new RuleSetMediaInput(
                 request.Media.Name,
                 (Messages.MediaType)(int)Enum.Parse<ApiModels.MediaType>(request.Media.Type, true),
-                request.Media.TvdbId, request.Media.ImdbId, request.Media.TmdbId),
+                request.Media.Ids is not null ? new ExternalIds(request.Media.Ids.TvdbId, request.Media.Ids.ImdbId, request.Media.Ids.TmdbId) : null),
             request.Confidence,
             [
                 .. request.Rules.Select(r => new RuleSetRuleInput(

@@ -133,7 +133,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
         Assert.Null(resolveRequest.TopicOrAlias);
-        Assert.Equal("tt0806910", resolveRequest.ImdbId);
+        Assert.Equal("tt0806910", resolveRequest.Ids?.ImdbId);
         probes.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
 
         var mediathekQuery = probes.Mediathek.ExpectMsg<QueryMediathek>();
@@ -158,7 +158,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var result = ExpectMsg<SearchMovieCompleted>();
         Assert.Equal(searchId, result.SearchId);
         Assert.Equal(2, result.Items.Length);
-        Assert.All(result.Items, i => Assert.Equal("tt0806910", i.ImdbId));
+        Assert.All(result.Items, i => Assert.Equal("tt0806910", i.Metadata?.Ids?.ImdbId));
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, 550, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
-        Assert.Equal(550, resolveRequest.TmdbId);
+        Assert.Equal(550, resolveRequest.Ids!.TmdbId);
         probes.Resolver.Reply(new RuleSetResolved("fight-club", "Fight Club"));
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
@@ -193,9 +193,9 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchMovieCompleted>();
         Assert.Single(result.Items);
-        Assert.Equal(550, result.Items[0].TmdbId);
-        Assert.Equal(0.95f, result.Items[0].MatchConfidence);
-        Assert.Equal(MatchMethod.TitleMatch, result.Items[0].MatchMethod);
+        Assert.Equal(550, result.Items[0].Metadata?.Ids?.TmdbId);
+        Assert.Equal(0.95f, result.Items[0].Metadata?.MatchConfidence);
+        Assert.Equal(MatchMethod.TitleMatch, result.Items[0].Metadata?.MatchMethod);
     }
 
     [Fact]
@@ -238,7 +238,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchMovieCompleted>();
         var item = Assert.Single(result.Items);
-        Assert.Equal("tt1234567", item.ImdbId);
+        Assert.Equal("tt1234567", item.Metadata?.Ids?.ImdbId);
     }
 
     [Fact]
@@ -295,7 +295,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchMovieCompleted>();
         Assert.Single(result.Items);
-        Assert.Null(result.Items[0].MatchConfidence);
+        Assert.Null(result.Items[0].Metadata?.MatchConfidence);
     }
 
     [Fact]

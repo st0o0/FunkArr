@@ -8,19 +8,22 @@ public sealed record ScoringDetail(
     ItemTrace[] ItemTraces);
 
 public sealed record ItemTrace(
-    string CandidateTitle,
-    string CandidateTopic,
-    string CandidateChannel,
-    int CandidateDuration,
-    int CandidateQuality,
-    string? CandidateDescription,
-    long CandidateTimestamp,
+    ScoreCandidate Candidate,
     bool Matched,
     double Score,
     string? MatchedRuleId,
     TracedIdentification? Identification,
     RuleTrace[] RuleTraces,
     EnrichmentTraceOutput? EnrichmentTrace = null);
+
+public sealed record ScoreCandidate(
+    string Title,
+    string Topic,
+    string Channel,
+    int Duration,
+    int Quality,
+    string? Description,
+    long Timestamp);
 
 public sealed record RuleTrace(
     string RuleId,

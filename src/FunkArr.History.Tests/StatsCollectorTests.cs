@@ -5,6 +5,7 @@ using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.History.Tests;
 
@@ -116,7 +117,7 @@ public sealed class StatsCollectorTests : TestKit
         Assert.NotNull(query);
 
         _ruleSetResolverProbe.Reply(new RegisteredRuleSetsResult([
-            new RegisteredRuleSetEntry("rs-1", "Test Topic", [], null, null, null, null, null),
+            new RegisteredRuleSetEntry("rs-1", "Test Topic", [], new ExternalIds(null, null, null), null, null),
         ]));
 
         var historyQuery = _historyRegionProbe.ExpectMsg<QueryScoringStats>();

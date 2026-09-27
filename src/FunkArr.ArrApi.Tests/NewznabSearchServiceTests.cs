@@ -1,5 +1,6 @@
 using FunkArr.ArrApi.Newznab;
 using FunkArr.Messages.Search;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.ArrApi.Tests;
 
@@ -45,9 +46,12 @@ public sealed class NewznabSearchServiceTests
             items, new SearchCommand.TvParams(Season: 1, Episode: null, TvdbId: null, ImdbId: null));
 
         Assert.Equal(2, result.Length);
-        Assert.All(result, i => Assert.Equal("1", i.Season));
+        Assert.All(result, i => Assert.Equal("1", i.Metadata?.Season));
     }
 
     private static SearchResultItem CreateItem(string title, string? season = null, string? episode = null) =>
-        new(title, "channel", "topic", "", 0, 0, 0, null, 0, Season: season, Episode: episode);
+        new(title, "channel", "topic", "", 0, 0, 0, null, 0,
+            Metadata: season is not null || episode is not null
+                ? new MatchMetadata(null, season, episode, null, null)
+                : null);
 }

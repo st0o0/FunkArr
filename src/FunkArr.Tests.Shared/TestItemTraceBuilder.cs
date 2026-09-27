@@ -1,5 +1,6 @@
 using FunkArr.Persistence;
 using FunkArr.Persistence.Events.ScoringHistory;
+using FunkArr.Persistence.Events.Shared;
 
 namespace FunkArr.Tests.Shared;
 
@@ -7,13 +8,9 @@ public static class TestItemTraceBuilder
 {
     public static PersistedItemTrace CreateSampleTrace() =>
         new(
-            CandidateTitle: "Tatort: Der letzte Schrei",
-            CandidateTopic: "Tatort",
-            CandidateChannel: "ARD",
-            CandidateDuration: 5400,
-            CandidateQuality: 720,
-            CandidateDescription: "Ein spannender Fall",
-            CandidateTimestamp: 1700000000,
+            Candidate: new PersistedScoreCandidate(
+                "Tatort: Der letzte Schrei", "Tatort", "ARD",
+                5400, 720, "Ein spannender Fall", 1700000000),
             Matched: true,
             Score: 0.95,
             MatchedRuleId: "rule-1",

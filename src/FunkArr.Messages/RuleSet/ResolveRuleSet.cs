@@ -1,12 +1,11 @@
 using FunkArr.Messages.Enrichment;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.Messages.RuleSet;
 
 public sealed record ResolveRuleSet(
     string? TopicOrAlias,
-    int? TvdbId = null,
-    string? ImdbId = null,
-    int? TmdbId = null);
+    ExternalIds? Ids = null);
 
 public abstract record ResolveRuleSetResponse;
 

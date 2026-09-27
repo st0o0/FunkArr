@@ -15,48 +15,48 @@ internal static class SabnzbdResponseMapper
         Mb: (item.TotalBytes / 1_048_576.0).ToString("F0"),
         Filename: item.Title,
         Cat: MapMediaTypeToCategory(item.Category),
-        Mbleft: ((item.TotalBytes - item.BytesDownloaded) / 1_048_576.0).ToString("F0"),
-        Percentage: DerivePhase(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs)
-            .CalculatePercentage(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs, item.TotalDuration)
+        Mbleft: ((item.TotalBytes - item.Progress.BytesDownloaded) / 1_048_576.0).ToString("F0"),
+        Percentage: DerivePhase(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs)
+            .CalculatePercentage(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs, item.TotalDuration)
             .ToString(),
         Priority: item.Priority.ToString(),
         Speed: FormatSpeed(item));
 
     internal static HistorySlot BuildHistorySlot(HistoryItem item, string completePath) => new(
         NzoId: item.DownloadId.ToString(),
-        Name: item.Title,
-        NzbName: item.Title + ".nzb",
-        Category: MapMediaTypeToCategory(item.Category),
-        Bytes: item.TotalBytes,
-        DownloadTime: item.DownloadTimeSeconds,
-        Storage: !string.IsNullOrEmpty(item.RelativePath)
-            ? Path.GetDirectoryName(Path.Join(completePath, item.RelativePath))
+        Name: item.Completion.Title,
+        NzbName: item.Completion.Title + ".nzb",
+        Category: MapMediaTypeToCategory(item.Completion.Category),
+        Bytes: item.Completion.Size,
+        DownloadTime: item.Completion.DownloadTimeSeconds,
+        Storage: !string.IsNullOrEmpty(item.Completion.RelativePath)
+            ? Path.GetDirectoryName(Path.Join(completePath, item.Completion.RelativePath))
             : null,
-        Status: MapHistoryStatus(item.Status),
-        FailMessage: item.FailMessage,
-        CompletedOn: item.CompletedAt);
+        Status: MapHistoryStatus(item.Completion.Status),
+        FailMessage: item.Completion.FailMessage,
+        CompletedOn: item.Completion.CompletedAt);
 
     internal static string FormatSpeed(QueueItem item)
     {
-        if (item.Status != DownloadStatus.Processing || item.CurrentTimeUs <= 0)
+        if (item.Status != DownloadStatus.Processing || item.Progress.CurrentTimeUs <= 0)
         {
             return "0";
         }
 
-        var elapsedSeconds = item.CurrentTimeUs / 1_000_000.0;
-        var bytesPerSecond = item.BytesDownloaded / elapsedSeconds;
+        var elapsedSeconds = item.Progress.CurrentTimeUs / 1_000_000.0;
+        var bytesPerSecond = item.Progress.BytesDownloaded / elapsedSeconds;
         return ((long)bytesPerSecond).ToString();
     }
 
     internal static string FormatTimeLeft(QueueItem item)
     {
-        if (item.TotalDuration <= 0 || item.Speed <= 0)
+        if (item.TotalDuration <= 0 || item.Progress.Speed <= 0)
         {
             return "00:00:00";
         }
 
-        var elapsedSeconds = item.CurrentTimeUs / 1_000_000.0;
-        var remainingSeconds = (item.TotalDuration - elapsedSeconds) / item.Speed;
+        var elapsedSeconds = item.Progress.CurrentTimeUs / 1_000_000.0;
+        var remainingSeconds = (item.TotalDuration - elapsedSeconds) / item.Progress.Speed;
         if (remainingSeconds < 0)
         {
             remainingSeconds = 0;

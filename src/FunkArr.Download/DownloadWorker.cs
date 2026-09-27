@@ -68,8 +68,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         }
 
         var evt = new DownloadInitialized(
-            cmd.DownloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
-            cmd.Channel, cmd.Duration, cmd.Size, cmd.Category.ToPersistence(),
+            cmd.DownloadId, cmd.Media.ToPersistence(),
             cmd.RouteName, cmd.ProxyUrl);
 
         Persist(evt, e => _state = _state.Apply(e));
@@ -82,9 +81,9 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        if (string.IsNullOrEmpty(_state.VideoUrl))
+        if (string.IsNullOrEmpty(_state.Media!.VideoUrl))
         {
-            _log.Warning("Download {DownloadId} failed - video URL is empty: {Title}", cmd.DownloadId, _state.Title);
+            _log.Warning("Download {DownloadId} failed - video URL is empty: {Title}", cmd.DownloadId, _state.Media.Title);
             Persist(new DownloadFaulted(cmd.DownloadId, "Video URL is empty", Persistence.PersistedFailureKind.Permanent),
                 e => _state = _state.Apply(e));
             DeferAsync("notify", _ =>
@@ -98,7 +97,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         var paths = ResolvePaths();
         _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
-        _log.Info("Download {DownloadId} started: {Title}", cmd.DownloadId, _state.Title);
+        _log.Info("Download {DownloadId} started: {Title}", cmd.DownloadId, _state.Media!.Title);
         var attemptEvt = new DownloadAttemptStarted(cmd.DownloadId, 1);
         Persist(attemptEvt, e => _state = _state.Apply(e));
         DeferAsync("start", _ => StartFfmpeg(paths.IncompletePath));
@@ -116,10 +115,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         Timers.Cancel(_retryTimerKey);
 
         var evt = new DownloadInitialized(
-            _downloadId,
-            _state.Title!, _state.VideoUrl!, _state.SubtitleUrl,
-            _state.Channel!, _state.Duration, _state.Size,
-            _state.Category!.Value.ToPersistence(),
+            _downloadId, _state.Media!.ToPersistence(),
             _state.RouteName, _state.ProxyUrl);
 
         Persist(evt, e => _state = _state.Apply(e));
@@ -134,16 +130,14 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 
         Sender.Tell(new WorkerStatusResult(
             _downloadId,
-            _state.Title!,
-            _state.Category!.Value,
-            _state.Channel ?? "",
-            _state.SubtitleUrl is not null,
-            _state.Size,
+            _state.Media!.Title,
+            _state.Media.Category,
+            _state.Media.Channel,
+            _state.Media.SubtitleUrl is not null,
+            _state.Media.Size,
             _state.Status,
-            _state.BytesDownloaded,
-            _state.CurrentTimeUs,
-            _state.Duration,
-            _state.Speed,
+            _state.Progress,
+            _state.Media.Duration,
             _state.FailMessage,
             _state.Phase,
             _state.Attempt));
@@ -156,14 +150,12 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        var phase = DownloadPhaseExtensions.DerivePhase(msg.TotalSize, _state.Size, msg.OutTimeUs);
+        var phase = DownloadPhaseExtensions.DerivePhase(msg.TotalSize, _state.Media!.Size, msg.OutTimeUs);
 
         _state = _state with
         {
-            BytesDownloaded = msg.TotalSize,
-            CurrentTimeUs = msg.OutTimeUs,
-            Speed = msg.Speed,
-            Size = Math.Max(_state.Size, msg.TotalSize),
+            Progress = new Messages.Shared.DownloadProgress(msg.TotalSize, msg.OutTimeUs, msg.Speed),
+            Media = _state.Media with { Size = Math.Max(_state.Media.Size, msg.TotalSize) },
             Phase = phase,
         };
     }
@@ -189,7 +181,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             catch (Exception ex)
             {
                 Telemetry.MoveFailed.Add(1);
-                _log.Warning(ex, "Download {DownloadId} move failed: {Title}", _downloadId, _state.Title);
+                _log.Warning(ex, "Download {DownloadId} move failed: {Title}", _downloadId, _state.Media!.Title);
                 msg = msg with { Success = false, Error = $"Move failed: {ex.Message}" };
             }
         }
@@ -199,7 +191,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             var completedAt = _timeProvider.GetUtcNow().ToUnixTimeSeconds();
             var evt = new DownloadSucceeded(_downloadId, msg.ElapsedSeconds, completedAt);
 
-            _log.Info("Download {DownloadId} completed in {Elapsed}s: {Title}", _downloadId, msg.ElapsedSeconds, _state.Title);
+            _log.Info("Download {DownloadId} completed in {Elapsed}s: {Title}", _downloadId, msg.ElapsedSeconds, _state.Media!.Title);
             Persist(evt, e => _state = _state.Apply(e));
             DeferAsync("notify", _ =>
             {
@@ -213,7 +205,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             var reason = msg.Error ?? "FFmpeg failed";
             var evt = new DownloadFaulted(_downloadId, reason, msg.FailureKind.ToPersistence());
 
-            _log.Warning("Download {DownloadId} failed: {Reason} - {Title}", _downloadId, reason, _state.Title);
+            _log.Warning("Download {DownloadId} failed: {Reason} - {Title}", _downloadId, reason, _state.Media!.Title);
             Persist(evt, e => _state = _state.Apply(e));
 
             if (ShouldRetry(msg.FailureKind))
@@ -246,7 +238,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         var attempt = _state.Attempt + 1;
         Telemetry.Retries.Add(1, new KeyValuePair<string, object?>("reason",
             _state.LastFailureKind?.ToString().ToLowerInvariant() ?? "unknown"));
-        _log.Info("Download {DownloadId} retry attempt {Attempt}: {Title}", _downloadId, attempt, _state.Title);
+        _log.Info("Download {DownloadId} retry attempt {Attempt}: {Title}", _downloadId, attempt, _state.Media!.Title);
         var evt = new DownloadAttemptStarted(_downloadId, attempt);
         Persist(evt, e => _state = _state.Apply(e));
         DeferAsync("start", _ => StartFfmpeg(paths.IncompletePath));
@@ -271,13 +263,13 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     {
         _cts = new CancellationTokenSource();
         var self = Self;
-        _remuxer.RunAsync(_state.VideoUrl!, _state.SubtitleUrl, outputPath,
+        _remuxer.RunAsync(_state.Media!.VideoUrl, _state.Media.SubtitleUrl, outputPath,
             _state.RouteName, _state.ProxyUrl, self.Tell, _cts.Token)
             .PipeTo(self, failure: ex => new FfmpegResult(false, -1, ex.Message, 0));
     }
 
     private DataPaths.ResolvedDownload ResolvePaths() =>
-        _dataPaths.ResolveDownload(_downloadId.ToString(), _state.Title!, _state.Category?.ToString().ToLowerInvariant(), _optionsMonitor.CurrentValue.Categories);
+        _dataPaths.ResolveDownload(_downloadId.ToString(), _state.Media!.Title, _state.Media.Category.ToString().ToLowerInvariant(), _optionsMonitor.CurrentValue.Categories);
 
     private void CancelRunning()
     {

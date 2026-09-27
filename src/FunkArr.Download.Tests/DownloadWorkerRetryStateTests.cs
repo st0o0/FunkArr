@@ -1,7 +1,9 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Persistence;
 using FunkArr.Persistence.Events.Download;
+using FunkArr.Persistence.Events.Shared;
 
 namespace FunkArr.Download.Tests;
 
@@ -9,9 +11,12 @@ public sealed class DownloadWorkerRetryStateTests
 {
     private static readonly Guid _testId = Guid.NewGuid();
 
+    private static readonly PersistedDownloadMedia _testMedia = new(
+        "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
+        "ARD", 3600, 1_000_000, PersistedMediaType.Show);
+
     private static DownloadInitialized MakeInitialized() =>
-        new(_testId, "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
-            "ARD", 3600, 1_000_000, PersistedMediaType.Show);
+        new(_testId, _testMedia);
 
     private static DownloadWorkerState FailedState() =>
         DownloadWorkerState.Empty
@@ -40,13 +45,13 @@ public sealed class DownloadWorkerRetryStateTests
     {
         var state = FailedState().Apply(MakeInitialized());
 
-        Assert.Equal("Test Video", state.Title);
-        Assert.Equal("https://example.com/video.mp4", state.VideoUrl);
-        Assert.Equal("https://example.com/sub.srt", state.SubtitleUrl);
-        Assert.Equal("ARD", state.Channel);
-        Assert.Equal(3600, state.Duration);
-        Assert.Equal(1_000_000L, state.Size);
-        Assert.Equal(MediaType.Show, state.Category);
+        Assert.Equal("Test Video", state.Media!.Title);
+        Assert.Equal("https://example.com/video.mp4", state.Media.VideoUrl);
+        Assert.Equal("https://example.com/sub.srt", state.Media.SubtitleUrl);
+        Assert.Equal("ARD", state.Media.Channel);
+        Assert.Equal(3600, state.Media.Duration);
+        Assert.Equal(1_000_000L, state.Media.Size);
+        Assert.Equal(MediaType.Show, state.Media.Category);
     }
 
     [Fact]
@@ -54,16 +59,14 @@ public sealed class DownloadWorkerRetryStateTests
     {
         var state = FailedState() with
         {
-            BytesDownloaded = 500_000,
-            CurrentTimeUs = 1_800_000_000,
-            Speed = 2.5,
+            Progress = new DownloadProgress(500_000, 1_800_000_000, 2.5),
         };
 
         state = state.Apply(MakeInitialized());
 
-        Assert.Equal(0L, state.BytesDownloaded);
-        Assert.Equal(0L, state.CurrentTimeUs);
-        Assert.Equal(0.0, state.Speed);
+        Assert.Equal(0L, state.Progress.BytesDownloaded);
+        Assert.Equal(0L, state.Progress.CurrentTimeUs);
+        Assert.Equal(0.0, state.Progress.Speed);
     }
 
     [Fact]

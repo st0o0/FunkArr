@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Search;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.Search;
 
@@ -112,11 +113,8 @@ public sealed record ReleaseVariant(
         AiredAt: Source.AiredAt,
         Score: Score,
         SubtitleUrl: Source.SubtitleUrl,
-        TvdbId: Identity.TvdbId,
-        ImdbId: Identity.ImdbId,
-        TmdbId: Identity.TmdbId,
-        Season: Identity.Season,
-        Episode: Identity.Episode,
-        MatchConfidence: Match?.Confidence,
-        MatchMethod: Match?.Method);
+        Metadata: new MatchMetadata(
+            new ExternalIds(Identity.TvdbId, Identity.ImdbId, Identity.TmdbId),
+            Identity.Season, Identity.Episode,
+            Match?.Confidence, Match?.Method));
 }

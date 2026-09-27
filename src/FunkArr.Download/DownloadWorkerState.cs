@@ -1,18 +1,13 @@
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download;
 
 public sealed record DownloadWorkerState(
-    string? Title,
-    string? VideoUrl,
-    string? SubtitleUrl,
-    string? Channel,
-    int Duration,
-    long Size,
-    MediaType? Category,
+    DownloadMedia? Media,
     WorkerStatus Status,
     DownloadPhase Phase,
     int Attempt,
@@ -20,24 +15,23 @@ public sealed record DownloadWorkerState(
     FailureKind? LastFailureKind,
     string RouteName,
     string? ProxyUrl,
-    long BytesDownloaded,
-    long CurrentTimeUs,
-    double Speed)
+    DownloadProgress Progress)
 {
     public static readonly DownloadWorkerState Empty = new(
-        null, null, null, null, 0, 0, null, WorkerStatus.Initialized,
-        DownloadPhase.Initialized, 0, null, null, "Direct", null, 0, 0, 0.0);
+        null, WorkerStatus.Initialized,
+        DownloadPhase.Initialized, 0, null, null, "Direct", null,
+        new DownloadProgress(0, 0, 0.0));
 
-    public bool IsInitialized => Title is not null;
+    public bool IsInitialized => Media is not null;
 }
 
 public static class DownloadWorkerStateExtensions
 {
     public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadInitialized evt) =>
-        new(evt.Title, evt.VideoUrl, evt.SubtitleUrl, evt.Channel, evt.Duration,
-            evt.Size, evt.Category.ToDomain(), WorkerStatus.Initialized,
+        new(evt.Media.ToDomain(), WorkerStatus.Initialized,
             DownloadPhase.Initialized, 0, null, null,
-            evt.RouteName, evt.ProxyUrl, 0, 0, 0.0);
+            evt.RouteName, evt.ProxyUrl,
+            new DownloadProgress(0, 0, 0.0));
 
     public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadStarted _) =>
         state with { Status = WorkerStatus.Downloading, Phase = DownloadPhase.VideoDownload };
@@ -62,9 +56,7 @@ public static class DownloadWorkerStateExtensions
             Phase = DownloadPhase.VideoDownload,
             FailMessage = null,
             LastFailureKind = null,
-            BytesDownloaded = 0,
-            CurrentTimeUs = 0,
-            Speed = 0.0,
+            Progress = new DownloadProgress(0, 0, 0.0),
         };
 
     public static RecordDownload ToRecordDownload(
@@ -72,15 +64,15 @@ public static class DownloadWorkerStateExtensions
         int elapsedSeconds, DataPaths.ResolvedDownload? paths)
     {
         var completedAt = timeProvider.GetUtcNow().ToUnixTimeSeconds();
-        return new RecordDownload(
-            downloadId,
-            state.Title!,
-            state.Category!.Value,
-            state.Size,
+        var completion = new DownloadCompletion(
+            state.Media!.Title,
+            state.Media.Category,
+            state.Media.Size,
             state.Status == WorkerStatus.Completed ? DownloadStatus.Completed : DownloadStatus.Failed,
             paths?.RelativePath,
             state.FailMessage,
             elapsedSeconds,
             completedAt);
+        return new RecordDownload(downloadId, completion);
     }
 }

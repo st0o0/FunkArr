@@ -13,9 +13,9 @@ internal static class MatchingToDiskExtensions
             {
                 Name = body.Media.Name,
                 Type = body.Media.Type,
-                TvdbId = body.Media.TvdbId,
-                ImdbId = body.Media.ImdbId,
-                TmdbId = body.Media.TmdbId,
+                TvdbId = body.Media.Ids?.TvdbId,
+                ImdbId = body.Media.Ids?.ImdbId,
+                TmdbId = body.Media.Ids?.TmdbId,
             }
             : null,
         Confidence = body.Confidence,

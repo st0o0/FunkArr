@@ -1,3 +1,5 @@
+using FunkArr.Messages.Shared;
+
 namespace FunkArr.Messages.Download;
 
 public sealed record WorkerStatusResult(
@@ -8,10 +10,8 @@ public sealed record WorkerStatusResult(
     bool HasSubtitles,
     long Size,
     WorkerStatus Status,
-    long BytesDownloaded,
-    long CurrentTimeUs,
+    DownloadProgress Progress,
     int TotalDuration,
-    double Speed,
     string? FailMessage,
     DownloadPhase Phase,
     int Attempt);

@@ -1,5 +1,6 @@
 using FunkArr.ArrApi.Newznab;
 using FunkArr.Messages.Search;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 
@@ -7,7 +8,9 @@ public sealed class NewznabFilterTests
 {
     private static SearchResultItem MakeItem(string title, string? season = null, string? episode = null) =>
         new(title, "ARD", "Tatort", "url", 3600, 1000, 1080, null, 0.9,
-            Season: season, Episode: episode);
+            Metadata: season is not null || episode is not null
+                ? new MatchMetadata(null, season, episode, null, null)
+                : null);
 
     private static readonly SearchResultItem[] _items =
     [
@@ -26,7 +29,7 @@ public sealed class NewznabFilterTests
         var result = NewznabSearchService.FilterBySeasonEpisode(_items, tvParams);
 
         Assert.Equal(2, result.Length);
-        Assert.All(result, i => Assert.Equal("17", i.Episode));
+        Assert.All(result, i => Assert.Equal("17", i.Metadata?.Episode));
     }
 
     [Fact]
@@ -37,7 +40,7 @@ public sealed class NewznabFilterTests
         var result = NewznabSearchService.FilterBySeasonEpisode(_items, tvParams);
 
         Assert.Equal(3, result.Length);
-        Assert.All(result, i => Assert.Equal("2026", i.Season));
+        Assert.All(result, i => Assert.Equal("2026", i.Metadata?.Season));
     }
 
     [Fact]
@@ -65,7 +68,7 @@ public sealed class NewznabFilterTests
 
         var result = NewznabSearchService.FilterBySeasonEpisode(_items, tvParams);
 
-        Assert.DoesNotContain(result, i => i.Season is null);
+        Assert.DoesNotContain(result, i => i.Metadata?.Season is null);
     }
 
     [Fact]

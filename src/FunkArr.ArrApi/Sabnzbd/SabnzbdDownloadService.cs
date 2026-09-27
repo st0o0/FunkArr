@@ -3,6 +3,7 @@ using Akka.Hosting;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -60,7 +61,8 @@ public sealed class SabnzbdDownloadService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>();
-            var addCmd = new AddDownload(title, videoUrl, subtitleUrl, channel, duration, size, category, downloadPriority);
+            var media = new DownloadMedia(title, videoUrl, subtitleUrl, channel, duration, size, category);
+            var addCmd = new AddDownload(media, downloadPriority);
             var addResult = await manager.Ask<DownloadAdded>(addCmd, Timeout);
 
             if (priority == "2")

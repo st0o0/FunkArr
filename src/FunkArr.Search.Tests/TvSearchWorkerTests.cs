@@ -156,7 +156,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         var resolveRequest = p.Resolver.ExpectMsg<ResolveRuleSet>();
         Assert.Null(resolveRequest.TopicOrAlias);
-        Assert.Equal(83214, resolveRequest.TvdbId);
+        Assert.Equal(83214, resolveRequest.Ids?.TvdbId);
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
 
         var mediathekQuery = p.Mediathek.ExpectMsg<QueryMediathek>();
@@ -176,7 +176,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var result = ExpectMsg<SearchSeriesCompleted>();
         Assert.Equal(searchId, result.SearchId);
         Assert.Equal(2, result.Items.Length);
-        Assert.All(result.Items, i => Assert.Equal(83214, i.TvdbId));
+        Assert.All(result.Items, i => Assert.Equal(83214, i.Metadata?.Ids?.TvdbId));
     }
 
     [Fact]
@@ -218,7 +218,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchSeriesCompleted>();
         var item = Assert.Single(result.Items);
-        Assert.Equal(83214, item.TvdbId);
+        Assert.Equal(83214, item.Metadata?.Ids?.TvdbId);
     }
 
     [Fact]
@@ -261,10 +261,10 @@ public sealed class TvSearchWorkerTests : TestKit
         var result = ExpectMsg<SearchSeriesCompleted>();
         var item = Assert.Single(result.Items);
         Assert.Contains("S2026E09", item.Title);
-        Assert.Equal("2026", item.Season);
-        Assert.Equal("09", item.Episode);
-        Assert.Equal(0.85f, item.MatchConfidence);
-        Assert.Equal(MatchMethod.TitleMatch, item.MatchMethod);
+        Assert.Equal("2026", item.Metadata?.Season);
+        Assert.Equal("09", item.Metadata?.Episode);
+        Assert.Equal(0.85f, item.Metadata?.MatchConfidence);
+        Assert.Equal(MatchMethod.TitleMatch, item.Metadata?.MatchMethod);
     }
 
     [Fact]
@@ -305,8 +305,8 @@ public sealed class TvSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchSeriesCompleted>();
         var item = Assert.Single(result.Items);
-        Assert.Equal("2026", item.Season);
-        Assert.Equal("1", item.Episode);
+        Assert.Equal("2026", item.Metadata?.Season);
+        Assert.Equal("1", item.Metadata?.Episode);
     }
 
     [Fact]
@@ -340,8 +340,8 @@ public sealed class TvSearchWorkerTests : TestKit
 
         var result = ExpectMsg<SearchSeriesCompleted>();
         var item = Assert.Single(result.Items);
-        Assert.Null(item.Season);
-        Assert.Null(item.MatchConfidence);
+        Assert.Null(item.Metadata?.Season);
+        Assert.Null(item.Metadata?.MatchConfidence);
     }
 
     [Fact]

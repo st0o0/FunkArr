@@ -1,11 +1,31 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Persistence;
+using FunkArr.Persistence.Events.Shared;
 
 namespace FunkArr.Download;
 
 internal static class PersistenceMapping
 {
+    public static DownloadMedia ToDomain(this PersistedDownloadMedia media) =>
+        new(media.Title, media.VideoUrl, media.SubtitleUrl, media.Channel,
+            media.Duration, media.Size, media.Category.ToDomain());
+
+    public static PersistedDownloadMedia ToPersistence(this DownloadMedia media) =>
+        new(media.Title, media.VideoUrl, media.SubtitleUrl, media.Channel,
+            media.Duration, media.Size, media.Category.ToPersistence());
+
+    public static DownloadCompletion ToDomain(this PersistedDownloadCompletion completion) =>
+        new(completion.Title, completion.Category.ToDomain(), completion.Size,
+            completion.Status.ToDomain(), completion.RelativePath, completion.FailMessage,
+            completion.DownloadTimeSeconds, completion.CompletedAt);
+
+    public static PersistedDownloadCompletion ToPersistence(this DownloadCompletion completion) =>
+        new(completion.Title, completion.Category.ToPersistence(), completion.Size,
+            completion.Status.ToPersistence(), completion.RelativePath, completion.FailMessage,
+            completion.DownloadTimeSeconds, completion.CompletedAt);
+
     public static PersistedMediaType ToPersistence(this MediaType type) =>
         type switch
         {

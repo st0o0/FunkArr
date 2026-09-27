@@ -50,9 +50,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         }
 
         var evt = new DownloadHistoryRecorded(
-            cmd.DownloadId, cmd.Title, cmd.Category.ToPersistence(), cmd.Size,
-            cmd.Status.ToPersistence(), cmd.RelativePath, cmd.FailMessage,
-            cmd.DownloadTimeSeconds, cmd.CompletedAt);
+            cmd.DownloadId, cmd.Completion.ToPersistence());
 
         Persist(evt, e =>
         {
@@ -68,18 +66,18 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
             MaybeSnapshot();
 
-            if (cmd.Status == DownloadStatus.Completed)
+            if (cmd.Completion.Status == DownloadStatus.Completed)
             {
                 Telemetry.DownloadsCompleted.Add(1);
-                if (cmd.Size > 0)
+                if (cmd.Completion.Size > 0)
                 {
-                    Telemetry.DownloadBytes.Add(cmd.Size);
+                    Telemetry.DownloadBytes.Add(cmd.Completion.Size);
                 }
             }
-            else if (cmd.Status == DownloadStatus.Failed)
+            else if (cmd.Completion.Status == DownloadStatus.Failed)
             {
                 Telemetry.DownloadsFailed.Add(1,
-                    new KeyValuePair<string, object?>("reason", ClassifyFailure(cmd.FailMessage)));
+                    new KeyValuePair<string, object?>("reason", ClassifyFailure(cmd.Completion.FailMessage)));
             }
         });
     }

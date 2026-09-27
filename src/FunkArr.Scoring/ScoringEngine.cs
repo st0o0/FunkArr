@@ -69,10 +69,7 @@ public static class ScoringEngine
             }
 
             itemTraces[i] = new ItemTrace(
-                candidate.Title, candidate.Topic, candidate.Channel,
-                candidate.Duration, candidate.Quality,
-                candidate.Description, candidate.Timestamp,
-                matched, scored[i].Score, matchedRuleId,
+                candidate, matched, scored[i].Score, matchedRuleId,
                 identification, [.. ruleTraces]);
         }
 

@@ -67,7 +67,7 @@ public sealed class RuleSetWorker : ReceiveActor
         var resolver = Context.GetActor<IRuleSetResolver>();
         resolver.Tell(new RegisterRuleSet(
             msg.RuleSetId, identity.Value.Topic, identity.Value.Aliases,
-            identity.Value.TvdbId, identity.Value.ImdbId, identity.Value.TmdbId,
+            identity.Value.Ids,
             identity.Value.MediaName, identity.Value.MediaType, identity.Value.Enrichment));
 
         var sourceType = (_paths.CommunityPath, _paths.LocalPath) switch
@@ -125,7 +125,7 @@ public sealed class RuleSetWorker : ReceiveActor
             msg.RuleSetId,
             new RuleSetDetailResult.RuleSetIdentity(
                 identity.Value.Topic, identity.Value.Aliases,
-                identity.Value.TvdbId, identity.Value.ImdbId, identity.Value.TmdbId),
+                identity.Value.Ids),
             new RuleSetDetailResult.RuleSetSource(
                 _paths.CommunityPath, _paths.LocalPath,
                 _paths.CommunityModified, _paths.LocalModified),

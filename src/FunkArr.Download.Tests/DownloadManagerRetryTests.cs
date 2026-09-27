@@ -5,6 +5,7 @@ using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Tests.Shared;
 
 namespace FunkArr.Download.Tests;
@@ -31,7 +32,7 @@ public sealed class DownloadManagerRetryTests : TestKit
 
     private Guid EnqueueAndComplete(IActorRef manager)
     {
-        manager.Tell(new AddDownload("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var added = ExpectMsg<DownloadAdded>();
 
         // Manager sends InitDownload to region
@@ -69,13 +70,13 @@ public sealed class DownloadManagerRetryTests : TestKit
         var manager = CreateManager(concurrentDownloads: 1);
 
         // Add first download — it gets dispatched immediately
-        manager.Tell(new AddDownload("First", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("First", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var first = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();
 
         // Add second download — queued but not dispatched (slot full)
-        manager.Tell(new AddDownload("Second", "https://example.com/v2.mp4", null, "ZDF", 1800, 500, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Second", "https://example.com/v2.mp4", null, "ZDF", 1800, 500, MediaType.Show)));
         var second = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
 
@@ -92,7 +93,7 @@ public sealed class DownloadManagerRetryTests : TestKit
     {
         var manager = CreateManager(concurrentDownloads: 1);
 
-        manager.Tell(new AddDownload("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var added = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();
@@ -125,14 +126,14 @@ public sealed class DownloadManagerRetryTests : TestKit
         var manager = CreateManager(concurrentDownloads: 1);
 
         // Fill the slot
-        manager.Tell(new AddDownload("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var active = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();
 
         // Add and complete a second download by first freeing the slot, then re-filling
         manager.Tell(new SlotFree(active.DownloadId));
-        manager.Tell(new AddDownload("Blocking", "https://example.com/v2.mp4", null, "ZDF", 1800, 500, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Blocking", "https://example.com/v2.mp4", null, "ZDF", 1800, 500, MediaType.Show)));
         var blocking = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();

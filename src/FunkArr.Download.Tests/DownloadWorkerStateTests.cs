@@ -1,7 +1,9 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Persistence;
 using FunkArr.Persistence.Events.Download;
+using FunkArr.Persistence.Events.Shared;
 
 namespace FunkArr.Download.Tests;
 
@@ -9,13 +11,15 @@ public sealed class DownloadWorkerStateTests
 {
     private static readonly Guid _testId = Guid.NewGuid();
 
+    private static readonly PersistedDownloadMedia _testMedia = new(
+        "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
+        "ARD", 3600, 1_000_000, PersistedMediaType.Show);
+
     private static DownloadInitialized MakeInitialized() =>
-        new(_testId, "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
-            "ARD", 3600, 1_000_000, PersistedMediaType.Show);
+        new(_testId, _testMedia);
 
     private static DownloadInitialized MakeInitializedWithRoute() =>
-        new(_testId, "Test Video", "https://example.com/video.mp4", "https://example.com/sub.srt",
-            "ARD", 3600, 1_000_000, PersistedMediaType.Show, "ProxyRoute", "http://proxy:8080");
+        new(_testId, _testMedia, "ProxyRoute", "http://proxy:8080");
 
     [Fact]
     public void Empty_is_not_initialized()
@@ -29,13 +33,13 @@ public sealed class DownloadWorkerStateTests
         var state = DownloadWorkerState.Empty.Apply(MakeInitialized());
 
         Assert.True(state.IsInitialized);
-        Assert.Equal("Test Video", state.Title);
-        Assert.Equal("https://example.com/video.mp4", state.VideoUrl);
-        Assert.Equal("https://example.com/sub.srt", state.SubtitleUrl);
-        Assert.Equal("ARD", state.Channel);
-        Assert.Equal(3600, state.Duration);
-        Assert.Equal(1_000_000L, state.Size);
-        Assert.Equal(MediaType.Show, state.Category);
+        Assert.Equal("Test Video", state.Media!.Title);
+        Assert.Equal("https://example.com/video.mp4", state.Media.VideoUrl);
+        Assert.Equal("https://example.com/sub.srt", state.Media.SubtitleUrl);
+        Assert.Equal("ARD", state.Media.Channel);
+        Assert.Equal(3600, state.Media.Duration);
+        Assert.Equal(1_000_000L, state.Media.Size);
+        Assert.Equal(MediaType.Show, state.Media.Category);
         Assert.Equal(WorkerStatus.Initialized, state.Status);
     }
 
@@ -90,9 +94,9 @@ public sealed class DownloadWorkerStateTests
     {
         var state = DownloadWorkerState.Empty;
 
-        Assert.Equal(0L, state.BytesDownloaded);
-        Assert.Equal(0L, state.CurrentTimeUs);
-        Assert.Equal(0.0, state.Speed);
+        Assert.Equal(0L, state.Progress.BytesDownloaded);
+        Assert.Equal(0L, state.Progress.CurrentTimeUs);
+        Assert.Equal(0.0, state.Progress.Speed);
     }
 
     [Fact]
@@ -100,16 +104,14 @@ public sealed class DownloadWorkerStateTests
     {
         var state = DownloadWorkerState.Empty with
         {
-            BytesDownloaded = 500_000,
-            CurrentTimeUs = 1_000_000,
-            Speed = 1.5,
+            Progress = new DownloadProgress(500_000, 1_000_000, 1.5),
         };
 
         state = state.Apply(MakeInitialized());
 
-        Assert.Equal(0L, state.BytesDownloaded);
-        Assert.Equal(0L, state.CurrentTimeUs);
-        Assert.Equal(0.0, state.Speed);
+        Assert.Equal(0L, state.Progress.BytesDownloaded);
+        Assert.Equal(0L, state.Progress.CurrentTimeUs);
+        Assert.Equal(0.0, state.Progress.Speed);
     }
 
     [Fact]
@@ -154,13 +156,13 @@ public sealed class DownloadWorkerStateTests
         var state = DownloadWorkerState.Empty
             .Apply(MakeInitialized())
             .Apply(new DownloadAttemptStarted(_testId, 1));
-        state = state with { BytesDownloaded = 500_000, CurrentTimeUs = 1_000_000, Speed = 1.5 };
+        state = state with { Progress = new DownloadProgress(500_000, 1_000_000, 1.5) };
         state = state.Apply(new DownloadAttemptStarted(_testId, 2));
 
         Assert.Equal(2, state.Attempt);
-        Assert.Equal(0L, state.BytesDownloaded);
-        Assert.Equal(0L, state.CurrentTimeUs);
-        Assert.Equal(0.0, state.Speed);
+        Assert.Equal(0L, state.Progress.BytesDownloaded);
+        Assert.Equal(0L, state.Progress.CurrentTimeUs);
+        Assert.Equal(0.0, state.Progress.Speed);
     }
 
     [Fact]

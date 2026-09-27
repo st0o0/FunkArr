@@ -98,13 +98,13 @@ public sealed class ReleaseVariantTests
         Assert.Equal(DateTimeOffset.UnixEpoch, item.AiredAt);
         Assert.Equal(0.85, item.Score);
         Assert.Equal("https://sub.vtt", item.SubtitleUrl);
-        Assert.Equal(83214, item.TvdbId);
-        Assert.Equal("tt123", item.ImdbId);
-        Assert.Equal(550, item.TmdbId);
-        Assert.Equal("2", item.Season);
-        Assert.Equal("5", item.Episode);
-        Assert.Equal(0.9f, item.MatchConfidence);
-        Assert.Equal(MatchMethod.AirdateMatch, item.MatchMethod);
+        Assert.Equal(83214, item.Metadata?.Ids?.TvdbId);
+        Assert.Equal("tt123", item.Metadata?.Ids?.ImdbId);
+        Assert.Equal(550, item.Metadata?.Ids?.TmdbId);
+        Assert.Equal("2", item.Metadata?.Season);
+        Assert.Equal("5", item.Metadata?.Episode);
+        Assert.Equal(0.9f, item.Metadata?.MatchConfidence);
+        Assert.Equal(MatchMethod.AirdateMatch, item.Metadata?.MatchMethod);
     }
 
     [Fact]
@@ -117,8 +117,8 @@ public sealed class ReleaseVariantTests
 
         var item = variant.ToResultItem();
 
-        Assert.Null(item.MatchConfidence);
-        Assert.Null(item.MatchMethod);
+        Assert.Null(item.Metadata?.MatchConfidence);
+        Assert.Null(item.Metadata?.MatchMethod);
     }
 
     private static EnrichedItem MakeItem(

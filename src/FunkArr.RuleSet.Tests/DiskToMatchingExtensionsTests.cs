@@ -68,8 +68,8 @@ public sealed class DiskToMatchingExtensionsTests
         Assert.NotNull(identity);
         Assert.Equal("Tatort", identity!.Value.Topic);
         Assert.Equal(["Tatort AT"], identity.Value.Aliases);
-        Assert.Equal(83214, identity.Value.TvdbId);
-        Assert.Equal("tt0806910", identity.Value.ImdbId);
+        Assert.Equal(83214, identity.Value.Ids.TvdbId);
+        Assert.Equal("tt0806910", identity.Value.Ids.ImdbId);
         Assert.Equal(Messages.MediaType.Show, identity.Value.MediaType);
         Assert.True(identity.Value.Enrichment.Enabled);
     }

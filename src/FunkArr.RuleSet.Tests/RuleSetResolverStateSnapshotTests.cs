@@ -1,5 +1,6 @@
 using FunkArr.Messages;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.RuleSet.Tests;
 
@@ -9,7 +10,7 @@ public sealed class RuleSetResolverStateSnapshotTests
     public void GetSnapshot_ReturnsRegisteredRuleSetsResult()
     {
         var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], 12345, "tt1234", 67890, "Tatort", MediaType.Show, null));
+            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show, null));
 
         var snapshot = state.GetSnapshot();
 
@@ -22,8 +23,8 @@ public sealed class RuleSetResolverStateSnapshotTests
     public void SnapshotRoundTrip_PreservesEntries()
     {
         var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], 12345, "tt1234", 67890, "Tatort", MediaType.Show, null))
-            .Apply(new RegisterRuleSet("heute", "heute show", [], null, null, null, null, null, null));
+            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show, null))
+            .Apply(new RegisterRuleSet("heute", "heute show", []));
 
         var snapshot = state.GetSnapshot();
         var restored = RuleSetResolverStateExtensions.FromSnapshot(snapshot);
@@ -36,11 +37,11 @@ public sealed class RuleSetResolverStateSnapshotTests
     public void SnapshotRoundTrip_PreservesLookupIndex()
     {
         var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], null, null, null, null, null, null));
+            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"]));
 
         var restored = RuleSetResolverStateExtensions.FromSnapshot(state.GetSnapshot());
 
-        var resolved = restored.Resolve(new ResolveRuleSet("tatort-krimi", null, null, null));
+        var resolved = restored.Resolve(new ResolveRuleSet("tatort-krimi"));
         Assert.IsType<RuleSetResolved>(resolved);
         Assert.Equal("tatort", ((RuleSetResolved)resolved).RuleSetId);
     }

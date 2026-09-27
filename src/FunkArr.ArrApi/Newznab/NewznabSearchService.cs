@@ -82,12 +82,12 @@ public sealed class NewznabSearchService(
             return
             [
                 .. items.Where(i =>
-                    int.TryParse(i.Season, out var s) && s == season &&
-                    int.TryParse(i.Episode, out var e) && e == episode)
+                    int.TryParse(i.Metadata?.Season, out var s) && s == season &&
+                    int.TryParse(i.Metadata?.Episode, out var e) && e == episode)
             ];
         }
 
-        return [.. items.Where(i => int.TryParse(i.Season, out var s) && s == season)];
+        return [.. items.Where(i => int.TryParse(i.Metadata?.Season, out var s) && s == season)];
     }
 
     internal static Rss ToRss(
@@ -137,29 +137,29 @@ public sealed class NewznabSearchService(
             new() { Name = "category", Value = category.CategoryId(item.Quality) },
         };
 
-        if (item.Season is not null)
+        if (item.Metadata?.Season is not null)
         {
-            attrs.Add(new NewznabAttribute { Name = "season", Value = item.Season });
+            attrs.Add(new NewznabAttribute { Name = "season", Value = item.Metadata.Season });
         }
 
-        if (item.Episode is not null)
+        if (item.Metadata?.Episode is not null)
         {
-            attrs.Add(new NewznabAttribute { Name = "episode", Value = item.Episode });
+            attrs.Add(new NewznabAttribute { Name = "episode", Value = item.Metadata.Episode });
         }
 
-        if (item.TvdbId is not null)
+        if (item.Metadata?.Ids?.TvdbId is not null)
         {
-            attrs.Add(new NewznabAttribute { Name = "tvdbid", Value = item.TvdbId.Value.ToString() });
+            attrs.Add(new NewznabAttribute { Name = "tvdbid", Value = item.Metadata.Ids.TvdbId.Value.ToString() });
         }
 
-        if (item.ImdbId is not null)
+        if (item.Metadata?.Ids?.ImdbId is not null)
         {
-            attrs.Add(new NewznabAttribute { Name = "imdb", Value = item.ImdbId });
+            attrs.Add(new NewznabAttribute { Name = "imdb", Value = item.Metadata.Ids.ImdbId });
         }
 
-        if (item.TmdbId is not null)
+        if (item.Metadata?.Ids?.TmdbId is not null)
         {
-            attrs.Add(new NewznabAttribute { Name = "tmdbid", Value = item.TmdbId.Value.ToString() });
+            attrs.Add(new NewznabAttribute { Name = "tmdbid", Value = item.Metadata.Ids.TmdbId.Value.ToString() });
         }
 
         return attrs;

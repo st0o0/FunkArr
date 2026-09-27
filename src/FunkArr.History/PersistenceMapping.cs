@@ -4,6 +4,7 @@ using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using FunkArr.Persistence;
 using FunkArr.Persistence.Events.ScoringHistory;
+using FunkArr.Persistence.Events.Shared;
 
 namespace FunkArr.History;
 
@@ -30,17 +31,21 @@ internal static class PersistenceMapping
         };
 
     public static PersistedItemTrace ToPersistence(this ItemTrace trace) =>
-        new(trace.CandidateTitle, trace.CandidateTopic, trace.CandidateChannel,
-            trace.CandidateDuration, trace.CandidateQuality, trace.CandidateDescription,
-            trace.CandidateTimestamp, trace.Matched, trace.Score, trace.MatchedRuleId,
+        new(new PersistedScoreCandidate(
+                trace.Candidate.Title, trace.Candidate.Topic, trace.Candidate.Channel,
+                trace.Candidate.Duration, trace.Candidate.Quality, trace.Candidate.Description,
+                trace.Candidate.Timestamp),
+            trace.Matched, trace.Score, trace.MatchedRuleId,
             trace.Identification?.ToPersistence(),
             [.. trace.RuleTraces.Select(r => r.ToPersistence())],
             trace.EnrichmentTrace?.ToPersistence());
 
     public static ItemTrace ToDomain(this PersistedItemTrace trace) =>
-        new(trace.CandidateTitle, trace.CandidateTopic, trace.CandidateChannel,
-            trace.CandidateDuration, trace.CandidateQuality, trace.CandidateDescription,
-            trace.CandidateTimestamp, trace.Matched, trace.Score, trace.MatchedRuleId,
+        new(new ScoreCandidate(
+                trace.Candidate.Title, trace.Candidate.Topic, trace.Candidate.Channel,
+                trace.Candidate.Duration, trace.Candidate.Quality, trace.Candidate.Description,
+                trace.Candidate.Timestamp),
+            trace.Matched, trace.Score, trace.MatchedRuleId,
             trace.Identification?.ToDomain(),
             [.. trace.RuleTraces.Select(r => r.ToDomain())],
             trace.EnrichmentTrace?.ToDomain());

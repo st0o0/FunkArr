@@ -137,8 +137,8 @@ public sealed class TvSearchWorkerStateTests
         Assert.True(result);
         Assert.NotNull(request);
         Assert.Null(request.TopicOrAlias);
-        Assert.Equal(83214, request.TvdbId);
-        Assert.Equal("tt123", request.ImdbId);
+        Assert.Equal(83214, request.Ids?.TvdbId);
+        Assert.Equal("tt123", request.Ids?.ImdbId);
     }
 
     [Fact]

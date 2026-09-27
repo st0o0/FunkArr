@@ -82,8 +82,8 @@ public sealed class SabnzbdQueueService(
             }
 
             var totalSpeed = result.Items
-                .Where(i => i is { Status: DownloadStatus.Processing, Speed: > 0 })
-                .Sum(i => i.TotalBytes > 0 ? i.BytesDownloaded / Math.Max(1.0, i.CurrentTimeUs / 1_000_000.0) : 0);
+                .Where(i => i is { Status: DownloadStatus.Processing, Progress.Speed: > 0 })
+                .Sum(i => i.TotalBytes > 0 ? i.Progress.BytesDownloaded / Math.Max(1.0, i.Progress.CurrentTimeUs / 1_000_000.0) : 0);
 
             return new SabnzbdResult.Ok(new FullStatusResponse(new FullStatusData(
                 Paused: result.IsPaused,

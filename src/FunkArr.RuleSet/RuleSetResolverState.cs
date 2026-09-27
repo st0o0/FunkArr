@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.RuleSet;
 
@@ -73,9 +74,9 @@ public static class RuleSetResolverStateExtensions
         }
 
         var idIndex = RemoveIdEntries(state.IdIndex, msg.RuleSetId);
-        idIndex = AddIdEntry(idIndex, "tvdb", msg.TvdbId?.ToString(), msg.RuleSetId);
-        idIndex = AddIdEntry(idIndex, "imdb", msg.ImdbId, msg.RuleSetId);
-        idIndex = AddIdEntry(idIndex, "tmdb", msg.TmdbId?.ToString(), msg.RuleSetId);
+        idIndex = AddIdEntry(idIndex, "tvdb", msg.Ids?.TvdbId?.ToString(), msg.RuleSetId);
+        idIndex = AddIdEntry(idIndex, "imdb", msg.Ids?.ImdbId, msg.RuleSetId);
+        idIndex = AddIdEntry(idIndex, "tmdb", msg.Ids?.TmdbId?.ToString(), msg.RuleSetId);
 
         var mediaNameIndex = msg.MediaName is not null
             ? state.MediaNameByRuleSetId.SetItem(msg.RuleSetId, msg.MediaName)
@@ -110,17 +111,17 @@ public static class RuleSetResolverStateExtensions
             return new RuleSetResolved(ruleSetId, topic, mediaName, enrichment);
         }
 
-        if (TryResolveById(state, "tvdb", msg.TvdbId?.ToString(), out var byTvdb))
+        if (TryResolveById(state, "tvdb", msg.Ids?.TvdbId?.ToString(), out var byTvdb))
         {
             return byTvdb;
         }
 
-        if (TryResolveById(state, "imdb", msg.ImdbId, out var byImdb))
+        if (TryResolveById(state, "imdb", msg.Ids?.ImdbId, out var byImdb))
         {
             return byImdb;
         }
 
-        if (TryResolveById(state, "tmdb", msg.TmdbId?.ToString(), out var byTmdb))
+        if (TryResolveById(state, "tmdb", msg.Ids?.TmdbId?.ToString(), out var byTmdb))
         {
             return byTmdb;
         }
@@ -176,7 +177,7 @@ public static class RuleSetResolverStateExtensions
         {
             state = state.Apply(new RegisterRuleSet(
                 entry.RuleSetId, entry.Topic, entry.Aliases,
-                entry.TvdbId, entry.ImdbId, entry.TmdbId,
+                entry.Ids,
                 entry.MediaName, entry.MediaType, null));
         }
 
@@ -219,7 +220,7 @@ public static class RuleSetResolverStateExtensions
 
             var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
             MediaType? mediaType = state.MediaTypeByRuleSetId.TryGetValue(ruleSetId, out var mt) ? mt : null;
-            entries.Add(new RegisteredRuleSetEntry(ruleSetId, topic, aliases, tvdbId, imdbId, tmdbId, mediaName, mediaType));
+            entries.Add(new RegisteredRuleSetEntry(ruleSetId, topic, aliases, new ExternalIds(tvdbId, imdbId, tmdbId), mediaName, mediaType));
         }
 
         return new RegisteredRuleSetsResult([.. entries]);

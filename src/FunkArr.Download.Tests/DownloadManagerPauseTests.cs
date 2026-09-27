@@ -5,6 +5,7 @@ using Akka.TestKit.Xunit;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Tests.Shared;
 
 namespace FunkArr.Download.Tests;
@@ -35,7 +36,7 @@ public sealed class DownloadManagerPauseTests : TestKit
         manager.Tell(new PauseDownloads());
         ExpectMsg<PauseDownloadsResult>(r => r.Success);
 
-        manager.Tell(new AddDownload("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         ExpectMsg<DownloadAdded>();
 
         _regionProbe.ExpectMsg<InitDownload>();
@@ -50,7 +51,7 @@ public sealed class DownloadManagerPauseTests : TestKit
         manager.Tell(new PauseDownloads());
         ExpectMsg<PauseDownloadsResult>();
 
-        manager.Tell(new AddDownload("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
 
@@ -86,7 +87,7 @@ public sealed class DownloadManagerPauseTests : TestKit
     {
         var manager = CreateManager(concurrentDownloads: 1);
 
-        manager.Tell(new AddDownload("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var added = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();
@@ -106,7 +107,7 @@ public sealed class DownloadManagerPauseTests : TestKit
         manager.Tell(new PauseDownloads());
         ExpectMsg<PauseDownloadsResult>();
 
-        manager.Tell(new AddDownload("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var added = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
 
@@ -134,7 +135,7 @@ public sealed class DownloadManagerPauseTests : TestKit
     {
         var manager = CreateManager(concurrentDownloads: 3);
 
-        manager.Tell(new AddDownload("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show));
+        manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var added = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();

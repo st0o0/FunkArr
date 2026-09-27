@@ -49,7 +49,7 @@ public sealed class ScoringHistoryEventVerifyTests
         Assert.Equal(original.MatchedCount, result.MatchedCount);
         Assert.Equal(original.EnrichedCount, result.EnrichedCount);
         Assert.Single(result.ItemTraces);
-        Assert.Equal(original.ItemTraces[0].CandidateTitle, result.ItemTraces[0].CandidateTitle);
+        Assert.Equal(original.ItemTraces[0].Candidate.Title, result.ItemTraces[0].Candidate.Title);
         Assert.Equal(original.ItemTraces[0].Score, result.ItemTraces[0].Score);
     }
 }

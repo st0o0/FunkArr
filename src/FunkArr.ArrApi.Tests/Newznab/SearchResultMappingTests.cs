@@ -2,6 +2,7 @@ using System.Text;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Messages.Search;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 
@@ -84,7 +85,7 @@ public sealed class SearchResultMappingTests
         var items = new[]
         {
             new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
-                TvdbId: 83214),
+                Metadata: new MatchMetadata(new ExternalIds(83214, null, null), null, null, null, null)),
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
@@ -99,7 +100,7 @@ public sealed class SearchResultMappingTests
         var items = new[]
         {
             new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
-                ImdbId: "tt0806910"),
+                Metadata: new MatchMetadata(new ExternalIds(null, "tt0806910", null), null, null, null, null)),
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
@@ -115,7 +116,7 @@ public sealed class SearchResultMappingTests
         var items = new[]
         {
             new SearchResultItem("Test", "ARD", "Tatort", "url", 7200, 100, 720, null, 0.9,
-                TmdbId: 2116),
+                Metadata: new MatchMetadata(new ExternalIds(null, null, 2116), null, null, null, null)),
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);

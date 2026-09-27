@@ -1,6 +1,7 @@
 using FunkArr.Api.Extensions;
 using FunkArr.Api.Models;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using MediaType = FunkArr.Messages.MediaType;
 
 namespace FunkArr.Api.Tests;
@@ -17,10 +18,8 @@ public sealed class DownloadApiEndpointTests
             Channel: "ARD",
             HasSubtitles: true,
             TotalBytes: 245_000_000,
-            BytesDownloaded: 176_400_000,
-            CurrentTimeUs: 36_000_000,
+            Progress: new DownloadProgress(176_400_000, 36_000_000, 1.0),
             TotalDuration: 50,
-            Speed: 1.0,
             Category: MediaType.Show,
             Priority: DownloadPriority.Normal,
             Phase: DownloadPhase.VideoDownload,
@@ -47,10 +46,8 @@ public sealed class DownloadApiEndpointTests
             Channel: "ZDF",
             HasSubtitles: false,
             TotalBytes: 180_000_000,
-            BytesDownloaded: 0,
-            CurrentTimeUs: 0,
+            Progress: new DownloadProgress(0, 0, 0),
             TotalDuration: 0,
-            Speed: 0,
             Category: MediaType.Show,
             Priority: DownloadPriority.Normal,
             Phase: DownloadPhase.Initialized,
@@ -76,10 +73,8 @@ public sealed class DownloadApiEndpointTests
             Channel: "ARD",
             HasSubtitles: false,
             TotalBytes: 100,
-            BytesDownloaded: 100,
-            CurrentTimeUs: 60_000_000,
+            Progress: new DownloadProgress(100, 60_000_000, 1.0),
             TotalDuration: 50,
-            Speed: 1.0,
             Category: MediaType.Show,
             Priority: DownloadPriority.Normal,
             Phase: DownloadPhase.Remuxing,
@@ -94,15 +89,9 @@ public sealed class DownloadApiEndpointTests
     public void History_response_maps_completed_item()
     {
         var item = new HistoryItem(
-            DownloadId: Guid.NewGuid(),
-            Title: "Tagesschau",
-            Category: MediaType.Show,
-            TotalBytes: 245_000_000,
-            DownloadTimeSeconds: 185,
-            RelativePath: "/downloads/tagesschau.mkv",
-            Status: DownloadStatus.Completed,
-            FailMessage: "",
-            CompletedAt: 1725300000);
+            Guid.NewGuid(),
+            new DownloadCompletion("Tagesschau", MediaType.Show,
+                245_000_000, DownloadStatus.Completed, "/downloads/tagesschau.mkv", null, 185, 1725300000));
 
         var result = item.ToApi();
 
@@ -115,15 +104,9 @@ public sealed class DownloadApiEndpointTests
     public void History_response_maps_failed_item()
     {
         var item = new HistoryItem(
-            DownloadId: Guid.NewGuid(),
-            Title: "Panorama",
-            Category: MediaType.Show,
-            TotalBytes: 98_000_000,
-            DownloadTimeSeconds: 0,
-            RelativePath: "",
-            Status: DownloadStatus.Failed,
-            FailMessage: "FFmpeg exited with code 1",
-            CompletedAt: 1725300000);
+            Guid.NewGuid(),
+            new DownloadCompletion("Panorama", MediaType.Show,
+                98_000_000, DownloadStatus.Failed, null, "FFmpeg exited with code 1", 0, 1725300000));
 
         var result = item.ToApi();
 
@@ -150,9 +133,9 @@ public sealed class DownloadApiEndpointTests
     {
         var items = new[]
         {
-            new QueueItem(Guid.NewGuid(), "A", DownloadStatus.Processing, "ARD", true, 100, 50, 1_000_000, 10, 1.0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1),
-            new QueueItem(Guid.NewGuid(), "B", DownloadStatus.Processing, "ZDF", false, 100, 50, 1_000_000, 10, 1.0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1),
-            new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, 0, 0, 0, 0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0),
+            new QueueItem(Guid.NewGuid(), "A", DownloadStatus.Processing, "ARD", true, 100, new DownloadProgress(50, 1_000_000, 1.0), 10, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1),
+            new QueueItem(Guid.NewGuid(), "B", DownloadStatus.Processing, "ZDF", false, 100, new DownloadProgress(50, 1_000_000, 1.0), 10, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1),
+            new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, new DownloadProgress(0, 0, 0), 0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0),
         };
         var queueResult = new QueueResult(items, 3, 3, false, true, null);
 
@@ -166,15 +149,9 @@ public sealed class DownloadApiEndpointTests
     public void History_completed_at_is_datetimeoffset()
     {
         var item = new HistoryItem(
-            DownloadId: Guid.NewGuid(),
-            Title: "Test",
-            Category: MediaType.Show,
-            TotalBytes: 100,
-            DownloadTimeSeconds: 10,
-            RelativePath: "/test.mkv",
-            Status: DownloadStatus.Completed,
-            FailMessage: "",
-            CompletedAt: 1725300000);
+            Guid.NewGuid(),
+            new DownloadCompletion("Test", MediaType.Show,
+                100, DownloadStatus.Completed, "/test.mkv", null, 10, 1725300000));
 
         var result = item.ToApi();
 

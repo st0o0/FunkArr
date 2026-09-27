@@ -10,13 +10,15 @@
       "EnrichedCount": 2,
       "ItemTraces": [
         {
-          "CandidateTitle": "Tatort: Der letzte Schrei",
-          "CandidateTopic": "Tatort",
-          "CandidateChannel": "ARD",
-          "CandidateDuration": 5400,
-          "CandidateQuality": 720,
-          "CandidateDescription": "Ein spannender Fall",
-          "CandidateTimestamp": 1700000000,
+          "Candidate": {
+            "Title": "Tatort: Der letzte Schrei",
+            "Topic": "Tatort",
+            "Channel": "ARD",
+            "Duration": 5400,
+            "Quality": 720,
+            "Description": "Ein spannender Fall",
+            "Timestamp": 1700000000
+          },
           "Matched": true,
           "Score": 0.95,
           "MatchedRuleId": "rule-1",

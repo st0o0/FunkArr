@@ -1,13 +1,9 @@
+using FunkArr.Persistence.Events.Shared;
+
 namespace FunkArr.Persistence.Events.Download;
 
 public sealed record DownloadInitialized(
     Guid DownloadId,
-    string Title,
-    string VideoUrl,
-    string? SubtitleUrl,
-    string Channel,
-    int Duration,
-    long Size,
-    PersistedMediaType Category,
+    PersistedDownloadMedia Media,
     string RouteName = "Direct",
     string? ProxyUrl = null);

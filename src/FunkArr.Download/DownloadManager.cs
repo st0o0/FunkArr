@@ -81,17 +81,16 @@ public sealed class DownloadManager : ReceivePersistentActor
     {
         var downloadId = Guid.NewGuid();
 
-        var route = _routeResolver.Resolve(cmd.Channel);
+        var route = _routeResolver.Resolve(cmd.Media.Channel);
 
-        _log.Info("Enqueuing download {DownloadId}: {Title} (route: {Route})", downloadId, cmd.Title, route.Name);
-        Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence(), cmd.Category.ToPersistence()), e =>
+        _log.Info("Enqueuing download {DownloadId}: {Title} (route: {Route})", downloadId, cmd.Media.Title, route.Name);
+        Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence(), cmd.Media.Category.ToPersistence()), e =>
         {
             _state = _state.Apply(e);
             MaybeSnapshot();
 
             _downloadRegion.Tell(new InitDownload(
-                downloadId, cmd.Title, cmd.VideoUrl, cmd.SubtitleUrl,
-                cmd.Channel, cmd.Duration, cmd.Size, cmd.Category, route.Name, route.ProxyUrl));
+                downloadId, cmd.Media, route.Name, route.ProxyUrl));
 
             Telemetry.Enqueued.Add(1);
             Sender.Tell(new DownloadAdded(downloadId));
@@ -144,8 +143,8 @@ public sealed class DownloadManager : ReceivePersistentActor
                     r.DownloadId, r.Title,
                     r.Status == WorkerStatus.Downloading ? DownloadStatus.Processing : DownloadStatus.Queued,
                     r.Channel, r.HasSubtitles,
-                    r.Size, r.BytesDownloaded, r.CurrentTimeUs,
-                    r.TotalDuration, r.Speed, r.Category, priority,
+                    r.Size, r.Progress,
+                    r.TotalDuration, r.Category, priority,
                     r.Phase, r.Attempt);
             })
             .RunWith(Sink.Seq<QueueItem>(), _materializer)

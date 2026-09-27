@@ -3,19 +3,17 @@
 ## Purpose
 
 Formerly defined persistence DTOs for scoring traces, versioning rules, JSON property stability, mapping between Message records and persistence DTOs, and golden-file snapshot tests. These concerns have been superseded by the actor-state-management capability (persistence records in `FunkArr.Persistence/Events/`, Akka default serializer, and serializer roundtrip tests).
-
 ## Requirements
-
 ### Requirement: History persistence actor
-The HistoryWorker (renamed from ScoringHistoryWorker) SHALL use PersistenceId `history-{ruleSetId}` and persist HistoryRecorded events that include enrichment data.
+The HistoryWorker (renamed from ScoringHistoryWorker) SHALL use PersistenceId `history-{ruleSetId}` and persist HistoryRecorded events that include enrichment data. The HistoryRecorded event's ItemTrace array SHALL use records that embed ScoreCandidate/PersistedScoreCandidate instead of flattening candidate fields with Candidate* prefixes.
 
 #### Scenario: Persist history with enrichment
 - **WHEN** HistoryWorker receives RecordHistory with enrichment data
-- **THEN** it persists a HistoryRecorded event containing candidateCount, matchedCount, enrichedCount, and ItemTrace[] with EnrichmentTrace
+- **THEN** it persists a HistoryRecorded event containing candidateCount, matchedCount, enrichedCount, and ItemTrace[] with EnrichmentTrace, where each ItemTrace embeds a PersistedScoreCandidate (not flattened CandidateTitle/CandidateTopic/... fields)
 
 #### Scenario: Recovery replays HistoryRecorded events
 - **WHEN** HistoryWorker recovers from journal
-- **THEN** it replays HistoryRecorded events and rebuilds state including pre-computed stats
+- **THEN** it replays HistoryRecorded events and rebuilds state including pre-computed stats, with embedded candidate records
 
 ### Requirement: Pre-computed stats in HistoryWorker state
 HistoryState SHALL maintain a pre-computed HistoryStats record that is updated on every Apply, not computed on-demand.
@@ -43,3 +41,4 @@ After persisting a HistoryRecorded event and updating state, HistoryWorker SHALL
 - ~~Persistence DTOs have version tracking~~
 - ~~JSON snapshot tests verify serialization stability~~
 - ~~Mapping between Messages and Persistence DTOs~~
+

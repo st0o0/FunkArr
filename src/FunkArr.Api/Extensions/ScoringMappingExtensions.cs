@@ -6,9 +6,11 @@ namespace FunkArr.Api.Extensions;
 internal static class ScoringMappingExtensions
 {
     internal static ApiModels.ItemTrace ToApi(this ItemTrace msg) =>
-        new(msg.CandidateTitle, msg.CandidateTopic, msg.CandidateChannel,
-            msg.CandidateDuration, msg.CandidateQuality, msg.CandidateDescription,
-            msg.CandidateTimestamp, msg.Matched, msg.Score, msg.MatchedRuleId,
+        new(new ApiModels.ScoreCandidate(
+                msg.Candidate.Title, msg.Candidate.Topic, msg.Candidate.Channel,
+                msg.Candidate.Duration, msg.Candidate.Quality, msg.Candidate.Description,
+                msg.Candidate.Timestamp),
+            msg.Matched, msg.Score, msg.MatchedRuleId,
             msg.Identification is not null
                 ? new ApiModels.TracedIdentification(msg.Identification.Season, msg.Identification.Episode, msg.Identification.Title)
                 : null,

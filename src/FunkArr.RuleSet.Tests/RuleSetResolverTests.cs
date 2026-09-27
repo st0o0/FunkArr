@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.TestKit.Xunit;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.RuleSet.Tests;
 
@@ -151,9 +152,9 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], TvdbId: 83214));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(83214, null, null)));
 
-        resolver.Tell(new ResolveRuleSet(null, TvdbId: 83214));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(83214, null, null)));
         var result = ExpectMsg<RuleSetResolved>();
 
         Assert.Equal("tatort", result.RuleSetId);
@@ -165,9 +166,9 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], ImdbId: "tt0806910"));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(null, "tt0806910", null)));
 
-        resolver.Tell(new ResolveRuleSet(null, ImdbId: "tt0806910"));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(null, "tt0806910", null)));
         var result = ExpectMsg<RuleSetResolved>();
 
         Assert.Equal("tatort", result.RuleSetId);
@@ -179,9 +180,9 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], TmdbId: 2116));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(null, null, 2116)));
 
-        resolver.Tell(new ResolveRuleSet(null, TmdbId: 2116));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(null, null, 2116)));
         var result = ExpectMsg<RuleSetResolved>();
 
         Assert.Equal("tatort", result.RuleSetId);
@@ -193,9 +194,9 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], TvdbId: 83214));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(83214, null, null)));
 
-        resolver.Tell(new ResolveRuleSet("Tatort", TvdbId: 99999));
+        resolver.Tell(new ResolveRuleSet("Tatort", new ExternalIds(99999, null, null)));
         var result = ExpectMsg<RuleSetResolved>();
 
         Assert.Equal("tatort", result.RuleSetId);
@@ -206,7 +207,7 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new ResolveRuleSet(null, TvdbId: 99999));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(99999, null, null)));
         ExpectMsg<RuleSetFailed>();
     }
 
@@ -215,13 +216,13 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], TvdbId: 83214));
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], TvdbId: 99999));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(83214, null, null)));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(99999, null, null)));
 
-        resolver.Tell(new ResolveRuleSet(null, TvdbId: 83214));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(83214, null, null)));
         ExpectMsg<RuleSetFailed>();
 
-        resolver.Tell(new ResolveRuleSet(null, TvdbId: 99999));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(99999, null, null)));
         Assert.Equal("tatort", ExpectMsg<RuleSetResolved>().RuleSetId);
     }
 
@@ -230,14 +231,14 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], TvdbId: 83214, ImdbId: "tt0806910"));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(83214, "tt0806910", null)));
 
         resolver.Tell(new DeregisterRuleSet("tatort"));
 
-        resolver.Tell(new ResolveRuleSet(null, TvdbId: 83214));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(83214, null, null)));
         ExpectMsg<RuleSetFailed>();
 
-        resolver.Tell(new ResolveRuleSet(null, ImdbId: "tt0806910"));
+        resolver.Tell(new ResolveRuleSet(null, new ExternalIds(null, "tt0806910", null)));
         ExpectMsg<RuleSetFailed>();
     }
 
@@ -271,7 +272,7 @@ public sealed class RuleSetResolverTests : TestKit
     {
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
-        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", ["Tatort Münster"], TvdbId: 83214, ImdbId: "tt0806910"));
+        resolver.Tell(new RegisterRuleSet("tatort", "Tatort", ["Tatort Münster"], new ExternalIds(83214, "tt0806910", null)));
 
         resolver.Tell(new QueryRegisteredRuleSets());
         var result = ExpectMsg<RegisteredRuleSetsResult>();
@@ -280,8 +281,8 @@ public sealed class RuleSetResolverTests : TestKit
         Assert.Equal("tatort", entry.RuleSetId);
         Assert.Equal("Tatort", entry.Topic);
         Assert.Contains("Tatort Münster", entry.Aliases);
-        Assert.Equal(83214, entry.TvdbId);
-        Assert.Equal("tt0806910", entry.ImdbId);
+        Assert.Equal(83214, entry.Ids.TvdbId);
+        Assert.Equal("tt0806910", entry.Ids.ImdbId);
     }
 
     [Fact]
@@ -318,7 +319,7 @@ public sealed class RuleSetResolverTests : TestKit
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
         resolver.Tell(new RegisterRuleSet("show-a", "Show A", []));
-        resolver.Tell(new RegisterRuleSet("show-b", "Show B", ["Alias B"], TmdbId: 42));
+        resolver.Tell(new RegisterRuleSet("show-b", "Show B", ["Alias B"], new ExternalIds(null, null, 42)));
         resolver.Tell(new RegisterRuleSet("show-c", "Show C", []));
 
         resolver.Tell(new QueryRegisteredRuleSets());
@@ -326,7 +327,7 @@ public sealed class RuleSetResolverTests : TestKit
 
         Assert.Equal(3, result.Entries.Length);
         Assert.Contains(result.Entries, e => e.RuleSetId == "show-a");
-        Assert.Contains(result.Entries, e => e.RuleSetId == "show-b" && e.TmdbId == 42);
+        Assert.Contains(result.Entries, e => e.RuleSetId == "show-b" && e.Ids.TmdbId == 42);
         Assert.Contains(result.Entries, e => e.RuleSetId == "show-c");
     }
 

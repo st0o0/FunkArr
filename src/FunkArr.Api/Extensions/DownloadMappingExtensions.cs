@@ -22,17 +22,17 @@ internal static class DownloadMappingExtensions
             : ApiModels.QueueStatus.Queued;
 
         var phase = item.Phase is DownloadPhase.Initialized or DownloadPhase.Completed or DownloadPhase.Failed
-            ? DerivePhase(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs)
+            ? DerivePhase(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs)
             : item.Phase;
-        var percentage = phase.CalculatePercentage(item.BytesDownloaded, item.TotalBytes, item.CurrentTimeUs, item.TotalDuration);
+        var percentage = phase.CalculatePercentage(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs, item.TotalDuration);
 
-        var elapsedSeconds = item.CurrentTimeUs / 1_000_000.0;
-        var speed = elapsedSeconds > 0 ? (long)(item.BytesDownloaded / elapsedSeconds) : 0;
+        var elapsedSeconds = item.Progress.CurrentTimeUs / 1_000_000.0;
+        var speed = elapsedSeconds > 0 ? (long)(item.Progress.BytesDownloaded / elapsedSeconds) : 0;
 
         var eta = "00:00:00";
-        if (speed > 0 && item.TotalBytes > item.BytesDownloaded)
+        if (speed > 0 && item.TotalBytes > item.Progress.BytesDownloaded)
         {
-            var remainingSeconds = (item.TotalBytes - item.BytesDownloaded) / (double)speed;
+            var remainingSeconds = (item.TotalBytes - item.Progress.BytesDownloaded) / (double)speed;
             var ts = TimeSpan.FromSeconds(Math.Min(remainingSeconds, 359999));
             eta = $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
         }
@@ -46,7 +46,7 @@ internal static class DownloadMappingExtensions
             item.HasSubtitles,
             item.TotalDuration,
             item.TotalBytes,
-            item.BytesDownloaded,
+            item.Progress.BytesDownloaded,
             percentage,
             phase.ToString().ToLowerInvariant(),
             speed,
@@ -59,12 +59,12 @@ internal static class DownloadMappingExtensions
 
     internal static ApiModels.DownloadHistoryItem ToApi(this HistoryItem item) =>
         new(item.DownloadId.ToString(),
-            item.Title,
-            (ApiModels.MediaType)(int)item.Category,
-            item.TotalBytes,
-            item.DownloadTimeSeconds,
-            item.Status == DownloadStatus.Completed ? item.RelativePath : null,
-            item.Status == DownloadStatus.Completed ? ApiModels.HistoryStatus.Completed : ApiModels.HistoryStatus.Failed,
-            item.Status == DownloadStatus.Failed ? item.FailMessage : null,
-            DateTimeOffset.FromUnixTimeSeconds(item.CompletedAt));
+            item.Completion.Title,
+            (ApiModels.MediaType)(int)item.Completion.Category,
+            item.Completion.Size,
+            item.Completion.DownloadTimeSeconds,
+            item.Completion.Status == DownloadStatus.Completed ? item.Completion.RelativePath : null,
+            item.Completion.Status == DownloadStatus.Completed ? ApiModels.HistoryStatus.Completed : ApiModels.HistoryStatus.Failed,
+            item.Completion.Status == DownloadStatus.Failed ? item.Completion.FailMessage : null,
+            DateTimeOffset.FromUnixTimeSeconds(item.Completion.CompletedAt));
 }

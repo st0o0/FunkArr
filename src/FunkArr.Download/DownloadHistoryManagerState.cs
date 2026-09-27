@@ -1,6 +1,8 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Persistence.Events.Download;
+using FunkArr.Persistence.Events.Shared;
 
 namespace FunkArr.Download;
 
@@ -15,14 +17,7 @@ public sealed record HistoryStats(
 
 public sealed record HistoryRecord(
     Guid DownloadId,
-    string Title,
-    MediaType Category,
-    long Size,
-    DownloadStatus Status,
-    string? RelativePath,
-    string? FailMessage,
-    int DownloadTimeSeconds,
-    long CompletedAt);
+    DownloadCompletion Completion);
 
 public sealed record DownloadHistoryManagerState(
     IReadOnlyList<HistoryRecord> Records,
@@ -36,10 +31,7 @@ public static class DownloadHistoryManagerStateExtensions
 {
     public static DownloadHistoryManagerState Apply(this DownloadHistoryManagerState state, DownloadHistoryRecorded evt)
     {
-        var record = new HistoryRecord(
-            evt.DownloadId, evt.Title, evt.Category.ToDomain(), evt.Size,
-            evt.Status.ToDomain(), evt.RelativePath, evt.FailMessage,
-            evt.DownloadTimeSeconds, evt.CompletedAt);
+        var record = new HistoryRecord(evt.DownloadId, evt.Completion.ToDomain());
 
         var records = new List<HistoryRecord>(state.Records) { record };
         var index = new HashSet<Guid>(state.Index) { evt.DownloadId };
@@ -97,17 +89,13 @@ public static class DownloadHistoryManagerStateExtensions
     public static PersistedDownloadHistoryManagerState GetPersistenceState(this DownloadHistoryManagerState state) =>
         new([
             .. state.Records.Select(r => new DownloadHistoryRecorded(
-                r.DownloadId, r.Title, r.Category.ToPersistence(), r.Size,
-                r.Status.ToPersistence(), r.RelativePath, r.FailMessage,
-                r.DownloadTimeSeconds, r.CompletedAt))
+                r.DownloadId, r.Completion.ToPersistence()))
         ]);
 
     public static DownloadHistoryManagerState FromPersistence(PersistedDownloadHistoryManagerState persisted)
     {
         var records = persisted.Records.Select(r => new HistoryRecord(
-            r.DownloadId, r.Title, r.Category.ToDomain(), r.Size,
-            r.Status.ToDomain(), r.RelativePath, r.FailMessage,
-            r.DownloadTimeSeconds, r.CompletedAt)).ToList();
+            r.DownloadId, r.Completion.ToDomain())).ToList();
 
         var index = new HashSet<Guid>(records.Select(r => r.DownloadId));
         var stats = HistoryStats.Empty;
@@ -139,7 +127,7 @@ public static class DownloadHistoryManagerStateExtensions
     public static HistoryCategoriesResult ToHistoryCategories(this DownloadHistoryManagerState state)
     {
         var categories = state.Records
-            .Select(r => r.Category.ToString().ToLowerInvariant())
+            .Select(r => r.Completion.Category.ToString().ToLowerInvariant())
             .Distinct()
             .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -152,7 +140,7 @@ public static class DownloadHistoryManagerStateExtensions
         IEnumerable<HistoryRecord> filtered = state.Records;
         if (query.Category is not null)
         {
-            filtered = filtered.Where(r => r.Category == query.Category);
+            filtered = filtered.Where(r => r.Completion.Category == query.Category);
         }
 
         var materialized = filtered.ToArray();
@@ -165,32 +153,27 @@ public static class DownloadHistoryManagerStateExtensions
         }
 
         return new HistoryResult(
-            [
-                .. paged.Select(r => new HistoryItem(
-                    r.DownloadId, r.Title, r.Category, r.Size,
-                    r.DownloadTimeSeconds, r.RelativePath ?? "", r.Status,
-                    r.FailMessage ?? "", r.CompletedAt))
-            ],
+            [.. paged.Select(r => new HistoryItem(r.DownloadId, r.Completion))],
             totalItems);
     }
 
     private static HistoryStats AddToStats(HistoryStats stats, HistoryRecord record) =>
-        record.Status == DownloadStatus.Completed
+        record.Completion.Status == DownloadStatus.Completed
             ? stats with
             {
                 TotalCompleted = stats.TotalCompleted + 1,
-                TotalBytes = stats.TotalBytes + record.Size,
-                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds + record.DownloadTimeSeconds,
+                TotalBytes = stats.TotalBytes + record.Completion.Size,
+                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds + record.Completion.DownloadTimeSeconds,
             }
             : stats with { TotalFailed = stats.TotalFailed + 1 };
 
     private static HistoryStats RemoveFromStats(HistoryStats stats, HistoryRecord record) =>
-        record.Status == DownloadStatus.Completed
+        record.Completion.Status == DownloadStatus.Completed
             ? stats with
             {
                 TotalCompleted = stats.TotalCompleted - 1,
-                TotalBytes = stats.TotalBytes - record.Size,
-                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds - record.DownloadTimeSeconds,
+                TotalBytes = stats.TotalBytes - record.Completion.Size,
+                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds - record.Completion.DownloadTimeSeconds,
             }
             : stats with { TotalFailed = stats.TotalFailed - 1 };
 }

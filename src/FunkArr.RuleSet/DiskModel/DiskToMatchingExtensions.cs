@@ -2,6 +2,7 @@ using System.Text.Json;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.RuleSet.DiskModel;
 
@@ -18,12 +19,12 @@ internal static class DiskToMatchingExtensions
         return new MatchingConfig(ruleSetId, disk.Confidence ?? 0f, rules);
     }
 
-    public static (string Topic, string[] Aliases, int? TvdbId, string? ImdbId, int? TmdbId,
+    public static (string Topic, string[] Aliases, ExternalIds Ids,
         string? MediaName, Messages.MediaType? MediaType, EnrichmentConfig Enrichment)? ToIdentity(this DiskRuleSet disk)
     {
         var aliases = disk.Aliases?.ToArray() ?? [];
         return (disk.Topic, aliases,
-            disk.Media?.TvdbId, disk.Media?.ImdbId, disk.Media?.TmdbId,
+            new ExternalIds(disk.Media?.TvdbId, disk.Media?.ImdbId, disk.Media?.TmdbId),
             disk.Media?.Name, disk.Media?.Type,
             disk.Enrichment.ToEnrichmentConfig());
     }

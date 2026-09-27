@@ -1,5 +1,6 @@
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Scoring;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.Messages.RuleSet;
 
@@ -18,9 +19,7 @@ public sealed record RuleSetDetailResult(
     public sealed record RuleSetIdentity(
         string Topic,
         string[] Aliases,
-        int? TvdbId,
-        string? ImdbId,
-        int? TmdbId);
+        ExternalIds Ids);
 
     public sealed record RuleSetSource(
         string? CommunityPath,
