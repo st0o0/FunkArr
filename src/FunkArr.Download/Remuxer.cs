@@ -1,20 +1,33 @@
+using Microsoft.Extensions.Logging;
+
 namespace FunkArr.Download;
 
-internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner ffmpeg) : IRemuxer
+internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner ffmpeg, ILogger<Remuxer> logger) : IRemuxer
 {
     public async Task<FfmpegResult> RunAsync(
         string videoUrl, string? subtitleUrl, string outputPath,
         string routeName, string? proxyUrl, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         string? subtitlePath = null;
+        string? subtitleLanguage = null;
         try
         {
             if (subtitleUrl is not null)
             {
-                subtitlePath = await subtitlePreparer.PrepareAsync(subtitleUrl, Path.GetDirectoryName(outputPath)!, routeName, ct);
+                var result = await subtitlePreparer.PrepareAsync(subtitleUrl, Path.GetDirectoryName(outputPath)!, routeName, ct);
+                switch (result)
+                {
+                    case SubtitleResult.Succeeded s:
+                        subtitlePath = s.FilePath;
+                        subtitleLanguage = s.Track.Language;
+                        break;
+                    case SubtitleResult.Failed f:
+                        logger.LogWarning("Subtitle failed for {Url}: {Reason} {Detail}", subtitleUrl, f.Reason, f.Detail);
+                        break;
+                }
             }
 
-            return await ffmpeg.RunAsync(videoUrl, subtitlePath, outputPath, proxyUrl, onProgress, ct);
+            return await ffmpeg.RunAsync(videoUrl, subtitlePath, outputPath, proxyUrl, subtitleLanguage, onProgress, ct);
         }
         finally
         {
@@ -26,7 +39,6 @@ internal sealed class Remuxer(ISubtitlePreparer subtitlePreparer, IFfmpegRunner 
                 }
                 catch
                 {
-                    /* cleanup is best-effort */
                 }
             }
         }

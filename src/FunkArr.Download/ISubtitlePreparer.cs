@@ -1,6 +1,6 @@
 namespace FunkArr.Download;
 
-public interface ISubtitlePreparer
+internal interface ISubtitlePreparer
 {
-    Task<string?> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct);
+    Task<SubtitleResult> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct);
 }

@@ -1,11 +1,64 @@
-using System.Xml.Linq;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace FunkArr.Download;
 
 internal sealed class SubtitlePreparer(IHttpClientFactory httpClientFactory, ILogger<SubtitlePreparer> logger) : ISubtitlePreparer
 {
-    public async Task<string?> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
+    private static ISubtitleFormat[] CreateFormats() => [new TtmlFormat(), new WebVttFormat(), new SrtFormat()];
+
+    public async Task<SubtitleResult> PrepareAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
+    {
+        var sw = Stopwatch.StartNew();
+        string? detectedFormat = null;
+
+        try
+        {
+            var result = await PrepareInternalAsync(url, outputDirectory, routeName, ct);
+            sw.Stop();
+
+            switch (result)
+            {
+                case SubtitleResult.Succeeded s:
+                    detectedFormat = s.Track.Format;
+                    Telemetry.SubtitleTotal.Add(1,
+                        new KeyValuePair<string, object?>("status", "succeeded"),
+                        new KeyValuePair<string, object?>("format", s.Track.Format.ToLowerInvariant()));
+                    logger.LogDebug("Subtitle prepared from {Url}, format {Format}", url, s.Track.Format);
+                    break;
+                case SubtitleResult.Failed f:
+                    Telemetry.SubtitleTotal.Add(1,
+                        new KeyValuePair<string, object?>("status", "failed"),
+                        new KeyValuePair<string, object?>("format", "unknown"));
+                    logger.LogWarning("Subtitle preparation failed for {Url}: {Reason} {Detail}", url, f.Reason, f.Detail);
+                    break;
+                case SubtitleResult.Unavailable:
+                    Telemetry.SubtitleTotal.Add(1,
+                        new KeyValuePair<string, object?>("status", "unavailable"),
+                        new KeyValuePair<string, object?>("format", "unknown"));
+                    break;
+            }
+
+            Telemetry.SubtitleDuration.Record(sw.Elapsed.TotalSeconds);
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            Telemetry.SubtitleTotal.Add(1,
+                new KeyValuePair<string, object?>("status", "failed"),
+                new KeyValuePair<string, object?>("format", "unknown"));
+            Telemetry.SubtitleDuration.Record(sw.Elapsed.TotalSeconds);
+            logger.LogWarning(ex, "Subtitle preparation failed for {Url}", url);
+            return new SubtitleResult.Failed(SubtitleFailureReason.DownloadFailed, ex.Message);
+        }
+    }
+
+    private async Task<SubtitleResult> PrepareInternalAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
     {
         string content;
         try
@@ -13,64 +66,40 @@ internal sealed class SubtitlePreparer(IHttpClientFactory httpClientFactory, ILo
             using var client = httpClientFactory.CreateClient($"route:{routeName}");
             var response = await client.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+                return new SubtitleResult.Failed(SubtitleFailureReason.DownloadFailed, $"HTTP {(int)response.StatusCode}");
 
             content = await response.Content.ReadAsStringAsync(ct);
         }
-        catch (Exception ex) when (!ct.IsCancellationRequested)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "Failed to download subtitle from {Url}", url);
-            return null;
+            return new SubtitleResult.Failed(SubtitleFailureReason.DownloadFailed, ex.Message);
         }
 
         if (string.IsNullOrWhiteSpace(content))
+            return new SubtitleResult.Failed(SubtitleFailureReason.EmptyContent);
+
+        content = StripBom(content);
+
+        foreach (var format in CreateFormats())
         {
-            return null;
+            if (!format.CanParse(content))
+                continue;
+
+            var cues = format.Parse(content);
+            if (cues.Count == 0)
+                return new SubtitleResult.Failed(SubtitleFailureReason.ConversionFailed, $"{format.Name} parsed but produced no cues");
+
+            var srt = SrtEmitter.Emit(cues);
+            var path = Path.Combine(outputDirectory, "subtitle.srt");
+            await File.WriteAllTextAsync(path, srt, ct);
+
+            var track = new SubtitleTrack(format.Name, "deu", cues);
+            return new SubtitleResult.Succeeded(track, path);
         }
 
-        var trimmed = content.TrimStart('﻿').TrimStart();
-
-        try
-        {
-            var doc = XDocument.Parse(content);
-            if (doc.Root?.Name.LocalName == "tt")
-            {
-                var srt = TtmlToSrtConverter.Convert(content);
-                if (string.IsNullOrWhiteSpace(srt))
-                {
-                    logger.LogWarning("Subtitle conversion produced empty result for {Url}", url);
-                    return null;
-                }
-
-                return WriteFile(outputDirectory, ".srt", srt);
-            }
-        }
-        catch (System.Xml.XmlException)
-        {
-        }
-
-        if (trimmed.StartsWith("WEBVTT", StringComparison.Ordinal))
-        {
-            return WriteFile(outputDirectory, ".vtt", content);
-        }
-
-        if (IsSrt(trimmed))
-        {
-            return WriteFile(outputDirectory, ".srt", content);
-        }
-
-        return null;
+        return new SubtitleResult.Failed(SubtitleFailureReason.UnrecognizedFormat);
     }
 
-    private static bool IsSrt(string content) =>
-        content.Length > 5 && char.IsDigit(content[0]) && content.Contains("-->");
-
-    private static string WriteFile(string directory, string extension, string content)
-    {
-        var path = Path.Combine(directory, $"subtitle{extension}");
-        File.WriteAllText(path, content);
-        return path;
-    }
+    private static string StripBom(string content) =>
+        content.Length > 0 && content[0] == '﻿' ? content[1..] : content;
 }
