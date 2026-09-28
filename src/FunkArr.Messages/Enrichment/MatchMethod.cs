@@ -5,5 +5,5 @@ public enum MatchMethod
     RegexExtracted,
     TitleMatch,
     AirdateMatch,
-    YearMatch,
+    YearMatch
 }

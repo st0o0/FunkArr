@@ -4,5 +4,5 @@ public enum PersistedFilterGroupOp
 {
     All,
     Any,
-    Not,
+    Not
 }

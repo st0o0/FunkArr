@@ -4,5 +4,5 @@ public enum PersistedRuleOutcome
 {
     Matched,
     FilterFailed,
-    IdentificationFailed,
+    IdentificationFailed
 }

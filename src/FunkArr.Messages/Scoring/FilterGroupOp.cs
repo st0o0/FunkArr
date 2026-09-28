@@ -4,5 +4,5 @@ public enum FilterGroupOp
 {
     All,
     Any,
-    Not,
+    Not
 }

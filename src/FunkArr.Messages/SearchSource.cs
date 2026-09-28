@@ -5,5 +5,5 @@ public enum SearchSource
     Sonarr,
     Radarr,
     Prowlarr,
-    Test,
+    Test
 }

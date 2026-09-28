@@ -6,5 +6,5 @@ public enum PersistedIdentificationStrategy
     AbsoluteEpisodeNumber,
     TitleExact,
     TitleIncludes,
-    AirdateExtraction,
+    AirdateExtraction
 }

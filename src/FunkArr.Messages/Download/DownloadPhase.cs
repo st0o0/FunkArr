@@ -7,7 +7,7 @@ public enum DownloadPhase
     Remuxing = 2,
     Moving = 3,
     Completed = 4,
-    Failed = 5,
+    Failed = 5
 }
 
 public static class DownloadPhaseExtensions
@@ -25,7 +25,7 @@ public static class DownloadPhaseExtensions
         DownloadPhase.Remuxing => totalDuration > 0
             ? Math.Clamp((int)(currentTimeUs / 1_000_000.0 / totalDuration * 100), 0, 100)
             : 0,
-        _ => 0,
+        _ => 0
     };
 
     public static bool IsTransient(this DownloadPhase phase) =>

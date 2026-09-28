@@ -5,5 +5,5 @@ public enum PersistedMatchMethod
     RegexExtracted,
     TitleMatch,
     AirdateMatch,
-    YearMatch,
+    YearMatch
 }

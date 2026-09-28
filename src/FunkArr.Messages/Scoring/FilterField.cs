@@ -7,5 +7,5 @@ public enum FilterField
     Channel,
     Description,
     Duration,
-    Timestamp,
+    Timestamp
 }

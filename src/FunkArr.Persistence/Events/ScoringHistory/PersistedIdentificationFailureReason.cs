@@ -9,5 +9,5 @@ public enum PersistedIdentificationFailureReason
     NoTitlePartsConfigured,
     TitlePartRegexNotMatched,
     TitleDoesNotMatch,
-    NoDateFoundInTitle,
+    NoDateFoundInTitle
 }

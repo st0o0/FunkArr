@@ -7,5 +7,5 @@ public enum FilterOp
     NotContains,
     GreaterThan,
     LessThan,
-    Regex,
+    Regex
 }

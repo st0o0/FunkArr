@@ -9,5 +9,5 @@ public enum IdentificationFailureReason
     NoTitlePartsConfigured,
     TitlePartRegexNotMatched,
     TitleDoesNotMatch,
-    NoDateFoundInTitle,
+    NoDateFoundInTitle
 }
