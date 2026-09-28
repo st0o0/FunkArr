@@ -16,7 +16,7 @@ services:
       - FunkArr__Tvdb__ApiKey=${TVDB_API_KEY:-}
       - FunkArr__Tmdb__ApiKey=${TMDB_API_KEY:-}
       - FunkArr__Download__Path=/shared/downloads
-      - FunkArr__Download__ConcurrentDownloads=50
+      - FunkArr__Download__ConcurrentDownloads=2
       # Network routes (requires proxy profile: docker compose -f docker-compose.dev.yml --profile proxy up -d)
       - FunkArr__Routes__Definitions__0__Name=Direct
       - FunkArr__Routes__Definitions__1__Name=Austria
