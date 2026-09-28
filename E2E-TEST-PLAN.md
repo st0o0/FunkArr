@@ -10,22 +10,148 @@ Complete browser + API test script covering every clickable element and interact
 
 ---
 
-## Test Scenarios & Prerequisites
+## Test Scenarios & Setup Recipes
 
-Some tests require specific state. The execution order (bottom of this file) sets up these
-scenarios in sequence - each phase builds on the previous one.
+Every test must be executed - no skips allowed. The execution order (bottom of this file)
+sets up each scenario deterministically before the tests that need it.
 
-| Scenario | Setup | Required for |
+| Scenario | Setup recipe | Required for |
 |---|---|---|
 | **Clean slate** | Fresh volumes, no data | 0.x, 14.x (health), initial dashboard |
-| **Sonarr ready** | Tatort added (tvdbId 83214), root folder `/shared/tv` registered | 17.x (search flow) |
-| **Services configured** | FunkArr indexer + download client in Sonarr (via setup wizard or API) | 17.x, download tests |
-| **Post-search** | At least 1 Sonarr search triggered → scoring history + download exist | 3.x, 4.x, 5.x, 12.x, 13.x, 18.x, 19.x |
-| **Local ruleset exists** | A local-only ruleset created (via UI or API) | 6.9-6.11 (source filters), 7.8 (export), 10.x (delete), 11.x |
-| **Merged ruleset exists** | Community ruleset edited locally (PUT /api/rulesets/{id}) | 7.10-7.11, 10.1-10.2 |
-| **Active download** | Download in progress (timing-sensitive - trigger search and test quickly) | 3.4-3.7, 18.1 |
-| **Failed download** | Download that failed (403 or similar) | 5.6-5.8, 18.4-18.5 |
-| **Multiple queue items** | 2+ downloads queued simultaneously | 3.8-3.9, 4.2 |
+| **Sonarr ready** | Tatort added (tvdbId 83214), root folder `/shared/tv` | 17.x |
+| **Radarr ready** | Movie added (e.g. Schachnovelle tmdbId 718638), root folder `/shared/movies` | 26.x |
+| **Services configured** | Setup wizard or API configures Prowlarr/Sonarr/Radarr | 17.x, 26.x |
+| **Local ruleset** | `POST /api/rulesets` with local-only ruleset | 6.9-6.11, 7.9-7.12, 10.x, 11.x |
+| **Merged ruleset** | Edit Tatort via UI editor, save -> creates local overlay | 7.8, 7.10-7.11, 10.1-10.2, 11.x |
+| **Paused pipeline** | `POST /api/downloads/pause` before triggering searches | 3.x, 4.x, 25.x, 28.x |
+| **Queued downloads** | Pause pipeline, trigger 3+ episode searches -> items queue | 3.8, 4.2-4.4, 25.3-25.6, 28.6-28.9 |
+| **Active download** | Resume pipeline -> downloads become active | 3.4-3.7, 18.1 |
+| **Failed download** | Upload NZB with invalid URL via SABnzbd addfile | 5.6-5.8, 18.4-18.5, 21.14 |
+| **Pagination data** | Trigger 5+ separate searches to generate >20 scoring entries | 5.10, 12.5-12.6 |
+| **Post-search** | Completed downloads + scoring history exist | 1.5-1.8, 5.x, 12.x, 13.x, 19.x |
+
+### Setup Recipe: Paused pipeline with queued items
+
+Pause the download pipeline first, then trigger searches. Downloads queue instead of
+starting immediately.
+
+```powershell
+$apiKey = "funkarr-dev-api-key-01"
+
+# Pause pipeline
+Invoke-RestMethod "http://localhost:6969/api/downloads/pause" -Method Post
+
+# Trigger 3 episode searches (items queue since pipeline is paused)
+@(1403, 1404, 1405) | ForEach-Object {
+    $body = "{`"name`":`"EpisodeSearch`",`"episodeIds`":[$_]}"
+    Invoke-RestMethod "http://localhost:8989/api/v3/command?apikey=$apiKey" -Method Post `
+        -ContentType "application/json" -Body $body
+    Start-Sleep -Seconds 5  # wait for scoring + grab
+}
+
+# Now test queue operations (4.x, 25.x, 28.x) while items are queued
+# Then resume to test active downloads (3.4-3.7):
+# Invoke-RestMethod "http://localhost:6969/api/downloads/resume" -Method Post
+```
+
+### Setup Recipe: Failed download via NZB upload
+
+Upload a crafted NZB with an unreachable URL. The download worker will fail when it
+tries to connect.
+
+```powershell
+$nzbXml = @'
+<?xml version="1.0" encoding="utf-8"?>
+<nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">
+  <head>
+    <meta type="title">E2E-Failed-Download-Test</meta>
+    <meta type="X-FunkArr-Url">http://192.0.2.1/nonexistent-video.mp4</meta>
+    <meta type="X-FunkArr-Channel">TEST</meta>
+    <meta type="X-FunkArr-Duration">60</meta>
+    <meta type="X-FunkArr-Size">1000</meta>
+    <meta type="X-FunkArr-Category">show</meta>
+  </head>
+  <file post_id="1">
+    <groups><group>a.b.mediathek</group></groups>
+    <segments><segment number="1">test@news.example.com</segment></segments>
+  </file>
+</nzb>
+'@
+
+# Write NZB to temp file and upload via multipart form
+$tempNzb = [System.IO.Path]::GetTempFileName() + ".nzb"
+$nzbXml | Set-Content $tempNzb -Encoding UTF8
+
+# Upload via curl (PowerShell multipart is cumbersome)
+curl -s -X POST "http://localhost:6969/download/api" `
+    -F "apikey=funkarr-dev-api-key-01" `
+    -F "mode=addfile" `
+    -F "cat=show" `
+    -F "name=@$tempNzb"
+
+Remove-Item $tempNzb
+# Wait for download to fail (unreachable URL times out)
+Start-Sleep -Seconds 30
+```
+
+### Setup Recipe: Radarr movie search
+
+```powershell
+$apiKey = "funkarr-dev-api-key-01"
+
+# Add Schachnovelle (2021 German film, community movie ruleset exists)
+$body = '{"title":"Schachnovelle","tmdbId":718638,"imdbId":"tt9781494","year":2021,"qualityProfileId":1,"rootFolderPath":"/shared/movies","monitored":true,"addOptions":{"searchForMovie":false}}'
+Invoke-RestMethod "http://localhost:7878/api/v3/movie?apikey=$apiKey" -Method Post `
+    -ContentType "application/json" -Body $body
+
+# Get movie ID
+$movies = Invoke-RestMethod "http://localhost:7878/api/v3/movie?apikey=$apiKey"
+$movieId = ($movies | Where-Object { $_.tmdbId -eq 718638 }).id
+
+# Trigger movie search
+$searchBody = "{`"name`":`"MoviesSearch`",`"movieIds`":[$movieId]}"
+Invoke-RestMethod "http://localhost:7878/api/v3/command?apikey=$apiKey" -Method Post `
+    -ContentType "application/json" -Body $searchBody
+```
+
+### Setup Recipe: Generate pagination data (>20 scoring entries)
+
+Trigger searches for multiple different episodes. Each search creates scoring entries.
+
+```powershell
+$apiKey = "funkarr-dev-api-key-01"
+
+# Get episode IDs from different seasons
+$episodes = Invoke-RestMethod "http://localhost:8989/api/v3/episode?seriesId=1&apikey=$apiKey"
+$targets = $episodes | Where-Object { $_.seasonNumber -ge 2024 } | Select-Object -First 8
+
+# Trigger searches with spacing
+foreach ($ep in $targets) {
+    $body = "{`"name`":`"EpisodeSearch`",`"episodeIds`":[$($ep.id)]}"
+    Invoke-RestMethod "http://localhost:8989/api/v3/command?apikey=$apiKey" -Method Post `
+        -ContentType "application/json" -Body $body
+    Start-Sleep -Seconds 3
+}
+```
+
+### Setup Recipe: SSE reconnect test
+
+Test from the browser using JavaScript to close and reopen the EventSource:
+
+```javascript
+// Close all EventSource connections to simulate disconnect
+performance.getEntriesByType('resource')
+  .filter(r => r.name.includes('/stream'))
+  .forEach(() => { /* EventSource will auto-reconnect */ });
+
+// Or use the browser devtools Network panel to throttle/block the stream URL
+// then unblock - the composable's onerror handler fires and EventSource reconnects
+```
+
+Alternatively, pause and resume the FunkArr container briefly:
+```powershell
+docker pause funkarr; Start-Sleep -Seconds 3; docker unpause funkarr
+```
 
 ### Setup Wizard Notes
 
@@ -112,8 +238,8 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **1.2** System stat card click navigates to `/setup`
 - [ ] **1.3** Recent Downloads stat card click navigates to `/activity/history`
 - [ ] **1.4** Regelwerke stat card click navigates to `/rulesets`
-- [ ] **1.5** Download status bar shows active/waiting counts *(requires: post-search)*
-- [ ] **1.6** "Anzeigen" link in status bar navigates to `/activity` *(requires: post-search)*
+- [ ] **1.5** Download status bar shows active/waiting counts
+- [ ] **1.6** "Anzeigen" link in status bar navigates to `/activity`
 - [ ] **1.7** Letzte Aktivität shows entries with status indicator (green=completed, orange=downloading, red=failed), title, episode info, size, relative timestamp
 - [ ] **1.8** "Alle anzeigen" link navigates to `/activity/history`
 - [ ] **1.9** Version number shown bottom-left (v0.0.0-dev or current)
@@ -143,11 +269,11 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **3.1** Tab buttons visible: Aktiv, Wartend, Verlauf - Aktiv is default
 - [ ] **3.2** Empty state: "Keine aktiven Downloads" message when idle
 - [ ] **3.3** Search field visible and filters active downloads
-- [ ] **3.4** During download: shows title, episode, quality badge (1080p), channel tag, size tag, duration tag, SUB badge (if subtitles) *(requires: active download)*
-- [ ] **3.5** Progress bar with %, download speed (KB/s), ETA *(requires: active download)*
-- [ ] **3.6** Global speed indicator in page header *(requires: active download)*
-- [ ] **3.7** Cancel button (X) on active download → toast "Download abgebrochen" *(requires: active download - timing-sensitive)*
-- [ ] **3.8** Queue group cards expand/collapse on header click *(requires: multiple active downloads in same group)*
+- [ ] **3.4** During download: shows title, episode, quality badge (1080p), channel tag, size tag, duration tag, SUB badge (if subtitles)
+- [ ] **3.5** Progress bar with %, download speed (KB/s), ETA
+- [ ] **3.6** Global speed indicator in page header
+- [ ] **3.7** Cancel button (X) on active download → toast "Download abgebrochen"
+- [ ] **3.8** Queue group cards expand/collapse on header click
 
 ---
 
@@ -156,9 +282,9 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 **Route**: `/activity` → click Wartend tab
 
 - [ ] **4.1** Click Wartend tab → switches view
-- [ ] **4.2** Badge count on tab label ("Wartend 1") *(requires: queued download)*
-- [ ] **4.3** Shows queued items with title, episode, quality, size, type (show/movie) *(requires: queued download)*
-- [ ] **4.4** X button removes item from queue → toast "Download abgebrochen" *(requires: queued download)*
+- [ ] **4.2** Badge count on tab label ("Wartend 1")
+- [ ] **4.3** Shows queued items with title, episode, quality, size, type (show/movie)
+- [ ] **4.4** X button removes item from queue → toast "Download abgebrochen"
 
 ---
 
@@ -171,11 +297,11 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **5.3** Category filter dropdown ("Alle Kategorien") → filters by download category
 - [ ] **5.4** Search field filters history entries
 - [ ] **5.5** Completed status: green dot + "Completed"
-- [ ] **5.6** Failed status: red dot + "Failed" *(requires: failed download)*
-- [ ] **5.7** Failed item: expandable `<details>` shows full error message *(requires: failed download)*
-- [ ] **5.8** Retry button (only on Failed items) → toast "Wiederholung gestartet", item re-queued *(requires: failed download)*
+- [ ] **5.6** Failed status: red dot + "Failed"
+- [ ] **5.7** Failed item: expandable `<details>` shows full error message
+- [ ] **5.8** Retry button (only on Failed items) → toast "Wiederholung gestartet", item re-queued
 - [ ] **5.9** X button deletes history entry → toast "Eintrag gelöscht"
-- [ ] **5.10** Pagination: "Zurück" / "Weiter" buttons when totalPages > 1 *(requires: >20 history entries)*
+- [ ] **5.10** Pagination: "Zurück" / "Weiter" buttons when totalPages > 1
 
 ---
 
@@ -185,15 +311,15 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 - [ ] **6.1** Shows all rulesets with title, aliases, rule count, IMDB/TVDB IDs
 - [ ] **6.2** Source badges: community (orange), merged (white)
-- [ ] **6.3** Scoring stats visible for rulesets with history (Trefferquote, enrichment %, last scored) *(requires: post-search)*
+- [ ] **6.3** Scoring stats visible for rulesets with history (Trefferquote, enrichment %, last scored)
 - [ ] **6.4** Search input: type "tatort" → filters to matching rulesets
 - [ ] **6.5** Clear search → all rulesets shown again
 - [ ] **6.6** Type filter: click "Serien" → only series, count updates
 - [ ] **6.7** Type filter: click "Filme" → only movies, count updates *(0 if no movie rulesets exist)*
 - [ ] **6.8** Type filter: click "Alle" → reset *(default state - test after using another filter)*
-- [ ] **6.9** Source filter: click "Community" → filtered count "X Regelwerke von Y" *(requires: local ruleset exists)*
-- [ ] **6.10** Source filter: click "Lokal" → only merged/local rulesets *(requires: local ruleset exists)*
-- [ ] **6.11** Source filter: click "Alle Quellen" → reset *(requires: local ruleset exists)*
+- [ ] **6.9** Source filter: click "Community" → filtered count "X Regelwerke von Y"
+- [ ] **6.10** Source filter: click "Lokal" → only merged/local rulesets
+- [ ] **6.11** Source filter: click "Alle Quellen" → reset
 - [ ] **6.12** Sort dropdown: "Nach Name sortieren" → alphabetical by topic
 - [ ] **6.13** Sort dropdown: "Nach ID sortieren" → alphabetical by ruleset ID
 - [ ] **6.14** "+ Neu" link navigates to `/rulesets/new`
@@ -212,11 +338,11 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **7.5** Expanded rule shows: strategy, title parts, regex patterns, filters
 - [ ] **7.6** "Scoring-Verlauf" button navigates to `/rulesets/{id}/history`
 - [ ] **7.7** "Bearbeiten" button navigates to `/rulesets/{id}/edit`
-- [ ] **7.8** "Für Community exportieren" button → toast "Erfolgreich exportiert" or validation error *(requires: merged ruleset)*
-- [ ] **7.9** "Lokal löschen" button → shows confirmation panel *(requires: merged or local ruleset)*
-- [ ] **7.10** Delete confirmation: "Bestätigen" → deletes local overlay, reloads as community-only or navigates to list *(requires: merged ruleset)*
-- [ ] **7.11** Delete confirmation: "Abbrechen" → hides confirmation panel *(requires: merged or local ruleset)*
-- [ ] **7.12** Delete on local-only ruleset → navigates to `/rulesets` *(requires: local-only ruleset)*
+- [ ] **7.8** "Für Community exportieren" button → toast "Erfolgreich exportiert" or validation error
+- [ ] **7.9** "Lokal löschen" button → shows confirmation panel
+- [ ] **7.10** Delete confirmation: "Bestätigen" → deletes local overlay, reloads as community-only or navigates to list
+- [ ] **7.11** Delete confirmation: "Abbrechen" → hides confirmation panel
+- [ ] **7.12** Delete on local-only ruleset → navigates to `/rulesets`
 
 ---
 
@@ -301,8 +427,8 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ## 10. RuleSet - Delete
 
-- [ ] **10.1** "Lokal löschen" on merged ruleset → confirmation panel *(requires: merged ruleset - PUT a community ruleset first)*
-- [ ] **10.2** Confirm → removes local override, detail reloads as community-only *(requires: merged ruleset)*
+- [ ] **10.1** "Lokal löschen" on merged ruleset → confirmation panel
+- [ ] **10.2** Confirm → removes local override, detail reloads as community-only
 - [ ] **10.3** "Lokal löschen" on local-only ruleset → confirmation panel
 - [ ] **10.4** Confirm → deletes completely, navigates to `/rulesets`
 - [ ] **10.5** Cancel → confirmation panel disappears, no changes
@@ -313,7 +439,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 ## 11. RuleSet - Export
 
 - [ ] **11.1** Click "Für Community exportieren" on detail page
-- [ ] **11.2** Valid ruleset → toast "Erfolgreich exportiert" *(requires: merged ruleset)*
+- [ ] **11.2** Valid ruleset → toast "Erfolgreich exportiert"
 
 ---
 
@@ -325,8 +451,8 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **12.2** Total count header ("X Bewertungsdurchläufe insgesamt")
 - [ ] **12.3** Table with: Quelle, Abfrage, Zeitpunkt, Kandidaten, Treffer
 - [ ] **12.4** Click on table row → navigates to `/rulesets/{id}/history/{requestId}`
-- [ ] **12.5** Pagination: "Weiter" button loads next page *(requires: >20 scoring entries)*
-- [ ] **12.6** Pagination: "Zurück" button loads previous page *(requires: >20 scoring entries)*
+- [ ] **12.5** Pagination: "Weiter" button loads next page
+- [ ] **12.6** Pagination: "Zurück" button loads previous page
 - [ ] **12.7** After a Sonarr search: only 1 entry per logical search (pagination cache)
 
 ---
@@ -384,22 +510,22 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **16.1** URL field shows placeholder `http://prowlarr:9696` (value empty - must type)
 - [ ] **16.2** API-Schlüssel password field - type API key (both URL + key required for buttons to enable)
 - [ ] **16.3** FunkArr-URL optional field shows placeholder `http://funkarr:6969`
-- [ ] **16.4** Click "Indexer erstellen" → creates Newznab indexer in Prowlarr *(requires: Docker networking)*
-- [ ] **16.5** Success state shown after creation (button changes) *(requires: successful creation)*
-- [ ] **16.6** Duplicate creation → error "Should be unique" shown gracefully *(requires: prior successful creation)*
+- [ ] **16.4** Click "Indexer erstellen" → creates Newznab indexer in Prowlarr
+- [ ] **16.5** Success state shown after creation (button changes)
+- [ ] **16.6** Duplicate creation → error "Should be unique" shown gracefully
 - [ ] **16.7** Click "Manuell konfigurieren" → expands manual instructions
 - [ ] **16.8** Click copy button on manual field → clipboard + toast "In Zwischenablage kopiert"
 
 ### Sonarr
 - [ ] **16.9** URL placeholder `http://sonarr:8989` (must type value)
 - [ ] **16.10** Type API key into password field (both URL + key required)
-- [ ] **16.11** Click "Download-Client erstellen" → creates SABnzbd client *(requires: Docker networking)*
+- [ ] **16.11** Click "Download-Client erstellen" → creates SABnzbd client
 - [ ] **16.12** Success / duplicate error
 
 ### Radarr
 - [ ] **16.13** URL placeholder `http://radarr:7878` (must type value)
 - [ ] **16.14** Type API key into password field
-- [ ] **16.15** Click "Download-Client erstellen" → creates SABnzbd client *(requires: Docker networking)*
+- [ ] **16.15** Click "Download-Client erstellen" → creates SABnzbd client
 - [ ] **16.16** Success / duplicate error
 
 ### Navigation
@@ -432,11 +558,11 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ## 18. Download Lifecycle
 
-- [ ] **18.1** Active download shows cancel button → click cancels, toast shown *(requires: active download - timing-sensitive)*
-- [ ] **18.2** Queued download shows cancel button → click removes from queue *(requires: queued download)*
+- [ ] **18.1** Active download shows cancel button → click cancels, toast shown
+- [ ] **18.2** Queued download shows cancel button → click removes from queue
 - [ ] **18.3** Completed download in history → X button deletes entry
-- [ ] **18.4** Failed download → "Wiederholen" button re-queues → toast "Wiederholung gestartet" *(requires: failed download)*
-- [ ] **18.5** Retried download appears in queue/active again *(requires: failed download)*
+- [ ] **18.4** Failed download → "Wiederholen" button re-queues → toast "Wiederholung gestartet"
+- [ ] **18.5** Retried download appears in queue/active again
 
 ---
 
@@ -530,8 +656,6 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ## 25. Download Queue Operations
 
-*(requires: active or queued downloads)*
-
 - [ ] **25.1** Pause button → pauses all downloads, toast confirmation
 - [ ] **25.2** Resume button → resumes paused pipeline, toast confirmation
 - [ ] **25.3** Force-start on queued item → bypasses concurrency limit, starts immediately
@@ -574,10 +698,10 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **28.3** `GET /api/downloads/settings` → concurrency limit, schedule config
 - [ ] **28.4** `POST /api/downloads/pause` → pauses pipeline (200)
 - [ ] **28.5** `POST /api/downloads/resume` → resumes pipeline (200)
-- [ ] **28.6** `POST /api/downloads/queue/{id}/force-start` → bypasses limit *(requires: queued download)*
-- [ ] **28.7** `POST /api/downloads/queue/{id}/move` → repositions item *(requires: queued download)*
-- [ ] **28.8** `POST /api/downloads/queue/{id}/priority` → changes priority *(requires: queued download)*
-- [ ] **28.9** `POST /api/downloads/queue/swap` → swaps two items *(requires: 2+ queued downloads)*
+- [ ] **28.6** `POST /api/downloads/queue/{id}/force-start` → bypasses limit
+- [ ] **28.7** `POST /api/downloads/queue/{id}/move` → repositions item
+- [ ] **28.8** `POST /api/downloads/queue/{id}/priority` → changes priority
+- [ ] **28.9** `POST /api/downloads/queue/swap` → swaps two items
 
 ---
 
@@ -604,25 +728,34 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ## Test Execution Order
 
-For a clean E2E run, execute in this order:
+Every test must be PASS or FAIL. No skips. Execute in this order - each step sets up
+the state required by subsequent steps.
 
 1. **Startup**: Docker compose up, wait for health (sections 14, 22)
 2. **Setup wizard**: Full walkthrough - health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
-3. **Dashboard**: Verify stat cards, links, version (section 1)
+3. **Dashboard (clean)**: Verify stat cards, links, version on clean slate (section 1.1-1.4, 1.9)
 4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links (section 2)
 5. **Settings page**: All sections visible, download config, cache stats, routes, log viewer (section 24)
 6. **Legacy redirects**: /queue, /history, /search redirect correctly (section 29.6-29.8)
-7. **Rulesets list**: Search, all filter combinations, both sort options, click through (section 6)
-8. **Ruleset detail**: View Tatort - identity, enrichment, expand/collapse rules, export (sections 7, 11)
-9. **Ruleset editor**: Open editor - edit every field type, add/remove aliases, toggle enrichment, add/remove rules and filters, live preview + full test, save (section 8)
-10. **Create ruleset**: Create test ruleset with all fields, verify in list (section 9)
-11. **Delete ruleset**: Delete test ruleset via confirmation flow, verify gone (section 10)
-12. **Sonarr search**: Trigger search, verify pipeline end-to-end (section 17)
-13. **Activity**: Active tab during download, Queue tab, History tab after completion (sections 3-5)
-14. **Queue operations**: Pause/resume, force-start, priority, move, swap, download detail page (section 25)
-15. **Download lifecycle**: Cancel, retry on failure, delete history (section 18)
-16. **Radarr search**: Trigger movie search, verify pipeline end-to-end (section 26)
-17. **Scoring history**: Click through to detail, filter tabs, expand traces (sections 12-13)
-18. **Scoring verification**: API check for enrichment traces (section 19)
-19. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD, Mediathek, Download APIs (sections 20-23, 27-28)
-20. **Error handling**: Invalid routes, bad IDs, malformed requests, SSE resilience, concurrency (section 29)
+7. **Create local ruleset**: Via UI (section 9) - creates state for source filters + delete tests
+8. **Edit Tatort**: Via UI editor, add alias, save - creates merged ruleset (section 8)
+9. **Rulesets list**: Search, ALL filter combinations (type + source), both sort options (section 6)
+10. **Ruleset detail**: Tatort (merged) - identity, enrichment, expand/collapse, export, delete overlay (sections 7, 10.1-10.2, 11)
+11. **Delete local ruleset**: Delete the section 9 ruleset via confirmation flow (section 10.3-10.6)
+12. **Pause pipeline**: `POST /api/downloads/pause` - prevent downloads from starting
+13. **Trigger 3+ Sonarr searches**: Different episodes while paused - items queue (section 17.1-17.6)
+14. **Upload failed NZB**: Add NZB with invalid URL via SABnzbd addfile - queues bad download
+15. **Queue tests**: Wartend tab shows queued items, queue operations (sections 4, 25.3-25.6, 28.6-28.9)
+16. **Resume pipeline**: `POST /api/downloads/resume` - downloads start
+17. **Active download tests**: Aktiv tab during download, cancel one, global speed (sections 3.4-3.7, 18.1)
+18. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
+19. **History tests**: Verlauf tab, completed + failed status, retry, delete (sections 5, 18.3-18.5)
+20. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)
+21. **Generate pagination data**: Trigger 5+ more searches for different episodes
+22. **Scoring history**: List with pagination, click through to detail, filter tabs, traces (sections 12-13)
+23. **Scoring verification**: API check for enrichment + rule traces (section 19)
+24. **Radarr search**: Add movie to Radarr, trigger search (section 26)
+25. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD, Mediathek, Download APIs (sections 20-23, 27-28)
+26. **Error handling**: Invalid routes, bad IDs, malformed requests (section 29.1-29.5)
+27. **SSE resilience**: Pause/unpause container, verify stream reconnects (section 29.9-29.10)
+28. **Concurrency limit**: Queue 3 downloads with limit=2, verify 2 active + 1 waiting (section 29.11)
