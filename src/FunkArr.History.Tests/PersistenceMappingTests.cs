@@ -186,7 +186,7 @@ public sealed class PersistenceMappingTests
         {
             new RuleTrace("rule-1", 0, RuleOutcome.Matched,
                 new FilterGroupTrace(FilterGroupOp.All, true, []),
-                new IdentificationTrace(IdentificationStrategy.SeasonAndEpisodeNumber, true, null)),
+                new IdentificationTrace(IdentificationStrategy.SeasonAndEpisodeNumber, true, null))
         };
         var enrichment = new EnrichmentTrace(MatchMethod.TitleMatch, 0.9f, true, "1", "5", "Tatort", 2026, 0, null);
         var original = new ItemTrace(candidate, true, 0.95, "rule-1", identification, ruleTraces, enrichment);

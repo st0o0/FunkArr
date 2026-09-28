@@ -117,7 +117,7 @@ public sealed class StatsCollectorTests : TestKit
         Assert.NotNull(query);
 
         _ruleSetResolverProbe.Reply(new RegisteredRuleSetsResult([
-            new RegisteredRuleSetEntry("rs-1", "Test Topic", [], new ExternalIds(null, null, null), null, null),
+            new RegisteredRuleSetEntry("rs-1", "Test Topic", [], new ExternalIds(null, null, null), null, null)
         ]));
 
         var historyQuery = _historyRegionProbe.ExpectMsg<QueryScoringStats>();

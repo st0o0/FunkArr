@@ -27,14 +27,14 @@ public sealed class HistoryWorkerTests : TestKit
         {
             MaxSnapshots = 100,
             MaxAgeDays = 30,
-            SnapshotInterval = 20,
+            SnapshotInterval = 20
         };
     }
 
     private IActorRef CreateWorker(string ruleSetId = "rs-test")
     {
         var optionsMonitor = new TestOptionsMonitor(_options);
-        return Sys.ActorOf(Props.Create(() => new HistoryWorker(optionsMonitor, ruleSetId)));
+        return Sys.ActorOf(Props.Create(() => new HistoryWorker(ruleSetId, optionsMonitor)));
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public sealed class HistoryWorkerTests : TestKit
         {
             new ItemTrace(candidate, true, 0.95, "rule-1",
                 new TracedIdentification("1", "5", "Tatort"),
-                [new RuleTrace("rule-1", 0, RuleOutcome.Matched, null, null)]),
+                [new RuleTrace("rule-1", 0, RuleOutcome.Matched, null, null)])
         };
 
         var cmd = new RecordHistory(requestId, "rs-test",

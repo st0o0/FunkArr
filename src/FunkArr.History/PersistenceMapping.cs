@@ -17,7 +17,7 @@ internal static class PersistenceMapping
             SearchSource.Radarr => PersistedSearchSource.Radarr,
             SearchSource.Prowlarr => PersistedSearchSource.Prowlarr,
             SearchSource.Test => PersistedSearchSource.Test,
-            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
 
     public static SearchSource ToDomain(this PersistedSearchSource source) =>
@@ -27,7 +27,7 @@ internal static class PersistenceMapping
             PersistedSearchSource.Radarr => SearchSource.Radarr,
             PersistedSearchSource.Prowlarr => SearchSource.Prowlarr,
             PersistedSearchSource.Test => SearchSource.Test,
-            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
 
     public static PersistedItemTrace ToPersistence(this ItemTrace trace) =>
