@@ -58,7 +58,7 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             })
             .WithClustering(new ClusterOptions
             {
-                SeedNodes = ["akka.tcp://funkarr@localhost:2552"],
+                SeedNodes = ["akka.tcp://funkarr@localhost:2552"]
             });
 
         RegisterSearchActors(builder);
@@ -76,13 +76,14 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithSingleton<ISearchManager>("search-manager",
                 (_, _, resolver) => resolver.Props<SearchManager>())
             .WithShardRegion<ITvSearchRegion>("tv-search",
-                (_, _, resolver) => _ => resolver.Props<TvSearchWorker>(),
+                (_, _, resolver) => nttId => resolver.Props<TvSearchWorker>(nttId),
                 new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30) })
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30), ShouldPassivateIdleEntities = true })
             .WithShardRegion<IMovieSearchRegion>("movie-search",
-                (_, _, resolver) => _ => resolver.Props<MovieSearchWorker>(),
+                (_, _, resolver) => nttId => resolver.Props<MovieSearchWorker>(nttId),
                 new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30) });
+                new ShardOptions
+                { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30), ShouldPassivateIdleEntities = true });
     }
 
     private static void RegisterDownloadActors(AkkaConfigurationBuilder builder)
@@ -95,9 +96,9 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithSingleton<IDownloadHistoryManager>("download-history",
                 (_, _, resolver) => resolver.Props<DownloadHistoryManager>())
             .WithShardRegion<IDownloadRegion>("download-worker",
-                (_, _, resolver) => entityId => resolver.Props<DownloadWorker>(entityId),
+                (_, _, resolver) => nttId => resolver.Props<DownloadWorker>(nttId),
                 new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) });
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5), ShouldPassivateIdleEntities = true });
     }
 
     private static void RegisterScoringActors(AkkaConfigurationBuilder builder)
@@ -108,9 +109,9 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithSingleton<IStatsCollector>("stats-collector",
                 (_, _, resolver) => resolver.Props<StatsCollector>())
             .WithShardRegion<IHistoryRegion>("history",
-                (_, _, resolver) => entityId => resolver.Props<HistoryWorker>(entityId),
+                (_, _, resolver) => nttId => resolver.Props<HistoryWorker>(nttId),
                 new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) });
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5), ShouldPassivateIdleEntities = true });
     }
 
     private static void RegisterRuleSetActors(AkkaConfigurationBuilder builder)
@@ -123,9 +124,9 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
             .WithSingleton<IRuleSetUpdater>("ruleset-updater",
                 (_, _, resolver) => resolver.Props<RuleSetUpdater>())
             .WithShardRegion<IRuleSetRegion>("ruleset-worker",
-                (_, _, resolver) => _ => resolver.Props<RuleSetWorker>(),
+                (_, _, resolver) => nttId => resolver.Props<RuleSetWorker>(nttId),
                 new ShardMessageExtractor(),
-                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5) });
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromMinutes(5), ShouldPassivateIdleEntities = true });
     }
 
     private static void RegisterEnrichmentActors(AkkaConfigurationBuilder builder)

@@ -14,6 +14,12 @@ namespace FunkArr.Search;
 
 public sealed class TvSearchWorkerState
 {
+    private Guid _scoringRequestId;
+    private ScoringOrigin? _scoringOrigin;
+    private readonly Dictionary<int, string?> _constructedTitles = [];
+
+    private ShowIdentity BaseIdentity => new(ImdbId, TvdbId, null, null);
+
     public Guid SearchId { get; private set; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
     public SearchSource Source { get; private set; }
@@ -30,15 +36,15 @@ public sealed class TvSearchWorkerState
     public EnrichedItem[] Items { get; private set; } = [];
     public ItemTrace[] ItemTraces { get; private set; } = [];
 
-    private Guid _scoringRequestId;
-    private ScoringOrigin? _scoringOrigin;
-    private Dictionary<int, string?> _constructedTitles = [];
+    private TvSearchWorkerState(string nttId)
+    {
+        SearchId = Guid.Parse(nttId);
+    }
 
-    public ShowIdentity BaseIdentity => new(ImdbId, TvdbId, null, null);
+    public static TvSearchWorkerState From(string nttId) => new(nttId);
 
     public void Init(SearchSeries cmd, IActorRef replyTo)
     {
-        SearchId = cmd.SearchId;
         ReplyTo = replyTo;
         Source = cmd.Source;
         Query = cmd.Query;
@@ -49,10 +55,7 @@ public sealed class TvSearchWorkerState
         Offset = cmd.Offset;
     }
 
-    public void Apply(QueryMediathekCompleted result)
-    {
-        Sources = [.. result.Items.Select(SourceInfo.From)];
-    }
+    public void Apply(QueryMediathekCompleted result) => Sources = [.. result.Items.Select(SourceInfo.From)];
 
     public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
     {
@@ -93,7 +96,7 @@ public sealed class TvSearchWorkerState
                     BaseIdentity with
                     {
                         Season = s.Metadata?.Season,
-                        Episode = s.Metadata?.Episode,
+                        Episode = s.Metadata?.Episode
                     },
                     Match: null,
                     Display: display);
@@ -127,7 +130,7 @@ public sealed class TvSearchWorkerState
                 {
                     Identity = showId with { Season = ep.Season, Episode = ep.Episode },
                     Match = new MatchInfo(ep.Confidence, ep.Method),
-                    Display = display,
+                    Display = display
                 };
             })
         ];
@@ -225,7 +228,7 @@ public sealed class TvSearchWorkerState
         }
 
         var candidates = Items
-            .Where(e => e.Matched && e.HasScoringMetadata && e.Match is null)
+            .Where(e => e is { Matched: true, HasScoringMetadata: true, Match: null })
             .Select(e =>
             {
                 var si = (ShowIdentity)e.Identity;

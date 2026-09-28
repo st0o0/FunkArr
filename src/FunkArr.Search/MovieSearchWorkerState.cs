@@ -14,29 +14,35 @@ namespace FunkArr.Search;
 
 public sealed class MovieSearchWorkerState
 {
+    private Guid _scoringRequestId;
+    private ScoringOrigin? _scoringOrigin;
+
+    private MovieIdentity BaseIdentity => new(ImdbId, TmdbId, null);
+
     public Guid SearchId { get; private set; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
     public SearchSource Source { get; private set; }
     public string? Query { get; private set; }
     public SourceInfo[] Sources { get; private set; } = [];
-    public string? RuleSetId { get; private set; }
+    public string? RuleSetId { get; set; }
     public string? ImdbId { get; private set; }
     public int? TmdbId { get; private set; }
     public int? Limit { get; private set; }
     public int? Offset { get; private set; }
-    public string? MediaName { get; private set; }
+    public string? MediaName { get; set; }
     public EnrichmentConfig? EnrichmentConfig { get; private set; }
     public EnrichedItem[] Items { get; private set; } = [];
-    public ItemTrace[] ItemTraces { get; private set; } = [];
+    public ItemTrace[] ItemTraces { get; set; } = [];
 
-    private Guid _scoringRequestId;
-    private ScoringOrigin? _scoringOrigin;
-
-    public MovieIdentity BaseIdentity => new(ImdbId, TmdbId, null);
-
-    public void Init(SearchMovie cmd, IActorRef replyTo)
+    private MovieSearchWorkerState(string nttId)
     {
-        SearchId = cmd.SearchId;
+        SearchId = Guid.Parse(nttId);
+    }
+
+    public static MovieSearchWorkerState From(string nttId) => new(nttId);
+
+    public void Apply(SearchMovie cmd, IActorRef replyTo)
+    {
         ReplyTo = replyTo;
         Source = cmd.Source;
         Query = cmd.Query;
@@ -46,12 +52,9 @@ public sealed class MovieSearchWorkerState
         Offset = cmd.Offset;
     }
 
-    public void Apply(QueryMediathekCompleted result)
-    {
-        Sources = [.. result.Items.Select(SourceInfo.From)];
-    }
+    public void Apply(QueryMediathekCompleted result) => Sources = [.. result.Items.Select(SourceInfo.From)];
 
-    public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
+    public void Apply(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
     {
         RuleSetId = ruleSetId;
         MediaName = mediaName;
@@ -113,10 +116,10 @@ public sealed class MovieSearchWorkerState
                     {
                         ImdbId = movie.ImdbId ?? mi.ImdbId,
                         TmdbId = movie.TmdbId ?? mi.TmdbId,
-                        Year = movie.Year,
+                        Year = movie.Year
                     },
                     Match = new MatchInfo(movie.Confidence, movie.Method),
-                    Display = display,
+                    Display = display
                 };
             })
         ];

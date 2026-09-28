@@ -16,11 +16,11 @@ public sealed class HistoryWorker : ReceivePersistentActor
     private readonly IActorRef _statsCollector = Context.GetActor<IStatsCollector>();
     private HistoryState _state = HistoryState.Empty;
 
-    public override string PersistenceId { get; }
+    public override string PersistenceId => $"history-{field}";
 
-    public HistoryWorker(IOptionsMonitor<ScoringHistoryOptions> optionsMonitor, string ruleSetId)
+    public HistoryWorker(string nttId, IOptionsMonitor<ScoringHistoryOptions> optionsMonitor)
     {
-        PersistenceId = $"history-{ruleSetId}";
+        PersistenceId = nttId;
         _optionsMonitor = optionsMonitor;
 
         Recover<SnapshotOffer>(offer =>
@@ -57,7 +57,7 @@ public sealed class HistoryWorker : ReceivePersistentActor
                 }
 
                 Telemetry.Recordings.Add(1);
-                _statsCollector.Tell(new UpdateStats(ruleSetId, _state.Stats));
+                _statsCollector.Tell(new UpdateStats(nttId, _state.Stats));
             });
         });
 
@@ -74,7 +74,7 @@ public sealed class HistoryWorker : ReceivePersistentActor
         Command<QueryScoringStats>(query =>
         {
             Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "stats"));
-            Sender.Tell(new ScoringStatsQueryResult(query.RuleSetId, _state.Stats));
+            Sender.Tell(new ScoringStatsQueryResult(nttId, _state.Stats));
         });
         Command<SaveSnapshotSuccess>(_ => { });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));

@@ -19,8 +19,8 @@ public sealed class TvSearchWorker : ReceiveActor
     private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly TvSearchWorkerState _state = new();
-    private readonly Stopwatch _stopwatch = new();
+
+    private readonly TvSearchWorkerState _state;
 
     private readonly IActorRef _mediathekManager = Context.GetActor<IMediathekManager>();
     private readonly IActorRef _scoringManager = Context.GetActor<IScoringManager>();
@@ -28,40 +28,32 @@ public sealed class TvSearchWorker : ReceiveActor
     private readonly IActorRef _metadataResolver = Context.GetActor<IEnrichmentManager>();
     private readonly IActorRef _historyRegion = Context.GetActor<IHistoryRegion>();
 
+    private readonly Stopwatch _stopwatch = new();
 
-    public TvSearchWorker()
+    public TvSearchWorker(string nttId)
     {
+        _state = TvSearchWorkerState.From(nttId);
         Receive<SearchSeries>(cmd =>
         {
             _log.Info("TV search started: Query={Query}, TvdbId={TvdbId}", cmd.Query, cmd.TvdbId);
             _stopwatch.Restart();
             _state.Init(cmd, Sender);
 
-            var hasQuery = !string.IsNullOrWhiteSpace(cmd.Query);
-            var hasId = cmd.TvdbId is not null || cmd.ImdbId is not null;
-
-            if (hasQuery)
+            switch (cmd)
             {
-                _state.TryGetMediathekQuery(out var query);
-                _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
-                    .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
-                Become(Querying);
-            }
-            else if (hasId)
-            {
-                if (_state.TryGetRuleSetRequest(out var request))
-                {
+                case { TvdbId: not null } or { ImdbId: not null }
+                    when _state.TryGetRuleSetRequest(out var request):
                     _ruleSetResolver.Ask<ResolveRuleSetResponse>(request, _ruleSetTimeout)
                         .PipeTo(Self, failure: ex => new RuleSetFailed(ex));
                     Become(ResolvingRuleSet);
-                }
-            }
-            else
-            {
-                _state.TryGetMediathekQuery(out var query);
-                _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
-                    .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
-                Become(Querying);
+                    break;
+
+                default:
+                    _state.TryGetMediathekQuery(out var query);
+                    _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
+                        .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
+                    Become(Querying);
+                    break;
             }
         });
     }
@@ -118,10 +110,7 @@ public sealed class TvSearchWorker : ReceiveActor
             }
         });
 
-        Receive<RuleSetFailed>(_ =>
-        {
-            Reply(_state.ToSearchCompleted());
-        });
+        Receive<RuleSetFailed>(_ => { Reply(_state.ToSearchCompleted()); });
     }
 
     private void Scoring()
