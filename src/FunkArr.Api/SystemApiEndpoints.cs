@@ -7,6 +7,7 @@ using FunkArr.Core;
 using FunkArr.Messages.Enrichment;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Api;
@@ -18,7 +19,7 @@ public static class SystemApiEndpoints
     private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
     private static readonly System.Text.Json.JsonSerializerOptions _sseJsonOptions = new()
     {
-        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
     };
 
     public static WebApplication MapSystemApi(this WebApplication app)
@@ -27,6 +28,7 @@ public static class SystemApiEndpoints
             .WithTags("System")
             .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
+        group.WithRequestTimeout(TimeSpan.FromSeconds(15));
 
         group.MapGet("/setup", async (
             IOptionsMonitor<FunkArrOptions> options,
@@ -58,7 +60,7 @@ public static class SystemApiEndpoints
                 ["incompleteDirectory"] = incompleteCheck,
                 ["indexerApi"] = await indexerTask,
                 ["downloadApi"] = await downloadApiTask,
-                ["ffmpeg"] = await ffmpegTask,
+                ["ffmpeg"] = await ffmpegTask
             };
 
             var port = ctx.Request.Host.Port ?? (ctx.Request.Scheme == "https" ? 443 : 80);

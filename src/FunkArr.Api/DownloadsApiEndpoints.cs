@@ -8,6 +8,7 @@ using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.Extensions.Options;
 using ApiModels = FunkArr.Api.Models;
 
@@ -25,6 +26,7 @@ public static class DownloadsApiEndpoints
             .WithTags("Downloads")
             .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
+        group.WithRequestTimeout(TimeSpan.FromSeconds(15));
 
         group.MapGet("/queue", async (IActorRegistry registry, CancellationToken ct) =>
         {
@@ -34,7 +36,7 @@ public static class DownloadsApiEndpoints
             {
                 QueueResult result => Results.Ok(result.ToApi()),
                 QueueFailed failed => Results.Problem(failed.Cause.Message, statusCode: 502),
-                _ => Results.Problem("Unexpected response", statusCode: 500),
+                _ => Results.Problem("Unexpected response", statusCode: 500)
             };
         })
         .WithSummary("Get download queue")
@@ -88,6 +90,7 @@ public static class DownloadsApiEndpoints
             }
         })
         .WithSummary("Stream download queue (SSE)")
+        .DisableRequestTimeout()
         .ExcludeFromDescription();
 
         group.MapGet("/history", async ([AsParameters] ApiModels.DownloadHistoryRequest req, IActorRegistry registry, CancellationToken ct) =>
@@ -224,7 +227,7 @@ public static class DownloadsApiEndpoints
             {
                 MoveDownloadCompleted => Results.Ok(new ApiModels.OperationResult(true)),
                 MoveDownloadFailed f => Results.NotFound(new ApiModels.OperationResult(false, f.Reason)),
-                _ => Results.Problem("Unexpected response", statusCode: 500),
+                _ => Results.Problem("Unexpected response", statusCode: 500)
             };
         })
         .WithSummary("Move download to position")
@@ -247,7 +250,7 @@ public static class DownloadsApiEndpoints
             {
                 SetDownloadPriorityCompleted => Results.Ok(new ApiModels.OperationResult(true)),
                 SetDownloadPriorityFailed f => Results.NotFound(new ApiModels.OperationResult(false, f.Reason)),
-                _ => Results.Problem("Unexpected response", statusCode: 500),
+                _ => Results.Problem("Unexpected response", statusCode: 500)
             };
         })
         .WithSummary("Set download priority")
@@ -265,7 +268,7 @@ public static class DownloadsApiEndpoints
             {
                 SwapDownloadsCompleted => Results.Ok(new ApiModels.OperationResult(true)),
                 SwapDownloadsFailed f => Results.BadRequest(new ApiModels.OperationResult(false, f.Reason)),
-                _ => Results.Problem("Unexpected response", statusCode: 500),
+                _ => Results.Problem("Unexpected response", statusCode: 500)
             };
         })
         .WithSummary("Swap two downloads")
@@ -295,6 +298,6 @@ public static class DownloadsApiEndpoints
     {
         "movie" or "movies" => MediaType.Movie,
         "tv" or "show" => MediaType.Show,
-        _ => null,
+        _ => null
     };
 }

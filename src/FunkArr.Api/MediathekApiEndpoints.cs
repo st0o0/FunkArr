@@ -6,6 +6,7 @@ using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Timeouts;
 using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
@@ -20,6 +21,7 @@ public static class MediathekApiEndpoints
             .WithTags("Mediathek")
             .AddEndpointFilter<ValidationEndpointFilter>()
             .AddEndpointFilter<EndpointExceptionFilter>();
+        group.WithRequestTimeout(TimeSpan.FromSeconds(60));
 
         group.MapGet("/search", async ([AsParameters] ApiModels.MediathekSearchRequest req, IActorRegistry registry, CancellationToken ct) =>
         {
@@ -67,7 +69,7 @@ public static class MediathekApiEndpoints
                         completed.Total)),
                 QueryMediathekFailed failed => Results.Problem(
                     statusCode: 502, title: "MediathekViewWeb Error", detail: failed.Cause.Message),
-                _ => ApiResults.GatewayTimeout(),
+                _ => ApiResults.GatewayTimeout()
             };
         })
         .WithSummary("Search Mediathek")

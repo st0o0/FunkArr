@@ -1,11 +1,15 @@
 using FunkArr.ArrApi.Sabnzbd.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FunkArr.ArrApi.Sabnzbd;
 
 [ApiController]
 [Route("/download/api")]
+[HttpLogging(HttpLoggingFields.All)]
+[RequestTimeout(milliseconds: 15_000)]
 [ServiceFilter(typeof(SabnzbdApiKeyFilter))]
 public sealed class SabnzbdController(
     SabnzbdQueueService queue,
@@ -36,7 +40,7 @@ public sealed class SabnzbdController(
             "retry" => MapResult(await downloads.Retry(req.Value, cancellationToken)),
             "pause" => MapResult(await queue.PauseQueue(cancellationToken)),
             "resume" => MapResult(await queue.ResumeQueue(cancellationToken)),
-            _ => BadRequest(new SabnzbdErrorResponse(false, "Invalid mode")),
+            _ => BadRequest(new SabnzbdErrorResponse(false, "Invalid mode"))
         };
     }
 
@@ -56,6 +60,6 @@ public sealed class SabnzbdController(
     {
         SabnzbdResult.Ok ok => Ok(ok.Data),
         SabnzbdResult.Error err => new ObjectResult(new SabnzbdErrorResponse(false, err.Message)) { StatusCode = err.StatusCode },
-        _ => StatusCode(500, new SabnzbdErrorResponse(false, "Unexpected result")),
+        _ => StatusCode(500, new SabnzbdErrorResponse(false, "Unexpected result"))
     };
 }

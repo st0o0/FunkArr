@@ -1,5 +1,6 @@
 using FunkArr.Api;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Servus.Core.Application.Startup;
@@ -23,6 +24,8 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
         });
 
         app.UseStatusCodePages();
+        app.UseHttpLogging();
+        app.UseRequestTimeouts();
         app.UseStaticFiles();
         app.UseOutputCache();
 
@@ -32,12 +35,13 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
             {
                 [HealthStatus.Healthy] = 200,
                 [HealthStatus.Degraded] = 200,
-                [HealthStatus.Unhealthy] = 503,
+                [HealthStatus.Unhealthy] = 503
             }
-        });
+        }).WithRequestTimeout(TimeSpan.FromSeconds(5));
         app.MapGet("/alive", () => Results.Ok("Alive"))
             .WithTags("Health")
-            .WithSummary("Liveness probe");
+            .WithSummary("Liveness probe")
+            .WithRequestTimeout(TimeSpan.FromSeconds(5));
 
         app.MapSystemApi();
         app.MapSetupArrApi();
