@@ -8,7 +8,7 @@ public sealed class SrtEmitterTests
         var cues = new List<SubtitleCue>
         {
             new(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3), "First"),
-            new(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(7), "Second"),
+            new(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(7), "Second")
         };
 
         var srt = SrtEmitter.Emit(cues);
@@ -24,7 +24,7 @@ public sealed class SrtEmitterTests
         {
             new(TimeSpan.Zero, TimeSpan.FromSeconds(1), "A"),
             new(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(3), "B"),
-            new(TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(5), "C"),
+            new(TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(5), "C")
         };
 
         var srt = SrtEmitter.Emit(cues);
@@ -39,7 +39,7 @@ public sealed class SrtEmitterTests
     {
         var cues = new List<SubtitleCue>
         {
-            new(new TimeSpan(0, 1, 23, 45, 678), new TimeSpan(0, 1, 23, 47, 123), "Precise"),
+            new(new TimeSpan(0, 1, 23, 45, 678), new TimeSpan(0, 1, 23, 47, 123), "Precise")
         };
 
         var srt = SrtEmitter.Emit(cues);

@@ -5,7 +5,7 @@ internal enum SubtitleFailureReason
     DownloadFailed,
     EmptyContent,
     UnrecognizedFormat,
-    ConversionFailed,
+    ConversionFailed
 }
 
 internal abstract record SubtitleResult

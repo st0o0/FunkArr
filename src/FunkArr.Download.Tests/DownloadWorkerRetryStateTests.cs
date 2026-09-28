@@ -60,7 +60,7 @@ public sealed class DownloadWorkerRetryStateTests
     {
         var state = FailedState() with
         {
-            Progress = new DownloadProgress(500_000, 1_800_000_000, 2.5),
+            Progress = new DownloadProgress(500_000, 1_800_000_000, 2.5)
         };
 
         state = state.Apply(MakeInitialized());

@@ -209,7 +209,7 @@ public sealed class RemuxerTests
             "dup_frames=0",
             "drop_frames=0",
             "speed=1.95x",
-            "progress=continue",
+            "progress=continue"
         };
 
         foreach (var line in lines)

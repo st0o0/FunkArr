@@ -39,7 +39,7 @@ public sealed class DataFilesTests
     {
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
-            ["/data/test.txt"] = new("content"),
+            ["/data/test.txt"] = new("content")
         });
         var (sut, _) = Create(fs);
 
@@ -53,7 +53,7 @@ public sealed class DataFilesTests
     {
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
-            ["/data/dir/sub/file.txt"] = new("content"),
+            ["/data/dir/sub/file.txt"] = new("content")
         });
         var (sut, _) = Create(fs);
 
@@ -78,7 +78,7 @@ public sealed class DataFilesTests
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
             ["/src/file.mkv"] = new("video"),
-            ["/dest/placeholder"] = new(""),
+            ["/dest/placeholder"] = new("")
         });
         var (sut, _) = Create(fs);
 
@@ -95,7 +95,7 @@ public sealed class DataFilesTests
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
             ["/src/file.mkv"] = new("new"),
-            ["/dest/file.mkv"] = new("old"),
+            ["/dest/file.mkv"] = new("old")
         });
         var (sut, _) = Create(fs);
 
@@ -110,7 +110,7 @@ public sealed class DataFilesTests
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
             ["/data/rulesets/community/old.json"] = new("old"),
-            ["/data/rulesets-new/new.json"] = new("new"),
+            ["/data/rulesets-new/new.json"] = new("new")
         });
         var (sut, _) = Create(fs);
 
@@ -126,7 +126,7 @@ public sealed class DataFilesTests
     {
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
-            ["/data/rulesets-new/new.json"] = new("new"),
+            ["/data/rulesets-new/new.json"] = new("new")
         });
         var (sut, _) = Create(fs);
 
@@ -140,7 +140,7 @@ public sealed class DataFilesTests
     {
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
-            ["/data/test.json"] = new("{\"key\":\"value\"}"),
+            ["/data/test.json"] = new("{\"key\":\"value\"}")
         });
         var (sut, _) = Create(fs);
 
@@ -166,7 +166,7 @@ public sealed class DataFilesTests
     {
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
-            ["/data/version.txt"] = new("1.0.0"),
+            ["/data/version.txt"] = new("1.0.0")
         });
         var (sut, _) = Create(fs);
 
@@ -206,7 +206,7 @@ public sealed class DataFilesTests
     {
         var fs = new MockFileSystem(new Dictionary<string, MockFileData>
         {
-            ["/data/test.json"] = new("content"),
+            ["/data/test.json"] = new("content")
         });
         var (sut, _) = Create(fs);
 
@@ -238,7 +238,7 @@ public sealed class DataFilesTests
         {
             ["/data/rulesets/a.json"] = new(""),
             ["/data/rulesets/b.json"] = new(""),
-            ["/data/rulesets/c.txt"] = new(""),
+            ["/data/rulesets/c.txt"] = new("")
         });
         var (sut, _) = Create(fs);
 

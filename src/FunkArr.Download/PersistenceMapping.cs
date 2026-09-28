@@ -31,7 +31,7 @@ internal static class PersistenceMapping
         {
             MediaType.Show => PersistedMediaType.Show,
             MediaType.Movie => PersistedMediaType.Movie,
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
 
     public static MediaType ToDomain(this PersistedMediaType type) =>
@@ -39,7 +39,7 @@ internal static class PersistenceMapping
         {
             PersistedMediaType.Show => MediaType.Show,
             PersistedMediaType.Movie => MediaType.Movie,
-            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
 
     public static PersistedDownloadPriority ToPersistence(this DownloadPriority priority) =>
@@ -48,7 +48,7 @@ internal static class PersistenceMapping
             DownloadPriority.Low => PersistedDownloadPriority.Low,
             DownloadPriority.Normal => PersistedDownloadPriority.Normal,
             DownloadPriority.High => PersistedDownloadPriority.High,
-            _ => throw new ArgumentOutOfRangeException(nameof(priority), priority, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(priority), priority, null)
         };
 
     public static DownloadPriority ToDomain(this PersistedDownloadPriority priority) =>
@@ -57,7 +57,7 @@ internal static class PersistenceMapping
             PersistedDownloadPriority.Low => DownloadPriority.Low,
             PersistedDownloadPriority.Normal => DownloadPriority.Normal,
             PersistedDownloadPriority.High => DownloadPriority.High,
-            _ => throw new ArgumentOutOfRangeException(nameof(priority), priority, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(priority), priority, null)
         };
 
     public static PersistedDownloadStatus ToPersistence(this DownloadStatus status) =>
@@ -67,7 +67,7 @@ internal static class PersistenceMapping
             DownloadStatus.Processing => PersistedDownloadStatus.Processing,
             DownloadStatus.Completed => PersistedDownloadStatus.Completed,
             DownloadStatus.Failed => PersistedDownloadStatus.Failed,
-            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
         };
 
     public static DownloadStatus ToDomain(this PersistedDownloadStatus status) =>
@@ -77,7 +77,7 @@ internal static class PersistenceMapping
             PersistedDownloadStatus.Processing => DownloadStatus.Processing,
             PersistedDownloadStatus.Completed => DownloadStatus.Completed,
             PersistedDownloadStatus.Failed => DownloadStatus.Failed,
-            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
         };
 
     public static PersistedFailureKind ToPersistence(this FailureKind kind) =>
@@ -85,7 +85,7 @@ internal static class PersistenceMapping
         {
             FailureKind.Transient => PersistedFailureKind.Transient,
             FailureKind.Permanent => PersistedFailureKind.Permanent,
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
         };
 
     public static FailureKind ToDomain(this PersistedFailureKind kind) =>
@@ -93,6 +93,6 @@ internal static class PersistenceMapping
         {
             PersistedFailureKind.Transient => FailureKind.Transient,
             PersistedFailureKind.Permanent => FailureKind.Permanent,
-            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
         };
 }

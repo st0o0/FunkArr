@@ -161,7 +161,7 @@ public static class DownloadHistoryManagerStateExtensions
             {
                 TotalCompleted = stats.TotalCompleted + 1,
                 TotalBytes = stats.TotalBytes + record.Completion.Size,
-                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds + record.Completion.DownloadTimeSeconds,
+                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds + record.Completion.DownloadTimeSeconds
             }
             : stats with { TotalFailed = stats.TotalFailed + 1 };
 
@@ -171,7 +171,7 @@ public static class DownloadHistoryManagerStateExtensions
             {
                 TotalCompleted = stats.TotalCompleted - 1,
                 TotalBytes = stats.TotalBytes - record.Completion.Size,
-                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds - record.Completion.DownloadTimeSeconds,
+                TotalDownloadTimeSeconds = stats.TotalDownloadTimeSeconds - record.Completion.DownloadTimeSeconds
             }
             : stats with { TotalFailed = stats.TotalFailed - 1 };
 }

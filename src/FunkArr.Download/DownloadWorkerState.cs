@@ -41,7 +41,7 @@ public static class DownloadWorkerStateExtensions
             Status = WorkerStatus.Failed,
             Phase = DownloadPhase.Failed,
             FailMessage = evt.Reason,
-            LastFailureKind = evt.FailureKind.ToDomain(),
+            LastFailureKind = evt.FailureKind.ToDomain()
         };
 
     public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadAttemptStarted evt) =>
@@ -52,7 +52,7 @@ public static class DownloadWorkerStateExtensions
             Phase = DownloadPhase.VideoDownload,
             FailMessage = null,
             LastFailureKind = null,
-            Progress = new DownloadProgress(0, 0, 0.0),
+            Progress = new DownloadProgress(0, 0, 0.0)
         };
 
     public static RecordDownload ToRecordDownload(

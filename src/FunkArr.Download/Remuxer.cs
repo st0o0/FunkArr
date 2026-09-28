@@ -53,6 +53,7 @@ internal sealed class Remuxer(
                 }
                 catch
                 {
+                    // noop
                 }
             }
         }

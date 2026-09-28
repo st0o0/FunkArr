@@ -46,16 +46,7 @@ internal sealed class FfmpegProcess : IFfmpegProcess
 
     internal static FFMpegArgumentProcessor BuildArguments(FfmpegInput input)
     {
-        Action<FFMpegArgumentOptions> inputOptions = opts =>
-        {
-            opts.WithCustomArgument($"-user_agent \"{_userAgent}\"");
-            if (input.ProxyUrl is not null)
-            {
-                opts.WithCustomArgument($"-http_proxy {input.ProxyUrl}");
-            }
-        };
-
-        var arguments = FFMpegArguments.FromUrlInput(new Uri(input.VideoUrl), inputOptions);
+        var arguments = FFMpegArguments.FromUrlInput(new Uri(input.VideoUrl), InputOptions);
 
         if (input.SubtitlePath is not null)
         {
@@ -85,6 +76,15 @@ internal sealed class FfmpegProcess : IFfmpegProcess
 
             outputOptions.WithCustomArgument("-progress pipe:1");
         });
+
+        void InputOptions(FFMpegArgumentOptions opts)
+        {
+            opts.WithCustomArgument($"-user_agent \"{_userAgent}\"");
+            if (input.ProxyUrl is not null)
+            {
+                opts.WithCustomArgument($"-http_proxy {input.ProxyUrl}");
+            }
+        }
     }
 
     internal static void ParseProgressLine(
@@ -121,7 +121,7 @@ internal sealed class FfmpegProcess : IFfmpegProcess
             ? result
             : 0;
 
-    internal static double ParseSpeed(string? value)
+    private static double ParseSpeed(string? value)
     {
         if (value is null or "N/A")
         {

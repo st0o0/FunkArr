@@ -56,8 +56,7 @@ internal sealed class SubtitleDownloader(IHttpClientFactory httpClientFactory, I
         }
     }
 
-    private async Task<SubtitleResult> DownloadAndConvertAsync(
-        string url, string outputDirectory, string routeName, CancellationToken ct)
+    private async Task<SubtitleResult> DownloadAndConvertAsync(string url, string outputDirectory, string routeName, CancellationToken ct)
     {
         string content;
         try

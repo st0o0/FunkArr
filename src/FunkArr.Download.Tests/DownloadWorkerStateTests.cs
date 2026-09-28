@@ -102,7 +102,7 @@ public sealed class DownloadWorkerStateTests
     {
         var state = DownloadWorkerState.Empty with
         {
-            Progress = new DownloadProgress(500_000, 1_000_000, 1.5),
+            Progress = new DownloadProgress(500_000, 1_000_000, 1.5)
         };
 
         state = state.Apply(MakeInitialized());

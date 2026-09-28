@@ -3,6 +3,7 @@ using Akka.Event;
 using Akka.Persistence;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
+using FunkArr.Messages.Shared;
 using FunkArr.Persistence.Events.Download;
 using Microsoft.Extensions.Options;
 using Servus.Akka;
@@ -67,8 +68,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        var evt = new DownloadInitialized(
-            cmd.DownloadId, cmd.Media.ToPersistence());
+        var evt = new DownloadInitialized(cmd.DownloadId, cmd.Media.ToPersistence());
 
         Persist(evt, e => _state = _state.Apply(e));
     }
@@ -96,7 +96,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         var paths = ResolvePaths();
         _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
-        _log.Info("Download {DownloadId} started: {Title}", cmd.DownloadId, _state.Media!.Title);
+        _log.Info("Download {DownloadId} started: {Title}", cmd.DownloadId, _state.Media.Title);
         var attemptEvt = new DownloadAttemptStarted(cmd.DownloadId, 1);
         Persist(attemptEvt, e => _state = _state.Apply(e));
         DeferAsync("start", _ => StartFfmpeg(paths.IncompletePath));
@@ -152,9 +152,9 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 
         _state = _state with
         {
-            Progress = new Messages.Shared.DownloadProgress(msg.TotalSize, msg.OutTimeUs, msg.Speed),
+            Progress = new DownloadProgress(msg.TotalSize, msg.OutTimeUs, msg.Speed),
             Media = _state.Media with { Size = Math.Max(_state.Media.Size, msg.TotalSize) },
-            Phase = phase,
+            Phase = phase
         };
     }
 
@@ -286,7 +286,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             _state = _state with
             {
                 Status = WorkerStatus.Initialized,
-                Phase = DownloadPhase.Initialized,
+                Phase = DownloadPhase.Initialized
             };
         }
     }

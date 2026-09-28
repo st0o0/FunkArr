@@ -116,6 +116,6 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         not null when message.Contains("ffmpeg", StringComparison.OrdinalIgnoreCase) => "ffmpeg",
         not null when message.Contains("disk", StringComparison.OrdinalIgnoreCase) => "disk",
         not null when message.Contains("space", StringComparison.OrdinalIgnoreCase) => "disk",
-        _ => "other",
+        _ => "other"
     };
 }

@@ -46,7 +46,7 @@ public static class DownloadManagerStateExtensions
         var entry = state.Queued.First(e => e.Id == evt.DownloadId);
         var dict = new Dictionary<Guid, DispatchedEntry>(state.Dispatched)
         {
-            [evt.DownloadId] = new(entry.Priority, entry.Category),
+            [evt.DownloadId] = new(entry.Priority, entry.Category)
         };
         return new(
             Queued: [.. state.Queued.Where(e => e.Id != evt.DownloadId)],
