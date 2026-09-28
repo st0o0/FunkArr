@@ -1,19 +1,19 @@
 ## Purpose
 
-Singleton HTTP gateway to the MediathekViewWeb API. Handles query construction, backpressure via stashing, and response mapping.
+Singleton HTTP gateway to the MediathekViewWeb API. Handles query construction, backpressure via stashing, and response mapping. Delegates HTTP requests and caching to MediathekClient.
 ## Requirements
 ### Requirement: MediathekViewWebManager is a singleton HTTP gateway
 
-The MediathekViewWebManager SHALL be a Cluster Singleton actor that serves as the single point of access to the MediathekViewWeb API at `https://mediathekviewweb.de/api/query`.
+The MediathekViewWebManager SHALL be a Cluster Singleton actor that serves as the single point of access to the MediathekViewWeb API. The actor SHALL implement `IWithUnboundedStash` for backpressure. The actor SHALL delegate HTTP requests and caching to an injected `MediathekClient` service. The actor SHALL NOT implement `IWithTimers` (cache cleanup is handled by the cache backend).
 
 #### Scenario: Successful query
 
 - **WHEN** a MediathekQuery message is received
-- **THEN** the Manager SHALL use the MediathekQueryBuilder to serialize the query to JSON, send an HTTP POST with `Content-Type: text/plain`, deserialize the response, and respond with a MediathekQueryCompleted containing the mapped MediathekItems
+- **THEN** the Manager SHALL use the MediathekQueryBuilder to build a query object, call `MediathekClient.QueryAsync` with the query object, and respond with the result mapped to a MediathekQueryCompleted message
 
 #### Scenario: HTTP error
 
-- **WHEN** the HTTP request fails (network error, non-2xx status)
+- **WHEN** the MediathekClient call fails (exception from HttpClient)
 - **THEN** the Manager SHALL respond with a MediathekQueryFailed message containing the error reason
 
 ### Requirement: MediathekViewWebManager enforces backpressure via stashing
