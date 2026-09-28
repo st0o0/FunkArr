@@ -16,20 +16,28 @@ public sealed class EnrichmentSetupContainer : IServiceSetupContainer
             .AddOptions<TmdbOptions>()
             .BindConfiguration(TmdbOptions.SectionName);
 
-        services.AddMemoryCache();
-
         services.AddHttpClient<TvdbClient>(client =>
         {
             client.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
         })
         .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("tvdb"))
-        .AddStandardResilienceHandler();
+        .AddStandardResilienceHandler(options =>
+        {
+            options.Retry.DelayGenerator = RetryAfterDefaults.DelayGenerator;
+            options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+            options.CircuitBreaker.FailureRatio = 0.25;
+        });
 
         services.AddHttpClient<TmdbClient>(client =>
         {
             client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
         })
         .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("tmdb"))
-        .AddStandardResilienceHandler();
+        .AddStandardResilienceHandler(options =>
+        {
+            options.Retry.DelayGenerator = RetryAfterDefaults.DelayGenerator;
+            options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+            options.CircuitBreaker.FailureRatio = 0.25;
+        });
     }
 }

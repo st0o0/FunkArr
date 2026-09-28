@@ -15,9 +15,9 @@ public sealed class EnrichmentManager : ReceiveActor
         var tmdbPool = Context.ResolveChildActor<TmdbEnrichmentActor>("tmdb-pool",
             props => props.WithRouter(new SmallestMailboxPool(2)));
 
-        Receive<EnrichEpisodes>(msg => tvdbPool.Forward(msg));
-        Receive<EnrichMovies>(msg => tmdbPool.Forward(msg));
+        Receive<EnrichEpisodes>(tvdbPool.Forward);
+        Receive<EnrichMovies>(tmdbPool.Forward);
         Receive<QueryCacheStats>(_ =>
-            Sender.Tell(new CacheStatsResult(tvdbClient.CacheEntryCount, tmdbClient.CacheEntryCount, null)));
+            Sender.Tell(new CacheStatsResult(0, 0, null)));
     }
 }

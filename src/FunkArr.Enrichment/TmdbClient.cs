@@ -4,19 +4,19 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Enrichment;
 
-public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOptions> options, IMemoryCache cache, ILogger<TmdbClient> log)
+public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOptions> options, IDistributedCache cache, ILogger<TmdbClient> log)
 {
     private static readonly TimeSpan _movieTtl = TimeSpan.FromDays(30);
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
     public bool IsConfigured => !string.IsNullOrEmpty(options.CurrentValue.ApiKey);
@@ -24,7 +24,8 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
     public async Task<TmdbMovieData?> GetMovieDataAsync(int tmdbId)
     {
         var cacheKey = $"tmdb:movie:{tmdbId}";
-        if (cache.TryGetValue(cacheKey, out TmdbMovieData? cached))
+        var cached = await cache.GetAsync<TmdbMovieData>(cacheKey);
+        if (cached is not null)
         {
             log.LogDebug("TMDB cache hit for movie {TmdbId}", tmdbId);
             Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "hit"));
@@ -44,8 +45,7 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         var altTitles = await FetchAlternativeTitlesAsync(tmdbId);
         Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, new KeyValuePair<string, object?>("api", "tmdb"));
         var data = new TmdbMovieData(movie, altTitles);
-        cache.Set(cacheKey, data, _movieTtl);
-        Telemetry.SetTmdbCacheEntries(CacheEntryCount);
+        await cache.SetAsync(cacheKey, data, _movieTtl);
         return data;
     }
 
@@ -54,7 +54,7 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         var url = QueryHelpers.AddQueryString($"find/{imdbId}", new Dictionary<string, string?>
         {
             ["api_key"] = ApiKey(),
-            ["external_source"] = "imdb_id",
+            ["external_source"] = "imdb_id"
         });
         var result = await FetchAsync<TmdbFindResponse>(url);
         var movie = result?.MovieResults is { Length: > 0 } ? result.MovieResults[0] : null;
@@ -65,19 +65,17 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         }
 
         var cacheKey = $"tmdb:movie:{movie.Id}";
-        if (cache.TryGetValue(cacheKey, out TmdbMovieData? cached))
+        var cached = await cache.GetAsync<TmdbMovieData>(cacheKey);
+        if (cached is not null)
         {
             return cached;
         }
 
         var altTitles = await FetchAlternativeTitlesAsync(movie.Id);
         var data = new TmdbMovieData(movie, altTitles);
-        cache.Set(cacheKey, data, _movieTtl);
-        Telemetry.SetTmdbCacheEntries(CacheEntryCount);
+        await cache.SetAsync(cacheKey, data, _movieTtl);
         return data;
     }
-
-    public int CacheEntryCount => (cache as MemoryCache)?.Count ?? 0;
 
     private async Task<TmdbMovie?> FetchMovieAsync(int tmdbId)
     {

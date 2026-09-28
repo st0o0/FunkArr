@@ -6,19 +6,19 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Core;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Enrichment;
 
-public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IMemoryCache cache, ILogger<TvdbClient> log, TimeProvider timeProvider)
+public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IDistributedCache cache, ILogger<TvdbClient> log, TimeProvider timeProvider)
 {
     private static readonly KeyValuePair<string, object?> _apiTag = new("api", "tvdb");
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
     private string? _token;
@@ -28,11 +28,12 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
     public async Task<TvdbEpisode[]> GetEpisodesAsync(int seriesId)
     {
         var cacheKey = $"tvdb:episodes:{seriesId}";
-        if (cache.TryGetValue(cacheKey, out TvdbEpisode[]? cached))
+        var cached = await cache.GetAsync<TvdbEpisode[]>(cacheKey);
+        if (cached is not null)
         {
             log.LogDebug("TVDB cache hit for series {SeriesId}", seriesId);
             Telemetry.Requests.Add(1, _apiTag, new KeyValuePair<string, object?>("status", "hit"));
-            return cached!;
+            return cached;
         }
 
         log.LogDebug("TVDB cache miss for series {SeriesId}, fetching", seriesId);
@@ -41,12 +42,9 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         var episodes = await FetchEpisodesAsync(seriesId);
         Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, _apiTag);
         var ttl = DetermineShowTtl(episodes);
-        cache.Set(cacheKey, episodes, ttl);
-        Telemetry.SetTvdbCacheEntries(CacheEntryCount);
+        await cache.SetAsync(cacheKey, episodes, ttl);
         return episodes;
     }
-
-    public int CacheEntryCount => (cache as MemoryCache)?.Count ?? 0;
 
     private async Task<TvdbEpisode[]> FetchEpisodesAsync(int seriesId)
     {
