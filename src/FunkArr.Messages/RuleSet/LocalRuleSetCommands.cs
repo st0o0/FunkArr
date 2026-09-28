@@ -83,7 +83,7 @@ public abstract record ExportRuleSetResponse;
 public sealed record ExportRuleSetCompleted(string Json) : ExportRuleSetResponse;
 public sealed record ExportRuleSetFailed(ExportRuleSetFailureReason Reason) : ExportRuleSetResponse;
 
-public enum ExportRuleSetFailureReason { NotFound }
+public enum ExportRuleSetFailureReason { NotFound, NoLocalOverlay }
 
 public sealed record ExportRuleSetValidationFailed(
     IReadOnlyList<string> Errors) : ExportRuleSetResponse;

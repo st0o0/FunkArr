@@ -262,6 +262,9 @@ public static class RuleSetApiEndpoints
         {
             ExportRuleSetCompleted completed => ExportResult(id, completed.Json, httpContext),
             ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors)),
+            ExportRuleSetFailed { Reason: ExportRuleSetFailureReason.NoLocalOverlay } =>
+                Results.Problem(statusCode: 400, title: "No local overlay",
+                    detail: "Only locally modified rulesets can be exported. Edit this ruleset first to create a local overlay."),
             ExportRuleSetFailed => Results.NotFound(),
             _ => ApiResults.GatewayTimeout(),
         };

@@ -212,7 +212,7 @@ public sealed class RuleSetWorker : ReceiveActor
     {
         if (!_store.ExistsLocal(msg.RuleSetId))
         {
-            Sender.Tell(new ExportRuleSetFailed(ExportRuleSetFailureReason.NotFound));
+            Sender.Tell(new ExportRuleSetFailed(ExportRuleSetFailureReason.NoLocalOverlay));
             return;
         }
 

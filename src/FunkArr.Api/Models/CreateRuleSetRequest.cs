@@ -7,7 +7,7 @@ public sealed record CreateRuleSetRequest(
         ErrorMessage = "ruleSetId must be kebab-case (lowercase letters, numbers, hyphens)")]
     string RuleSetId,
     [property: Required] string Topic,
-    MediaInput Media,
+    [property: Required] MediaInput Media,
     [property: Required, MinLength(1)] RuleInput[] Rules,
     string[]? Aliases = null,
     [property: Range(0.0, 1.0)] float? Confidence = null,

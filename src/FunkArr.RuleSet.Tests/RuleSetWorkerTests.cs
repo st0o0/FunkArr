@@ -156,7 +156,7 @@ public sealed class RuleSetWorkerTests : TestKit
 
         worker.Tell(new ExportRuleSet("test-show"), TestActor);
         var result = ExpectMsg<ExportRuleSetFailed>();
-        Assert.Equal(ExportRuleSetFailureReason.NotFound, result.Reason);
+        Assert.Equal(ExportRuleSetFailureReason.NoLocalOverlay, result.Reason);
     }
 
     [Fact]
