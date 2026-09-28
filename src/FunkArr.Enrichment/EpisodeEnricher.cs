@@ -49,7 +49,7 @@ public static class EpisodeEnricher
             {
                 EnrichmentMethod.Title => FindByTitle(candidate, filteredEpisodes, titleThreshold, runtimeTolerance),
                 EnrichmentMethod.Airdate => FindByAirdateGuarded(candidate, filteredEpisodes, airdateTolerance, minTitleAffinity, ref bestTitleScore),
-                _ => null,
+                _ => null
             };
 
             if (result is not null)

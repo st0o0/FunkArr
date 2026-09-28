@@ -9,7 +9,7 @@ public sealed class EpisodeEnricherTests
         new(2026, 1, "Nachtschatten", "2026-01-01", 89),
         new(2026, 5, "Wenn man nur einen retten könnte", "2026-01-25", 88),
         new(2026, 9, "Sashimi Spezial", "2026-03-01", 89),
-        new(2026, 16, "Könige der Nacht", "2026-05-03", 88),
+        new(2026, 16, "Könige der Nacht", "2026-05-03", 88)
     ];
 
     private static readonly TvdbEpisode[] _compositeEpisodes =
@@ -17,7 +17,7 @@ public sealed class EpisodeEnricherTests
         new(2026, 1, "Winkler - 20 - Nachtschatten", "2026-01-01", 89),
         new(2026, 9, "Odenthal - 83 - Sashimi Spezial", "2026-03-01", 89),
         new(2026, 17, "Lindholm - 33 - König in Gelb", "2026-09-13", 89),
-        new(2026, 18, "Ballauf & Schenk - 96 - Die letzten Menschen von Köln", "2026-09-20", 89),
+        new(2026, 18, "Ballauf & Schenk - 96 - Die letzten Menschen von Köln", "2026-09-20", 89)
     ];
 
     [Fact]
@@ -26,7 +26,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "ZDF Magazin Royale S2026E01", null, null, 1800,
-                ExistingSeason: "2026", ExistingEpisode: "01"),
+                ExistingSeason: "2026", ExistingEpisode: "01")
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -43,7 +43,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -61,7 +61,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Tatort: Nachtschatten", "Nachtschatten", null, 5340, null, null),
+            new EpisodeCandidate(0, "Tatort: Nachtschatten", "Nachtschatten", null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -75,7 +75,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Könige der Nacht (2026)", null, null, 5280, null, null),
+            new EpisodeCandidate(0, "Könige der Nacht (2026)", null, null, 5280, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -90,7 +90,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Completely Different Title", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Completely Different Title", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -104,7 +104,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Unknown Title", null,
-                new DateTimeOffset(2026, 1, 2, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 1, 2, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
         var config = MakeConfig(minTitleAffinity: 0f);
 
@@ -122,7 +122,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Unknown Title", null,
-                new DateTimeOffset(2026, 6, 15, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 6, 15, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
         var config = MakeConfig(minTitleAffinity: 0f);
 
@@ -137,7 +137,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
-            new EpisodeCandidate(1, "Totally Unknown Episode", null, null, 5340, null, null),
+            new EpisodeCandidate(1, "Totally Unknown Episode", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -152,7 +152,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
-            new EpisodeCandidate(1, "Sashimi Spezial", null, null, 5340, null, null),
+            new EpisodeCandidate(1, "Sashimi Spezial", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -168,7 +168,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Something", null, null, 5340,
-                ExistingSeason: "2026", ExistingEpisode: "1"),
+                ExistingSeason: "2026", ExistingEpisode: "1")
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -183,7 +183,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Unknown", null,
-                new DateTimeOffset(2026, 1, 1, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 1, 1, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
         var config = MakeConfig(minTitleAffinity: 0f);
 
@@ -198,7 +198,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null)
         };
         var config = MakeConfig(enabled: false);
 
@@ -212,7 +212,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Nacht", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Nacht", null, null, 5340, null, null)
         };
 
         var defaultResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -230,7 +230,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Nachtschatten", null,
-                new DateTimeOffset(2026, 1, 2, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 1, 2, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
         var config = MakeConfig(methods: [EnrichmentMethod.Airdate]);
 
@@ -246,7 +246,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Unknown Title", null,
-                new DateTimeOffset(2026, 1, 5, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 1, 5, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
 
         var defaultResults = EpisodeEnricher.Resolve(_tatortEpisodes, candidates, MakeConfig(minTitleAffinity: 0f));
@@ -262,7 +262,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
@@ -279,7 +279,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Bauernsterben", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Bauernsterben", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
@@ -292,7 +292,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Nachtschatten", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_tatortEpisodes, candidates);
@@ -306,7 +306,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Tatort: König in Gelb", "König in Gelb", null, 5340, null, null),
+            new EpisodeCandidate(0, "Tatort: König in Gelb", "König in Gelb", null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
@@ -322,7 +322,7 @@ public sealed class EpisodeEnricherTests
         {
             new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null),
             new EpisodeCandidate(1, "Sashimi Spezial", null, null, 5340, null, null),
-            new EpisodeCandidate(2, "Die letzten Menschen von Köln", null, null, 5340, null, null),
+            new EpisodeCandidate(2, "Die letzten Menschen von Köln", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
@@ -354,13 +354,13 @@ public sealed class EpisodeEnricherTests
     {
         var season2025 = new TvdbEpisode[]
         {
-            new(2025, 5, "Schürk & Hölzer - 05 - Das Ende der Nacht", "2025-02-08", 89),
+            new(2025, 5, "Schürk & Hölzer - 05 - Das Ende der Nacht", "2025-02-08", 89)
         };
         var season2026 = _compositeEpisodes;
 
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Das Ende der Nacht", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Das Ende der Nacht", null, null, 5340, null, null)
         };
 
         var firstPass = EpisodeEnricher.Resolve(season2026, candidates);
@@ -378,12 +378,12 @@ public sealed class EpisodeEnricherTests
     {
         var allEpisodes = new TvdbEpisode[]
         {
-            new(2025, 5, "Das Ende der Nacht", "2025-02-08", 89),
+            new(2025, 5, "Das Ende der Nacht", "2025-02-08", 89)
         };
 
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Das Ende der Nacht", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "Das Ende der Nacht", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(allEpisodes, candidates);
@@ -399,7 +399,7 @@ public sealed class EpisodeEnricherTests
     {
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null),
+            new EpisodeCandidate(0, "König in Gelb", null, null, 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates);
@@ -413,7 +413,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Bauernsterben", null,
-                new DateTimeOffset(2026, 9, 14, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 9, 14, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates, MakeConfig());
@@ -427,7 +427,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "König in Gelb", null,
-                new DateTimeOffset(2026, 9, 14, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 9, 14, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
 
         var results = EpisodeEnricher.Resolve(_compositeEpisodes, candidates, MakeConfig());
@@ -443,7 +443,7 @@ public sealed class EpisodeEnricherTests
         var candidates = new[]
         {
             new EpisodeCandidate(0, "Bauernsterben", null,
-                new DateTimeOffset(2026, 9, 13, 20, 15, 0, TimeSpan.Zero), 5340, null, null),
+                new DateTimeOffset(2026, 9, 13, 20, 15, 0, TimeSpan.Zero), 5340, null, null)
         };
         var config = MakeConfig(minTitleAffinity: 0f);
 

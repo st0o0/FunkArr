@@ -117,7 +117,7 @@ public sealed class MovieEnricherTests
         {
             new MovieCandidate(0, "Fight Club", null, 8340),
             new MovieCandidate(1, "Something Else", null, 5400),
-            new MovieCandidate(2, "Clube da Luta", null, 8340),
+            new MovieCandidate(2, "Clube da Luta", null, 8340)
         };
 
         var results = MovieEnricher.Resolve(_fightClub, _fightClubAltTitles, candidates);
