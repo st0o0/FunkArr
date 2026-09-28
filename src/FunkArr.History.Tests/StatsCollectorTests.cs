@@ -123,7 +123,7 @@ public sealed class StatsCollectorTests : TestKit
         var historyQuery = _historyRegionProbe.ExpectMsg<QueryScoringStats>();
         Assert.Equal("rs-1", historyQuery.RuleSetId);
 
-        _historyRegionProbe.Reply(new ScoringStatsResult(DateTimeOffset.UtcNow, 0.6, 0.4, 8));
+        _historyRegionProbe.Reply(new ScoringStatsQueryResult("rs-1", new ScoringStatsResult(DateTimeOffset.UtcNow, 0.6, 0.4, 8)));
 
         AwaitCondition(() =>
         {

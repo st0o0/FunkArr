@@ -1,5 +1,5 @@
 using System.IO.Compression;
-using System.Text.Json;
+using System.Net.Http.Json;
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
@@ -69,7 +69,6 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
 
     private async Task DoCheckForUpdates()
     {
-        var opts = _optionsMonitor.CurrentValue;
         var rulesetsDir = _dataPaths.CommunityRuleSets;
         var versionFile = _dataPaths.RuleSetVersion;
 
@@ -112,14 +111,14 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
             await archive.ExtractToDirectoryAsync(tempDir);
 
             var extractedRulesets = Path.Join(tempDir, "rulesets");
-            var sourceDir = Directory.Exists(extractedRulesets) ? extractedRulesets : tempDir;
+            var sourceDir = _dataFiles.Exists(extractedRulesets) ? extractedRulesets : tempDir;
             _dataFiles.ReplaceDirectory(sourceDir, rulesetsDir);
             _dataFiles.WriteText(versionFile, release.Value.Version);
 
             _log.Info("Community rulesets updated to version {Version}", release.Value.Version);
             Telemetry.UpdatesApplied.Add(1);
 
-            var manager = Context.GetActor<IRuleSetManager>();
+            var manager = await Context.GetActorAsync<IRuleSetManager>();
             manager.Tell(new RuleSetManager.ScanRuleSets());
         }
         catch (Exception ex)
@@ -146,57 +145,33 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
             return null;
         }
 
-        var json = await response.Content.ReadAsStringAsync();
-        var releases = JsonSerializer.Deserialize<JsonElement[]>(json);
+        var releases = await response.Content.ReadFromJsonAsync<GitHubRelease[]>();
         if (releases is null)
         {
             return null;
         }
 
-        foreach (var rel in releases)
+        var match = releases.FirstOrDefault(r =>
+            r.TagName is not null &&
+            r.TagName.StartsWith("rulesets-v", StringComparison.Ordinal) &&
+            (opts.Version == "latest" || r.TagName["rulesets-v".Length..] == opts.Version));
+
+        if (match?.TagName is null)
         {
-            if (!rel.TryGetProperty("tag_name", out var tagEl))
+            if (opts.Version != "latest")
             {
-                continue;
+                _log.Warning("Pinned version {Version} not found in releases", opts.Version);
             }
 
-            var tag = tagEl.GetString();
-            if (tag is null || !tag.StartsWith("rulesets-v", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var version = tag["rulesets-v".Length..];
-
-            if (opts.Version != "latest" && version != opts.Version)
-            {
-                continue;
-            }
-
-            string? assetUrl = null;
-            if (rel.TryGetProperty("assets", out var assets))
-            {
-                foreach (var asset in assets.EnumerateArray())
-                {
-                    if (asset.TryGetProperty("name", out var nameEl) &&
-                        nameEl.GetString() == "rulesets.zip" &&
-                        asset.TryGetProperty("browser_download_url", out var urlEl))
-                    {
-                        assetUrl = urlEl.GetString();
-                        break;
-                    }
-                }
-            }
-
-            return new ReleaseInfo(tag, version, assetUrl);
+            return null;
         }
 
-        if (opts.Version != "latest")
-        {
-            _log.Warning("Pinned version {Version} not found in releases", opts.Version);
-        }
+        var version = match.TagName["rulesets-v".Length..];
+        var assetUrl = match.Assets?
+            .FirstOrDefault(a => a.Name == "rulesets.zip")
+            ?.BrowserDownloadUrl;
 
-        return null;
+        return new ReleaseInfo(match.TagName, version, assetUrl);
     }
 
     private readonly record struct ReleaseInfo(string Tag, string Version, string? AssetUrl);

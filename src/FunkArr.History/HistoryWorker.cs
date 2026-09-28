@@ -71,10 +71,10 @@ public sealed class HistoryWorker : ReceivePersistentActor
             Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "detail"));
             Sender.Tell(_state.QueryDetail(query));
         });
-        Command<QueryScoringStats>(_ =>
+        Command<QueryScoringStats>(query =>
         {
             Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "stats"));
-            Sender.Tell(_state.Stats);
+            Sender.Tell(new ScoringStatsQueryResult(query.RuleSetId, _state.Stats));
         });
         Command<SaveSnapshotSuccess>(_ => { });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));

@@ -134,13 +134,14 @@ public sealed class HistoryWorkerTests : TestKit
 
         worker.Tell(new QueryScoringStats("rs-test"), TestActor);
 
-        var stats = ExpectMsg<ScoringStatsResult>();
-        Assert.NotNull(stats.LastRun);
-        Assert.NotNull(stats.MatchRate);
-        Assert.Equal(0.5, stats.MatchRate.Value, 0.001);
-        Assert.NotNull(stats.EnrichmentRate);
-        Assert.Equal(0.6, stats.EnrichmentRate.Value, 0.001);
-        Assert.Equal(1, stats.TotalRuns);
+        var result = ExpectMsg<ScoringStatsQueryResult>();
+        Assert.Equal("rs-test", result.RuleSetId);
+        Assert.NotNull(result.Stats.LastRun);
+        Assert.NotNull(result.Stats.MatchRate);
+        Assert.Equal(0.5, result.Stats.MatchRate.Value, 0.001);
+        Assert.NotNull(result.Stats.EnrichmentRate);
+        Assert.Equal(0.6, result.Stats.EnrichmentRate.Value, 0.001);
+        Assert.Equal(1, result.Stats.TotalRuns);
     }
 
     [Fact]
@@ -150,10 +151,11 @@ public sealed class HistoryWorkerTests : TestKit
 
         worker.Tell(new QueryScoringStats("rs-test"), TestActor);
 
-        var stats = ExpectMsg<ScoringStatsResult>();
-        Assert.Null(stats.LastRun);
-        Assert.Null(stats.MatchRate);
-        Assert.Equal(0, stats.TotalRuns);
+        var result = ExpectMsg<ScoringStatsQueryResult>();
+        Assert.Equal("rs-test", result.RuleSetId);
+        Assert.Null(result.Stats.LastRun);
+        Assert.Null(result.Stats.MatchRate);
+        Assert.Equal(0, result.Stats.TotalRuns);
     }
 
     [Fact]
@@ -196,7 +198,8 @@ public sealed class HistoryWorkerTests : TestKit
 
         worker.Tell(new QueryScoringStats("my-ruleset"), TestActor);
 
-        ExpectMsg<ScoringStatsResult>();
+        var result = ExpectMsg<ScoringStatsQueryResult>();
+        Assert.Equal("my-ruleset", result.RuleSetId);
     }
 
     private static RecordHistory CreateCommand(

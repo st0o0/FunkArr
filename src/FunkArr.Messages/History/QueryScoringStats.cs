@@ -7,3 +7,5 @@ public sealed record ScoringStatsResult(
     double? MatchRate,
     double? EnrichmentRate = null,
     int TotalRuns = 0);
+
+public sealed record ScoringStatsQueryResult(string RuleSetId, ScoringStatsResult Stats);

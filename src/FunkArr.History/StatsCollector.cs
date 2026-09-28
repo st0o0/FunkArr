@@ -1,4 +1,9 @@
+using System.Collections.Immutable;
 using Akka.Actor;
+using Akka.Event;
+using Akka.Streams;
+using Akka.Streams.Dsl;
+using Akka.Streams.Supervision;
 using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
@@ -8,9 +13,12 @@ namespace FunkArr.History;
 
 public sealed class StatsCollector : ReceiveActor
 {
-    private static readonly TimeSpan _backfillTimeout = TimeSpan.FromSeconds(5);
+    private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly IMaterializer _materializer = Context.Materializer();
 
     private StatsCollectorState _state = StatsCollectorState.Empty;
+
+    private static readonly TimeSpan _backfillTimeout = TimeSpan.FromSeconds(5);
 
     public StatsCollector()
     {
@@ -18,40 +26,38 @@ public sealed class StatsCollector : ReceiveActor
         Receive<QueryAllStats>(_ => Sender.Tell(_state.GetSnapshot()));
         Receive<RemoveStats>(msg => _state = _state.Apply(msg));
         Receive<RegisteredRuleSetsResult>(HandleBackfillRuleSets);
-        Receive<BackfillStatsResult>(msg =>
-        {
-            if (msg.Stats is not null)
-            {
-                _state = _state.Apply(new UpdateStats(msg.RuleSetId, msg.Stats));
-            }
-        });
-        Receive<BackfillFailed>(_ => { });
+        Receive<BackfillComplete>(HandleBackfillComplete);
+        Receive<BackfillFailed>(msg => { _log.Error(msg.Cause, ""); });
     }
 
     private void HandleBackfillRuleSets(RegisteredRuleSetsResult result)
     {
-        var historyRegion = Context.GetActor<IHistoryRegion>();
+        Source.From(result.Entries)
+            .Select(e => new QueryScoringStats(e.RuleSetId))
+            .Ask<ScoringStatsQueryResult>(Context.GetActor<IHistoryRegion>(), _backfillTimeout, 4)
+            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .RunWith(Sink.Seq<ScoringStatsQueryResult>(), _materializer)
+            .PipeTo(Self,
+                success: items => new BackfillComplete(items),
+                failure: ex => new BackfillFailed(ex));
+    }
 
-        foreach (var entry in result.Entries)
+    private void HandleBackfillComplete(BackfillComplete msg)
+    {
+        foreach (var item in msg.Results)
         {
-            historyRegion.Ask<ScoringStatsResult>(
-                    new QueryScoringStats(entry.RuleSetId), _backfillTimeout)
-                .PipeTo(Self,
-                    success: stats => new BackfillStatsResult(entry.RuleSetId, stats),
-                    failure: _ => new BackfillStatsResult(entry.RuleSetId, null));
+            _state = _state.Apply(new UpdateStats(item.RuleSetId, item.Stats));
         }
     }
 
-    private sealed record BackfillFailed;
-    private sealed record BackfillStatsResult(string RuleSetId, ScoringStatsResult? Stats);
+    private sealed record BackfillFailed(Exception Cause);
+
+    private sealed record BackfillComplete(IImmutableList<ScoringStatsQueryResult> Results);
 
     protected override void PreStart()
     {
-        base.PreStart();
-
         var resolver = Context.GetActor<IRuleSetResolver>();
-        resolver.Ask<RegisteredRuleSetsResult>(
-                new QueryRegisteredRuleSets(), _backfillTimeout)
-            .PipeTo(Self, failure: _ => new BackfillFailed());
+        resolver.Ask<RegisteredRuleSetsResult>(new QueryRegisteredRuleSets(), _backfillTimeout)
+            .PipeTo(Self, failure: ex => new BackfillFailed(ex));
     }
 }

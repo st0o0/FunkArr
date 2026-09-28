@@ -240,7 +240,7 @@ public sealed class RuleSetManagerTests : TestKit
             var stats = statsQuery.RuleSetId == "show-a"
                 ? new ScoringStatsResult(lastRun, 0.85)
                 : new ScoringStatsResult(null, null);
-            historyProbe.Reply(stats);
+            historyProbe.Reply(new ScoringStatsQueryResult(statsQuery.RuleSetId, stats));
         }
 
         var result = ExpectMsg<RuleSetListWithStatsResult>();

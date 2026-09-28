@@ -2,6 +2,9 @@ using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Akka.Actor;
 using Akka.Event;
+using Akka.Streams;
+using Akka.Streams.Dsl;
+using Akka.Streams.Supervision;
 using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
@@ -9,7 +12,7 @@ using Servus.Akka;
 
 namespace FunkArr.RuleSet;
 
-public sealed class RuleSetManager : ReceiveActor
+public sealed class RuleSetManager : ReceiveActor, IWithTimers
 {
     public sealed record ScanRuleSets;
 
@@ -19,9 +22,16 @@ public sealed class RuleSetManager : ReceiveActor
 
     private sealed record FlushChanges;
 
+    private sealed record ListWithStatsComplete(ImmutableList<ScoringStatsQueryResult> Stats);
+
+    private sealed record ListWithStatsFailed;
+
     private static readonly TimeSpan _defaultDebounceWindow = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly IActorRef _ruleSetRegion = Context.GetActor<IRuleSetRegion>();
+    private readonly IMaterializer _materializer = Context.Materializer();
     private readonly RuleSetStore _store;
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
@@ -31,7 +41,8 @@ public sealed class RuleSetManager : ReceiveActor
         ImmutableDictionary<string, WorkerSummary>.Empty.WithComparers(StringComparer.Ordinal);
     private IFileSystemWatcher? _communityWatcher;
     private IFileSystemWatcher? _localWatcher;
-    private ICancelable? _flushSchedule;
+
+    public ITimerScheduler Timers { get; set; } = null!;
 
     public RuleSetManager(RuleSetStore store, IDataFiles dataFiles, DataPaths dataPaths, TimeSpan? debounceWindow = null)
     {
@@ -48,17 +59,16 @@ public sealed class RuleSetManager : ReceiveActor
         Receive<QueryRuleSetSummaries>(_ => HandleQuerySummaries());
         Receive<WorkerReady>(HandleWorkerReady);
         Receive<WorkerRemoved>(HandleWorkerRemoved);
-        ReceiveAsync<QueryRuleSetListWithStats>(_ => HandleQueryListWithStats());
+        Receive<QueryRuleSetListWithStats>(_ => HandleQueryListWithStats());
     }
 
     protected override void PreStart()
     {
         var current = _store.Scan();
 
-        var shardRegion = Context.GetActor<IRuleSetRegion>();
         foreach (var (id, paths) in current)
         {
-            shardRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
+            _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
         }
 
         _state = _state with { KnownRuleSets = current };
@@ -72,10 +82,9 @@ public sealed class RuleSetManager : ReceiveActor
     {
         var current = _store.Scan();
 
-        var shardRegion = Context.GetActor<IRuleSetRegion>();
         foreach (var (id, paths) in current)
         {
-            shardRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
+            _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
         }
 
         _state = _state with { KnownRuleSets = current };
@@ -97,19 +106,16 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void ScheduleFlushIfNeeded()
     {
-        if (_flushSchedule is not null)
+        if (Timers.IsTimerActive("flush"))
         {
             return;
         }
 
-        _flushSchedule = Context.System.Scheduler.ScheduleTellOnceCancelable(
-            _debounceWindow, Self, new FlushChanges(), ActorRefs.NoSender);
+        Timers.StartSingleTimer("flush", new FlushChanges(), _debounceWindow);
     }
 
     private void HandleFlush()
     {
-        _flushSchedule = null;
-
         if (_state.FullRescanRequested)
         {
             HandleFullRescan();
@@ -162,7 +168,6 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void HandleTargetedFlush()
     {
-        var shardRegion = Context.GetActor<IRuleSetRegion>();
         var added = 0;
         var updated = 0;
         var removed = 0;
@@ -177,20 +182,20 @@ public sealed class RuleSetManager : ReceiveActor
             {
                 if (hasFiles)
                 {
-                    shardRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
+                    _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
                     knownRuleSets = knownRuleSets.SetItem(id, current);
                     added++;
                 }
             }
             else if (!hasFiles)
             {
-                shardRegion.Tell(new RuleSetWorker.RemoveRuleSet(id));
+                _ruleSetRegion.Tell(new RuleSetWorker.RemoveRuleSet(id));
                 knownRuleSets = knownRuleSets.Remove(id);
                 removed++;
             }
             else if (known != current)
             {
-                shardRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
+                _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
                 knownRuleSets = knownRuleSets.SetItem(id, current);
                 updated++;
             }
@@ -210,8 +215,7 @@ public sealed class RuleSetManager : ReceiveActor
 
     private void HandleQueryDetail(QueryRuleSetDetail msg)
     {
-        var shardRegion = Context.GetActor<IRuleSetRegion>();
-        shardRegion.Forward(msg);
+        _ruleSetRegion.Forward(msg);
     }
 
     private void HandleQuerySummaries()
@@ -234,37 +238,42 @@ public sealed class RuleSetManager : ReceiveActor
         Telemetry.SetActiveCount(_summaries.Count);
     }
 
-    private async Task HandleQueryListWithStats()
+    private void HandleQueryListWithStats()
     {
+        if (_summaries.IsEmpty)
+        {
+            Sender.Tell(new RuleSetListWithStatsResult([]));
+            return;
+        }
+
         var historyRegion = Context.GetActor<IHistoryRegion>();
-        var statsTimeout = TimeSpan.FromSeconds(3);
+        var summaries = _summaries;
 
-        var statsTasks = _summaries.Keys.Select(async ruleSetId =>
+        Source.From(summaries.Keys)
+            .Select(id => new QueryScoringStats(id))
+            .Ask<ScoringStatsQueryResult>(historyRegion, _statsTimeout, 4)
+            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .RunWith(Sink.Seq<ScoringStatsQueryResult>(), _materializer)
+            .PipeTo(Sender, Self,
+                success: items => BuildListWithStatsResult(summaries, items),
+                failure: _ => BuildListWithStatsResult(summaries, []));
+    }
+
+    private static RuleSetListWithStatsResult BuildListWithStatsResult(
+        ImmutableDictionary<string, WorkerSummary> summaries,
+        IImmutableList<ScoringStatsQueryResult> stats)
+    {
+        var statsMap = stats.ToDictionary(s => s.RuleSetId, s => s.Stats);
+
+        var entries = summaries.Select(kv =>
         {
-            try
-            {
-                var stats = await historyRegion.Ask<ScoringStatsResult>(
-                    new QueryScoringStats(ruleSetId), statsTimeout);
-                return (RuleSetId: ruleSetId, Stats: stats);
-            }
-            catch
-            {
-                return (RuleSetId: ruleSetId, Stats: new ScoringStatsResult(null, null));
-            }
-        }).ToArray();
-
-        var results = await Task.WhenAll(statsTasks);
-        var statsMap = results.ToDictionary(r => r.RuleSetId, r => r.Stats);
-
-        var entries = _summaries.Select(kv =>
-        {
-            statsMap.TryGetValue(kv.Key, out var stats);
+            statsMap.TryGetValue(kv.Key, out var s);
             return new RuleSetListWithStatsEntry(
                 kv.Key, kv.Value.RuleCount, kv.Value.SourceType,
-                stats?.LastRun, stats?.MatchRate);
+                s?.LastRun, s?.MatchRate);
         }).ToArray();
 
-        Sender.Tell(new RuleSetListWithStatsResult(entries));
+        return new RuleSetListWithStatsResult(entries);
     }
 
     private void SetupWatchers()
@@ -312,7 +321,6 @@ public sealed class RuleSetManager : ReceiveActor
     {
         _communityWatcher?.Dispose();
         _localWatcher?.Dispose();
-        _flushSchedule?.Cancel();
     }
 }
 
