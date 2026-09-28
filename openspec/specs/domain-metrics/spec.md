@@ -81,6 +81,18 @@ The Search domain SHALL expose histograms for duration and result counts, and co
 - **WHEN** a search returns results
 - **THEN** `funkarr.search.results_per_request` histogram records the count
 
+### Requirement: Search domain SHALL instrument MediathekViewWeb cache hits and misses
+
+The Search domain Telemetry SHALL expose counters for MediathekViewWeb response cache hits and misses.
+
+#### Scenario: Cache hit counted
+- **WHEN** MediathekViewWebManager serves a response from cache
+- **THEN** `funkarr.search.mediathek_cache_hits_total` counter SHALL be incremented
+
+#### Scenario: Cache miss counted
+- **WHEN** MediathekViewWebManager makes an HTTP request (cache miss)
+- **THEN** `funkarr.search.mediathek_cache_misses_total` counter SHALL be incremented
+
 ### Requirement: Scoring domain SHALL instrument duration, runs, and error paths
 The Scoring domain SHALL expose histograms for duration, counters for runs, regex timeouts, and no-config fallthrough, and tag existing counters with ruleSetId.
 
