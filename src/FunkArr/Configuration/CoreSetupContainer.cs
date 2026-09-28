@@ -45,6 +45,7 @@ public sealed class CoreSetupContainer : IServiceSetupContainer
         });
         services.AddSingleton<IDataFiles, DataFiles>();
 
+        services.AddProblemDetails();
         services.AddOpenApi();
 
         services.AddHealthChecks()

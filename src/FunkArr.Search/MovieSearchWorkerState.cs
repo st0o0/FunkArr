@@ -32,7 +32,7 @@ public sealed class MovieSearchWorkerState
     private Guid _scoringRequestId;
     private ScoringOrigin? _scoringOrigin;
 
-    public MediaIdentity BaseIdentity => new(null, ImdbId, TmdbId, null, null);
+    public MovieIdentity BaseIdentity => new(ImdbId, TmdbId, null);
 
     public void Init(SearchMovie cmd, IActorRef replyTo)
     {
@@ -66,21 +66,21 @@ public sealed class MovieSearchWorkerState
         [
             .. scored.Results.Select(s =>
             {
-                var episodeTitle = s.Metadata?.ConstructedTitle
-                                   ?? ReleaseVariant.CleanTitle(Sources[s.Index].Title, effectiveMediaName);
+                var baseDisplay = ReleaseDisplay.From(Sources[s.Index].Title, effectiveMediaName);
+                var constructedTitle = s.Metadata?.ConstructedTitle;
+                var display = constructedTitle is not null
+                    ? baseDisplay with { EpisodeTitle = constructedTitle }
+                    : baseDisplay;
+
                 return new EnrichedItem(
                     s.Index,
                     Sources[s.Index],
                     s.Score,
                     s.Matched,
                     s.Metadata is not null,
-                    BaseIdentity with
-                    {
-                        Season = s.Metadata?.Season,
-                        Episode = s.Metadata?.Episode,
-                    },
+                    BaseIdentity,
                     Match: null,
-                    Display: s.Matched ? new ReleaseDisplay(effectiveMediaName, episodeTitle) : null);
+                    Display: display);
             })
         ];
 
@@ -106,12 +106,14 @@ public sealed class MovieSearchWorkerState
                     display = display with { EpisodeTitle = movie.Title };
                 }
 
+                var mi = (MovieIdentity)item.Identity;
                 return item with
                 {
-                    Identity = item.Identity with
+                    Identity = mi with
                     {
-                        ImdbId = movie.ImdbId ?? item.Identity.ImdbId,
-                        TmdbId = movie.TmdbId ?? item.Identity.TmdbId,
+                        ImdbId = movie.ImdbId ?? mi.ImdbId,
+                        TmdbId = movie.TmdbId ?? mi.TmdbId,
+                        Year = movie.Year,
                     },
                     Match = new MatchInfo(movie.Confidence, movie.Method),
                     Display = display,
@@ -231,15 +233,14 @@ public sealed class MovieSearchWorkerState
 
     public SearchMovieCompleted ToSearchCompleted()
     {
-        var items = Items.Length > 0 ? EnsureDisplay(Items) : UnscoredItems();
+        var items = Items.Length > 0 ? Items : UnscoredItems();
 
-        var variants = items
-            .SelectMany(e => ReleaseVariant.Expand(e, MediaType.Movie, MediaName))
-            .OrderByDescending(v => v.Score)
-            .Select(v => v.ToResultItem())
+        var results = items
+            .SelectMany(e => SceneRelease.ForMovie(e, MediaName).Expand())
+            .OrderByDescending(r => r.Score)
             .ToArray();
 
-        return new SearchMovieCompleted(SearchId, variants, variants.Length);
+        return new SearchMovieCompleted(SearchId, results, results.Length);
     }
 
     public void MergeEnrichmentIntoTraces(EnrichedMovie[] enriched)
@@ -297,23 +298,6 @@ public sealed class MovieSearchWorkerState
             ItemTraces);
     }
 
-    private EnrichedItem[] EnsureDisplay(EnrichedItem[] items)
-    {
-        var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
-        return
-        [
-            .. items.Select(item =>
-                item.Display is not null
-                    ? item
-                    : item with
-                    {
-                        Display = new ReleaseDisplay(
-                            fallbackMediaName,
-                            ReleaseVariant.CleanTitle(item.Source.Title, fallbackMediaName)),
-                    })
-        ];
-    }
-
     private EnrichedItem[] UnscoredItems()
     {
         var fallbackMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
@@ -321,9 +305,7 @@ public sealed class MovieSearchWorkerState
         [
             .. Sources.Select((s, i) => new EnrichedItem(
                 i, s, 0.0, false, false, BaseIdentity, null,
-                Display: new ReleaseDisplay(
-                    fallbackMediaName,
-                    ReleaseVariant.CleanTitle(s.Title, fallbackMediaName))))
+                Display: ReleaseDisplay.From(s.Title, fallbackMediaName)))
         ];
     }
 }

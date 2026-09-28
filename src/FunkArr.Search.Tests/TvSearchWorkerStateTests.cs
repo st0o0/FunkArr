@@ -60,9 +60,10 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal(0.9, item.Score);
         Assert.True(item.Matched);
         Assert.True(item.HasScoringMetadata);
-        Assert.Equal("1", item.Identity.Season);
-        Assert.Equal("3", item.Identity.Episode);
-        Assert.Equal(83214, item.Identity.TvdbId);
+        var si = Assert.IsType<ShowIdentity>(item.Identity);
+        Assert.Equal("1", si.Season);
+        Assert.Equal("3", si.Episode);
+        Assert.Equal(83214, si.TvdbId);
         Assert.Null(item.Match);
     }
 
@@ -78,8 +79,9 @@ public sealed class TvSearchWorkerStateTests
             [new EnrichedEpisode(0, "2", "9", "Roomservice", 0.85f, MatchMethod.TitleMatch)]));
 
         var item = Assert.Single(state.Items);
-        Assert.Equal("2", item.Identity.Season);
-        Assert.Equal("9", item.Identity.Episode);
+        var si = Assert.IsType<ShowIdentity>(item.Identity);
+        Assert.Equal("2", si.Season);
+        Assert.Equal("9", si.Episode);
         Assert.NotNull(item.Match);
         Assert.Equal(0.85f, item.Match.Confidence);
         Assert.Equal(MatchMethod.TitleMatch, item.Match.Method);
@@ -102,7 +104,8 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal(2, state.Items.Length);
         Assert.NotNull(state.Items[0].Match);
         Assert.Null(state.Items[1].Match);
-        Assert.Null(state.Items[1].Identity.Season);
+        var si = Assert.IsType<ShowIdentity>(state.Items[1].Identity);
+        Assert.Null(si.Season);
     }
 
     [Fact]

@@ -184,3 +184,17 @@ TvSearchWorker SHALL tell HistoryRegion with RecordHistory after enrichment comp
 - **WHEN** TvSearchWorker receives EnrichEpisodesFailed
 - **THEN** it tells HistoryRegion with RecordHistory (scoring-only ItemTraces)
 - **THEN** it replies SearchSeriesCompleted
+
+### Requirement: TvSearchWorkerState produces search results via SceneRelease
+
+The TvSearchWorkerState `ToSearchCompleted` method SHALL convert `EnrichedItem[]` to `SearchResultItem[]` by mapping each item through `SceneRelease.ForShow(item, MediaName)` and calling `Expand()`. Results SHALL be ordered by Score descending. All items SHALL have non-null `Display` after `Apply(ScoreCompleted)`.
+
+#### Scenario: ToSearchCompleted uses SceneRelease
+
+- **WHEN** ToSearchCompleted is called after scoring
+- **THEN** each EnrichedItem SHALL be mapped via `SceneRelease.ForShow(item, MediaName).Expand()` and the results sorted by Score descending
+
+#### Scenario: Display set for all items during scoring
+
+- **WHEN** `Apply(ScoreCompleted)` processes items
+- **THEN** ALL items (matched and unmatched) SHALL have a non-null Display using `ReleaseDisplay.From(source.Title, mediaName)` as the base, with ConstructedTitle overriding EpisodeTitle for matched items

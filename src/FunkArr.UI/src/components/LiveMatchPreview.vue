@@ -108,15 +108,15 @@
         >
           <div class="p-3 cursor-pointer" @click="toggleExpand(idx)">
             <div class="flex items-baseline gap-2 mb-0.5">
-              <span class="font-semibold text-text-body truncate">{{ item.candidateTitle }}</span>
+              <span class="font-semibold text-text-body truncate">{{ item.candidate.title }}</span>
               <span
                 class="text-xs px-1.5 py-0.5 rounded shrink-0"
                 :class="item.matched ? 'bg-surface-elevated text-status-ok' : 'bg-surface-elevated text-text-secondary'"
               >{{ item.matched ? $t('preview.matched') : $t('preview.noMatch') }}</span>
             </div>
             <div class="text-xs text-text-secondary">
-              {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
-              {{ Math.floor(item.candidateDuration / 60) }}min
+              {{ item.candidate.channel }} &middot; {{ item.candidate.topic }} &middot;
+              {{ Math.floor(item.candidate.duration / 60) }}min
               <template v-if="item.matched">
                 &middot; <span class="text-status-ok font-medium">{{ item.matchedRuleId }}</span>
                 &middot; score {{ item.score.toFixed(2) }}

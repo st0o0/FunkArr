@@ -22,6 +22,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
                 new KeyValuePair<ScalarTarget, ScalarClient>(ScalarTarget.CSharp, ScalarClient.HttpClient);
         });
 
+        app.UseStatusCodePages();
         app.UseStaticFiles();
         app.UseOutputCache();
 
@@ -44,6 +45,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
 
         app.MapPrometheusScrapingEndpoint("/metrics");
 
+        app.Map("/api/{**rest}", () => Results.NotFound()).ExcludeFromDescription();
         app.MapFallbackToFile("index.html");
     }
 }

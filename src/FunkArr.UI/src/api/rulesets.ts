@@ -142,14 +142,18 @@ export interface EnrichmentTrace {
   detail: string | null
 }
 
+export interface ScoreCandidate {
+  title: string
+  topic: string
+  channel: string
+  duration: number
+  quality: number
+  description: string | null
+  timestamp: number
+}
+
 export interface ItemTrace {
-  candidateTitle: string
-  candidateTopic: string
-  candidateChannel: string
-  candidateDuration: number
-  candidateQuality: number
-  candidateDescription: string | null
-  candidateTimestamp: number
+  candidate: ScoreCandidate
   matched: boolean
   score: number
   matchedRuleId: string | null

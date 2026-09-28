@@ -62,7 +62,7 @@ internal static class RuleSetMappingExtensions
             request.Aliases,
             new RuleSetMediaInput(
                 request.Media.Name,
-                (Messages.MediaType)(int)Enum.Parse<ApiModels.MediaType>(request.Media.Type, true),
+                ParseMediaType(request.Media.Type),
                 request.Media.TvdbId is not null || request.Media.ImdbId is not null || request.Media.TmdbId is not null
                     ? new ExternalIds(request.Media.TvdbId, request.Media.ImdbId, request.Media.TmdbId)
                     : null),
@@ -115,6 +115,11 @@ internal static class RuleSetMappingExtensions
     internal static ApiModels.ScoringDetail ToApi(this ScoringDetailResult msg) =>
         new(msg.RequestId, (ApiModels.SearchSource)(int)msg.Source, msg.Query, msg.Timestamp,
             [.. msg.ItemTraces.Select(t => t.ToApi())]);
+
+    private static Messages.MediaType ParseMediaType(string type) =>
+        Enum.TryParse<ApiModels.MediaType>(type, true, out var parsed)
+            ? (Messages.MediaType)(int)parsed
+            : throw new ArgumentException($"Invalid media type '{type}'. Valid values: show, movie.");
 
     internal static ApiModels.SourceType ToApi(this string? sourceType) => sourceType switch
     {

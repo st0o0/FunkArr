@@ -1,8 +1,14 @@
 namespace FunkArr.Search;
 
-public sealed record MediaIdentity(
+public abstract record MediaIdentity(string? ImdbId);
+
+public sealed record ShowIdentity(
+    string? ImdbId,
     int? TvdbId,
+    string? Season,
+    string? Episode) : MediaIdentity(ImdbId);
+
+public sealed record MovieIdentity(
     string? ImdbId,
     int? TmdbId,
-    string? Season,
-    string? Episode);
+    int? Year) : MediaIdentity(ImdbId);

@@ -3,11 +3,16 @@
 State classes for TvSearchWorker and MovieSearchWorker - sealed classes with Apply methods for pipeline transformations and TryGet methods for routing decisions (Pathfinder pattern).
 ## Requirements
 ### Requirement: TvSearchWorkerState is a class with Apply methods
-TvSearchWorkerState SHALL be a sealed class in FunkArr.Search with private setters. Apply(EnrichEpisodesCompleted) SHALL override Identity.Season and Identity.Episode with enrichment results even when they were previously set by regex extraction, since enrichment results are authoritative TVDB numbers.
+TvSearchWorkerState SHALL be a sealed class in FunkArr.Search with private setters. BaseIdentity SHALL return a ShowIdentity with TvdbId, ImdbId, Season=null, Episode=null. Apply(ScoreCompleted) SHALL build EnrichedItems with ShowIdentity, patching Season and Episode from MetadataSpec. Apply(EnrichEpisodesCompleted) SHALL override ShowIdentity.Season and ShowIdentity.Episode with enrichment results even when they were previously set by regex extraction, since enrichment results are authoritative TVDB numbers.
 
 #### Scenario: Init from SearchSeries command
 - **WHEN** Init(SearchSeries, IActorRef) is called
 - **THEN** the state SHALL set SearchId, ReplyTo, Source, Query, TvdbId, ImdbId, Season, Limit, Offset from the command
+
+#### Scenario: BaseIdentity returns ShowIdentity
+
+- **WHEN** TvSearchWorkerState has TvdbId=83214 and ImdbId="tt0806910"
+- **THEN** BaseIdentity SHALL return ShowIdentity("tt0806910", 83214, null, null)
 
 #### Scenario: Apply QueryMediathekCompleted
 - **WHEN** Apply(QueryMediathekCompleted) is called
@@ -17,18 +22,23 @@ TvSearchWorkerState SHALL be a sealed class in FunkArr.Search with private sette
 - **WHEN** ApplyRuleSet(ruleSetId, mediaName, enrichmentConfig) is called
 - **THEN** the state SHALL set RuleSetId, MediaName, and EnrichmentConfig
 
+#### Scenario: Apply ScoreCompleted builds ShowIdentity with Season/Episode
+
+- **WHEN** Apply(ScoreCompleted) is called and scored items have MetadataSpec with Season="2", Episode="5"
+- **THEN** the EnrichedItem SHALL have Identity as ShowIdentity with Season="2", Episode="5"
+
 #### Scenario: Apply ScoreCompleted preserves ConstructedTitle
 - **WHEN** Apply(ScoreCompleted) is called and scored items have MetadataSpec with ConstructedTitle
 - **THEN** the state SHALL store the ConstructedTitle per item index for later use in enrichment requests
 
 #### Scenario: Apply EnrichEpisodesCompleted
 - **WHEN** Apply(EnrichEpisodesCompleted) is called with resolved episodes
-- **THEN** the state SHALL patch Items by updating Identity.Season/Episode and setting Match for each resolved index
+- **THEN** the state SHALL patch Items by updating ShowIdentity.Season/Episode and setting Match for each resolved index
 
 #### Scenario: Apply EnrichEpisodesCompleted overrides regex S/E
 - **WHEN** Apply(EnrichEpisodesCompleted) is called with resolved episodes
 - **AND** an item already had Season/Episode from regex extraction
-- **THEN** the state SHALL override Identity.Season and Identity.Episode with the enrichment result
+- **THEN** the state SHALL override ShowIdentity.Season and ShowIdentity.Episode with the enrichment result
 - **AND** set Match with the enrichment confidence and method
 
 ### Requirement: TvSearchWorkerState TryGet methods build outgoing messages
@@ -95,7 +105,7 @@ The state SHALL have a ToSearchCompleted() method that expands Items into Releas
 
 ### Requirement: MovieSearchWorkerState is a class with Apply methods
 
-MovieSearchWorkerState SHALL be a sealed class in FunkArr.Search following the same pattern as TvSearchWorkerState but for movie searches. It SHALL expose: SearchId, ReplyTo, Source, Query, Sources, RuleSetId, ImdbId (string?), TmdbId (int?), Limit (int?), Offset (int?), MediaName, Items, BaseIdentity (computed from ImdbId/TmdbId), EnrichmentConfig (EnrichmentConfig?).
+MovieSearchWorkerState SHALL be a sealed class in FunkArr.Search with private setters. BaseIdentity SHALL return a MovieIdentity with ImdbId, TmdbId, Year=null. Apply(ScoreCompleted) SHALL build EnrichedItems with MovieIdentity. Season and Episode from MetadataSpec SHALL NOT be transferred to MovieIdentity. Year SHALL be derived from the source's AiredAt or enrichment data.
 
 #### Scenario: Init from SearchMovie command
 
@@ -103,10 +113,20 @@ MovieSearchWorkerState SHALL be a sealed class in FunkArr.Search following the s
 - **THEN** the state SHALL set SearchId, ReplyTo, Source, Query, ImdbId, TmdbId, Limit, Offset from the command
 - **AND** the common fields (SearchId, Source, Query, Limit, Offset) SHALL be accessible via the SearchRequest base type
 
+#### Scenario: BaseIdentity returns MovieIdentity
+
+- **WHEN** MovieSearchWorkerState has ImdbId="tt0137523" and TmdbId=550
+- **THEN** BaseIdentity SHALL return MovieIdentity("tt0137523", 550, null)
+
+#### Scenario: Apply ScoreCompleted builds MovieIdentity without Season/Episode
+
+- **WHEN** Apply(ScoreCompleted) is called and scored items have MetadataSpec with Season="1", Episode="2"
+- **THEN** the EnrichedItem SHALL have Identity as MovieIdentity without Season or Episode fields
+
 #### Scenario: Apply EnrichMoviesCompleted
 
 - **WHEN** Apply(EnrichMoviesCompleted) is called with resolved movies
-- **THEN** the state SHALL patch Items by updating Identity.ImdbId/TmdbId and setting Match for each resolved index
+- **THEN** the state SHALL patch Items by updating MovieIdentity.ImdbId/TmdbId and setting Match for each resolved index
 
 ### Requirement: MovieSearchWorkerState TryGet methods
 

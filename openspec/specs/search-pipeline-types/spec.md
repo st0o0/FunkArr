@@ -1,6 +1,6 @@
 ## Purpose
 
-Pipeline stage types internal to FunkArr.Search - SourceInfo (Mediathek projection), MediaIdentity (external IDs + season/episode), MatchInfo (enrichment result), EnrichedItem (post-scoring central type), and ReleaseVariant (post-expansion with variant quality URLs).
+Pipeline stage types internal to FunkArr.Search - SourceInfo (Mediathek projection), MediaIdentity hierarchy (abstract base with ShowIdentity/MovieIdentity subtypes for type-safe external IDs), MatchInfo (enrichment result), EnrichedItem (post-scoring central type), and SceneRelease (post-expansion with scene-style release titles).
 ## Requirements
 ### Requirement: SourceInfo projects MediathekItem for the pipeline
 
@@ -23,17 +23,37 @@ SourceInfo SHALL be a sealed record in FunkArr.Search that projects a MediathekI
 
 ### Requirement: MediaIdentity groups external IDs and season/episode
 
-MediaIdentity SHALL be a sealed record in FunkArr.Search containing: TvdbId (int?), ImdbId (string?), TmdbId (int?), Season (string?), Episode (string?). It SHALL be used as a composed sub-record in EnrichedItem to represent the resolved identity of a search result.
+MediaIdentity SHALL be an abstract record in FunkArr.Search containing ImdbId (string?) as the shared base property. Two sealed subtypes SHALL exist:
+
+- `ShowIdentity(string? ImdbId, int? TvdbId, string? Season, string? Episode)` for TV shows
+- `MovieIdentity(string? ImdbId, int? TmdbId, int? Year)` for movies
+
+Both subtypes SHALL inherit from MediaIdentity. EnrichedItem.Identity SHALL remain typed as MediaIdentity (polymorphic). All three records SHALL live in `MediaIdentity.cs`.
 
 #### Scenario: TV base identity
 
 - **WHEN** a TvSearch has TvdbId=83214 and ImdbId="tt0806910"
-- **THEN** the base MediaIdentity SHALL be new MediaIdentity(83214, "tt0806910", null, null, null)
+- **THEN** the base identity SHALL be new ShowIdentity("tt0806910", 83214, null, null)
 
-#### Scenario: Identity patched by enrichment
+#### Scenario: Movie base identity
 
-- **WHEN** enrichment resolves Season="2" and Episode="5"
-- **THEN** the MediaIdentity SHALL be updated to include Season="2", Episode="5" via with-expression
+- **WHEN** a MovieSearch has TmdbId=550 and ImdbId="tt0137523"
+- **THEN** the base identity SHALL be new MovieIdentity("tt0137523", 550, null)
+
+#### Scenario: Show identity patched by enrichment
+
+- **WHEN** enrichment resolves Season="2" and Episode="5" for a TV show
+- **THEN** the ShowIdentity SHALL be updated to include Season="2", Episode="5" via with-expression
+
+#### Scenario: Movie identity patched by enrichment
+
+- **WHEN** enrichment resolves Year=2024 for a movie
+- **THEN** the MovieIdentity SHALL be updated to include Year=2024 via with-expression
+
+#### Scenario: Movie identity does not carry Season or Episode
+
+- **WHEN** a MovieSearchWorker builds an identity from scoring metadata that includes Season/Episode captures
+- **THEN** the MovieIdentity SHALL NOT include Season or Episode fields
 
 ### Requirement: MatchInfo captures enrichment result
 
@@ -51,22 +71,27 @@ MatchInfo SHALL be a sealed record in FunkArr.Search containing: Confidence (flo
 
 ### Requirement: EnrichedItem is the central pipeline record
 
-EnrichedItem SHALL be a sealed record in FunkArr.Search containing: Index (int), Source (SourceInfo), Score (double), Identity (MediaIdentity), Match (MatchInfo?). It SHALL be the type stored in state after scoring. Items without enrichment SHALL have Match=null.
+EnrichedItem SHALL be a sealed record in FunkArr.Search containing: Index (int), Source (SourceInfo), Score (double), Matched (bool), HasScoringMetadata (bool), Identity (MediaIdentity), Match (MatchInfo?), Display (ReleaseDisplay?). The Identity property SHALL accept both ShowIdentity and MovieIdentity through the abstract MediaIdentity base type.
 
-#### Scenario: Created from scoring without enrichment
+#### Scenario: Created from TV scoring without enrichment
 
-- **WHEN** a ScoreCompleted result has Index=3, Score=0.85, Metadata with Season=null
-- **THEN** the EnrichedItem SHALL have Index=3, Score=0.85, Identity with base IDs and Season/Episode from metadata, Match=null
+- **WHEN** a ScoreCompleted result has Index=3, Score=0.85, Metadata with Season="2", Episode="5"
+- **THEN** the EnrichedItem SHALL have Identity as ShowIdentity with Season="2", Episode="5", Match=null
+
+#### Scenario: Created from movie scoring
+
+- **WHEN** a ScoreCompleted result has Index=1, Score=0.9
+- **THEN** the EnrichedItem SHALL have Identity as MovieIdentity, Match=null
 
 #### Scenario: Patched by episode enrichment
 
 - **WHEN** an EpisodesEnriched response contains an EnrichedEpisode for Index=3 with Season="2", Episode="5", Confidence=0.9, Method=TitleMatch
-- **THEN** the EnrichedItem at Index=3 SHALL be updated with Identity.Season="2", Identity.Episode="5", Match=new MatchInfo(0.9, TitleMatch)
+- **THEN** the EnrichedItem at Index=3 SHALL be updated with ShowIdentity.Season="2", ShowIdentity.Episode="5", Match=new MatchInfo(0.9, TitleMatch)
 
 #### Scenario: Patched by movie enrichment
 
 - **WHEN** a MoviesEnriched response contains an EnrichedMovie for Index=1 with ImdbId="tt0806910", TmdbId=550, Confidence=0.8, Method=TitleMatch
-- **THEN** the EnrichedItem at Index=1 SHALL be updated with Identity.ImdbId="tt0806910", Identity.TmdbId=550, Match=new MatchInfo(0.8, TitleMatch)
+- **THEN** the EnrichedItem at Index=1 SHALL be updated with MovieIdentity.ImdbId="tt0806910", MovieIdentity.TmdbId=550, Match=new MatchInfo(0.8, TitleMatch)
 
 ### Requirement: ReleaseVariant expands EnrichedItem into quality variants
 
@@ -99,13 +124,15 @@ ReleaseVariant SHALL be a sealed record in FunkArr.Search containing: Title (str
 
 ### Requirement: ReleaseVariant maps to SearchResultItem
 
-ReleaseVariant SHALL have a `ToResultItem()` method that produces a flat SearchResultItem by copying fields directly. The method SHALL construct a `MatchMetadata` from the ReleaseVariant's Identity (TvdbId, ImdbId, TmdbId, Season, Episode) and Match (Confidence, Method) fields. If both Identity has no IDs and Match is null, MatchMetadata SHALL be null. SubtitleUrl SHALL be mapped from Source.SubtitleUrl.
+SceneRelease.Expand() SHALL pattern-match on the MediaIdentity subtype to build ExternalIds and MatchMetadata. For ShowIdentity, ExternalIds SHALL use TvdbId and ImdbId with TmdbId=null, and Season/Episode from the identity. For MovieIdentity, ExternalIds SHALL use ImdbId and TmdbId with TvdbId=null, and Season=null, Episode=null.
 
-#### Scenario: Trivial 1:1 mapping
-- **WHEN** a ReleaseVariant has Title="Tatort.S02E05.Roomservice.GERMAN.720p.WEB.h264-FunkArr", Source.Channel="ARD", Identity.TvdbId=83214, Match.Confidence=0.9
-- **THEN** ToResultItem SHALL produce a SearchResultItem with those values in a MatchMetadata property, not as flat fields
+#### Scenario: Show identity maps to MatchMetadata with Season/Episode
 
-#### Scenario: No enrichment produces null MatchMetadata
-- **WHEN** a ReleaseVariant has Identity with all null IDs and Match=null
-- **THEN** ToResultItem SHALL produce a SearchResultItem with Metadata=null
+- **WHEN** SceneRelease.Expand() processes an EnrichedItem with ShowIdentity(ImdbId="tt0806910", TvdbId=83214, Season="2", Episode="5")
+- **THEN** the MatchMetadata SHALL have Ids=ExternalIds(83214, "tt0806910", null), Season="2", Episode="5"
+
+#### Scenario: Movie identity maps to MatchMetadata without Season/Episode
+
+- **WHEN** SceneRelease.Expand() processes an EnrichedItem with MovieIdentity(ImdbId="tt0137523", TmdbId=550, Year=1999)
+- **THEN** the MatchMetadata SHALL have Ids=ExternalIds(null, "tt0137523", 550), Season=null, Episode=null
 

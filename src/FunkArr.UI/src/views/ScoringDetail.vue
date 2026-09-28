@@ -43,7 +43,7 @@
         >
           <div class="flex items-baseline gap-3 mb-1">
             <span class="font-semibold" :class="item.matched ? 'text-status-ok' : 'text-text-body'">
-              {{ item.candidateTitle }}
+              {{ item.candidate.title }}
             </span>
             <span
               class="text-xs px-1.5 py-0.5 rounded text-xs"
@@ -55,9 +55,9 @@
           </div>
 
           <div class="text-xs text-text-secondary mb-2">
-            {{ item.candidateChannel }} &middot; {{ item.candidateTopic }} &middot;
-            {{ Math.floor(item.candidateDuration / 60) }}min &middot;
-            {{ item.candidateQuality }}p
+            {{ item.candidate.channel }} &middot; {{ item.candidate.topic }} &middot;
+            {{ Math.floor(item.candidate.duration / 60) }}min &middot;
+            {{ item.candidate.quality }}p
             <span v-if="item.matchedRuleId" class="ml-2 text-status-ok font-medium">rule: {{ item.matchedRuleId }}</span>
           </div>
 

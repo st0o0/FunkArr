@@ -50,9 +50,9 @@ public sealed class MovieSearchWorkerStateTests
 
         var item = Assert.Single(state.Items);
         Assert.Equal(0.8, item.Score);
-        Assert.Equal("tt0806910", item.Identity.ImdbId);
-        Assert.Equal(550, item.Identity.TmdbId);
-        Assert.Null(item.Identity.TvdbId);
+        var mi = Assert.IsType<MovieIdentity>(item.Identity);
+        Assert.Equal("tt0806910", mi.ImdbId);
+        Assert.Equal(550, mi.TmdbId);
         Assert.Null(item.Match);
     }
 
@@ -67,8 +67,9 @@ public sealed class MovieSearchWorkerStateTests
             [new EnrichedMovie(0, "Das Boot", 1981, "tt0806910", 550, 0.92f, MatchMethod.TitleMatch)]));
 
         var item = Assert.Single(state.Items);
-        Assert.Equal("tt0806910", item.Identity.ImdbId);
-        Assert.Equal(550, item.Identity.TmdbId);
+        var mi = Assert.IsType<MovieIdentity>(item.Identity);
+        Assert.Equal("tt0806910", mi.ImdbId);
+        Assert.Equal(550, mi.TmdbId);
         Assert.NotNull(item.Match);
         Assert.Equal(0.92f, item.Match.Confidence);
         Assert.Equal(MatchMethod.TitleMatch, item.Match.Method);
@@ -85,7 +86,8 @@ public sealed class MovieSearchWorkerStateTests
             [new EnrichedMovie(0, "Film", 2024, "tt999", 550, 0.9f, MatchMethod.TitleMatch)]));
 
         var item = Assert.Single(state.Items);
-        Assert.Equal("tt999", item.Identity.ImdbId);
+        var mi = Assert.IsType<MovieIdentity>(item.Identity);
+        Assert.Equal("tt999", mi.ImdbId);
     }
 
     [Fact]

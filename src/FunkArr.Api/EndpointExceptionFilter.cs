@@ -11,6 +11,13 @@ internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> l
         {
             return await next(context);
         }
+        catch (ArgumentException ex)
+        {
+            return Results.Problem(
+                title: "Bad Request",
+                detail: ex.Message,
+                statusCode: 400);
+        }
         catch (TimeoutException ex)
         {
             var endpoint = context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown";
