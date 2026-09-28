@@ -92,7 +92,7 @@
       "required": ["field", "op", "value"],
       "additionalProperties": false,
       "properties": {
-        "field": { "type": "string", "minLength": 1 },
+        "field": { "$ref": "#/$defs/filterField" },
         "op": { "$ref": "#/$defs/filterOp" },
         "value": { "type": "string" }
       }
@@ -116,6 +116,17 @@
         "byAbsoluteEpisodeNumber"
       ]
     },
+    "filterField": {
+      "type": "string",
+      "enum": [
+        "title",
+        "topic",
+        "channel",
+        "description",
+        "duration",
+        "timestamp"
+      ]
+    },
     "filterOp": {
       "type": "string",
       "enum": [
@@ -133,7 +144,7 @@
       "additionalProperties": false,
       "properties": {
         "type": { "$ref": "#/$defs/titleRuleType" },
-        "field": { "type": "string" },
+        "field": { "$ref": "#/$defs/filterField" },
         "pattern": { "type": "string" },
         "captureGroup": { "type": "integer", "minimum": 0 },
         "value": { "type": "string" }
@@ -163,7 +174,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "tolerance": { "type": "integer", "minimum": 0 }
+            "tolerance": { "type": "integer", "minimum": 0 },
+            "minTitleAffinity": { "type": "number", "minimum": 0, "maximum": 1 }
           }
         },
         "runtime": {
