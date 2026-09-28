@@ -45,7 +45,7 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(All: [
                 Condition(FilterField.Duration, FilterOp.GreaterThan, "60"),
-                Condition(FilterField.Channel, FilterOp.Eq, "ARD"),
+                Condition(FilterField.Channel, FilterOp.Eq, "ARD")
             ]),
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
@@ -61,7 +61,7 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(All: [
                 Condition(FilterField.Duration, FilterOp.GreaterThan, "60"),
-                Condition(FilterField.Channel, FilterOp.Eq, "ZDF"),
+                Condition(FilterField.Channel, FilterOp.Eq, "ZDF")
             ]),
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
@@ -77,7 +77,7 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(Any: [
                 Condition(FilterField.Channel, FilterOp.Eq, "ZDF"),
-                Condition(FilterField.Channel, FilterOp.Eq, "ARD"),
+                Condition(FilterField.Channel, FilterOp.Eq, "ARD")
             ]),
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
@@ -93,7 +93,7 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(Any: [
                 Condition(FilterField.Channel, FilterOp.Eq, "ZDF"),
-                Condition(FilterField.Channel, FilterOp.Eq, "BR"),
+                Condition(FilterField.Channel, FilterOp.Eq, "BR")
             ]),
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
@@ -108,7 +108,7 @@ public sealed class ScoringActorTests : TestKit
     {
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(Not: [
-                Condition(FilterField.Title, FilterOp.Contains, "Audiodeskription"),
+                Condition(FilterField.Title, FilterOp.Contains, "Audiodeskription")
             ]),
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
@@ -129,8 +129,8 @@ public sealed class ScoringActorTests : TestKit
                 Condition(FilterField.Duration, FilterOp.GreaterThan, "30"),
                 new FilterNode.GroupNode(new FilterSpec(Any: [
                     Condition(FilterField.Channel, FilterOp.Eq, "ARD"),
-                    Condition(FilterField.Channel, FilterOp.Eq, "ZDF"),
-                ])),
+                    Condition(FilterField.Channel, FilterOp.Eq, "ZDF")
+                ]))
             ]),
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 
@@ -311,7 +311,7 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, null, null,
             new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [
-                    new TitlePart(TitlePartType.Static, Value: "Folge 42"),
+                    new TitlePart(TitlePartType.Static, Value: "Folge 42")
                 ]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Folge 42"));
@@ -327,7 +327,7 @@ public sealed class ScoringActorTests : TestKit
                 TitleParts: [
                     new TitlePart(TitlePartType.Regex, Pattern: @"^(\w+):", Field: FilterField.Title, CaptureGroup: 1),
                     new TitlePart(TitlePartType.Static, Value: " & "),
-                    new TitlePart(TitlePartType.Regex, Pattern: @"^(\w+)", Field: FilterField.Topic),
+                    new TitlePart(TitlePartType.Regex, Pattern: @"^(\w+)", Field: FilterField.Topic)
                 ]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort & Krimi", topic: "Krimi"));
@@ -345,7 +345,7 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, null, null,
             new IdentificationSpec(IdentificationStrategy.TitleExact,
                 TitleParts: [
-                    new TitlePart(TitlePartType.Regex, Pattern: @"NOMATCH_(\d+)", Field: FilterField.Title),
+                    new TitlePart(TitlePartType.Regex, Pattern: @"NOMATCH_(\d+)", Field: FilterField.Title)
                 ]));
 
         var result = Score(Config(0.5f, rule), Candidate(title: "Tatort: Die goldene Zeit"));
@@ -588,7 +588,7 @@ public sealed class ScoringActorTests : TestKit
         var rule = new MatchingRule("r1", 0, 0.9f,
             new FilterSpec(All: [
                 Condition(FilterField.Channel, FilterOp.Eq, "ZDF"),
-                Condition(FilterField.Duration, FilterOp.GreaterThan, "30"),
+                Condition(FilterField.Duration, FilterOp.GreaterThan, "30")
             ]),
             new IdentificationSpec(IdentificationStrategy.AirdateExtraction));
 

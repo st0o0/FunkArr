@@ -95,7 +95,7 @@ public sealed class ScoringEngineTests
                     [
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ZDF")),
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Topic, FilterOp.Eq, "Tatort")),
-                        new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD")),
+                        new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD"))
                     ]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
                     TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])));
@@ -121,7 +121,7 @@ public sealed class ScoringEngineTests
                 new FilterSpec(null,
                     [
                         new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ARD")),
-                        new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ZDF")),
+                        new FilterNode.ConditionNode(new FilterCondition(FilterField.Channel, FilterOp.Eq, "ZDF"))
                     ]),
                 new IdentificationSpec(IdentificationStrategy.TitleExact,
                     TitleParts: [new TitlePart(TitlePartType.Regex, Pattern: "(.+)")])));

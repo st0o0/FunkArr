@@ -9,7 +9,7 @@ public sealed class ScoringManagerStateTests
     {
         var config = new MatchingConfig("tatort", 0.8f, [
             new MatchingRule("rule-1", 0, null, null,
-                new IdentificationSpec(IdentificationStrategy.AirdateExtraction)),
+                new IdentificationSpec(IdentificationStrategy.AirdateExtraction))
         ]);
 
         var state = ScoringManagerState.Empty.Apply(config);

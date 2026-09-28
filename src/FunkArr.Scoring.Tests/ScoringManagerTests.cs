@@ -16,7 +16,7 @@ public sealed class ScoringManagerTests : TestKit
     private static MatchingConfig CreateAirdateConfig(string ruleSetId = "test", float confidence = 0.9f) =>
         new(ruleSetId, confidence, [
             new MatchingRule("airdate-rule", 0, null, null,
-                new IdentificationSpec(IdentificationStrategy.AirdateExtraction)),
+                new IdentificationSpec(IdentificationStrategy.AirdateExtraction))
         ]);
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[]
         {
             new ScoreCandidate("Test Title", "Test", "ARD", 5400, 720, null, 0),
-            new ScoreCandidate("Another Title", "Test", "ZDF", 3600, 1080, null, 0),
+            new ScoreCandidate("Another Title", "Test", "ZDF", 3600, 1080, null, 0)
         };
 
         manager.Tell(new ScoreItems(Guid.Empty, "nonexistent", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));

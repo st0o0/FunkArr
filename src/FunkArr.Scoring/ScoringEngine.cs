@@ -219,7 +219,7 @@ public static class ScoringEngine
         FilterNode.ConditionNode c => new FilterNodeTrace(
             c.Condition.Field.ToString(), c.Condition.Op.ToString(),
             c.Condition.Value, null, false, true, null),
-        _ => new FilterNodeTrace(null, null, null, null, false, true, null),
+        _ => new FilterNodeTrace(null, null, null, null, false, true, null)
     };
 
     private static (bool result, FilterNodeTrace trace) EvaluateNodeTraced(
@@ -262,7 +262,7 @@ public static class ScoringEngine
             FilterOp.GreaterThan => CompareNumeric(fieldValue, condition.Value) > 0,
             FilterOp.LessThan => CompareNumeric(fieldValue, condition.Value) < 0,
             FilterOp.Regex => EvaluateRegex(fieldValue, condition.Value),
-            _ => false,
+            _ => false
         };
 
         return (result, fieldValue);
@@ -276,7 +276,7 @@ public static class ScoringEngine
         FilterField.Duration => (candidate.Duration / 60).ToString(CultureInfo.InvariantCulture),
         FilterField.Description => candidate.Description,
         FilterField.Timestamp => candidate.Timestamp.ToString(CultureInfo.InvariantCulture),
-        _ => null,
+        _ => null
     };
 
     private static int CompareNumeric(string left, string right)
@@ -311,7 +311,7 @@ public static class ScoringEngine
             IdentificationStrategy.TitleExact => IdentifyTitleConstructionTraced(spec, candidate, exact: true),
             IdentificationStrategy.TitleIncludes => IdentifyTitleConstructionTraced(spec, candidate, exact: false),
             IdentificationStrategy.AirdateExtraction => IdentifyAirdateTraced(candidate),
-            _ => (false, new IdentificationTrace(null, false, IdentificationFailureReason.UnknownStrategy), null),
+            _ => (false, new IdentificationTrace(null, false, IdentificationFailureReason.UnknownStrategy), null)
         };
 
     private static (bool, IdentificationTrace, TracedIdentification?) IdentifyRegexCaptureTraced(
@@ -445,7 +445,7 @@ public static class ScoringEngine
         FilterField.Channel => candidate.Channel,
         FilterField.Description => candidate.Description,
         null => candidate.Title,
-        _ => null,
+        _ => null
     };
 
     private static string? ExtractCapture(string input, string pattern, int? captureGroup = null)
