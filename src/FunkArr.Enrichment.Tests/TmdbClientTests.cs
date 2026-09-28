@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -11,7 +12,8 @@ public sealed class TmdbClientTests
     {
         var options = new TmdbOptions { ApiKey = apiKey };
         var monitor = new TestOptionsMonitor<TmdbOptions>(options);
-        return new TmdbClient(new HttpClient(), monitor, new MemoryCache(new MemoryCacheOptions()), NullLogger<TmdbClient>.Instance);
+        var cache = new MemoryDistributedCache(Microsoft.Extensions.Options.Options.Create(new MemoryDistributedCacheOptions()));
+        return new TmdbClient(new HttpClient(), monitor, cache, NullLogger<TmdbClient>.Instance);
     }
 
     [Fact]

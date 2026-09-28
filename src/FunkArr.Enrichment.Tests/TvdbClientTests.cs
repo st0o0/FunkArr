@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -11,7 +12,8 @@ public sealed class TvdbClientTests
     {
         var options = new TvdbOptions { ApiKey = apiKey };
         var monitor = new TestOptionsMonitor<TvdbOptions>(options);
-        return new TvdbClient(new HttpClient(), monitor, new MemoryCache(new MemoryCacheOptions()), NullLogger<TvdbClient>.Instance, TimeProvider.System);
+        var cache = new MemoryDistributedCache(Microsoft.Extensions.Options.Options.Create(new MemoryDistributedCacheOptions()));
+        return new TvdbClient(new HttpClient(), monitor, cache, NullLogger<TvdbClient>.Instance, TimeProvider.System);
     }
 
     [Fact]

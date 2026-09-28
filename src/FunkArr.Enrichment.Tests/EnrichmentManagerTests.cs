@@ -19,7 +19,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
         services.AddSingleton(new TestOptionsMonitor<TmdbOptions>(new TmdbOptions { ApiKey = "" }));
         services.AddSingleton<Microsoft.Extensions.Options.IOptionsMonitor<TmdbOptions>>(sp =>
             sp.GetRequiredService<TestOptionsMonitor<TmdbOptions>>());
-        services.AddMemoryCache();
+        services.AddDistributedMemoryCache();
         services.AddSingleton(TimeProvider.System);
         services.AddHttpClient<TvdbClient>();
         services.AddHttpClient<TmdbClient>();
@@ -52,7 +52,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
 
         var candidates = new[]
         {
-            new EpisodeCandidate(0, "Roomservice", "Roomservice", null, 5400, null, null),
+            new EpisodeCandidate(0, "Roomservice", "Roomservice", null, 5400, null, null)
         };
 
         manager.Tell(new EnrichEpisodes(83214, 2026, candidates));
@@ -68,7 +68,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
 
         var candidates = new[]
         {
-            new MovieCandidate(0, "Test Film", null, 5400),
+            new MovieCandidate(0, "Test Film", null, 5400)
         };
 
         manager.Tell(new EnrichMovies(null, 550, candidates));
