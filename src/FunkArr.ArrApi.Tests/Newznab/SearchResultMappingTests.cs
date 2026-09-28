@@ -19,7 +19,7 @@ public sealed class SearchResultMappingTests
             new SearchResultItem(
                 "Tatort: Die goldene Zeit", "ARD", "Tatort",
                 "https://example.com/hd.mp4", 5400, 1200000000, 720,
-                new DateTimeOffset(2024, 6, 25, 20, 15, 0, TimeSpan.Zero), 0.95),
+                new DateTimeOffset(2024, 6, 25, 20, 15, 0, TimeSpan.Zero), 0.95)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
@@ -39,7 +39,7 @@ public sealed class SearchResultMappingTests
     {
         var items = new[]
         {
-            new SearchResultItem("Test", "ZDF", "Topic", "url", 3600, 500000, 480, null, 0.5),
+            new SearchResultItem("Test", "ZDF", "Topic", "url", 3600, 500000, 480, null, 0.5)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
@@ -54,7 +54,7 @@ public sealed class SearchResultMappingTests
     {
         var items = new[]
         {
-            new SearchResultItem("Title", "CH", "Topic", "https://example.com/v.mp4", 100, 0, 720, null, 1.0),
+            new SearchResultItem("Title", "CH", "Topic", "https://example.com/v.mp4", 100, 0, 720, null, 1.0)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
@@ -69,7 +69,7 @@ public sealed class SearchResultMappingTests
     {
         var items = new[]
         {
-            new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9),
+            new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
@@ -86,14 +86,14 @@ public sealed class SearchResultMappingTests
         var items = new[]
         {
             new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
-                Metadata: new MatchMetadata(new ExternalIds(83214, null, null), null, null, null, null)),
+                Metadata: new MatchMetadata(new ExternalIds(83214, null, null), null, null, null, null))
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var attrs = item.Attributes;
 
-        Assert.Contains(attrs, a => a.Name == "tvdbid" && a.Value == "83214");
+        Assert.Contains(attrs, a => a is { Name: "tvdbid", Value: "83214" });
     }
 
     [Fact]
@@ -102,14 +102,14 @@ public sealed class SearchResultMappingTests
         var items = new[]
         {
             new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
-                Metadata: new MatchMetadata(new ExternalIds(null, "tt0806910", null), null, null, null, null)),
+                Metadata: new MatchMetadata(new ExternalIds(null, "tt0806910", null), null, null, null, null))
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var attrs = item.Attributes;
 
-        Assert.Contains(attrs, a => a.Name == "imdb" && a.Value == "tt0806910");
+        Assert.Contains(attrs, a => a is { Name: "imdb", Value: "tt0806910" });
         Assert.DoesNotContain(attrs, a => a.Name == "imdbid");
     }
 
@@ -119,14 +119,14 @@ public sealed class SearchResultMappingTests
         var items = new[]
         {
             new SearchResultItem("Test", "ARD", "Tatort", "url", 7200, 100, 720, null, 0.9,
-                Metadata: new MatchMetadata(new ExternalIds(null, null, 2116), null, null, null, null)),
+                Metadata: new MatchMetadata(new ExternalIds(null, null, 2116), null, null, null, null))
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var attrs = item.Attributes;
 
-        Assert.Contains(attrs, a => a.Name == "tmdbid" && a.Value == "2116");
+        Assert.Contains(attrs, a => a is { Name: "tmdbid", Value: "2116" });
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class SearchResultMappingTests
     {
         var items = new[]
         {
-            new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9),
+            new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
@@ -151,7 +151,7 @@ public sealed class SearchResultMappingTests
     {
         var items = new[]
         {
-            new SearchResultItem("Film", "ARD", "Film", "url", 5400, 1200000000, 720, null, 0.9),
+            new SearchResultItem("Film", "ARD", "Film", "url", 5400, 1200000000, 720, null, 0.9)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Movie);
@@ -166,7 +166,7 @@ public sealed class SearchResultMappingTests
     {
         var items = new[]
         {
-            new SearchResultItem("Film", "ZDF", "Film", "url", 3600, 500000, 480, null, 0.5),
+            new SearchResultItem("Film", "ZDF", "Film", "url", 3600, 500000, 480, null, 0.5)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Movie);
@@ -201,7 +201,7 @@ public sealed class SearchResultMappingTests
         {
             new SearchResultItem(
                 "Title\twith\ttabs", "Chan\tnel", "Topic", "https://example.com/v.mp4",
-                100, 0, 720, null, 1.0),
+                100, 0, 720, null, 1.0)
         };
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);

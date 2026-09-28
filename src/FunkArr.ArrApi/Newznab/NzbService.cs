@@ -54,7 +54,7 @@ public static class NzbService
             new() { Type = FunkArrHeaders.Url, Value = url },
             new() { Type = FunkArrHeaders.Channel, Value = channel },
             new() { Type = FunkArrHeaders.Duration, Value = duration },
-            new() { Type = FunkArrHeaders.Size, Value = size },
+            new() { Type = FunkArrHeaders.Size, Value = size }
         };
 
         if (subtitleUrl is not null)

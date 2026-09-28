@@ -14,8 +14,8 @@ public sealed class SearchParameterTests
             Channel = new Channel
             {
                 Response = new NewznabResponse { Offset = 10, Total = 0 },
-                Items = [],
-            },
+                Items = []
+            }
         };
         var xml = NewznabXmlResult.Serialize(rss);
         var doc = XDocument.Parse(xml);
@@ -35,8 +35,8 @@ public sealed class SearchParameterTests
             Channel = new Channel
             {
                 Response = new NewznabResponse { Offset = 0, Total = 0 },
-                Items = [],
-            },
+                Items = []
+            }
         };
         var xml = NewznabXmlResult.Serialize(rss);
         var doc = XDocument.Parse(xml);

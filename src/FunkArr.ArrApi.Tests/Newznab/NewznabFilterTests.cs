@@ -18,7 +18,7 @@ public sealed class NewznabFilterTests
         MakeItem("König in Gelb 720p", "2026", "17"),
         MakeItem("Die letzten Menschen", "2026", "18"),
         MakeItem("Nachtschatten", "2025", "5"),
-        MakeItem("Unmatched Daily Release"),
+        MakeItem("Unmatched Daily Release")
     ];
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class NewznabFilterTests
         var items = new[]
         {
             MakeItem("Folge 5", "05", "07"),
-            MakeItem("Folge 5 720p", "5", "7"),
+            MakeItem("Folge 5 720p", "5", "7")
         };
         var tvParams = new SearchCommand.TvParams(5, 7, 12345, null);
 
@@ -102,7 +102,7 @@ public sealed class NewznabFilterTests
         {
             MakeItem("Folge A", "05", "01"),
             MakeItem("Folge B", "05", "02"),
-            MakeItem("Other season", "06", "01"),
+            MakeItem("Other season", "06", "01")
         };
         var tvParams = new SearchCommand.TvParams(5, null, 12345, null);
 

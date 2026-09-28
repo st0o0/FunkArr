@@ -39,7 +39,7 @@ public sealed class NewznabSearchServiceTests
         {
             CreateItem("S01E01", "1", "1"),
             CreateItem("S02E01", "2", "1"),
-            CreateItem("S01E02", "1", "2"),
+            CreateItem("S01E02", "1", "2")
         };
 
         var result = NewznabSearchService.FilterBySeasonEpisode(

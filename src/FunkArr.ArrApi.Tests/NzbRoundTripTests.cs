@@ -41,9 +41,9 @@ public sealed class NzbRoundTripTests
                 Metas =
                 [
                     new NzbMeta { Type = "title", Value = title },
-                    new NzbMeta { Type = "url", Value = url },
-                ],
-            },
+                    new NzbMeta { Type = "url", Value = url }
+                ]
+            }
         });
 
     private static (string? Title, string? Url) ParseNzb(string nzbXml)

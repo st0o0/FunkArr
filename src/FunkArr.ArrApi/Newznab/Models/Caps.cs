@@ -76,7 +76,7 @@ public sealed class Categories
 {
     public static readonly Categories Default = new()
     {
-        Items = [FromCategory(NewznabCategory.Movie), FromCategory(NewznabCategory.Tv)],
+        Items = [FromCategory(NewznabCategory.Movie), FromCategory(NewznabCategory.Tv)]
     };
 
     private static CategoryEntry FromCategory(NewznabCategory cat) => new()
@@ -86,8 +86,8 @@ public sealed class Categories
         SubCategories =
         [
             new() { Id = int.Parse(cat.SdId), Name = "SD" },
-            new() { Id = int.Parse(cat.HdId), Name = "HD" },
-        ],
+            new() { Id = int.Parse(cat.HdId), Name = "HD" }
+        ]
     };
 
     [XmlElement("category")]

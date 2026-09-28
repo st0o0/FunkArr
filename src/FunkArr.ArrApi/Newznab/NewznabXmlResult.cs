@@ -28,7 +28,7 @@ internal sealed class NewznabXmlResult(object value) : IActionResult
         {
             Encoding = Encoding.UTF8,
             Indent = false,
-            OmitXmlDeclaration = false,
+            OmitXmlDeclaration = false
         });
         serializer.Serialize(xmlWriter, obj, _namespaces);
         return writer.ToString();
@@ -44,8 +44,8 @@ internal sealed class NewznabXmlResult(object value) : IActionResult
             StatusCode = error.Code switch
             {
                 100 => 403,
-                _ => 400,
-            },
+                _ => 400
+            }
         };
 
     internal static NewznabXmlResult Empty(int offset) =>
@@ -54,8 +54,8 @@ internal sealed class NewznabXmlResult(object value) : IActionResult
             Channel = new Channel
             {
                 Response = new NewznabResponse { Offset = offset, Total = 0 },
-                Items = [],
-            },
+                Items = []
+            }
         });
 
     private sealed class Utf8StringWriter : StringWriter

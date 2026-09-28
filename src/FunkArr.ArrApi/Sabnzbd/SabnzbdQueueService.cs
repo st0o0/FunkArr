@@ -151,7 +151,7 @@ public sealed class SabnzbdQueueService(
                     history_retention = "all",
                     tv_categories = Array.Empty<string>(),
                     movie_categories = Array.Empty<string>(),
-                    date_categories = Array.Empty<string>(),
+                    date_categories = Array.Empty<string>()
                 },
                 categories = opts.Categories.Select((c, i) => new
                 {
@@ -159,10 +159,10 @@ public sealed class SabnzbdQueueService(
                     order = i,
                     dir = string.IsNullOrEmpty(c.Dir) ? c.Name : c.Dir,
                     newzbin = "",
-                    priority = 0,
+                    priority = 0
                 }).ToArray(),
-                sorters = Array.Empty<object>(),
-            },
+                sorters = Array.Empty<object>()
+            }
         });
     }
 }

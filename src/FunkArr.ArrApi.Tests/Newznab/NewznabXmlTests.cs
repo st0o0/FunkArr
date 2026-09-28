@@ -98,8 +98,8 @@ public sealed class NewznabXmlTests
             Channel = new Channel
             {
                 Response = new NewznabResponse { Offset = 0, Total = 0 },
-                Items = [],
-            },
+                Items = []
+            }
         });
         var doc = XDocument.Parse(xml);
         var root = doc.Root!;
@@ -135,16 +135,16 @@ public sealed class NewznabXmlTests
                         Enclosure = new Enclosure
                         {
                             Url = "/index/api/nzb?url=dGVzdA==&title=dGVzdA==",
-                            Length = 1500000000,
+                            Length = 1500000000
                         },
                         Attributes =
                         [
                             new NewznabAttribute { Name = "category", Value = "5000" },
-                            new NewznabAttribute { Name = "category", Value = "5040" },
-                        ],
-                    },
-                ],
-            },
+                            new NewznabAttribute { Name = "category", Value = "5040" }
+                        ]
+                    }
+                ]
+            }
         };
 
         var xml = NewznabXmlResult.Serialize(rss);

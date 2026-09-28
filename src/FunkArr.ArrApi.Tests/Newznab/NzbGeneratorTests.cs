@@ -18,9 +18,9 @@ public sealed class NzbGeneratorTests
                 Metas =
                 [
                     new NzbMeta { Type = "title", Value = "Tatort S01E05" },
-                    new NzbMeta { Type = "url", Value = "https://example.com/video.mp4" },
-                ],
-            },
+                    new NzbMeta { Type = "url", Value = "https://example.com/video.mp4" }
+                ]
+            }
         };
 
         var xml = NewznabXmlResult.Serialize(nzb);
@@ -49,9 +49,9 @@ public sealed class NzbGeneratorTests
                 Metas =
                 [
                     new NzbMeta { Type = "title", Value = "Test" },
-                    new NzbMeta { Type = "url", Value = "https://example.com/test.mp4" },
-                ],
-            },
+                    new NzbMeta { Type = "url", Value = "https://example.com/test.mp4" }
+                ]
+            }
         };
 
         var xml = NewznabXmlResult.Serialize(nzb);

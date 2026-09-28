@@ -115,7 +115,7 @@ public sealed class NewznabSearchService(
                 Category = category.DisplayName(item.Quality),
                 Description = $"{item.Channel} - {item.Topic}",
                 Enclosure = new Enclosure { Url = getNzbUrl, Length = item.Size },
-                Attributes = BuildAttributes(item, category),
+                Attributes = BuildAttributes(item, category)
             };
         }).ToList();
 
@@ -124,8 +124,8 @@ public sealed class NewznabSearchService(
             Channel = new Channel
             {
                 Response = new NewznabResponse { Offset = offset, Total = total },
-                Items = rssItems,
-            },
+                Items = rssItems
+            }
         };
     }
 
@@ -134,7 +134,7 @@ public sealed class NewznabSearchService(
         var attrs = new List<NewznabAttribute>
         {
             new() { Name = "size", Value = item.Size.ToString() },
-            new() { Name = "category", Value = category.CategoryId(item.Quality) },
+            new() { Name = "category", Value = category.CategoryId(item.Quality) }
         };
 
         if (item.Metadata?.Season is not null)
@@ -171,7 +171,7 @@ public sealed class NewznabSearchService(
             "tvsearch" => BuildTvSearch(req),
             "movie" => BuildMovieSearch(req),
             "search" => BuildGeneralSearch(req),
-            _ => (null, NewznabCategory.Tv),
+            _ => (null, NewznabCategory.Tv)
         };
 
     private static (SearchCommand?, NewznabCategory) BuildTvSearch(IndexerRequest req)
@@ -208,7 +208,7 @@ public sealed class NewznabSearchService(
     {
         null => null,
         > MaxLimit => MaxLimit,
-        _ => limit,
+        _ => limit
     };
 
     internal static int? ParseInt(string? value) =>

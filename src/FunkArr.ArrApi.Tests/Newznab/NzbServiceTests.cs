@@ -100,9 +100,9 @@ public sealed class NzbServiceTests
                 Metas =
                 [
                     new NzbMeta { Type = "title", Value = "Test Title" },
-                    new NzbMeta { Type = FunkArrHeaders.Url, Value = "https://example.com/v.mp4" },
-                ],
-            },
+                    new NzbMeta { Type = FunkArrHeaders.Url, Value = "https://example.com/v.mp4" }
+                ]
+            }
         });
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(nzbXml));

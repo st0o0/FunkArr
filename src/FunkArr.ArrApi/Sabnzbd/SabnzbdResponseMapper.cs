@@ -69,7 +69,7 @@ internal static class SabnzbdResponseMapper
     internal static MediaType ParseMediaType(string value) => value switch
     {
         "movie" or "movies" => MediaType.Movie,
-        _ => MediaType.Show,
+        _ => MediaType.Show
     };
 
     internal static MediaType? ParseMediaTypeNullable(string? value) => value switch
@@ -77,13 +77,13 @@ internal static class SabnzbdResponseMapper
         null or "" => null,
         "movie" or "movies" => MediaType.Movie,
         "tv" or "show" => MediaType.Show,
-        _ => null,
+        _ => null
     };
 
     internal static string MapMediaTypeToCategory(MediaType mediaType) => mediaType switch
     {
         MediaType.Movie => "movie",
-        _ => "tv",
+        _ => "tv"
     };
 
     internal static DownloadPriority MapSabnzbdPriority(string? value)
@@ -98,13 +98,13 @@ internal static class SabnzbdResponseMapper
             -1 => DownloadPriority.Low,
             1 => DownloadPriority.High,
             2 => DownloadPriority.High,
-            _ => DownloadPriority.Normal,
+            _ => DownloadPriority.Normal
         };
     }
 
     private static string MapHistoryStatus(DownloadStatus status) => status switch
     {
         DownloadStatus.Completed => "Completed",
-        _ => "Failed",
+        _ => "Failed"
     };
 }

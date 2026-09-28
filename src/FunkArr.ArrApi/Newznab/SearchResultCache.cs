@@ -53,7 +53,7 @@ public sealed class SearchResultCache(TimeSpan ttl, TimeProvider timeProvider)
         SearchCommand.MovieParams movie =>
             $"movie:{Normalize(cmd.Query)}:{movie.ImdbId}:{movie.TmdbId}",
         _ =>
-            $"general:{Normalize(cmd.Query)}:{cmd.Cat}",
+            $"general:{Normalize(cmd.Query)}:{cmd.Cat}"
     };
 
     private static string Normalize(string? value) =>
