@@ -14,11 +14,11 @@ public sealed class MovieSearchWorkerStateTests
     [Fact]
     public void Init_sets_all_fields_from_command()
     {
-        var state = new MovieSearchWorkerState();
         var id = Guid.NewGuid();
+        var state = MovieSearchWorkerState.From(id.ToString());
         var cmd = new SearchMovie(id, SearchSource.Radarr, "Das Boot", "tt0806910", 550, 25, 10);
 
-        state.Init(cmd, _noSender);
+        state.Apply(cmd, _noSender);
 
         Assert.Equal(id, state.SearchId);
         Assert.Equal(SearchSource.Radarr, state.Source);
@@ -107,7 +107,7 @@ public sealed class MovieSearchWorkerStateTests
     public void TryGetRuleSetRequest_returns_false_when_ruleset_already_set()
     {
         var state = InitState(imdbId: "tt123");
-        state.ApplyRuleSet("film", null, null);
+        state.Apply("film", null, null);
 
         Assert.False(state.TryGetRuleSetRequest(out _));
     }
@@ -153,7 +153,7 @@ public sealed class MovieSearchWorkerStateTests
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem("ZDF", "Film", "Movie")], 1));
-        state.ApplyRuleSet("film", null, null);
+        state.Apply("film", null, null);
 
         var result = state.TryGetScoringRequest(out var request);
 
@@ -166,7 +166,7 @@ public sealed class MovieSearchWorkerStateTests
     public void TryGetScoringRequest_returns_false_when_sources_empty()
     {
         var state = InitState();
-        state.ApplyRuleSet("film", null, null);
+        state.Apply("film", null, null);
 
         Assert.False(state.TryGetScoringRequest(out _));
     }
@@ -207,7 +207,7 @@ public sealed class MovieSearchWorkerStateTests
             new AirdateMatchConfig(3), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
             new YearMatchConfig(1));
 
-        state.ApplyRuleSet("film", "Film", config);
+        state.Apply("film", "Film", config);
 
         Assert.NotNull(state.EnrichmentConfig);
         Assert.Equal(3, state.EnrichmentConfig.Airdate.Tolerance);
@@ -222,7 +222,7 @@ public sealed class MovieSearchWorkerStateTests
             false, [EnrichmentMethod.Title], new TitleMatchConfig(0.5f),
             new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
             new YearMatchConfig(1));
-        state.ApplyRuleSet("film", "Film", config);
+        state.Apply("film", "Film", config);
         state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
         Assert.False(state.TryGetEnrichmentRequest(out _));
@@ -237,7 +237,7 @@ public sealed class MovieSearchWorkerStateTests
             true, [EnrichmentMethod.Title], new TitleMatchConfig(0.4f),
             new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
             new YearMatchConfig(2));
-        state.ApplyRuleSet("film", "Film", config);
+        state.Apply("film", "Film", config);
         state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
         var result = state.TryGetEnrichmentRequest(out var request);
@@ -248,16 +248,15 @@ public sealed class MovieSearchWorkerStateTests
         Assert.Equal(0.4f, request.Config.Title.Threshold);
     }
 
-    private static MovieSearchWorkerState InitState(
-        string? imdbId = null, int? tmdbId = null, string? query = null)
+    private static MovieSearchWorkerState InitState(string? imdbId = null, int? tmdbId = null, string? query = null)
     {
-        var state = new MovieSearchWorkerState();
-        state.Init(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, query, imdbId, tmdbId, null, null), _noSender);
+        var id = Guid.NewGuid();
+        var state = MovieSearchWorkerState.From(id.ToString());
+        state.Apply(new SearchMovie(id, SearchSource.Radarr, query, imdbId, tmdbId, null, null), _noSender);
         return state;
     }
 
-    private static MediathekItem MakeMediathekItem(
-        string channel = "ARD", string topic = "Film", string title = "Test",
-        string? url = "https://v.mp4") =>
-        new(channel, topic, title, null, 0, 5400, 0, null, url, null, null, null);
+    private static MediathekItem MakeMediathekItem(string channel = "ARD", string topic = "Film", string title = "Test",
+        string? url = "https://v.mp4")
+        => new(channel, topic, title, null, 0, 5400, 0, null, url, null, null, null);
 }

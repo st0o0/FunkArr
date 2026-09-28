@@ -70,7 +70,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
         {
             >= 5000 and < 6000 => SearchType.Tv,
             >= 2000 and < 3000 => SearchType.Movie,
-            _ => SearchType.Both,
+            _ => SearchType.Both
         };
 
         switch (type)

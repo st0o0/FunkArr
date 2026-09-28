@@ -236,9 +236,9 @@ public sealed class SceneReleaseTests
         var results = SceneRelease.ForShow(item, null).Expand();
 
         Assert.Equal(3, results.Length);
-        Assert.Contains(results, r => r.Quality == 1080 && r.Url == "https://hd.mp4");
-        Assert.Contains(results, r => r.Quality == 720 && r.Url == "https://sd.mp4");
-        Assert.Contains(results, r => r.Quality == 480 && r.Url == "https://low.mp4");
+        Assert.Contains(results, r => r is { Quality: 1080, Url: "https://hd.mp4" });
+        Assert.Contains(results, r => r is { Quality: 720, Url: "https://sd.mp4" });
+        Assert.Contains(results, r => r is { Quality: 480, Url: "https://low.mp4" });
     }
 
     [Fact]

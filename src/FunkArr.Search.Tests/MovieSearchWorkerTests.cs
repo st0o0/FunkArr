@@ -43,10 +43,10 @@ public sealed class MovieSearchWorkerTests : TestKit
     public void Successful_movie_search()
     {
         var probes = RegisterProbes();
-
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
+
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
         var mediathekQuery = probes.Mediathek.ExpectMsg<QueryMediathek>();
@@ -58,7 +58,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         probes.Mediathek.Reply(new QueryMediathekCompleted(
         [
             new MediathekItem("ARD", "Das Boot", "Das Boot", null, 1719244800, 7200, 2400000000,
-                null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null),
+                null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null)
         ], 1));
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
@@ -81,10 +81,10 @@ public sealed class MovieSearchWorkerTests : TestKit
     public void No_query_queries_mediathek_for_recent_items()
     {
         var probes = RegisterProbes();
-
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
+
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, null, null, null), TestActor);
 
         var query = probes.Mediathek.ExpectMsg<QueryMediathek>();
@@ -100,17 +100,17 @@ public sealed class MovieSearchWorkerTests : TestKit
     public void RuleSet_not_found_returns_unscored_results()
     {
         var probes = RegisterProbes();
-
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
+
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Unknown Movie", null, null, null, null), TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new QueryMediathekCompleted(
         [
             new MediathekItem("ZDF", "Unknown Movie", "Unknown Movie", null, 0, 7200, 0,
-                null, "https://x.com/v.mp4", null, null, null),
+                null, "https://x.com/v.mp4", null, null, null)
         ], 1));
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
@@ -126,10 +126,10 @@ public sealed class MovieSearchWorkerTests : TestKit
     public void ImdbId_only_search_resolves_then_queries_mvw()
     {
         var probes = RegisterProbes();
-
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
+
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt0806910", null, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
@@ -145,7 +145,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         probes.Mediathek.Reply(new QueryMediathekCompleted(
         [
             new MediathekItem("ARD", "Tatort", "Tatort: Der Film", null, 1719244800, 7200, 2400000000,
-                null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null),
+                null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null)
         ], 1));
 
         var scoreRequest = probes.Scoring.ExpectMsg<ScoreItems>();
@@ -168,9 +168,10 @@ public sealed class MovieSearchWorkerTests : TestKit
     {
         var probes = RegisterProbes();
 
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
+
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, 550, null, null), TestActor);
 
         var resolveRequest = probes.Resolver.ExpectMsg<ResolveRuleSet>();
@@ -182,7 +183,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         probes.Mediathek.Reply(new QueryMediathekCompleted(
         [
             new MediathekItem("ARD", "Fight Club", "Fight Club", null, 0, 7200, 0,
-                null, "https://x.com/v.mp4", null, null, null),
+                null, "https://x.com/v.mp4", null, null, null)
         ], 1));
 
         probes.Scoring.ExpectMsg<ScoreItems>();
@@ -191,7 +192,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var enrichRequest = probes.Enrichment.ExpectMsg<EnrichMovies>();
         Assert.Equal(550, enrichRequest.TmdbId);
         probes.Enrichment.Reply(new EnrichMoviesCompleted([
-            new EnrichedMovie(0, "Fight Club", 1999, null, 550, 0.95f, MatchMethod.TitleMatch),
+            new EnrichedMovie(0, "Fight Club", 1999, null, 550, 0.95f, MatchMethod.TitleMatch)
         ]));
 
         var result = ExpectMsg<SearchMovieCompleted>();
@@ -206,9 +207,10 @@ public sealed class MovieSearchWorkerTests : TestKit
     {
         var probes = RegisterProbes();
 
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
+
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt9999999", null, null, null), TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
@@ -223,21 +225,28 @@ public sealed class MovieSearchWorkerTests : TestKit
     public void Text_search_carries_imdbId_through_to_results()
     {
         var probes = RegisterProbes();
-
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
-        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", "tt1234567", null, null, null), TestActor);
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
+
+        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", "tt1234567", null, null, null),
+            TestActor);
+
+        probes.Resolver.ExpectMsg<ResolveRuleSet>();
+        probes.Resolver.Reply(new RuleSetResolved("das-boot", "Das Boot"));
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new QueryMediathekCompleted(
         [
             new MediathekItem("ARD", "Das Boot", "Das Boot", null, 0, 7200, 0,
-                null, "https://x.com/v.mp4", null, null, null),
+                null, "https://x.com/v.mp4", null, null, null)
         ], 1));
 
-        probes.Resolver.ExpectMsg<ResolveRuleSet>();
-        probes.Resolver.Reply(new RuleSetFailed(new RuleSetNotFoundException("Das Boot")));
+        probes.Scoring.ExpectMsg<ScoreItems>();
+        probes.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.8, true)], []));
+
+        probes.Enrichment.ExpectMsg<EnrichMovies>();
+        probes.Enrichment.Reply(new EnrichMoviesCompleted([]));
 
         var result = ExpectMsg<SearchMovieCompleted>();
         var item = Assert.Single(result.Items);
@@ -248,16 +257,16 @@ public sealed class MovieSearchWorkerTests : TestKit
     public void Resolution_skipped_when_no_ids()
     {
         var probes = RegisterProbes();
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(Guid.NewGuid().ToString())));
 
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
-        worker.Tell(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
+        worker.Tell(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, "Das Boot", null, null, null, null),
+            TestActor);
 
         probes.Mediathek.ExpectMsg<QueryMediathek>();
         probes.Mediathek.Reply(new QueryMediathekCompleted(
         [
             new MediathekItem("ARD", "Das Boot", "Das Boot", null, 0, 7200, 0,
-                null, "https://x.com/v.mp4", null, null, null),
+                null, "https://x.com/v.mp4", null, null, null)
         ], 1));
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
@@ -276,9 +285,10 @@ public sealed class MovieSearchWorkerTests : TestKit
     {
         var probes = RegisterProbes();
 
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(Guid.NewGuid().ToString())));
 
-        worker.Tell(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, null, "tt1234567", null, null, null), TestActor);
+        worker.Tell(new SearchMovie(Guid.NewGuid(), SearchSource.Radarr, null, "tt1234567", null, null, null),
+            TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();
         probes.Resolver.Reply(new RuleSetResolved("das-boot", "Das Boot"));
@@ -287,7 +297,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         probes.Mediathek.Reply(new QueryMediathekCompleted(
         [
             new MediathekItem("ARD", "Das Boot", "Das Boot", null, 0, 7200, 0,
-                null, "https://x.com/v.mp4", null, null, null),
+                null, "https://x.com/v.mp4", null, null, null)
         ], 1));
 
         probes.Scoring.ExpectMsg<ScoreItems>();
@@ -305,9 +315,9 @@ public sealed class MovieSearchWorkerTests : TestKit
     public void ImdbId_search_with_zero_mvw_results_returns_empty()
     {
         var probes = RegisterProbes();
-        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker()));
-
         var searchId = Guid.NewGuid();
+
+        var worker = Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt0806910", null, null, null), TestActor);
 
         probes.Resolver.ExpectMsg<ResolveRuleSet>();

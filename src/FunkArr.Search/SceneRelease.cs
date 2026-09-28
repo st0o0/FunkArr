@@ -17,7 +17,7 @@ public sealed record SceneRelease(
         {
             ({ } s, { } e) => $"S{PadNumber(s)}E{PadNumber(e)}",
             (null, { } e) => $"S01E{PadNumber(e)}",
-            _ => item.Source.AiredAt?.ToString("yyyy-MM-dd"),
+            _ => item.Source.AiredAt?.ToString("yyyy-MM-dd")
         };
         return new SceneRelease(display.MediaName, identifier, display.EpisodeTitle, item);
     }
@@ -27,7 +27,7 @@ public sealed record SceneRelease(
         var display = ResolveDisplay(item, mediaName);
         var mi = item.Identity as MovieIdentity;
         var year = mi?.Year?.ToString()
-                ?? item.Source.AiredAt?.Year.ToString();
+                   ?? item.Source.AiredAt?.Year.ToString();
         return new SceneRelease(display.MediaName, year, display.EpisodeTitle, item);
     }
 
@@ -73,8 +73,8 @@ public sealed record SceneRelease(
         var (ids, season, episode) = item.Identity switch
         {
             ShowIdentity si => (new ExternalIds(si.TvdbId, si.ImdbId, null), si.Season, si.Episode),
-            MovieIdentity mi => (new ExternalIds(null, mi.ImdbId, mi.TmdbId), (string?)null, (string?)null),
-            _ => (new ExternalIds(null, item.Identity.ImdbId, null), (string?)null, (string?)null),
+            MovieIdentity mi => (new ExternalIds(null, mi.ImdbId, mi.TmdbId), null, null),
+            _ => (new ExternalIds(null, item.Identity.ImdbId, null), null, null)
         };
         return new MatchMetadata(ids, season, episode, item.Match?.Confidence, item.Match?.Method);
     }
@@ -120,7 +120,7 @@ public sealed record SceneRelease(
         720 => "720p",
         480 => "480p",
         270 => "270p",
-        _ => $"{quality}p",
+        _ => $"{quality}p"
     };
 
     private static string CollapseDots(string input)

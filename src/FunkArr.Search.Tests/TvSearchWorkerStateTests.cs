@@ -14,8 +14,8 @@ public sealed class TvSearchWorkerStateTests
     [Fact]
     public void Init_sets_all_fields_from_command()
     {
-        var state = new TvSearchWorkerState();
         var id = Guid.NewGuid();
+        var state = TvSearchWorkerState.From(id.ToString());
         var cmd = new SearchSeries(id, SearchSource.Sonarr, "Tatort", 2, 5, 83214, "tt123", 25, 10);
 
         state.Init(cmd, _noSender);
@@ -37,7 +37,7 @@ public sealed class TvSearchWorkerStateTests
         var items = new[]
         {
             MakeMediathekItem("ARD", "Tatort", "Ep1"),
-            MakeMediathekItem("ZDF", "Show", "Ep2"),
+            MakeMediathekItem("ZDF", "Show", "Ep2")
         };
 
         state.Apply(new QueryMediathekCompleted(items, 2));
@@ -45,7 +45,6 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal(2, state.Sources.Length);
         Assert.Equal("ARD", state.Sources[0].Channel);
         Assert.Equal("ZDF", state.Sources[1].Channel);
-
     }
 
     [Fact]
@@ -54,7 +53,8 @@ public sealed class TvSearchWorkerStateTests
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
 
-        state.Apply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))], []));
+        state.Apply(
+            new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true, new MetadataSpec("1", "3", null))], []));
 
         var item = Assert.Single(state.Items);
         Assert.Equal(0.9, item.Score);
@@ -95,7 +95,7 @@ public sealed class TvSearchWorkerStateTests
         state.Apply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null)),
-            new ScoredItem(1, 0.5, false),
+            new ScoredItem(1, 0.5, false)
         ], []));
 
         state.Apply(new EnrichEpisodesCompleted(
@@ -250,13 +250,13 @@ public sealed class TvSearchWorkerStateTests
         state.Apply(new QueryMediathekCompleted(
         [
             MakeMediathekItem("ARD", "Show", "Low", url: "https://low.mp4"),
-            MakeMediathekItem("ARD", "Show", "High", url: "https://high.mp4"),
+            MakeMediathekItem("ARD", "Show", "High", url: "https://high.mp4")
         ], 2));
         state.ApplyRuleSet("show", "Show", null);
         state.Apply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.5, true),
-            new ScoredItem(1, 0.9, true),
+            new ScoredItem(1, 0.9, true)
         ], []));
 
         var result = state.ToSearchCompleted();
@@ -338,11 +338,11 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal("Roomservice", candidate.ConstructedTitle);
     }
 
-    private static TvSearchWorkerState InitState(
-        int? tvdbId = null, string? imdbId = null, string? query = null)
+    private static TvSearchWorkerState InitState(int? tvdbId = null, string? imdbId = null, string? query = null)
     {
-        var state = new TvSearchWorkerState();
-        state.Init(new SearchSeries(Guid.NewGuid(), SearchSource.Sonarr, query, null, null, tvdbId, imdbId, null, null), _noSender);
+        var state = TvSearchWorkerState.From(Guid.NewGuid().ToString());
+        state.Init(new SearchSeries(Guid.NewGuid(), SearchSource.Sonarr, query, null, null, tvdbId, imdbId, null, null),
+            _noSender);
         return state;
     }
 

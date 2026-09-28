@@ -60,7 +60,7 @@ internal sealed class MediathekQueryBuilder
             _offset = query.Offset,
             _size = query.Size,
             _durationMin = query.DurationMin,
-            _durationMax = query.DurationMax,
+            _durationMax = query.DurationMax
         };
 
         foreach (var field in query.Fields)
@@ -78,7 +78,7 @@ internal sealed class MediathekQueryBuilder
             ["queries"] = _queries.Select(q => new Dictionary<string, object>
             {
                 ["fields"] = q.Fields,
-                ["query"] = q.Query,
+                ["query"] = q.Query
             }).ToArray(),
             ["sortBy"] = _sortBy,
             ["sortOrder"] = _sortOrder,
@@ -86,7 +86,7 @@ internal sealed class MediathekQueryBuilder
             ["offset"] = _offset,
             ["size"] = _size,
             ["duration_min"] = _durationMin,
-            ["duration_max"] = _durationMax,
+            ["duration_max"] = _durationMax
         };
 
         return JsonSerializer.Serialize(request, _jsonOptions);
@@ -95,7 +95,7 @@ internal sealed class MediathekQueryBuilder
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never
     };
 
     private sealed record QueryEntry(string[] Fields, string Query);
