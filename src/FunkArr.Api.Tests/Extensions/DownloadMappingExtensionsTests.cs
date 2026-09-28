@@ -82,7 +82,7 @@ public sealed class DownloadMappingExtensionsTests
                     245_000_000, DownloadStatus.Completed, "/tagesschau.mkv", null, 120, 1725300000)),
             new HistoryItem(Guid.NewGuid(),
                 new DownloadCompletion("Panorama", MediaType.Show,
-                    98_000_000, DownloadStatus.Failed, null, "Timeout", 0, 1725400000)),
+                    98_000_000, DownloadStatus.Failed, null, "Timeout", 0, 1725400000))
         };
         var historyResult = new HistoryResult(items, 42);
 

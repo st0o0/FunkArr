@@ -43,6 +43,6 @@ internal static class ScoringMappingExtensions
         RuleOutcome.Matched => ApiModels.RuleOutcome.Matched,
         RuleOutcome.FilterFailed => ApiModels.RuleOutcome.FilterFailed,
         RuleOutcome.IdentificationFailed => ApiModels.RuleOutcome.IdentificationFailed,
-        _ => ApiModels.RuleOutcome.FilterFailed,
+        _ => ApiModels.RuleOutcome.FilterFailed
     };
 }

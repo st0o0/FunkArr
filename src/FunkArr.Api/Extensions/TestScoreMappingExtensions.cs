@@ -62,7 +62,7 @@ internal static class TestScoreMappingExtensions
             MsgScoring.IdentificationStrategy.AirdateExtraction => new MsgScoring.IdentificationSpec(
                 MsgScoring.IdentificationStrategy.AirdateExtraction),
 
-            _ => null,
+            _ => null
         };
     }
 

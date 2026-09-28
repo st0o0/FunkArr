@@ -5,7 +5,7 @@ public enum SourceType
     Community,
     Local,
     Merged,
-    Unknown,
+    Unknown
 }
 
 public sealed record RuleSetListEntry(

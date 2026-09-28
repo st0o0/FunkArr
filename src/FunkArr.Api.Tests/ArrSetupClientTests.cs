@@ -15,7 +15,7 @@ public sealed class ArrSetupClientTests
     private static StubHandler Respond(HttpStatusCode statusCode, string body) =>
         new(() => new HttpResponseMessage(statusCode)
         {
-            Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json"),
+            Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
         });
 
     [Fact]

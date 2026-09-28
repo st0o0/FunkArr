@@ -9,7 +9,7 @@ public sealed class ArrSetupClient(HttpClient httpClient)
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
+        PropertyNameCaseInsensitive = true
     };
 
     public async Task<ArrResourceResponse> PostResourceAsync<T>(

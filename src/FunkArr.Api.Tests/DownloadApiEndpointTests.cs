@@ -135,7 +135,7 @@ public sealed class DownloadApiEndpointTests
         {
             new QueueItem(Guid.NewGuid(), "A", DownloadStatus.Processing, "ARD", true, 100, new DownloadProgress(50, 1_000_000, 1.0), 10, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1),
             new QueueItem(Guid.NewGuid(), "B", DownloadStatus.Processing, "ZDF", false, 100, new DownloadProgress(50, 1_000_000, 1.0), 10, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1),
-            new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, new DownloadProgress(0, 0, 0), 0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0),
+            new QueueItem(Guid.NewGuid(), "C", DownloadStatus.Queued, "ARD", false, 100, new DownloadProgress(0, 0, 0), 0, MediaType.Show, DownloadPriority.Normal, DownloadPhase.Initialized, 0)
         };
         var queueResult = new QueueResult(items, 3, 3, false, true, null);
 

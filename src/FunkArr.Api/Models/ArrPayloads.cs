@@ -29,7 +29,7 @@ internal sealed record ProwlarrIndexerPayload(
             new("baseUrl", $"{funkArrUrl}/index"),
             new("apiPath", "/api"),
             new("apiKey", apiKey),
-            new("categories", new[] { 5000, 2000 }),
+            new("categories", new[] { 5000, 2000 })
         ]);
 }
 
@@ -60,7 +60,7 @@ internal sealed record SonarrRadarrIndexerPayload(
             new("baseUrl", $"{funkArrUrl}/index"),
             new("apiPath", "/api"),
             new("apiKey", apiKey),
-            new("categories", categories),
+            new("categories", categories)
         ]);
 }
 
@@ -92,7 +92,7 @@ internal sealed record SabnzbdDownloadClientPayload(
                 new("urlBase", "/download"),
                 new("apiKey", apiKey),
                 new("tvCategory", category),
-                new("movieCategory", category),
+                new("movieCategory", category)
             ]);
     }
 }

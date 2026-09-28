@@ -3,7 +3,7 @@ namespace FunkArr.Api.Models;
 public enum MediaType
 {
     Show,
-    Movie,
+    Movie
 }
 
 public enum SearchSource
@@ -11,7 +11,7 @@ public enum SearchSource
     Sonarr,
     Radarr,
     Prowlarr,
-    Test,
+    Test
 }
 
 public enum FilterOp
@@ -21,7 +21,7 @@ public enum FilterOp
     NotContains,
     GreaterThan,
     LessThan,
-    Regex,
+    Regex
 }
 
 public enum FilterField
@@ -31,7 +31,7 @@ public enum FilterField
     Channel,
     Description,
     Duration,
-    Timestamp,
+    Timestamp
 }
 
 public enum IdentificationStrategy
@@ -40,32 +40,32 @@ public enum IdentificationStrategy
     AbsoluteEpisodeNumber,
     TitleExact,
     TitleIncludes,
-    AirdateExtraction,
+    AirdateExtraction
 }
 
 public enum TitlePartType
 {
     Static,
-    Regex,
+    Regex
 }
 
 public enum EnrichmentMethod
 {
     Title,
-    Airdate,
+    Airdate
 }
 
 public enum RuntimeMode
 {
     Tiebreaker,
-    Filter,
+    Filter
 }
 
 public enum RuleOutcome
 {
     Matched,
     FilterFailed,
-    IdentificationFailed,
+    IdentificationFailed
 }
 
 public enum MatchMethod
@@ -73,5 +73,5 @@ public enum MatchMethod
     RegexExtracted,
     TitleMatch,
     AirdateMatch,
-    YearMatch,
+    YearMatch
 }

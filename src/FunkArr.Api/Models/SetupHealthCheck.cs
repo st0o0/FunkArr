@@ -4,7 +4,7 @@ public enum CheckStatus
 {
     Ok,
     Warn,
-    Fail,
+    Fail
 }
 
 public sealed record SetupHealthCheck(

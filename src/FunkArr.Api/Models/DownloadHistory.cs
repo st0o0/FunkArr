@@ -3,7 +3,7 @@ namespace FunkArr.Api.Models;
 public enum HistoryStatus
 {
     Completed,
-    Failed,
+    Failed
 }
 
 public sealed record DownloadHistoryResponse(

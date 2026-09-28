@@ -62,7 +62,7 @@ public sealed class MediathekViewWebHealthCheckTests
         new()
         {
             Registration = new HealthCheckRegistration(
-                "test", _ => null!, failureStatus, null),
+                "test", _ => null!, failureStatus, null)
         };
 
     private sealed class StubHttpClientFactory(HttpClient client) : IHttpClientFactory

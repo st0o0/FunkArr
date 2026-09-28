@@ -57,7 +57,7 @@ internal static class IpAddressExtensions
 {
     internal static bool IsInPrivateRange(this IPAddress address)
     {
-        if (address.AddressFamily == AddressFamily.InterNetworkV6 && address.IsIPv6LinkLocal)
+        if (address is { AddressFamily: AddressFamily.InterNetworkV6, IsIPv6LinkLocal: true })
         {
             return true;
         }
@@ -74,7 +74,7 @@ internal static class IpAddressExtensions
             172 => bytes[1] >= 16 && bytes[1] <= 31,
             192 => bytes[1] == 168,
             169 => bytes[1] == 254,
-            _ => false,
+            _ => false
         };
     }
 }

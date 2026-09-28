@@ -86,6 +86,6 @@ public sealed class DirectoryHealthCheckTests
         new()
         {
             Registration = new HealthCheckRegistration(
-                "test", _ => null!, failureStatus, null),
+                "test", _ => null!, failureStatus, null)
         };
 }

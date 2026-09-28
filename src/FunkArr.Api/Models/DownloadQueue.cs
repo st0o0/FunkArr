@@ -5,7 +5,7 @@ namespace FunkArr.Api.Models;
 public enum QueueStatus
 {
     Processing,
-    Queued,
+    Queued
 }
 
 public sealed record DownloadQueueResponse(

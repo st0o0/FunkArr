@@ -59,7 +59,7 @@ public sealed class TestScoreMappingExtensionsTests
             0.8f,
             [
                 new RuleInput("r1", Strategy: null),
-                new RuleInput("r2", Strategy: IdentificationStrategy.AirdateExtraction),
+                new RuleInput("r2", Strategy: IdentificationStrategy.AirdateExtraction)
             ],
             [new TestCandidate("Title")]);
 
@@ -120,7 +120,7 @@ public sealed class TestScoreMappingExtensionsTests
             TitleRules:
             [
                 new TitleRuleInput(TitlePartType.Static, Value: "Tagesschau"),
-                new TitleRuleInput(TitlePartType.Regex, Field: FilterField.Title, Pattern: @"(\d+)", CaptureGroup: 1),
+                new TitleRuleInput(TitlePartType.Regex, Field: FilterField.Title, Pattern: @"(\d+)", CaptureGroup: 1)
             ]);
 
         var result = rule.ToMessage();
@@ -161,7 +161,7 @@ public sealed class TestScoreMappingExtensionsTests
                 All:
                 [
                     new FilterNodeInput(Field: FilterField.Channel, Op: FilterOp.Eq, Value: "ARD"),
-                    new FilterNodeInput(Field: FilterField.Duration, Op: FilterOp.GreaterThan, Value: "300"),
+                    new FilterNodeInput(Field: FilterField.Duration, Op: FilterOp.GreaterThan, Value: "300")
                 ]));
 
         var result = rule.ToMessage();
@@ -194,8 +194,8 @@ public sealed class TestScoreMappingExtensionsTests
                     new FilterNodeInput(
                         All:
                         [
-                            new FilterNodeInput(Field: FilterField.Channel, Op: FilterOp.Eq, Value: "ARD"),
-                        ]),
+                            new FilterNodeInput(Field: FilterField.Channel, Op: FilterOp.Eq, Value: "ARD")
+                        ])
                 ]));
 
         var result = rule.ToMessage();
