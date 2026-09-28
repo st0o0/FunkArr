@@ -1,39 +1,53 @@
 ## Purpose
 
-Singleton HTTP gateway to the MediathekViewWeb API. Handles query construction, backpressure via stashing, and response mapping. Delegates HTTP requests and caching to MediathekClient.
+Singleton HTTP gateway to the MediathekViewWeb API. Handles query construction, stream-based concurrency control, and response mapping. Delegates HTTP requests and caching to MediathekClient.
 ## Requirements
 ### Requirement: MediathekViewWebManager is a singleton HTTP gateway
 
-The MediathekViewWebManager SHALL be a Cluster Singleton actor that serves as the single point of access to the MediathekViewWeb API. The actor SHALL implement `IWithUnboundedStash` for backpressure. The actor SHALL delegate HTTP requests and caching to an injected `MediathekClient` service. The actor SHALL NOT implement `IWithTimers` (cache cleanup is handled by the cache backend).
+The MediathekViewWebManager SHALL be a Cluster Singleton actor that serves as the single point of access to the MediathekViewWeb API. The actor SHALL use an internal Akka.Streams pipeline for concurrency control and request processing. The actor SHALL delegate HTTP requests and caching to an injected `MediathekClient` service. The actor SHALL NOT implement `IWithUnboundedStash` or `IWithTimers`.
 
 #### Scenario: Successful query
 
-- **WHEN** a MediathekQuery message is received
-- **THEN** the Manager SHALL use the MediathekQueryBuilder to build a query object, call `MediathekClient.QueryAsync` with the query object, and respond with the result mapped to a MediathekQueryCompleted message
+- **WHEN** a `QueryMediathek` message is received
+- **THEN** the Manager SHALL assign a `Guid` RequestId, store the Sender in a pending dictionary keyed by RequestId, use the `MediathekQueryBuilder` to build a JSON query string, feed it into the stream pipeline, and when the stream result arrives, look up the original Sender and respond with a `QueryMediathekCompleted` message
 
 #### Scenario: HTTP error
 
-- **WHEN** the MediathekClient call fails (exception from HttpClient)
-- **THEN** the Manager SHALL respond with a MediathekQueryFailed message containing the error reason
+- **WHEN** the `MediathekClient` call fails with an exception inside the stream pipeline
+- **THEN** the exception SHALL be caught in the `SelectAsyncUnordered` stage, routed back to the actor as a `StreamFailure`, and the actor SHALL respond to the original Sender with a `QueryMediathekFailed` message
 
-### Requirement: MediathekViewWebManager enforces backpressure via stashing
+### Requirement: MediathekViewWebManager uses Akka.Streams for concurrency control
 
-The Manager SHALL limit concurrent HTTP requests to a configurable maximum (default 3). Requests beyond the limit are stashed and processed as slots free up.
+The Manager SHALL materialize a single long-lived Akka.Streams pipeline in its constructor. The pipeline SHALL use `Source.ActorRef` for input, `Select` for query building, `SelectAsyncUnordered` for throttled HTTP execution, and `Sink.ActorRef` to route results back to Self.
 
-#### Scenario: Under capacity
+#### Scenario: Concurrency limit
 
-- **WHEN** a MediathekQuery arrives and fewer than N requests are in-flight
-- **THEN** the Manager SHALL process the request immediately
+- **WHEN** multiple `QueryMediathek` messages arrive concurrently
+- **THEN** the stream's `SelectAsyncUnordered(maxConcurrent)` SHALL limit parallel HTTP requests to the configured maximum (default 3)
 
-#### Scenario: At capacity
+#### Scenario: Buffer overflow
 
-- **WHEN** a MediathekQuery arrives and N requests are already in-flight
-- **THEN** the Manager SHALL stash the message
+- **WHEN** more requests arrive than the `Source.ActorRef` buffer can hold (64 elements)
+- **THEN** the overflow strategy `DropNew` SHALL drop the excess request, and the caller SHALL receive no response (Ask timeout acts as circuit breaker)
 
-#### Scenario: Slot freed
+#### Scenario: Stream error resilience
 
-- **WHEN** an in-flight HTTP request completes (success or failure)
-- **THEN** the Manager SHALL decrement the in-flight count and unstash one message
+- **WHEN** an unexpected exception occurs in the stream pipeline
+- **THEN** the `Deciders.ResumingDecider` supervision strategy SHALL drop the failing element and continue processing, and the actor SHALL log a warning
+
+### Requirement: MediathekViewWebManager tracks in-flight requests
+
+The Manager SHALL maintain a `Dictionary<Guid, IActorRef>` mapping RequestIds to original Senders. This dictionary serves as both sender correlation and in-flight request tracking.
+
+#### Scenario: Request lifecycle
+
+- **WHEN** a `QueryMediathek` is received and a stream result arrives for it
+- **THEN** the Manager SHALL add an entry to the dictionary when the request enters the stream, and remove the entry when the stream result is processed
+
+#### Scenario: Orphaned request
+
+- **WHEN** the stream drops or fails to process a request (e.g., supervision resume)
+- **THEN** the dictionary entry SHALL remain until the caller's Ask times out (no explicit cleanup required)
 
 ### Requirement: MediathekQueryBuilder maps query messages to API format
 

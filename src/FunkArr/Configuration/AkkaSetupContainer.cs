@@ -1,5 +1,6 @@
 using Akka.Cluster.Hosting;
 using Akka.Hosting;
+using Akka.Pattern;
 using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
 using FunkArr.Core;
@@ -72,7 +73,14 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
     {
         builder
             .WithSingleton<IMediathekManager>("mediathek-view-web-manager",
-                (_, _, resolver) => resolver.Props<MediathekViewWebManager>())
+                (_, _, resolver) => BackoffSupervisor.Props(
+                    Backoff.OnFailure(
+                        resolver.Props<MediathekViewWebManager>(),
+                        childName: "mediathek-view-web-manager",
+                        minBackoff: TimeSpan.FromSeconds(1),
+                        maxBackoff: TimeSpan.FromSeconds(30),
+                        randomFactor: 0.2,
+                        maxNrOfRetries: -1)))
             .WithSingleton<ISearchManager>("search-manager",
                 (_, _, resolver) => resolver.Props<SearchManager>())
             .WithShardRegion<ITvSearchRegion>("tv-search",

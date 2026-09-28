@@ -1,63 +1,78 @@
 using Akka.Actor;
 using Akka.Event;
+using Akka.Streams;
+using Akka.Streams.Dsl;
+using Akka.Streams.Supervision;
 using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Search;
 
-public sealed class MediathekViewWebManager : ReceiveActor, IWithUnboundedStash
+public sealed class MediathekViewWebManager : ReceiveActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly MediathekClient _client;
-    private readonly int _maxConcurrent;
-    private MediathekViewWebManagerState _state = MediathekViewWebManagerState.Empty;
+    private readonly Dictionary<Guid, IActorRef> _pending = [];
 
-    public IStash Stash { get; set; } = null!;
+    private sealed record StreamRequest(string Json, Guid RequestId);
+
+    private abstract record StreamResponse(Guid RequestId);
+
+    private sealed record StreamSuccess(MediathekQueryResult Result, Guid RequestId) : StreamResponse(RequestId);
+
+    private sealed record StreamFailure(Exception Cause, Guid RequestId) : StreamResponse(RequestId);
+
+    private sealed record StreamComplete
+    {
+        public static readonly StreamComplete Instance = new();
+    }
 
     public MediathekViewWebManager(MediathekClient client, int maxConcurrent = 3)
     {
-        _client = client;
-        _maxConcurrent = maxConcurrent;
+        var materializer = Context.Materializer();
 
-        Receive<QueryMediathek>(HandleQuery);
-        Receive<QueryMediathekCompleted>(HandleCompleted);
-        Receive<QueryMediathekFailed>(HandleFailed);
-    }
+        var sourceRef = Source.ActorRef<StreamRequest>(64, OverflowStrategy.DropNew)
+            .SelectAsyncUnordered(maxConcurrent, async tuple =>
+            {
+                try
+                {
+                    var result = await client.QueryAsync(tuple.Json);
+                    return (StreamResponse)new StreamSuccess(result, tuple.RequestId);
+                }
+                catch (Exception ex)
+                {
+                    return new StreamFailure(ex, tuple.RequestId);
+                }
+            })
+            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .To(Sink.ActorRef<StreamResponse>(Self, StreamComplete.Instance, ex => new StreamFailure(ex, Guid.Empty)))
+            .Run(materializer);
 
-    private void HandleQuery(QueryMediathek query)
-    {
-        if (!_state.HasCapacity(_maxConcurrent))
+        Receive<QueryMediathek>(query =>
         {
-            _log.Debug("At capacity ({MaxConcurrent}), stashing query", _maxConcurrent);
-            Stash.Stash();
-            return;
-        }
+            var requestId = Guid.NewGuid();
+            _pending[requestId] = Sender;
+            sourceRef.Tell(new StreamRequest(MediathekQueryBuilder.FromMessage(query).Build(), requestId));
+        });
 
-        _state = _state.Apply(new MediathekViewWebManagerState.RequestStarted());
+        Receive<StreamSuccess>(msg =>
+        {
+            if (_pending.Remove(msg.RequestId, out var sender))
+            {
+                sender.Tell(new QueryMediathekCompleted(msg.Result.Items, msg.Result.Total));
+            }
+        });
 
-        _client.QueryAsync(query).PipeTo(
-            Self,
-            Sender,
-            success: result => result,
-            failure: ex => new QueryMediathekFailed(ex));
-    }
+        Receive<StreamFailure>(msg =>
+        {
+            Telemetry.MediathekErrors.Add(1);
+            _log.Warning(msg.Cause, "MediathekViewWeb query {RequestId} failed", msg.RequestId);
+            if (_pending.Remove(msg.RequestId, out var sender))
+            {
+                sender.Tell(new QueryMediathekFailed(msg.Cause));
+            }
+        });
 
-    private void HandleCompleted(QueryMediathekCompleted msg)
-    {
-        Sender.Tell(msg);
-        SlotFreed();
-    }
-
-    private void HandleFailed(QueryMediathekFailed msg)
-    {
-        Telemetry.MediathekErrors.Add(1);
-        _log.Warning(msg.Cause, "MediathekViewWeb query failed");
-        Sender.Tell(msg);
-        SlotFreed();
-    }
-
-    private void SlotFreed()
-    {
-        _state = _state.Apply(new MediathekViewWebManagerState.RequestCompleted());
-        Stash.Unstash();
+        Receive<StreamComplete>(_ =>
+            throw new InvalidOperationException(
+                $"MediathekViewWeb stream completed unexpectedly, {_pending.Count} requests orphaned"));
     }
 }

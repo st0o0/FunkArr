@@ -17,12 +17,11 @@ public sealed class MediathekClient(HttpClient httpClient, IDistributedCache cac
         Converters = { new EmptyStringToNullConverter() }
     };
 
-    public async Task<QueryMediathekCompleted> QueryAsync(QueryMediathek query, CancellationToken cancellationToken = default)
+    internal async Task<MediathekQueryResult> QueryAsync(string json, CancellationToken cancellationToken = default)
     {
-        var json = MediathekQueryBuilder.FromMessage(query).Build();
         var cacheKey = $"mediathek:{json}";
 
-        var cached = await cache.GetAsync<QueryMediathekCompleted>(cacheKey, cancellationToken);
+        var cached = await cache.GetAsync<MediathekQueryResult>(cacheKey, cancellationToken);
         if (cached is not null)
         {
             log.LogDebug("MediathekViewWeb cache hit");
@@ -56,13 +55,15 @@ public sealed class MediathekClient(HttpClient httpClient, IDistributedCache cac
             .ToArray();
 
         var total = apiResponse?.Result?.QueryInfo?.TotalResults ?? items.Length;
-        var result = new QueryMediathekCompleted(items, total);
+        var result = new MediathekQueryResult(items, total);
 
         await cache.SetAsync(cacheKey, result, _cacheTtl, cancellationToken);
 
         return result;
     }
 
-    internal static long EstimateSize(int duration, string? urlHd, string? urlVideo, string? urlLow) =>
-        duration * (urlHd is not null ? 833_000L : urlVideo is not null ? 420_000L : urlLow is not null ? 100_000L : 0L);
+    internal static long EstimateSize(int duration, string? urlHd, string? urlVideo, string? urlLow)
+        => duration * (urlHd is not null ? 833_000L :
+            urlVideo is not null ? 420_000L :
+            urlLow is not null ? 100_000L : 0L);
 }

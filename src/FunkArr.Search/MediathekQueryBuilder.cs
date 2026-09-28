@@ -6,6 +6,8 @@ namespace FunkArr.Search;
 
 internal sealed class MediathekQueryBuilder
 {
+    private sealed record QueryEntry(string[] Fields, string Query);
+
     private readonly List<QueryEntry> _queries = [];
     private string _sortBy = "timestamp";
     private string _sortOrder = "desc";
@@ -14,6 +16,13 @@ internal sealed class MediathekQueryBuilder
     private int _size = 15;
     private int? _durationMin;
     private int? _durationMax;
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        DefaultIgnoreCondition = JsonIgnoreCondition.Never
+    };
+
 
     public static MediathekQueryBuilder Create() => new();
 
@@ -91,12 +100,4 @@ internal sealed class MediathekQueryBuilder
 
         return JsonSerializer.Serialize(request, _jsonOptions);
     }
-
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        DefaultIgnoreCondition = JsonIgnoreCondition.Never
-    };
-
-    private sealed record QueryEntry(string[] Fields, string Query);
 }
