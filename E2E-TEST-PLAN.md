@@ -458,15 +458,33 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **20.2** TV search: `GET /index/api?t=tvsearch&tvdbid=83214&season=2026&ep=18&apikey=<key>` → Newznab RSS with items, season/episode attributes
 - [ ] **20.3** Pagination: offset=0 and offset=100 return different items, correct total
 - [ ] **20.4** General search: `GET /index/api?t=search&q=tatort&apikey=<key>`
-- [ ] **20.5** Movie search: `GET /index/api?t=movie&imdbid=<id>&apikey=<key>`
-- [ ] **20.6** Invalid API key → 403 error XML
+- [ ] **20.5** Movie search by IMDB: `GET /index/api?t=movie&imdbid=<id>&apikey=<key>`
+- [ ] **20.6** Movie search by TMDB: `GET /index/api?t=movie&tmdbid=<id>&apikey=<key>`
+- [ ] **20.7** Invalid API key → 403 error XML
 
 ---
 
 ## 21. SABnzbd API
 
-- [ ] **21.1** Queue endpoint returns download status
-- [ ] **21.2** History endpoint returns completed downloads
+### Protocol
+- [ ] **21.1** `GET /download/api?mode=version&apikey=<key>` → version string
+- [ ] **21.2** `GET /download/api?mode=get_config&apikey=<key>` → config JSON
+- [ ] **21.3** `GET /download/api?mode=fullstatus&apikey=<key>` → status with speed, disk space
+- [ ] **21.4** Invalid/missing API key → error response
+
+### Queue Operations
+- [ ] **21.5** `GET /download/api?mode=queue&apikey=<key>` → queue listing
+- [ ] **21.6** `POST /download/api` with `mode=addfile` + NZB multipart → adds to queue
+- [ ] **21.7** `GET /download/api?mode=queue&name=delete&value=<id>&apikey=<key>` → removes item
+- [ ] **21.8** `GET /download/api?mode=queue&name=priority&value=<id>&value2=1&apikey=<key>` → changes priority
+- [ ] **21.9** `GET /download/api?mode=queue&name=switch&value=<id1>&value2=<id2>&apikey=<key>` → swaps items
+- [ ] **21.10** `GET /download/api?mode=pause&apikey=<key>` → pauses queue
+- [ ] **21.11** `GET /download/api?mode=resume&apikey=<key>` → resumes queue
+
+### History
+- [ ] **21.12** `GET /download/api?mode=history&apikey=<key>` → history listing
+- [ ] **21.13** `GET /download/api?mode=history&name=delete&value=<id>&apikey=<key>` → deletes entry
+- [ ] **21.14** `GET /download/api?mode=retry&value=<id>&apikey=<key>` → retries failed download
 
 ---
 
@@ -475,7 +493,11 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **22.1** `GET /api/system/version` → version info
 - [ ] **22.2** `GET /api/system/setup` → health check results
 - [ ] **22.3** `GET /api/system/storage` → disk usage
-- [ ] **22.4** `GET /api/system/cache` → enrichment cache stats
+- [ ] **22.4** `GET /api/system/cache` → enrichment cache stats (TVDB/TMDB counts + oldest entry)
+- [ ] **22.5** `GET /api/system/routes` → network route configuration (Direct default + Austria proxy)
+- [ ] **22.6** `GET /api/system/logs` → recent log entries from ring buffer
+- [ ] **22.7** `GET /api/system/logs/stream` → SSE connection opens, log entries stream in real-time
+- [ ] **22.8** `GET /openapi/v1.json` → valid OpenAPI spec document with all /api endpoints
 
 ---
 
@@ -488,7 +510,95 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **23.5** `DELETE /api/rulesets/{id}` → delete ruleset
 - [ ] **23.6** `GET /api/rulesets/{id}/raw` → raw ruleset YAML
 - [ ] **23.7** `GET /api/rulesets/{id}/export` → community export
-- [ ] **23.8** `POST /api/rulesets/test` → ad-hoc scoring test with enrichment
+- [ ] **23.8** `POST /api/rulesets/test` with `{ defaultConfidence, rules: [{ id, strategy, ... }], candidates: [{ title, topic, channel, duration }] }` → returns `{ itemTraces: [{ candidate, matched, score, ruleTraces }] }`
+
+---
+
+## 24. Settings Page
+
+**Route**: `/settings`
+
+- [ ] **24.1** Page loads with all sections: Download-Einstellungen, Metadaten-Cache, Netzwerkrouten, System
+- [ ] **24.2** Download settings: shows concurrent download limit and schedule config
+- [ ] **24.3** Cache stats: TVDB and TMDB entry counts displayed
+- [ ] **24.4** Network routes: configured routes listed (Direct, Austria proxy)
+- [ ] **24.5** System info: version, storage usage
+- [ ] **24.6** Log viewer: recent log entries visible
+- [ ] **24.7** Log viewer: new log entries appear in real-time (SSE stream)
+
+---
+
+## 25. Download Queue Operations
+
+*(requires: active or queued downloads)*
+
+- [ ] **25.1** Pause button → pauses all downloads, toast confirmation
+- [ ] **25.2** Resume button → resumes paused pipeline, toast confirmation
+- [ ] **25.3** Force-start on queued item → bypasses concurrency limit, starts immediately
+- [ ] **25.4** Set priority High/Normal/Low on queue item → item moves to correct priority section
+- [ ] **25.5** Move download to different position in queue
+- [ ] **25.6** Swap two downloads' positions
+- [ ] **25.7** Download detail page (`/activity/{id}`) loads with full download info
+
+---
+
+## 26. Radarr Search Flow (E2E)
+
+**API-driven flow testing Radarr integration (movie search path).**
+
+- [ ] **26.1** Add a movie to Radarr (or use existing) with root folder `/shared/movies`
+- [ ] **26.2** Trigger movie search via Radarr API or UI
+- [ ] **26.3** FunkArr receives Newznab movie search request (check logs)
+- [ ] **26.4** Scoring matches items, TMDB enrichment resolves metadata
+- [ ] **26.5** Radarr receives results and can initiate download via SABnzbd API
+- [ ] **26.6** Download appears in FunkArr Activity queue
+- [ ] **26.7** Download completes, Radarr sees completed item
+
+---
+
+## 27. Mediathek Search API
+
+- [ ] **27.1** `GET /api/mediathek/search?q=Tatort` → results from MediathekViewWeb
+- [ ] **27.2** Channel filter: `?q=Tatort&channel=ARD` → filtered results
+- [ ] **27.3** Topic filter: `?topic=Tagesschau` → topic-specific results
+- [ ] **27.4** Pagination: `?q=Tatort&offset=0&size=5` then `offset=5` → different result sets
+- [ ] **27.5** Duration filter: minimum duration applied correctly
+- [ ] **27.6** Sort parameter: changes result ordering
+
+---
+
+## 28. Download API (Internal)
+
+- [ ] **28.1** `GET /api/downloads/history/stats` → completed/failed counts, bytes, avg time, success rate
+- [ ] **28.2** `GET /api/downloads/history/categories` → distinct category list
+- [ ] **28.3** `GET /api/downloads/settings` → concurrency limit, schedule config
+- [ ] **28.4** `POST /api/downloads/pause` → pauses pipeline (200)
+- [ ] **28.5** `POST /api/downloads/resume` → resumes pipeline (200)
+- [ ] **28.6** `POST /api/downloads/queue/{id}/force-start` → bypasses limit *(requires: queued download)*
+- [ ] **28.7** `POST /api/downloads/queue/{id}/move` → repositions item *(requires: queued download)*
+- [ ] **28.8** `POST /api/downloads/queue/{id}/priority` → changes priority *(requires: queued download)*
+- [ ] **28.9** `POST /api/downloads/queue/swap` → swaps two items *(requires: 2+ queued downloads)*
+
+---
+
+## 29. Error Handling & Edge Cases
+
+### API Errors
+- [ ] **29.1** `GET /api/nonexistent` → 404
+- [ ] **29.2** `GET /api/rulesets/nonexistent-id` → 404, not 500
+- [ ] **29.3** `POST /api/rulesets` with invalid JSON → 400 with validation details
+- [ ] **29.4** `DELETE /api/rulesets/{community-id}` → error (community protected)
+- [ ] **29.5** Newznab `GET /index/api?t=invalid&apikey=<key>` → proper error response
+
+### Legacy Redirects
+- [ ] **29.6** Navigate to `/queue` → redirects to `/activity`
+- [ ] **29.7** Navigate to `/history` → redirects to `/activity`
+- [ ] **29.8** Navigate to `/search` → redirects to `/rulesets`
+
+### Resilience
+- [ ] **29.9** Queue SSE: disconnect network briefly → stream reconnects, state recovers
+- [ ] **29.10** Log SSE: disconnect → stream reconnects, new entries appear
+- [ ] **29.11** Concurrent download limit: with limit=2, queue 3 downloads → only 2 active, 1 waiting
 
 ---
 
@@ -500,14 +610,19 @@ For a clean E2E run, execute in this order:
 2. **Setup wizard**: Full walkthrough - health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
 3. **Dashboard**: Verify stat cards, links, version (section 1)
 4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links (section 2)
-5. **Rulesets list**: Search, all filter combinations, both sort options, click through (section 6)
-6. **Ruleset detail**: View Tatort - identity, enrichment, expand/collapse rules, export (sections 7, 11)
-7. **Ruleset editor**: Open editor - edit every field type, add/remove aliases, toggle enrichment, add/remove rules and filters, live preview + full test, save (section 8)
-8. **Create ruleset**: Create test ruleset with all fields, verify in list (section 9)
-9. **Delete ruleset**: Delete test ruleset via confirmation flow, verify gone (section 10)
-10. **Sonarr search**: Trigger search, verify pipeline end-to-end (section 17)
-11. **Activity**: Active tab during download, Queue tab, History tab after completion (sections 3-5)
-12. **Download lifecycle**: Cancel, retry on failure, delete history (section 18)
-13. **Scoring history**: Click through to detail, filter tabs, expand traces (sections 12-13)
-14. **Scoring verification**: API check for enrichment traces (section 19)
-15. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD APIs (sections 20-23)
+5. **Settings page**: All sections visible, download config, cache stats, routes, log viewer (section 24)
+6. **Legacy redirects**: /queue, /history, /search redirect correctly (section 29.6-29.8)
+7. **Rulesets list**: Search, all filter combinations, both sort options, click through (section 6)
+8. **Ruleset detail**: View Tatort - identity, enrichment, expand/collapse rules, export (sections 7, 11)
+9. **Ruleset editor**: Open editor - edit every field type, add/remove aliases, toggle enrichment, add/remove rules and filters, live preview + full test, save (section 8)
+10. **Create ruleset**: Create test ruleset with all fields, verify in list (section 9)
+11. **Delete ruleset**: Delete test ruleset via confirmation flow, verify gone (section 10)
+12. **Sonarr search**: Trigger search, verify pipeline end-to-end (section 17)
+13. **Activity**: Active tab during download, Queue tab, History tab after completion (sections 3-5)
+14. **Queue operations**: Pause/resume, force-start, priority, move, swap, download detail page (section 25)
+15. **Download lifecycle**: Cancel, retry on failure, delete history (section 18)
+16. **Radarr search**: Trigger movie search, verify pipeline end-to-end (section 26)
+17. **Scoring history**: Click through to detail, filter tabs, expand traces (sections 12-13)
+18. **Scoring verification**: API check for enrichment traces (section 19)
+19. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD, Mediathek, Download APIs (sections 20-23, 27-28)
+20. **Error handling**: Invalid routes, bad IDs, malformed requests, SSE resilience, concurrency (section 29)
