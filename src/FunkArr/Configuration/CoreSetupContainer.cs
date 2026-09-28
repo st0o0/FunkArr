@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.Text.Json;
 using FunkArr.Api.HealthChecks;
 using FunkArr.Core;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Servus.Core.Application.Startup;
@@ -44,6 +45,23 @@ public sealed class CoreSetupContainer : IServiceSetupContainer
             return dataPaths;
         });
         services.AddSingleton<IDataFiles, DataFiles>();
+
+        services.AddRequestTimeouts();
+
+        services.AddHttpLogging(options =>
+        {
+            options.LoggingFields =
+                HttpLoggingFields.RequestMethod |
+                HttpLoggingFields.RequestPath |
+                HttpLoggingFields.RequestQuery |
+                HttpLoggingFields.ResponseStatusCode |
+                HttpLoggingFields.Duration |
+                HttpLoggingFields.RequestBody |
+                HttpLoggingFields.ResponseBody;
+            options.CombineLogs = true;
+        });
+
+        services.AddDistributedMemoryCache();
 
         services.AddProblemDetails();
         services.AddOpenApi();

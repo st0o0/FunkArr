@@ -15,6 +15,7 @@
     <PackageReference Include="Akka.Cluster.Sharding" />
     <PackageReference Include="Akka.Logger.Serilog" />
     <PackageReference Include="Akka.Persistence.Sql.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="Akka.Streams" />
     <PackageReference Include="Servus" />
