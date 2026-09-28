@@ -33,7 +33,7 @@ public sealed class RuleSetDetailTests(FunkArrFixture fixture)
                 new Messages.RuleSet.RuleSetDetailRule(
                     "default", 0, null,
                     Messages.Scoring.IdentificationStrategy.SeasonAndEpisodeNumber,
-                    @"S(\d+)", @"E(\d+)", 1, null, null),
+                    @"S(\d+)", @"E(\d+)", 1, null, null)
             ],
             new MsgEnrichment.EnrichmentConfig(
                 true,

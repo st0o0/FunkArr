@@ -21,7 +21,7 @@ public sealed class PersistedHistoryStateVerifyTests
                 [TestItemTraceBuilder.CreateSampleTrace()]),
             new ScoringHistoryRecorded(
                 _testRequestId2, PersistedSearchSource.Radarr, "Film",
-                _testTimestamp.AddHours(1), 5, 1, 0, []),
+                _testTimestamp.AddHours(1), 5, 1, 0, [])
         ]);
         var json = JsonConvert.SerializeObject(state, Formatting.Indented);
         return Verify(json);
@@ -35,7 +35,7 @@ public sealed class PersistedHistoryStateVerifyTests
             new ScoringHistoryRecorded(
                 _testRequestId1, PersistedSearchSource.Sonarr, "Tatort",
                 _testTimestamp, 10, 3, 2,
-                [TestItemTraceBuilder.CreateSampleTrace()]),
+                [TestItemTraceBuilder.CreateSampleTrace()])
         ]);
 
         var json = JsonConvert.SerializeObject(original);

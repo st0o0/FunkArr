@@ -22,7 +22,7 @@ public sealed class SabnzbdQueueTests(FunkArrFixture fixture)
         var items = new[]
         {
             TestData.QueueItem("Tatort.S01E05.720p.WEB-DL"),
-            TestData.ProcessingItem(),
+            TestData.ProcessingItem()
         };
         downloadProbe.Reply(new QueueResult(items, 2, 2, false, false, null));
 

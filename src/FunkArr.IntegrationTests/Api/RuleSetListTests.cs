@@ -26,14 +26,14 @@ public sealed class RuleSetListTests(FunkArrFixture fixture)
             new RegisteredRuleSetEntry(
                 "tatort", "Tatort", ["tatort-berlin"],
                 new ExternalIds(12345, "tt1234567", null),
-                "Tatort", Messages.MediaType.Show),
+                "Tatort", Messages.MediaType.Show)
         ]));
 
         var managerProbe = _fixture.GetProbe<IRuleSetManager>();
         managerProbe.ExpectMsg<QueryRuleSetSummaries>();
         managerProbe.Reply(new RuleSetSummaryResult(
         [
-            new RuleSetSummaryEntry("tatort", 3, "community"),
+            new RuleSetSummaryEntry("tatort", 3, "community")
         ]));
 
         var statsProbe = _fixture.GetProbe<IStatsCollector>();

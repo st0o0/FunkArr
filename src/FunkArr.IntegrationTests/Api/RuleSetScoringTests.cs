@@ -22,7 +22,7 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
                 new RuleInput("rule-1",
                     Strategy: FunkArr.Api.Models.IdentificationStrategy.SeasonAndEpisodeNumber,
                     SeasonRegex: @"S(\d+)",
-                    EpisodeRegex: @"E(\d+)"),
+                    EpisodeRegex: @"E(\d+)")
             ],
             Candidates:
             [
@@ -30,7 +30,7 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
                     Title: "Tatort S01E05 Der letzte Fall",
                     Topic: "Tatort",
                     Channel: "ARD",
-                    Duration: 5400),
+                    Duration: 5400)
             ]);
 
         var task = _fixture.Client.PostAsJsonAsync("/api/rulesets/test", request);
@@ -48,8 +48,8 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
                     Identification: new MsgHistory.TracedIdentification("01", "05", null),
                     RuleTraces:
                     [
-                        new MsgHistory.RuleTrace("rule-1", 0, MsgHistory.RuleOutcome.Matched, null, null),
-                    ]),
+                        new MsgHistory.RuleTrace("rule-1", 0, MsgHistory.RuleOutcome.Matched, null, null)
+                    ])
             ]));
 
         var response = await task;

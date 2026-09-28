@@ -24,7 +24,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
             new SearchResultItem(
                 "Tatort.S01E01.720p.WEB-DL", "ARD", "Tatort",
                 "https://example.com/video.mp4", 5400, 500_000_000, 720,
-                DateTimeOffset.UtcNow, 95.0, "https://example.com/sub.xml"),
+                DateTimeOffset.UtcNow, 95.0, "https://example.com/sub.xml")
         };
         searchProbe.Reply(new SearchCommandCompleted(Guid.NewGuid(), items, items.Length));
 

@@ -79,7 +79,7 @@ public sealed class FunkArrFixture : IAsyncLifetime
         services.AddArrApiServices(builder.Configuration);
 
         services.AddControllers()
-            .AddApplicationPart(typeof(FunkArr.ArrApi.AssemblyMarker).Assembly);
+            .AddApplicationPart(typeof(ArrApi.AssemblyMarker).Assembly);
 
         services.ConfigureHttpJsonOptions(options =>
         {
@@ -94,8 +94,8 @@ public sealed class FunkArrFixture : IAsyncLifetime
             {
                 [HealthStatus.Healthy] = 200,
                 [HealthStatus.Degraded] = 200,
-                [HealthStatus.Unhealthy] = 503,
-            },
+                [HealthStatus.Unhealthy] = 503
+            }
         });
 
         _app.MapGet("/alive", () => Microsoft.AspNetCore.Http.Results.Ok("Alive"));

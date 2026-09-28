@@ -22,7 +22,7 @@ public sealed class SabnzbdHistoryTests(FunkArrFixture fixture)
         var items = new[]
         {
             TestData.CompletedItem(),
-            TestData.FailedItem(),
+            TestData.FailedItem()
         };
         historyProbe.Reply(new HistoryResult(items, 2));
 

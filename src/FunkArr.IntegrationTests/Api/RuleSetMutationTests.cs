@@ -50,7 +50,7 @@ public sealed class RuleSetMutationTests(FunkArrFixture fixture)
 
         var probe = _fixture.GetProbe<IRuleSetRegion>();
         probe.ExpectMsg<CreateLocalRuleSet>();
-        probe.Reply(new CreateLocalRuleSetValidationFailed(["Topic is required", "At least one rule needed"]));
+        probe.Reply(new CreateLocalRuleSetValidationFailed([new RuleSetValidationError("topic", "Topic is required"), new RuleSetValidationError("rules", "At least one rule needed")]));
 
         var response = await task;
 
