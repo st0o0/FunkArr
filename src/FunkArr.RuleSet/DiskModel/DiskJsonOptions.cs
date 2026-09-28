@@ -20,8 +20,8 @@ public static class DiskJsonOptions
             new JsonStringEnumConverter<FilterOp>(JsonNamingPolicy.CamelCase),
             new JsonStringEnumConverter<TitlePartType>(JsonNamingPolicy.CamelCase),
             new JsonStringEnumConverter<EnrichmentMethod>(JsonNamingPolicy.CamelCase),
-            new JsonStringEnumConverter<RuntimeMode>(JsonNamingPolicy.CamelCase),
-        },
+            new JsonStringEnumConverter<RuntimeMode>(JsonNamingPolicy.CamelCase)
+        }
     };
 
     public static readonly JsonSerializerOptions WriteFormatted = new()
@@ -37,7 +37,7 @@ public static class DiskJsonOptions
             new JsonStringEnumConverter<FilterOp>(JsonNamingPolicy.CamelCase),
             new JsonStringEnumConverter<TitlePartType>(JsonNamingPolicy.CamelCase),
             new JsonStringEnumConverter<EnrichmentMethod>(JsonNamingPolicy.CamelCase),
-            new JsonStringEnumConverter<RuntimeMode>(JsonNamingPolicy.CamelCase),
-        },
+            new JsonStringEnumConverter<RuntimeMode>(JsonNamingPolicy.CamelCase)
+        }
     };
 }

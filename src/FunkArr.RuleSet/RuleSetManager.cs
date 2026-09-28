@@ -204,7 +204,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
         _state = _state with
         {
             KnownRuleSets = knownRuleSets,
-            PendingIds = _state.PendingIds.Clear(),
+            PendingIds = _state.PendingIds.Clear()
         };
 
         if (added > 0 || updated > 0 || removed > 0)

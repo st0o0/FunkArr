@@ -31,13 +31,13 @@ public sealed class RuleSetMergerTests
         var community = new DiskRuleSet
         {
             Topic = "Community",
-            Rules = [new DiskRule { Id = "comm-rule" }],
+            Rules = [new DiskRule { Id = "comm-rule" }]
         };
         var local = new DiskRuleSet
         {
             Topic = "Local",
             Standalone = true,
-            Rules = [new DiskRule { Id = "local-rule" }],
+            Rules = [new DiskRule { Id = "local-rule" }]
         };
 
         var result = RuleSetMerger.Resolve(community, local);
@@ -57,13 +57,13 @@ public sealed class RuleSetMergerTests
             Rules =
             [
                 new DiskRule { Id = "comm-1", Priority = 0 },
-                new DiskRule { Id = "comm-2", Priority = 1 },
-            ],
+                new DiskRule { Id = "comm-2", Priority = 1 }
+            ]
         };
         var local = new DiskRuleSet
         {
             Topic = "Show",
-            Rules = [new DiskRule { Id = "local-3", Priority = 2 }],
+            Rules = [new DiskRule { Id = "local-3", Priority = 2 }]
         };
 
         var result = RuleSetMerger.Resolve(community, local);
@@ -78,12 +78,12 @@ public sealed class RuleSetMergerTests
         var community = new DiskRuleSet
         {
             Topic = "Show",
-            Rules = [new DiskRule { Id = "shared-rule", Priority = 0, Strategy = "itemTitleExact" }],
+            Rules = [new DiskRule { Id = "shared-rule", Priority = 0, Strategy = "itemTitleExact" }]
         };
         var local = new DiskRuleSet
         {
             Topic = "Show",
-            Rules = [new DiskRule { Id = "shared-rule", Priority = 0, Strategy = "itemTitleIncludes" }],
+            Rules = [new DiskRule { Id = "shared-rule", Priority = 0, Strategy = "itemTitleIncludes" }]
         };
 
         var result = RuleSetMerger.Resolve(community, local);
@@ -102,14 +102,14 @@ public sealed class RuleSetMergerTests
             Rules =
             [
                 new DiskRule { Id = "keep-rule", Priority = 0 },
-                new DiskRule { Id = "skip-rule", Priority = 1 },
-            ],
+                new DiskRule { Id = "skip-rule", Priority = 1 }
+            ]
         };
         var local = new DiskRuleSet
         {
             Topic = "Show",
             Disable = ["skip-rule"],
-            Rules = [],
+            Rules = []
         };
 
         var result = RuleSetMerger.Resolve(community, local);
@@ -138,13 +138,13 @@ public sealed class RuleSetMergerTests
         {
             Topic = "Show",
             Media = new DiskMedia { TvdbId = 100, Name = "Comm" },
-            Rules = [],
+            Rules = []
         };
         var local = new DiskRuleSet
         {
             Topic = "Show",
             Media = new DiskMedia { TvdbId = 200 },
-            Rules = [],
+            Rules = []
         };
 
         var result = RuleSetMerger.Resolve(community, local);

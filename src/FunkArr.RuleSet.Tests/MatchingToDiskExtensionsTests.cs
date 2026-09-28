@@ -48,7 +48,7 @@ public sealed class MatchingToDiskExtensionsTests
             (IdentificationStrategy.AbsoluteEpisodeNumber, "byAbsoluteEpisodeNumber"),
             (IdentificationStrategy.TitleExact, "itemTitleExact"),
             (IdentificationStrategy.TitleIncludes, "itemTitleIncludes"),
-            (IdentificationStrategy.AirdateExtraction, "itemTitleEqualsAirdate"),
+            (IdentificationStrategy.AirdateExtraction, "itemTitleEqualsAirdate")
         };
 
         foreach (var (strategy, expected) in strategies)
@@ -113,7 +113,7 @@ public sealed class MatchingToDiskExtensionsTests
                 TitleRules:
                 [
                     new RuleSetTitleRuleInput(TitlePartType.Static, Value: " - "),
-                    new RuleSetTitleRuleInput(TitlePartType.Regex, FilterField.Title, Pattern: @"\S.*"),
+                    new RuleSetTitleRuleInput(TitlePartType.Regex, FilterField.Title, Pattern: @"\S.*")
                 ])],
             null, null, null);
 

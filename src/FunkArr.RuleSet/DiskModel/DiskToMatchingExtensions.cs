@@ -118,7 +118,7 @@ internal static class DiskToMatchingExtensions
                 IdentificationStrategy.TitleIncludes => new IdentificationSpec(
                     strategy, TitleParts: TransformTitleRules(raw.TitleRules)),
                 IdentificationStrategy.AirdateExtraction => new IdentificationSpec(strategy),
-                _ => null,
+                _ => null
             };
 
             if (identification is null)

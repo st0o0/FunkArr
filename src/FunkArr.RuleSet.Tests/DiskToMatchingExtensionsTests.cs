@@ -16,8 +16,8 @@ public sealed class DiskToMatchingExtensionsTests
             Rules =
             [
                 new DiskRule { Id = "rule-1", Priority = 0, Strategy = "itemTitleIncludes" },
-                new DiskRule { Id = "rule-2", Priority = 1, Strategy = "seasonAndEpisodeNumber" },
-            ],
+                new DiskRule { Id = "rule-2", Priority = 1, Strategy = "seasonAndEpisodeNumber" }
+            ]
         };
 
         var config = disk.ToMatchingConfig("test-id");
@@ -35,7 +35,7 @@ public sealed class DiskToMatchingExtensionsTests
         var disk = new DiskRuleSet
         {
             Topic = "Test",
-            Rules = [new DiskRule { Id = "bad-rule", Strategy = "unknownStrategy" }],
+            Rules = [new DiskRule { Id = "bad-rule", Strategy = "unknownStrategy" }]
         };
 
         var config = disk.ToMatchingConfig("test");
@@ -55,13 +55,13 @@ public sealed class DiskToMatchingExtensionsTests
                 Name = "Tatort",
                 Type = Messages.MediaType.Show,
                 TvdbId = 83214,
-                ImdbId = "tt0806910",
+                ImdbId = "tt0806910"
             },
             Enrichment = new DiskEnrichment
             {
                 Enabled = true,
-                Methods = [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
-            },
+                Methods = [EnrichmentMethod.Title, EnrichmentMethod.Airdate]
+            }
         };
 
         var identity = disk.ToIdentity();
@@ -96,9 +96,9 @@ public sealed class DiskToMatchingExtensionsTests
                 {
                     Id = "rule-with-filters",
                     Strategy = "itemTitleIncludes",
-                    TitleRules = [new DiskTitleRule { Type = TitlePartType.Static, Value = " - " }],
-                },
-            ],
+                    TitleRules = [new DiskTitleRule { Type = TitlePartType.Static, Value = " - " }]
+                }
+            ]
         };
 
         var rules = disk.ToDetailRules();

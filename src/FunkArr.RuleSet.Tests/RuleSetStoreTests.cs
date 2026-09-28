@@ -67,7 +67,7 @@ public sealed class RuleSetStoreTests : IDisposable
         {
             Topic = "Saved",
             Media = new DiskMedia { Name = "Saved", Type = Messages.MediaType.Show },
-            Rules = [new DiskRule { Id = "save-rule", Strategy = "itemTitleIncludes" }],
+            Rules = [new DiskRule { Id = "save-rule", Strategy = "itemTitleIncludes" }]
         };
 
         var json = _store.SaveLocal("saved-show", disk);

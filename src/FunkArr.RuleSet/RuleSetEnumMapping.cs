@@ -21,7 +21,7 @@ public static class RuleSetEnumMapping
             "itemTitleExact" => (IdentificationStrategy.TitleExact, true),
             "itemTitleIncludes" => (IdentificationStrategy.TitleIncludes, true),
             "itemTitleEqualsAirdate" => (IdentificationStrategy.AirdateExtraction, true),
-            _ => (default, false),
+            _ => (default, false)
         };
 
         return valid;
@@ -34,7 +34,7 @@ public static class RuleSetEnumMapping
         IdentificationStrategy.TitleExact => "itemTitleExact",
         IdentificationStrategy.TitleIncludes => "itemTitleIncludes",
         IdentificationStrategy.AirdateExtraction => "itemTitleEqualsAirdate",
-        _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, null)
     };
 
     public static string ToDiskValue(this FilterField field) => field switch
@@ -45,7 +45,7 @@ public static class RuleSetEnumMapping
         FilterField.Description => "description",
         FilterField.Duration => "duration",
         FilterField.Timestamp => "timestamp",
-        _ => throw new ArgumentOutOfRangeException(nameof(field), field, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(field), field, null)
     };
 
     public static bool TryParseFilterField(string? value, out FilterField field)
@@ -64,7 +64,7 @@ public static class RuleSetEnumMapping
             "description" => (FilterField.Description, true),
             "duration" => (FilterField.Duration, true),
             "timestamp" => (FilterField.Timestamp, true),
-            _ => (default, false),
+            _ => (default, false)
         };
 
         return valid;
@@ -78,7 +78,7 @@ public static class RuleSetEnumMapping
         FilterOp.GreaterThan => "greaterThan",
         FilterOp.LessThan => "lessThan",
         FilterOp.Regex => "regex",
-        _ => throw new ArgumentOutOfRangeException(nameof(op), op, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
     };
 
     public static bool TryParseFilterOp(string? value, out FilterOp op)
@@ -97,7 +97,7 @@ public static class RuleSetEnumMapping
             "greaterThan" => (FilterOp.GreaterThan, true),
             "lessThan" => (FilterOp.LessThan, true),
             "regex" => (FilterOp.Regex, true),
-            _ => (default, false),
+            _ => (default, false)
         };
 
         return valid;
@@ -107,7 +107,7 @@ public static class RuleSetEnumMapping
     {
         TitlePartType.Static => "static",
         TitlePartType.Regex => "regex",
-        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
     };
 
     public static bool TryParseTitlePartType(string? value, out TitlePartType type)
@@ -122,7 +122,7 @@ public static class RuleSetEnumMapping
         {
             "static" => (TitlePartType.Static, true),
             "regex" => (TitlePartType.Regex, true),
-            _ => (default, false),
+            _ => (default, false)
         };
 
         return valid;
@@ -132,21 +132,21 @@ public static class RuleSetEnumMapping
     {
         EnrichmentMethod.Title => "title",
         EnrichmentMethod.Airdate => "airdate",
-        _ => throw new ArgumentOutOfRangeException(nameof(method), method, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(method), method, null)
     };
 
     public static string ToDiskValue(this RuntimeMode mode) => mode switch
     {
         RuntimeMode.Tiebreaker => "tiebreaker",
         RuntimeMode.Filter => "filter",
-        _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
     };
 
     public static string ToDiskValue(this MediaType type) => type switch
     {
         MediaType.Show => "show",
         MediaType.Movie => "movie",
-        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null),
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
     };
 
     public static bool TryParseMediaType(string? value, out MediaType type)
@@ -161,7 +161,7 @@ public static class RuleSetEnumMapping
         {
             "show" => (MediaType.Show, true),
             "movie" => (MediaType.Movie, true),
-            _ => (default, false),
+            _ => (default, false)
         };
 
         return valid;

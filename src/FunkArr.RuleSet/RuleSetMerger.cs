@@ -36,7 +36,7 @@ internal static class RuleSetMerger
         Media = MergeMedia(community.Media, local.Media),
         Confidence = local.Confidence ?? community.Confidence,
         Rules = MergeRules(community.Rules ?? [], local.Rules ?? [], local.Disable),
-        Enrichment = MergeEnrichment(community.Enrichment, local.Enrichment),
+        Enrichment = MergeEnrichment(community.Enrichment, local.Enrichment)
     };
 
     private static DiskMedia? MergeMedia(DiskMedia? community, DiskMedia? local)
@@ -62,7 +62,7 @@ internal static class RuleSetMerger
             ImdbId = local.ImdbId ?? community.ImdbId,
             TmdbId = local.TmdbId ?? community.TmdbId,
             Name = local.Name ?? community.Name,
-            Type = local.Type ?? community.Type,
+            Type = local.Type ?? community.Type
         };
     }
 
@@ -165,19 +165,19 @@ internal static class RuleSetMerger
                 ? new DiskAirdateMatch
                 {
                     Tolerance = local.Airdate.Tolerance ?? community.Airdate?.Tolerance,
-                    MinTitleAffinity = local.Airdate.MinTitleAffinity ?? community.Airdate?.MinTitleAffinity,
+                    MinTitleAffinity = local.Airdate.MinTitleAffinity ?? community.Airdate?.MinTitleAffinity
                 }
                 : community.Airdate,
             Runtime = local.Runtime is not null
                 ? new DiskRuntimeMatch
                 {
                     Tolerance = local.Runtime.Tolerance ?? community.Runtime?.Tolerance,
-                    Mode = local.Runtime.Mode ?? community.Runtime?.Mode,
+                    Mode = local.Runtime.Mode ?? community.Runtime?.Mode
                 }
                 : community.Runtime,
             Year = local.Year is not null
                 ? new DiskYearMatch { Tolerance = local.Year.Tolerance ?? community.Year?.Tolerance }
-                : community.Year,
+                : community.Year
         };
     }
 }

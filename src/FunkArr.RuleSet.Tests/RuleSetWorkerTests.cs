@@ -36,7 +36,8 @@ public sealed class RuleSetWorkerTests : TestKit
         _store = new RuleSetStore(_dataFiles, dataPaths);
     }
 
-    private IActorRef CreateWorkerWithProbes(out TestProbe scoringProbe, out TestProbe resolverProbe, out TestProbe managerProbe)
+    private IActorRef CreateWorkerWithProbes(out TestProbe scoringProbe, out TestProbe resolverProbe,
+        out TestProbe managerProbe)
     {
         scoringProbe = CreateTestProbe();
         resolverProbe = CreateTestProbe();
@@ -48,7 +49,7 @@ public sealed class RuleSetWorkerTests : TestKit
         registry.Register<IRuleSetManager>(managerProbe);
 
         return Sys.ActorOf(Props.Create(() =>
-            new RuleSetWorker(_store, new RuleSetValidator())), "test-show");
+            new RuleSetWorker("test-show", _store, new RuleSetValidator())), "test-show");
     }
 
     [Fact]
