@@ -4,6 +4,8 @@ using FunkArr.Messages.Shared;
 
 namespace FunkArr.Messages.RuleSet;
 
+public sealed record RuleSetValidationError(string Field, string Message);
+
 public sealed record RuleSetBody(
     string Topic,
     string[]? Aliases,
@@ -56,7 +58,7 @@ public sealed record CreateLocalRuleSetFailed(CreateLocalRuleSetFailureReason Re
 public enum CreateLocalRuleSetFailureReason { AlreadyExists }
 
 public sealed record CreateLocalRuleSetValidationFailed(
-    IReadOnlyList<string> Errors) : CreateLocalRuleSetResponse;
+    IReadOnlyList<RuleSetValidationError> Errors) : CreateLocalRuleSetResponse;
 
 public sealed record UpdateLocalRuleSet(string RuleSetId, RuleSetBody Body) : IWithRuleSetId;
 
@@ -67,7 +69,7 @@ public sealed record UpdateLocalRuleSetFailed(UpdateLocalRuleSetFailureReason Re
 public enum UpdateLocalRuleSetFailureReason { NotFound }
 
 public sealed record UpdateLocalRuleSetValidationFailed(
-    IReadOnlyList<string> Errors) : UpdateLocalRuleSetResponse;
+    IReadOnlyList<RuleSetValidationError> Errors) : UpdateLocalRuleSetResponse;
 
 public sealed record DeleteLocalRuleSet(string RuleSetId) : IWithRuleSetId;
 
@@ -86,7 +88,7 @@ public sealed record ExportRuleSetFailed(ExportRuleSetFailureReason Reason) : Ex
 public enum ExportRuleSetFailureReason { NotFound, NoLocalOverlay }
 
 public sealed record ExportRuleSetValidationFailed(
-    IReadOnlyList<string> Errors) : ExportRuleSetResponse;
+    IReadOnlyList<RuleSetValidationError> Errors) : ExportRuleSetResponse;
 
 public sealed record WorkerReady(string RuleSetId, int RuleCount, string SourceType);
 

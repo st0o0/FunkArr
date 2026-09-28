@@ -19,13 +19,15 @@ public sealed class RuleSetWorker : ReceiveActor
     public sealed record RemoveRuleSet(string RuleSetId) : IWithRuleSetId;
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly string _nttId;
     private readonly RuleSetStore _store;
     private readonly IRuleSetValidator _validator;
     private DiskRuleSet? _merged;
     private RuleSetPaths _paths = new(null, null, null, null);
 
-    public RuleSetWorker(RuleSetStore store, IRuleSetValidator validator)
+    public RuleSetWorker(string nttId, RuleSetStore store, IRuleSetValidator validator)
     {
+        _nttId = nttId;
         _store = store;
         _validator = validator;
 
@@ -38,16 +40,14 @@ public sealed class RuleSetWorker : ReceiveActor
         Receive<ExportRuleSet>(HandleExport);
     }
 
-    private string RuleSetId => Self.Path.Name;
-
     private void HandleLoad(LoadRuleSet msg)
     {
-        _merged = _store.LoadMerged(msg.RuleSetId);
-        _paths = _store.CheckPaths(msg.RuleSetId);
+        _merged = _store.LoadMerged(_nttId);
+        _paths = _store.CheckPaths(_nttId);
 
         if (_merged is null)
         {
-            _log.Warning("RuleSet '{RuleSetId}': no valid JSON found", msg.RuleSetId);
+            _log.Warning("RuleSet '{RuleSetId}': no valid JSON found", _nttId);
             return;
         }
 
@@ -57,7 +57,7 @@ public sealed class RuleSetWorker : ReceiveActor
             return;
         }
 
-        var config = _merged.ToMatchingConfig(msg.RuleSetId);
+        var config = _merged.ToMatchingConfig(_nttId);
         if (config is not null)
         {
             var scoringManager = Context.GetActor<IScoringManager>();
@@ -66,7 +66,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
         var resolver = Context.GetActor<IRuleSetResolver>();
         resolver.Tell(new RegisterRuleSet(
-            msg.RuleSetId, identity.Value.Topic, identity.Value.Aliases,
+            _nttId, identity.Value.Topic, identity.Value.Aliases,
             identity.Value.Ids,
             identity.Value.MediaName, identity.Value.MediaType, identity.Value.Enrichment));
 
@@ -75,11 +75,11 @@ public sealed class RuleSetWorker : ReceiveActor
             (not null, not null) => "merged",
             (not null, null) => "community",
             (null, not null) => "local",
-            _ => "unknown",
+            _ => "unknown"
         };
 
         var manager = Context.GetActor<IRuleSetManager>();
-        manager.Tell(new WorkerReady(msg.RuleSetId, config?.Rules.Length ?? 0, sourceType));
+        manager.Tell(new WorkerReady(_nttId, config?.Rules.Length ?? 0, sourceType));
         Telemetry.Loaded.Add(1, new KeyValuePair<string, object?>("source", sourceType));
     }
 
@@ -88,13 +88,13 @@ public sealed class RuleSetWorker : ReceiveActor
         _merged = null;
 
         var scoringManager = Context.GetActor<IScoringManager>();
-        scoringManager.Tell(new RemoveMatchingConfig(msg.RuleSetId));
+        scoringManager.Tell(new RemoveMatchingConfig(_nttId));
 
         var resolver = Context.GetActor<IRuleSetResolver>();
-        resolver.Tell(new DeregisterRuleSet(msg.RuleSetId));
+        resolver.Tell(new DeregisterRuleSet(_nttId));
 
         var manager = Context.GetActor<IRuleSetManager>();
-        manager.Tell(new WorkerRemoved(msg.RuleSetId));
+        manager.Tell(new WorkerRemoved(_nttId));
         Telemetry.Removed.Add(1);
     }
 
@@ -102,27 +102,27 @@ public sealed class RuleSetWorker : ReceiveActor
     {
         if (_merged is null)
         {
-            _merged = _store.LoadMerged(msg.RuleSetId);
-            _paths = _store.CheckPaths(msg.RuleSetId);
+            _merged = _store.LoadMerged(_nttId);
+            _paths = _store.CheckPaths(_nttId);
         }
 
         if (_merged is null)
         {
-            Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(msg.RuleSetId)));
+            Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(_nttId)));
             return;
         }
 
         var identity = _merged.ToIdentity();
         if (identity is null)
         {
-            Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(msg.RuleSetId)));
+            Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(_nttId)));
             return;
         }
 
-        var config = _merged.ToMatchingConfig(msg.RuleSetId);
+        var config = _merged.ToMatchingConfig(_nttId);
 
         Sender.Tell(new RuleSetDetailResult(
-            msg.RuleSetId,
+            _nttId,
             new RuleSetDetailResult.RuleSetIdentity(
                 identity.Value.Topic, identity.Value.Aliases,
                 identity.Value.Ids),
@@ -136,73 +136,73 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleCreate(CreateLocalRuleSet msg)
     {
-        if (_store.ExistsLocal(msg.RuleSetId))
+        if (_store.ExistsLocal(_nttId))
         {
             Sender.Tell(new CreateLocalRuleSetFailed(CreateLocalRuleSetFailureReason.AlreadyExists));
             return;
         }
 
         var disk = msg.Body.ToDiskRuleSet();
-        var json = _store.SaveLocal(msg.RuleSetId, disk);
+        var json = _store.SaveLocal(_nttId, disk);
         var errors = _validator.Validate(json);
         if (errors.Count > 0)
         {
-            _store.DeleteLocal(msg.RuleSetId);
+            _store.DeleteLocal(_nttId);
             Telemetry.ValidationErrors.Add(1);
-            Sender.Tell(new CreateLocalRuleSetValidationFailed([.. errors.Select(e => e.Message)]));
+            Sender.Tell(new CreateLocalRuleSetValidationFailed([.. errors]));
             return;
         }
 
-        Self.Tell(new LoadRuleSet(msg.RuleSetId, null, null));
-        Sender.Tell(new CreateLocalRuleSetCompleted(msg.RuleSetId));
+        Self.Tell(new LoadRuleSet(_nttId, null, null));
+        Sender.Tell(new CreateLocalRuleSetCompleted(_nttId));
     }
 
     private void HandleUpdate(UpdateLocalRuleSet msg)
     {
-        if (!_store.ExistsLocal(msg.RuleSetId) && !_store.ExistsCommunity(msg.RuleSetId))
+        if (!_store.ExistsLocal(_nttId) && !_store.ExistsCommunity(_nttId))
         {
             Sender.Tell(new UpdateLocalRuleSetFailed(UpdateLocalRuleSetFailureReason.NotFound));
             return;
         }
 
         var disk = msg.Body.ToDiskRuleSet();
-        var json = _store.SaveLocal(msg.RuleSetId, disk);
+        var json = _store.SaveLocal(_nttId, disk);
         var errors = _validator.Validate(json);
         if (errors.Count > 0)
         {
-            _store.DeleteLocal(msg.RuleSetId);
+            _store.DeleteLocal(_nttId);
             Telemetry.ValidationErrors.Add(1);
-            Sender.Tell(new UpdateLocalRuleSetValidationFailed([.. errors.Select(e => e.Message)]));
+            Sender.Tell(new UpdateLocalRuleSetValidationFailed([.. errors]));
             return;
         }
 
-        Self.Tell(new LoadRuleSet(msg.RuleSetId, null, null));
+        Self.Tell(new LoadRuleSet(_nttId, null, null));
         Sender.Tell(new UpdateLocalRuleSetCompleted());
     }
 
     private void HandleDelete(DeleteLocalRuleSet msg)
     {
-        if (!_store.DeleteLocal(msg.RuleSetId))
+        if (!_store.DeleteLocal(_nttId))
         {
             Sender.Tell(new DeleteLocalRuleSetFailed(DeleteLocalRuleSetFailureReason.NotFound));
             return;
         }
 
-        if (_store.ExistsCommunity(msg.RuleSetId))
+        if (_store.ExistsCommunity(_nttId))
         {
-            Self.Tell(new LoadRuleSet(msg.RuleSetId, null, null));
+            Self.Tell(new LoadRuleSet(_nttId, null, null));
         }
         else
         {
             _merged = null;
             var scoringManager = Context.GetActor<IScoringManager>();
-            scoringManager.Tell(new RemoveMatchingConfig(msg.RuleSetId));
+            scoringManager.Tell(new RemoveMatchingConfig(_nttId));
 
             var resolver = Context.GetActor<IRuleSetResolver>();
-            resolver.Tell(new DeregisterRuleSet(msg.RuleSetId));
+            resolver.Tell(new DeregisterRuleSet(_nttId));
 
             var manager = Context.GetActor<IRuleSetManager>();
-            manager.Tell(new WorkerRemoved(msg.RuleSetId));
+            manager.Tell(new WorkerRemoved(_nttId));
         }
 
         Sender.Tell(new DeleteLocalRuleSetCompleted());
@@ -210,13 +210,13 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleExport(ExportRuleSet msg)
     {
-        if (!_store.ExistsLocal(msg.RuleSetId))
+        if (!_store.ExistsLocal(_nttId))
         {
             Sender.Tell(new ExportRuleSetFailed(ExportRuleSetFailureReason.NoLocalOverlay));
             return;
         }
 
-        var json = _store.ExportMergedJson(msg.RuleSetId);
+        var json = _store.ExportMergedJson(_nttId);
         if (json is null)
         {
             Sender.Tell(new ExportRuleSetFailed(ExportRuleSetFailureReason.NotFound));
@@ -227,7 +227,7 @@ public sealed class RuleSetWorker : ReceiveActor
         if (errors.Count > 0)
         {
             Telemetry.ValidationErrors.Add(1);
-            Sender.Tell(new ExportRuleSetValidationFailed([.. errors.Select(e => e.Message)]));
+            Sender.Tell(new ExportRuleSetValidationFailed([.. errors]));
             return;
         }
 

@@ -1,6 +1,6 @@
-namespace FunkArr.Core;
+using FunkArr.Messages.RuleSet;
 
-public sealed record RuleSetValidationError(string Field, string Message);
+namespace FunkArr.Core;
 
 public interface IRuleSetValidator
 {

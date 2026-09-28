@@ -126,6 +126,10 @@ internal static class RuleSetMappingExtensions
         "community" => ApiModels.SourceType.Community,
         "local" => ApiModels.SourceType.Local,
         "merged" => ApiModels.SourceType.Merged,
-        _ => ApiModels.SourceType.Unknown,
+        _ => ApiModels.SourceType.Unknown
     };
+
+    internal static IReadOnlyList<ApiModels.ValidationErrorEntry> ToApiErrors(
+        this IReadOnlyList<RuleSetValidationError> errors) =>
+        [.. errors.Select(e => new ApiModels.ValidationErrorEntry(e.Field, e.Message))];
 }

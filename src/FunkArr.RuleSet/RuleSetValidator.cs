@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using FunkArr.Core;
+using FunkArr.Messages.RuleSet;
 using Json.Schema;
 
 namespace FunkArr.RuleSet;
@@ -53,7 +54,7 @@ public sealed class RuleSetValidator : IRuleSetValidator
     {
         var options = new EvaluationOptions
         {
-            OutputFormat = OutputFormat.List,
+            OutputFormat = OutputFormat.List
         };
 
         var result = _schema.Evaluate(root, options);
@@ -76,7 +77,7 @@ public sealed class RuleSetValidator : IRuleSetValidator
 
             foreach (var error in detail.Errors)
             {
-                var message = HumanizeError(error.Key, error.Value, friendlyPath);
+                var message = HumanizeError(error.Key, error.Value);
                 errors.Add(new RuleSetValidationError(friendlyPath, message));
             }
         }
@@ -219,7 +220,7 @@ public sealed class RuleSetValidator : IRuleSetValidator
         return string.Join('.', parts);
     }
 
-    private static string HumanizeError(string errorKey, string errorValue, string path)
+    private static string HumanizeError(string errorKey, string errorValue)
     {
         return errorKey switch
         {
@@ -231,7 +232,7 @@ public sealed class RuleSetValidator : IRuleSetValidator
             "pattern" => $"Value does not match required pattern: {errorValue}",
             "additionalProperties" => $"Unknown property: {errorValue}",
             "oneOf" => $"Value does not match any allowed format: {errorValue}",
-            _ => errorValue,
+            _ => errorValue
         };
     }
 }
