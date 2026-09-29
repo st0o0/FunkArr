@@ -8,6 +8,13 @@ Complete browser + API test script covering every clickable element and interact
 **Prerequisites**: `docker compose -f docker-compose.dev.yml up -d --build`, wait for FunkArr on port 6969.  
 **Arr services**: Sonarr (8989), Radarr (7878), Prowlarr (9696) - all with API key `funkarr-dev-api-key-01`.
 
+**Credentials & Endpoints**:
+- API Key for all services: `funkarr-dev-api-key-01`
+- Newznab API: `GET http://localhost:6969/index/api?t=<type>&apikey=funkarr-dev-api-key-01`
+- SABnzbd API: `GET http://localhost:6969/download/api?mode=<mode>&apikey=funkarr-dev-api-key-01`
+- Internal API: `http://localhost:6969/api/...` (no API key)
+- Docker-internal FunkArr hostname: `funkarr` (for Arr service URLs: `http://funkarr:6969`)
+
 ---
 
 ## Test Scenarios & Setup Recipes
@@ -27,7 +34,7 @@ sets up each scenario deterministically before the tests that need it.
 | **Queued downloads** | Pause pipeline, trigger 3+ episode searches -> items queue | 3.7, 4.2-4.4, 25.3-25.6, 28.6-28.9 |
 | **Active download** | Resume pipeline -> downloads become active | 3.3-3.6, 18.1 |
 | **Failed download** | Upload NZB with invalid URL via SABnzbd addfile | 5.6-5.8, 18.4-18.5, 21.14 |
-| **Pagination data** | Trigger 5+ separate searches to generate >20 scoring entries | 5.10, 12.5-12.6 |
+| **Pagination data** | Trigger searches to generate scoring entries (count non-deterministic) | 5.10, 12.5-12.6 |
 | **Post-search** | Completed downloads + scoring history exist | 1.5-1.8, 5.x, 12.x, 13.x, 19.x |
 
 ### Setup Recipe: Paused pipeline with queued items
@@ -121,23 +128,67 @@ Invoke-RestMethod "http://localhost:7878/api/v3/command?apikey=$apiKey" -Method 
     -ContentType "application/json" -Body $searchBody
 ```
 
-### Setup Recipe: Generate pagination data (>20 scoring entries)
+### Setup Recipe: Generate scoring history entries
 
-Trigger searches for multiple different episodes. Each search creates scoring entries.
+Trigger Sonarr searches to create scoring history entries. Note: the
+MediathekViewWeb query queue is bounded, so rapid-fire searches will saturate it
+and many will fail silently (no scoring entry recorded). Space searches 5+ seconds
+apart and expect ~50% success rate. The exact entry count is non-deterministic.
 
 ```powershell
 $apiKey = "funkarr-dev-api-key-01"
 
-# Get episode IDs from different seasons
+# Get episode IDs spread across seasons 2020-2026 (1 per season)
 $episodes = Invoke-RestMethod "http://localhost:8989/api/v3/episode?seriesId=1&apikey=$apiKey"
-$targets = $episodes | Where-Object { $_.seasonNumber -ge 2024 } | Select-Object -First 8
+$targets = $episodes `
+    | Where-Object { $_.seasonNumber -ge 2015 -and $_.seasonNumber -le 2026 } `
+    | Group-Object seasonNumber `
+    | ForEach-Object { $_.Group | Select-Object -First 1 } `
+    | Select-Object -First 12
 
-# Trigger searches with spacing
+# Trigger searches with generous spacing to avoid queue saturation
 foreach ($ep in $targets) {
     $body = "{`"name`":`"EpisodeSearch`",`"episodeIds`":[$($ep.id)]}"
     Invoke-RestMethod "http://localhost:8989/api/v3/command?apikey=$apiKey" -Method Post `
         -ContentType "application/json" -Body $body
-    Start-Sleep -Seconds 3
+    Start-Sleep -Seconds 5
+}
+
+# Verify: expect 5-12 entries (queue saturation limits throughput)
+Start-Sleep -Seconds 15
+$scoring = Invoke-RestMethod "http://localhost:6969/api/rulesets/tatort/history?limit=1"
+Write-Host "Tatort scoring entries: $($scoring.totalCount)"
+```
+
+### Setup Recipe: Generate history pagination data (>25 history entries)
+
+Upload 20 NZB files with unreachable URLs via SABnzbd addfile. These fail within
+seconds, producing history entries. Split across categories (show + movie) to enable
+category filter testing (5.3). Combined with entries from real Sonarr grabs, this
+exceeds the history pageSize of 25.
+
+```powershell
+$apiKey = "funkarr-dev-api-key-01"
+
+# Upload 10 NZBs with category=show and 10 with category=movie
+foreach ($i in 1..20) {
+    $cat = if ($i -le 10) { "show" } else { "movie" }
+    $title = "E2E-Pagination-$cat-$i"
+    $nzb = "<?xml version=`"1.0`" encoding=`"utf-8`"?><nzb xmlns=`"http://www.newzbin.com/DTD/2003/nzb`"><head><meta type=`"title`">$title</meta><meta type=`"X-FunkArr-Url`">http://192.0.2.1/pagination-$i.mp4</meta><meta type=`"X-FunkArr-Channel`">TEST</meta><meta type=`"X-FunkArr-Duration`">60</meta><meta type=`"X-FunkArr-Size`">1000</meta><meta type=`"X-FunkArr-Category`">$cat</meta></head><file post_id=`"1`"><groups><group>a.b.mediathek</group></groups><segments><segment number=`"1`">pagination-$i@e2e</segment></segments></file></nzb>"
+    $tempNzb = Join-Path $env:TEMP "e2e-pagination-$i.nzb"
+    $nzb | Set-Content $tempNzb -Encoding UTF8
+    curl -s -X POST "http://localhost:6969/download/api?apikey=$apiKey&mode=addfile&cat=$cat" -F "name=@$tempNzb" | Out-Null
+    Remove-Item $tempNzb
+}
+
+# Wait for all NZBs to fail (poll until history has enough entries)
+$maxRetries = 30
+for ($i = 0; $i -lt $maxRetries; $i++) {
+    $hist = Invoke-RestMethod "http://localhost:6969/download/api?mode=history&apikey=$apiKey"
+    $count = $hist.history.slots.Count
+    if ($count -ge 26) { Write-Host "History has $count entries (>= 26)"; break }
+    Write-Host "History: $count entries, waiting..."
+    Start-Sleep -Seconds 5
 }
 ```
 
@@ -489,8 +540,8 @@ The Queue tab is the default tab and shows both active downloads and queued item
 - [ ] **12.2** Total count header ("X Bewertungsdurchläufe insgesamt")
 - [ ] **12.3** Table with: Quelle, Abfrage, Zeitpunkt, Kandidaten, Treffer
 - [ ] **12.4** Click on table row → navigates to `/rulesets/{id}/history/{requestId}`
-- [ ] **12.5** Pagination: "Weiter" button loads next page
-- [ ] **12.6** Pagination: "Zurück" button loads previous page
+- [ ] **12.5** Pagination API: `GET /api/rulesets/{id}/history?limit=2` returns at most 2 snapshots with correct `totalCount`
+- [ ] **12.6** Pagination API: `GET /api/rulesets/{id}/history?limit=2&offset=2` returns different snapshots than offset=0
 - [ ] **12.7** After a Sonarr search: only 1 entry per logical search (pagination cache)
 
 ---
@@ -783,7 +834,7 @@ the state required by subsequent steps.
    regex patterns against the community source to ensure no double-escaping occurred.
    If editing via API instead of UI, read "API Ruleset Roundtrip Pitfalls" above.
 9. **Rulesets list**: Search, ALL filter combinations (type + source), both sort options (section 6)
-10. **Ruleset detail**: Tatort (merged) - identity, enrichment, expand/collapse, export, delete overlay (sections 7, 10.1-10.2, 11)
+10. **Ruleset detail + export**: Tatort (merged) - identity, enrichment, expand/collapse, **export first** (section 11), then delete overlay (sections 7, 10.1-10.2). Export requires the local overlay to exist.
 11. **Delete local ruleset**: Delete the section 9 ruleset via confirmation flow (section 10.3-10.6)
 12. **Pause pipeline**: `POST /api/downloads/pause` - prevent downloads from starting
 13. **Trigger 3+ Sonarr searches**: Different episodes while paused - items queue (section 17.1-17.6)
@@ -792,13 +843,14 @@ the state required by subsequent steps.
 16. **Resume pipeline**: `POST /api/downloads/resume` - downloads start
 17. **Active download tests**: Queue tab during download, cancel one, global speed (sections 3.3-3.6, 18.1)
 18. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
-19. **History tests**: History tab, completed + failed status, retry, delete (sections 5, 18.3-18.5)
-20. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)
-21. **Generate pagination data**: Trigger 5+ more searches for different episodes
-22. **Scoring history**: List with pagination, click through to detail, filter tabs, traces (sections 12-13)
-23. **Scoring verification**: API check for enrichment + rule traces (section 19)
-24. **Radarr search**: Add movie to Radarr, trigger search (section 26)
-25. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD, Mediathek, Download APIs (sections 20-23, 27-28)
-26. **Error handling**: Invalid routes, bad IDs, malformed requests (section 29.1-29.5)
-27. **SSE resilience**: Pause/unpause container, verify stream reconnects (section 29.9-29.10)
-28. **Concurrency limit**: Queue 3 downloads with limit=2, verify 2 active + 1 waiting (section 29.11)
+19. **Generate history pagination data**: Upload 20 NZBs with bad URLs (10x show, 10x movie) via SABnzbd addfile, poll until history has >= 26 entries
+20. **History tests**: History tab, completed + failed status, retry, delete, category filter, pagination (sections 5, 18.3-18.5)
+21. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)
+22. **Generate scoring history entries**: Trigger 10+ Sonarr searches across seasons 2015-2026 (1 per season, 5s spacing to avoid queue saturation)
+23. **Scoring history**: List, API pagination (limit/offset), click through to detail, filter tabs, traces (sections 12-13)
+24. **Scoring verification**: API check for enrichment + rule traces (section 19)
+25. **Radarr search**: Add movie to Radarr, trigger search (section 26)
+26. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD, Mediathek, Download APIs (sections 20-23, 27-28)
+27. **Error handling**: Invalid routes, bad IDs, malformed requests (section 29.1-29.5)
+28. **SSE resilience**: Pause/unpause container, verify stream reconnects (section 29.9-29.10)
+29. **Concurrency limit**: Queue 3 downloads with limit=2, verify 2 active + 1 waiting (section 29.11)
