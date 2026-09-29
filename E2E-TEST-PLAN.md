@@ -19,13 +19,13 @@ sets up each scenario deterministically before the tests that need it.
 |---|---|---|
 | **Clean slate** | Fresh volumes, no data | 0.x, 14.x (health), initial dashboard |
 | **Sonarr ready** | Tatort added (tvdbId 83214), root folder `/shared/tv` | 17.x |
-| **Radarr ready** | Movie added (e.g. Schachnovelle tmdbId 718638), root folder `/shared/movies` | 26.x |
+| **Radarr ready** | Movie added (e.g. Schachnovelle tmdbId 1740919), root folder `/shared/movies` | 26.x |
 | **Services configured** | Setup wizard or API configures Prowlarr/Sonarr/Radarr | 17.x, 26.x |
 | **Local ruleset** | `POST /api/rulesets` with local-only ruleset | 6.9-6.11, 7.9-7.12, 10.x, 11.x |
 | **Merged ruleset** | Edit Tatort via UI editor, save -> creates local overlay | 7.8, 7.10-7.11, 10.1-10.2, 11.x |
 | **Paused pipeline** | `POST /api/downloads/pause` before triggering searches | 3.x, 4.x, 25.x, 28.x |
-| **Queued downloads** | Pause pipeline, trigger 3+ episode searches -> items queue | 3.8, 4.2-4.4, 25.3-25.6, 28.6-28.9 |
-| **Active download** | Resume pipeline -> downloads become active | 3.4-3.7, 18.1 |
+| **Queued downloads** | Pause pipeline, trigger 3+ episode searches -> items queue | 3.7, 4.2-4.4, 25.3-25.6, 28.6-28.9 |
+| **Active download** | Resume pipeline -> downloads become active | 3.3-3.6, 18.1 |
 | **Failed download** | Upload NZB with invalid URL via SABnzbd addfile | 5.6-5.8, 18.4-18.5, 21.14 |
 | **Pagination data** | Trigger 5+ separate searches to generate >20 scoring entries | 5.10, 12.5-12.6 |
 | **Post-search** | Completed downloads + scoring history exist | 1.5-1.8, 5.x, 12.x, 13.x, 19.x |
@@ -82,11 +82,8 @@ $nzbXml = @'
 $tempNzb = [System.IO.Path]::GetTempFileName() + ".nzb"
 $nzbXml | Set-Content $tempNzb -Encoding UTF8
 
-# Upload via curl (PowerShell multipart is cumbersome)
-curl -s -X POST "http://localhost:6969/download/api" `
-    -F "apikey=funkarr-dev-api-key-01" `
-    -F "mode=addfile" `
-    -F "cat=show" `
+# Upload via curl - API key MUST be a query parameter, not a form field
+curl -s -X POST "http://localhost:6969/download/api?apikey=funkarr-dev-api-key-01&mode=addfile&cat=show" `
     -F "name=@$tempNzb"
 
 Remove-Item $tempNzb
@@ -99,14 +96,24 @@ Start-Sleep -Seconds 30
 ```powershell
 $apiKey = "funkarr-dev-api-key-01"
 
-# Add Schachnovelle (2021 German film, community movie ruleset exists)
-$body = '{"title":"Schachnovelle","tmdbId":718638,"imdbId":"tt9781494","year":2021,"qualityProfileId":1,"rootFolderPath":"/shared/movies","monitored":true,"addOptions":{"searchForMovie":false}}'
+# Add Schachnovelle (2021 German film)
+# Note: Radarr looks up movies via TMDB. Use Radarr's lookup to find the correct tmdbId
+# since TMDB IDs can change over time.
+$lookup = Invoke-RestMethod "http://localhost:7878/api/v3/movie/lookup?term=schachnovelle&apikey=$apiKey"
+$movie = $lookup | Where-Object { $_.year -eq 2021 } | Select-Object -First 1
+$body = $movie | ConvertTo-Json -Depth 5
+# Set required fields
+$movieObj = $movie | Select-Object *
+$movieObj.qualityProfileId = 1
+$movieObj.rootFolderPath = "/shared/movies"
+$movieObj.monitored = $true
+$movieObj.addOptions = @{ searchForMovie = $false }
 Invoke-RestMethod "http://localhost:7878/api/v3/movie?apikey=$apiKey" -Method Post `
-    -ContentType "application/json" -Body $body
+    -ContentType "application/json" -Body ($movieObj | ConvertTo-Json -Depth 5)
 
 # Get movie ID
 $movies = Invoke-RestMethod "http://localhost:7878/api/v3/movie?apikey=$apiKey"
-$movieId = ($movies | Where-Object { $_.tmdbId -eq 718638 }).id
+$movieId = ($movies | Where-Object { $_.title -match "Schachnovelle" }).id
 
 # Trigger movie search
 $searchBody = "{`"name`":`"MoviesSearch`",`"movieIds`":[$movieId]}"
@@ -164,6 +171,38 @@ Docker networking: Prowlarr/Sonarr/Radarr must reach FunkArr at `http://funkarr:
 internal DNS). The "Indexer erstellen" / "Download-Client erstellen" buttons make a test
 connection - this only works when all containers are on the same Docker network. From `localhost`
 (the browser), use the FunkArr setup API (`POST /api/setup/{service}/{resource}`) as a fallback.
+
+### API Ruleset Roundtrip Pitfalls
+
+When reading a ruleset via `GET /api/rulesets/{id}` and writing it back via `PUT`, watch for
+these traps:
+
+1. **Regex pattern escaping**: The API returns regex patterns as unescaped strings (e.g.
+   `\s*` with a single backslash). When embedding these in a JSON body for PUT/POST, each
+   backslash must be JSON-escaped to `\\`. PowerShell here-strings (`@'...'@`) pass content
+   literally, so `\\s*` in a here-string becomes JSON `\\s*` which decodes to the string `\s*`
+   (correct). But if you double-escape to `\\\\s*`, the API receives `\\s*` (literal backslash+s),
+   which breaks the regex. **Always verify**: after a PUT, `GET /api/rulesets/{id}/raw` and
+   compare the `pattern` fields against the community source file.
+
+2. **Dropped fields on roundtrip**: The detail endpoint (`GET /api/rulesets/{id}`) returns a
+   read-model with fields like `identity.topic`, `source`, `defaultConfidence`. The write
+   endpoint (`PUT /api/rulesets/{id}`) expects a flat body with `topic`, `media`, `rules`,
+   `aliases`, `enrichment`. If you GET the detail and naively map it back, you will lose:
+   - **Filters** on rules (the detail response nests them differently)
+   - **Confidence** at the ruleset level vs rule level
+   - **Enrichment runtime/year** config (only title+airdate are commonly shown)
+
+   To safely roundtrip, either use the **raw** endpoint (`GET /api/rulesets/{id}/raw`) which
+   returns the on-disk JSON format, or make minimal changes (e.g. only add an alias) rather
+   than replacing the entire ruleset.
+
+3. **Enum values**: The API uses **numeric** enum values (strategy: 3 = TitleIncludes,
+   titleRule type: 0 = Static, field: 0 = Title). The on-disk format uses **string** enum
+   values (strategy: "itemTitleIncludes", type: "static", field: "title"). Don't mix them.
+
+4. **Rule ID pattern**: Rule IDs must match `^[a-z][a-z0-9-]{2,}$` (lowercase, 3+ chars,
+   start with letter). Short IDs like "r1" will fail schema validation.
 
 ---
 
@@ -262,37 +301,36 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 3. Activity - Active Downloads (Aktiv tab)
+## 3. Activity - Queue (Queue tab)
 
 **Route**: `/activity`
 
-- [ ] **3.1** Tab buttons visible: Aktiv, Wartend, Verlauf - Aktiv is default
-- [ ] **3.2** Empty state: "Keine aktiven Downloads" message when idle
-- [ ] **3.3** Search field visible and filters active downloads
-- [ ] **3.4** During download: shows title, episode, quality badge (1080p), channel tag, size tag, duration tag, SUB badge (if subtitles)
-- [ ] **3.5** Progress bar with %, download speed (KB/s), ETA
-- [ ] **3.6** Global speed indicator in page header
-- [ ] **3.7** Cancel button (X) on active download → toast "Download abgebrochen"
-- [ ] **3.8** Queue group cards expand/collapse on header click
+The Queue tab is the default tab and shows both active downloads and queued items.
+
+- [ ] **3.1** Tab buttons visible: Queue, History - Queue is default
+- [ ] **3.2** Empty state: "No active downloads" message when idle
+- [ ] **3.3** During download: shows title, episode, quality badge (1080p), channel tag, size tag, duration tag, SUB badge (if subtitles)
+- [ ] **3.4** Progress bar with %, download speed (KB/s), ETA
+- [ ] **3.5** Global speed indicator in page header
+- [ ] **3.6** Cancel button (X) on active download → toast "Download abgebrochen"
+- [ ] **3.7** Queue group cards expand/collapse on header click
 
 ---
 
-## 4. Activity - Queue (Wartend tab)
+## 4. Activity - Queue Details
 
-**Route**: `/activity` → click Wartend tab
-
-- [ ] **4.1** Click Wartend tab → switches view
-- [ ] **4.2** Badge count on tab label ("Wartend 1")
+- [ ] **4.1** Search field visible and filters queue items
+- [ ] **4.2** Badge count on Queue tab label when items present
 - [ ] **4.3** Shows queued items with title, episode, quality, size, type (show/movie)
 - [ ] **4.4** X button removes item from queue → toast "Download abgebrochen"
 
 ---
 
-## 5. Activity - History (Verlauf tab)
+## 5. Activity - History (History tab)
 
-**Route**: `/activity` → click Verlauf tab
+**Route**: `/activity` → click History tab
 
-- [ ] **5.1** Click Verlauf tab → switches view
+- [ ] **5.1** Click History tab → switches view
 - [ ] **5.2** Table with columns: Titel, Qualität (badge), Größe, Dauer, Status, Abgeschlossen
 - [ ] **5.3** Category filter dropdown ("Alle Kategorien") → filters by download category
 - [ ] **5.4** Search field filters history entries
@@ -519,19 +557,21 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 ### Sonarr
 - [ ] **16.9** URL placeholder `http://sonarr:8989` (must type value)
 - [ ] **16.10** Type API key into password field (both URL + key required)
-- [ ] **16.11** Click "Download-Client erstellen" → creates SABnzbd client
-- [ ] **16.12** Success / duplicate error
+- [ ] **16.11** Click "Indexer erstellen" → creates Newznab indexer in Sonarr
+- [ ] **16.12** Click "Download-Client erstellen" → creates SABnzbd client
+- [ ] **16.13** Success / duplicate error for both
 
 ### Radarr
-- [ ] **16.13** URL placeholder `http://radarr:7878` (must type value)
-- [ ] **16.14** Type API key into password field
-- [ ] **16.15** Click "Download-Client erstellen" → creates SABnzbd client
-- [ ] **16.16** Success / duplicate error
+- [ ] **16.14** URL placeholder `http://radarr:7878` (must type value)
+- [ ] **16.15** Type API key into password field
+- [ ] **16.16** Click "Indexer erstellen" → creates Newznab indexer in Radarr
+- [ ] **16.17** Click "Download-Client erstellen" → creates SABnzbd client
+- [ ] **16.18** Success / duplicate error for both
 
 ### Navigation
-- [ ] **16.17** "Zurück" on each step returns to previous
-- [ ] **16.18** Click completed step in indicator → jumps to that step
-- [ ] **16.19** Final "Weiter" → navigates to Dashboard (`/`)
+- [ ] **16.19** "Zurück" on each step returns to previous
+- [ ] **16.20** Click completed step in indicator → jumps to that step
+- [ ] **16.21** Final "Weiter" → navigates to Dashboard (`/`)
 
 ---
 
@@ -634,7 +674,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 - [ ] **23.3** `POST /api/rulesets` → create new ruleset
 - [ ] **23.4** `PUT /api/rulesets/{id}` → update existing ruleset
 - [ ] **23.5** `DELETE /api/rulesets/{id}` → delete ruleset
-- [ ] **23.6** `GET /api/rulesets/{id}/raw` → raw ruleset YAML
+- [ ] **23.6** `GET /api/rulesets/{id}/raw` → raw ruleset JSON (on-disk format with string enums)
 - [ ] **23.7** `GET /api/rulesets/{id}/export` → community export
 - [ ] **23.8** `POST /api/rulesets/test` with `{ defaultConfidence, rules: [{ id, strategy, ... }], candidates: [{ title, topic, channel, duration }] }` → returns `{ itemTraces: [{ candidate, matched, score, ruleTraces }] }`
 
@@ -682,12 +722,12 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ## 27. Mediathek Search API
 
-- [ ] **27.1** `GET /api/mediathek/search?q=Tatort` → results from MediathekViewWeb
-- [ ] **27.2** Channel filter: `?q=Tatort&channel=ARD` → filtered results
-- [ ] **27.3** Topic filter: `?topic=Tagesschau` → topic-specific results
-- [ ] **27.4** Pagination: `?q=Tatort&offset=0&size=5` then `offset=5` → different result sets
-- [ ] **27.5** Duration filter: minimum duration applied correctly
-- [ ] **27.6** Sort parameter: changes result ordering
+- [ ] **27.1** `GET /api/mediathek/search?q=Tatort&limit=5` → JSON with `items` array and `totalResults` count
+- [ ] **27.2** Channel filter: `?q=Tatort&channel=ARD&limit=5` → filtered items
+- [ ] **27.3** Topic filter: `?topic=Tagesschau&limit=5` → topic-specific items
+- [ ] **27.4** Pagination: `?q=Tatort&offset=0&limit=5` then `offset=5&limit=5` → different result sets
+- [ ] **27.5** Duration filter: `?q=Tatort&minDuration=600&limit=5` → items with duration >= 600
+- [ ] **27.6** Sort parameter: `?q=Tatort&sortBy=timestamp` → results (verify 200 OK, only `timestamp` is valid)
 
 ---
 
@@ -738,18 +778,21 @@ the state required by subsequent steps.
 5. **Settings page**: All sections visible, download config, cache stats, routes, log viewer (section 24)
 6. **Legacy redirects**: /queue, /history, /search redirect correctly (section 29.6-29.8)
 7. **Create local ruleset**: Via UI (section 9) - creates state for source filters + delete tests
-8. **Edit Tatort**: Via UI editor, add alias, save - creates merged ruleset (section 8)
+8. **Edit Tatort**: Via UI editor, add alias, save - creates merged ruleset (section 8).
+   After saving, **validate the roundtrip**: `GET /api/rulesets/tatort/raw` and compare
+   regex patterns against the community source to ensure no double-escaping occurred.
+   If editing via API instead of UI, read "API Ruleset Roundtrip Pitfalls" above.
 9. **Rulesets list**: Search, ALL filter combinations (type + source), both sort options (section 6)
 10. **Ruleset detail**: Tatort (merged) - identity, enrichment, expand/collapse, export, delete overlay (sections 7, 10.1-10.2, 11)
 11. **Delete local ruleset**: Delete the section 9 ruleset via confirmation flow (section 10.3-10.6)
 12. **Pause pipeline**: `POST /api/downloads/pause` - prevent downloads from starting
 13. **Trigger 3+ Sonarr searches**: Different episodes while paused - items queue (section 17.1-17.6)
 14. **Upload failed NZB**: Add NZB with invalid URL via SABnzbd addfile - queues bad download
-15. **Queue tests**: Wartend tab shows queued items, queue operations (sections 4, 25.3-25.6, 28.6-28.9)
+15. **Queue tests**: Queue tab shows queued items, queue operations (sections 4, 25.3-25.6, 28.6-28.9)
 16. **Resume pipeline**: `POST /api/downloads/resume` - downloads start
-17. **Active download tests**: Aktiv tab during download, cancel one, global speed (sections 3.4-3.7, 18.1)
+17. **Active download tests**: Queue tab during download, cancel one, global speed (sections 3.3-3.6, 18.1)
 18. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
-19. **History tests**: Verlauf tab, completed + failed status, retry, delete (sections 5, 18.3-18.5)
+19. **History tests**: History tab, completed + failed status, retry, delete (sections 5, 18.3-18.5)
 20. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)
 21. **Generate pagination data**: Trigger 5+ more searches for different episodes
 22. **Scoring history**: List with pagination, click through to detail, filter tabs, traces (sections 12-13)
