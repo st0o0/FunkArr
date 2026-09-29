@@ -11,12 +11,19 @@ using Servus.Akka;
 
 namespace FunkArr.Search;
 
-public sealed class TvSearchWorker : ReceiveActor
+public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 {
     private static readonly TimeSpan _mediathekTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan _ruleSetTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan _scoringTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
+
+    private static readonly TimeSpan[] _retryBackoff =
+        [TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(1500)];
+
+    private const int MaxRetries = 2;
+
+    private sealed record RetryMediathekQuery(int Attempt);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
@@ -29,6 +36,10 @@ public sealed class TvSearchWorker : ReceiveActor
     private readonly IActorRef _historyRegion = Context.GetActor<IHistoryRegion>();
 
     private readonly Stopwatch _stopwatch = new();
+
+    public ITimerScheduler Timers { get; set; } = null!;
+
+    private QueryMediathek? _lastQuery;
 
     public TvSearchWorker(string nttId)
     {
@@ -50,9 +61,7 @@ public sealed class TvSearchWorker : ReceiveActor
 
                 default:
                     _state.TryGetMediathekQuery(out var query);
-                    _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
-                        .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
-                    Become(Querying);
+                    AskMediathek(query!);
                     break;
             }
         });
@@ -82,7 +91,33 @@ public sealed class TvSearchWorker : ReceiveActor
             }
         });
 
-        Receive<QueryMediathekFailed>(failed =>
+        Receive<QueryMediathekQueueFull>(_ =>
+        {
+            if (_state.Attempt < MaxRetries)
+            {
+                var delay = _retryBackoff[_state.Attempt];
+                _log.Info("TV search {SearchId} queue full, retry {Attempt} in {Delay}ms",
+                    _state.SearchId, _state.Attempt + 1, delay.TotalMilliseconds);
+                Timers.StartSingleTimer("mediathek-retry",
+                    new RetryMediathekQuery(_state.Attempt + 1), delay);
+            }
+            else
+            {
+                _log.Warning("TV search {SearchId} queue full, retries exhausted", _state.SearchId);
+                Telemetry.Timeouts.Add(1);
+                Reply(new SearchSeriesFailed(_state.SearchId,
+                    new InvalidOperationException("MediathekViewWeb query queue full after retries")));
+            }
+        });
+
+        Receive<RetryMediathekQuery>(msg =>
+        {
+            _state.Attempt = msg.Attempt;
+            _mediathekManager.Ask<QueryMediathekResponse>(_lastQuery!, _mediathekTimeout)
+                .PipeTo(Self, failure: ex => new QueryMediathekError(ex));
+        });
+
+        Receive<QueryMediathekError>(failed =>
         {
             _log.Warning(failed.Cause, "TV search {SearchId} mediathek query failed", _state.SearchId);
             Reply(new SearchSeriesFailed(_state.SearchId, failed.Cause));
@@ -98,9 +133,7 @@ public sealed class TvSearchWorker : ReceiveActor
             if (_state.Sources.Length == 0)
             {
                 _state.TryGetMediathekQueryForTopic(resolved.Topic, out var query);
-                _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
-                    .PipeTo(Self, failure: ex => new QueryMediathekFailed(ex));
-                Become(Querying);
+                AskMediathek(query!);
             }
             else if (_state.TryGetScoringRequest(out var scoringRequest))
             {
@@ -153,6 +186,15 @@ public sealed class TvSearchWorker : ReceiveActor
             RecordHistory();
             Reply(_state.ToSearchCompleted());
         });
+    }
+
+    private void AskMediathek(QueryMediathek query)
+    {
+        _lastQuery = query;
+        _state.Attempt = 0;
+        _mediathekManager.Ask<QueryMediathekResponse>(query, _mediathekTimeout)
+            .PipeTo(Self, failure: ex => new QueryMediathekError(ex));
+        Become(Querying);
     }
 
     private void RecordHistory()

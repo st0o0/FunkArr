@@ -33,6 +33,7 @@ public sealed class TvSearchWorkerState
     public int? Offset { get; private set; }
     public string? MediaName { get; private set; }
     public EnrichmentConfig? EnrichmentConfig { get; private set; }
+    public int Attempt { get; set; }
     public EnrichedItem[] Items { get; private set; } = [];
     public ItemTrace[] ItemTraces { get; private set; } = [];
 

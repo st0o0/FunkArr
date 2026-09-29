@@ -67,8 +67,10 @@ public static class MediathekApiEndpoints
                     new ApiModels.MediathekSearchResponse(
                         [.. completed.Items.Select(i => i.ToApi())],
                         completed.Total)),
-                QueryMediathekFailed failed => Results.Problem(
-                    statusCode: 502, title: "MediathekViewWeb Error", detail: failed.Cause.Message),
+                QueryMediathekQueueFull => Results.Problem(
+                    statusCode: 503, title: "Service Busy", detail: "MediathekViewWeb query queue is full"),
+                QueryMediathekError error => Results.Problem(
+                    statusCode: 502, title: "MediathekViewWeb Error", detail: error.Cause.Message),
                 _ => ApiResults.GatewayTimeout()
             };
         })

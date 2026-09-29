@@ -16,4 +16,8 @@ public sealed record QueryMediathekCompleted(
     MediathekItem[] Items,
     int Total) : QueryMediathekResponse;
 
-public sealed record QueryMediathekFailed(Exception Cause) : QueryMediathekResponse;
+public abstract record QueryMediathekFailed : QueryMediathekResponse;
+
+public sealed record QueryMediathekQueueFull : QueryMediathekFailed;
+
+public sealed record QueryMediathekError(Exception Cause) : QueryMediathekFailed;

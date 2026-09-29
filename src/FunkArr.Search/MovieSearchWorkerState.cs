@@ -31,6 +31,7 @@ public sealed class MovieSearchWorkerState
     public int? Offset { get; private set; }
     public string? MediaName { get; set; }
     public EnrichmentConfig? EnrichmentConfig { get; private set; }
+    public int Attempt { get; set; }
     public EnrichedItem[] Items { get; private set; } = [];
     public ItemTrace[] ItemTraces { get; set; } = [];
 

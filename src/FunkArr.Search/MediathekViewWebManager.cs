@@ -25,11 +25,12 @@ public sealed class MediathekViewWebManager : ReceiveActor
         public static readonly StreamComplete Instance = new();
     }
 
+    private sealed record OfferOutcome(Guid RequestId, IQueueOfferResult? Result, Exception? Error);
+
     public MediathekViewWebManager(MediathekClient client, int maxConcurrent = 3)
     {
         var materializer = Context.Materializer();
-
-        var sourceRef = Source.ActorRef<StreamRequest>(64, OverflowStrategy.Backpressure)
+        var sourceRef = Source.Queue<StreamRequest>(64, OverflowStrategy.DropNew)
             .SelectAsyncUnordered(maxConcurrent, async tuple =>
             {
                 try
@@ -50,7 +51,32 @@ public sealed class MediathekViewWebManager : ReceiveActor
         {
             var requestId = Guid.NewGuid();
             _pending[requestId] = Sender;
-            sourceRef.Tell(new StreamRequest(MediathekQueryBuilder.FromMessage(query).Build(), requestId));
+            sourceRef.OfferAsync(new StreamRequest(MediathekQueryBuilder.FromMessage(query).Build(), requestId))
+                .PipeTo(Self,
+                    success: result => new OfferOutcome(requestId, result, null),
+                    failure: ex => new OfferOutcome(requestId, null, ex));
+        });
+
+        Receive<OfferOutcome>(msg =>
+        {
+            if (msg.Result is QueueOfferResult.Enqueued)
+            {
+                return;
+            }
+
+            if (!_pending.Remove(msg.RequestId, out var sender))
+            {
+                return;
+            }
+
+            if (msg.Error is not null)
+            {
+                sender.Tell(new QueryMediathekError(msg.Error));
+            }
+            else
+            {
+                sender.Tell(new QueryMediathekQueueFull());
+            }
         });
 
         Receive<StreamSuccess>(msg =>
@@ -67,7 +93,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
             _log.Warning(msg.Cause, "MediathekViewWeb query {RequestId} failed", msg.RequestId);
             if (_pending.Remove(msg.RequestId, out var sender))
             {
-                sender.Tell(new QueryMediathekFailed(msg.Cause));
+                sender.Tell(new QueryMediathekError(msg.Cause));
             }
         });
 

@@ -9,26 +9,31 @@ The MediathekViewWebManager SHALL be a Cluster Singleton actor that serves as th
 #### Scenario: Successful query
 
 - **WHEN** a `QueryMediathek` message is received
-- **THEN** the Manager SHALL assign a `Guid` RequestId, store the Sender in a pending dictionary keyed by RequestId, use the `MediathekQueryBuilder` to build a JSON query string, feed it into the stream pipeline, and when the stream result arrives, look up the original Sender and respond with a `QueryMediathekCompleted` message
+- **THEN** the Manager SHALL assign a `Guid` RequestId, store the Sender in a pending dictionary keyed by RequestId, use the `MediathekQueryBuilder` to build a JSON query string, offer it to the queue via `OfferAsync.PipeTo`, and when the stream result arrives, look up the original Sender and respond with a `QueryMediathekCompleted` message
 
 #### Scenario: HTTP error
 
 - **WHEN** the `MediathekClient` call fails with an exception inside the stream pipeline
-- **THEN** the exception SHALL be caught in the `SelectAsyncUnordered` stage, routed back to the actor as a `StreamFailure`, and the actor SHALL respond to the original Sender with a `QueryMediathekFailed` message
+- **THEN** the exception SHALL be caught in the `SelectAsyncUnordered` stage, routed back to the actor as a `StreamFailure`, and the actor SHALL respond to the original Sender with a `QueryMediathekError` message
+
+#### Scenario: Queue full error
+
+- **WHEN** `OfferAsync` returns `Dropped` (queue at capacity)
+- **THEN** the actor SHALL respond to the original Sender with `QueryMediathekQueueFull` and remove the pending dictionary entry
 
 ### Requirement: MediathekViewWebManager uses Akka.Streams for concurrency control
 
-The Manager SHALL materialize a single long-lived Akka.Streams pipeline in its constructor. The pipeline SHALL use `Source.ActorRef` for input, `Select` for query building, `SelectAsyncUnordered` for throttled HTTP execution, and `Sink.ActorRef` to route results back to Self.
+The Manager SHALL materialize a single long-lived Akka.Streams pipeline in its constructor. The pipeline SHALL use `Source.Queue` with `OverflowStrategy.DropNew` for input, `SelectAsyncUnordered` for throttled HTTP execution, and `Sink.ActorRef` to route results back to Self. Queue offers SHALL use `OfferAsync(...).PipeTo(Self)` for non-blocking operation.
 
 #### Scenario: Concurrency limit
 
 - **WHEN** multiple `QueryMediathek` messages arrive concurrently
 - **THEN** the stream's `SelectAsyncUnordered(maxConcurrent)` SHALL limit parallel HTTP requests to the configured maximum (default 3)
 
-#### Scenario: Buffer overflow
+#### Scenario: Buffer overflow with immediate response
 
-- **WHEN** more requests arrive than the `Source.ActorRef` buffer can hold (64 elements)
-- **THEN** the overflow strategy `DropNew` SHALL drop the excess request, and the caller SHALL receive no response (Ask timeout acts as circuit breaker)
+- **WHEN** more requests arrive than the `Source.Queue` buffer can hold (64 elements)
+- **THEN** the overflow strategy `DropNew` SHALL cause `OfferAsync` to return `Dropped` immediately, and the actor SHALL respond with `QueryMediathekQueueFull` to the caller
 
 #### Scenario: Stream error resilience
 

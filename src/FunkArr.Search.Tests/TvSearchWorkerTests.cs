@@ -90,7 +90,7 @@ public sealed class TvSearchWorkerTests : TestKit
             TestActor);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
-        p.Mediathek.Reply(new QueryMediathekFailed(new Exception("Connection refused")));
+        p.Mediathek.Reply(new QueryMediathekError(new Exception("Connection refused")));
 
         var result = ExpectMsg<SearchSeriesFailed>();
         Assert.Equal(searchId, result.SearchId);
@@ -357,6 +357,76 @@ public sealed class TvSearchWorkerTests : TestKit
         var item = Assert.Single(result.Items);
         Assert.Null(item.Metadata?.Season);
         Assert.Null(item.Metadata?.MatchConfidence);
+    }
+
+    [Fact]
+    public void Queue_full_retries_and_succeeds()
+    {
+        var p = RegisterProbes();
+        var searchId = Guid.NewGuid();
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(searchId.ToString())));
+
+        worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null),
+            TestActor);
+
+        p.Mediathek.ExpectMsg<QueryMediathek>();
+        p.Mediathek.Reply(new QueryMediathekQueueFull());
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(TimeSpan.FromSeconds(5));
+        p.Mediathek.Reply(new QueryMediathekCompleted(
+        [
+            new MediathekItem("ARD", "Tatort", "Test", null, 0, 5400, 0, null, "https://x.com/v.mp4", null, null, null)
+        ], 1));
+
+        p.Resolver.ExpectMsg<ResolveRuleSet>(TimeSpan.FromSeconds(5));
+        p.Resolver.Reply(new RuleSetFailed(new RuleSetNotFoundException("Tatort")));
+
+        var result = ExpectMsg<SearchSeriesCompleted>(TimeSpan.FromSeconds(5));
+        Assert.Equal(searchId, result.SearchId);
+    }
+
+    [Fact]
+    public void Queue_full_retries_exhausted_returns_failed()
+    {
+        var p = RegisterProbes();
+        var searchId = Guid.NewGuid();
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(searchId.ToString())));
+
+        worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null),
+            TestActor);
+
+        p.Mediathek.ExpectMsg<QueryMediathek>();
+        p.Mediathek.Reply(new QueryMediathekQueueFull());
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(TimeSpan.FromSeconds(5));
+        p.Mediathek.Reply(new QueryMediathekQueueFull());
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(TimeSpan.FromSeconds(5));
+        p.Mediathek.Reply(new QueryMediathekQueueFull());
+
+        var result = ExpectMsg<SearchSeriesFailed>(TimeSpan.FromSeconds(5));
+        Assert.Equal(searchId, result.SearchId);
+        Assert.Contains("queue full", result.Cause.Message);
+    }
+
+    [Fact]
+    public void Mediathek_error_is_not_retried()
+    {
+        var p = RegisterProbes();
+        var searchId = Guid.NewGuid();
+        var worker = Sys.ActorOf(Props.Create(() => new TvSearchWorker(searchId.ToString())));
+
+        worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null),
+            TestActor);
+
+        p.Mediathek.ExpectMsg<QueryMediathek>();
+        p.Mediathek.Reply(new QueryMediathekError(new Exception("HTTP 500")));
+
+        var result = ExpectMsg<SearchSeriesFailed>();
+        Assert.Equal(searchId, result.SearchId);
+        Assert.Contains("HTTP 500", result.Cause.Message);
+
+        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(500));
     }
 
     [Fact]
