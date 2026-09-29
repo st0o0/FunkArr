@@ -19,26 +19,28 @@ public sealed record SearchManagerState(
         SearchCommandCompleted? MovieResult);
 
     public sealed record AddSearch(Guid SearchId, PendingSearch Pending);
+
     public sealed record UpdateSearch(Guid SearchId, PendingSearch Pending);
+
     public sealed record RemoveSearch(Guid SearchId);
 }
 
 public static class SearchManagerStateExtensions
 {
-    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.AddSearch msg) =>
-        new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
+    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.AddSearch msg)
+        => new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
 
-    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.UpdateSearch msg) =>
-        new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
+    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.UpdateSearch msg)
+        => new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
 
-    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.RemoveSearch msg) =>
-        new(Pending: state.Pending.Remove(msg.SearchId));
+    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.RemoveSearch msg)
+        => new(Pending: state.Pending.Remove(msg.SearchId));
 
-    public static SearchManagerState.PendingSearch? TryGetPending(
-        this SearchManagerState state, Guid searchId) =>
-        state.Pending.TryGetValue(searchId, out var pending) ? pending : null;
+    public static SearchManagerState.PendingSearch? TryGetPending(this SearchManagerState state, Guid searchId)
+        => state.Pending.GetValueOrDefault(searchId);
 
-    public static SearchCommandCompleted MergeResults(Guid searchId, SearchCommandCompleted tv, SearchCommandCompleted movie)
+    public static SearchCommandCompleted MergeResults(Guid searchId, SearchCommandCompleted tv,
+        SearchCommandCompleted movie)
     {
         var merged = tv.Items.Concat(movie.Items)
             .OrderByDescending(i => i.Score)

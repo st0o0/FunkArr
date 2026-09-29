@@ -8,7 +8,12 @@ namespace FunkArr.Search;
 
 public sealed class SearchManager : ReceiveActor, IWithTimers
 {
-    public enum SearchType { Tv, Movie, Both }
+    public enum SearchType
+    {
+        Tv,
+        Movie,
+        Both
+    }
 
     private sealed record SearchTimeout(Guid SearchId);
 
@@ -118,7 +123,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                 _state = _state.Apply(new SearchManagerState.RemoveSearch(searchId));
                 break;
 
-            case SearchType.Both:
+            default:
                 var updated = pending.TvResult is null
                     ? pending with { TvResult = completed }
                     : pending with { MovieResult = completed };
@@ -134,6 +139,7 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
                 {
                     _state = _state.Apply(new SearchManagerState.UpdateSearch(searchId, updated));
                 }
+
                 break;
         }
     }
@@ -157,7 +163,8 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             }
         }
 
-        Telemetry.Failed.Add(1, new KeyValuePair<string, object?>("source", pending.Source.ToString().ToLowerInvariant()));
+        Telemetry.Failed.Add(1,
+            new KeyValuePair<string, object?>("source", pending.Source.ToString().ToLowerInvariant()));
         pending.OriginalSender.Tell(new SearchCommandFailed(searchId, cause));
         _state = _state.Apply(new SearchManagerState.RemoveSearch(searchId));
     }
@@ -181,11 +188,14 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             }
         }
 
-        Telemetry.Timeouts.Add(1, new KeyValuePair<string, object?>("source", pending.Source.ToString().ToLowerInvariant()));
+        Telemetry.Timeouts.Add(1,
+            new KeyValuePair<string, object?>("source", pending.Source.ToString().ToLowerInvariant()));
         _log.Warning("Search {SearchId} timed out after {Timeout}s", timeout.SearchId, _searchTimeout.TotalSeconds);
-        pending.OriginalSender.Tell(new SearchCommandFailed(timeout.SearchId, new TimeoutException("Search timed out")));
+        pending.OriginalSender.Tell(new SearchCommandFailed(timeout.SearchId,
+            new TimeoutException("Search timed out")));
         _state = _state.Apply(new SearchManagerState.RemoveSearch(timeout.SearchId));
     }
 
-    private void ScheduleTimeout(Guid searchId) => Timers.StartSingleTimer($"timeout-{searchId}", new SearchTimeout(searchId), _searchTimeout);
+    private void ScheduleTimeout(Guid searchId) =>
+        Timers.StartSingleTimer($"timeout-{searchId}", new SearchTimeout(searchId), _searchTimeout);
 }
