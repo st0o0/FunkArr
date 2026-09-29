@@ -34,7 +34,7 @@
               class="border-t border-border-subtle hover:bg-surface-elevated/60 cursor-pointer transition-colors"
               @click="$router.push(`/rulesets/${id}/history/${s.requestId}`)"
             >
-              <td class="px-4 py-2.5 text-text-body">{{ s.source }}</td>
+              <td class="px-4 py-2.5 text-text-body">{{ searchSourceName(s.source) }}</td>
               <td class="px-4 py-2.5 text-text-body">{{ s.query }}</td>
               <td class="px-4 py-2.5 text-text-secondary">{{ formatTime(s.timestamp) }}</td>
               <td class="px-4 py-2.5 text-right text-text-body tabular-nums">{{ s.candidateCount }}</td>
@@ -68,6 +68,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getScoringHistory, type ScoringHistoryResult } from '../api/rulesets'
+import { searchSourceName } from '../api/enumMaps'
 import EmptyState from '../components/EmptyState.vue'
 import SkeletonTable from '../components/SkeletonTable.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'

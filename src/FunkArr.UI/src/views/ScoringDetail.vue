@@ -14,7 +14,7 @@
     <div v-else-if="detail">
       <h1 class="text-xl font-semibold text-text-primary tracking-tight mb-2">{{ $t('scoring.detailTitle') }}</h1>
       <div class="text-sm text-text-secondary mb-6 flex items-center gap-3">
-        <span>{{ $t('scoring.sourceColumn') }}: {{ detail.source }}</span>
+        <span>{{ $t('scoring.sourceColumn') }}: {{ searchSourceName(detail.source) }}</span>
         <span class="text-text-muted">|</span>
         <span>{{ $t('scoring.queryColumn') }}: {{ detail.query }}</span>
         <span class="text-text-muted">|</span>
@@ -108,7 +108,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getScoringDetail, type ScoringDetail } from '../api/rulesets'
-import { RuleOutcome } from '../api/enumMaps'
+import { RuleOutcome, searchSourceName } from '../api/enumMaps'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 import { strategyLabel } from '../utils/strategy'

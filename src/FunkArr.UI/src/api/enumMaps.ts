@@ -5,8 +5,10 @@ export const FilterOp = { Eq: 0, Contains: 1, NotContains: 2, GreaterThan: 3, Le
 export const EnrichmentMethod = { Title: 0, Airdate: 1 } as const
 export const RuntimeMode = { Tiebreaker: 0, Filter: 1 } as const
 export const RuleOutcome = { Matched: 0, FilterFailed: 1, IdentificationFailed: 2 } as const
+export const SearchSource = { Sonarr: 0, Radarr: 1, Prowlarr: 2, Test: 3 } as const
 export const MatchMethod = { RegexExtracted: 0, TitleMatch: 1, AirdateMatch: 2, YearMatch: 3 } as const
 
+const searchSourceNames: Record<number, string> = { 0: 'Sonarr', 1: 'Radarr', 2: 'Prowlarr', 3: 'Test' }
 const strategyNames: Record<number, string> = { 0: 'seasonAndEpisodeNumber', 1: 'byAbsoluteEpisodeNumber', 2: 'itemTitleExact', 3: 'itemTitleIncludes', 4: 'itemTitleEqualsAirdate' }
 const titlePartTypeNames: Record<number, string> = { 0: 'static', 1: 'regex' }
 const filterFieldNames: Record<number, string> = { 0: 'title', 1: 'topic', 2: 'channel', 3: 'description', 4: 'duration', 5: 'timestamp' }
@@ -16,6 +18,7 @@ const runtimeModeNames: Record<number, string> = { 0: 'tiebreaker', 1: 'filter' 
 const ruleOutcomeNames: Record<number, string> = { 0: 'matched', 1: 'filterFailed', 2: 'identificationFailed' }
 const matchMethodNames: Record<number, string> = { 0: 'RegexExtracted', 1: 'TitleMatch', 2: 'AirdateMatch', 3: 'YearMatch' }
 
+export function searchSourceName(v: number): string { return searchSourceNames[v] ?? String(v) }
 export function strategyName(v: number): string { return strategyNames[v] ?? String(v) }
 export function titlePartTypeName(v: number): string { return titlePartTypeNames[v] ?? String(v) }
 export function filterFieldName(v: number): string { return filterFieldNames[v] ?? String(v) }

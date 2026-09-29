@@ -29,7 +29,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
     {
         var materializer = Context.Materializer();
 
-        var sourceRef = Source.ActorRef<StreamRequest>(64, OverflowStrategy.DropNew)
+        var sourceRef = Source.ActorRef<StreamRequest>(64, OverflowStrategy.Backpressure)
             .SelectAsyncUnordered(maxConcurrent, async tuple =>
             {
                 try
