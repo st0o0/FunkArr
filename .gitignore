@@ -35,12 +35,6 @@ BenchmarkDotNet.Artifacts/
 coverage-results/
 results/
 
-# OpenSpec archive
-openspec/changes/archive/
-
-# Claude Code
-.claude/
-
 # Worktrees
 .worktrees/
 

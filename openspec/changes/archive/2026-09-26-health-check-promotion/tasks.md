@@ -1,0 +1,6 @@
+- [x] Create `FfmpegHealthCheck` in `FunkArr.Api/HealthChecks/` that runs `ffmpeg -version` and returns Unhealthy on failure
+- [x] Create `MediathekViewWebHealthCheck` in `FunkArr.Api/HealthChecks/` that does a HEAD request with 3s timeout and returns Degraded on failure
+- [x] Create `DirectoryHealthCheck` in `FunkArr.Api/HealthChecks/` parameterized by path selector, returns Unhealthy if not writable
+- [x] Register all health checks in `ServiceSetupContainer` with correct failure status
+- [x] Refactor `SystemApiEndpoints` to reuse shared check logic from the health check classes instead of duplicating it
+- [x] Add unit tests for `MediathekViewWebHealthCheck` and `DirectoryHealthCheck`

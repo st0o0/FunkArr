@@ -1,0 +1,5 @@
+- [x] Fix `MatchHistory` to `ScoringHistory` in `docs/configuration.md` and `docs/en/configuration.md`
+- [x] Fix `MatchHistory` to `ScoringHistory` in `docs/how-it-works.md` and `docs/en/how-it-works.md`
+- [x] Update proxy support in comparison table and remove "Kein Proxy-Support" weakness in `docs/comparison.md` and `docs/en/comparison.md`
+- [x] Add `ArrApi` config section to `docs/configuration.md` and `docs/en/configuration.md`
+- [x] Add `DownloadSchedule` config reference to `docs/configuration.md` and `docs/en/configuration.md`

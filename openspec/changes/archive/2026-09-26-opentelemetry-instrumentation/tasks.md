@@ -1,0 +1,12 @@
+- [x] Add OTel SDK packages to Directory.Packages.props and FunkArr.csproj
+- [x] Create TelemetrySetupContainer with AddOpenTelemetry (tracing + metrics + OTLP export)
+- [x] Add OpenTelemetry.Api to domain projects and create Telemetry class with ActivitySource + Meter in each
+- [x] Add custom traces to FunkArr.Download (Remuxer, SubtitlePreparer, FfmpegRunner)
+- [x] Add custom traces to FunkArr.Scoring (ScoringEngine)
+- [x] Add custom traces to FunkArr.Enrichment (TmdbClient, TvdbClient) with cache hit/miss tags
+- [x] Add custom metrics to FunkArr.Search (search.duration, search.results)
+- [x] Add custom metrics to FunkArr.Download (download.completed, download.failed)
+- [x] Add custom metrics to FunkArr.Scoring (scoring.duration)
+- [x] Add custom metrics to FunkArr.Enrichment (enrichment.cache_hits, enrichment.cache_misses)
+- [x] Add Aspire Dashboard to docker-compose.dev.yml with OTLP endpoint config for FunkArr
+- [x] Verify build and all tests pass
