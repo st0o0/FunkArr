@@ -1,5 +1,80 @@
 # Changelog
 
+## [0.3.0](https://github.com/st0o0/FunkArr/compare/funkarr-v0.2.1...funkarr-v0.3.0) (2026-09-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* redesign remuxer with fluent RemuxOptions, split into SubtitleDownloader + FfmpegProcess, add HLS BSF tolerance for SRF/ORF
+* extract shared record types (ExternalIds, DownloadMedia, DownloadProgress, DownloadCompletion, MatchMetadata, ScoreCandidate embedding)
+* rename persistence events, expand metrics across all domains, fix Docker permissions
+
+### Features
+
+* add API integration tests with custom FunkArrTestServer and TestProbe-backed actors ([22478cd](https://github.com/st0o0/FunkArr/commit/22478cd5eaa57bbc5f214cad10fb77545ed29c95))
+* add Download Detail, Settings page with log viewer, and clickable queue cards ([fb43ebb](https://github.com/st0o0/FunkArr/commit/fb43ebb3657c3fcdb36da84da85826479b1cc3c2))
+* add network routing and proxy support for geo-restricted Mediatheken ([84dc3b6](https://github.com/st0o0/FunkArr/commit/84dc3b6bf186eac8992356397c756f161f6b4fb9))
+* add OpenTelemetry tracing, metrics, and Aspire Dashboard for observability ([65611af](https://github.com/st0o0/FunkArr/commit/65611af898b122088fb44f51a3ef81e8729d13fd))
+* add request timeouts and HTTP logging to API endpoints ([127d392](https://github.com/st0o0/FunkArr/commit/127d392730a25f01b4f4ad3d04a7dab36fd31816))
+* add RetryAfterDefaults and reduce dev concurrent downloads to 2 ([7d429dc](https://github.com/st0o0/FunkArr/commit/7d429dc63944da29c76820ec23eb1c4e3d900aab))
+* add subtitle telemetry (subtitle_total counter, subtitle_duration_seconds histogram) ([324fca4](https://github.com/st0o0/FunkArr/commit/324fca4e8c0be9d740228e59122914ae60869c08))
+* add subtitle type model with ISubtitleFormat, SubtitleCue, SubtitleTrack, SubtitleResult, SrtEmitter ([3c9c7ce](https://github.com/st0o0/FunkArr/commit/3c9c7ceeeda56f4874ddef88ffca046393f8292f))
+* add typed IDistributedCache extensions and registration in Core ([6199ed5](https://github.com/st0o0/FunkArr/commit/6199ed56b56df4c897a49326630324980393ee23))
+* **enums:** Map search source enum values to names ([895a261](https://github.com/st0o0/FunkArr/commit/895a261f7a80c5af003dc2e028bc62152998df51))
+* expand E2E test plan for new features ([a3b156b](https://github.com/st0o0/FunkArr/commit/a3b156bdd6b69c9a05579e5f79c7c60277c6ec8a))
+* parameterize subtitle language in FfmpegRunner instead of hardcoded deu ([c0cc055](https://github.com/st0o0/FunkArr/commit/c0cc0553c1c052f7a47992a6bb849c8077a94d80))
+* promote /healthz to real health checks (FFmpeg, MVW, directories) ([4cb4ced](https://github.com/st0o0/FunkArr/commit/4cb4cedae0153463c9ae13d2f9cecde9d0d74184))
+* redesign metrics for Prometheus /metrics endpoint with operational focus ([a4a3471](https://github.com/st0o0/FunkArr/commit/a4a34713c50f34911c56e5357be51b331414b91f))
+* **search:** non-blocking queue offer with retry in SearchWorkers ([03547bd](https://github.com/st0o0/FunkArr/commit/03547bd46b65139ea1ab9dae6109b54dc6a65eb6))
+* Update E2E test plan and script details ([60d2c4e](https://github.com/st0o0/FunkArr/commit/60d2c4e7814dc9cf842a870bb6ae338f35734f4f))
+* Update E2E test plan with details ([c23a0c0](https://github.com/st0o0/FunkArr/commit/c23a0c051804304d371ff4ec22a46ae2f57a2268))
+
+
+### Bug Fixes
+
+* remove dead DownloadPhase.SubtitleDownload enum value, renumber phases ([a7da08e](https://github.com/st0o0/FunkArr/commit/a7da08eb7d03f91c5a8e0e3bc8c8be9258ba914d))
+* require Media on ruleset create/update, return 400 for export without local overlay ([d7a97cc](https://github.com/st0o0/FunkArr/commit/d7a97cc89c527425679591a15c875817d5ca50c6))
+* robust subtitle detection, EBU-TT-D offset normalization, telemetry cleanup ([a07debf](https://github.com/st0o0/FunkArr/commit/a07debfa5aa54f9a10f9cb05e30e8c3de0acca62))
+* use tinyproxy for CONNECT support and set user-agent for ORF streams ([88b0880](https://github.com/st0o0/FunkArr/commit/88b0880c87131fddbdb81775c35144f29ca9a40a))
+
+
+### Documentation
+
+* add observability page, update README with scheduling and health checks ([37c62df](https://github.com/st0o0/FunkArr/commit/37c62df8e7601793f74a9f629ac0e8a67ff99b9e))
+* fix ScoringHistory env vars, proxy support claim, add ArrApi and DownloadSchedule config ([cd780c2](https://github.com/st0o0/FunkArr/commit/cd780c21faaec770d50498d3f764ec8a9f5ae0f8))
+* replace emdashes with regular dashes in comparison pages ([4c5511c](https://github.com/st0o0/FunkArr/commit/4c5511c886ae69fe038592c6d8090f6188b49d51))
+* update AGENTS.md with architecture guardrails, actor topology, and Akka conventions ([7b4f8ae](https://github.com/st0o0/FunkArr/commit/7b4f8ae40e5d852fc49d985ececf2d67a7f8c3d7))
+* update E2E test plan with setup recipes and execution order ([d6afe8e](https://github.com/st0o0/FunkArr/commit/d6afe8e936538e061dced248c3064e76e2f7bddd))
+* update observability docs for Prometheus /metrics endpoint ([889697a](https://github.com/st0o0/FunkArr/commit/889697a7ce911a26970af9a7a73d3d3365d5c80c))
+
+
+### Refactoring
+
+* clean test assertions, thread CancellationToken through API, update C# conventions ([ad5d099](https://github.com/st0o0/FunkArr/commit/ad5d09919e76d6879b908343891134e912fdbd75))
+* clean up style and formatting in RuleSet domain ([3893768](https://github.com/st0o0/FunkArr/commit/3893768cc51331480eb02ff33904e3b79cb08dd2))
+* clean up style and visibility in Download domain ([a3d9cd1](https://github.com/st0o0/FunkArr/commit/a3d9cd13a1ee7fc1de869809fb04047f9310d464))
+* DeferAsync, SaveSnapshot, Akka.Streams queue, typed enum mappings, TimeProvider ([497842a](https://github.com/st0o0/FunkArr/commit/497842a022c75b1cacfc57d92759d8c9f66a5dc9))
+* extract MediathekClient from MediathekViewWebManager actor ([a7657fb](https://github.com/st0o0/FunkArr/commit/a7657fb9c981756e3fd3a33dac5635135038856d))
+* extract shared record types (ExternalIds, DownloadMedia, DownloadProgress, DownloadCompletion, MatchMetadata, ScoreCandidate embedding) ([2426c2d](https://github.com/st0o0/FunkArr/commit/2426c2dc2547f2247ce2df0fffcd640845617fb3))
+* migrate TmdbClient and TvdbClient from IMemoryCache to IDistributedCache ([66e154e](https://github.com/st0o0/FunkArr/commit/66e154efa39cb968d35424d9bc1fcea6d27c1c1e))
+* pass nttId to sharded entity constructors and enable idle passivation ([746d672](https://github.com/st0o0/FunkArr/commit/746d6729cb3d6b0fdb064c98d708f795725b247a))
+* redesign remuxer with fluent RemuxOptions, split into SubtitleDownloader + FfmpegProcess, add HLS BSF tolerance for SRF/ORF ([09ebcda](https://github.com/st0o0/FunkArr/commit/09ebcda8277be2b5f046235663adb5c48595f216))
+* remove distributed tracing from all domains ([78b490a](https://github.com/st0o0/FunkArr/commit/78b490a152ab64481fce4a930a48b7ec813f18dc))
+* rename Meter fields to private _meter in Telemetry classes ([4cc2718](https://github.com/st0o0/FunkArr/commit/4cc2718ee93f3e732bb8a5eb5ca66fc8c6a9334e))
+* rename persistence events, expand metrics across all domains, fix Docker permissions ([684d31b](https://github.com/st0o0/FunkArr/commit/684d31b983c0da5aa267275d9f59286c1ee9be5e))
+* replace anonymous types with typed HTTP models, rename ArrApiClient to ArrSetupClient, fix activity history link ([badc832](https://github.com/st0o0/FunkArr/commit/badc832993d42eb964b70d05f89579ffc0e4fa13))
+* replace MediathekViewWebManager PipeTo with Akka.Streams pipeline ([54e5131](https://github.com/st0o0/FunkArr/commit/54e5131d37474756906fbbf6c84cbf3cc9cb1f3a))
+* replace OTLP exporter with Prometheus, add Process/Runtime instrumentation ([66c28c4](https://github.com/st0o0/FunkArr/commit/66c28c4e5dec9b2e754f80f5511d481a74312156))
+* replace TtmlToSrtConverter with self-contained format classes (TtmlFormat, WebVttFormat, SrtFormat) ([198b32c](https://github.com/st0o0/FunkArr/commit/198b32c4b0a899112848f41e08d861740910623c))
+* restructure SetupContainers per-domain, remove ServiceSetupContainer ([9b8a47b](https://github.com/st0o0/FunkArr/commit/9b8a47bf40b9b5d21fafe4def0679a5dc5a9f4be))
+* rewrite DownloadWorker with phases, retry, route persistence and refactor DownloadHistoryManager ([d969b74](https://github.com/st0o0/FunkArr/commit/d969b74b42606711ce52fce63fc41ce470e3e5bb))
+* rewrite SubtitlePreparer with format registry loop and SubtitleResult, update Remuxer ([df80c04](https://github.com/st0o0/FunkArr/commit/df80c04305accf0b73a3e5f05b4fbea305f8733e))
+* simplify search dispatch and clean up style in Search domain ([4f1feb7](https://github.com/st0o0/FunkArr/commit/4f1feb7d2fc12f6e9da7068a74b2e4584887f05b))
+* Simplify SearchManager logic ([8706359](https://github.com/st0o0/FunkArr/commit/87063592b7490db75b2425d938f8496216203998))
+* split MediaIdentity into ShowIdentity/MovieIdentity subtypes ([a7d100a](https://github.com/st0o0/FunkArr/commit/a7d100a6bdc6a0b66d3169a5fc1110c1df2fddad))
+* type validation errors with field+message in RuleSet pipeline ([cecd4f2](https://github.com/st0o0/FunkArr/commit/cecd4f297f4ce5356346ba50440a93ab854d21fc))
+* typed GitHub models, Akka.Streams fan-out, IWithTimers for RuleSetManager ([2b382b7](https://github.com/st0o0/FunkArr/commit/2b382b77fea536fc10a69c498730b8fed12d3be2))
+
 ## [0.2.1](https://github.com/st0o0/FunkArr/compare/funkarr-v0.2.0...funkarr-v0.2.1) (2026-09-25)
 
 
