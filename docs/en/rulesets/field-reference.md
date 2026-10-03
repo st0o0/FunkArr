@@ -13,6 +13,7 @@ Every field in the FunkArr ruleset JSON format, organized by section.
 | `rules` | array | Yes | - | Ordered list of matching rules. See [Rule Fields](#rule-fields). |
 | `standalone` | boolean | No | `false` | **Local only.** When `true`, the local ruleset is used as-is - the community base is ignored entirely. No merging happens. |
 | `disable` | string[] | No | `[]` | **Local only.** List of community rule IDs to skip during merge. The rules are removed before local rules are applied. Each value must match a rule `id` in the community base. |
+| `enrichment` | object | No | - | Controls metadata enrichment (TVDB/TMDB) for this ruleset. See [Enrichment Fields](#enrichment-fields). |
 
 ## Media Fields
 
@@ -23,7 +24,7 @@ The `media` object links a ruleset to external metadata providers so Sonarr and 
 | `name` | string | Yes | - | Display name for Sonarr/Radarr. Usually the same as `topic`, but can differ (e.g., topic "Checker Reportagen" → media name "Checker Julian"). |
 | `type` | string | Yes | `"show"` | Either `"show"` or `"movie"`. Determines whether FunkArr generates Newznab TV or movie categories. |
 | `tvdbId` | integer | No | - | TheTVDB series or movie ID. Sonarr uses this for matching. Look it up at [thetvdb.com](https://thetvdb.com). |
-| `imdbId` | string | No | - | IMDb ID in `tt` format (e.g., `"tt0806910"`). Used by both Sonarr and Radarr. |
+| `imdbId` | string | No | - | IMDb ID in `tt` format (e.g., `"tt0806910"`); must match `tt` followed by digits. Used by both Sonarr and Radarr. |
 | `tmdbId` | integer | No | - | TheMovieDB ID. Radarr uses this for movie matching. |
 
 ::: tip
@@ -36,15 +37,15 @@ Each entry in the `rules` array defines one matching attempt. Rules are evaluate
 
 | Field | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `id` | string | Yes | - | Unique identifier for this rule within the ruleset. Must be kebab-case (lowercase letters, digits, hyphens, minimum 3 characters). Used for override targeting when local rules replace community rules. |
+| `id` | string | Yes | - | Unique identifier for this rule within the ruleset. Must be kebab-case (starts with a lowercase letter, followed by lowercase letters, digits, or hyphens; minimum 3 characters). Used for override targeting when local rules replace community rules. |
 | `priority` | integer | No | `0` | Sort order for rule evaluation. Lower values are tried first. When two rules have the same priority, array order is used as tiebreaker. |
 | `strategy` | string | Yes | - | Identification strategy. Determines how season/episode information is extracted. See [Strategies](./strategies) for details. |
 | `confidence` | number | No | - | Override the ruleset's default confidence for this specific rule. Use a lower value for rules that are less certain (e.g., a fallback regex). |
 | `filters` | object | No | - | Pre-filter conditions that must pass before identification is attempted. See [Filter Fields](#filter-fields). |
-| `seasonRegex` | string | No | - | Regex pattern to extract a season number. Used with `seasonAndEpisodeNumber` strategy. Must contain at least one capture group. |
-| `episodeRegex` | string | No | - | Regex pattern to extract an episode number. Used with `seasonAndEpisodeNumber` and `byAbsoluteEpisodeNumber` strategies. Must contain at least one capture group. |
-| `captureGroup` | integer | No | `1` | Which regex capture group to use for extraction (0-indexed). Defaults to the first capture group. |
-| `titleRules` | array | No | - | Title construction parts for `itemTitleExact`, `itemTitleIncludes`, and `itemTitleEqualsAirdate` strategies. See [Title Rule Fields](#title-rule-fields). |
+| `seasonRegex` | string | No | - | Regex pattern to extract a season number. Used with `seasonAndEpisodeNumber` strategy (optional - without it no season is extracted). Should contain a capture group. |
+| `episodeRegex` | string | No | - | Regex pattern to extract an episode number. Used with `seasonAndEpisodeNumber` and `byAbsoluteEpisodeNumber` strategies. Should contain a capture group. |
+| `captureGroup` | integer | No | last group | Which regex capture group to use for extraction (`0` = full match, `1` = first group, ...). Applies to `seasonRegex` and `episodeRegex`. When omitted, the last capture group of the pattern is used (the full match if there is no group). |
+| `titleRules` | array | No | - | Title construction parts for `itemTitleExact` and `itemTitleIncludes` strategies (`itemTitleEqualsAirdate` detects the date automatically and ignores `titleRules`). See [Title Rule Fields](#title-rule-fields). |
 
 ## Filter Fields
 
@@ -83,9 +84,9 @@ Each array contains filter nodes. A node is either a **condition** (leaf) or a n
 
 | Operator | Description | Example |
 |---|---|---|
-| `eq` | Exact string match | `channel eq "ARD"` |
-| `contains` | Substring match (case-sensitive) | `title contains "Tatort"` |
-| `notContains` | Substring must not be present | `title notContains "Trailer"` |
+| `eq` | Exact string match (case-insensitive) | `channel eq "ARD"` |
+| `contains` | Substring match (case-insensitive) | `title contains "Tatort"` |
+| `notContains` | Substring must not be present (case-insensitive) | `title notContains "Trailer"` |
 | `greaterThan` | Numeric greater-than | `duration greaterThan "25"` |
 | `lessThan` | Numeric less-than | `duration lessThan "120"` |
 | `regex` | Regular expression match | `title regex "S\\d{2}E\\d{2}"` |
@@ -94,15 +95,15 @@ See the [Filter Cookbook](./filters) for common patterns and examples.
 
 ## Title Rule Fields
 
-Title rules construct or extract a title string piece by piece, left to right. Used with `itemTitleExact`, `itemTitleIncludes`, and `itemTitleEqualsAirdate` strategies.
+Title rules construct or extract a title string piece by piece, left to right. Used with `itemTitleExact` and `itemTitleIncludes` strategies.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `type` | string | Yes | Either `"static"` (literal text) or `"regex"` (extract from a Mediathek field). |
 | `value` | string | No | The literal text to append. Used when `type` is `"static"`. |
-| `field` | string | No | The Mediathek field to run the regex against. Used when `type` is `"regex"`. One of: `title`, `topic`, `channel`, `description`. |
+| `field` | string | No | The Mediathek field to run the regex against. Used when `type` is `"regex"`. One of: `title`, `topic`, `channel`, `description`. Defaults to `title`. |
 | `pattern` | string | No | Regex pattern to match. Used when `type` is `"regex"`. The matched text (or specified capture group) is appended to the constructed title. |
-| `captureGroup` | integer | No | Which capture group to extract (0 = full match, 1 = first group, etc.). Defaults to `0` (full match) when omitted. |
+| `captureGroup` | integer | No | Which capture group to extract (0 = full match, 1 = first group, etc.). When omitted, the last capture group of the pattern is used (the full match if there is no group). |
 
 ### Example
 
@@ -110,9 +111,34 @@ This title rule set from the Tatort community ruleset:
 
 ```json
 "titleRules": [
-  { "type": "static", "value": " - " },
   { "type": "regex", "field": "title", "pattern": "(?<=Tatort:\\s*)\\S.*" }
 ]
 ```
 
-Given the Mediathek title "Tatort: Borowski und die Kinder", this produces: `" - Borowski und die Kinder"`. With the `itemTitleIncludes` strategy, Sonarr searches for any episode title containing that string.
+Given the Mediathek title "Tatort: Borowski und die Kinder", this produces: `"Borowski und die Kinder"`. With the `itemTitleIncludes` strategy, the Mediathek title must contain that string; it is then used as the episode title.
+
+## Enrichment Fields
+
+The optional `enrichment` object controls how FunkArr enriches matches with external metadata (TVDB/TMDB). All fields are optional; defaults apply when omitted.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `true` | Turns enrichment on or off for this ruleset. |
+| `methods` | string[] | `["title", "airdate"]` | Matching methods to use, in this order. Allowed: `title`, `airdate`. |
+| `title.threshold` | number | `0.7` | Minimum similarity (0.0-1.0) for title matching. |
+| `airdate.tolerance` | integer | `7` | Allowed deviation of the air date, in days. |
+| `airdate.minTitleAffinity` | number | `0.3` | Minimum title similarity (0.0-1.0) required for an airdate match to be accepted. |
+| `runtime.tolerance` | number | `0.35` | Allowed relative runtime deviation (0.0-1.0). |
+| `runtime.mode` | string | `"tiebreaker"` | `"tiebreaker"` uses runtime only to break ties, `"filter"` discards candidates outside the tolerance. |
+| `year.tolerance` | integer | `1` | Allowed release year deviation, in years. |
+
+```json
+"enrichment": {
+  "enabled": true,
+  "methods": ["title", "airdate"],
+  "title": { "threshold": 0.8 },
+  "airdate": { "tolerance": 3, "minTitleAffinity": 0.3 },
+  "runtime": { "tolerance": 0.35, "mode": "tiebreaker" },
+  "year": { "tolerance": 1 }
+}
+```

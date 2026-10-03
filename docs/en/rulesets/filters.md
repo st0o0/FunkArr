@@ -33,9 +33,9 @@ Each condition checks one field from the Mediathek entry:
 
 | Operator | Works on | Description |
 |---|---|---|
-| `eq` | string | Exact string match |
-| `contains` | string | Substring match (case-sensitive) |
-| `notContains` | string | Substring must not be present |
+| `eq` | string | Exact string match (case-insensitive) |
+| `contains` | string | Substring match (case-insensitive) |
+| `notContains` | string | Substring must not be present (case-insensitive) |
 | `greaterThan` | number | Numeric greater-than comparison |
 | `lessThan` | number | Numeric less-than comparison |
 | `regex` | string | Regular expression match |
@@ -43,6 +43,13 @@ Each condition checks one field from the Mediathek entry:
 ::: warning
 Numeric values must be passed as strings in JSON: `"value": "60"`, not `"value": 60`.
 :::
+
+Additional evaluation details:
+
+- `eq`, `contains`, and `notContains` ignore letter case.
+- `regex` has a 100 ms timeout; on timeout the condition counts as not matched.
+- If an entry has no value for the checked field, the condition is not matched.
+- For `greaterThan`/`lessThan`, if either side is not a number the values are compared as text.
 
 ## Common Patterns
 

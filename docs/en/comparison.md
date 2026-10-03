@@ -15,19 +15,23 @@ All three projects query the same MediathekViewWeb API. The available content (A
 | **GitHub Stars**       | New project          | ~374                   | ~40                     |
 | **Sonarr**             | Yes                  | Yes                    | Yes                     |
 | **Radarr**             | Yes                  | Limited (WIP)          | Yes (since v1.1.0)      |
-| **Rulesets**           | Community + custom, web UI editor | Built-in matching | Community rulesets, auto-update from GitHub |
+| **Rulesets**           | Community (auto-synced from GitHub) + custom, web UI editor with live preview | Built-in matching | Community rulesets, auto-update from GitHub |
 | **Metadata**           | TMDB + TVDB (requires API keys) | TVDB only     | Local shows.json → TVDB → TMDB |
 | **Download**           | FFmpeg (HLS + direct)| Direct HTTP            | Direct HTTP + yt-dlp    |
 | **Output**             | MKV (remux, no re-encode) | MKV               | MKV (optional FFmpeg)   |
-| **Subtitles**          | SRT from HLS or separate download | Yes       | Yes                     |
+| **Subtitles**          | TTML/WebVTT download, converted to SRT, embedded as German track in MKV | Yes       | Yes                     |
 | **Database**           | SQLite or PostgreSQL | SQLite                 | SQLite (Prisma)         |
 | **Web UI**             | Yes (Vue.js, with setup wizard) | Yes (with setup wizard)| Yes (Next.js, with setup wizard) |
 | **Port**               | 6969                 | 5007                   | 6767                    |
 | **Docker**             | Multi-arch (amd64, arm64, armv7) | Yes         | Multi-arch (amd64, arm64) |
 | **Auto-config**        | Yes (creates indexer + download client in Prowlarr/Sonarr/Radarr) | Yes (setup wizard) | No |
-| **Proxy support**      | Yes (network routes with HTTP proxy) | No                     | Yes (for downloads + yt-dlp) |
+| **Proxy support**      | Yes (per-channel network routes with HTTP proxy, for video and subtitle downloads) | Not documented | Yes (for downloads + yt-dlp) |
 | **Umlaut handling**    | Built-in             | Via UmlautAdaptarr (separate service) | Not specified |
-| **Match history**      | Yes (diagnostics + stats) | No                | No                      |
+| **Match history**      | Yes (diagnostics + stats, trace per evaluation) | No                | No                      |
+| **Download schedule**  | Yes (time windows, `HH:mm`) | Not documented | Not documented |
+| **Queue**              | Persistent, 3 priority levels, pause/resume, retry | Not documented | Not documented |
+| **Monitoring**         | Prometheus `/metrics` (OpenTelemetry), `/healthz` | Not documented | Not documented |
+| **UI languages**       | German (incl. de-AT, de-CH), English | Not documented | Not documented |
 | **PUID/PGID**          | Yes                  | Not documented         | Yes                     |
 | **ORF/SRF**            | Via MediathekViewWeb | M3U download (beta.12) | HLS via yt-dlp (SRF needs SRG-SSR credentials) |
 
@@ -83,6 +87,7 @@ In fairness, FunkArr also has limitations:
 - **No yt-dlp** - uses FFmpeg only for HLS and direct downloads. If a stream format isn't supported by FFmpeg's native HLS demuxer, it fails. yt-dlp handles more edge cases.
 - **Newest and smallest community** - MediathekArr has years of head start and the largest user base. If you need help, there's no Discord or Telegram channel yet.
 - **TVDB and TMDB API keys required** for metadata enrichment - they're optional but needed for full functionality.
+- **Proxy without automatic fallback** - if a configured proxy is unreachable, the download fails. Routes apply to the download pipeline, not to metadata APIs.
 - **Match history is diagnostic, not adaptive** - the scoring engine executes rules deterministically. History records past runs and aggregates stats for debugging, but it doesn't learn or adjust weights based on past results.
 
 ## When to Use Which

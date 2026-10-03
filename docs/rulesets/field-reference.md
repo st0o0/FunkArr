@@ -13,6 +13,7 @@ Alle Felder im FunkArr-Regelwerk-JSON-Format, nach Abschnitt geordnet.
 | `rules` | array | Ja | - | Geordnete Liste von Matching-Regeln. Siehe [Regel-Felder](#regel-felder). |
 | `standalone` | boolean | Nein | `false` | **Nur lokal.** Wenn `true`, wird das lokale Regelwerk unverändert verwendet - die Community-Basis wird komplett ignoriert. Kein Zusammenführen findet statt. |
 | `disable` | string[] | Nein | `[]` | **Nur lokal.** Liste von Community-Regel-IDs, die beim Zusammenführen übersprungen werden. Die Regeln werden entfernt, bevor lokale Regeln angewendet werden. Jeder Wert muss einer Regel-`id` in der Community-Basis entsprechen. |
+| `enrichment` | object | Nein | - | Steuert die Metadaten-Anreicherung (TVDB/TMDB) für dieses Regelwerk. Siehe [Enrichment-Felder](#enrichment-felder). |
 
 ## Media-Felder
 
@@ -23,7 +24,7 @@ Das `media`-Objekt verknüpft ein Regelwerk mit externen Metadaten-Anbietern, da
 | `name` | string | Ja | - | Anzeigename für Sonarr/Radarr. Normalerweise identisch mit `topic`, kann aber abweichen (z.B. Topic „Checker Reportagen" → Media-Name „Checker Julian"). |
 | `type` | string | Ja | `"show"` | Entweder `"show"` oder `"movie"`. Bestimmt, ob FunkArr Newznab-TV- oder Film-Kategorien generiert. |
 | `tvdbId` | integer | Nein | - | TheTVDB Serien- oder Film-ID. Sonarr verwendet sie für die Zuordnung. Nachschlagen auf [thetvdb.com](https://thetvdb.com). |
-| `imdbId` | string | Nein | - | IMDb-ID im `tt`-Format (z.B. `"tt0806910"`). Wird von Sonarr und Radarr verwendet. |
+| `imdbId` | string | Nein | - | IMDb-ID im `tt`-Format (z.B. `"tt0806910"`); muss dem Muster `tt` + Ziffern entsprechen. Wird von Sonarr und Radarr verwendet. |
 | `tmdbId` | integer | Nein | - | TheMovieDB-ID. Radarr verwendet sie für die Film-Zuordnung. |
 
 ::: tip
@@ -36,15 +37,15 @@ Jeder Eintrag im `rules`-Array definiert einen Matching-Versuch. Regeln werden i
 
 | Feld | Typ | Pflicht | Standard | Beschreibung |
 |---|---|---|---|---|
-| `id` | string | Ja | - | Eindeutiger Bezeichner für diese Regel innerhalb des Regelwerks. Muss kebab-case sein (Kleinbuchstaben, Ziffern, Bindestriche, mindestens 3 Zeichen). Wird für die Überschreibung verwendet, wenn lokale Regeln Community-Regeln ersetzen. |
+| `id` | string | Ja | - | Eindeutiger Bezeichner für diese Regel innerhalb des Regelwerks. Muss kebab-case sein (beginnt mit einem Kleinbuchstaben, danach Kleinbuchstaben, Ziffern, Bindestriche; mindestens 3 Zeichen). Wird für die Überschreibung verwendet, wenn lokale Regeln Community-Regeln ersetzen. |
 | `priority` | integer | Nein | `0` | Reihenfolge der Regelauswertung. Niedrigere Werte werden zuerst versucht. Bei gleicher Priorität gilt die Array-Reihenfolge. |
 | `strategy` | string | Ja | - | Identifikationsstrategie. Bestimmt, wie Staffel-/Episodeninformationen extrahiert werden. Siehe [Strategien](./strategies) für Details. |
 | `confidence` | number | Nein | - | Überschreibt die Standard-Konfidenz des Regelwerks für diese spezifische Regel. Verwende einen niedrigeren Wert für unsichere Regeln (z.B. einen Fallback-Regex). |
 | `filters` | object | Nein | - | Vorfilterbedingungen, die bestehen müssen, bevor die Identifikation versucht wird. Siehe [Filter-Felder](#filter-felder). |
-| `seasonRegex` | string | Nein | - | Regex-Muster zur Extraktion einer Staffelnummer. Verwendet mit der `seasonAndEpisodeNumber`-Strategie. Muss mindestens eine Capture Group enthalten. |
-| `episodeRegex` | string | Nein | - | Regex-Muster zur Extraktion einer Episodennummer. Verwendet mit den Strategien `seasonAndEpisodeNumber` und `byAbsoluteEpisodeNumber`. Muss mindestens eine Capture Group enthalten. |
-| `captureGroup` | integer | Nein | `1` | Welche Regex Capture Group für die Extraktion verwendet wird (0-indexiert). Standard ist die erste Capture Group. |
-| `titleRules` | array | Nein | - | Titelkonstruktionsteile für die Strategien `itemTitleExact`, `itemTitleIncludes` und `itemTitleEqualsAirdate`. Siehe [Titelregel-Felder](#titelregel-felder). |
+| `seasonRegex` | string | Nein | - | Regex-Muster zur Extraktion einer Staffelnummer. Verwendet mit der `seasonAndEpisodeNumber`-Strategie (optional - ohne Angabe wird keine Staffel extrahiert). Sollte eine Capture Group enthalten. |
+| `episodeRegex` | string | Nein | - | Regex-Muster zur Extraktion einer Episodennummer. Verwendet mit den Strategien `seasonAndEpisodeNumber` und `byAbsoluteEpisodeNumber`. Sollte eine Capture Group enthalten. |
+| `captureGroup` | integer | Nein | letzte Gruppe | Welche Regex Capture Group für die Extraktion verwendet wird (`0` = vollständiger Match, `1` = erste Gruppe, ...). Gilt für `seasonRegex` und `episodeRegex`. Ohne Angabe wird die letzte Capture Group des Musters verwendet (ohne Gruppe der vollständige Match). |
+| `titleRules` | array | Nein | - | Titelkonstruktionsteile für die Strategien `itemTitleExact` und `itemTitleIncludes` (`itemTitleEqualsAirdate` erkennt das Datum automatisch und ignoriert `titleRules`). Siehe [Titelregel-Felder](#titelregel-felder). |
 
 ## Filter-Felder
 
@@ -83,9 +84,9 @@ Jedes Array enthält Filterknoten. Ein Knoten ist entweder eine **Bedingung** (B
 
 | Operator | Beschreibung | Beispiel |
 |---|---|---|
-| `eq` | Exakter String-Vergleich | `channel eq "ARD"` |
-| `contains` | Substring-Match (Groß-/Kleinschreibung beachten) | `title contains "Tatort"` |
-| `notContains` | Substring darf nicht enthalten sein | `title notContains "Trailer"` |
+| `eq` | Exakter String-Vergleich (Groß-/Kleinschreibung wird ignoriert) | `channel eq "ARD"` |
+| `contains` | Substring-Match (Groß-/Kleinschreibung wird ignoriert) | `title contains "Tatort"` |
+| `notContains` | Substring darf nicht enthalten sein (Groß-/Kleinschreibung wird ignoriert) | `title notContains "Trailer"` |
 | `greaterThan` | Numerischer Größer-als-Vergleich | `duration greaterThan "25"` |
 | `lessThan` | Numerischer Kleiner-als-Vergleich | `duration lessThan "120"` |
 | `regex` | Regulärer-Ausdruck-Match | `title regex "S\\d{2}E\\d{2}"` |
@@ -94,15 +95,15 @@ Siehe das [Filter-Kochbuch](./filters) für gängige Muster und Beispiele.
 
 ## Titelregel-Felder
 
-Titelregeln konstruieren oder extrahieren einen Titel-String Stück für Stück, von links nach rechts. Verwendet mit den Strategien `itemTitleExact`, `itemTitleIncludes` und `itemTitleEqualsAirdate`.
+Titelregeln konstruieren oder extrahieren einen Titel-String Stück für Stück, von links nach rechts. Verwendet mit den Strategien `itemTitleExact` und `itemTitleIncludes`.
 
 | Feld | Typ | Pflicht | Beschreibung |
 |---|---|---|---|
 | `type` | string | Ja | Entweder `"static"` (fester Text) oder `"regex"` (aus einem Mediathek-Feld extrahieren). |
 | `value` | string | Nein | Der feste Text zum Anhängen. Verwendet wenn `type` gleich `"static"`. |
-| `field` | string | Nein | Das Mediathek-Feld, gegen das der Regex ausgeführt wird. Verwendet wenn `type` gleich `"regex"`. Eines von: `title`, `topic`, `channel`, `description`. |
+| `field` | string | Nein | Das Mediathek-Feld, gegen das der Regex ausgeführt wird. Verwendet wenn `type` gleich `"regex"`. Eines von: `title`, `topic`, `channel`, `description`. Standard: `title`. |
 | `pattern` | string | Nein | Regex-Muster zum Abgleich. Verwendet wenn `type` gleich `"regex"`. Der gematchte Text (oder die angegebene Capture Group) wird an den konstruierten Titel angehängt. |
-| `captureGroup` | integer | Nein | Welche Capture Group extrahiert wird (0 = vollständiger Match, 1 = erste Gruppe, etc.). Standard ist `0` (vollständiger Match) wenn weggelassen. |
+| `captureGroup` | integer | Nein | Welche Capture Group extrahiert wird (0 = vollständiger Match, 1 = erste Gruppe, etc.). Wenn weggelassen, wird die letzte Capture Group des Musters verwendet (ohne Gruppe der vollständige Match). |
 
 ### Beispiel
 
@@ -110,9 +111,34 @@ Dieses Titelregel-Set aus dem Tatort-Community-Regelwerk:
 
 ```json
 "titleRules": [
-  { "type": "static", "value": " - " },
   { "type": "regex", "field": "title", "pattern": "(?<=Tatort:\\s*)\\S.*" }
 ]
 ```
 
-Für den Mediathek-Titel „Tatort: Borowski und die Kinder" ergibt dies: `" - Borowski und die Kinder"`. Mit der `itemTitleIncludes`-Strategie sucht Sonarr nach jedem Episodentitel, der diesen String enthält.
+Für den Mediathek-Titel „Tatort: Borowski und die Kinder" ergibt dies: `"Borowski und die Kinder"`. Mit der `itemTitleIncludes`-Strategie muss der Mediathek-Titel diesen String enthalten; er wird danach als Episodentitel verwendet.
+
+## Enrichment-Felder
+
+Das optionale `enrichment`-Objekt steuert, wie FunkArr Treffer mit externen Metadaten (TVDB/TMDB) anreichert. Alle Felder sind optional; ohne Angabe gelten die Standardwerte.
+
+| Feld | Typ | Standard | Beschreibung |
+|---|---|---|---|
+| `enabled` | boolean | `true` | Schaltet die Anreicherung für dieses Regelwerk ein oder aus. |
+| `methods` | string[] | `["title", "airdate"]` | Verwendete Matching-Methoden in dieser Reihenfolge. Erlaubt: `title`, `airdate`. |
+| `title.threshold` | number | `0.7` | Mindest-Ähnlichkeit (0.0-1.0) beim Titelvergleich. |
+| `airdate.tolerance` | integer | `7` | Erlaubte Abweichung des Ausstrahlungsdatums in Tagen. |
+| `airdate.minTitleAffinity` | number | `0.3` | Mindest-Titelähnlichkeit (0.0-1.0), damit ein Datums-Match akzeptiert wird. |
+| `runtime.tolerance` | number | `0.35` | Erlaubte relative Abweichung der Laufzeit (0.0-1.0). |
+| `runtime.mode` | string | `"tiebreaker"` | `"tiebreaker"` nutzt die Laufzeit nur zur Entscheidung bei Gleichstand, `"filter"` verwirft Kandidaten außerhalb der Toleranz. |
+| `year.tolerance` | integer | `1` | Erlaubte Abweichung des Erscheinungsjahres in Jahren. |
+
+```json
+"enrichment": {
+  "enabled": true,
+  "methods": ["title", "airdate"],
+  "title": { "threshold": 0.8 },
+  "airdate": { "tolerance": 3, "minTitleAffinity": 0.3 },
+  "runtime": { "tolerance": 0.35, "mode": "tiebreaker" },
+  "year": { "tolerance": 1 }
+}
+```

@@ -19,9 +19,9 @@ Extracts a season and episode number from the Mediathek title using regex patter
 **When to use:** The title contains season and episode information in any format - German ("Staffel 3 Folge 12"), abbreviated ("S03/E12"), or embedded in parentheses.
 
 **Required fields:**
-- `seasonRegex` - pattern to extract the season number
 - `episodeRegex` - pattern to extract the episode number
-- `captureGroup` (optional) - which capture group to use (default: 1)
+- `seasonRegex` (optional) - pattern to extract the season number; if omitted, only an episode number is extracted
+- `captureGroup` (optional) - which capture group to use; applies to both regexes (default: the last capture group of the pattern)
 
 **Example:**
 
@@ -45,7 +45,7 @@ For a show where titles look like "Feuer und Flamme (S03/E05)":
 The `seasonRegex` captures `03` from "S03", and the `episodeRegex` captures `05` from "E05".
 
 ::: tip
-The regex must contain a capture group `()`. FunkArr extracts the content of the first capture group by default. Use `captureGroup` to select a different group.
+The regex should contain a capture group `()`. Without `captureGroup`, FunkArr extracts the content of the **last** capture group in the pattern (the full match if there is no group). Use `captureGroup` to select a specific group (`0` = full match). If the regex doesn't match or the group is empty, the rule fails. All regexes have a 100 ms timeout.
 :::
 
 ## byAbsoluteEpisodeNumber
@@ -56,7 +56,7 @@ Extracts a single absolute episode number with no season. Sonarr maps it to the 
 
 **Required fields:**
 - `episodeRegex` - pattern to extract the episode number
-- `captureGroup` (optional)
+- `captureGroup` (optional) - default: the last capture group of the pattern
 
 **Example: Schloss Einstein**
 
@@ -91,7 +91,7 @@ A second rule with lower priority handles the "Folge" variant:
 
 ## itemTitleExact
 
-Constructs a title string from parts and matches it **exactly** against the Sonarr/Radarr episode title. The constructed title must be an exact match.
+Constructs a title string from parts and matches it **exactly** against the Mediathek title (case-insensitive). The constructed title must equal the full Mediathek title. It is then used as the episode title for matching in Sonarr/Radarr and for metadata enrichment.
 
 **When to use:** Episode titles are unique and predictable. The Mediathek title contains the episode title verbatim or can be extracted cleanly.
 
@@ -115,7 +115,7 @@ For a show where the Mediathek title is exactly the episode title:
 
 ## itemTitleIncludes
 
-Constructs a title string from parts and checks if the Sonarr/Radarr episode title **contains** it as a substring. More forgiving than exact matching.
+Constructs a title string from parts and checks if the Mediathek title **contains** it as a substring (case-insensitive, umlauts are normalized: ä = ae, ö = oe, ü = ue, ß = ss). More forgiving than exact matching.
 
 **When to use:** Episode titles are embedded in the Mediathek title with extra formatting, or when exact matching is too brittle.
 
@@ -137,7 +137,6 @@ Mediathek titles: "Tatort: Borowski und die Kinder", "Tatort: Der letzte Schrei"
   },
   "strategy": "itemTitleIncludes",
   "titleRules": [
-    { "type": "static", "value": " - " },
     {
       "type": "regex",
       "field": "title",
@@ -149,10 +148,10 @@ Mediathek titles: "Tatort: Borowski und die Kinder", "Tatort: Der letzte Schrei"
 
 **How it works:**
 
-1. The static part appends `" - "` to the constructed title
-2. The regex part extracts everything after "Tatort: " from the Mediathek title
-3. Result: `" - Borowski und die Kinder"`
-4. Sonarr searches for an episode title that contains this substring
+1. The regex part extracts everything after "Tatort: " from the Mediathek title
+2. Result: `"Borowski und die Kinder"`
+3. The Mediathek title "Tatort: Borowski und die Kinder" contains this string, so the rule matches
+4. The constructed title is then used as the episode title for matching in Sonarr
 
 The Tatort ruleset includes a second rule at priority 1 with a more lenient regex for edge cases where the title format varies.
 
@@ -178,12 +177,17 @@ This matches any entry in the "Spielfilm" topic that contains "Apocalypse Now" i
 
 ## itemTitleEqualsAirdate
 
-Extracts a broadcast date from the title. Used for shows identified by their air date rather than season/episode numbers.
+Extracts a broadcast date from the Mediathek title. Used for shows identified by their air date rather than season/episode numbers.
 
 **When to use:** Talk shows, news programs, weekly magazines, and daily shows where episodes are identified by broadcast date.
 
-**Required fields:**
-- `titleRules` - regex to extract the date from the Mediathek title
+**Required fields:** none. The date is detected automatically from the title; `titleRules`, `seasonRegex`, `episodeRegex`, and `captureGroup` are ignored by this strategy.
+
+**Recognized date formats:**
+- numeric: `15.09.2026`, `5.9.26` (two-digit years are interpreted as 20xx)
+- written out: `13. September 2026`
+
+The date is passed on as `yyyy-MM-dd`. If no date is found in the title, the rule fails. Use `filters` to restrict the rule to matching entries.
 
 **Example: heute-show**
 
@@ -198,18 +202,11 @@ Mediathek titles: "heute-show vom 13. September 2026"
       { "field": "duration", "op": "greaterThan", "value": "25" }
     ]
   },
-  "strategy": "itemTitleEqualsAirdate",
-  "titleRules": [
-    {
-      "type": "regex",
-      "field": "title",
-      "pattern": "^heute-show vom (\\d{1,2}\\. \\w+ \\d{4})"
-    }
-  ]
+  "strategy": "itemTitleEqualsAirdate"
 }
 ```
 
-The regex extracts "13. September 2026" from the title. FunkArr parses this into a date and matches it to the episode with that air date in Sonarr.
+FunkArr detects "13. September 2026" in the title, parses it into a date and matches it to the episode with that air date in Sonarr.
 
 **Example: Die Sendung mit der Maus**
 
@@ -224,14 +221,7 @@ Mediathek titles use a numeric date format: "Die Sendung mit der Maus 15.09.2026
       { "field": "duration", "op": "greaterThan", "value": "21" }
     ]
   },
-  "strategy": "itemTitleEqualsAirdate",
-  "titleRules": [
-    {
-      "type": "regex",
-      "field": "title",
-      "pattern": "\\b\\d{2}\\.\\d{2}\\.\\d{4}\\b"
-    }
-  ]
+  "strategy": "itemTitleEqualsAirdate"
 }
 ```
 
@@ -251,7 +241,7 @@ Title rules (`titleRules`) build a string by appending parts left to right. Each
 ```
 Part 1        Part 2        Part 3
 [static]  →  [regex]   →  [static]  →  final title
-" - "        "Borowski"    ""            " - Borowski"
+"Folge: "    "Borowski"    "!"           "Folge: Borowski!"
 ```
 
 ### Regex parts
@@ -259,9 +249,9 @@ Part 1        Part 2        Part 3
 A regex part has three components:
 1. `field` - which Mediathek field to search (usually `title`)
 2. `pattern` - the regex to run
-3. `captureGroup` - which group to extract (default: 0 = full match)
+3. `captureGroup` - which group to extract (default: the last capture group of the pattern, or the full match if there is no group; `0` = always the full match)
 
-If the regex doesn't match, the entire rule fails identification.
+If the regex doesn't match or the result is empty, the entire rule fails identification. If `field` is omitted, `title` is used; regex parts can use `title`, `topic`, `channel`, and `description` as `field`.
 
 ### Multiple rules for robustness
 

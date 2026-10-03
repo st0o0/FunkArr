@@ -59,7 +59,7 @@ Controls how many videos are downloaded and remuxed simultaneously. Each downloa
 
 ### Retries
 
-When `RetryEnabled` is `true`, failed downloads are retried up to `MaxRetries` times. `RetryBackoffBase` is the base delay between attempts. `MaxHistoryRecords` caps how many finished downloads are kept in the download history.
+When `RetryEnabled` is `true`, failed downloads are retried up to `MaxRetries` times. `RetryBackoffBase` is the base delay between attempts; it doubles with each attempt, capped at 5 minutes (with `00:00:30`: 30 s, 1 min, 2 min, ...). `MaxHistoryRecords` caps how many finished downloads are kept in the download history.
 
 ### Categories
 
@@ -349,7 +349,7 @@ FunkArr exposes three health endpoints, none of which are configurable:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/healthz` | Full health check (database, actor system) - returns 200 or 503 |
+| `/healthz` | Full health check (data, complete and incomplete directories writable, FFmpeg on `PATH`, MediathekViewWeb reachable) - returns 503 if a directory or FFmpeg check fails; an unreachable MediathekViewWeb only reports Degraded (200) |
 | `/alive` | Simple liveness probe - always returns 200 |
 | `/api/system/setup` | Setup validation - checks API key, directories, FFmpeg, API connectivity |
 

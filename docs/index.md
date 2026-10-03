@@ -23,7 +23,7 @@ features:
   - title: Proxy und Geo-Routing
     details: Leite Sender-spezifischen Traffic uber VPN oder Proxy - ideal fur geo-eingeschrankte Inhalte von ORF, SRF und anderen.
   - title: Observability
-    details: Prometheus-`/metrics`-Endpunkt mit OpenTelemetry-basierten Metriken fur Downloads, Suche, Scoring, Enrichment, Regelwerke und externe API-Gesundheit.
+    details: Prometheus-`/metrics`-Endpunkt mit Metriken fur Downloads, Suche, Scoring, Enrichment, Regelwerke und externe API. Health Checks fur FFmpeg, Verzeichnisse und MediathekViewWeb.
   - title: Ein Container
     details: Läuft auf jedem Docker-Host mit SQLite als Standard. Optionales PostgreSQL fur grossere Setups. PUID/PGID-Support.
   - title: MediathekViewWeb

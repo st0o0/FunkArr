@@ -144,7 +144,7 @@ Jeder Download wird von einem eigenen DownloadWorker verarbeitet, dessen Zustand
    - **WebVTT** - wird direkt als VTT-Datei verwendet
    - **SRT** - wird direkt verwendet
 
-2. **Video herunterladen und remuxen:** FFmpeg lädt das Video herunter (direkte URL oder HLS-Stream) und verpackt es als MKV-Container. Wenn fur den Sender eine Netzwerk-Route mit Proxy konfiguriert ist, werden sowohl der Untertitel-Download als auch FFmpeg uber den konfigurierten HTTP-Proxy geroutet (siehe [Konfiguration - Netzwerk-Routen](/configuration#netzwerk-routen)):
+2. **Video herunterladen und remuxen:** FFmpeg lädt das Video herunter (direkte URL oder HLS-Stream) und verpackt es als MKV-Container. Wenn für den Sender eine Netzwerk-Route mit Proxy konfiguriert ist, werden sowohl der Untertitel-Download als auch FFmpeg über den konfigurierten HTTP-Proxy geroutet (siehe [Konfiguration - Netzwerk-Routen](/configuration#netzwerk-routen)):
    - Video- und Audio-Codecs werden kopiert (keine Neucodierung)
    - Untertitel werden als SRT-Spur mit deutschem Sprach-Tag (`language=deu`) eingebettet
    - Der Fortschritt wird live ausgelesen (heruntergeladene Bytes, Zeitposition, Geschwindigkeit)

@@ -59,7 +59,7 @@ Steuert, wie viele Videos gleichzeitig heruntergeladen und remuxed werden. Jeder
 
 ### Wiederholungen
 
-Wenn `RetryEnabled` auf `true` steht, werden fehlgeschlagene Downloads bis zu `MaxRetries`-mal wiederholt. `RetryBackoffBase` ist die Basis-Wartezeit zwischen den Versuchen. `MaxHistoryRecords` begrenzt, wie viele abgeschlossene Downloads im Download-Verlauf gespeichert bleiben.
+Wenn `RetryEnabled` auf `true` steht, werden fehlgeschlagene Downloads bis zu `MaxRetries`-mal wiederholt. `RetryBackoffBase` ist die Basis-Wartezeit zwischen den Versuchen; sie verdoppelt sich mit jedem Versuch, maximal jedoch auf 5 Minuten (bei `00:00:30`: 30 s, 1 min, 2 min, ...). `MaxHistoryRecords` begrenzt, wie viele abgeschlossene Downloads im Download-Verlauf gespeichert bleiben.
 
 ### Kategorien
 
@@ -349,7 +349,7 @@ FunkArr stellt drei Health-Endpunkte bereit, von denen keiner konfigurierbar ist
 
 | Endpunkt | Zweck |
 |----------|-------|
-| `/healthz` | Vollständiger Health-Check (Datenbank, Actor-System) - gibt 200 oder 503 zurück |
+| `/healthz` | Vollständiger Health-Check (Daten-, Complete- und Incomplete-Verzeichnis beschreibbar, FFmpeg im `PATH`, MediathekViewWeb erreichbar) - gibt 503 zurück, wenn ein Verzeichnis- oder FFmpeg-Check fehlschlägt; ein nicht erreichbares MediathekViewWeb ergibt nur Degraded (200) |
 | `/alive` | Einfacher Liveness-Probe - gibt immer 200 zurück |
 | `/api/system/setup` | Setup-Validierung - prüft API-Schlüssel, Verzeichnisse, FFmpeg, API-Konnektivität |
 

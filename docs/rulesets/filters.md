@@ -33,9 +33,9 @@ Jede Bedingung prüft ein Feld des Mediathek-Eintrags:
 
 | Operator | Anwendung | Beschreibung |
 |---|---|---|
-| `eq` | string | Exakter String-Vergleich |
-| `contains` | string | Substring-Match (Groß-/Kleinschreibung beachten) |
-| `notContains` | string | Substring darf nicht enthalten sein |
+| `eq` | string | Exakter String-Vergleich (Groß-/Kleinschreibung wird ignoriert) |
+| `contains` | string | Substring-Match (Groß-/Kleinschreibung wird ignoriert) |
+| `notContains` | string | Substring darf nicht enthalten sein (Groß-/Kleinschreibung wird ignoriert) |
 | `greaterThan` | number | Numerischer Größer-als-Vergleich |
 | `lessThan` | number | Numerischer Kleiner-als-Vergleich |
 | `regex` | string | Regulärer-Ausdruck-Match |
@@ -43,6 +43,13 @@ Jede Bedingung prüft ein Feld des Mediathek-Eintrags:
 ::: warning
 Numerische Werte müssen in JSON als Strings übergeben werden: `"value": "60"`, nicht `"value": 60`.
 :::
+
+Weitere Auswertungsdetails:
+
+- `eq`, `contains` und `notContains` ignorieren Groß-/Kleinschreibung.
+- `regex` hat ein Timeout von 100 ms; bei Timeout gilt die Bedingung als nicht erfüllt.
+- Hat ein Eintrag für das geprüfte Feld keinen Wert, ist die Bedingung nicht erfüllt.
+- Sind bei `greaterThan`/`lessThan` beide Seiten keine Zahlen, wird als Text verglichen.
 
 ## Gängige Muster
 

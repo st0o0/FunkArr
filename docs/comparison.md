@@ -15,19 +15,23 @@ Alle drei Projekte nutzen dieselbe MediathekViewWeb API. Die verfügbaren Inhalt
 | **GitHub Stars**       | Neues Projekt        | ~374                   | ~40                     |
 | **Sonarr**             | Ja                   | Ja                     | Ja                      |
 | **Radarr**             | Ja                   | Eingeschränkt (WIP)    | Ja (seit v1.1.0)        |
-| **Regelwerke**         | Community + eigene, Web-UI-Editor | Internes Matching | Community-Regelwerke, Auto-Update von GitHub |
+| **Regelwerke**         | Community (Auto-Sync von GitHub) + eigene, Web-UI-Editor mit Live-Vorschau | Internes Matching | Community-Regelwerke, Auto-Update von GitHub |
 | **Metadaten**          | TMDB + TVDB (erfordert API-Keys) | Nur TVDB    | Lokale shows.json → TVDB → TMDB |
 | **Download**           | FFmpeg (HLS + direkt)| Direkter HTTP-Download | Direkter HTTP-Download + yt-dlp |
 | **Ausgabe**            | MKV (Remux, keine Neucodierung) | MKV         | MKV (optionales FFmpeg) |
-| **Untertitel**         | SRT aus HLS oder separater Download | Ja        | Ja                      |
+| **Untertitel**         | TTML/WebVTT-Download, Konvertierung zu SRT, als deutsche Spur in MKV eingebettet | Ja        | Ja                      |
 | **Datenbank**          | SQLite oder PostgreSQL | SQLite                | SQLite (Prisma)         |
 | **Web-UI**             | Ja (Vue.js, mit Setup-Assistent) | Ja (mit Setup-Assistent) | Ja (Next.js, mit Setup-Assistent) |
 | **Port**               | 6969                 | 5007                   | 6767                    |
 | **Docker**             | Multi-Arch (amd64, arm64, armv7) | Ja          | Multi-Arch (amd64, arm64) |
 | **Auto-Konfiguration** | Ja (erstellt Indexer + Download-Client in Prowlarr/Sonarr/Radarr) | Ja (Setup-Assistent) | Nein |
-| **Proxy-Support**      | Ja (Netzwerk-Routen mit HTTP-Proxy) | Nein                   | Ja (für Downloads + yt-dlp) |
+| **Proxy-Support**      | Ja (Netzwerk-Routen pro Sender mit HTTP-Proxy, für Video- und Untertitel-Downloads) | Nicht dokumentiert | Ja (für Downloads + yt-dlp) |
 | **Umlaut-Behandlung**  | Eingebaut            | Via UmlautAdaptarr (separater Dienst) | Nicht dokumentiert |
-| **Match-Verlauf**      | Ja (Diagnose + Statistiken) | Nein            | Nein                    |
+| **Match-Verlauf**      | Ja (Diagnose + Statistiken, Trace pro Bewertung) | Nein            | Nein                    |
+| **Download-Zeitplan**  | Ja (Zeitfenster, `HH:mm`) | Nicht dokumentiert | Nicht dokumentiert |
+| **Warteschlange**      | Persistent, 3 Prioritätsstufen, Pause/Fortsetzen, Wiederholen | Nicht dokumentiert | Nicht dokumentiert |
+| **Monitoring**         | Prometheus-`/metrics` (OpenTelemetry), `/healthz` | Nicht dokumentiert | Nicht dokumentiert |
+| **UI-Sprachen**        | Deutsch (inkl. de-AT, de-CH), Englisch | Nicht dokumentiert | Nicht dokumentiert |
 | **PUID/PGID**          | Ja                   | Nicht dokumentiert      | Ja                      |
 | **ORF/SRF**            | Via MediathekViewWeb | M3U-Download (beta.12) | HLS via yt-dlp (SRF braucht SRG-SSR-Credentials) |
 
@@ -83,6 +87,7 @@ Der Fairness halber hat FunkArr ebenfalls Einschränkungen:
 - **Kein yt-dlp** - verwendet ausschließlich FFmpeg für HLS und direkte Downloads. Wenn ein Stream-Format nicht vom nativen FFmpeg-HLS-Demuxer unterstützt wird, schlägt es fehl. yt-dlp handhabt mehr Randfälle.
 - **Jüngstes und kleinstes Projekt** - MediathekArr hat Jahre Vorsprung und die größte Nutzerbasis. Es gibt noch keinen Discord- oder Telegram-Kanal.
 - **TVDB- und TMDB-API-Keys erforderlich** für Metadaten-Anreicherung - sie sind optional, aber für volle Funktionalität nötig.
+- **Proxy ohne automatischen Fallback** - ist ein konfigurierter Proxy nicht erreichbar, schlägt der Download fehl. Die Route gilt für die Download-Pipeline, nicht für Metadaten-APIs.
 - **Match-Verlauf ist diagnostisch, nicht adaptiv** - die Scoring-Engine führt Regeln deterministisch aus. Der Verlauf zeichnet vergangene Durchläufe auf und aggregiert Statistiken zur Fehlersuche, aber er lernt nicht und passt keine Gewichtungen an.
 
 ## Welches Projekt für welchen Einsatz?

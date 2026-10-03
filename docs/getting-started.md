@@ -34,11 +34,11 @@ docker compose up -d
 Die Web-Oberfläche ist unter `http://localhost:8080` erreichbar.
 
 ::: tip Hinweise
-- `PUID` / `PGID` (Standard: `1654`) legen fest, unter welchem Benutzer FunkArr läuft. Dieser Benutzer braucht Schreibzugriff auf den Download-Pfad.
-- Ohne `FunkArr__ApiKey` gilt der Standardwert `funkarr-default-api-key`. Setze für den produktiven Betrieb einen eigenen Wert.
-- Als Datenbank wird standardmäßig SQLite (`/app/data/funkarr.db`) verwendet. PostgreSQL ist optional, siehe [Konfiguration](configuration).
-- Sonarr/Radarr müssen den Download-Pfad (hier `/media`) unter demselben Pfad eingebunden haben, damit sie fertige Downloads importieren können.
-- Innerhalb des Docker-Netzwerks läuft FunkArr immer auf Port `6969`; `8080` ist nur das veröffentlichte Host-Port-Mapping.
+- **PUID/PGID**: Setzt die Benutzer-/Gruppen-ID im Container. Standard ist `1654`. Setze `PUID=1000` und `PGID=1000` um Berechtigungsprobleme zu vermeiden.
+- **API-Schlüssel**: Ohne `FunkArr__ApiKey` wird der Standard-Schlüssel `funkarr-default-api-key` verwendet. Setze deinen eigenen für produktive Nutzung.
+- **Datenbank**: SQLite ist Standard. Für PostgreSQL siehe [Konfiguration](configuration).
+- **Pfade**: Sonarr/Radarr benötigen den Download-Pfad am selben Mount-Punkt um abgeschlossene Downloads importieren zu können.
+- **Ports**: Im Docker-Netzwerk läuft FunkArr auf Port `6969`. Port `8080` ist nur das Host-Mapping.
 :::
 
 ## Einrichtung in Prowlarr / Sonarr / Radarr
