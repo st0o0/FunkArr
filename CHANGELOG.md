@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.0...funkarr-v0.3.1) (2026-10-03)
+
+
+### Documentation
+
+* update metrics, health checks, config options, and ruleset behavior ([39d9c75](https://github.com/st0o0/FunkArr/commit/39d9c7519a9f83aa62cf189cca762178e80ff040))
+* update web-ui, comparison, rulesets reference, and fix strategy/filter accuracy ([8abe211](https://github.com/st0o0/FunkArr/commit/8abe2110d71f3809876aa6a017e37b498c7e7a18))
+
 ## [0.3.0](https://github.com/st0o0/FunkArr/compare/funkarr-v0.2.1...funkarr-v0.3.0) (2026-09-30)
 
 
