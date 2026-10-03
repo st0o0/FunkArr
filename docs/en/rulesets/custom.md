@@ -60,19 +60,23 @@ Click **Save**. FunkArr validates your ruleset against the JSON schema and regis
 
 ## Overrides
 
-Local rulesets take priority over community rulesets for the same show. When both exist, FunkArr merges them:
+Local rulesets (`data/rulesets/local/<id>.json`) take priority over community rulesets (`data/rulesets/community/<id>.json`) with the same ID. When both exist, FunkArr merges them:
 
 - Rules with the **same ID** → local replaces community
 - Rules with a **new ID** → appended to the list
+- **Topic** → the community ruleset's topic is kept
 - **Aliases** → unioned (both sets combined)
-- **Media fields** → local wins per field (tvdbId, imdbId, etc.)
+- **Media fields** → local wins per field (name, type, tvdbId, imdbId, tmdbId)
 - **Confidence** → local value used if set
+- **Enrichment** → local settings win per field
 
-To edit a community ruleset, navigate to its detail page and click **Edit**. Your changes are saved as a local overlay - the community base stays intact and continues to receive updates.
+The merged result is sorted by priority.
+
+To edit a community ruleset, navigate to its detail page and click **Edit**. The builder saves the result as a full local copy with `standalone: true` (see below). The community file stays untouched but no longer influences that ruleset. For an override that keeps receiving community updates, create a local JSON file with the same ID in `data/rulesets/local/` containing only your differing rules.
 
 ## Standalone Mode
 
-If you want to ignore the community base entirely, open your local ruleset JSON file and set `standalone: true`. This tells FunkArr to use your local ruleset as-is, with no merging.
+If you want to ignore the community base entirely, set `standalone: true` in your local ruleset JSON file. This tells FunkArr to use your local ruleset as-is, with no merging. Editing a community ruleset in the builder sets this flag automatically.
 
 Use this when a community ruleset's structure is too different from what you need, or when you want full control over every rule.
 
@@ -86,11 +90,11 @@ To skip specific community rules without replacing them, add their IDs to the `d
 }
 ```
 
-Disabled rules are removed during merge. Your own rules still apply.
+Disabled rules are removed during merge. Your own rules still apply. The field only takes effect in merge mode, not with `standalone: true`.
 
 ## Exporting for Community
 
-If you've created a ruleset that others would find useful, click **Export for Community** on the detail page. This downloads a clean JSON file you can submit as a pull request to the community rulesets repository.
+If you've created a ruleset that others would find useful, click **Export for Community** on the detail page. This validates the ruleset and downloads the merged JSON file without the `standalone` and `disable` fields you can submit as a pull request to the community rulesets repository.
 
 ## Next Steps
 

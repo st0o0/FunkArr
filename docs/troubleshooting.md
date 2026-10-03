@@ -148,7 +148,7 @@ Für automatische Überwachung stellt FunkArr drei Endpunkte bereit:
 
 | Endpunkt | Zweck |
 |----------|-------|
-| `/healthz` | Vollständiger Health-Check (Datenbank, Actor-System) - gibt 200 oder 503 zurück |
+| `/healthz` | Vollständiger Health-Check (Daten-, Complete- und Incomplete-Verzeichnis beschreibbar, FFmpeg im `PATH`, MediathekViewWeb erreichbar) - gibt 503 zurück, wenn ein Verzeichnis- oder FFmpeg-Check fehlschlägt; ein nicht erreichbares MediathekViewWeb ergibt nur Degraded (200) |
 | `/alive` | Einfacher Liveness-Probe - gibt immer 200 zurück |
 | `/api/system/setup` | Detaillierte Setup-Validierung mit einzelnen Prüfungsergebnissen |
 

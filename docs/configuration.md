@@ -39,6 +39,10 @@ data/
 |----------|----------|-------------|
 | `FunkArr__Download__Path` | `data/downloads` | Stamm-Download-Verzeichnis |
 | `FunkArr__Download__ConcurrentDownloads` | `3` | Maximale parallele Downloads |
+| `FunkArr__Download__RetryEnabled` | `false` | Fehlgeschlagene Downloads automatisch wiederholen |
+| `FunkArr__Download__MaxRetries` | `3` | Maximale Wiederholungsversuche pro Download |
+| `FunkArr__Download__RetryBackoffBase` | `00:00:30` | Basis-Wartezeit zwischen Wiederholungen (`TimeSpan`, `HH:mm:ss`) |
+| `FunkArr__Download__MaxHistoryRecords` | `1000` | Maximale Anzahl aufbewahrter Download-Verlaufseinträge |
 
 ### Download-Pfad
 
@@ -52,6 +56,10 @@ Sonarr und Radarr überwachen das `complete/`-Verzeichnis auf fertige Dateien. S
 ### Parallele Downloads
 
 Steuert, wie viele Videos gleichzeitig heruntergeladen und remuxed werden. Jeder Download verwendet einen FFmpeg-Prozess. Erhöhe den Wert bei schnellen Verbindungen mit verfügbarer CPU; verringere ihn bei Timeouts oder Ressourcenproblemen.
+
+### Wiederholungen
+
+Wenn `RetryEnabled` auf `true` steht, werden fehlgeschlagene Downloads bis zu `MaxRetries`-mal wiederholt. `RetryBackoffBase` ist die Basis-Wartezeit zwischen den Versuchen. `MaxHistoryRecords` begrenzt, wie viele abgeschlossene Downloads im Download-Verlauf gespeichert bleiben.
 
 ### Kategorien
 
@@ -68,6 +76,8 @@ FunkArr__Download__Categories__1__Dir=movies
 |----------|----------|-------------|
 | `FunkArr__Download__Categories__N__Name` | - | Kategoriename wie in Sonarr/Radarr konfiguriert |
 | `FunkArr__Download__Categories__N__Dir` | - | Unterverzeichnis innerhalb von `complete/` für diese Kategorie |
+
+Die Standardwerte in `appsettings.json` definieren bereits die Kategorien `tv` und `movies` (jeweils mit gleichnamigem Verzeichnis). Eigene Einträge sind nur nötig, wenn du andere Namen brauchst.
 
 Wenn Sonarr eine Download-Anfrage mit der Kategorie `tv` sendet, landet die fertige Datei in `complete/tv/`. Das `N` im Variablennamen ist ein nullbasierter Index - verwende `0`, `1`, `2` usw. für jede Kategorie.
 
@@ -308,6 +318,7 @@ FunkArr verwendet [Serilog](https://serilog.net/) für strukturiertes Logging. L
 | `Serilog__MinimumLevel__Default` | `Information` | Globales Mindest-Log-Level |
 | `Serilog__MinimumLevel__Override__Akka` | `Warning` | Akka.NET Actor-System Log-Level |
 | `Serilog__MinimumLevel__Override__Microsoft.AspNetCore` | `Warning` | ASP.NET Core Request Log-Level |
+| `Serilog__MinimumLevel__Override__Microsoft.AspNetCore.Hosting.Diagnostics` | `Information` | Log-Level der ASP.NET Core Hosting-Diagnose (Request-Zusammenfassung) |
 
 Gültige Level: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, `Fatal`.
 

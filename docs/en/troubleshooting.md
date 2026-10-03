@@ -148,7 +148,7 @@ For automated monitoring, FunkArr provides three endpoints:
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/healthz` | Full health check (database, actor system) - returns 200 or 503 |
+| `/healthz` | Full health check (data, complete and incomplete directories writable, FFmpeg on `PATH`, MediathekViewWeb reachable) - returns 503 if a directory or FFmpeg check fails; an unreachable MediathekViewWeb only reports Degraded (200) |
 | `/alive` | Simple liveness probe - always returns 200 |
 | `/api/system/setup` | Detailed setup validation with individual check results |
 

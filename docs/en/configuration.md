@@ -39,6 +39,10 @@ data/
 |----------|---------|-------------|
 | `FunkArr__Download__Path` | `data/downloads` | Root download directory |
 | `FunkArr__Download__ConcurrentDownloads` | `3` | Max parallel downloads |
+| `FunkArr__Download__RetryEnabled` | `false` | Automatically retry failed downloads |
+| `FunkArr__Download__MaxRetries` | `3` | Max retry attempts per download |
+| `FunkArr__Download__RetryBackoffBase` | `00:00:30` | Base backoff between retries (`TimeSpan`, `HH:mm:ss`) |
+| `FunkArr__Download__MaxHistoryRecords` | `1000` | Max download history records to retain |
 
 ### Download Path
 
@@ -52,6 +56,10 @@ Sonarr and Radarr monitor the `complete/` directory for finished files. Make sur
 ### Concurrent Downloads
 
 Controls how many videos are downloaded and remuxed simultaneously. Each download uses one FFmpeg process. Increase on fast connections with available CPU; decrease if you see timeouts or resource issues.
+
+### Retries
+
+When `RetryEnabled` is `true`, failed downloads are retried up to `MaxRetries` times. `RetryBackoffBase` is the base delay between attempts. `MaxHistoryRecords` caps how many finished downloads are kept in the download history.
 
 ### Categories
 
@@ -68,6 +76,8 @@ FunkArr__Download__Categories__1__Dir=movies
 |----------|---------|-------------|
 | `FunkArr__Download__Categories__N__Name` | - | Category name as configured in Sonarr/Radarr |
 | `FunkArr__Download__Categories__N__Dir` | - | Subdirectory inside `complete/` for this category |
+
+The defaults in `appsettings.json` already define the categories `tv` and `movies` (each with a matching directory). Configure your own entries only if you need different names.
 
 When Sonarr sends a download request with category `tv`, the finished file ends up in `complete/tv/`. The `N` in the variable name is a zero-based index - use `0`, `1`, `2`, etc. for each category.
 
@@ -308,6 +318,7 @@ FunkArr uses [Serilog](https://serilog.net/) for structured logging. Log levels 
 | `Serilog__MinimumLevel__Default` | `Information` | Global minimum log level |
 | `Serilog__MinimumLevel__Override__Akka` | `Warning` | Akka.NET actor system log level |
 | `Serilog__MinimumLevel__Override__Microsoft.AspNetCore` | `Warning` | ASP.NET Core request log level |
+| `Serilog__MinimumLevel__Override__Microsoft.AspNetCore.Hosting.Diagnostics` | `Information` | ASP.NET Core hosting diagnostics (request summary) log level |
 
 Valid levels: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, `Fatal`.
 

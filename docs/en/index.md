@@ -23,7 +23,7 @@ features:
   - title: Proxy and Geo-Routing
     details: Route channel-specific traffic through VPN or proxy - ideal for geo-restricted content from ORF, SRF, and others.
   - title: Observability
-    details: OpenTelemetry tracing and metrics for downloads, scoring, and enrichment. Aspire Dashboard or any OTLP backend.
+    details: Prometheus `/metrics` endpoint with OpenTelemetry-based metrics for downloads, search, scoring, enrichment, rulesets, and external API health.
   - title: Single Container
     details: Runs on any Docker host with SQLite by default. Optional PostgreSQL for larger setups. PUID/PGID support.
   - title: MediathekViewWeb

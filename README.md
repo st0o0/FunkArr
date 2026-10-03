@@ -29,8 +29,8 @@ No Usenet account needed. No torrents. Just direct downloads from public media l
 - **Network routing and proxy** - route channel-specific traffic through VPN or proxy for geo-restricted content (ORF, SRF, etc.)
 - **Download scheduling** - define time windows for downloads to run, pause automatically outside schedule
 - **Health checks** - real health checks for FFmpeg, MediathekViewWeb connectivity, and directory write access
-- **Observability** - Prometheus `/metrics` endpoint with download queue, scoring, and external API health metrics
-- **Web UI** - download queue with detail view, history, ruleset management, settings with log viewer, and setup health checks
+- **Observability** - Prometheus `/metrics` endpoint with download, search, scoring, enrichment, ruleset, and external API health metrics
+- **Web UI** - download queue with detail view, activity and scoring history, ruleset management, settings with log viewer, and setup health checks
 - **Single container** - runs on any Docker host, SQLite by default, PUID/PGID support
 
 ## Quick Start
@@ -144,6 +144,8 @@ dotnet run --project src/FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj
 dotnet run --project src/FunkArr.Scoring.Tests/FunkArr.Scoring.Tests.csproj
 dotnet run --project src/FunkArr.History.Tests/FunkArr.History.Tests.csproj
 dotnet run --project src/FunkArr.Enrichment.Tests/FunkArr.Enrichment.Tests.csproj
+dotnet run --project src/FunkArr.MetadataResolver.Tests/FunkArr.MetadataResolver.Tests.csproj
+dotnet run --project src/FunkArr.Persistence.Tests/FunkArr.Persistence.Tests.csproj
 dotnet run --project src/FunkArr.Api.Tests/FunkArr.Api.Tests.csproj
 dotnet run --project src/FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj
 dotnet run --project src/FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj

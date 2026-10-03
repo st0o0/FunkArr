@@ -14,6 +14,8 @@ services:
       - funkarr-data:/app/data
       - /path/to/media:/media
     environment:
+      - PUID=1000
+      - PGID=1000
       - FunkArr__ApiKey=your-api-key-here
       - FunkArr__Download__Path=/media/downloads
       - FunkArr__Download__Categories__0__Name=tv
@@ -30,6 +32,14 @@ docker compose up -d
 ```
 
 Die Web-Oberfläche ist unter `http://localhost:8080` erreichbar.
+
+::: tip Hinweise
+- `PUID` / `PGID` (Standard: `1654`) legen fest, unter welchem Benutzer FunkArr läuft. Dieser Benutzer braucht Schreibzugriff auf den Download-Pfad.
+- Ohne `FunkArr__ApiKey` gilt der Standardwert `funkarr-default-api-key`. Setze für den produktiven Betrieb einen eigenen Wert.
+- Als Datenbank wird standardmäßig SQLite (`/app/data/funkarr.db`) verwendet. PostgreSQL ist optional, siehe [Konfiguration](configuration).
+- Sonarr/Radarr müssen den Download-Pfad (hier `/media`) unter demselben Pfad eingebunden haben, damit sie fertige Downloads importieren können.
+- Innerhalb des Docker-Netzwerks läuft FunkArr immer auf Port `6969`; `8080` ist nur das veröffentlichte Host-Port-Mapping.
+:::
 
 ## Einrichtung in Prowlarr / Sonarr / Radarr
 

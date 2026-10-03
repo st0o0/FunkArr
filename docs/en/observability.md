@@ -10,12 +10,14 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 |--------|------|-------------|
 | `funkarr_download_completed_total` | Counter | Completed downloads |
 | `funkarr_download_failed_total` | Counter | Failed downloads (tag: `reason`) |
-| `funkarr_download_duration_seconds` | Histogram | Download duration (tag: `status`) |
+| `funkarr_download_duration_seconds` | Histogram | Download (FFmpeg) duration (tag: `status` = `completed`/`failed`) |
 | `funkarr_download_bytes_total` | Counter | Total bytes downloaded |
 | `funkarr_download_enqueued_total` | Counter | Downloads added to queue |
 | `funkarr_download_cancelled_total` | Counter | Downloads cancelled |
 | `funkarr_download_retries_total` | Counter | Retry attempts (tag: `reason`) |
 | `funkarr_download_move_failed_total` | Counter | File move failures |
+| `funkarr_download_subtitle_total` | Counter | Subtitle preparation attempts (tags: `status` = `succeeded`/`failed`/`unavailable`, `format`) |
+| `funkarr_download_subtitle_duration_seconds` | Histogram | Subtitle preparation duration |
 | `funkarr_download_queue_size` | Gauge | Current queue depth |
 | `funkarr_download_active` | Gauge | Currently active downloads |
 | `funkarr_download_paused` | Gauge | Whether downloads are paused (0/1) |
@@ -29,10 +31,12 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 | `funkarr_search_matches_total` | Counter | Searches with accepted results (tag: `source`) |
 | `funkarr_search_no_match_total` | Counter | Searches with no accepted results (tag: `source`) |
 | `funkarr_search_duration_seconds` | Histogram | End-to-end search duration (tags: `source`, `type`) |
-| `funkarr_search_timeouts_total` | Counter | Search timeouts |
+| `funkarr_search_timeouts_total` | Counter | Search timeouts (tag: `source`, not always set) |
 | `funkarr_search_failed_total` | Counter | Search failures (tag: `source`) |
 | `funkarr_search_mediathek_errors_total` | Counter | MediathekViewWeb API errors |
 | `funkarr_search_results_per_request` | Histogram | Result count distribution |
+| `funkarr_search_mediathek_cache_hits_total` | Counter | MediathekViewWeb response cache hits |
+| `funkarr_search_mediathek_cache_misses_total` | Counter | MediathekViewWeb response cache misses |
 
 ### Scoring (`FunkArr.Scoring`)
 
@@ -49,11 +53,10 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `funkarr_enrichment_requests_total` | Counter | Enrichment requests (tags: `api`, `status`) |
+| `funkarr_enrichment_requests_total` | Counter | Enrichment requests (tags: `api` = `tmdb`/`tvdb`, `status` = `hit`/`miss`) |
 | `funkarr_enrichment_failed_total` | Counter | Enrichment failures (tag: `api`) |
 | `funkarr_enrichment_duration_seconds` | Histogram | API call duration (tag: `api`) |
 | `funkarr_enrichment_items_enriched_total` | Counter | Items enriched (tag: `api`) |
-| `funkarr_enrichment_cache_entries` | Gauge | Cache entry count (tag: `api`) |
 
 ### History (`FunkArr.History`)
 
@@ -81,7 +84,7 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `funkarr_external_api_requests_total` | Counter | External API calls (tags: `api`, `status_code`) |
+| `funkarr_external_api_requests_total` | Counter | External API calls (tags: `api`, `status_code` = status class such as `2xx`, `4xx`, `5xx`, or `error` on exceptions) |
 | `funkarr_external_api_duration_seconds` | Histogram | External API latency (tag: `api`) |
 
 ### Standard metrics
@@ -90,7 +93,19 @@ ASP.NET Core HTTP metrics and .NET runtime metrics (CPU, memory, GC, threads) ar
 
 ## Configuration
 
-The `/metrics` endpoint is always active and requires no configuration. It is available at `http://<host>:6969/metrics`.
+The `/metrics` endpoint is always active and requires no configuration. It is available at `http://<host>:6969/metrics`. Metric names are exported in Prometheus format (dots become underscores, e.g. `funkarr.download.queue_size` becomes `funkarr_download_queue_size`).
+
+## Health checks
+
+`/healthz` runs these checks:
+
+| Check | Failure status |
+|-------|----------------|
+| `data-directory`, `complete-directory`, `incomplete-directory` (must be writable) | Unhealthy (503) |
+| `ffmpeg` (found on `PATH`) | Unhealthy (503) |
+| `mediathekviewweb` (reachable, 3 s timeout) | Degraded (still 200) |
+
+`/alive` is a plain liveness probe and always returns 200.
 
 ## Prometheus scrape configuration
 
@@ -110,6 +125,8 @@ The metrics can be visualized directly in Grafana. Example queries:
 - **Search success rate**: `rate(funkarr_search_matches_total[5m]) / rate(funkarr_search_requests_total[5m])`
 - **Scoring duration (p95)**: `histogram_quantile(0.95, rate(funkarr_scoring_duration_seconds_bucket[5m]))`
 - **External API latency (p95)**: `histogram_quantile(0.95, rate(funkarr_external_api_duration_seconds_bucket[5m]))`
+- **Subtitle failure rate**: `rate(funkarr_download_subtitle_total{status="failed"}[5m])`
+- **MediathekViewWeb cache hit rate**: `rate(funkarr_search_mediathek_cache_hits_total[5m]) / (rate(funkarr_search_mediathek_cache_hits_total[5m]) + rate(funkarr_search_mediathek_cache_misses_total[5m]))`
 - **Enrichment cache hit rate**: `rate(funkarr_enrichment_requests_total{status="hit"}[5m]) / rate(funkarr_enrichment_requests_total[5m])`
 - **Active rulesets**: `funkarr_ruleset_active`
 - **Download retry rate**: `rate(funkarr_download_retries_total[5m])`

@@ -60,19 +60,23 @@ Klicke auf **Speichern**. FunkArr validiert dein Regelwerk gegen das JSON-Schema
 
 ## Überschreibungen
 
-Lokale Regelwerke haben Vorrang vor Community-Regelwerken für dieselbe Sendung. Wenn beide existieren, führt FunkArr sie zusammen:
+Lokale Regelwerke (`data/rulesets/local/<id>.json`) haben Vorrang vor Community-Regelwerken (`data/rulesets/community/<id>.json`) mit derselben ID. Wenn beide existieren, führt FunkArr sie zusammen:
 
 - Regeln mit **gleicher ID** → lokal ersetzt Community
 - Regeln mit **neuer ID** → werden an die Liste angehängt
+- **Thema** → das Thema des Community-Regelwerks bleibt erhalten
 - **Aliase** → vereinigt (beide Sets kombiniert)
-- **Media-Felder** → lokal gewinnt pro Feld (tvdbId, imdbId, etc.)
+- **Media-Felder** → lokal gewinnt pro Feld (Name, Typ, tvdbId, imdbId, tmdbId)
 - **Konfidenz** → lokaler Wert wird verwendet, wenn gesetzt
+- **Anreicherung** → lokale Einstellungen gewinnen pro Feld
 
-Um ein Community-Regelwerk zu bearbeiten, navigiere zu seiner Detailseite und klicke auf **Bearbeiten**. Deine Änderungen werden als lokale Überschreibung gespeichert - die Community-Basis bleibt intakt und erhält weiterhin Updates.
+Das zusammengeführte Ergebnis wird nach Priorität sortiert.
+
+Um ein Community-Regelwerk zu bearbeiten, navigiere zu seiner Detailseite und klicke auf **Bearbeiten**. Der Builder speichert das Ergebnis als vollständige lokale Kopie mit `standalone: true` (siehe unten). Die Community-Datei bleibt unverändert, hat aber keinen Einfluss mehr auf dieses Regelwerk. Für eine Überschreibung, die weiterhin Community-Updates erhält, lege eine lokale JSON-Datei mit gleicher ID in `data/rulesets/local/` an, die nur deine abweichenden Regeln enthält.
 
 ## Standalone-Modus
 
-Wenn du die Community-Basis komplett ignorieren möchtest, öffne deine lokale Regelwerk-JSON-Datei und setze `standalone: true`. Das weist FunkArr an, dein lokales Regelwerk unverändert zu verwenden, ohne Zusammenführung.
+Wenn du die Community-Basis komplett ignorieren möchtest, setze in deiner lokalen Regelwerk-JSON-Datei `standalone: true`. Das weist FunkArr an, dein lokales Regelwerk unverändert zu verwenden, ohne Zusammenführung. Das Bearbeiten eines Community-Regelwerks im Builder setzt dieses Flag automatisch.
 
 Verwende dies, wenn die Struktur eines Community-Regelwerks zu stark von dem abweicht, was du brauchst, oder wenn du die volle Kontrolle über jede Regel haben möchtest.
 
@@ -86,11 +90,11 @@ Um bestimmte Community-Regeln zu überspringen, ohne sie zu ersetzen, füge ihre
 }
 ```
 
-Deaktivierte Regeln werden beim Zusammenführen entfernt. Deine eigenen Regeln gelten weiterhin.
+Deaktivierte Regeln werden beim Zusammenführen entfernt. Deine eigenen Regeln gelten weiterhin. Das Feld wirkt nur im Zusammenführungsmodus, nicht mit `standalone: true`.
 
 ## Für Community exportieren
 
-Wenn du ein Regelwerk erstellt hast, das für andere nützlich sein könnte, klicke auf **Für Community exportieren** auf der Detailseite. Das lädt eine bereinigte JSON-Datei herunter, die du als Pull Request im Community-Regelwerk-Repository einreichen kannst.
+Wenn du ein Regelwerk erstellt hast, das für andere nützlich sein könnte, klicke auf **Für Community exportieren** auf der Detailseite. Das validiert das Regelwerk und lädt die zusammengeführte JSON-Datei ohne die Felder `standalone` und `disable` herunter, die du als Pull Request im Community-Regelwerk-Repository einreichen kannst.
 
 ## Nächste Schritte
 

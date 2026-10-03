@@ -2,6 +2,21 @@
 
 This page explains how FunkArr works internally: from receiving a search request through scoring and metadata enrichment to the finished download.
 
+## Architecture Overview
+
+FunkArr is built on Akka.NET. Work is split across a few long-lived singleton actors (managers) and short-lived sharded entities (workers). The domains communicate only through messages.
+
+| Domain | Actors | Responsibility |
+|--------|--------|----------------|
+| Search | `SearchManager`, `MediathekViewWebManager` (singletons), `TvSearchWorker`, `MovieSearchWorker` (sharded, one per search request) | Orchestrates a search and queries MediathekViewWeb |
+| RuleSet | `RuleSetResolver`, `RuleSetManager`, `RuleSetUpdater` (singletons), `RuleSetWorker` (sharded, one per ruleset) | Loads, merges and resolves rulesets, syncs community rulesets |
+| Scoring | `ScoringManager` (singleton) with a pool of `ScoringActor` | Evaluates Mediathek entries against ruleset rules |
+| Enrichment | `EnrichmentManager` (singleton) with TVDB and TMDB actor pools | Resolves season/episode and movie data via external APIs |
+| History | `StatsCollector` (singleton), `HistoryWorker` (sharded, persistent, one per ruleset) | Scoring history and statistics |
+| Download | `DownloadManager`, `DownloadScheduler`, `DownloadHistoryManager` (singletons), `DownloadWorker` (sharded, persistent, one per download) | Queue, schedule, FFmpeg remux, download history |
+
+The HTTP layer (`/index/api` for Newznab, `/download/api` for SABnzbd) is a thin adapter that only translates requests into messages for these actors.
+
 ## Search Flow
 
 When Sonarr or Radarr send a search request to FunkArr, it passes through several stages:
@@ -13,18 +28,22 @@ Sonarr/Radarr send a standard Newznab request to `/index/api`. FunkArr identifie
 - `t=tvsearch` - TV search (from Sonarr), with optional TVDB ID, season and episode
 - `t=movie` - Movie search (from Radarr), with optional IMDB ID or TMDB ID
 - `t=search` - General search (from Prowlarr), category determines the type
+- `t=caps` - Capabilities of the indexer
+- `t=get` - Fetches the NZB for a search result
 
-The request is converted into an internal search command and forwarded to the SearchManager.
+The request is checked against the API key, converted into an internal search command and forwarded to the SearchManager. The full result list of a search is cached for 60 seconds (`SearchCacheTtlSeconds`), so pagination and the season/episode filter are applied to the cached list without re-running the search.
 
 ### 2. SearchManager Coordinates the Search
 
-The SearchManager decides based on the category whether to search for TV, movies, or both:
+The SearchManager (cluster singleton) creates a search ID and hands the work to a sharded search worker (one `TvSearchWorker` or `MovieSearchWorker` entity per search request). Explicit `t=tvsearch` / `t=movie` requests go straight to the matching worker. For `t=search`, the category decides:
 
 - Category 5000-5999: TV only
 - Category 2000-2999: movies only
 - No category: both in parallel, results are merged
 
-Each search has a 30-second timeout. If one part of a combined search fails, the results from the other part are still returned.
+Each search has a 30-second timeout (the controller itself times out after 45 seconds). If one part of a combined search fails or times out, the results from the other part are still returned.
+
+The search worker runs the following steps as a small state machine (resolve ruleset, query, score, enrich) and then replies to the SearchManager. Idle workers are passivated after 30 seconds.
 
 ### 3. MediathekViewWeb Query
 
@@ -32,22 +51,33 @@ Each search has a 30-second timeout. If one part of a combined search fails, the
 [MediathekViewWeb](https://mediathekviewweb.de/#everywhere=true) is a free community project that makes the media libraries of German-language public broadcasters searchable. FunkArr uses their API as the data source for all search queries.
 :::
 
-The MediathekViewWebManager sends the search query to the MediathekViewWeb API. This searches the Mediathek database (ARD, ZDF, ORF, SRF and other broadcasters).
+The MediathekViewWebManager (cluster singleton) sends the search query to the MediathekViewWeb API. This searches the Mediathek database (ARD, ZDF, ORF, SRF and other broadcasters).
 
-Queries can filter by topic (show name), title and description. Each result contains:
+Queries filter by topic (show name), are sorted by date (newest first), exclude future entries and ignore entries shorter than 5 minutes. API responses are cached for 5 minutes. Each result contains:
 
 - Channel, topic, title, description
 - Video URLs in different qualities (HD, normal, low)
 - Subtitle URL (if available)
 - Duration, size, air date
 
-FunkArr limits concurrent queries to MediathekViewWeb to 3 to avoid overloading the API. Additional requests are automatically queued.
+FunkArr limits concurrent queries to MediathekViewWeb to 3 to avoid overloading the API. Additional requests wait in a bounded queue (64 entries). If the queue is full, the search worker retries twice (after 0.5 s and 1.5 s) before the search fails.
 
 ### 4. Ruleset Matching
 
-If a TVDB ID or IMDB ID is included in the request, FunkArr loads the matching ruleset from the RuleSet store. The ruleset determines how Mediathek titles are converted into structured season/episode formats.
+The `RuleSetResolver` (singleton) knows all loaded rulesets and finds the matching one by topic or alias, or by TVDB, IMDB or TMDB ID. The ruleset determines how Mediathek titles are converted into structured season/episode formats.
 
-If no ruleset is available or no ID is provided, the Mediathek results are passed directly to scoring.
+The order depends on the request:
+
+- **With TVDB/IMDB ID:** the ruleset is resolved first. Its topic is then used for the Mediathek query.
+- **Without ID:** the Mediathek query runs first with the search term as the topic. Afterwards the ruleset is resolved from the topic of the first result.
+
+If no ruleset is found, the Mediathek results are returned without scoring.
+
+Rulesets are managed separately from search:
+
+- `RuleSetManager` scans the community and local ruleset directories, watches them for changes (changes are debounced for 2 seconds) and loads each ruleset into a sharded `RuleSetWorker`.
+- `RuleSetWorker` merges the community and local version of a ruleset, validates it, registers it with the `RuleSetResolver` and sends its matching configuration to the `ScoringManager`.
+- `RuleSetUpdater` checks the GitHub releases of the community ruleset repository every 30 minutes (if `RefreshEnabled`), downloads the `rulesets.zip` of a new release and triggers a re-scan.
 
 ### 5. Scoring
 
@@ -65,11 +95,11 @@ The scoring engine evaluates each Mediathek entry against the ruleset's rules. T
 
 **Score assignment:** Each match receives a confidence value (0.0-1.0). This value comes from the rule itself or the ruleset's default confidence.
 
-Scoring runs in parallel across a pool of worker actors. The pool size is configurable via `FunkArr__Scoring__PoolSize` (default: 4).
+The `ScoringManager` holds the matching configuration of every ruleset and distributes the work to a pool of `ScoringActor` workers (smallest-mailbox routing). The pool size is configurable via `FunkArr__Scoring__PoolSize` (default: 4). Regex evaluation has a 100 ms timeout per match to protect against runaway patterns. If no matching configuration exists for a ruleset, the entries are returned unscored.
 
 ### 6. Metadata Enrichment
 
-After scoring, matches are enriched with external metadata (see the [Metadata Enrichment](#metadata-enrichment) section).
+After scoring, matches are enriched with external metadata (see the [Metadata Enrichment](#metadata-enrichment) section). This step is optional: if enrichment is not configured for the ruleset or fails, the scored results are returned as they are. Afterwards the search worker records the run in the scoring history of the ruleset (see [Scoring History](#scoring-history)).
 
 ### 7. Newznab Response
 
@@ -89,7 +119,7 @@ When Sonarr or Radarr start a download, they send a SABnzbd request to `/downloa
 
 ### Queue Management
 
-The DownloadManager maintains a persistent queue with these capabilities:
+The `DownloadManager` (persistent cluster singleton) maintains the queue and dispatches downloads to the sharded, persistent `DownloadWorker` entities (one per download). When a worker finishes or fails for good, it frees its slot, records the result in the `DownloadHistoryManager` and the manager dispatches the next entry. The queue supports:
 
 - **Concurrent downloads:** Up to 3 downloads run simultaneously by default (configurable via `FunkArr__Download__ConcurrentDownloads`).
 - **Priorities:** Each download has a priority. Higher-priority downloads are processed first.
@@ -103,11 +133,11 @@ The queue is persistent - it survives container restarts. Active downloads are a
 
 ### Download Schedule
 
-FunkArr supports optional download time windows. When configured, downloads only start during the defined windows. Outside the windows, they remain in the queue. New downloads start automatically when the next window begins.
+FunkArr supports optional download time windows. The `DownloadScheduler` (singleton) evaluates the configured windows and tells the DownloadManager when downloads are enabled or disabled. Outside the windows, downloads remain in the queue. New downloads start automatically when the next window begins. Windows may span midnight, and changes to the configuration are applied without a restart.
 
 ### FFmpeg Remux
 
-Each download is processed by a DownloadWorker:
+Each download is processed by its own DownloadWorker, whose state (initialized, downloading, completed, failed) is persisted:
 
 1. **Subtitle preparation:** If a subtitle URL is available, the subtitle file is downloaded. FunkArr auto-detects the format:
    - **TTML/XML** - converted to SRT (via a built-in TTML-to-SRT converter)
@@ -121,9 +151,11 @@ Each download is processed by a DownloadWorker:
 
 3. **Completion:** The finished file is moved from the `incomplete/` directory to the `complete/` directory, organized by category subdirectory (e.g. `complete/tv/`).
 
+4. **Retry on failure:** If retries are enabled (`RetryEnabled`, off by default), transient failures are retried up to `MaxRetries` times (default: 3). The delay doubles with each attempt, starting at 30 seconds (`RetryBackoffBase`) and capped at 5 minutes. Permanent failures and exhausted retries end up in the download history as failed.
+
 ### Download History
 
-Every completed download (successful or failed) is recorded in the download history. The history stores title, category, file size, status, error message (on failure), download duration and completion timestamp. You can remove individual history entries.
+Every completed download (successful or failed) is recorded by the `DownloadHistoryManager` (persistent singleton). At most 1000 entries are kept (`MaxHistoryRecords`), the oldest are trimmed. The history stores title, category, file size, status, error message (on failure), download duration and completion timestamp. You can remove individual history entries.
 
 ### Live Progress
 
@@ -154,7 +186,7 @@ These traces are viewable in the web UI and help when debugging rulesets.
 
 ### Scoring History
 
-Every search request evaluated against a ruleset is recorded in that ruleset's scoring history. Each snapshot records:
+Every search request evaluated against a ruleset is recorded in that ruleset's scoring history. The search worker sends the result to a sharded, persistent `HistoryWorker` (one per ruleset), which stores the snapshots and trims them by count and age. After each recording it reports updated statistics to the `StatsCollector` (singleton), which keeps the statistics of all rulesets in memory for the UI and rebuilds them from the history workers at startup. Each snapshot records:
 
 - Search source (Sonarr, Radarr, Prowlarr or test)
 - Search query
@@ -182,7 +214,7 @@ FunkArr can enrich search results with external metadata to determine season and
 
 ### TVDB (TV Shows)
 
-For TV shows, FunkArr loads the episode list from TVDB and tries to match Mediathek entries to the correct episodes. Two methods are tried in order:
+The `EnrichmentManager` (singleton) forwards requests to two actor pools (two workers each): one for TVDB, one for TMDB. For TV shows, FunkArr loads the episode list from TVDB and tries to match Mediathek entries to the correct episodes. If the search specified a season, the match is first limited to that season; entries without a match are then retried against all episodes with a 10% confidence penalty. Two methods are tried in order:
 
 **Title matching:** Compares the Mediathek title with TVDB episode names using Levenshtein distance (similarity measurement). The default threshold is 0.7 (70% similarity). When multiple episodes tie, runtime is used as a tiebreaker.
 
