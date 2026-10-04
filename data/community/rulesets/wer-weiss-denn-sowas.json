@@ -6,7 +6,7 @@
     "name": "Wer weiß denn sowas?",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.85,
   "rules": [
     {
       "id": "absolute-episode",

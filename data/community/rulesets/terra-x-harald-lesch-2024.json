@@ -6,7 +6,7 @@
     "name": "Terra X Harald Lesch",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.9,
   "rules": [
     {
       "id": "season-episode",

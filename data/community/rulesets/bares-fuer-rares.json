@@ -9,7 +9,7 @@
     "name": "Bares für Rares",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.95,
   "rules": [
     {
       "id": "season-episode",

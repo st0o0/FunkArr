@@ -9,7 +9,7 @@
     "name": "Germany in ...",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.9,
   "rules": [
     {
       "id": "season-episode",

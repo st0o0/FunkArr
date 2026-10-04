@@ -7,7 +7,7 @@
     "name": "Schloss Einstein",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.8,
   "rules": [
     {
       "id": "title-includes",

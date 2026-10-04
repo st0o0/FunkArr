@@ -7,7 +7,7 @@
     "name": "Verrückt nach Meer",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.9,
   "rules": [
     {
       "id": "season-episode",

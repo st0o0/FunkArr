@@ -7,7 +7,7 @@
     "name": "Sketch History - Neues von gestern",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.95,
   "rules": [
     {
       "id": "season-episode",

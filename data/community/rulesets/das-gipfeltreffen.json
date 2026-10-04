@@ -7,7 +7,7 @@
     "name": "Das Gipfeltreffen",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.85,
   "rules": [
     {
       "id": "title-exact",

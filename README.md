@@ -21,7 +21,7 @@ No Usenet account needed. No torrents. Just direct downloads from public media l
 
 - **Newznab indexer API** - add FunkArr in Prowlarr or directly in Sonarr/Radarr as an indexer
 - **SABnzbd download client API** - add it as a SABnzbd download client in Sonarr/Radarr
-- **Community rulesets** - map messy Mediathek titles to structured season/episode format, auto-synced from GitHub ([browse catalog](https://st0o0.github.io/funkarr/rulesets/catalog))
+- **Community rulesets** - map messy Mediathek titles to structured season/episode format, auto-synced from GitHub ([browse catalog](https://st0o0.github.io/funkarr/en/rulesets/catalog))
 - **RuleSet builder** - create and test rulesets with a visual editor and debugger in the web UI
 - **Metadata resolution** - resolves series and movies via TMDB and TVDB for accurate matching
 - **Match intelligence** - tracks which mappings worked so results improve over time
@@ -85,7 +85,21 @@ The web UI is available at `http://localhost:8080`.
 
 Mediathek titles are messy - "Tatort" episodes might appear as "Tatort: Der letzte Schrei" with no season or episode number. Rulesets map these titles to structured season/episode format so Sonarr can match them.
 
-Community rulesets sync automatically from GitHub. You can also create custom rulesets in the web UI (Rulesets section), which includes a debugger to test rules against live Mediathek data.
+Community rulesets sync automatically from GitHub. **98 rulesets** covering the most popular shows and movies are included out of the box. You can also create custom rulesets in the web UI (Rulesets section), which includes a debugger to test rules against live Mediathek data.
+
+### Confidence Levels
+
+Each ruleset carries a confidence score (0.0 – 1.0) that reflects how reliably its rules can identify episodes. The score flows through to Sonarr/Radarr as match quality and affects which results are prioritized.
+
+| Strategy | Confidence | Rationale |
+|----------|-----------|-----------|
+| Season + episode regex | 0.95 | Direct numeric extraction from structured titles |
+| Season/episode + title fallback | 0.90 | Reliable primary match, title fallback for edge cases |
+| Absolute episode number | 0.90 | Consistent numbering in long-running series |
+| Airdate extraction | 0.85 | Date parsing reliable, but airdate matching depends on guide data |
+| Exact title match | 0.85 | Precise but fragile — any title variation breaks it |
+| Title substring match (shows) | 0.80 | Flexible but can produce false positives |
+| Title substring match (movies) | 0.80 | Static title matching against broadcast listings |
 
 ## Configuration
 
@@ -125,7 +139,7 @@ All configuration is via environment variables. Defaults work out of the box - t
 | `FunkArr__Postgres__Password` | _(empty)_ | PostgreSQL password |
 | `FunkArr__Postgres__Database` | `funkarr` | PostgreSQL database name |
 
-See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://st0o0.github.io/funkarr/configuration).
+See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://st0o0.github.io/funkarr/en/configuration).
 
 ## Build & Test
 
@@ -149,6 +163,7 @@ dotnet run --project src/FunkArr.Persistence.Tests/FunkArr.Persistence.Tests.csp
 dotnet run --project src/FunkArr.Api.Tests/FunkArr.Api.Tests.csproj
 dotnet run --project src/FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj
 dotnet run --project src/FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj
+dotnet run --project src/FunkArr.IntegrationTests/FunkArr.IntegrationTests.csproj
 ```
 
 Format check (CI enforces this):
@@ -164,7 +179,7 @@ Other projects in this space:
 |                | FunkArr           | MediathekArr        | RundfunkArr          |
 |----------------|-------------------|---------------------|----------------------|
 | Stack          | .NET / Akka.NET   | .NET                | Node.js / Next.js    |
-| Status         | Active            | Beta                | Dormant (since 2024) |
+| Status         | v0.3.1            | Beta                | Dormant (since 2024) |
 | Sonarr         | Yes               | Yes                 | Yes                  |
 | Radarr         | Yes               | Limited             | Yes                  |
 | ORF/SRF        | Yes               | Yes                 | No                   |

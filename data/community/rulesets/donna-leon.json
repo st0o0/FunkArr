@@ -7,7 +7,7 @@
     "name": "Donna Leon",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.85,
   "rules": [
     {
       "id": "title-exact",

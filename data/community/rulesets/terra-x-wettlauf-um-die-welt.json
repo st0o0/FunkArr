@@ -6,7 +6,7 @@
     "name": "Terra X - Wettlauf um die Welt",
     "type": "show"
   },
-  "confidence": 1,
+  "confidence": 0.9,
   "rules": [
     {
       "id": "season-episode",
