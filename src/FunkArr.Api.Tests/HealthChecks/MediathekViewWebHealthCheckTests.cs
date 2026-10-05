@@ -1,6 +1,7 @@
 using System.Net;
 using FunkArr.Api.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using NSubstitute;
 
 namespace FunkArr.Api.Tests.HealthChecks;
 
@@ -47,15 +48,20 @@ public sealed class MediathekViewWebHealthCheckTests
     private static IHttpClientFactory CreateFactory(HttpStatusCode statusCode)
     {
         var handler = new StubHttpMessageHandler(statusCode);
-        var client = new HttpClient(handler);
-        return new StubHttpClientFactory(client);
+        return CreateFactory(new HttpClient(handler));
     }
 
     private static IHttpClientFactory CreateThrowingFactory()
     {
         var handler = new ThrowingHttpMessageHandler();
-        var client = new HttpClient(handler);
-        return new StubHttpClientFactory(client);
+        return CreateFactory(new HttpClient(handler));
+    }
+
+    private static IHttpClientFactory CreateFactory(HttpClient client)
+    {
+        var factory = Substitute.For<IHttpClientFactory>();
+        factory.CreateClient(Arg.Any<string>()).Returns(client);
+        return factory;
     }
 
     private static HealthCheckContext CreateContext(HealthStatus failureStatus) =>
@@ -64,11 +70,6 @@ public sealed class MediathekViewWebHealthCheckTests
             Registration = new HealthCheckRegistration(
                 "test", _ => null!, failureStatus, null)
         };
-
-    private sealed class StubHttpClientFactory(HttpClient client) : IHttpClientFactory
-    {
-        public HttpClient CreateClient(string name) => client;
-    }
 
     private sealed class StubHttpMessageHandler(HttpStatusCode statusCode) : HttpMessageHandler
     {

@@ -1,4 +1,3 @@
-using System.IO.Abstractions;
 using System.Net;
 using Akka.Actor;
 using Akka.Hosting;
@@ -8,14 +7,17 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 
 namespace FunkArr.Api.Tests;
 
 public sealed class RuleSetApiEndpointTests : IAsyncLifetime
 {
+    private readonly Dictionary<string, string> _files = [];
+
     private WebApplication _app = null!;
     private ActorSystem _actorSystem = null!;
-    private FakeDataFiles _dataFiles = null!;
+    private IDataFiles _dataFiles = null!;
 
     public HttpClient Client { get; private set; } = null!;
 
@@ -25,7 +27,9 @@ public sealed class RuleSetApiEndpointTests : IAsyncLifetime
         builder.WebHost.UseTestServer();
         builder.Logging.ClearProviders();
 
-        _dataFiles = new FakeDataFiles();
+        _dataFiles = Substitute.For<IDataFiles>();
+        _dataFiles.Exists(Arg.Any<string>()).Returns(call => _files.ContainsKey(call.Arg<string>()));
+        _dataFiles.ReadText(Arg.Any<string>()).Returns(call => _files[call.Arg<string>()]);
         var funkArrOptions = Options.Create(new FunkArrOptions { DataPath = Path.GetTempPath() });
         var downloadOptions = Options.Create(new DownloadOptions { Path = Path.GetTempPath() });
 
@@ -69,7 +73,7 @@ public sealed class RuleSetApiEndpointTests : IAsyncLifetime
     {
         var dataPaths = _app.Services.GetRequiredService<DataPaths>();
         var path = Path.Join(dataPaths.LocalRuleSets, "ard-tagesschau.json");
-        _dataFiles.Add(path, "{\"ruleSetId\":\"ard-tagesschau\"}");
+        _files[path] = "{\"ruleSetId\":\"ard-tagesschau\"}";
 
         var response = await Client.GetAsync("/api/rulesets/ard-tagesschau/raw");
 
@@ -77,46 +81,5 @@ public sealed class RuleSetApiEndpointTests : IAsyncLifetime
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
         var body = await response.Content.ReadAsStringAsync();
         Assert.Equal("{\"ruleSetId\":\"ard-tagesschau\"}", body);
-    }
-
-    private sealed class FakeDataFiles : IDataFiles
-    {
-        private readonly Dictionary<string, string> _files = [];
-
-        public void Add(string path, string content) => _files[path] = content;
-
-        public bool Exists(string path) => _files.ContainsKey(path);
-
-        public string ReadText(string path) => _files[path];
-
-        public void CreateDirectory(string path)
-        {
-        }
-
-        public void Remove(string path)
-        {
-        }
-
-        public void Move(string source, string destination)
-        {
-        }
-
-        public void ReplaceDirectory(string source, string target)
-        {
-        }
-
-        public void WriteText(string path, string content)
-        {
-        }
-
-        public void WriteAtomic(string path, string content)
-        {
-        }
-
-        public string[] ListFiles(string directory, string pattern) => [];
-
-        public bool CanWrite(string directory) => true;
-
-        public IFileSystemWatcher Watch(string directory, string filter) => throw new NotSupportedException();
     }
 }

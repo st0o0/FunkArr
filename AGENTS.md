@@ -102,6 +102,11 @@ dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
 dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
 ```
 
+**NSubstitute** for mocking plain interfaces (e.g. `IDataFiles`, `IHttpClientFactory`)
+instead of hand-rolled stub classes. Akka actors are never mocked this way - use
+`TestProbe`/real actors (see `funkarr-test` skill). `Substitute.For<T>()` +
+`sub.Member(Arg.Any<...>()).Returns(...)`; verify with `sub.Received(1).Method(...)`.
+
 ## Test assertion conventions
 
 - **No `!.` in tests**: Never use the null-forgiving operator to access nullable
