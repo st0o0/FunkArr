@@ -7,12 +7,12 @@ using FunkArr.Messages.Shared;
 using FunkArr.Persistence.Events.Download;
 using Microsoft.Extensions.Options;
 using Servus.Akka;
+using Servus.Resilience;
 
 namespace FunkArr.Download;
 
 public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 {
-    private static readonly TimeSpan _maxBackoff = TimeSpan.FromMinutes(5);
     private const string _retryTimerKey = "retry";
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
@@ -23,6 +23,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private readonly DataPaths _dataPaths;
     private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
     private readonly TimeProvider _timeProvider;
+    private readonly BackoffPolicy _backoff;
     private readonly Guid _downloadId;
     private DownloadWorkerState _state = DownloadWorkerState.Empty;
     private CancellationTokenSource? _cts;
@@ -43,6 +44,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         _dataPaths = dataPaths;
         _optionsMonitor = options;
         _timeProvider = timeProvider;
+        _backoff = Backoff.Create(options.CurrentValue.RetryBackoffBase, maxDelay: TimeSpan.FromMinutes(5));
 
         Command<InitDownload>(HandleInit);
         Command<StartDownload>(HandleStart);
@@ -208,7 +210,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 
             if (ShouldRetry(msg.FailureKind))
             {
-                var delay = CalculateBackoff(_state.Attempt);
+                var delay = _backoff.DelayWithJitter(Math.Max(0, _state.Attempt - 1));
                 _log.Info("Download {DownloadId} scheduling retry {Attempt} in {Delay}s", _downloadId, _state.Attempt + 1, delay.TotalSeconds);
                 Timers.StartSingleTimer(_retryTimerKey, new RetryAttempt(), delay);
             }
@@ -248,13 +250,6 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         return opts.RetryEnabled
             && failureKind == FailureKind.Transient
             && _state.Attempt < opts.MaxRetries;
-    }
-
-    private TimeSpan CalculateBackoff(int attempt)
-    {
-        var opts = _optionsMonitor.CurrentValue;
-        var delay = opts.RetryBackoffBase * Math.Pow(2, Math.Max(0, attempt - 1));
-        return delay > _maxBackoff ? _maxBackoff : delay;
     }
 
     private void StartFfmpeg(string outputPath)

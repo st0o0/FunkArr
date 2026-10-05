@@ -8,6 +8,7 @@ using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 using Servus.Akka;
+using Servus.Resilience;
 
 namespace FunkArr.Search;
 
@@ -18,8 +19,8 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
     private static readonly TimeSpan _scoringTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
 
-    private static readonly TimeSpan[] _retryBackoff =
-        [TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(1500)];
+    private static readonly BackoffPolicy _retryBackoff =
+        Backoff.Create(TimeSpan.FromMilliseconds(500), multiplier: 3.0, maxDelay: TimeSpan.FromMilliseconds(1500));
 
     private const int MaxRetries = 2;
 
@@ -95,7 +96,7 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
         {
             if (_state.Attempt < MaxRetries)
             {
-                var delay = _retryBackoff[_state.Attempt];
+                var delay = _retryBackoff.DelayWithJitter(_state.Attempt);
                 _log.Info("TV search {SearchId} queue full, retry {Attempt} in {Delay}ms",
                     _state.SearchId, _state.Attempt + 1, delay.TotalMilliseconds);
                 Timers.StartSingleTimer("mediathek-retry",
