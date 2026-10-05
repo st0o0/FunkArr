@@ -122,6 +122,31 @@ dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
   must send a request to at least one mapped route and assert on the response
   (status code and/or body), not only that `IEndpointRouteBuilder.DataSources`
   is non-empty.
+- **Assert the exact computed value, not just existence.** When behavior
+  produces a concrete value (a string, a count, a computed field), assert on
+  that value directly instead of settling for "it's not null" or "it's not
+  empty."
+- **Exceptions: capture and inspect, not just the type.**
+  `var ex = Assert.Throws<T>(...)` / `await Assert.ThrowsAsync<T>(...)`, then
+  assert on `ex`'s actual fields (`ex.ParamName`, `ex.Message`, custom
+  properties) — not just the exception type.
+- **Mock-call assertions specify exact args and count** —
+  `mock.Received(1).Method(Arg.Is<T>(x => ...))`, not just "was called" /
+  "didn't throw."
+- **`Assert.IsType<T>(obj, exactMatch: false)`** to prove interface/base-type
+  conformance instead of an unchecked cast.
+- **No `Thread.Sleep`/arbitrary delay for async or eventually-consistent
+  state.** Use a bounded wait with a descriptive timeout failure instead.
+  Akka actor tests already get this for free via `TestProbe.ExpectMsg`/
+  `AwaitAssert`.
+- **`Assert.Multiple`** for grouped assertions on the same object/outcome, so
+  one run reports every failing assertion instead of stopping at the first.
+- **`Assert.Equal(expected, actual)` over `Assert.True(actual == expected)`**
+  — better failure messages.
+- Prefer `Theory`/`InlineData`/`MemberData` for small input/output sweeps;
+  prefer separate named `[Fact]`s when each case needs a large distinct
+  fixture (e.g. an embedded JSON payload) — a readable failure name beats
+  DRY in that case.
 
 ## Message naming convention
 
