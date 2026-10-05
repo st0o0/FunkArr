@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/st0o0/FunkArr/compare/rulesets-v0.3.0...rulesets-v0.3.1) (2026-10-05)
+
+
+### Documentation
+
+* update README and set strategy-based ruleset confidence values ([c430cd7](https://github.com/st0o0/FunkArr/commit/c430cd7dc229b8e8d019917d5949940bf96f2811))
+
 ## [0.3.0](https://github.com/st0o0/FunkArr/compare/rulesets-v0.2.0...rulesets-v0.3.0) (2026-09-24)
 
 
