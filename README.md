@@ -21,7 +21,7 @@ No Usenet account needed. No torrents. Just direct downloads from public media l
 
 - **Newznab indexer API** - add FunkArr in Prowlarr or directly in Sonarr/Radarr as an indexer
 - **SABnzbd download client API** - add it as a SABnzbd download client in Sonarr/Radarr
-- **Community rulesets** - map messy Mediathek titles to structured season/episode format, auto-synced from GitHub ([browse catalog](https://st0o0.github.io/funkarr/en/rulesets/catalog))
+- **Community rulesets** - map messy Mediathek titles to structured season/episode format, auto-synced from GitHub ([browse catalog](https://funkarr.st0o0.net/en/rulesets/catalog))
 - **RuleSet builder** - create and test rulesets with a visual editor and debugger in the web UI
 - **Metadata resolution** - resolves series and movies via TMDB and TVDB for accurate matching
 - **Match intelligence** - tracks which mappings worked so results improve over time
@@ -139,7 +139,7 @@ All configuration is via environment variables. Defaults work out of the box - t
 | `FunkArr__Postgres__Password` | _(empty)_ | PostgreSQL password |
 | `FunkArr__Postgres__Database` | `funkarr` | PostgreSQL database name |
 
-See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://st0o0.github.io/funkarr/en/configuration).
+See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://funkarr.st0o0.net/en/configuration).
 
 ## Build & Test
 
