@@ -15,4 +15,8 @@
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
 </Project>

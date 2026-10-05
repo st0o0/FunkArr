@@ -8,7 +8,6 @@
     <ProjectReference Include="..\FunkArr.Api\FunkArr.Api.csproj" />
     <ProjectReference Include="..\FunkArr.ArrApi\FunkArr.ArrApi.csproj" />
     <ProjectReference Include="..\FunkArr.RuleSet\FunkArr.RuleSet.csproj" />
-    <ProjectReference Include="..\FunkArr.Tests.Shared\FunkArr.Tests.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +20,10 @@
     <PackageReference Include="xunit.v3.mtp-v2" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
   </ItemGroup>
 
 </Project>

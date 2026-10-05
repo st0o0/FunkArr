@@ -20,5 +20,8 @@
     <EmbeddedResource Include="Resources\**\*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
 
 </Project>
