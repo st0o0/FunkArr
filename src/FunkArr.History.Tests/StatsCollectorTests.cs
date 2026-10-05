@@ -113,8 +113,7 @@ public sealed class StatsCollectorTests : TestKit
     {
         var actor = Sys.ActorOf(Props.Create<StatsCollector>());
 
-        var query = _ruleSetResolverProbe.ExpectMsg<QueryRegisteredRuleSets>();
-        Assert.NotNull(query);
+        _ruleSetResolverProbe.ExpectMsg<QueryRegisteredRuleSets>();
 
         _ruleSetResolverProbe.Reply(new RegisteredRuleSetsResult([
             new RegisteredRuleSetEntry("rs-1", "Test Topic", [], new ExternalIds(null, null, null), null, null)

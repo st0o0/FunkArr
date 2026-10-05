@@ -112,8 +112,12 @@ public sealed class SetupHealthCheckTests
     [Fact]
     public void Storage_directory_returns_result_for_any_path()
     {
-        var result = SystemApiEndpoints.GetStorageDirectory("/nonexistent/path/that/does/not/exist");
+        const string invalidPath = "\0invalid-path";
 
-        Assert.NotNull(result.Path);
+        var result = SystemApiEndpoints.GetStorageDirectory(invalidPath);
+
+        Assert.Equal(invalidPath, result.Path);
+        Assert.Equal(0, result.AvailableBytes);
+        Assert.Equal(0, result.TotalBytes);
     }
 }

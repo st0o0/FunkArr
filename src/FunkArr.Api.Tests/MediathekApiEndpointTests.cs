@@ -1,24 +1,53 @@
+using System.Net;
+using Akka.Actor;
+using Akka.Hosting;
 using FunkArr.Api.Extensions;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FunkArr.Api.Tests;
 
-public sealed class MediathekApiEndpointTests
+public sealed class MediathekApiEndpointTests : IAsyncLifetime
 {
-    [Fact]
-    public void MapMediathekApi_registers_search_endpoint()
+    private WebApplication _app = null!;
+    private ActorSystem _actorSystem = null!;
+
+    public HttpClient Client { get; private set; } = null!;
+
+    public async ValueTask InitializeAsync()
     {
         var builder = WebApplication.CreateBuilder();
-        var app = builder.Build();
+        builder.WebHost.UseTestServer();
 
-        app.MapMediathekApi();
+        _actorSystem = ActorSystem.Create("mediathekapi-endpoint-tests");
+        var registry = ActorRegistry.For(_actorSystem);
+        builder.Services.AddSingleton<IActorRegistry>(registry);
 
-        var endpoints = app as IEndpointRouteBuilder;
-        var dataSource = endpoints.DataSources;
+        _app = builder.Build();
+        _app.MapMediathekApi();
 
-        Assert.NotEmpty(dataSource);
+        await _app.StartAsync();
+        Client = _app.GetTestClient();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Client.Dispose();
+        await _app.StopAsync();
+        await _app.DisposeAsync();
+        await _actorSystem.Terminate();
+    }
+
+    [Fact]
+    public async Task Search_without_query_terms_returns_bad_request()
+    {
+        var response = await Client.GetAsync("/api/mediathek/search");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("At least one of q, channel, or topic is required", body);
     }
 
     [Fact]

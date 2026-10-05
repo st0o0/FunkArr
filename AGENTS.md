@@ -112,6 +112,16 @@ dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
   count and binds the element.
 - **Count guard before indexing**: When accessing multiple elements by index,
   assert the count first: `Assert.Equal(2, list.Count)` before `list[0]`/`list[1]`.
+- **No vacuous assertion after an already-proven value**: Once a value's type
+  and non-null state are already proven (e.g. by `ExpectMsg<T>()`), the
+  following assertion must inspect its actual content (property values,
+  message text, counts), not just `Assert.NotNull(result)` again. A
+  `Assert.NotNull(value)` used as a null guard before further property
+  assertions is still correct and not vacuous.
+- **Endpoint-registration tests assert real behavior**: A test for `Map<X>Api`
+  must send a request to at least one mapped route and assert on the response
+  (status code and/or body), not only that `IEndpointRouteBuilder.DataSources`
+  is non-empty.
 
 ## Message naming convention
 

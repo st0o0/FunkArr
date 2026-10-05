@@ -47,6 +47,8 @@ public sealed class ApiKeyActionFilterTests
 
         Assert.False(called);
         Assert.NotNull(context.Result);
+        Assert.IsType<ContentResult>(context.Result);
+        Assert.Equal(403, ((ContentResult)context.Result).StatusCode);
     }
 
     [Fact]

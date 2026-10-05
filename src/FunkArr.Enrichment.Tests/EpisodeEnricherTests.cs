@@ -389,9 +389,9 @@ public sealed class EpisodeEnricherTests
         var results = EpisodeEnricher.Resolve(allEpisodes, candidates);
         var result = Assert.Single(results);
 
-        var penalized = result with { Confidence = result.Confidence * 0.9f };
-        Assert.True(penalized.Confidence < result.Confidence);
-        Assert.True(penalized.Confidence > 0.8f);
+        Assert.Equal("2025", result.Season);
+        Assert.Equal("5", result.Episode);
+        Assert.Equal(1.0f, result.Confidence);
     }
 
     [Fact]

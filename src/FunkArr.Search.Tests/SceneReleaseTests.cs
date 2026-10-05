@@ -4,8 +4,6 @@ namespace FunkArr.Search.Tests;
 
 public sealed class SceneReleaseTests
 {
-    // --- ForShow identifier resolution ---
-
     [Fact]
     public void ForShow_SeasonAndEpisode()
     {
@@ -78,8 +76,6 @@ public sealed class SceneReleaseTests
         Assert.Equal("Tatort", release.MediaName);
         Assert.Equal("Herz aus Eis", release.EpisodeTitle);
     }
-
-    // --- ForMovie identifier resolution ---
 
     [Fact]
     public void ForMovie_EnrichedYear()
@@ -225,8 +221,6 @@ public sealed class SceneReleaseTests
         Assert.Equal(1, CountOccurrences(title, "S2026E10"));
     }
 
-    // --- Expand ---
-
     [Fact]
     public void Expand_AllThreeUrls_ThreeVariants()
     {
@@ -328,8 +322,6 @@ public sealed class SceneReleaseTests
         Assert.Equal(0.85f, result.Metadata.MatchConfidence);
         Assert.Equal(MatchMethod.TitleMatch, result.Metadata.MatchMethod);
     }
-
-    // --- Helpers ---
 
     private static EnrichedItem MakeItem(
         string? season = null, string? episode = null, int? year = null,

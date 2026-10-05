@@ -42,7 +42,9 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
         manager.Tell(new QueryCacheStats());
 
         var stats = ExpectMsg<CacheStatsResult>();
-        Assert.NotNull(stats);
+        Assert.Equal(0, stats.TvdbEntries);
+        Assert.Equal(0, stats.TmdbEntries);
+        Assert.Null(stats.OldestEntry);
     }
 
     [Fact]
@@ -58,7 +60,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
         manager.Tell(new EnrichEpisodes(83214, 2026, candidates));
 
         var response = ExpectMsg<EnrichEpisodesFailed>();
-        Assert.NotNull(response);
+        Assert.Contains("not configured", response.Cause.Message);
     }
 
     [Fact]

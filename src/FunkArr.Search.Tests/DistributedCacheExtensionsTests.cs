@@ -7,8 +7,7 @@ namespace FunkArr.Search.Tests;
 
 public sealed class DistributedCacheExtensionsTests
 {
-    private static IDistributedCache CreateCache() =>
-        new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
+    private static MemoryDistributedCache CreateCache() => new(Options.Create(new MemoryDistributedCacheOptions()));
 
     private sealed record TestData(string Name, int Value);
 
