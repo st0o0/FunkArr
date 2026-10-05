@@ -25,8 +25,5 @@ public sealed class DownloadSetupContainer : ApplicationSetupContainer<WebApplic
             .AddCheck<FfmpegHealthCheck>("ffmpeg", failureStatus: HealthStatus.Unhealthy);
     }
 
-    protected override void SetupApplication(WebApplication app)
-    {
-        app.MapDownloadsApi();
-    }
+    protected override void SetupApplication(WebApplication app) => app.MapDownloadsApi();
 }

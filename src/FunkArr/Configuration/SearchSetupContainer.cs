@@ -30,8 +30,5 @@ public sealed class SearchSetupContainer : ApplicationSetupContainer<WebApplicat
             .AddCheck<MediathekViewWebHealthCheck>("mediathekviewweb", failureStatus: HealthStatus.Degraded);
     }
 
-    protected override void SetupApplication(WebApplication app)
-    {
-        app.MapMediathekApi();
-    }
+    protected override void SetupApplication(WebApplication app) => app.MapMediathekApi();
 }

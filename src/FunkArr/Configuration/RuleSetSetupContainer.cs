@@ -35,8 +35,5 @@ public sealed class RuleSetSetupContainer : ApplicationSetupContainer<WebApplica
         });
     }
 
-    protected override void SetupApplication(WebApplication app)
-    {
-        app.MapRuleSetApi();
-    }
+    protected override void SetupApplication(WebApplication app) => app.MapRuleSetApi();
 }
