@@ -1,6 +1,6 @@
 using FunkArr.Api;
 using Serilog;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 
 namespace FunkArr.Configuration;
 

@@ -1,10 +1,9 @@
 using System.Net.Mime;
 using FunkArr.Api;
 using FunkArr.Api.HealthChecks;
-using FunkArr.Core;
 using FunkArr.Search;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 
 namespace FunkArr.Configuration;
 

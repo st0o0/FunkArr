@@ -4,7 +4,7 @@ using FunkArr.Core;
 using FunkArr.Download;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 
 namespace FunkArr.Configuration;
 

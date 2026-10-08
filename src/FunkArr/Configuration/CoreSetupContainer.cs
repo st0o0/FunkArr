@@ -5,7 +5,7 @@ using FunkArr.Core;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 
 namespace FunkArr.Configuration;
 

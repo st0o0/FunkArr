@@ -1,7 +1,7 @@
 using FunkArr.Api;
 using FunkArr.Core;
 using FunkArr.RuleSet;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 
 namespace FunkArr.Configuration;
 

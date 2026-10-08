@@ -1,6 +1,6 @@
 using FunkArr.Configuration;
 using Serilog;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 using ApplicationSetupContainer = FunkArr.Configuration.ApplicationSetupContainer;
 
 Log.Logger = new LoggerConfiguration()

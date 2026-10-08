@@ -1,12 +1,12 @@
 using FunkArr.Core;
 using FunkArr.Enrichment;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 
 namespace FunkArr.Configuration;
 
 public sealed class EnrichmentSetupContainer : IServiceSetupContainer
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void SetupServices(IServiceCollection services, IConfiguration _)
     {
         services
             .AddOptions<TvdbOptions>()

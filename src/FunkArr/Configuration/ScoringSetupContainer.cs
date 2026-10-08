@@ -1,5 +1,5 @@
 using FunkArr.Core;
-using Servus.Core.Application.Startup;
+using Servus.Application.Startup;
 
 namespace FunkArr.Configuration;
 
