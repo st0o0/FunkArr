@@ -65,8 +65,17 @@ public sealed class DownloadManager : ReceivePersistentActor
             DispatchNext();
         });
 
-        Command<SaveSnapshotSuccess>(_ => { });
+        Command<SaveSnapshotSuccess>(e =>
+        {
+            _log.Debug("Snapshot saved at sequence {SequenceNr}, cleaning journal", e.Metadata.SequenceNr);
+            DeleteMessages(e.Metadata.SequenceNr);
+            DeleteSnapshots(new SnapshotSelectionCriteria(e.Metadata.SequenceNr - 1));
+        });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
+        Command<DeleteMessagesSuccess>(e => _log.Debug("Journal cleaned up to sequence {SequenceNr}", e.ToSequenceNr));
+        Command<DeleteMessagesFailure>(e => _log.Warning(e.Cause, "Journal cleanup failed up to sequence {SequenceNr}", e.ToSequenceNr));
+        Command<DeleteSnapshotsSuccess>(e => _log.Debug("Old snapshots cleaned up to sequence {SequenceNr}", e.Criteria.MaxSequenceNr));
+        Command<DeleteSnapshotsFailure>(e => _log.Warning(e.Cause, "Snapshot cleanup failed"));
 
         options.OnChange(opts =>
         {
