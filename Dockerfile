@@ -36,6 +36,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f62a272ac1b46e83f56b8ed0
 # hadolint ignore=DL3018
 RUN apk add --no-cache ffmpeg icu-libs su-exec
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV DOTNET_gcServer=0
+ENV DOTNET_GCConserveMemory=9
 ARG VERSION=0.0.0-dev
 LABEL org.opencontainers.image.title="funkarr" \
       org.opencontainers.image.description="German public broadcaster media libraries for the *arr ecosystem" \
