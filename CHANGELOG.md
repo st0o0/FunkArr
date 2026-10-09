@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.3.2](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.1...funkarr-v0.3.2) (2026-10-09)
+
+
+### Features
+
+* **persistence:** add journal cleanup after snapshot saves ([853096c](https://github.com/st0o0/FunkArr/commit/853096c7bfe701210533fc50974f2eb386eb1b7e))
+
+
+### Bug Fixes
+
+* grant pull-requests/issues write permission to labeler and label-sync callers ([cd24d93](https://github.com/st0o0/FunkArr/commit/cd24d937a0e9553cca349df315ecc0e843c52165))
+* **ui:** pin vue-tsc to 3.3.11 to avoid 3.3.12 type-check regression ([4eb3307](https://github.com/st0o0/FunkArr/commit/4eb33070e1fcb567be1c098958e26639f89f7585))
+
+
+### Performance
+
+* **docker:** Optimize .NET GC for lower memory usage ([6d05fd7](https://github.com/st0o0/FunkArr/commit/6d05fd7161abfd0d093d194cd048f0be1e13f71c))
+
+
+### Documentation
+
+* extend test assertion conventions with xUnit best practices ([7983038](https://github.com/st0o0/FunkArr/commit/79830382687da1587e8c9e0e3661b3256871d2cf))
+* point documentation links to funkarr.st0o0.net ([0374f93](https://github.com/st0o0/FunkArr/commit/0374f93001d2ee6d643173bfb2f39b0d4c2f8956))
+* update README and set strategy-based ruleset confidence values ([c430cd7](https://github.com/st0o0/FunkArr/commit/c430cd7dc229b8e8d019917d5949940bf96f2811))
+
+
+### Refactoring
+
+* replace hand-rolled backoff with Servus.Resilience BackoffPolicy ([87eb519](https://github.com/st0o0/FunkArr/commit/87eb519604ab85bfcfabe5e38e79333f6e81aadb))
+* Simplify setup container API mapping ([8edeca2](https://github.com/st0o0/FunkArr/commit/8edeca29a940c808f8cc72d4af848a3b811a3ff6))
+
 ## [0.3.1](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.0...funkarr-v0.3.1) (2026-10-04)
 
 
