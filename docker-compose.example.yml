@@ -1,6 +1,6 @@
 services:
   funkarr:
-    image: ghcr.io/st0o0/funkarr:latest@sha256:6e2d687c8ad8337515d966624855cebd375a18dfae3594f6272c5bc16e9a3cff
+    image: ghcr.io/st0o0/funkarr:latest@sha256:dcdb4f5fd6287c061b3bbad655f0def7a13ab3d11616f7b9b2b1f684a0dbae28
     restart: unless-stopped
     ports:
       - "8080:6969"
