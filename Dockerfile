@@ -8,7 +8,7 @@ RUN pnpm install --frozen-lockfile
 COPY src/FunkArr.UI/ .
 RUN pnpm run build
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:3cc3bbbbf93d82104892f42aa9106b6be4d120346dea0649643a97c801525256 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:230c3fbae0ceedc70bca04eed2bfb5694e8b248cadbb81010f41b7a993601f55 AS build
 ARG TARGETARCH
 ARG VERSION=0.0.0-dev
 WORKDIR /src
@@ -32,7 +32,7 @@ COPY data/community/ruleset.schema.json /data/community/ruleset.schema.json
 COPY --from=ui /ui/dist/ FunkArr/wwwroot/
 RUN dotnet publish FunkArr/FunkArr.csproj -c Release -a ${TARGETARCH} -o /app/publish /p:Version=${VERSION} /p:ContinuousIntegrationBuild=true
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:f62a272ac1b46e83f56b8ed0416572f31cd1128e2c4a5e63eb34d348e4a36095
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine@sha256:819bd3649d8bf53f35527c68d62e17b348ef6f24ae73073f497f00a878348062
 # hadolint ignore=DL3018
 RUN apk add --no-cache ffmpeg icu-libs su-exec
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
