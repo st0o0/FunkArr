@@ -131,14 +131,14 @@
                 v-for="(rt, ri) in item.ruleTraces"
                 :key="ri"
                 class="pl-3 border-l-2"
-                :class="outcomeBorderClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === RuleOutcome.Matched))"
+                :class="outcomeBorderClass(rt.outcome, isSkipped(rt, item, ri))"
               >
                 <div class="flex items-center gap-2 text-xs mb-1">
                   <span class="font-mono text-text-body">{{ rt.ruleId }}</span>
                   <span class="text-text-secondary">prio {{ rt.priority }}</span>
                   <span
                     class="px-1.5 py-0.5 rounded text-[11px] font-medium"
-                    :class="outcomeBadgeClass(rt.outcome, item.matched && ri > item.ruleTraces.findIndex(r => r.outcome === RuleOutcome.Matched))"
+                    :class="outcomeBadgeClass(rt.outcome, isSkipped(rt, item, ri))"
                   >{{ isSkipped(rt, item, ri) ? $t('preview.skipped') : outcomeLabel(rt.outcome) }}</span>
                 </div>
 
