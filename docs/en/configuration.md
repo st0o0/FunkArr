@@ -127,9 +127,9 @@ Example configuration:
 ```
 FunkArr__Routes__Definitions__0__Name=Direct
 FunkArr__Routes__Definitions__1__Name=Austria
-FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+FunkArr__Routes__Definitions__1__Proxy=http://gluetun-at:8888
 FunkArr__Routes__Definitions__2__Name=Switzerland
-FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+FunkArr__Routes__Definitions__2__Proxy=http://gluetun-ch:8888
 
 FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
 FunkArr__Routes__ChannelRoutes__0__Route=Austria
@@ -149,7 +149,7 @@ The route applies to the entire download pipeline: both subtitle downloads and F
 
 ### Docker Compose with Proxy Infrastructure
 
-A complete example with FunkArr, HTTP proxies, and WireGuard VPN gateways:
+A complete example with FunkArr and gluetun VPN gateways, each exposing an HTTP proxy:
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
       # Route definitions
       - FunkArr__Routes__Definitions__0__Name=Direct
       - FunkArr__Routes__Definitions__1__Name=Austria
-      - FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+      - FunkArr__Routes__Definitions__1__Proxy=http://gluetun-at:8888
       - FunkArr__Routes__Definitions__2__Name=Switzerland
-      - FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+      - FunkArr__Routes__Definitions__2__Proxy=http://gluetun-ch:8888
       # Channel mapping
       - FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
       - FunkArr__Routes__ChannelRoutes__0__Route=Austria
@@ -176,46 +176,48 @@ services:
       - FunkArr__Routes__ChannelRoutes__1__Route=Switzerland
       - FunkArr__Routes__Default=Direct
 
-  # Austria: HTTP proxy in front of WireGuard gateway
-  tinyproxy-at:
-    image: monokal/tinyproxy
-    restart: unless-stopped
-    network_mode: "service:wireguard-at"
-
-  wireguard-at:
-    image: lscr.io/linuxserver/wireguard
+  # Austria: gluetun WireGuard gateway with built-in HTTP proxy
+  gluetun-at:
+    image: qmcgaw/gluetun:latest
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
-    volumes:
-      - ./wireguard/at:/config
+    devices:
+      - /dev/net/tun:/dev/net/tun
     environment:
-      - PUID=1000
-      - PGID=1000
+      - VPN_SERVICE_PROVIDER=<your provider>
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=<your key>
+      - WIREGUARD_ADDRESSES=<your address>
+      - SERVER_COUNTRIES=Austria
+      - HTTPPROXY=on
 
-  # Switzerland: HTTP proxy in front of WireGuard gateway
-  tinyproxy-ch:
-    image: monokal/tinyproxy
-    restart: unless-stopped
-    network_mode: "service:wireguard-ch"
-
-  wireguard-ch:
-    image: lscr.io/linuxserver/wireguard
+  # Switzerland: gluetun WireGuard gateway with built-in HTTP proxy
+  gluetun-ch:
+    image: qmcgaw/gluetun:latest
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
-    volumes:
-      - ./wireguard/ch:/config
+    devices:
+      - /dev/net/tun:/dev/net/tun
     environment:
-      - PUID=1000
-      - PGID=1000
+      - VPN_SERVICE_PROVIDER=<your provider>
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=<your key>
+      - WIREGUARD_ADDRESSES=<your address>
+      - SERVER_COUNTRIES=Switzerland
+      - HTTPPROXY=on
 
 volumes:
   funkarr-data:
 ```
 
 ::: tip
-The proxy containers (`tinyproxy-at`, `tinyproxy-ch`) use `network_mode: "service:wireguard-*"`, so all their network traffic flows through the respective WireGuard tunnel. FunkArr reaches them via the internal Docker network - the proxies don't need to be publicly accessible.
+Each gluetun container tunnels its traffic through WireGuard and serves the HTTP proxy itself (`HTTPPROXY=on`, port 8888). FunkArr reaches it via the internal Docker network - the proxies don't need to be publicly accessible.
+:::
+
+::: warning
+Use a gluetun image built on Go 1.26.9 / 1.27.2 or newer. Older builds answer `CONNECT` with `Transfer-Encoding: chunked`, which makes FFmpeg fail the TLS handshake through the proxy ([gluetun#3489](https://github.com/passteque/gluetun/issues/3489)). Any other HTTP proxy that supports `CONNECT` (e.g. tinyproxy) works as well.
 :::
 
 ## Rulesets

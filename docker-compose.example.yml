@@ -67,9 +67,9 @@ services:
       # Route definitions: Name + optional Proxy URI
       #- FunkArr__Routes__Definitions__0__Name=Direct
       #- FunkArr__Routes__Definitions__1__Name=Austria
-      #- FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+      #- FunkArr__Routes__Definitions__1__Proxy=http://gluetun-at:8888
       #- FunkArr__Routes__Definitions__2__Name=Switzerland
-      #- FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+      #- FunkArr__Routes__Definitions__2__Proxy=http://gluetun-ch:8888
       # Channel-to-route patterns (first match wins, glob via FileSystemName)
       #- FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
       #- FunkArr__Routes__ChannelRoutes__0__Route=Austria

@@ -67,18 +67,6 @@ services:
       PROWLARR__AUTH__METHOD: External
       PROWLARR__AUTH__REQUIRED: DisabledForLocalAddresses
 
-  tinyproxy-at:
-    container_name: tinyproxy-at
-    image: kalaksi/tinyproxy@sha256:fafafc7079ca29c6704564de1353f61d038f2166f09b01d4e460e8e499bf6b57
-    restart: unless-stopped
-    network_mode: "service:gluetun-at"
-    environment:
-      - PORT=8888
-      - TIMEOUT=600
-      - LOGLEVEL=Info
-    profiles:
-      - proxy
-
   gluetun-at:
     container_name: gluetun-at
     image: qmcgaw/gluetun@sha256:945d325be5c2abe50b89c84791b51a4e3d039737ed3703b2482c1e2b396e8fbe
@@ -94,6 +82,8 @@ services:
       - WIREGUARD_PRESHARED_KEY=${WG_PRESHARED_KEY:-}
       - WIREGUARD_ADDRESSES=${WG_ADDRESSES:-}
       - SERVER_COUNTRIES=Austria
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=on
     profiles:
       - proxy
 

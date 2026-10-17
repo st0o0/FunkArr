@@ -127,9 +127,9 @@ Beispiel-Konfiguration:
 ```
 FunkArr__Routes__Definitions__0__Name=Direct
 FunkArr__Routes__Definitions__1__Name=Austria
-FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+FunkArr__Routes__Definitions__1__Proxy=http://gluetun-at:8888
 FunkArr__Routes__Definitions__2__Name=Switzerland
-FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+FunkArr__Routes__Definitions__2__Proxy=http://gluetun-ch:8888
 
 FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
 FunkArr__Routes__ChannelRoutes__0__Route=Austria
@@ -149,7 +149,7 @@ Die Route gilt fur die gesamte Download-Pipeline: sowohl der Untertitel-Download
 
 ### Docker Compose mit Proxy-Infrastruktur
 
-Ein vollstandiges Beispiel mit FunkArr, HTTP-Proxys und WireGuard-VPN-Gateways:
+Ein vollstandiges Beispiel mit FunkArr und gluetun-VPN-Gateways, die jeweils einen HTTP-Proxy bereitstellen:
 
 ```yaml
 services:
@@ -166,9 +166,9 @@ services:
       # Routen-Definitionen
       - FunkArr__Routes__Definitions__0__Name=Direct
       - FunkArr__Routes__Definitions__1__Name=Austria
-      - FunkArr__Routes__Definitions__1__Proxy=http://tinyproxy-at:8888
+      - FunkArr__Routes__Definitions__1__Proxy=http://gluetun-at:8888
       - FunkArr__Routes__Definitions__2__Name=Switzerland
-      - FunkArr__Routes__Definitions__2__Proxy=http://tinyproxy-ch:8888
+      - FunkArr__Routes__Definitions__2__Proxy=http://gluetun-ch:8888
       # Sender-Zuordnung
       - FunkArr__Routes__ChannelRoutes__0__Pattern=ORF*
       - FunkArr__Routes__ChannelRoutes__0__Route=Austria
@@ -176,46 +176,48 @@ services:
       - FunkArr__Routes__ChannelRoutes__1__Route=Switzerland
       - FunkArr__Routes__Default=Direct
 
-  # Osterreich: HTTP-Proxy vor WireGuard-Gateway
-  tinyproxy-at:
-    image: monokal/tinyproxy
-    restart: unless-stopped
-    network_mode: "service:wireguard-at"
-
-  wireguard-at:
-    image: lscr.io/linuxserver/wireguard
+  # Osterreich: gluetun-WireGuard-Gateway mit eingebautem HTTP-Proxy
+  gluetun-at:
+    image: qmcgaw/gluetun:latest
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
-    volumes:
-      - ./wireguard/at:/config
+    devices:
+      - /dev/net/tun:/dev/net/tun
     environment:
-      - PUID=1000
-      - PGID=1000
+      - VPN_SERVICE_PROVIDER=<dein Anbieter>
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=<dein Schluessel>
+      - WIREGUARD_ADDRESSES=<deine Adresse>
+      - SERVER_COUNTRIES=Austria
+      - HTTPPROXY=on
 
-  # Schweiz: HTTP-Proxy vor WireGuard-Gateway
-  tinyproxy-ch:
-    image: monokal/tinyproxy
-    restart: unless-stopped
-    network_mode: "service:wireguard-ch"
-
-  wireguard-ch:
-    image: lscr.io/linuxserver/wireguard
+  # Schweiz: gluetun-WireGuard-Gateway mit eingebautem HTTP-Proxy
+  gluetun-ch:
+    image: qmcgaw/gluetun:latest
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
-    volumes:
-      - ./wireguard/ch:/config
+    devices:
+      - /dev/net/tun:/dev/net/tun
     environment:
-      - PUID=1000
-      - PGID=1000
+      - VPN_SERVICE_PROVIDER=<dein Anbieter>
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=<dein Schluessel>
+      - WIREGUARD_ADDRESSES=<deine Adresse>
+      - SERVER_COUNTRIES=Switzerland
+      - HTTPPROXY=on
 
 volumes:
   funkarr-data:
 ```
 
 ::: tip
-Die Proxy-Container (`tinyproxy-at`, `tinyproxy-ch`) verwenden `network_mode: "service:wireguard-*"`, sodass ihr gesamter Netzwerkverkehr durch den jeweiligen WireGuard-Tunnel fliesst. FunkArr erreicht sie uber das interne Docker-Netzwerk - die Proxys mussen nicht offentlich erreichbar sein.
+Jeder gluetun-Container leitet seinen Verkehr durch WireGuard und stellt den HTTP-Proxy selbst bereit (`HTTPPROXY=on`, Port 8888). FunkArr erreicht ihn uber das interne Docker-Netzwerk - die Proxys mussen nicht offentlich erreichbar sein.
+:::
+
+::: warning
+Verwende ein gluetun-Image, das mit Go 1.26.9 / 1.27.2 oder neuer gebaut wurde. Altere Builds antworten auf `CONNECT` mit `Transfer-Encoding: chunked`, wodurch FFmpeg den TLS-Handshake uber den Proxy nicht abschliessen kann ([gluetun#3489](https://github.com/passteque/gluetun/issues/3489)). Jeder andere HTTP-Proxy mit `CONNECT`-Unterstutzung (z. B. tinyproxy) funktioniert ebenfalls.
 :::
 
 ## Regelwerke
