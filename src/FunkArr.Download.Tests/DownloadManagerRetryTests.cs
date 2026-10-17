@@ -67,18 +67,18 @@ public sealed class DownloadManagerRetryTests : TestKit
     {
         var manager = CreateManager(concurrentDownloads: 1);
 
-        // Add first download — it gets dispatched immediately
+        // Add first download: it gets dispatched immediately
         manager.Tell(new AddDownload(new DownloadMedia("First", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
         var first = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();
 
-        // Add second download — queued but not dispatched (slot full)
+        // Add second download: queued but not dispatched (slot full)
         manager.Tell(new AddDownload(new DownloadMedia("Second", "https://example.com/v2.mp4", null, "ZDF", 1800, 500, MediaType.Show)));
         var second = ExpectMsg<DownloadAdded>();
         _regionProbe.ExpectMsg<InitDownload>();
 
-        // Retry the queued second download — should be rejected
+        // Retry the queued second download, should be rejected
         manager.Tell(new RetryDownload(second.DownloadId));
         var result = ExpectMsg<RetryDownloadResult>();
 
@@ -96,7 +96,7 @@ public sealed class DownloadManagerRetryTests : TestKit
         _regionProbe.ExpectMsg<InitDownload>();
         _regionProbe.ExpectMsg<StartDownload>();
 
-        // Download is dispatched (active) — retry should be rejected
+        // Download is dispatched (active), retry should be rejected
         manager.Tell(new RetryDownload(added.DownloadId));
         var result = ExpectMsg<RetryDownloadResult>();
 
@@ -137,7 +137,7 @@ public sealed class DownloadManagerRetryTests : TestKit
         _regionProbe.ExpectMsg<StartDownload>();
 
         // Complete the first download fully (it was already dequeued via SlotFree)
-        // Now retry the first one — slot is taken by blocking
+        // Now retry the first one, slot is taken by blocking
         manager.Tell(new RetryDownload(active.DownloadId));
         var result = ExpectMsg<RetryDownloadResult>();
 

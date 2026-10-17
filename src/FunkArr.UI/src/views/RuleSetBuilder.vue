@@ -18,7 +18,7 @@
           <ul class="space-y-1">
             <li v-for="(err, idx) in validationErrors" :key="idx" class="text-sm text-text-body">
               <span class="font-mono text-xs text-text-secondary">{{ err.field }}</span>
-              <span class="mx-1 text-text-muted">—</span>
+              <span class="mx-1 text-text-muted">-</span>
               <span>{{ err.message }}</span>
             </li>
           </ul>

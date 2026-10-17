@@ -68,7 +68,7 @@
     "enterTopic": "Gib a Thema ein, damit Kandidaten gladen wern",
     "noCandidatesFound": "Nix gfunden für \"{topic}\"",
     "addRulesToSeeMatches": "Regeln hinzufügen, dann siagst Treffer",
-    "previewDisclaimer": "Nur Vorschau — für genaue Ergebnisse an vollständigen Test starten",
+    "previewDisclaimer": "Nur Vorschau: für genaue Ergebnisse an vollständigen Test starten",
     "matched": "Treffer",
     "noMatch": "Ka Treffer"
   },

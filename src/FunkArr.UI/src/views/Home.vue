@@ -22,7 +22,7 @@
       <div class="bg-surface-raised rounded-lg border border-border-default px-4 py-3">
         <div class="text-xs text-text-secondary mb-1">{{ $t('home.storage') }}</div>
         <div class="flex items-baseline gap-1.5">
-          <span class="text-lg font-semibold text-text-primary tabular-nums">{{ storage ? formatSize(storageUsed) : '—' }}</span>
+          <span class="text-lg font-semibold text-text-primary tabular-nums">{{ storage ? formatSize(storageUsed) : '-' }}</span>
           <span v-if="storage" class="text-xs text-text-secondary">/ {{ formatSize(storage.completeDirectory.totalBytes) }}</span>
         </div>
         <div v-if="storage" class="mt-2 h-1.5 rounded-full bg-surface-elevated overflow-hidden">

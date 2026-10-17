@@ -303,7 +303,7 @@ public static class RuleSetApiEndpoints
         }
         catch
         {
-            // enrichment timeout or failure — return scoring results without enrichment
+            // enrichment timeout or failure: return scoring results without enrichment
         }
 
         return itemTraces;

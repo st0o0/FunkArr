@@ -52,7 +52,7 @@ const hasErrors = () => props.validation.some(v =>
         </div>
         <div class="form-group" style="max-width: 100px">
           <label>Confidence</label>
-          <input v-model.number="rule.confidence" type="number" min="0" max="1" step="0.1" placeholder="—" />
+          <input v-model.number="rule.confidence" type="number" min="0" max="1" step="0.1" placeholder="-" />
         </div>
       </div>
 

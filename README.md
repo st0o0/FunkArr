@@ -97,7 +97,7 @@ Each ruleset carries a confidence score (0.0 – 1.0) that reflects how reliably
 | Season/episode + title fallback | 0.90 | Reliable primary match, title fallback for edge cases |
 | Absolute episode number | 0.90 | Consistent numbering in long-running series |
 | Airdate extraction | 0.85 | Date parsing reliable, but airdate matching depends on guide data |
-| Exact title match | 0.85 | Precise but fragile — any title variation breaks it |
+| Exact title match | 0.85 | Precise but fragile, so any title variation breaks it |
 | Title substring match (shows) | 0.80 | Flexible but can produce false positives |
 | Title substring match (movies) | 0.80 | Static title matching against broadcast listings |
 

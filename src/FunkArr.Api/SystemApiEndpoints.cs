@@ -169,7 +169,7 @@ public static class SystemApiEndpoints
             : key;
 
         return isDefault
-            ? new CheckResult(CheckStatus.Warn, "API key is still the default — change it for security", Value: key, Masked: masked)
+            ? new CheckResult(CheckStatus.Warn, "API key is still the default, change it for security", Value: key, Masked: masked)
             : new CheckResult(CheckStatus.Ok, Value: key, Masked: masked);
     }
 
@@ -213,6 +213,6 @@ public static class SystemApiEndpoints
         var (available, version) = await FfmpegHealthCheck.ProbeAsync();
         return available
             ? new CheckResult(CheckStatus.Ok, Version: version)
-            : CheckResult.Warn("FFmpeg not found on PATH — needed for downloads");
+            : CheckResult.Warn("FFmpeg not found on PATH, needed for downloads");
     }
 }
