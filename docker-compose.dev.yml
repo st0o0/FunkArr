@@ -69,7 +69,7 @@ services:
 
   gluetun-at:
     container_name: gluetun-at
-    image: qmcgaw/gluetun@sha256:945d325be5c2abe50b89c84791b51a4e3d039737ed3703b2482c1e2b396e8fbe
+    image: qmcgaw/gluetun@sha256:3b3e0e7e522c003e64927d6cc59858fa1c48b5188e65253c214c7f2ef504231e
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
