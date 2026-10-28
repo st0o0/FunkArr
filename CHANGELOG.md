@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.3](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.2...funkarr-v0.3.3) (2026-10-28)
+
+
+### Features
+
+* **proxy:** Use gluetun for proxy functionality ([11e8252](https://github.com/st0o0/FunkArr/commit/11e82524120ff19fb7ea6e0aa185138d0f5b9e61))
+
+
+### Bug Fixes
+
+* exclude code coverage tracker from architecture tests ([c0d999e](https://github.com/st0o0/FunkArr/commit/c0d999eacbf9f6228b64f8d2a50a99c4be16cdd2))
+* replace corepack with pinned npm install for Node 26 compatibility ([591e8c8](https://github.com/st0o0/FunkArr/commit/591e8c83ef56e73e3bf65b9f7da4d05f6427b9ab))
+* **ui:** use isSkipped helper in LiveMatchPreview template ([78d5696](https://github.com/st0o0/FunkArr/commit/78d5696f1d06834b9162a7fbc63ba7e69e8b0809))
+
+
+### Documentation
+
+* remove em dashes and simplify wording ([1d86929](https://github.com/st0o0/FunkArr/commit/1d869293f99c84329dadbbee489ebf1e2ebc2c95))
+
 ## [0.3.2](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.1...funkarr-v0.3.2) (2026-10-09)
 
 
