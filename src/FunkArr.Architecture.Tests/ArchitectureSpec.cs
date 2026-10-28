@@ -38,7 +38,8 @@ public sealed class ArchitectureSpec
             .Build();
 
     private static IObjectProvider<IType> InAssembly(Assembly assembly)
-        => Types().That().ResideInAssembly(assembly);
+        => Types().That().ResideInAssembly(assembly)
+            .And().DoNotHaveFullNameContaining("Microsoft.CodeCoverage");
 
     private static readonly IObjectProvider<IType> _messagesLayer = InAssembly(_messagesAssembly);
     private static readonly IObjectProvider<IType> _persistenceLayer = InAssembly(_persistenceAssembly);
