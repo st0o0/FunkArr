@@ -29,7 +29,7 @@
     <PackageVersion Include="FFMpegCore" Version="5.5.0" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
-    <PackageVersion Include="JsonSchema.Net" Version="9.4.1" />
+    <PackageVersion Include="JsonSchema.Net" Version="9.5.0" />
     <PackageVersion Include="System.IO.Abstractions" Version="22.3.0" />
   </ItemGroup>
   <ItemGroup Label="OpenTelemetry">
