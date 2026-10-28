@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
-FROM --platform=$BUILDPLATFORM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS ui
+FROM --platform=$BUILDPLATFORM node:26-slim@sha256:94816674c62774da0d099a947bf4613b9e1972a2733abd0d0cd80e795f8411d0 AS ui
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /ui
 COPY src/FunkArr.UI/package.json src/FunkArr.UI/pnpm-lock.yaml ./
