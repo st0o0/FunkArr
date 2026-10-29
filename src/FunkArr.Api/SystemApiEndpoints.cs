@@ -130,7 +130,8 @@ public static class SystemApiEndpoints
             }
         })
         .WithSummary("Stream log entries via SSE")
-        .ExcludeFromDescription();
+        .ExcludeFromDescription()
+        .DisableRequestTimeout();
 
         group.MapGet("/routes", (IOptionsMonitor<RoutingOptions> routes) =>
         {

@@ -24,6 +24,10 @@ internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> l
             logger.LogWarning(ex, "Timeout in endpoint {Endpoint}", endpoint);
             return ApiResults.GatewayTimeout();
         }
+        catch (OperationCanceledException) when (context.HttpContext.RequestAborted.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             var endpoint = context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown";
