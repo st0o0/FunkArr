@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.3...funkarr-v0.3.4) (2026-10-29)
+
+
+### Bug Fixes
+
+* prevent SSE logs/stream error cascade from request timeout and client disconnect ([5626470](https://github.com/st0o0/FunkArr/commit/5626470bd8106ea14add21dc09dbfb6ce3be89dd))
+
 ## [0.3.3](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.2...funkarr-v0.3.3) (2026-10-28)
 
 
