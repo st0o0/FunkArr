@@ -18,10 +18,9 @@ public sealed class MediathekApiModelTests
     [InlineData("\"abc\"", null)]
     public void FilmlisteTimestamp_is_read_leniently(string rawValue, long? expected)
     {
-        var json = $$"""
-            {"result":{"results":[{"channel":"ARD","topic":"Tatort","title":"T","timestamp":1,"duration":60,
-            "filmlisteTimestamp":{{rawValue}}}],"queryInfo":{"totalResults":1,"filmlisteTimestamp":{{rawValue}}}},"err":null}
-            """;
+        var json =
+            "{\"result\":{\"results\":[{\"channel\":\"ARD\",\"topic\":\"Tatort\",\"title\":\"T\",\"timestamp\":1,\"duration\":60," +
+            "\"filmlisteTimestamp\":" + rawValue + "}],\"queryInfo\":{\"totalResults\":1,\"filmlisteTimestamp\":" + rawValue + "}},\"err\":null}";
 
         var response = JsonSerializer.Deserialize<MediathekApiResponse>(json, _jsonOptions);
 
