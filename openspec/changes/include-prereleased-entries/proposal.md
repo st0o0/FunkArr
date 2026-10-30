@@ -6,7 +6,7 @@ All MediathekViewWeb queries are sent with `future=false`, which hides every ent
 
 ## What Changes
 
-- **BREAKING (behaviour):** pre-released entries are always included; there is no option to turn this off. Verified manually from Germany that such entries are downloadable.
+- Pre-released entries are always included; there is no option to turn this off. Verified manually from Germany that such entries are downloadable.
 - TV and movie searches send their regular `future=false` query plus an identical `future=true` query and merge the results (see `evaluation-workers`); the internal Mediathek search (`/api/mediathek/search`) and the feed ingest query with `future=true`.
 - Documentation explains the behaviour and how to wait for the broadcast instead (Sonarr's release-profile air date restriction).
 
