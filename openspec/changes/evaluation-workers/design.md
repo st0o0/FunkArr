@@ -32,8 +32,8 @@ The search worker resolves the ruleset only when the request has media IDs (need
 ### Feed passes registered media IDs
 `RuleSetLookup` groups feed items per ruleset and keeps the ruleset's `ExternalIds`. The crawler sends `EvaluateSeries(…, TvdbId, ImdbId)` / `EvaluateMovies(…, ImdbId, TmdbId)`. Rulesets without IDs still evaluate, just without enrichment.
 
-### Two queries for pre-released entries
-Every search sends the regular `future=false` query and the same query with `future=true` in parallel, then merges: queue-full wins (so the retry logic applies), then errors, otherwise items are de-duplicated by `UrlVideoHd ?? UrlVideo ?? UrlVideoLow ?? channel|title|timestamp`, first occurrence wins, `Total` and `ListTimestamp` take the maximum. Aired entries are guaranteed their full window; upcoming entries add up to one more window. The cost is one extra (cached) Mediathek request per search.
+### Pre-released entries handled by the Mediathek manager
+An interim version sent a `future=false` and a `future=true` query from every search worker and merged them there. It was replaced by adaptive paging inside `MediathekViewWebManager` (see `include-prereleased-entries`), so search workers send one `QueryMediathek` and receive one response.
 
 ### Evaluation lives in the Feed domain
 The release pipeline (evaluation workers, `SourceInfo`, `SceneRelease`, `ReleaseDisplay`, `EnrichedItem`, `VariantDetector`, …) moves from `FunkArr.Search` to `FunkArr.Feed`. After the split, Search only queries MediathekViewWeb; nothing in Search used these types except the evaluation itself. Search reaches the evaluation through `ITvEvaluationRegion` / `IMovieEvaluationRegion` in Core and the `Evaluate*` messages, so no project reference between the domains is needed. The feed crawler talks to the same regions. A separate `FunkArr.Evaluation` project was considered but adds a project for what is the core of the feed anyway.

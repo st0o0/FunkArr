@@ -55,7 +55,6 @@ public static class MediathekApiEndpoints
                 [.. fields],
                 SortBy: req.SortBy,
                 SortOrder: req.SortOrder,
-                Future: true,
                 Offset: actualOffset,
                 Size: actualLimit,
                 DurationMin: req.DurationMin,

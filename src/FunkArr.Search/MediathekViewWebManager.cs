@@ -10,7 +10,11 @@ namespace FunkArr.Search;
 public sealed class MediathekViewWebManager : ReceiveActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly Dictionary<Guid, IActorRef> _pending = [];
+    private readonly Dictionary<Guid, PendingQuery> _pending = [];
+    private readonly TimeProvider _timeProvider;
+    private ISourceQueueWithComplete<StreamRequest> _queue = null!;
+
+    private sealed record PendingQuery(IActorRef Sender, MediathekQueryPlan Plan);
 
     private sealed record StreamRequest(string Json, Guid RequestId);
 
@@ -27,10 +31,11 @@ public sealed class MediathekViewWebManager : ReceiveActor
 
     private sealed record OfferOutcome(Guid RequestId, IQueueOfferResult? Result, Exception? Error);
 
-    public MediathekViewWebManager(MediathekClient client, int maxConcurrent = 3)
+    public MediathekViewWebManager(MediathekClient client, TimeProvider timeProvider, int maxConcurrent = 3)
     {
+        _timeProvider = timeProvider;
         var materializer = Context.Materializer();
-        var sourceRef = Source.Queue<StreamRequest>(64, OverflowStrategy.DropNew)
+        _queue = Source.Queue<StreamRequest>(64, OverflowStrategy.DropNew)
             .SelectAsyncUnordered(maxConcurrent, async tuple =>
             {
                 try
@@ -50,11 +55,9 @@ public sealed class MediathekViewWebManager : ReceiveActor
         Receive<QueryMediathek>(query =>
         {
             var requestId = Guid.NewGuid();
-            _pending[requestId] = Sender;
-            sourceRef.OfferAsync(new StreamRequest(MediathekQueryBuilder.FromMessage(query).Build(), requestId))
-                .PipeTo(Self,
-                    success: result => new OfferOutcome(requestId, result, null),
-                    failure: ex => new OfferOutcome(requestId, null, ex));
+            var plan = MediathekQueryPlan.For(query, _timeProvider.GetUtcNow());
+            _pending[requestId] = new PendingQuery(Sender, plan);
+            Offer(requestId, plan.FirstPage());
         });
 
         Receive<OfferOutcome>(msg =>
@@ -64,36 +67,46 @@ public sealed class MediathekViewWebManager : ReceiveActor
                 return;
             }
 
-            if (!_pending.Remove(msg.RequestId, out var sender))
+            if (!_pending.Remove(msg.RequestId, out var pending))
             {
                 return;
             }
 
             if (msg.Error is not null)
             {
-                sender.Tell(new QueryMediathekError(msg.Error));
+                pending.Sender.Tell(new QueryMediathekError(msg.Error));
             }
             else
             {
-                sender.Tell(new QueryMediathekQueueFull());
+                pending.Sender.Tell(new QueryMediathekQueueFull());
             }
         });
 
         Receive<StreamSuccess>(msg =>
         {
-            if (_pending.Remove(msg.RequestId, out var sender))
+            if (!_pending.TryGetValue(msg.RequestId, out var pending))
             {
-                sender.Tell(new QueryMediathekCompleted(msg.Result.Items, msg.Result.Total, msg.Result.ListTimestamp));
+                return;
             }
+
+            var nextPage = pending.Plan.Apply(msg.Result);
+            if (nextPage is not null)
+            {
+                Offer(msg.RequestId, nextPage);
+                return;
+            }
+
+            _pending.Remove(msg.RequestId);
+            pending.Sender.Tell(pending.Plan.ToCompleted());
         });
 
         Receive<StreamFailure>(msg =>
         {
             Telemetry.MediathekErrors.Add(1);
             _log.Warning(msg.Cause, "MediathekViewWeb query {RequestId} failed", msg.RequestId);
-            if (_pending.Remove(msg.RequestId, out var sender))
+            if (_pending.Remove(msg.RequestId, out var pending))
             {
-                sender.Tell(new QueryMediathekError(msg.Cause));
+                pending.Sender.Tell(new QueryMediathekError(msg.Cause));
             }
         });
 
@@ -101,4 +114,10 @@ public sealed class MediathekViewWebManager : ReceiveActor
             throw new InvalidOperationException(
                 $"MediathekViewWeb stream completed unexpectedly, {_pending.Count} requests orphaned"));
     }
+
+    private void Offer(Guid requestId, string json) =>
+        _queue.OfferAsync(new StreamRequest(json, requestId))
+            .PipeTo(Self,
+                success: result => new OfferOutcome(requestId, result, null),
+                failure: ex => new OfferOutcome(requestId, null, ex));
 }

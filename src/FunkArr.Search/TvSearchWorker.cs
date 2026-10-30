@@ -12,7 +12,7 @@ namespace FunkArr.Search;
 
 public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 {
-    private static readonly TimeSpan _mediathekTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan _mediathekTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan _ruleSetTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan _evaluationTimeout = TimeSpan.FromSeconds(40);
 
@@ -136,11 +136,8 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 
     private void AskMediathek()
     {
-        var queries = _state.GetMediathekQueries();
-        Task.WhenAll(queries.Select(q => _mediathekManager.Ask<QueryMediathekResponse>(q, _mediathekTimeout)))
-            .PipeTo(Self,
-                success: responses => MediathekQueryMerge.Merge(responses),
-                failure: ex => new QueryMediathekError(ex));
+        _mediathekManager.Ask<QueryMediathekResponse>(_state.GetMediathekQuery(), _mediathekTimeout)
+            .PipeTo(Self, failure: ex => new QueryMediathekError(ex));
     }
 
     private void Reply(SearchSeriesResponse response)

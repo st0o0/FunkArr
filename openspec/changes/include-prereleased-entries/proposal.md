@@ -7,7 +7,8 @@ All MediathekViewWeb queries are sent with `future=false`, which hides every ent
 ## What Changes
 
 - Pre-released entries are always included; there is no option to turn this off. Verified manually from Germany that such entries are downloadable.
-- TV and movie searches send their regular `future=false` query plus an identical `future=true` query and merge the results (see `evaluation-workers`); the internal Mediathek search (`/api/mediathek/search`) and the feed ingest query with `future=true`.
+- `QueryMediathek` loses its `Future` flag; the `MediathekViewWebManager` always queries with `future=true`.
+- For date-sorted queries the manager pages adaptively so upcoming entries never push aired ones out of the requested window (one request for most shows, at most 3 pages), and drops entries more than 90 days ahead as data errors. Callers send one message and get one response.
 - Documentation explains the behaviour and how to wait for the broadcast instead (Sonarr's release-profile air date restriction).
 
 ## Capabilities
@@ -22,7 +23,7 @@ _None._ The existing query requirements in `tv-search` and `movie-search` do not
 
 ## Impact
 
-- **Search:** worker states always build the `future=false` / `future=true` query pair.
-- **Api:** `MediathekApiEndpoints` queries with `future=true`.
+- **Messages:** `QueryMediathek` without `Future`.
+- **Search:** `MediathekViewWebManager` + `MediathekQueryPlan` (paging, lead-time cap); `MediathekQueryBuilder` always sends `future=true`; workers send a single query.
 - **Behavior change:** searches now also return pre-released entries, with no way back via configuration (version 0.x).
 - **Not changed:** download failure classification (see design.md).

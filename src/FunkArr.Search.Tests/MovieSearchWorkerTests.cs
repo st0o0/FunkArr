@@ -38,7 +38,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
-        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Das Boot")], 1));
+        var query = AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Das Boot")], 1));
         var field = Assert.Single(query.Fields);
         Assert.Multiple(
             () => Assert.Equal(new[] { "title", "topic" }, field.Fields),
@@ -69,7 +69,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, null, null, null), TestActor);
 
-        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([], 0));
+        var query = AnswerQuery(p.Mediathek, new QueryMediathekCompleted([], 0));
         Assert.Empty(query.Fields);
 
         var result = ExpectMsg<SearchMovieCompleted>();
@@ -95,7 +95,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var ruleSet = new RuleSetResolved("tatort", "Tatort");
         p.Resolver.Reply(ruleSet);
 
-        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Tatort")], 1));
+        var query = AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Tatort")], 1));
         Assert.Equal("Tatort", Assert.Single(query.Fields).Query);
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
@@ -125,22 +125,6 @@ public sealed class MovieSearchWorkerTests : TestKit
     }
 
     [Fact]
-    public void Include_future_sends_a_second_query_with_future_enabled()
-    {
-        var p = RegisterProbes();
-        var searchId = Guid.NewGuid();
-        var worker = CreateWorker(searchId);
-
-        worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
-
-        var first = p.Mediathek.ExpectMsg<QueryMediathek>();
-        var second = p.Mediathek.ExpectMsg<QueryMediathek>();
-        Assert.Multiple(
-            () => Assert.Equal(new[] { false, true }, new[] { first.Future, second.Future }.Order().ToArray()),
-            () => Assert.Equal(first with { Future = second.Future }, second));
-    }
-
-    [Fact]
     public void Evaluation_failure_returns_search_failed()
     {
         var p = RegisterProbes();
@@ -149,7 +133,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
-        AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Das Boot")], 1));
+        AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Das Boot")], 1));
         var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
         p.Evaluation.Reply(new EvaluateMoviesFailed(evaluation.SearchId, new Exception("Scoring error")));
 
@@ -159,18 +143,12 @@ public sealed class MovieSearchWorkerTests : TestKit
             () => Assert.Contains("Scoring error", result.Cause.Message));
     }
 
-    private static QueryMediathek AnswerQueries(Akka.TestKit.TestProbe mediathek, QueryMediathekResponse response,
+    private static QueryMediathek AnswerQuery(Akka.TestKit.TestProbe mediathek, QueryMediathekResponse response,
         TimeSpan? timeout = null)
     {
-        var queries = new List<QueryMediathek>();
-        for (var i = 0; i < 2; i++)
-        {
-            queries.Add(mediathek.ExpectMsg<QueryMediathek>(timeout));
-            mediathek.LastSender.Tell(response, mediathek.Ref);
-        }
-
-        Assert.Equal(new[] { false, true }, queries.Select(q => q.Future).Order().ToArray());
-        return queries.Single(q => !q.Future);
+        var query = mediathek.ExpectMsg<QueryMediathek>(timeout);
+        mediathek.Reply(response);
+        return query;
     }
 
     private static MediathekItem Item(string title) =>

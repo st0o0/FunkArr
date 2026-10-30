@@ -55,7 +55,7 @@ public sealed class SearchWorkerStateTests
     {
         var state = TvState(query: "Tatort", limit: 25, offset: 10);
 
-        var query = PastQuery(state.GetMediathekQueries());
+        var query = state.GetMediathekQuery();
         var field = Assert.Single(query.Fields);
         Assert.Multiple(
             () => Assert.Equal("topic", Assert.Single(field.Fields)),
@@ -71,7 +71,7 @@ public sealed class SearchWorkerStateTests
         var state = TvState(tvdbId: 83214, offset: 10);
         state.ApplyRuleSet(new RuleSetResolved("tatort", "Tatort"));
 
-        var query = PastQuery(state.GetMediathekQueries());
+        var query = state.GetMediathekQuery();
         Assert.Multiple(
             () => Assert.Equal("Tatort", Assert.Single(query.Fields).Query),
             () => Assert.Equal(0, query.Offset));
@@ -82,7 +82,7 @@ public sealed class SearchWorkerStateTests
     {
         var state = TvState();
 
-        var query = PastQuery(state.GetMediathekQueries());
+        var query = state.GetMediathekQuery();
         Assert.Empty(query.Fields);
     }
 
@@ -128,7 +128,7 @@ public sealed class SearchWorkerStateTests
     {
         var state = MovieState(query: "Das Boot");
 
-        var query = PastQuery(state.GetMediathekQueries());
+        var query = state.GetMediathekQuery();
         var field = Assert.Single(query.Fields);
         Assert.Multiple(
             () => Assert.Equal(new[] { "title", "topic" }, field.Fields),
@@ -195,12 +195,6 @@ public sealed class SearchWorkerStateTests
         var state = MovieSearchWorkerState.From(id.ToString());
         state.Apply(new SearchMovie(id, SearchSource.Radarr, query, imdbId, tmdbId, null, null), _noSender);
         return state;
-    }
-
-    private static QueryMediathek PastQuery(QueryMediathek[] queries)
-    {
-        Assert.Equal(2, queries.Length);
-        return Assert.Single(queries, q => !q.Future);
     }
 
     private static MediathekItem Item(string title) =>
