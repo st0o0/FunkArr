@@ -39,15 +39,17 @@ public sealed class TvSearchWorkerState
     public ItemTrace[] ItemTraces { get; private set; } = [];
 
     private readonly VariantOptions _variants;
+    private readonly bool _includeFuture;
 
-    private TvSearchWorkerState(string nttId, VariantOptions variants)
+    private TvSearchWorkerState(string nttId, VariantOptions variants, bool includeFuture)
     {
         SearchId = Guid.Parse(nttId);
         _variants = variants;
+        _includeFuture = includeFuture;
     }
 
-    public static TvSearchWorkerState From(string nttId, VariantOptions? variants = null) =>
-        new(nttId, variants ?? new VariantOptions());
+    public static TvSearchWorkerState From(string nttId, VariantOptions? variants = null, bool includeFuture = true) =>
+        new(nttId, variants ?? new VariantOptions(), includeFuture);
 
     public void Init(SearchSeries cmd, IActorRef replyTo)
     {
@@ -154,7 +156,7 @@ public sealed class TvSearchWorkerState
             Fields: [.. fields],
             SortBy: "timestamp",
             SortOrder: "desc",
-            Future: false,
+            Future: _includeFuture,
             Offset: Offset ?? 0,
             Size: Limit ?? 50,
             DurationMin: 300,
@@ -168,7 +170,7 @@ public sealed class TvSearchWorkerState
             Fields: [new MediathekQueryField(["topic"], topic)],
             SortBy: "timestamp",
             SortOrder: "desc",
-            Future: false,
+            Future: _includeFuture,
             Offset: 0,
             Size: Limit ?? 50,
             DurationMin: 300,

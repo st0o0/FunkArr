@@ -37,15 +37,17 @@ public sealed class MovieSearchWorkerState
     public ItemTrace[] ItemTraces { get; set; } = [];
 
     private readonly VariantOptions _variants;
+    private readonly bool _includeFuture;
 
-    private MovieSearchWorkerState(string nttId, VariantOptions variants)
+    private MovieSearchWorkerState(string nttId, VariantOptions variants, bool includeFuture)
     {
         SearchId = Guid.Parse(nttId);
         _variants = variants;
+        _includeFuture = includeFuture;
     }
 
-    public static MovieSearchWorkerState From(string nttId, VariantOptions? variants = null) =>
-        new(nttId, variants ?? new VariantOptions());
+    public static MovieSearchWorkerState From(string nttId, VariantOptions? variants = null, bool includeFuture = true) =>
+        new(nttId, variants ?? new VariantOptions(), includeFuture);
 
     public void Apply(SearchMovie cmd, IActorRef replyTo)
     {
@@ -143,7 +145,7 @@ public sealed class MovieSearchWorkerState
             Fields: [.. fields],
             SortBy: "timestamp",
             SortOrder: "desc",
-            Future: false,
+            Future: _includeFuture,
             Offset: Offset ?? 0,
             Size: Limit ?? 50,
             DurationMin: 3600,
@@ -157,7 +159,7 @@ public sealed class MovieSearchWorkerState
             Fields: [new MediathekQueryField(["title", "topic"], topic)],
             SortBy: "timestamp",
             SortOrder: "desc",
-            Future: false,
+            Future: _includeFuture,
             Offset: 0,
             Size: Limit ?? 50,
             DurationMin: 3600,
