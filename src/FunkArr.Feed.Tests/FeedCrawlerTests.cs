@@ -48,7 +48,8 @@ public sealed class FeedCrawlerTests : TestKit
         var probe = p.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Multiple(
             () => Assert.Equal(1, probe.Size),
-            () => Assert.Equal("filmlisteTimestamp", probe.SortBy));
+            () => Assert.Equal("filmlisteTimestamp", probe.SortBy),
+            () => Assert.True(probe.Future));
         p.Mediathek.Reply(new QueryMediathekCompleted([], 0, _listTimestamp));
 
         var outcome = await run;

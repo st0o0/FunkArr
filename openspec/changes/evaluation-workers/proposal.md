@@ -2,7 +2,7 @@
 
 The search workers (`TvSearchWorker`, `MovieSearchWorker`) own two jobs: querying MediathekViewWeb and evaluating the result (ruleset resolution, scoring, enrichment, history). The RSS feed (#204) reused them by sending `EvaluateSeries` / `EvaluateMovies` into the search shard regions, which mixed feed evaluations into search entities, borrowed the search response types, and skipped enrichment because feed evaluations carried no TVDB/IMDB/TMDB IDs.
 
-A live check of `future=true` (#205) also showed a regression, handled in `include-prereleased-entries`: topic searches return the newest 50 entries, and with `future=true` many of those slots are taken by entries scheduled weeks ahead (e.g. 48 of 50 for a daily show), pushing aired episodes out of the window.
+A live check of `future=true` (#205) also showed a regression, resolved in `include-prereleased-entries` by keeping searches on `future=false`: topic searches return the newest 50 entries, and with `future=true` many of those slots are taken by entries scheduled weeks ahead (e.g. 48 of 50 for a daily show), pushing aired episodes out of the window.
 
 ## What Changes
 

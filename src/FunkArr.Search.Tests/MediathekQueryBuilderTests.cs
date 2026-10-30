@@ -20,7 +20,7 @@ public sealed class MediathekQueryBuilderTests
         Assert.Equal("tatort", queries[0].GetProperty("query").GetString());
         Assert.Equal("timestamp", root.GetProperty("sortBy").GetString());
         Assert.Equal("desc", root.GetProperty("sortOrder").GetString());
-        Assert.True(root.GetProperty("future").GetBoolean());
+        Assert.False(root.GetProperty("future").GetBoolean());
         Assert.Equal(0, root.GetProperty("offset").GetInt32());
         Assert.Equal(15, root.GetProperty("size").GetInt32());
     }
@@ -33,6 +33,7 @@ public sealed class MediathekQueryBuilderTests
             .WithQuery(["channel"], "ARD")
             .SortBy("duration", "asc")
             .WithDurationRange(min: 300, max: 7200)
+            .IncludeFuture(true)
             .WithPagination(10, 50)
             .Build();
 
@@ -88,6 +89,7 @@ public sealed class MediathekQueryBuilderTests
             Fields: [new MediathekQueryField(["topic"], "Tatort"), new MediathekQueryField(["channel"], "ARD")],
             SortBy: "timestamp",
             SortOrder: "desc",
+            Future: false,
             Offset: 5,
             Size: 25,
             DurationMin: 300,
@@ -101,6 +103,5 @@ public sealed class MediathekQueryBuilderTests
         Assert.Equal(5, root.GetProperty("offset").GetInt32());
         Assert.Equal(25, root.GetProperty("size").GetInt32());
         Assert.Equal(300, root.GetProperty("duration_min").GetInt32());
-        Assert.True(root.GetProperty("future").GetBoolean());
     }
 }
