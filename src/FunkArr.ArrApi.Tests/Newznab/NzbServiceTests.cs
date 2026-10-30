@@ -44,6 +44,17 @@ public sealed class NzbServiceTests
         Assert.Equal(201, error.ErrorDetail.Code);
     }
 
+    [Theory]
+    [InlineData(ValidationRss.TvGuid)]
+    [InlineData(ValidationRss.MovieGuid)]
+    public void GetNzb_rejects_validation_item_ids(string id)
+    {
+        var result = NzbService.GetNzb(id, TimeProvider.System);
+
+        var error = Assert.IsType<NzbGetResult.Error>(result);
+        Assert.Equal(201, error.ErrorDetail.Code);
+    }
+
     [Fact]
     public void GetNzb_returns_error_for_missing_url()
     {
