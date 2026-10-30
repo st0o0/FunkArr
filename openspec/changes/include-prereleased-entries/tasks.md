@@ -13,4 +13,4 @@
 
 - [x] 3.1 Describe the search and feed behaviour and the Sonarr air date restriction in how-it-works (both languages); remove the search section from the configuration docs.
 - [x] 3.2 Verify manually from Germany that pre-released entries are downloadable, measure future entries per show via the live API, and check Sonarr's search filters in its source.
-- [ ] 3.3 Run `dotnet format --verify-no-changes` and the affected test projects via CI and verify they pass.
+- [x] 3.3 Run `dotnet format --verify-no-changes` and the affected test projects via CI and verify they pass.
