@@ -263,14 +263,6 @@ Einen API-Schlüssel gibt es unter [thetvdb.com/api-information](https://thetvdb
 Beide Schlüssel sind optional, aber empfohlen. Ohne sie verlässt sich FunkArr ausschließlich auf Regelwerk-Muster für die Zuordnung, was funktioniert, aber weniger Ergebnisse liefert.
 :::
 
-## Suche
-
-| Variable | Standard | Beschreibung |
-|----------|----------|-------------|
-| `FunkArr__Search__IncludeFuture` | `true` | Mediathek-Einträge einbeziehen, die vor ihrem Sendetermin veröffentlicht werden |
-
-Sender veröffentlichen Folgen oft schon vor der TV-Ausstrahlung in der Mediathek. Mit `true` findet FunkArr sie, sobald sie abrufbar sind. Das Release behält den geplanten Sendetermin, die Episodenzuordnung funktioniert also wie gewohnt. Wer lieber auf die Ausstrahlung wartet, lässt die Option an und aktiviert in einem Sonarr-Release-Profil die Sperre vor dem Sendetermin, oder setzt die Variable auf `false`.
-
 ## RSS-Feed
 
 | Variable | Standard | Beschreibung |

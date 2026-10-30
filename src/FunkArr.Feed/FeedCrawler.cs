@@ -25,11 +25,11 @@ internal sealed class FeedCrawler(FeedCrawlerActors actors, TimeProvider timePro
     private static readonly TimeSpan _evaluationTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan _addTimeout = TimeSpan.FromSeconds(10);
 
-    internal async Task<FeedRunOutcome> RunAsync(long cursor, FeedOptions options, bool includeFuture, CancellationToken ct)
+    internal async Task<FeedRunOutcome> RunAsync(long cursor, FeedOptions options, CancellationToken ct)
     {
         var started = timeProvider.GetTimestamp();
 
-        var probe = await QueryAsync(0, 1, includeFuture, ct);
+        var probe = await QueryAsync(0, 1, ct);
         if (probe is not QueryMediathekCompleted probed)
         {
             return Failed(0, started, Describe(probe));
@@ -48,7 +48,7 @@ internal sealed class FeedCrawler(FeedCrawlerActors actors, TimeProvider timePro
 
         for (var page = 0; page < Math.Max(1, options.MaxPages); page++)
         {
-            var response = await QueryAsync(page * pageSize, pageSize, includeFuture, ct);
+            var response = await QueryAsync(page * pageSize, pageSize, ct);
             if (response is not QueryMediathekCompleted completed)
             {
                 return Failed(listTimestamp, started, Describe(response));
@@ -165,9 +165,9 @@ internal sealed class FeedCrawler(FeedCrawlerActors actors, TimeProvider timePro
         };
     }
 
-    private async Task<QueryMediathekResponse> QueryAsync(int offset, int size, bool includeFuture, CancellationToken ct)
+    private async Task<QueryMediathekResponse> QueryAsync(int offset, int size, CancellationToken ct)
     {
-        var query = new QueryMediathek([], _sortField, "desc", includeFuture, offset, size, _durationMin, null);
+        var query = new QueryMediathek([], _sortField, "desc", Future: true, offset, size, _durationMin, null);
         try
         {
             return await actors.Mediathek.Ask<QueryMediathekResponse>(query, _mediathekTimeout, ct);

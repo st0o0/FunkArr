@@ -5,7 +5,6 @@ using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Search;
-using Microsoft.Extensions.Options;
 using Servus.Akka;
 using Servus.Resilience;
 
@@ -36,9 +35,9 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 
     public ITimerScheduler Timers { get; set; } = null!;
 
-    public TvSearchWorker(string nttId, IOptionsMonitor<SearchOptions>? searchOptions = null)
+    public TvSearchWorker(string nttId)
     {
-        _state = TvSearchWorkerState.From(nttId, searchOptions?.CurrentValue.IncludeFuture ?? true);
+        _state = TvSearchWorkerState.From(nttId);
 
         Receive<SearchSeries>(cmd =>
         {

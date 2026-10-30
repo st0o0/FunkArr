@@ -32,8 +32,8 @@ The search worker resolves the ruleset only when the request has media IDs (need
 ### Feed passes registered media IDs
 `RuleSetLookup` groups feed items per ruleset and keeps the ruleset's `ExternalIds`. The crawler sends `EvaluateSeries(…, TvdbId, ImdbId)` / `EvaluateMovies(…, ImdbId, TmdbId)`. Rulesets without IDs still evaluate, just without enrichment.
 
-### Two queries for include-future
-When include-future is on, the search sends the regular `future=false` query and the same query with `future=true` in parallel, then merges: queue-full wins (so the retry logic applies), then errors, otherwise items are de-duplicated by `UrlVideoHd ?? UrlVideo ?? UrlVideoLow ?? channel|title|timestamp`, first occurrence wins, `Total` and `ListTimestamp` take the maximum. Aired entries are guaranteed their full window; upcoming entries add up to one more window. The cost is one extra (cached) Mediathek request per search.
+### Two queries for pre-released entries
+Every search sends the regular `future=false` query and the same query with `future=true` in parallel, then merges: queue-full wins (so the retry logic applies), then errors, otherwise items are de-duplicated by `UrlVideoHd ?? UrlVideo ?? UrlVideoLow ?? channel|title|timestamp`, first occurrence wins, `Total` and `ListTimestamp` take the maximum. Aired entries are guaranteed their full window; upcoming entries add up to one more window. The cost is one extra (cached) Mediathek request per search.
 
 ## Risks / Trade-offs
 

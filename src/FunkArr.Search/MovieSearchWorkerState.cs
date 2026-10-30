@@ -13,8 +13,6 @@ public sealed class MovieSearchWorkerState
     private const int _defaultSize = 50;
     private const int _durationMin = 3600;
 
-    private readonly bool _includeFuture;
-
     public Guid SearchId { get; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
     public SearchSource Source { get; private set; }
@@ -27,13 +25,12 @@ public sealed class MovieSearchWorkerState
     public RuleSetResolved? RuleSet { get; private set; }
     public MediathekItem[] Items { get; private set; } = [];
 
-    private MovieSearchWorkerState(string nttId, bool includeFuture)
+    private MovieSearchWorkerState(string nttId)
     {
         SearchId = Guid.Parse(nttId);
-        _includeFuture = includeFuture;
     }
 
-    public static MovieSearchWorkerState From(string nttId, bool includeFuture = true) => new(nttId, includeFuture);
+    public static MovieSearchWorkerState From(string nttId) => new(nttId);
 
     public void Apply(SearchMovie cmd, IActorRef replyTo)
     {
@@ -71,7 +68,7 @@ public sealed class MovieSearchWorkerState
             DurationMin: _durationMin,
             DurationMax: null);
 
-        return _includeFuture ? [primary, primary with { Future = true }] : [primary];
+        return [primary, primary with { Future = true }];
     }
 
     public void Apply(QueryMediathekCompleted result) => Items = result.Items;

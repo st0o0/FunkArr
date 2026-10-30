@@ -36,7 +36,7 @@ public sealed class MediathekSearchTests(FunkArrFixture fixture)
     }
 
     [Fact]
-    public async Task Search_IncludesPreReleasedEntriesByDefault()
+    public async Task Search_IncludesPreReleasedEntries()
     {
         var task = _fixture.Client.GetAsync("/api/mediathek/search?q=Tatort");
 
