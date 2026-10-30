@@ -8,6 +8,8 @@ internal sealed record PageEvaluation(MediathekItem[] Collected, bool ReachedEnd
 
 internal static class FeedIngestPlanner
 {
+    internal static readonly TimeSpan MaxLead = TimeSpan.FromDays(90);
+
     internal static bool HasUpdate(long cursor, long listTimestamp) =>
         listTimestamp > 0 && listTimestamp > cursor;
 
@@ -45,6 +47,12 @@ internal static class FeedIngestPlanner
         }
 
         return new PageEvaluation([.. collected], reachedOlder || page.Count < pageSize, inProgress);
+    }
+
+    internal static MediathekItem[] WithinLead(IEnumerable<MediathekItem> items, DateTimeOffset now)
+    {
+        var limit = (now + MaxLead).ToUnixTimeSeconds();
+        return [.. items.Where(i => i.Timestamp <= limit)];
     }
 
     internal static string? PrimaryUrl(MediathekItem item) =>

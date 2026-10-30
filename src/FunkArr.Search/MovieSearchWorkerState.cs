@@ -62,6 +62,7 @@ public sealed class MovieSearchWorkerState
             Fields: fields,
             SortBy: "timestamp",
             SortOrder: "desc",
+            Future: false,
             Offset: RuleSet is null ? Offset ?? 0 : 0,
             Size: Limit ?? _defaultSize,
             DurationMin: _durationMin,

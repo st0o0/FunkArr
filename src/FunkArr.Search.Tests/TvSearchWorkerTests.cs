@@ -43,7 +43,8 @@ public sealed class TvSearchWorkerTests : TestKit
         Assert.Multiple(
             () => Assert.Equal("topic", Assert.Single(field.Fields)),
             () => Assert.Equal("Tatort", field.Query),
-            () => Assert.Equal(300, query.DurationMin));
+            () => Assert.Equal(300, query.DurationMin),
+            () => Assert.False(query.Future));
         p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>();

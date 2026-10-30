@@ -101,4 +101,17 @@ public sealed class FeedIngestPlannerTests
 
         Assert.Equal(new[] { "a", "b" }, result.Select(i => i.Title).ToArray());
     }
+
+    [Fact]
+    public void WithinLead_drops_entries_more_than_90_days_ahead()
+    {
+        var now = DateTimeOffset.FromUnixTimeSeconds(1_761_800_000);
+        var aired = TestData.Item("aired") with { Timestamp = now.AddDays(-1).ToUnixTimeSeconds() };
+        var upcoming = TestData.Item("upcoming") with { Timestamp = now.AddDays(89).ToUnixTimeSeconds() };
+        var garbage = TestData.Item("garbage") with { Timestamp = now.AddDays(1159).ToUnixTimeSeconds() };
+
+        var kept = FeedIngestPlanner.WithinLead([aired, upcoming, garbage], now);
+
+        Assert.Equal(new[] { "aired", "upcoming" }, kept.Select(i => i.Title).ToArray());
+    }
 }

@@ -9,7 +9,6 @@ MediathekViewWeb filters `timestamp <= now + 1h` when `future=false`. With `futu
 **Goals:**
 - One place that turns Mediathek entries into releases, used by search and feed alike.
 - Feed evaluations enrich episodes and movies whenever the ruleset declares media IDs.
-- Pre-released entries are added to search results without displacing aired entries.
 
 **Non-Goals:**
 - Changing the scoring, enrichment or release-title rules.
@@ -32,8 +31,8 @@ The search worker resolves the ruleset only when the request has media IDs (need
 ### Feed passes registered media IDs
 `RuleSetLookup` groups feed items per ruleset and keeps the ruleset's `ExternalIds`. The crawler sends `EvaluateSeries(…, TvdbId, ImdbId)` / `EvaluateMovies(…, ImdbId, TmdbId)`. Rulesets without IDs still evaluate, just without enrichment.
 
-### Pre-released entries handled by the Mediathek manager
-An interim version sent a `future=false` and a `future=true` query from every search worker and merged them there. It was replaced by adaptive paging inside `MediathekViewWebManager` (see `include-prereleased-entries`), so search workers send one `QueryMediathek` and receive one response.
+### Pre-released entries only in the feed
+Search workers send one `QueryMediathek` with `future=false` and receive one response; pre-released entries are only handled by the feed (see `include-prereleased-entries`).
 
 ### Evaluation lives in the Feed domain
 The release pipeline (evaluation workers, `SourceInfo`, `SceneRelease`, `ReleaseDisplay`, `EnrichedItem`, `VariantDetector`, …) moves from `FunkArr.Search` to `FunkArr.Feed`. After the split, Search only queries MediathekViewWeb; nothing in Search used these types except the evaluation itself. Search reaches the evaluation through `ITvEvaluationRegion` / `IMovieEvaluationRegion` in Core and the `Evaluate*` messages, so no project reference between the domains is needed. The feed crawler talks to the same regions. A separate `FunkArr.Evaluation` project was considered but adds a project for what is the core of the feed anyway.
