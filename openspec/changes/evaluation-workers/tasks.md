@@ -24,7 +24,7 @@
 
 - [x] 5.1 Update how-it-works, observability (both languages) and the AGENTS.md actor topology and meter table.
 - [x] 5.2 Update the `prereleased-entries` requirement to the two-query behaviour.
-- [ ] 5.3 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
+- [x] 5.3 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
 
 ## Workflow follow-up
 
