@@ -113,6 +113,12 @@ Die Ergebnisse werden als Newznab-RSS-Feed zurückgegeben. Jeder Eintrag enthäl
 
 Suchergebnisse werden zwischengespeichert, damit eine Folgeanfrage mit Pagination nicht erneut die gesamte Suche auslöst.
 
+#### Anfragen ohne Suchbegriff (RSS-Sync und Indexer-Test)
+
+Sonarr, Radarr und Prowlarr senden für den RSS-Sync und für den "Test"-Button eine Suche ohne Suchbegriff und ohne Medien-ID (zum Beispiel `t=tvsearch` ohne `q`). FunkArr startet dafür keine Suche, sondern antwortet mit genau einem Validierungseintrag (`FunkArr.Validation.…`) in der passenden Kategorie, damit der Indexer-Test erfolgreich ist. Der Eintrag passt zu keiner echten Serie und keinem echten Film, und sein Download-Link wird mit einem Newznab-Fehler abgelehnt, sodass er nie einen Download auslöst.
+
+Neue Folgen werden deshalb aktuell nicht per RSS-Sync, sondern über die automatische oder manuelle Suche in Sonarr/Radarr gefunden. Ein echter RSS-Feed ist in [#204](https://github.com/st0o0/funkarr/issues/204) geplant.
+
 ## Download-Pipeline
 
 Wenn Sonarr oder Radarr einen Download starten, senden sie eine SABnzbd-Anfrage an `/download/api`. FunkArr simuliert einen SABnzbd-Download-Client.
