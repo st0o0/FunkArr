@@ -76,6 +76,52 @@ public sealed class FeedManagerStateTests
     }
 
     [Fact]
+    public void Query_keeps_order_and_category_totals_after_expiry()
+    {
+        var state = With(
+            TestData.Entry("old", _t0.AddDays(-15)),
+            TestData.Entry("b", _t0),
+            TestData.Entry("a", _t0),
+            TestData.Entry("movie", _t0.AddHours(1), MediaType.Movie));
+
+        state = state.Apply(new FeedEntriesExpired(state.ExpiredIds(_t0, TimeSpan.FromDays(14))));
+
+        var shows = state.Query(new QueryFeed(MediaType.Show, 0, 10));
+        var all = state.Query(new QueryFeed(null, 0, 10));
+        Assert.Multiple(
+            () => Assert.Equal(2, shows.Total),
+            () => Assert.Equal(new[] { "a", "b" }, shows.Entries.Select(e => e.StableId).ToArray()),
+            () => Assert.Equal(3, all.Total),
+            () => Assert.Equal(new[] { "movie", "a", "b" }, all.Entries.Select(e => e.StableId).ToArray()),
+            () => Assert.Equal(3, state.Entries.Count));
+    }
+
+    [Fact]
+    public void Query_for_category_without_entries_is_empty()
+    {
+        var state = With(TestData.Entry("a", _t0));
+
+        var movies = state.Query(new QueryFeed(MediaType.Movie, 0, 10));
+
+        Assert.Multiple(
+            () => Assert.Equal(0, movies.Total),
+            () => Assert.Empty(movies.Entries));
+    }
+
+    [Fact]
+    public void ExpiredIds_returns_all_entries_past_retention_oldest_first()
+    {
+        var state = With(
+            TestData.Entry("older", _t0.AddDays(-20)),
+            TestData.Entry("old", _t0.AddDays(-15)),
+            TestData.Entry("fresh", _t0.AddDays(-1)));
+
+        var expired = state.ExpiredIds(_t0, TimeSpan.FromDays(14));
+
+        Assert.Equal(new[] { "older", "old" }, expired);
+    }
+
+    [Fact]
     public void Persistence_roundtrip_keeps_release_fields()
     {
         var original = TestData.Entry("a", _t0);
