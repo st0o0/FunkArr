@@ -279,7 +279,8 @@
     "ruleTraces": "{count} Regel-Trace(s)",
     "allFilter": "Alle",
     "matchedFilter": "Treffer",
-    "unmatchedFilter": "Keine Treffer"
+    "unmatchedFilter": "Keine Treffer",
+    "excludedVariant": "Ausgeschlossen: {variant}"
   },
   "queue": {
     "downloading": "Wird heruntergeladen",
@@ -376,7 +377,11 @@
     "communityRulesets": "Community-Regelwerke",
     "apiKey": "API-Schluessel",
     "logs": "Logs",
-    "noLogs": "Keine Log-Eintraege"
+    "noLogs": "Keine Log-Eintraege",
+    "variants": "Sendungsfassungen",
+    "variantsHint": "Einstellbar über FunkArr__Variants__<Fassung>=Allow oder Exclude",
+    "variantAllowed": "Erlaubt",
+    "variantExcluded": "Ausgeschlossen"
   },
   "downloadDetail": {
     "loading": "Laden...",
@@ -401,5 +406,12 @@
   },
   "attribution": {
     "poweredBy": "Betrieben mit"
+  },
+  "variants": {
+    "standard": "Standard",
+    "audioDescription": "Audiodeskription",
+    "signLanguage": "Gebärdensprache",
+    "plainLanguage": "Einfache Sprache",
+    "originalVersion": "Originalfassung"
   }
 }

@@ -16,6 +16,7 @@ const filterOpNames: Record<number, string> = { 0: 'eq', 1: 'contains', 2: 'notC
 const enrichmentMethodNames: Record<number, string> = { 0: 'title', 1: 'airdate' }
 const runtimeModeNames: Record<number, string> = { 0: 'tiebreaker', 1: 'filter' }
 const ruleOutcomeNames: Record<number, string> = { 0: 'matched', 1: 'filterFailed', 2: 'identificationFailed' }
+const mediathekVariantNames: Record<number, string> = { 0: 'standard', 1: 'audioDescription', 2: 'signLanguage', 3: 'plainLanguage', 4: 'originalVersion' }
 const matchMethodNames: Record<number, string> = { 0: 'RegexExtracted', 1: 'TitleMatch', 2: 'AirdateMatch', 3: 'YearMatch' }
 
 export function searchSourceName(v: number): string { return searchSourceNames[v] ?? String(v) }
@@ -27,3 +28,4 @@ export function enrichmentMethodName(v: number): string { return enrichmentMetho
 export function runtimeModeName(v: number): string { return runtimeModeNames[v] ?? String(v) }
 export function ruleOutcomeName(v: number): string { return ruleOutcomeNames[v] ?? String(v) }
 export function matchMethodName(v: number): string { return matchMethodNames[v] ?? String(v) }
+export function mediathekVariantName(v: number): string { return mediathekVariantNames[v] ?? String(v) }

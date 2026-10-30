@@ -16,7 +16,7 @@ The system SHALL assign every Mediathek item exactly one variant: `Standard`, `A
 - **THEN** its variant SHALL be `SignLanguage`
 
 #### Scenario: Plain language
-- **WHEN** an item's title contains "Klare Sprache", "Leichte Sprache" or "Einfache Sprache"
+- **WHEN** an item's title contains "Klare Sprache", "Leichte Sprache" or "Einfache Sprache", also in the inflected forms "Klarer", "Leichter", "Einfacher"
 - **THEN** its variant SHALL be `PlainLanguage`
 
 #### Scenario: Original version

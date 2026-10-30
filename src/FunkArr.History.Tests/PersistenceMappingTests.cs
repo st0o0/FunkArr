@@ -217,6 +217,33 @@ public sealed class PersistenceMappingTests
         Assert.Null(restored.Identification);
         Assert.Empty(restored.RuleTraces);
         Assert.Null(restored.EnrichmentTrace);
+        Assert.Null(restored.ExcludedVariant);
+    }
+
+    [Theory]
+    [InlineData(MediathekVariant.AudioDescription, PersistedMediathekVariant.AudioDescription)]
+    [InlineData(MediathekVariant.SignLanguage, PersistedMediathekVariant.SignLanguage)]
+    [InlineData(MediathekVariant.PlainLanguage, PersistedMediathekVariant.PlainLanguage)]
+    [InlineData(MediathekVariant.OriginalVersion, PersistedMediathekVariant.OriginalVersion)]
+    public void ItemTrace_DirectRoundtrip_ExcludedVariant(MediathekVariant variant, PersistedMediathekVariant expected)
+    {
+        var candidate = new ScoreCandidate("Test (AD)", "Tatort", "ARD", 5400, 720, null, 0);
+        var original = new ItemTrace(candidate, false, 0.0, null, null, [], ExcludedVariant: variant);
+
+        var persisted = original.ToPersistence();
+        var restored = persisted.ToDomain();
+
+        Assert.Multiple(
+            () => Assert.Equal(expected, persisted.ExcludedVariant),
+            () => Assert.Equal(variant, restored.ExcludedVariant));
+    }
+
+    [Fact]
+    public void MediathekVariant_enums_have_matching_members()
+    {
+        Assert.Equal(
+            Enum.GetNames<MediathekVariant>(),
+            Enum.GetNames<PersistedMediathekVariant>());
     }
 
     [Theory]

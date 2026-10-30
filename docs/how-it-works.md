@@ -81,6 +81,8 @@ Regelwerke werden getrennt von der Suche verwaltet:
 
 ### 5. Scoring
 
+**Sendungsfassungen:** Vor dem Scoring wird jeder Eintrag anhand von Titel und Thema als Standard, Audiodeskription, Gebärdensprache, Einfache Sprache oder Originalfassung eingeordnet. In der [Konfiguration](/configuration#sendungsfassungen) ausgeschlossene Fassungen werden auf jedem Suchweg aus den Ergebnissen entfernt, auch wenn es kein Regelwerk gibt. Im Match-Verlauf erscheinen sie als ausgeschlossen, mit der Fassung als Grund und ohne dass eine Regel ausgewertet wird.
+
 Die Scoring-Engine wertet jeden Mediathek-Eintrag gegen die Regeln des Regelwerks aus. Dabei werden drei Schritte für jede Regel durchlaufen (Regeln sind nach Priorität sortiert, die erste passende gewinnt):
 
 **Filter-Prüfung:** Jede Regel kann Filter definieren, die ein Eintrag erfüllen muss. Filter können auf verschiedene Felder prüfen (Titel, Thema, Sender, Dauer, Beschreibung) mit Operatoren wie Gleichheit, Enthält, Regex, größer/kleiner. Filter lassen sich mit `all` (alle müssen passen), `any` (einer muss passen) und `not` (keiner darf passen) kombinieren.

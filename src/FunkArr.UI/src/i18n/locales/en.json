@@ -313,7 +313,8 @@
     "ruleTraces": "{count} rule trace(s)",
     "allFilter": "All",
     "matchedFilter": "Matched",
-    "unmatchedFilter": "Unmatched"
+    "unmatchedFilter": "Unmatched",
+    "excludedVariant": "Excluded: {variant}"
   },
   "queue": {
     "downloading": "Downloading",
@@ -410,7 +411,11 @@
     "communityRulesets": "Community Rulesets",
     "apiKey": "API Key",
     "logs": "Logs",
-    "noLogs": "No log entries"
+    "noLogs": "No log entries",
+    "variants": "Broadcast variants",
+    "variantsHint": "Set with FunkArr__Variants__<Variant>=Allow or Exclude",
+    "variantAllowed": "Allowed",
+    "variantExcluded": "Excluded"
   },
   "downloadDetail": {
     "loading": "Loading...",
@@ -435,5 +440,12 @@
   },
   "attribution": {
     "poweredBy": "Powered by"
+  },
+  "variants": {
+    "standard": "Standard",
+    "audioDescription": "Audio description",
+    "signLanguage": "Sign language",
+    "plainLanguage": "Plain language",
+    "originalVersion": "Original version"
   }
 }

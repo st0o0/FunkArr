@@ -7,4 +7,5 @@ public sealed record ItemTrace(
     string? MatchedRuleId,
     TracedIdentification? Identification,
     RuleTrace[] RuleTraces,
-    EnrichmentTrace? EnrichmentTrace = null);
+    EnrichmentTrace? EnrichmentTrace = null,
+    MediathekVariant? ExcludedVariant = null);

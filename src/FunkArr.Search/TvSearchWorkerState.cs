@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Akka.Actor;
+using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.History;
@@ -37,12 +38,16 @@ public sealed class TvSearchWorkerState
     public EnrichedItem[] Items { get; private set; } = [];
     public ItemTrace[] ItemTraces { get; private set; } = [];
 
-    private TvSearchWorkerState(string nttId)
+    private readonly VariantOptions _variants;
+
+    private TvSearchWorkerState(string nttId, VariantOptions variants)
     {
         SearchId = Guid.Parse(nttId);
+        _variants = variants;
     }
 
-    public static TvSearchWorkerState From(string nttId) => new(nttId);
+    public static TvSearchWorkerState From(string nttId, VariantOptions? variants = null) =>
+        new(nttId, variants ?? new VariantOptions());
 
     public void Init(SearchSeries cmd, IActorRef replyTo)
     {
@@ -206,7 +211,8 @@ public sealed class TvSearchWorkerState
 
         var candidates = Sources.Select(s => new ScoreCandidate(
             s.Title, s.Topic, s.Channel, s.Duration, s.ResolveQuality(),
-            s.Description, s.AiredAt?.ToUnixTimeSeconds() ?? 0)).ToArray();
+            s.Description, s.AiredAt?.ToUnixTimeSeconds() ?? 0,
+            _variants.IsExcluded(s.Variant) ? s.Variant : null)).ToArray();
 
         _scoringRequestId = Guid.NewGuid();
         _scoringOrigin = new ScoringOrigin(Source, Sources[0].Topic);
@@ -257,6 +263,7 @@ public sealed class TvSearchWorkerState
         var items = Items.Length > 0 ? Items : UnscoredItems();
 
         var results = items
+            .Where(e => !_variants.IsExcluded(e.Source.Variant))
             .SelectMany(e => SceneRelease.ForShow(e, MediaName).Expand())
             .OrderByDescending(r => r.Score)
             .ToArray();

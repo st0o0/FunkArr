@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Akka.Actor;
+using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.History;
@@ -35,12 +36,16 @@ public sealed class MovieSearchWorkerState
     public EnrichedItem[] Items { get; private set; } = [];
     public ItemTrace[] ItemTraces { get; set; } = [];
 
-    private MovieSearchWorkerState(string nttId)
+    private readonly VariantOptions _variants;
+
+    private MovieSearchWorkerState(string nttId, VariantOptions variants)
     {
         SearchId = Guid.Parse(nttId);
+        _variants = variants;
     }
 
-    public static MovieSearchWorkerState From(string nttId) => new(nttId);
+    public static MovieSearchWorkerState From(string nttId, VariantOptions? variants = null) =>
+        new(nttId, variants ?? new VariantOptions());
 
     public void Apply(SearchMovie cmd, IActorRef replyTo)
     {
@@ -195,7 +200,8 @@ public sealed class MovieSearchWorkerState
 
         var candidates = Sources.Select(s => new ScoreCandidate(
             s.Title, s.Topic, s.Channel, s.Duration, s.ResolveQuality(),
-            s.Description, s.AiredAt?.ToUnixTimeSeconds() ?? 0)).ToArray();
+            s.Description, s.AiredAt?.ToUnixTimeSeconds() ?? 0,
+            _variants.IsExcluded(s.Variant) ? s.Variant : null)).ToArray();
 
         _scoringRequestId = Guid.NewGuid();
         _scoringOrigin = new ScoringOrigin(Source, Sources[0].Topic);
@@ -240,6 +246,7 @@ public sealed class MovieSearchWorkerState
         var items = Items.Length > 0 ? Items : UnscoredItems();
 
         var results = items
+            .Where(e => !_variants.IsExcluded(e.Source.Variant))
             .SelectMany(e => SceneRelease.ForMovie(e, MediaName).Expand())
             .OrderByDescending(r => r.Score)
             .ToArray();

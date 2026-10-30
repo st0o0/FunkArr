@@ -88,6 +88,19 @@ export function getRoutes(): Promise<RoutesResponse> {
   return fetchJson('/api/system/routes')
 }
 
+export interface VariantPolicyEntry {
+  variant: number
+  policy: number
+}
+
+export interface VariantsResponse {
+  variants: VariantPolicyEntry[]
+}
+
+export function getVariants(): Promise<VariantsResponse> {
+  return fetchJson('/api/system/variants')
+}
+
 export interface LogEntry {
   timestamp: string
   level: string

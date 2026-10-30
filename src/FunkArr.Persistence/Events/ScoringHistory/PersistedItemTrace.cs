@@ -9,4 +9,5 @@ public sealed record PersistedItemTrace(
     string? MatchedRuleId,
     PersistedTracedIdentification? Identification,
     PersistedRuleTrace[] RuleTraces,
-    PersistedEnrichmentTrace? EnrichmentTrace = null);
+    PersistedEnrichmentTrace? EnrichmentTrace = null,
+    PersistedMediathekVariant? ExcludedVariant = null);

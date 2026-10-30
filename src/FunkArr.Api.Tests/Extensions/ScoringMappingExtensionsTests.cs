@@ -26,6 +26,37 @@ public sealed class ScoringMappingExtensionsTests
     }
 
     [Fact]
+    public void ItemTrace_maps_excluded_variant()
+    {
+        var candidate = new MsgScoring.ScoreCandidate("Test (AD)", "Tatort", "ARD", 5400, 720, null, 0);
+        var trace = new MsgHistory.ItemTrace(candidate, false, 0.0, null, null, [],
+            ExcludedVariant: FunkArr.Messages.MediathekVariant.AudioDescription);
+
+        var result = trace.ToApi();
+
+        Assert.Equal(ApiModels.MediathekVariant.AudioDescription, result.ExcludedVariant);
+    }
+
+    [Fact]
+    public void ItemTrace_maps_missing_exclusion_to_null()
+    {
+        var candidate = new MsgScoring.ScoreCandidate("Test", "Tatort", "ARD", 5400, 720, null, 0);
+        var trace = new MsgHistory.ItemTrace(candidate, true, 0.9, "rule-1", null, []);
+
+        var result = trace.ToApi();
+
+        Assert.Null(result.ExcludedVariant);
+    }
+
+    [Fact]
+    public void Api_MediathekVariant_matches_message_enum()
+    {
+        Assert.Equal(
+            Enum.GetNames<FunkArr.Messages.MediathekVariant>(),
+            Enum.GetNames<ApiModels.MediathekVariant>());
+    }
+
+    [Fact]
     public void ItemTrace_maps_matched_and_score()
     {
         var candidate = new MsgScoring.ScoreCandidate("Test", "Topic", "ZDF", 600, 720, null, 0);
