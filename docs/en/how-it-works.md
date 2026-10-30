@@ -8,7 +8,7 @@ FunkArr is built on Akka.NET. Work is split across a few long-lived singleton ac
 
 | Domain | Actors | Responsibility |
 |--------|--------|----------------|
-| Search | `SearchManager`, `MediathekViewWebManager` (singletons), `TvSearchWorker`, `MovieSearchWorker` (sharded, one per search request) | Orchestrates a search and queries MediathekViewWeb |
+| Search | `SearchManager`, `MediathekViewWebManager` (singletons), `TvSearchWorker`, `MovieSearchWorker` (sharded, one per search request), `TvEvaluationWorker`, `MovieEvaluationWorker` (sharded, one per evaluation) | Orchestrates a search, queries MediathekViewWeb and evaluates the entries |
 | RuleSet | `RuleSetResolver`, `RuleSetManager`, `RuleSetUpdater` (singletons), `RuleSetWorker` (sharded, one per ruleset) | Loads, merges and resolves rulesets, syncs community rulesets |
 | Scoring | `ScoringManager` (singleton) with a pool of `ScoringActor` | Evaluates Mediathek entries against ruleset rules |
 | Enrichment | `EnrichmentManager` (singleton) with TVDB and TMDB actor pools | Resolves season/episode and movie data via external APIs |
@@ -43,7 +43,7 @@ The SearchManager (cluster singleton) creates a search ID and hands the work to 
 
 Each search has a 30-second timeout (the controller itself times out after 45 seconds). If one part of a combined search fails or times out, the results from the other part are still returned.
 
-The search worker runs the following steps as a small state machine (resolve ruleset, query, score, enrich) and then replies to the SearchManager. Idle workers are passivated after 30 seconds.
+The search worker only resolves the ruleset by ID (if the request carries one) and queries MediathekViewWeb. It then hands the entries to a sharded evaluation worker (`TvEvaluationWorker` or `MovieEvaluationWorker`), which owns the evaluation pipeline: resolve the ruleset from the topic (if still unknown), score, enrich and record the scoring history. The RSS feed uses the same evaluation workers, so search and feed produce identical releases. Idle workers are passivated after 30 seconds.
 
 ### 3. MediathekViewWeb Query
 
@@ -53,7 +53,7 @@ The search worker runs the following steps as a small state machine (resolve rul
 
 The MediathekViewWebManager (cluster singleton) sends the search query to the MediathekViewWeb API. This searches the Mediathek database (ARD, ZDF, ORF, SRF and other broadcasters).
 
-Queries filter by topic (show name), are sorted by date (newest first), exclude future entries and ignore entries shorter than 5 minutes. API responses are cached for 5 minutes. Each result contains:
+Queries filter by topic (show name), are sorted by date (newest first) and ignore entries shorter than 5 minutes. With `FunkArr__Search__IncludeFuture=true` (default) the search sends two queries — one for already aired entries and one including entries published ahead of their broadcast time — and merges them by video URL. Using two queries keeps upcoming entries from crowding regular episodes out of the result window. API responses are cached for 5 minutes. Each result contains:
 
 - Channel, topic, title, description
 - Video URLs in different qualities (HD, normal, low)
@@ -101,7 +101,7 @@ The `ScoringManager` holds the matching configuration of every ruleset and distr
 
 ### 6. Metadata Enrichment
 
-After scoring, matches are enriched with external metadata (see the [Metadata Enrichment](#metadata-enrichment) section). This step is optional: if enrichment is not configured for the ruleset or fails, the scored results are returned as they are. Afterwards the search worker records the run in the scoring history of the ruleset (see [Scoring History](#scoring-history)).
+After scoring, matches are enriched with external metadata (see the [Metadata Enrichment](#metadata-enrichment) section). This step is optional: if enrichment is not configured for the ruleset or fails, the scored results are returned as they are. Afterwards the evaluation worker records the run in the scoring history of the ruleset (see [Scoring History](#scoring-history)).
 
 ### 7. Newznab Response
 
@@ -200,7 +200,7 @@ These traces are viewable in the web UI and help when debugging rulesets.
 
 ### Scoring History
 
-Every search request evaluated against a ruleset is recorded in that ruleset's scoring history. The search worker sends the result to a sharded, persistent `HistoryWorker` (one per ruleset), which stores the snapshots and trims them by count and age. After each recording it reports updated statistics to the `StatsCollector` (singleton), which keeps the statistics of all rulesets in memory for the UI and rebuilds them from the history workers at startup. Each snapshot records:
+Every search request evaluated against a ruleset is recorded in that ruleset's scoring history. The evaluation worker sends the result to a sharded, persistent `HistoryWorker` (one per ruleset), which stores the snapshots and trims them by count and age. After each recording it reports updated statistics to the `StatsCollector` (singleton), which keeps the statistics of all rulesets in memory for the UI and rebuilds them from the history workers at startup. Each snapshot records:
 
 - Search source (Sonarr, Radarr, Prowlarr or test)
 - Search query

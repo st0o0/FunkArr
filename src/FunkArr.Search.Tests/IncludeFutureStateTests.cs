@@ -15,40 +15,48 @@ public sealed class IncludeFutureStateTests
         Assert.True(new SearchOptions().IncludeFuture);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void Tv_queries_use_include_future(bool includeFuture)
+    [Fact]
+    public void Tv_include_future_adds_identical_query_with_future_enabled()
     {
         var id = Guid.NewGuid();
-        var state = TvSearchWorkerState.From(id.ToString(), includeFuture: includeFuture);
+        var state = TvSearchWorkerState.From(id.ToString(), includeFuture: true);
         state.Init(new SearchSeries(id, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), _noSender);
 
-        Assert.True(state.TryGetMediathekQuery(out var query));
-        Assert.True(state.TryGetMediathekQueryForTopic("Tatort", out var topicQuery));
-        Assert.NotNull(query);
-        Assert.NotNull(topicQuery);
+        var queries = state.GetMediathekQueries();
+
+        Assert.Equal(2, queries.Length);
         Assert.Multiple(
-            () => Assert.Equal(includeFuture, query.Future),
-            () => Assert.Equal(includeFuture, topicQuery.Future));
+            () => Assert.False(queries[0].Future),
+            () => Assert.True(queries[1].Future),
+            () => Assert.Equal(queries[0] with { Future = true }, queries[1]));
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void Movie_queries_use_include_future(bool includeFuture)
+    [Fact]
+    public void Movie_include_future_adds_identical_query_with_future_enabled()
     {
         var id = Guid.NewGuid();
-        var state = MovieSearchWorkerState.From(id.ToString(), includeFuture: includeFuture);
+        var state = MovieSearchWorkerState.From(id.ToString(), includeFuture: true);
         state.Apply(new SearchMovie(id, SearchSource.Radarr, "Das Boot", null, null, null, null), _noSender);
 
-        Assert.True(state.TryGetMediathekQuery(out var query));
-        Assert.True(state.TryGetMediathekQueryForTopic("Das Boot", out var topicQuery));
-        Assert.NotNull(query);
-        Assert.NotNull(topicQuery);
+        var queries = state.GetMediathekQueries();
+
+        Assert.Equal(2, queries.Length);
         Assert.Multiple(
-            () => Assert.Equal(includeFuture, query.Future),
-            () => Assert.Equal(includeFuture, topicQuery.Future));
+            () => Assert.False(queries[0].Future),
+            () => Assert.True(queries[1].Future),
+            () => Assert.Equal(queries[0] with { Future = true }, queries[1]));
+    }
+
+    [Fact]
+    public void Excluding_future_sends_a_single_past_query()
+    {
+        var id = Guid.NewGuid();
+        var state = TvSearchWorkerState.From(id.ToString(), includeFuture: false);
+        state.Init(new SearchSeries(id, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), _noSender);
+
+        var query = Assert.Single(state.GetMediathekQueries());
+
+        Assert.False(query.Future);
     }
 
     [Fact]
@@ -58,8 +66,6 @@ public sealed class IncludeFutureStateTests
         var state = TvSearchWorkerState.From(id.ToString());
         state.Init(new SearchSeries(id, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), _noSender);
 
-        Assert.True(state.TryGetMediathekQuery(out var query));
-        Assert.NotNull(query);
-        Assert.True(query.Future);
+        Assert.Contains(state.GetMediathekQueries(), q => q.Future);
     }
 }

@@ -8,7 +8,7 @@ FunkArr basiert auf Akka.NET. Die Arbeit verteilt sich auf wenige langlebige Sin
 
 | Domäne | Aktoren | Aufgabe |
 |--------|---------|---------|
-| Search | `SearchManager`, `MediathekViewWebManager` (Singletons), `TvSearchWorker`, `MovieSearchWorker` (geshardet, einer pro Suchanfrage) | Koordiniert eine Suche und fragt MediathekViewWeb ab |
+| Search | `SearchManager`, `MediathekViewWebManager` (Singletons), `TvSearchWorker`, `MovieSearchWorker` (geshardet, einer pro Suchanfrage), `TvEvaluationWorker`, `MovieEvaluationWorker` (geshardet, einer pro Auswertung) | Koordiniert eine Suche, fragt MediathekViewWeb ab und wertet die Einträge aus |
 | RuleSet | `RuleSetResolver`, `RuleSetManager`, `RuleSetUpdater` (Singletons), `RuleSetWorker` (geshardet, einer pro Regelwerk) | Lädt, vereint und löst Regelwerke auf, synchronisiert Community-Regelwerke |
 | Scoring | `ScoringManager` (Singleton) mit einem Pool aus `ScoringActor` | Wertet Mediathek-Einträge gegen Regelwerk-Regeln aus |
 | Enrichment | `EnrichmentManager` (Singleton) mit TVDB- und TMDB-Aktor-Pools | Bestimmt Staffel/Episode und Filmdaten über externe APIs |
@@ -43,7 +43,7 @@ Der SearchManager (Cluster-Singleton) erzeugt eine Such-ID und übergibt die Arb
 
 Jede Suche hat ein Timeout von 30 Sekunden (der Controller selbst bricht nach 45 Sekunden ab). Wenn bei einer kombinierten Suche ein Teil fehlschlägt oder das Timeout erreicht, werden die Ergebnisse des anderen Teils trotzdem zurückgegeben.
 
-Der Such-Worker durchläuft die folgenden Schritte als kleine Zustandsmaschine (Regelwerk auflösen, abfragen, bewerten, anreichern) und antwortet dann dem SearchManager. Inaktive Worker werden nach 30 Sekunden passiviert.
+Der Such-Worker löst nur das Regelwerk per ID auf (falls die Anfrage eine enthält) und fragt MediathekViewWeb ab. Die Einträge übergibt er dann an einen geshardeten Auswertungs-Worker (`TvEvaluationWorker` oder `MovieEvaluationWorker`), dem die Auswertungs-Pipeline gehört: Regelwerk über das Topic auflösen (falls noch unbekannt), bewerten, anreichern und den Scoring-Verlauf protokollieren. Der RSS-Feed nutzt dieselben Auswertungs-Worker, sodass Suche und Feed identische Releases erzeugen. Inaktive Worker werden nach 30 Sekunden passiviert.
 
 ### 3. MediathekViewWeb-Abfrage
 
@@ -53,7 +53,7 @@ Der Such-Worker durchläuft die folgenden Schritte als kleine Zustandsmaschine (
 
 Der MediathekViewWebManager (Cluster-Singleton) sendet die Suchanfrage an die MediathekViewWeb-API. Diese durchsucht die Mediathek-Datenbank (ARD, ZDF, ORF, SRF und weitere Sender).
 
-Die Abfragen filtern nach Topic (Sendungsname), sind nach Datum absteigend sortiert, schließen zukünftige Einträge aus und ignorieren Einträge unter 5 Minuten Länge. API-Antworten werden 5 Minuten zwischengespeichert. Die Ergebnisse enthalten für jeden Eintrag:
+Die Abfragen filtern nach Topic (Sendungsname), sind nach Datum absteigend sortiert und ignorieren Einträge unter 5 Minuten Länge. Mit `FunkArr__Search__IncludeFuture=true` (Standard) sendet die Suche zwei Abfragen – eine für bereits ausgestrahlte Einträge und eine inklusive vorab veröffentlichter Einträge – und führt sie über die Video-URL zusammen. Durch die zwei Abfragen verdrängen kommende Einträge keine regulären Folgen aus dem Ergebnisfenster. API-Antworten werden 5 Minuten zwischengespeichert. Die Ergebnisse enthalten für jeden Eintrag:
 
 - Sender, Thema, Titel, Beschreibung
 - Video-URLs in verschiedenen Qualitäten (HD, normal, niedrig)
@@ -101,7 +101,7 @@ Der `ScoringManager` hält die Matching-Konfiguration jedes Regelwerks und verte
 
 ### 6. Metadaten-Anreicherung
 
-Nach dem Scoring werden die Treffer mit externen Metadaten angereichert (siehe Abschnitt [Metadaten-Anreicherung](#metadaten-anreicherung)). Dieser Schritt ist optional: Ist die Anreicherung für das Regelwerk nicht konfiguriert oder schlägt sie fehl, werden die bewerteten Ergebnisse unverändert zurückgegeben. Anschließend protokolliert der Such-Worker den Lauf im Scoring-Verlauf des Regelwerks (siehe [Scoring-Verlauf](#scoring-verlauf)).
+Nach dem Scoring werden die Treffer mit externen Metadaten angereichert (siehe Abschnitt [Metadaten-Anreicherung](#metadaten-anreicherung)). Dieser Schritt ist optional: Ist die Anreicherung für das Regelwerk nicht konfiguriert oder schlägt sie fehl, werden die bewerteten Ergebnisse unverändert zurückgegeben. Anschließend protokolliert der Auswertungs-Worker den Lauf im Scoring-Verlauf des Regelwerks (siehe [Scoring-Verlauf](#scoring-verlauf)).
 
 ### 7. Newznab-Antwort
 
@@ -200,7 +200,7 @@ Diese Traces sind in der Web-UI einsehbar und helfen beim Debuggen von Regelwerk
 
 ### Scoring-Verlauf
 
-Jede Suchanfrage, die über ein Regelwerk ausgewertet wird, wird im Scoring-Verlauf des jeweiligen Regelwerks gespeichert. Der Such-Worker sendet das Ergebnis an einen geshardeten, persistenten `HistoryWorker` (einer pro Regelwerk), der die Snapshots speichert und nach Anzahl und Alter beschneidet. Nach jeder Aufzeichnung meldet er aktualisierte Statistiken an den `StatsCollector` (Singleton), der die Statistiken aller Regelwerke für die UI im Speicher hält und sie beim Start aus den History-Workern wiederherstellt. Pro Snapshot werden aufgezeichnet:
+Jede Suchanfrage, die über ein Regelwerk ausgewertet wird, wird im Scoring-Verlauf des jeweiligen Regelwerks gespeichert. Der Auswertungs-Worker sendet das Ergebnis an einen geshardeten, persistenten `HistoryWorker` (einer pro Regelwerk), der die Snapshots speichert und nach Anzahl und Alter beschneidet. Nach jeder Aufzeichnung meldet er aktualisierte Statistiken an den `StatsCollector` (Singleton), der die Statistiken aller Regelwerke für die UI im Speicher hält und sie beim Start aus den History-Workern wiederherstellt. Pro Snapshot werden aufgezeichnet:
 
 - Quelle der Suche (Sonarr, Radarr, Prowlarr oder Test)
 - Suchbegriff

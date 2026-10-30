@@ -9,7 +9,7 @@ public sealed class RuleSetLookupTests
     private static readonly RegisteredRuleSetEntry[] _entries =
     [
         new("tatort", "Tatort", ["Tatort (ARD)"], new ExternalIds(null, null, null), "Tatort", MediaType.Show),
-        new("das-boot", "Das Boot", [], new ExternalIds(null, null, null), "Das Boot", MediaType.Movie),
+        new("das-boot", "Das Boot", [], new ExternalIds(null, "tt0082096", 387), "Das Boot", MediaType.Movie),
         new("heute-show", "heute-show", [], new ExternalIds(null, null, null), null, null)
     ];
 
@@ -47,6 +47,7 @@ public sealed class RuleSetLookupTests
         var boot = Assert.Single(result.Groups, g => g.RuleSetId == "das-boot");
         Assert.Multiple(
             () => Assert.Equal(2, tatort.Items.Length),
-            () => Assert.Equal(MediaType.Movie, boot.MediaType));
+            () => Assert.Equal(MediaType.Movie, boot.MediaType),
+            () => Assert.Equal(new ExternalIds(null, "tt0082096", 387), boot.Ids));
     }
 }

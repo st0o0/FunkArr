@@ -37,7 +37,7 @@ A failed MVW query (503, queue full, error) or a failed group keeps the cursor, 
 
 ### Evaluation through the Search workers
 
-New commands `EvaluateSeries(SearchId, Source, Items)` / `EvaluateMovies(...)` (`IWithSearchId`) go to the existing shard regions. The worker runs `Init`, `Apply(new QueryMediathekCompleted(items, n))` and then the same continuation as after a real query (extracted into one method), so ruleset resolution, scoring, enrichment, the variant policy and history recording are shared. They reply with the existing `SearchSeriesResponse` / `SearchMovieResponse`. This deviates from "each command owns its responses" on purpose: the evaluation *is* the same search, only its input is pre-fetched, and a separate response hierarchy would duplicate the reply and telemetry code.
+New commands `EvaluateSeries` / `EvaluateMovies` (`IWithSearchId`) evaluate pre-fetched items with the same pipeline as searches (ruleset resolution, scoring, enrichment, variant policy, history). The follow-up change `evaluation-workers` moves this pipeline into dedicated evaluation shard regions with own response types and passes the ruleset's media IDs.
 
 Items of a group are matched to one ruleset by topic or alias, so `Sources[0].Topic` resolves to that ruleset in the worker.
 

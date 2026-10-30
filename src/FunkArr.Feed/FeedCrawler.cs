@@ -11,8 +11,8 @@ namespace FunkArr.Feed;
 internal sealed record FeedCrawlerActors(
     IActorRef Mediathek,
     IActorRef RuleSetResolver,
-    IActorRef TvSearch,
-    IActorRef MovieSearch,
+    IActorRef TvEvaluation,
+    IActorRef MovieEvaluation,
     IActorRef FeedManager);
 
 internal sealed class FeedCrawler(FeedCrawlerActors actors, TimeProvider timeProvider)
@@ -139,26 +139,28 @@ internal sealed class FeedCrawler(FeedCrawlerActors actors, TimeProvider timePro
 
     private async Task<SearchResultItem[]> EvaluateAsync(RuleSetGroup group, CancellationToken ct)
     {
-        var searchId = Guid.NewGuid();
+        var evaluationId = Guid.NewGuid();
 
         if (group.MediaType == MediaType.Movie)
         {
-            var movie = await actors.MovieSearch.Ask<SearchMovieResponse>(
-                new EvaluateMovies(searchId, SearchSource.Feed, group.Items), _evaluationTimeout, ct);
+            var movie = await actors.MovieEvaluation.Ask<EvaluateMoviesResponse>(
+                new EvaluateMovies(evaluationId, SearchSource.Feed, group.Items, group.Ids.ImdbId, group.Ids.TmdbId),
+                _evaluationTimeout, ct);
             return movie switch
             {
-                SearchMovieCompleted completed => completed.Items,
-                SearchMovieFailed failed => throw new InvalidOperationException($"Evaluation of {group.RuleSetId} failed", failed.Cause),
+                EvaluateMoviesCompleted completed => completed.Items,
+                EvaluateMoviesFailed failed => throw new InvalidOperationException($"Evaluation of {group.RuleSetId} failed", failed.Cause),
                 _ => throw new InvalidOperationException($"Unexpected response {movie.GetType().Name}")
             };
         }
 
-        var series = await actors.TvSearch.Ask<SearchSeriesResponse>(
-            new EvaluateSeries(searchId, SearchSource.Feed, group.Items), _evaluationTimeout, ct);
+        var series = await actors.TvEvaluation.Ask<EvaluateSeriesResponse>(
+            new EvaluateSeries(evaluationId, SearchSource.Feed, group.Items, group.Ids.TvdbId, group.Ids.ImdbId),
+            _evaluationTimeout, ct);
         return series switch
         {
-            SearchSeriesCompleted completed => completed.Items,
-            SearchSeriesFailed failed => throw new InvalidOperationException($"Evaluation of {group.RuleSetId} failed", failed.Cause),
+            EvaluateSeriesCompleted completed => completed.Items,
+            EvaluateSeriesFailed failed => throw new InvalidOperationException($"Evaluation of {group.RuleSetId} failed", failed.Cause),
             _ => throw new InvalidOperationException($"Unexpected response {series.GetType().Name}")
         };
     }

@@ -35,6 +35,8 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 | `funkarr_search_failed_total` | Counter | Search failures (tag: `source`) |
 | `funkarr_search_mediathek_errors_total` | Counter | MediathekViewWeb API errors |
 | `funkarr_search_results_per_request` | Histogram | Result count distribution |
+| `funkarr_search_evaluations_total` | Counter | Evaluations run by the evaluation workers (tags: `source`, `type`, `status`) |
+| `funkarr_search_evaluation_duration_seconds` | Histogram | Evaluation duration from ruleset resolution to releases (tags: `source`, `type`) |
 | `funkarr_search_mediathek_cache_hits_total` | Counter | MediathekViewWeb response cache hits |
 | `funkarr_search_mediathek_cache_misses_total` | Counter | MediathekViewWeb response cache misses |
 

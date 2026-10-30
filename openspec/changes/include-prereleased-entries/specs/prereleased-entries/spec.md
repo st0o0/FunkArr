@@ -16,19 +16,19 @@ The system SHALL read `FunkArr:Search:IncludeFuture` as a boolean. When it is no
 - **THEN** the effective value SHALL be `false`
 
 ### Requirement: Searches honor the include-future option
-Every MediathekViewWeb query built for a TV search, a movie search or the internal Mediathek search endpoint SHALL send `future` equal to the effective include-future value.
+TV and movie searches SHALL include entries published before their broadcast time when the effective include-future value is `true`, by sending an additional otherwise identical MediathekViewWeb query with `future=true` next to the regular `future=false` query (see `search-evaluation`). When the value is `false`, they SHALL send only the `future=false` query. The internal Mediathek search endpoint SHALL send `future` equal to the effective include-future value.
 
 #### Scenario: TV search includes pre-released entries
 - **WHEN** a TV search is executed with the default configuration
-- **THEN** the MediathekViewWeb query SHALL have `future=true`
+- **THEN** it SHALL send one MediathekViewWeb query with `future=false` and one with `future=true`
 
 #### Scenario: TV search by resolved topic
 - **WHEN** a TV search queries MediathekViewWeb with a topic resolved from a media ID and the default configuration
-- **THEN** the MediathekViewWeb query SHALL have `future=true`
+- **THEN** both queries SHALL use the resolved topic and one of them SHALL have `future=true`
 
 #### Scenario: Movie search
 - **WHEN** a movie search is executed with `IncludeFuture=false`
-- **THEN** the MediathekViewWeb query SHALL have `future=false`
+- **THEN** it SHALL send exactly one MediathekViewWeb query with `future=false`
 
 #### Scenario: Internal Mediathek search
 - **WHEN** `GET /api/mediathek/search?q=Tatort` is requested with the default configuration

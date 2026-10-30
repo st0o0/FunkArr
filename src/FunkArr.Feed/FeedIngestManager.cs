@@ -43,8 +43,8 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
             new FeedCrawlerActors(
                 Context.GetActor<IMediathekManager>(),
                 Context.GetActor<IRuleSetResolver>(),
-                Context.GetActor<ITvSearchRegion>(),
-                Context.GetActor<IMovieSearchRegion>(),
+                Context.GetActor<ITvEvaluationRegion>(),
+                Context.GetActor<IMovieEvaluationRegion>(),
                 Context.GetActor<IFeedManager>()),
             timeProvider);
 
