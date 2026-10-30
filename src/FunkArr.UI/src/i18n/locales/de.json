@@ -6,7 +6,8 @@
     "settings": "Einstellungen",
     "setup": "Einrichtung",
     "collapse": "Einklappen",
-    "expand": "Ausklappen"
+    "expand": "Ausklappen",
+    "feed": "Feed"
   },
   "home": {
     "title": "Übersicht",
@@ -413,5 +414,25 @@
     "signLanguage": "Gebärdensprache",
     "plainLanguage": "Einfache Sprache",
     "originalVersion": "Originalfassung"
+  },
+  "feed": {
+    "title": "RSS-Feed",
+    "crawlNow": "Jetzt abrufen",
+    "crawlStarted": "Feed-Abruf gestartet",
+    "lastRun": "Letzter Abruf",
+    "status": "Status",
+    "lastRunAt": "Letzter Lauf",
+    "never": "nie",
+    "newEntries": "Neue Einträge",
+    "published": "Veröffentlicht",
+    "unmatched": "Ohne Regelwerk",
+    "warnings": "Hinweise",
+    "gap": "Im letzten Lauf konnten nicht alle neuen Einträge abgedeckt werden",
+    "failures": "{count} fehlgeschlagene Läufe in Folge",
+    "hint": "Sonarr und Radarr holen diese Releases über ihren RSS-Sync ab. Einträge ohne passendes Regelwerk werden nicht veröffentlicht.",
+    "entries": "Veröffentlichte Releases ({count})",
+    "empty": "Noch keine Releases veröffentlicht.",
+    "disabled": "deaktiviert",
+    "running": "läuft"
   }
 }

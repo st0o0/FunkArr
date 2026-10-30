@@ -6,7 +6,8 @@
     "settings": "Settings",
     "setup": "Setup",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "feed": "Feed"
   },
   "home": {
     "title": "Overview",
@@ -447,5 +448,25 @@
     "signLanguage": "Sign language",
     "plainLanguage": "Plain language",
     "originalVersion": "Original version"
+  },
+  "feed": {
+    "title": "RSS feed",
+    "crawlNow": "Crawl now",
+    "crawlStarted": "Feed crawl started",
+    "lastRun": "Last ingest run",
+    "status": "Status",
+    "lastRunAt": "Last run",
+    "never": "never",
+    "newEntries": "New entries",
+    "published": "Published",
+    "unmatched": "Without ruleset",
+    "warnings": "Warnings",
+    "gap": "Not all new entries could be covered in the last run",
+    "failures": "{count} failed runs in a row",
+    "hint": "Sonarr and Radarr pick up these releases with their RSS sync. Entries without a matching ruleset are not published.",
+    "entries": "Published releases ({count})",
+    "empty": "No releases published yet.",
+    "disabled": "disabled",
+    "running": "running"
   }
 }

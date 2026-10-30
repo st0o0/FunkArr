@@ -115,11 +115,17 @@ Die Ergebnisse werden als Newznab-RSS-Feed zurückgegeben. Jeder Eintrag enthäl
 
 Suchergebnisse werden zwischengespeichert, damit eine Folgeanfrage mit Pagination nicht erneut die gesamte Suche auslöst.
 
-#### Anfragen ohne Suchbegriff (RSS-Sync und Indexer-Test)
+#### RSS-Sync
 
-Sonarr, Radarr und Prowlarr senden für den RSS-Sync und für den "Test"-Button eine Suche ohne Suchbegriff und ohne Medien-ID (zum Beispiel `t=tvsearch` ohne `q`). FunkArr startet dafür keine Suche, sondern antwortet mit genau einem Validierungseintrag (`FunkArr.Validation.…`) in der passenden Kategorie, damit der Indexer-Test erfolgreich ist. Der Eintrag passt zu keiner echten Serie und keinem echten Film, und sein Download-Link wird mit einem Newznab-Fehler abgelehnt, sodass er nie einen Download auslöst.
+Sonarr, Radarr und Prowlarr senden für den RSS-Sync und für den "Test"-Button eine Suche ohne Suchbegriff und ohne Medien-ID (zum Beispiel `t=tvsearch` ohne `q`). FunkArr beantwortet sie aus seinem RSS-Feed:
 
-Neue Folgen werden deshalb aktuell nicht per RSS-Sync, sondern über die automatische oder manuelle Suche in Sonarr/Radarr gefunden. Ein echter RSS-Feed ist in [#204](https://github.com/st0o0/funkarr/issues/204) geplant.
+1. **Einlesen:** Alle 15 Minuten fragt der `FeedIngestManager` bei MediathekViewWeb nach, ob ein neues Filmlisten-Update abgeschlossen ist. Wenn ja, sammelt er alle Einträge, die seit dem letzten Lauf neu hinzugekommen sind, anhand ihres `filmlisteTimestamp` (Zeitpunkt der ersten Aufnahme in die Liste, nicht der Sendetermin).
+2. **Zuordnung:** Neue Einträge werden über Thema und Aliase den Regelwerken zugeordnet. Einträge ohne Regelwerk werden gezählt, aber nicht veröffentlicht.
+3. **Auswertung:** Jede Regelwerk-Gruppe läuft durch die normale Such-Pipeline (Scoring, Anreicherung, Sendungsfassungen, Match-Verlauf mit Quelle `Feed`). Feed-Releases sind dadurch identisch mit Suchergebnissen.
+4. **Prüfung:** Veröffentlicht werden nur Releases mit einem Score von mindestens `MinConfidence` und mit Staffel/Folge (Serien) bzw. TMDB-/IMDB-ID (Filme).
+5. **Feed:** Der `FeedManager` speichert veröffentlichte Releases mit stabiler GUID und dem Zeitpunkt der ersten Sichtung als `pubDate` und entfernt sie nach der Aufbewahrungsdauer.
+
+RSS-Anfragen liefern den Feed mit den neuesten Einträgen zuerst, sodass Sonarr und Radarr lückenlos blättern können. Enthält der Feed für die angefragte Kategorie noch keine Releases (zum Beispiel direkt nach der Installation), antwortet FunkArr mit einem einzelnen Validierungseintrag (`FunkArr.Validation.…`), damit der Indexer-Test erfolgreich ist. Sein Download-Link wird abgelehnt, er löst also nie einen Download aus. Die Seite **Feed** in der Weboberfläche zeigt die veröffentlichten Releases und den letzten Abruf.
 
 ## Download-Pipeline
 

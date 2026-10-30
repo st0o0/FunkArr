@@ -48,6 +48,14 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
     {
         _state = MovieSearchWorkerState.From(
             nttId, variantOptions?.CurrentValue, searchOptions?.CurrentValue.IncludeFuture ?? true);
+        Receive<EvaluateMovies>(cmd =>
+        {
+            _log.Info("Movie evaluation started: Source={Source}, Items={Count}", cmd.Source, cmd.Items.Length);
+            _stopwatch.Restart();
+            _state.Apply(new SearchMovie(cmd.SearchId, cmd.Source, null, null, null, null, null), Sender);
+            ContinueAfterQuery(new QueryMediathekCompleted(cmd.Items, cmd.Items.Length));
+        });
+
         Receive<SearchMovie>(cmd =>
         {
             _log.Info("Movie search started: Query={Query}, TmdbId={TmdbId}", cmd.Query, cmd.TmdbId);
@@ -73,27 +81,7 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
 
     private void Querying()
     {
-        Receive<QueryMediathekCompleted>(result =>
-        {
-            _state.Apply(result);
-
-            if (_state.TryGetRuleSetRequest(out var ruleSetRequest))
-            {
-                _ruleSetResolver.Ask<ResolveRuleSetResponse>(ruleSetRequest, _ruleSetTimeout)
-                    .PipeTo(Self, failure: ex => new RuleSetFailed(ex));
-                Become(ResolvingRuleSet);
-            }
-            else if (_state.TryGetScoringRequest(out var scoringRequest))
-            {
-                _scoringManager.Ask<ScoreItemsResponse>(scoringRequest, _scoringTimeout)
-                    .PipeTo(Self, failure: ex => new ScoringFailed(ex));
-                Become(Scoring);
-            }
-            else
-            {
-                Reply(_state.ToSearchCompleted());
-            }
-        });
+        Receive<QueryMediathekCompleted>(ContinueAfterQuery);
 
         Receive<QueryMediathekQueueFull>(_ =>
         {
@@ -190,6 +178,28 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
             RecordHistory();
             Reply(_state.ToSearchCompleted());
         });
+    }
+
+    private void ContinueAfterQuery(QueryMediathekCompleted result)
+    {
+        _state.Apply(result);
+
+        if (_state.TryGetRuleSetRequest(out var ruleSetRequest))
+        {
+            _ruleSetResolver.Ask<ResolveRuleSetResponse>(ruleSetRequest, _ruleSetTimeout)
+                .PipeTo(Self, failure: ex => new RuleSetFailed(ex));
+            Become(ResolvingRuleSet);
+        }
+        else if (_state.TryGetScoringRequest(out var scoringRequest))
+        {
+            _scoringManager.Ask<ScoreItemsResponse>(scoringRequest, _scoringTimeout)
+                .PipeTo(Self, failure: ex => new ScoringFailed(ex));
+            Become(Scoring);
+        }
+        else
+        {
+            Reply(_state.ToSearchCompleted());
+        }
     }
 
     private void AskMediathek(QueryMediathek query)

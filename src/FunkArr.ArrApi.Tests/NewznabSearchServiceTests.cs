@@ -1,4 +1,5 @@
 using FunkArr.ArrApi.Newznab;
+using FunkArr.Messages;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
 
@@ -88,6 +89,41 @@ public sealed class NewznabSearchServiceTests
         var req = CreateRequest(t, cat: cat);
 
         Assert.Equal(expectedParentId, NewznabSearchService.ValidationCategory(req).ParentId);
+    }
+
+    [Theory]
+    [InlineData("tvsearch", null, MediaType.Show)]
+    [InlineData("movie", null, MediaType.Movie)]
+    [InlineData("search", "2000,2040", MediaType.Movie)]
+    [InlineData("search", "5030,5040", MediaType.Show)]
+    [InlineData("search", "2040,5040", null)]
+    [InlineData("search", null, null)]
+    public void FeedMediaType_matches_request(string t, string? cat, MediaType? expected)
+    {
+        Assert.Equal(expected, NewznabSearchService.FeedMediaType(CreateRequest(t, cat: cat)));
+    }
+
+    [Fact]
+    public void ToFeedRss_uses_stable_id_and_first_seen()
+    {
+        var firstSeen = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
+        var entry = new FunkArr.Messages.Feed.FeedEntry(
+            "0123456789abcdef0123456789abcdef", firstSeen, MediaType.Show,
+            new SearchResultItem("Tatort.S2026E18.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
+                "https://example.com/v.mp4", 5400, 1_000_000, 720,
+                new DateTimeOffset(2026, 10, 25, 20, 15, 0, TimeSpan.Zero), 0.9,
+                Metadata: new MatchMetadata(null, "2026", "18", null, null)));
+
+        var rss = NewznabSearchService.ToFeedRss([entry], 7, 0, "http://localhost:6969", "key");
+
+        var item = Assert.Single(rss.Channel.Items);
+        Assert.Multiple(
+            () => Assert.Equal("0123456789abcdef0123456789abcdef", item.Guid.Value),
+            () => Assert.False(item.Guid.IsPermaLink),
+            () => Assert.Equal("Fri, 30 Oct 2026 12:00:00 GMT", item.PubDate),
+            () => Assert.StartsWith("http://localhost:6969/index/api?t=get&id=", item.Link),
+            () => Assert.Equal("5040", Assert.Single(item.Attributes, a => a.Name == "category").Value),
+            () => Assert.Equal(7, rss.Channel.Response.Total));
     }
 
     private static IndexerRequest CreateRequest(

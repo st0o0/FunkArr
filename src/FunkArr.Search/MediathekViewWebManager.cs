@@ -83,7 +83,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
         {
             if (_pending.Remove(msg.RequestId, out var sender))
             {
-                sender.Tell(new QueryMediathekCompleted(msg.Result.Items, msg.Result.Total));
+                sender.Tell(new QueryMediathekCompleted(msg.Result.Items, msg.Result.Total, msg.Result.ListTimestamp));
             }
         });
 
