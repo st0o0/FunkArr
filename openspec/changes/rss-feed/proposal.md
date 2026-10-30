@@ -35,4 +35,4 @@ _None._ The message additions (Filmliste timestamps, `SearchSource.Feed`) are sp
 - **ArrApi:** RSS mode reads the feed; validation item only as fallback.
 - **Api / UI:** feed endpoints and page; `Feed` as search source name.
 - **Host:** two new singletons, `FeedOptions`, meter registration.
-- Depends on #203 (variant policy) and #205 (`IncludeFuture`), which this branch is stacked on.
+- Depends on #203 (variant policy) and #205 (pre-released entries), which this branch is stacked on.

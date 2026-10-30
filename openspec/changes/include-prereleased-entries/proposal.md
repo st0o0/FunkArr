@@ -6,15 +6,15 @@ All MediathekViewWeb queries are sent with `future=false`, which hides every ent
 
 ## What Changes
 
-- New option `FunkArr:Search:IncludeFuture` (default `true`).
-- TV search, movie search and the internal Mediathek search (`/api/mediathek/search`, used by the UI and the ruleset builder) send `future` according to that option.
-- Documentation explains the option and how to wait for the broadcast instead (Sonarr's release-profile air date restriction).
+- **BREAKING (behaviour):** pre-released entries are always included; there is no option to turn this off. Verified manually from Germany that such entries are downloadable.
+- TV and movie searches send their regular `future=false` query plus an identical `future=true` query and merge the results (see `evaluation-workers`); the internal Mediathek search (`/api/mediathek/search`) and the feed ingest query with `future=true`.
+- Documentation explains the behaviour and how to wait for the broadcast instead (Sonarr's release-profile air date restriction).
 
 ## Capabilities
 
 ### New Capabilities
 
-- `prereleased-entries`: whether Mediathek entries published before their broadcast time are included in searches, and how this is configured.
+- `prereleased-entries`: Mediathek entries published before their broadcast time are included in searches.
 
 ### Modified Capabilities
 
@@ -22,8 +22,7 @@ _None._ The existing query requirements in `tv-search` and `movie-search` do not
 
 ## Impact
 
-- **Core / Host:** `SearchOptions` (`FunkArr:Search`) registered in `SearchSetupContainer`.
-- **Search:** worker states take the option; `TvSearchWorker` / `MovieSearchWorker` read it via `IOptionsMonitor` (optional constructor parameter, like the variant policy).
-- **Api:** `MediathekApiEndpoints` reads the option.
-- **Behavior change:** searches now also return pre-released entries. `IncludeFuture=false` restores the previous behavior.
+- **Search:** worker states always build the `future=false` / `future=true` query pair.
+- **Api:** `MediathekApiEndpoints` queries with `future=true`.
+- **Behavior change:** searches now also return pre-released entries, with no way back via configuration (version 0.x).
 - **Not changed:** download failure classification (see design.md).

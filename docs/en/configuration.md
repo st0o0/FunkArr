@@ -263,14 +263,6 @@ Get an API key at [thetvdb.com/api-information](https://thetvdb.com/api-informat
 Both keys are optional but recommended. Without them, FunkArr relies solely on ruleset patterns for matching, which works but produces fewer results.
 :::
 
-## Search
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `FunkArr__Search__IncludeFuture` | `true` | Include Mediathek entries published before their broadcast time |
-
-Broadcasters often publish episodes in the Mediathek before the TV broadcast. With `true`, FunkArr finds them as soon as they are downloadable. The release keeps the scheduled broadcast date, so episode matching works as usual. If you prefer to wait for the broadcast, keep this enabled and turn on the air date restriction in a Sonarr release profile, or set the variable to `false`.
-
 ## RSS Feed
 
 | Variable | Default | Description |

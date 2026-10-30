@@ -53,7 +53,7 @@ The search worker only resolves the ruleset by ID (if the request carries one) a
 
 The MediathekViewWebManager (cluster singleton) sends the search query to the MediathekViewWeb API. This searches the Mediathek database (ARD, ZDF, ORF, SRF and other broadcasters).
 
-Queries filter by topic (show name), are sorted by date (newest first) and ignore entries shorter than 5 minutes. With `FunkArr__Search__IncludeFuture=true` (default) the search sends two queries — one for already aired entries and one including entries published ahead of their broadcast time — and merges them by video URL. Using two queries keeps upcoming entries from crowding regular episodes out of the result window. API responses are cached for 5 minutes. Each result contains:
+Queries filter by topic (show name), are sorted by date (newest first) and ignore entries shorter than 5 minutes. Broadcasters often publish episodes in the Mediathek before the TV broadcast, and these are already downloadable. The search therefore always sends two queries — one for already aired entries and one including entries published ahead of their broadcast time — and merges them by video URL. Using two queries keeps upcoming entries from crowding regular episodes out of the result window. Pre-released entries keep their scheduled broadcast date, so episode matching works as usual. To wait for the broadcast instead, turn on the air date restriction in a Sonarr release profile. API responses are cached for 5 minutes. Each result contains:
 
 - Channel, topic, title, description
 - Video URLs in different qualities (HD, normal, low)

@@ -6,19 +6,19 @@
 
 ## Goals / Non-Goals
 
-**Goals:** one option, honored by every query FunkArr builds for searches.
+**Goals:** every query FunkArr builds for searches includes pre-released entries.
 
 **Non-Goals:**
 - Changing download failure classification for pre-released entries (see below).
-- Per-ruleset or per-request overrides.
+- A configuration switch, per-ruleset or per-request overrides.
 
 ## Decisions
 
-### `SearchOptions` in Core, passed like the variant policy
+### Fixed behaviour, no option
 
-`SearchOptions` (`FunkArr:Search`, `IncludeFuture = true`) is bound in `SearchSetupContainer`. The workers receive `IOptionsMonitor<SearchOptions>?` as an optional constructor parameter and pass `CurrentValue.IncludeFuture` to `From(...)` of their state; the default is `true` when no options are given (tests). `MediathekApiEndpoints` injects `IOptionsMonitor<SearchOptions>` into the handler.
+An `IncludeFuture` option was implemented first and then removed. Pre-released entries were verified to be downloadable, the two-query merge removes the only downside (crowding the result window), and users who want to wait for the broadcast already have Sonarr's air date restriction. An option would only add a code path nobody needs. Version 0.x allows dropping it without migration.
 
-*Alternative:* carry the flag on `SearchSeries` / `SearchMovie`. Rejected: it is a deployment setting, not a request property, and ArrApi would have to know about it.
+*Alternative:* carry the flag on `SearchSeries` / `SearchMovie`. Rejected: not a request property, and ArrApi would have to know about it.
 
 ### No change to download failure classification
 
@@ -36,5 +36,5 @@ Sonarr rejects releases before air date only when the user enabled the air date 
 
 ## Risks / Trade-offs
 
-- [Future entries crowd out older ones in `sortBy=timestamp desc` queries with a size limit] → Topic-scoped queries contain few future entries; the limit (50) is unchanged. Users can disable the option.
+- [Future entries crowd out older ones in `sortBy=timestamp desc` queries with a size limit] → Live data showed up to 48 of 50 slots taken by future entries for daily shows; solved by the separate `future=false` query (see `evaluation-workers`).
 - [Livestream or placeholder entries] → Already filtered by `durationMin=300` in TV/movie queries.

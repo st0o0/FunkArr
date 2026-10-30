@@ -6,7 +6,6 @@ using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Search;
-using Microsoft.Extensions.Options;
 
 namespace FunkArr.Search.Tests;
 
@@ -27,11 +26,8 @@ public sealed class MovieSearchWorkerTests : TestKit
         return probes;
     }
 
-    private IActorRef CreateWorker(Guid searchId, bool includeFuture = false)
-    {
-        IOptionsMonitor<SearchOptions> options = new StaticOptionsMonitor<SearchOptions>(new SearchOptions { IncludeFuture = includeFuture });
-        return Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString(), options)));
-    }
+    private IActorRef CreateWorker(Guid searchId) =>
+        Sys.ActorOf(Props.Create(() => new MovieSearchWorker(searchId.ToString())));
 
     [Fact]
     public void Text_search_queries_title_and_topic_and_delegates_evaluation()
@@ -42,13 +38,12 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
-        var query = p.Mediathek.ExpectMsg<QueryMediathek>();
+        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Das Boot")], 1));
         var field = Assert.Single(query.Fields);
         Assert.Multiple(
             () => Assert.Equal(new[] { "title", "topic" }, field.Fields),
             () => Assert.Equal("Das Boot", field.Query),
             () => Assert.Equal(3600, query.DurationMin));
-        p.Mediathek.Reply(new QueryMediathekCompleted([Item("Das Boot")], 1));
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
         Assert.Multiple(
@@ -74,9 +69,8 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, null, null, null, null), TestActor);
 
-        var query = p.Mediathek.ExpectMsg<QueryMediathek>();
+        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([], 0));
         Assert.Empty(query.Fields);
-        p.Mediathek.Reply(new QueryMediathekCompleted([], 0));
 
         var result = ExpectMsg<SearchMovieCompleted>();
         Assert.Multiple(
@@ -101,9 +95,8 @@ public sealed class MovieSearchWorkerTests : TestKit
         var ruleSet = new RuleSetResolved("tatort", "Tatort");
         p.Resolver.Reply(ruleSet);
 
-        var query = p.Mediathek.ExpectMsg<QueryMediathek>();
+        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Tatort")], 1));
         Assert.Equal("Tatort", Assert.Single(query.Fields).Query);
-        p.Mediathek.Reply(new QueryMediathekCompleted([Item("Tatort")], 1));
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
         Assert.Multiple(
@@ -136,7 +129,7 @@ public sealed class MovieSearchWorkerTests : TestKit
     {
         var p = RegisterProbes();
         var searchId = Guid.NewGuid();
-        var worker = CreateWorker(searchId, includeFuture: true);
+        var worker = CreateWorker(searchId);
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
@@ -156,8 +149,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
-        p.Mediathek.ExpectMsg<QueryMediathek>();
-        p.Mediathek.Reply(new QueryMediathekCompleted([Item("Das Boot")], 1));
+        AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Das Boot")], 1));
         var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
         p.Evaluation.Reply(new EvaluateMoviesFailed(evaluation.SearchId, new Exception("Scoring error")));
 
@@ -165,6 +157,20 @@ public sealed class MovieSearchWorkerTests : TestKit
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Contains("Scoring error", result.Cause.Message));
+    }
+
+    private static QueryMediathek AnswerQueries(Akka.TestKit.TestProbe mediathek, QueryMediathekResponse response,
+        TimeSpan? timeout = null)
+    {
+        var queries = new List<QueryMediathek>();
+        for (var i = 0; i < 2; i++)
+        {
+            queries.Add(mediathek.ExpectMsg<QueryMediathek>(timeout));
+            mediathek.LastSender.Tell(response, mediathek.Ref);
+        }
+
+        Assert.Equal(new[] { false, true }, queries.Select(q => q.Future).Order().ToArray());
+        return queries.Single(q => !q.Future);
     }
 
     private static MediathekItem Item(string title) =>

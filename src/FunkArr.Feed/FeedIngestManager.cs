@@ -21,7 +21,6 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<FeedOptions> _feedOptions;
-    private readonly IOptionsMonitor<SearchOptions> _searchOptions;
     private readonly TimeProvider _timeProvider;
     private readonly FeedCrawler _crawler;
     private FeedIngestState _state = FeedIngestState.Empty;
@@ -33,11 +32,9 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
 
     public FeedIngestManager(
         IOptionsMonitor<FeedOptions> feedOptions,
-        IOptionsMonitor<SearchOptions> searchOptions,
         TimeProvider timeProvider)
     {
         _feedOptions = feedOptions;
-        _searchOptions = searchOptions;
         _timeProvider = timeProvider;
         _crawler = new FeedCrawler(
             new FeedCrawlerActors(
@@ -93,7 +90,7 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
         Timers.Cancel(_tickTimerKey);
         _log.Debug("Feed ingest run started at cursor {Cursor}", _state.Cursor);
 
-        _crawler.RunAsync(_state.Cursor, feed, _searchOptions.CurrentValue.IncludeFuture, CancellationToken.None)
+        _crawler.RunAsync(_state.Cursor, feed, CancellationToken.None)
             .PipeTo(Self, success: outcome => new RunFinished(outcome), failure: ex => new RunCrashed(ex));
     }
 

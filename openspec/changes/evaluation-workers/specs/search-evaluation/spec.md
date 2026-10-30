@@ -60,15 +60,11 @@ The feed crawler SHALL send each ruleset group to the evaluation region of the g
 - **THEN** the feed run SHALL count that group as failed
 
 ### Requirement: Pre-released entries are merged into searches
-When include-future is enabled, a search SHALL send two otherwise identical MediathekViewWeb queries, one with `future=false` and one with `future=true`, and merge the responses: a queue-full response SHALL win, then an error, otherwise the entries SHALL be de-duplicated by video URL (HD, then normal, then low; channel, title and timestamp when no URL exists), keeping the first occurrence. When include-future is disabled, a search SHALL send a single `future=false` query.
+A search SHALL send two otherwise identical MediathekViewWeb queries, one with `future=false` and one with `future=true`, and merge the responses: a queue-full response SHALL win, then an error, otherwise the entries SHALL be de-duplicated by video URL (HD, then normal, then low; channel, title and timestamp when no URL exists), keeping the first occurrence.
 
 #### Scenario: Merged results
 - **WHEN** the `future=false` query returns entry A and the `future=true` query returns entries B and A
 - **THEN** the evaluation SHALL receive exactly A and B
-
-#### Scenario: Include-future disabled
-- **WHEN** `FunkArr__Search__IncludeFuture=false` is configured
-- **THEN** a search SHALL send exactly one query with `future=false`
 
 #### Scenario: One query hits a full queue
 - **WHEN** one of the two queries returns queue-full

@@ -43,7 +43,7 @@ public sealed class FeedCrawlerTests : TestKit
     {
         var (crawler, p) = Create();
 
-        var run = crawler.RunAsync(_listTimestamp, _options, includeFuture: true, CancellationToken.None);
+        var run = crawler.RunAsync(_listTimestamp, _options, CancellationToken.None);
 
         var probe = p.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Multiple(
@@ -66,7 +66,7 @@ public sealed class FeedCrawlerTests : TestKit
         var unknown = TestData.Item("Irgendwas", "Unbekannt", _listTimestamp - 10);
         var old = TestData.Item("Alt", "Tatort", _listTimestamp - 400_000);
 
-        var run = crawler.RunAsync(0, _options, includeFuture: true, CancellationToken.None);
+        var run = crawler.RunAsync(0, _options, CancellationToken.None);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
         p.Mediathek.Reply(new QueryMediathekCompleted([], 0, _listTimestamp));
@@ -112,7 +112,7 @@ public sealed class FeedCrawlerTests : TestKit
         var (crawler, p) = Create();
         var tatort = TestData.Item("Herz aus Eis", "Tatort", _listTimestamp);
 
-        var run = crawler.RunAsync(0, _options, includeFuture: true, CancellationToken.None);
+        var run = crawler.RunAsync(0, _options, CancellationToken.None);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
         p.Mediathek.Reply(new QueryMediathekCompleted([], 0, _listTimestamp));
@@ -137,7 +137,7 @@ public sealed class FeedCrawlerTests : TestKit
     {
         var (crawler, p) = Create();
 
-        var run = crawler.RunAsync(0, _options, includeFuture: false, CancellationToken.None);
+        var run = crawler.RunAsync(0, _options, CancellationToken.None);
 
         p.Mediathek.ExpectMsg<QueryMediathek>();
         p.Mediathek.Reply(new QueryMediathekQueueFull());

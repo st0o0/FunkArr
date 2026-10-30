@@ -6,7 +6,6 @@ using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Search;
-using Microsoft.Extensions.Options;
 
 namespace FunkArr.Search.Tests;
 
@@ -27,11 +26,8 @@ public sealed class TvSearchWorkerTests : TestKit
         return probes;
     }
 
-    private IActorRef CreateWorker(Guid searchId, bool includeFuture = false)
-    {
-        IOptionsMonitor<SearchOptions> options = new StaticOptionsMonitor<SearchOptions>(new SearchOptions { IncludeFuture = includeFuture });
-        return Sys.ActorOf(Props.Create(() => new TvSearchWorker(searchId.ToString(), options)));
-    }
+    private IActorRef CreateWorker(Guid searchId) =>
+        Sys.ActorOf(Props.Create(() => new TvSearchWorker(searchId.ToString())));
 
     [Fact]
     public void Text_search_queries_mediathek_and_delegates_evaluation()
@@ -42,7 +38,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
-        var query = p.Mediathek.ExpectMsg<QueryMediathek>();
+        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Tatort", "Tatort: Test", "https://x.com/1.mp4")], 1));
         var field = Assert.Single(query.Fields);
         Assert.Multiple(
             () => Assert.Equal("topic", Assert.Single(field.Fields)),
@@ -50,7 +46,6 @@ public sealed class TvSearchWorkerTests : TestKit
             () => Assert.Equal(300, query.DurationMin),
             () => Assert.False(query.Future));
         p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
-        p.Mediathek.Reply(new QueryMediathekCompleted([Item("Tatort", "Tatort: Test", "https://x.com/1.mp4")], 1));
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>();
         Assert.Multiple(
@@ -85,9 +80,8 @@ public sealed class TvSearchWorkerTests : TestKit
         var ruleSet = new RuleSetResolved("tatort", "Tatort");
         p.Resolver.Reply(ruleSet);
 
-        var query = p.Mediathek.ExpectMsg<QueryMediathek>();
+        var query = AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Tatort", "Roomservice", "https://x.com/1.mp4")], 1));
         Assert.Equal("Tatort", Assert.Single(query.Fields).Query);
-        p.Mediathek.Reply(new QueryMediathekCompleted([Item("Tatort", "Roomservice", "https://x.com/1.mp4")], 1));
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>();
         Assert.Multiple(
@@ -125,8 +119,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
-        p.Mediathek.ExpectMsg<QueryMediathek>();
-        p.Mediathek.Reply(new QueryMediathekCompleted([], 0));
+        AnswerQueries(p.Mediathek, new QueryMediathekCompleted([], 0));
 
         var result = ExpectMsg<SearchSeriesCompleted>();
         Assert.Multiple(
@@ -140,7 +133,7 @@ public sealed class TvSearchWorkerTests : TestKit
     {
         var p = RegisterProbes();
         var searchId = Guid.NewGuid();
-        var worker = CreateWorker(searchId, includeFuture: true);
+        var worker = CreateWorker(searchId);
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
@@ -170,8 +163,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
-        p.Mediathek.ExpectMsg<QueryMediathek>();
-        p.Mediathek.Reply(new QueryMediathekCompleted([Item("Tatort", "Test", "https://x.com/v.mp4")], 1));
+        AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Tatort", "Test", "https://x.com/v.mp4")], 1));
         var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>();
         p.Evaluation.Reply(new EvaluateSeriesFailed(evaluation.SearchId, new Exception("Scoring error")));
 
@@ -190,8 +182,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
-        p.Mediathek.ExpectMsg<QueryMediathek>();
-        p.Mediathek.Reply(new QueryMediathekError(new Exception("HTTP 500")));
+        AnswerQueries(p.Mediathek, new QueryMediathekError(new Exception("HTTP 500")));
 
         var result = ExpectMsg<SearchSeriesFailed>();
         Assert.Multiple(
@@ -209,11 +200,9 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
-        p.Mediathek.ExpectMsg<QueryMediathek>();
-        p.Mediathek.Reply(new QueryMediathekQueueFull());
+        AnswerQueries(p.Mediathek, new QueryMediathekQueueFull());
 
-        p.Mediathek.ExpectMsg<QueryMediathek>(TimeSpan.FromSeconds(5));
-        p.Mediathek.Reply(new QueryMediathekCompleted([Item("Tatort", "Test", "https://x.com/v.mp4")], 1));
+        AnswerQueries(p.Mediathek, new QueryMediathekCompleted([Item("Tatort", "Test", "https://x.com/v.mp4")], 1), TimeSpan.FromSeconds(5));
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>(TimeSpan.FromSeconds(5));
         p.Evaluation.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [], 0));
@@ -231,17 +220,28 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
-        p.Mediathek.ExpectMsg<QueryMediathek>();
-        p.Mediathek.Reply(new QueryMediathekQueueFull());
-        p.Mediathek.ExpectMsg<QueryMediathek>(TimeSpan.FromSeconds(5));
-        p.Mediathek.Reply(new QueryMediathekQueueFull());
-        p.Mediathek.ExpectMsg<QueryMediathek>(TimeSpan.FromSeconds(5));
-        p.Mediathek.Reply(new QueryMediathekQueueFull());
+        AnswerQueries(p.Mediathek, new QueryMediathekQueueFull());
+        AnswerQueries(p.Mediathek, new QueryMediathekQueueFull(), TimeSpan.FromSeconds(5));
+        AnswerQueries(p.Mediathek, new QueryMediathekQueueFull(), TimeSpan.FromSeconds(5));
 
         var result = ExpectMsg<SearchSeriesFailed>(TimeSpan.FromSeconds(5));
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Contains("queue full", result.Cause.Message));
+    }
+
+    private static QueryMediathek AnswerQueries(Akka.TestKit.TestProbe mediathek, QueryMediathekResponse response,
+        TimeSpan? timeout = null)
+    {
+        var queries = new List<QueryMediathek>();
+        for (var i = 0; i < 2; i++)
+        {
+            queries.Add(mediathek.ExpectMsg<QueryMediathek>(timeout));
+            mediathek.LastSender.Tell(response, mediathek.Ref);
+        }
+
+        Assert.Equal(new[] { false, true }, queries.Select(q => q.Future).Order().ToArray());
+        return queries.Single(q => !q.Future);
     }
 
     private static MediathekItem Item(string topic, string title, string url) =>
