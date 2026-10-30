@@ -1,4 +1,4 @@
-namespace FunkArr.Feed.Tests;
+namespace FunkArr.Search.Tests;
 
 public sealed class SizeEstimationTests
 {
