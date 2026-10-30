@@ -11,7 +11,8 @@ A live check of `future=true` (#205) also showed a regression: topic searches re
 - The search workers only resolve the ruleset by media ID, query MediathekViewWeb (with queue-full retries) and delegate the entries to the evaluation region.
 - Searches always send two MediathekViewWeb queries (`future=false` and `future=true`, otherwise identical) and merge them, de-duplicated by video URL. This supersedes the single-query wording of the `prereleased-entries` requirement.
 - The feed crawler sends its ruleset groups to the evaluation regions and passes the ruleset's registered media IDs so feed entries are enriched like search results.
-- New metrics `funkarr.search.evaluations_total` and `funkarr.search.evaluation_duration_seconds`.
+- The evaluation pipeline (evaluation workers and states, `SourceInfo`, `SceneRelease`, `ReleaseDisplay`, `EnrichedItem`, `MediaIdentity`, `MatchInfo`, `VideoQuality`, `VariantDetector`) lives in the `FunkArr.Feed` domain; `FunkArr.Search` keeps querying only.
+- New metrics `funkarr.feed.evaluations_total` and `funkarr.feed.evaluation_duration_seconds`.
 
 ## Capabilities
 
@@ -25,7 +26,7 @@ A live check of `future=true` (#205) also showed a regression: topic searches re
 
 ## Impact
 
-- Code: `FunkArr.Messages/Search`, `FunkArr.Core/ActorKeys`, `FunkArr.Search` (new workers and states, slimmed search states and workers, query merge, telemetry), `FunkArr.Feed` (crawler, ruleset lookup), host shard registration.
+- Code: `FunkArr.Messages/Search`, `FunkArr.Core/ActorKeys`, `FunkArr.Search` (slimmed search states and workers, query merge, telemetry), `FunkArr.Feed` (evaluation workers and release pipeline moved from Search, crawler, ruleset lookup), host shard registration.
 - Tests: search worker and state tests split into search and evaluation tests; feed crawler tests.
 - Docs: how-it-works, observability, AGENTS.md actor topology.
 - No persistence or API contract changes. Version 0.x, no migration.

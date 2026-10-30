@@ -9,9 +9,9 @@ using FunkArr.Messages.Search;
 using Microsoft.Extensions.Options;
 using Servus.Akka;
 
-namespace FunkArr.Search;
+namespace FunkArr.Feed;
 
-public sealed class TvEvaluationWorker : ReceiveActor
+public sealed class MovieEvaluationWorker : ReceiveActor
 {
     private static readonly TimeSpan _ruleSetTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan _scoringTimeout = TimeSpan.FromSeconds(10);
@@ -19,7 +19,7 @@ public sealed class TvEvaluationWorker : ReceiveActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
 
-    private readonly TvEvaluationState _state;
+    private readonly MovieEvaluationState _state;
 
     private readonly IActorRef _scoringManager = Context.GetActor<IScoringManager>();
     private readonly IActorRef _ruleSetResolver = Context.GetActor<IRuleSetResolver>();
@@ -28,13 +28,13 @@ public sealed class TvEvaluationWorker : ReceiveActor
 
     private readonly Stopwatch _stopwatch = new();
 
-    public TvEvaluationWorker(string nttId, IOptionsMonitor<VariantOptions>? variantOptions = null)
+    public MovieEvaluationWorker(string nttId, IOptionsMonitor<VariantOptions>? variantOptions = null)
     {
-        _state = TvEvaluationState.From(nttId, variantOptions?.CurrentValue);
+        _state = MovieEvaluationState.From(nttId, variantOptions?.CurrentValue);
 
-        Receive<EvaluateSeries>(cmd =>
+        Receive<EvaluateMovies>(cmd =>
         {
-            _log.Debug("TV evaluation {SearchId} started: Source={Source}, Items={Count}",
+            _log.Debug("Movie evaluation {SearchId} started: Source={Source}, Items={Count}",
                 cmd.SearchId, cmd.Source, cmd.Items.Length);
             _stopwatch.Restart();
             _state.Init(cmd, Sender);
@@ -55,7 +55,7 @@ public sealed class TvEvaluationWorker : ReceiveActor
     {
         Receive<RuleSetResolved>(resolved =>
         {
-            _state.ApplyRuleSet(resolved.RuleSetId, resolved.MediaName, resolved.Enrichment);
+            _state.Apply(resolved.RuleSetId, resolved.MediaName, resolved.Enrichment);
             ScoreOrReply();
         });
 
@@ -70,8 +70,8 @@ public sealed class TvEvaluationWorker : ReceiveActor
 
             if (_state.TryGetEnrichmentRequest(out var enrichRequest))
             {
-                _enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout)
-                    .PipeTo(Self, failure: ex => new EnrichEpisodesFailed(ex));
+                _enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout)
+                    .PipeTo(Self, failure: ex => new EnrichMoviesFailed(ex));
                 Become(Enriching);
                 return;
             }
@@ -82,22 +82,22 @@ public sealed class TvEvaluationWorker : ReceiveActor
 
         Receive<ScoringFailed>(failed =>
         {
-            _log.Warning(failed.Cause, "TV evaluation {SearchId} scoring failed", _state.SearchId);
-            Reply(new EvaluateSeriesFailed(_state.SearchId, failed.Cause));
+            _log.Warning(failed.Cause, "Movie evaluation {SearchId} scoring failed", _state.SearchId);
+            Reply(new EvaluateMoviesFailed(_state.SearchId, failed.Cause));
         });
     }
 
     private void Enriching()
     {
-        Receive<EnrichEpisodesCompleted>(enriched =>
+        Receive<EnrichMoviesCompleted>(enriched =>
         {
             _state.Apply(enriched);
-            _state.MergeEnrichmentIntoTraces(enriched.Episodes);
+            _state.MergeEnrichmentIntoTraces(enriched.Movies);
             RecordHistory();
             Reply(_state.ToCompleted());
         });
 
-        Receive<EnrichEpisodesFailed>(_ =>
+        Receive<EnrichMoviesFailed>(_ =>
         {
             RecordHistory();
             Reply(_state.ToCompleted());
@@ -126,12 +126,12 @@ public sealed class TvEvaluationWorker : ReceiveActor
         }
     }
 
-    private void Reply(EvaluateSeriesResponse response)
+    private void Reply(EvaluateMoviesResponse response)
     {
         _stopwatch.Stop();
         var sourceTag = new KeyValuePair<string, object?>("source", _state.Source.ToString().ToLowerInvariant());
-        var typeTag = new KeyValuePair<string, object?>("type", "tv");
-        var statusTag = new KeyValuePair<string, object?>("status", response is EvaluateSeriesCompleted ? "completed" : "failed");
+        var typeTag = new KeyValuePair<string, object?>("type", "movie");
+        var statusTag = new KeyValuePair<string, object?>("status", response is EvaluateMoviesCompleted ? "completed" : "failed");
         Telemetry.Evaluations.Add(1, sourceTag, typeTag, statusTag);
         Telemetry.EvaluationDuration.Record(_stopwatch.Elapsed.TotalSeconds, sourceTag, typeTag);
 

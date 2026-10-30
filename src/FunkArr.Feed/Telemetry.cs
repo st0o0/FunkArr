@@ -6,6 +6,12 @@ internal static class Telemetry
 {
     private static readonly Meter _meter = new("FunkArr.Feed");
 
+    internal static readonly Counter<long> Evaluations = _meter.CreateCounter<long>(
+        "funkarr.feed.evaluations_total", description: "Evaluations of Mediathek entries by the evaluation workers");
+
+    internal static readonly Histogram<double> EvaluationDuration = _meter.CreateHistogram<double>(
+        "funkarr.feed.evaluation_duration_seconds", unit: "s", description: "Evaluation duration from ruleset resolution to releases");
+
     internal static readonly Counter<long> Crawls = _meter.CreateCounter<long>(
         "funkarr.feed.crawls_total", description: "Feed ingest runs by outcome");
 

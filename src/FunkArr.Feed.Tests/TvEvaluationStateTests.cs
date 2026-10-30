@@ -6,7 +6,7 @@ using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 
-namespace FunkArr.Search.Tests;
+namespace FunkArr.Feed.Tests;
 
 public sealed class TvEvaluationStateTests
 {

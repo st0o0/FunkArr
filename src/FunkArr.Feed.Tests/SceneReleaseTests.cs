@@ -1,7 +1,7 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 
-namespace FunkArr.Search.Tests;
+namespace FunkArr.Feed.Tests;
 
 public sealed class SceneReleaseTests
 {
