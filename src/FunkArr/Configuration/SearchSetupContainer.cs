@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using FunkArr.Api;
 using FunkArr.Api.HealthChecks;
+using FunkArr.Core;
 using FunkArr.Search;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Servus.Application.Startup;
@@ -11,6 +12,11 @@ public sealed class SearchSetupContainer : ApplicationSetupContainer<WebApplicat
 {
     public void SetupServices(IServiceCollection services, IConfiguration configuration)
     {
+        services
+            .AddOptions<SearchOptions>()
+            .Bind(configuration.GetSection(SearchOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddHttpClient<MediathekClient>(client =>
         {
             client.BaseAddress = new Uri("https://mediathekviewweb.de/api/query");

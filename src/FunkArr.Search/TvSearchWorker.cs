@@ -43,9 +43,13 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 
     private QueryMediathek? _lastQuery;
 
-    public TvSearchWorker(string nttId, IOptionsMonitor<VariantOptions>? variantOptions = null)
+    public TvSearchWorker(
+        string nttId,
+        IOptionsMonitor<VariantOptions>? variantOptions = null,
+        IOptionsMonitor<SearchOptions>? searchOptions = null)
     {
-        _state = TvSearchWorkerState.From(nttId, variantOptions?.CurrentValue);
+        _state = TvSearchWorkerState.From(
+            nttId, variantOptions?.CurrentValue, searchOptions?.CurrentValue.IncludeFuture ?? true);
         Receive<SearchSeries>(cmd =>
         {
             _log.Info("TV search started: Query={Query}, TvdbId={TvdbId}", cmd.Query, cmd.TvdbId);

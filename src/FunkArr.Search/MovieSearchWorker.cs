@@ -41,9 +41,13 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
 
     private QueryMediathek? _lastQuery;
 
-    public MovieSearchWorker(string nttId, IOptionsMonitor<VariantOptions>? variantOptions = null)
+    public MovieSearchWorker(
+        string nttId,
+        IOptionsMonitor<VariantOptions>? variantOptions = null,
+        IOptionsMonitor<SearchOptions>? searchOptions = null)
     {
-        _state = MovieSearchWorkerState.From(nttId, variantOptions?.CurrentValue);
+        _state = MovieSearchWorkerState.From(
+            nttId, variantOptions?.CurrentValue, searchOptions?.CurrentValue.IncludeFuture ?? true);
         Receive<SearchMovie>(cmd =>
         {
             _log.Info("Movie search started: Query={Query}, TmdbId={TmdbId}", cmd.Query, cmd.TmdbId);

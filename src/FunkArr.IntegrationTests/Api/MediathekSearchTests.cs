@@ -36,6 +36,21 @@ public sealed class MediathekSearchTests(FunkArrFixture fixture)
     }
 
     [Fact]
+    public async Task Search_IncludesPreReleasedEntriesByDefault()
+    {
+        var task = _fixture.Client.GetAsync("/api/mediathek/search?q=Tatort");
+
+        var probe = _fixture.GetProbe<IMediathekManager>();
+        var query = probe.ExpectMsg<QueryMediathek>();
+        probe.Reply(TestData.MediathekSearchResult(count: 1));
+        var response = await task;
+
+        Assert.Multiple(
+            () => Assert.Equal(HttpStatusCode.OK, response.StatusCode),
+            () => Assert.True(query.Future));
+    }
+
+    [Fact]
     public async Task Search_WithoutParams_Returns400()
     {
         var response = await _fixture.Client.GetAsync("/api/mediathek/search");
