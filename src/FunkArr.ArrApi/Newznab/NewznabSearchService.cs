@@ -13,6 +13,7 @@ public sealed class NewznabSearchService(
     IActorRegistry registry,
     SearchResultCache cache,
     IOptions<ArrApiOptions> options,
+    TimeProvider timeProvider,
     ILogger<NewznabSearchService> logger)
 {
     internal const int MaxLimit = 500;
@@ -20,6 +21,15 @@ public sealed class NewznabSearchService(
 
     internal async Task<SearchServiceResult> Search(IndexerRequest req, string baseUrl, string apiKey, CancellationToken ct)
     {
+        if (IsWithoutSearchCriteria(req))
+        {
+            var validationCategory = ValidationCategory(req);
+            logger.LogDebug("Answering {Function} request without search criteria with a validation item ({Category})",
+                req.T, validationCategory.Label);
+            return new SearchServiceResult.Success(
+                ValidationRss.Create(validationCategory, req.Offset ?? 0, timeProvider.GetUtcNow(), baseUrl, apiKey));
+        }
+
         var (cmd, category) = BuildCommand(req);
 
         if (cmd is null)
@@ -202,6 +212,31 @@ public sealed class NewznabSearchService(
         var category = NewznabCategory.FromCat(cat) ?? NewznabCategory.Tv;
         var cmd = new SearchCommand(SearchSource.Prowlarr, req.Q, cat, CapLimit(req.Limit), req.Offset, null);
         return (cmd, category);
+    }
+
+    internal static bool IsWithoutSearchCriteria(IndexerRequest req) =>
+        req.T is "tvsearch" or "movie" or "search"
+        && string.IsNullOrWhiteSpace(req.Q)
+        && string.IsNullOrWhiteSpace(req.TvdbId)
+        && string.IsNullOrWhiteSpace(req.ImdbId)
+        && string.IsNullOrWhiteSpace(req.TmdbId);
+
+    internal static NewznabCategory ValidationCategory(IndexerRequest req) => req.T switch
+    {
+        "movie" => NewznabCategory.Movie,
+        "search" when RequestsOnlyMovieCategories(req.Cat) => NewznabCategory.Movie,
+        _ => NewznabCategory.Tv
+    };
+
+    internal static bool RequestsOnlyMovieCategories(string? cat)
+    {
+        var categories = (cat ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(ParseInt)
+            .OfType<int>()
+            .ToArray();
+
+        return categories.Length > 0 && categories.All(c => NewznabCategory.FromCat(c) == NewznabCategory.Movie);
     }
 
     internal static int? CapLimit(int? limit) => limit switch
