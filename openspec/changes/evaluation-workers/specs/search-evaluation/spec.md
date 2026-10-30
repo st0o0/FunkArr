@@ -1,6 +1,6 @@
 ## Purpose
 
-Defines how Mediathek entries are evaluated into releases by dedicated evaluation workers, shared by searches and the RSS feed, and how searches combine aired and pre-released entries.
+Defines how Mediathek entries are evaluated into releases by dedicated evaluation workers, shared by searches and the RSS feed.
 
 ## ADDED Requirements
 
@@ -58,14 +58,3 @@ The feed crawler SHALL send each ruleset group to the evaluation region of the g
 #### Scenario: Failed group evaluation
 - **WHEN** the evaluation of a group replies `EvaluateSeriesFailed`
 - **THEN** the feed run SHALL count that group as failed
-
-### Requirement: Pre-released entries are merged into searches
-A search SHALL send two otherwise identical MediathekViewWeb queries, one with `future=false` and one with `future=true`, and merge the responses: a queue-full response SHALL win, then an error, otherwise the entries SHALL be de-duplicated by video URL (HD, then normal, then low; channel, title and timestamp when no URL exists), keeping the first occurrence.
-
-#### Scenario: Merged results
-- **WHEN** the `future=false` query returns entry A and the `future=true` query returns entries B and A
-- **THEN** the evaluation SHALL receive exactly A and B
-
-#### Scenario: One query hits a full queue
-- **WHEN** one of the two queries returns queue-full
-- **THEN** the search SHALL retry both queries with backoff

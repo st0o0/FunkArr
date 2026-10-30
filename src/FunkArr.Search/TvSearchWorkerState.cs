@@ -55,22 +55,19 @@ public sealed class TvSearchWorkerState
 
     public void ApplyRuleSet(RuleSetResolved resolved) => RuleSet = resolved;
 
-    public QueryMediathek[] GetMediathekQueries()
+    public QueryMediathek GetMediathekQuery()
     {
         var topic = RuleSet?.Topic ?? Query;
         MediathekQueryField[] fields = string.IsNullOrWhiteSpace(topic) ? [] : [new MediathekQueryField(["topic"], topic)];
 
-        var primary = new QueryMediathek(
+        return new QueryMediathek(
             Fields: fields,
             SortBy: "timestamp",
             SortOrder: "desc",
-            Future: false,
             Offset: RuleSet is null ? Offset ?? 0 : 0,
             Size: Limit ?? _defaultSize,
             DurationMin: _durationMin,
             DurationMax: null);
-
-        return [primary, primary with { Future = true }];
     }
 
     public void Apply(QueryMediathekCompleted result) => Items = result.Items;

@@ -11,7 +11,6 @@ internal sealed class MediathekQueryBuilder
     private readonly List<QueryEntry> _queries = [];
     private string _sortBy = "timestamp";
     private string _sortOrder = "desc";
-    private bool _future;
     private int _offset;
     private int _size = 15;
     private int? _durationMin;
@@ -46,12 +45,6 @@ internal sealed class MediathekQueryBuilder
         return this;
     }
 
-    public MediathekQueryBuilder IncludeFuture(bool future)
-    {
-        _future = future;
-        return this;
-    }
-
     public MediathekQueryBuilder WithPagination(int offset, int size)
     {
         _offset = offset;
@@ -65,7 +58,6 @@ internal sealed class MediathekQueryBuilder
         {
             _sortBy = query.SortBy ?? "timestamp",
             _sortOrder = query.SortOrder ?? "desc",
-            _future = query.Future,
             _offset = query.Offset,
             _size = query.Size,
             _durationMin = query.DurationMin,
@@ -91,7 +83,7 @@ internal sealed class MediathekQueryBuilder
             }).ToArray(),
             ["sortBy"] = _sortBy,
             ["sortOrder"] = _sortOrder,
-            ["future"] = _future,
+            ["future"] = true,
             ["offset"] = _offset,
             ["size"] = _size,
             ["duration_min"] = _durationMin,

@@ -167,7 +167,7 @@ internal sealed class FeedCrawler(FeedCrawlerActors actors, TimeProvider timePro
 
     private async Task<QueryMediathekResponse> QueryAsync(int offset, int size, CancellationToken ct)
     {
-        var query = new QueryMediathek([], _sortField, "desc", Future: true, offset, size, _durationMin, null);
+        var query = new QueryMediathek([], _sortField, "desc", offset, size, _durationMin, null);
         try
         {
             return await actors.Mediathek.Ask<QueryMediathekResponse>(query, _mediathekTimeout, ct);

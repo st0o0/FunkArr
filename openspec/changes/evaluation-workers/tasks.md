@@ -15,7 +15,6 @@
 
 - [x] 3.1 Slim `TvSearchWorkerState` / `MovieSearchWorkerState` to ID-based ruleset resolution, query building and delegation. Verify with search state tests.
 - [x] 3.2 Make the search workers delegate to the evaluation regions and keep queue-full retries. Verify with worker tests (text search, ID search, empty result, evaluation failure, retries).
-- [x] 3.3 Always send `future=false` and `future=true` queries and merge them via `MediathekQueryMerge`. Verify with merge tests and the two-query worker test.
 
 ## 4. Feed
 
@@ -24,8 +23,7 @@
 ## 5. Docs and verification
 
 - [x] 5.1 Update how-it-works, observability (both languages) and the AGENTS.md actor topology and meter table.
-- [x] 5.2 Update the `prereleased-entries` requirement to the two-query behaviour.
-- [x] 5.3 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
+- [x] 5.2 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
 
 ## Workflow follow-up
 
