@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using FunkArr.Messages;
 
-namespace FunkArr.Search;
+namespace FunkArr.Feed;
 
 internal static class VariantDetector
 {

@@ -1,4 +1,4 @@
-namespace FunkArr.Search;
+namespace FunkArr.Feed;
 
 public abstract record MediaIdentity(string? ImdbId);
 

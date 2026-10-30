@@ -18,12 +18,6 @@ internal static class Telemetry
     internal static readonly Histogram<double> SearchDuration = _meter.CreateHistogram<double>(
         "funkarr.search.duration_seconds", unit: "s", description: "End-to-end search duration");
 
-    internal static readonly Counter<long> Evaluations = _meter.CreateCounter<long>(
-        "funkarr.search.evaluations_total", description: "Evaluations of Mediathek entries by the evaluation workers");
-
-    internal static readonly Histogram<double> EvaluationDuration = _meter.CreateHistogram<double>(
-        "funkarr.search.evaluation_duration_seconds", unit: "s", description: "Evaluation duration from ruleset resolution to releases");
-
     internal static readonly Counter<long> Timeouts = _meter.CreateCounter<long>(
         "funkarr.search.timeouts_total", description: "Search timeouts");
 

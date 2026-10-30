@@ -1,7 +1,7 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
 
-namespace FunkArr.Search;
+namespace FunkArr.Feed;
 
 public sealed record SourceInfo(
     string Channel,

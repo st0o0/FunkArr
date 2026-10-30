@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace FunkArr.Search;
+namespace FunkArr.Feed;
 
 public sealed partial record ReleaseDisplay(string MediaName, string EpisodeTitle)
 {
