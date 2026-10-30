@@ -33,6 +33,6 @@ A hard global exclusion is not acceptable either: people who rely on audio descr
 - **Search:** variant detection at item intake (`SourceInfo`), policy applied in TV and movie worker states, title tag in `SceneRelease`. Workers read the policy via `IOptionsMonitor`.
 - **Scoring:** `ScoringEngine` records excluded candidates without evaluating rules.
 - **Core / Host:** `VariantOptions` bound to `FunkArr:Variants`.
-- **Api / UI:** read-only variant policy endpoint and settings section; exclusion reason in the scoring detail view; i18n for de, de-AT, de-CH, en.
+- **Api / UI:** read-only variant policy endpoint and settings section; exclusion reason in the scoring detail view; i18n for en and de (de-AT/de-CH fall back to de).
 - **Behavior change:** variants that were returned before are now excluded by default. Users who want them set the policy to `Allow`.
 - **Rulesets:** the existing `not` filters in community rulesets keep working but become redundant (cleanup in the rulesets repo, out of scope).

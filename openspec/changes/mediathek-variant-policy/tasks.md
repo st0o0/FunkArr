@@ -24,7 +24,7 @@
 ## 5. API, UI and docs
 
 - [ ] 5.1 Add `ExcludedVariant` to the API `ItemTrace` model and mapping, and `GET /api/system/variants` returning the effective policy. Verify with a mapping test and an endpoint test asserting the default response.
-- [ ] 5.2 Show the policy read-only on the Settings page and the exclusion reason in the scoring detail view; add i18n keys to de, de-AT, de-CH and en. Verify the frontend CI check passes.
+- [ ] 5.2 Show the policy read-only on the Settings page and the exclusion reason in the scoring detail view; add i18n keys to en and de (de-AT and de-CH fall back to de). Verify the frontend CI check passes.
 - [ ] 5.3 Document `FunkArr__Variants__*` in `docs/en/configuration.md` and `docs/configuration.md`, and the variant handling in `how-it-works` (both languages). Verify both languages describe the same defaults.
 - [ ] 5.4 Run `dotnet format --verify-no-changes` and all affected test projects via CI and verify they pass.
 

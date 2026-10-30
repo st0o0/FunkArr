@@ -271,6 +271,17 @@ Beide Schlüssel sind optional, aber empfohlen. Ohne sie verlässt sich FunkArr 
 
 Der Scoring-Pool verarbeitet Mediathek-Suchergebnisse parallel gegen Regelwerke. Jeder Worker wertet einen Regelwerk-Match gleichzeitig aus. Erhöhe den Wert für schnellere Suchantworten auf Multi-Core-Systemen; der Standardwert von 4 funktioniert für die meisten Setups gut.
 
+## Sendungsfassungen
+
+| Variable | Standard | Beschreibung |
+|----------|----------|-------------|
+| `FunkArr__Variants__AudioDescription` | `Exclude` | Fassungen mit Audiodeskription ("Audiodeskription", "Hörfassung") |
+| `FunkArr__Variants__SignLanguage` | `Exclude` | Fassungen mit Gebärdensprache ("Gebärdensprache", "DGS") |
+| `FunkArr__Variants__PlainLanguage` | `Exclude` | Fassungen in Einfacher, Leichter oder Klarer Sprache |
+| `FunkArr__Variants__OriginalVersion` | `Exclude` | Originalfassungen ("Originalfassung", "OV", "OmU") |
+
+Mediatheken veröffentlichen dieselbe Sendung oft in mehreren Fassungen. FunkArr erkennt die Fassung an Titel und Thema jedes Eintrags. Mit `Exclude` erscheint die Fassung nie in den Suchergebnissen, Sonarr und Radarr können sie also nicht automatisch laden. Mit `Allow` wird sie mit einer Kennzeichnung im Release-Titel ausgeliefert (`AD`, `DGS`, `EinfacheSprache`, `OV`), auf die du ein Custom Format setzen kannst, zum Beispiel um Audiodeskription zu bevorzugen. Originalfassungen erhalten keine `GERMAN`-Sprachkennzeichnung. Die aktuelle Einstellung steht auf der Einstellungsseite.
+
 ## Match-Verlauf
 
 | Variable | Standard | Beschreibung |

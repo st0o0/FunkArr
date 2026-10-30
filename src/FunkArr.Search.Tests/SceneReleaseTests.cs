@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 
 namespace FunkArr.Search.Tests;
@@ -108,6 +109,33 @@ public sealed class SceneReleaseTests
     }
 
     // --- FormatTitle ---
+
+    [Theory]
+    [InlineData(MediathekVariant.AudioDescription, "Tatort.S2026E18.Herz.aus.Eis.AD.GERMAN.1080p.WEB.h264-FunkArr")]
+    [InlineData(MediathekVariant.SignLanguage, "Tatort.S2026E18.Herz.aus.Eis.DGS.GERMAN.1080p.WEB.h264-FunkArr")]
+    [InlineData(MediathekVariant.PlainLanguage, "Tatort.S2026E18.Herz.aus.Eis.EinfacheSprache.GERMAN.1080p.WEB.h264-FunkArr")]
+    [InlineData(MediathekVariant.OriginalVersion, "Tatort.S2026E18.Herz.aus.Eis.OV.1080p.WEB.h264-FunkArr")]
+    [InlineData(MediathekVariant.Standard, "Tatort.S2026E18.Herz.aus.Eis.GERMAN.1080p.WEB.h264-FunkArr")]
+    public void FormatTitle_adds_variant_tag(MediathekVariant variant, string expected)
+    {
+        var item = MakeItem(season: "2026", episode: "18",
+            display: new ReleaseDisplay("Tatort", "Herz aus Eis"), variant: variant);
+
+        var release = SceneRelease.ForShow(item, "Tatort");
+
+        Assert.Equal(expected, release.FormatTitle(1080));
+    }
+
+    [Fact]
+    public void FormatTitle_original_version_movie_without_episode_title()
+    {
+        var item = MakeItem(year: 1995, display: new ReleaseDisplay("The Usual Suspects", ""),
+            variant: MediathekVariant.OriginalVersion);
+
+        var release = SceneRelease.ForMovie(item, "The Usual Suspects");
+
+        Assert.Equal("The.Usual.Suspects.1995.OV.1080p.WEB.h264-FunkArr", release.FormatTitle(1080));
+    }
 
     [Fact]
     public void FormatTitle_TvWithSeasonAndEpisode()
@@ -331,7 +359,8 @@ public sealed class SceneReleaseTests
         string title = "Test", string topic = "Topic",
         DateTimeOffset? airedAt = null,
         ReleaseDisplay? display = null,
-        MatchInfo? match = null)
+        MatchInfo? match = null,
+        MediathekVariant variant = MediathekVariant.Standard)
     {
         MediaIdentity identity = year is not null || tmdbId is not null
             ? new MovieIdentity(imdbId, tmdbId, year)
@@ -340,7 +369,7 @@ public sealed class SceneReleaseTests
         return new EnrichedItem(0,
             new SourceInfo(
                 "ARD", topic, title, null, duration, size, airedAt,
-                urlHd, url, urlLow, null),
+                urlHd, url, urlLow, null, variant),
             0.9, true, true,
             identity,
             match,

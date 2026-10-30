@@ -53,7 +53,7 @@ Descriptions often say "also available with audio description", which would mark
 
 - Settings page: a read-only "Variants" section listing each variant with Allowed/Excluded.
 - Scoring detail: an "Excluded: <variant>" badge instead of the rule list for excluded items.
-- i18n keys in de, de-AT, de-CH, en.
+- i18n keys in en and de; de-AT and de-CH only override individual keys and fall back to de.
 
 ## Risks / Trade-offs
 

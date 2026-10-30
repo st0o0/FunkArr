@@ -7,6 +7,7 @@ using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
+using Microsoft.Extensions.Options;
 using Servus.Akka;
 using Servus.Resilience;
 
@@ -40,9 +41,9 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
 
     private QueryMediathek? _lastQuery;
 
-    public MovieSearchWorker(string nttId)
+    public MovieSearchWorker(string nttId, IOptionsMonitor<VariantOptions>? variantOptions = null)
     {
-        _state = MovieSearchWorkerState.From(nttId);
+        _state = MovieSearchWorkerState.From(nttId, variantOptions?.CurrentValue);
         Receive<SearchMovie>(cmd =>
         {
             _log.Info("Movie search started: Query={Query}, TmdbId={TmdbId}", cmd.Query, cmd.TmdbId);

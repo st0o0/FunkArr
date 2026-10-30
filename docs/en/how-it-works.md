@@ -81,6 +81,8 @@ Rulesets are managed separately from search:
 
 ### 5. Scoring
 
+**Broadcast variants:** Before scoring, every entry is classified as standard, audio description, sign language, plain language or original version, based on its title and topic. Variants excluded in the [configuration](/en/configuration#broadcast-variants) are removed from the results on every search path, also when no ruleset exists. In the match history they appear as excluded with the variant as reason, without any rule being evaluated.
+
 The scoring engine evaluates each Mediathek entry against the ruleset's rules. Three steps are performed for each rule (rules are sorted by priority, the first match wins):
 
 **Filter check:** Each rule can define filters that an entry must satisfy. Filters can check various fields (title, topic, channel, duration, description) with operators like equals, contains, regex, greater/less than. Filters can be combined with `all` (all must pass), `any` (one must pass) and `not` (none may pass).

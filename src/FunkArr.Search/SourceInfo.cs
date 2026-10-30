@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Search;
@@ -13,7 +14,8 @@ public sealed record SourceInfo(
     string? UrlHd,
     string? Url,
     string? UrlLow,
-    string? SubtitleUrl)
+    string? SubtitleUrl,
+    MediathekVariant Variant = MediathekVariant.Standard)
 {
     public static SourceInfo From(MediathekItem item) => new(
         item.Channel,
@@ -26,7 +28,8 @@ public sealed record SourceInfo(
         item.UrlVideoHd,
         item.UrlVideo,
         item.UrlVideoLow,
-        item.UrlSubtitle);
+        item.UrlSubtitle,
+        VariantDetector.Detect(item.Title, item.Topic));
 
     public int ResolveQuality() =>
         UrlHd is not null ? 1080 :

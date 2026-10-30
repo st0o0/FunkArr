@@ -61,6 +61,21 @@ public enum RuntimeMode
     Filter
 }
 
+public enum MediathekVariant
+{
+    Standard,
+    AudioDescription,
+    SignLanguage,
+    PlainLanguage,
+    OriginalVersion
+}
+
+public enum VariantPolicy
+{
+    Exclude,
+    Allow
+}
+
 public enum RuleOutcome
 {
     Matched,

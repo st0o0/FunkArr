@@ -271,6 +271,17 @@ Both keys are optional but recommended. Without them, FunkArr relies solely on r
 
 The scoring pool processes Mediathek search results against rulesets in parallel. Each worker evaluates one ruleset match at a time. Increase for faster search responses on multi-core systems; the default of 4 works well for most setups.
 
+## Broadcast Variants
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FunkArr__Variants__AudioDescription` | `Exclude` | Audio description versions ("Audiodeskription", "Hörfassung") |
+| `FunkArr__Variants__SignLanguage` | `Exclude` | Sign language versions ("Gebärdensprache", "DGS") |
+| `FunkArr__Variants__PlainLanguage` | `Exclude` | Plain language versions ("Einfache/Leichte/Klare Sprache") |
+| `FunkArr__Variants__OriginalVersion` | `Exclude` | Original versions ("Originalfassung", "OV", "OmU") |
+
+Mediatheken often publish the same broadcast in several variants. FunkArr detects the variant from the title and topic of each entry. With `Exclude`, the variant never appears in search results, so Sonarr and Radarr cannot grab it automatically. With `Allow`, it is returned with a tag in the release title (`AD`, `DGS`, `EinfacheSprache`, `OV`), which you can match with a Custom Format, for example to prefer audio description. Original versions are released without the `GERMAN` language tag. The current policy is shown on the settings page.
+
 ## Match History
 
 | Variable | Default | Description |
