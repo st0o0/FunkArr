@@ -23,6 +23,7 @@ try
         .WithSetup<ScoringSetupContainer>()
         .WithSetup<RuleSetSetupContainer>()
         .WithSetup<EnrichmentSetupContainer>()
+        .WithSetup<FeedSetupContainer>()
         .WithSetup<ArrApiSetupContainer>()
         .WithSetup<ApplicationSetupContainer>()
         .Build();

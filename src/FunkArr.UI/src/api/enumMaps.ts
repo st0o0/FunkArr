@@ -5,10 +5,10 @@ export const FilterOp = { Eq: 0, Contains: 1, NotContains: 2, GreaterThan: 3, Le
 export const EnrichmentMethod = { Title: 0, Airdate: 1 } as const
 export const RuntimeMode = { Tiebreaker: 0, Filter: 1 } as const
 export const RuleOutcome = { Matched: 0, FilterFailed: 1, IdentificationFailed: 2 } as const
-export const SearchSource = { Sonarr: 0, Radarr: 1, Prowlarr: 2, Test: 3 } as const
+export const SearchSource = { Sonarr: 0, Radarr: 1, Prowlarr: 2, Test: 3, Feed: 4 } as const
 export const MatchMethod = { RegexExtracted: 0, TitleMatch: 1, AirdateMatch: 2, YearMatch: 3 } as const
 
-const searchSourceNames: Record<number, string> = { 0: 'Sonarr', 1: 'Radarr', 2: 'Prowlarr', 3: 'Test' }
+const searchSourceNames: Record<number, string> = { 0: 'Sonarr', 1: 'Radarr', 2: 'Prowlarr', 3: 'Test', 4: 'Feed' }
 const strategyNames: Record<number, string> = { 0: 'seasonAndEpisodeNumber', 1: 'byAbsoluteEpisodeNumber', 2: 'itemTitleExact', 3: 'itemTitleIncludes', 4: 'itemTitleEqualsAirdate' }
 const titlePartTypeNames: Record<number, string> = { 0: 'static', 1: 'regex' }
 const filterFieldNames: Record<number, string> = { 0: 'title', 1: 'topic', 2: 'channel', 3: 'description', 4: 'duration', 5: 'timestamp' }

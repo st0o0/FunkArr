@@ -100,6 +100,7 @@ public sealed class FunkArrFixture : IAsyncLifetime
 
         _app.MapGet("/alive", () => Microsoft.AspNetCore.Http.Results.Ok("Alive"));
         _app.MapSystemApi();
+        _app.MapFeedApi();
         _app.MapDownloadsApi();
         _app.MapRuleSetApi();
         _app.MapMediathekApi();
@@ -146,6 +147,8 @@ public sealed class FunkArrFixture : IAsyncLifetime
         Register<IStatsCollector>();
         Register<IEnrichmentManager>();
         Register<IDownloadScheduler>();
+        Register<IFeedManager>();
+        Register<IFeedIngestManager>();
 
         return probes;
 

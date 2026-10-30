@@ -16,6 +16,7 @@ public sealed class PersistenceMappingTests
     [InlineData(SearchSource.Radarr, PersistedSearchSource.Radarr)]
     [InlineData(SearchSource.Prowlarr, PersistedSearchSource.Prowlarr)]
     [InlineData(SearchSource.Test, PersistedSearchSource.Test)]
+    [InlineData(SearchSource.Feed, PersistedSearchSource.Feed)]
     public void SearchSource_DirectRoundtrip_PreservesValue(SearchSource domain, PersistedSearchSource expected)
     {
         var persisted = domain.ToPersistence();
@@ -236,6 +237,14 @@ public sealed class PersistenceMappingTests
         Assert.Multiple(
             () => Assert.Equal(expected, persisted.ExcludedVariant),
             () => Assert.Equal(variant, restored.ExcludedVariant));
+    }
+
+    [Fact]
+    public void SearchSource_enums_have_matching_members()
+    {
+        Assert.Equal(
+            Enum.GetNames<SearchSource>(),
+            Enum.GetNames<PersistedSearchSource>());
     }
 
     [Fact]

@@ -2,4 +2,4 @@ using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Search;
 
-internal sealed record MediathekQueryResult(MediathekItem[] Items, int Total);
+internal sealed record MediathekQueryResult(MediathekItem[] Items, int Total, long ListTimestamp = 0);

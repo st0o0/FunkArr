@@ -1,6 +1,9 @@
 using System.Xml.Linq;
 using FunkArr.Core;
+using FunkArr.Messages;
+using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.IntegrationTests.Arr;
 
@@ -51,8 +54,8 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     {
         var searchProbe = _fixture.GetProbe<ISearchManager>();
 
-        var response = await _fixture.Client.GetAsync(
-            "/index/api?t=tvsearch&cat=5030,5040&extended=1&offset=0&limit=100&apikey=test-key");
+        var response = await WithEmptyFeed(
+            "/index/api?t=tvsearch&cat=5030,5040&extended=1&offset=0&limit=100&apikey=test-key", MediaType.Show);
 
         var item = await SingleItem(response);
         Assert.Multiple(
@@ -66,8 +69,8 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     {
         var searchProbe = _fixture.GetProbe<ISearchManager>();
 
-        var response = await _fixture.Client.GetAsync(
-            "/index/api?t=movie&cat=2000,2040&offset=0&limit=100&apikey=test-key");
+        var response = await WithEmptyFeed(
+            "/index/api?t=movie&cat=2000,2040&offset=0&limit=100&apikey=test-key", MediaType.Movie);
 
         var item = await SingleItem(response);
         Assert.Multiple(
@@ -79,7 +82,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task Validation_item_get_link_returns_incorrect_parameter_error()
     {
-        var response = await _fixture.Client.GetAsync("/index/api?t=tvsearch&apikey=test-key");
+        var response = await WithEmptyFeed("/index/api?t=tvsearch&apikey=test-key", MediaType.Show);
         var item = await SingleItem(response);
         var link = item.Element("link")?.Value;
         Assert.NotNull(link);
@@ -93,6 +96,35 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     }
 
     [Fact]
+    public async Task TvSearch_without_query_returns_feed_entries()
+    {
+        var feedProbe = _fixture.GetProbe<IFeedManager>();
+        var searchProbe = _fixture.GetProbe<ISearchManager>();
+        var firstSeen = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
+        var entry = new FeedEntry("0123456789abcdef0123456789abcdef", firstSeen, MediaType.Show,
+            new SearchResultItem("Tatort.S2026E18.Herz.aus.Eis.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
+                "https://example.com/video.mp4", 5400, 500_000_000, 720, null, 0.9,
+                Metadata: new MatchMetadata(null, "2026", "18", null, null)));
+
+        var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=100&apikey=test-key");
+
+        var query = feedProbe.ExpectMsg<QueryFeed>();
+        Assert.Multiple(
+            () => Assert.Equal(MediaType.Show, query.MediaType),
+            () => Assert.Equal(0, query.Offset),
+            () => Assert.Equal(100, query.Limit));
+        feedProbe.Reply(new FeedResult([entry], 1));
+
+        var item = await SingleItem(await task);
+        Assert.Multiple(
+            () => Assert.Equal("Tatort.S2026E18.Herz.aus.Eis.GERMAN.720p.WEB.h264-FunkArr", item.Element("title")?.Value),
+            () => Assert.Equal("0123456789abcdef0123456789abcdef", item.Element("guid")?.Value),
+            () => Assert.Equal("Fri, 30 Oct 2026 12:00:00 GMT", item.Element("pubDate")?.Value),
+            () => Assert.Equal("5040", CategoryAttribute(item)));
+        searchProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+    }
+
+    [Fact]
     public async Task Get_nzb_with_valid_base64_id_returns_nzb_content()
     {
         var payload = string.Join('\t', "Test Title", "https://example.com/video.mp4", "", "ARD", "3600", "500000000", "tv");
@@ -103,6 +135,18 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         var contentType = response.Content.Headers.ContentType;
         Assert.NotNull(contentType);
         Assert.Equal("application/x-nzb", contentType.MediaType);
+    }
+
+    private async Task<HttpResponseMessage> WithEmptyFeed(string url, MediaType expectedMediaType)
+    {
+        var feedProbe = _fixture.GetProbe<IFeedManager>();
+        var task = _fixture.Client.GetAsync(url);
+
+        var query = feedProbe.ExpectMsg<QueryFeed>();
+        Assert.Equal(expectedMediaType, query.MediaType);
+        feedProbe.Reply(new FeedResult([], 0));
+
+        return await task;
     }
 
     private static async Task<XElement> SingleItem(HttpResponseMessage response)

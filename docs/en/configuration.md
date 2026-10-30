@@ -271,6 +271,21 @@ Both keys are optional but recommended. Without them, FunkArr relies solely on r
 
 Broadcasters often publish episodes in the Mediathek before the TV broadcast. With `true`, FunkArr finds them as soon as they are downloadable. The release keeps the scheduled broadcast date, so episode matching works as usual. If you prefer to wait for the broadcast, keep this enabled and turn on the air date restriction in a Sonarr release profile, or set the variable to `false`.
 
+## RSS Feed
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FunkArr__Feed__Enabled` | `true` | Collect new Mediathek entries for the RSS sync of Sonarr and Radarr |
+| `FunkArr__Feed__Interval` | `00:15:00` | Time between two ingest runs |
+| `FunkArr__Feed__InitialLookback` | `2.00:00:00` | How far back the very first run looks |
+| `FunkArr__Feed__PageSize` | `100` | Entries per MediathekViewWeb page (1-500) |
+| `FunkArr__Feed__MaxPages` | `20` | Maximum pages per run |
+| `FunkArr__Feed__Retention` | `14.00:00:00` | How long published releases stay in the feed |
+| `FunkArr__Feed__MinConfidence` | `0.7` | Minimum match score for publishing (0-1) |
+| `FunkArr__Feed__MaxConcurrency` | `4` | Ruleset groups evaluated in parallel |
+
+A run that finds no new Filmliste update costs a single small request. If a run cannot cover all new entries within `MaxPages`, the Feed page reports a gap; increase `MaxPages` if this happens regularly.
+
 ## Scoring
 
 | Variable | Default | Description |

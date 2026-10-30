@@ -271,6 +271,21 @@ Beide Schlüssel sind optional, aber empfohlen. Ohne sie verlässt sich FunkArr 
 
 Sender veröffentlichen Folgen oft schon vor der TV-Ausstrahlung in der Mediathek. Mit `true` findet FunkArr sie, sobald sie abrufbar sind. Das Release behält den geplanten Sendetermin, die Episodenzuordnung funktioniert also wie gewohnt. Wer lieber auf die Ausstrahlung wartet, lässt die Option an und aktiviert in einem Sonarr-Release-Profil die Sperre vor dem Sendetermin, oder setzt die Variable auf `false`.
 
+## RSS-Feed
+
+| Variable | Standard | Beschreibung |
+|----------|----------|-------------|
+| `FunkArr__Feed__Enabled` | `true` | Neue Mediathek-Einträge für den RSS-Sync von Sonarr und Radarr sammeln |
+| `FunkArr__Feed__Interval` | `00:15:00` | Abstand zwischen zwei Abrufen |
+| `FunkArr__Feed__InitialLookback` | `2.00:00:00` | Wie weit der allererste Abruf zurückschaut |
+| `FunkArr__Feed__PageSize` | `100` | Einträge pro MediathekViewWeb-Seite (1-500) |
+| `FunkArr__Feed__MaxPages` | `20` | Maximale Seiten pro Abruf |
+| `FunkArr__Feed__Retention` | `14.00:00:00` | Wie lange veröffentlichte Releases im Feed bleiben |
+| `FunkArr__Feed__MinConfidence` | `0.7` | Mindest-Score für die Veröffentlichung (0-1) |
+| `FunkArr__Feed__MaxConcurrency` | `4` | Parallel ausgewertete Regelwerk-Gruppen |
+
+Ein Abruf ohne neues Filmlisten-Update kostet nur eine kleine Anfrage. Kann ein Abruf nicht alle neuen Einträge innerhalb von `MaxPages` abdecken, zeigt die Feed-Seite eine Lücke an; passiert das regelmäßig, `MaxPages` erhöhen.
+
 ## Scoring
 
 | Variable | Standard | Beschreibung |

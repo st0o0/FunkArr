@@ -115,11 +115,17 @@ Results are returned as a Newznab RSS feed. Each entry contains:
 
 Search results are cached so that follow-up requests with pagination don't re-trigger the entire search.
 
-#### Requests without a search term (RSS sync and indexer test)
+#### RSS sync
 
-Sonarr, Radarr and Prowlarr send a search without a search term and without a media ID for their RSS sync and for the "Test" button (for example `t=tvsearch` without `q`). FunkArr does not start a search for these. It answers with exactly one validation entry (`FunkArr.Validation.…`) in the matching category, so the indexer test succeeds. The entry does not match any real series or movie, and its download link is rejected with a Newznab error, so it never starts a download.
+Sonarr, Radarr and Prowlarr send a search without a search term and without a media ID for their RSS sync and for the "Test" button (for example `t=tvsearch` without `q`). FunkArr answers these from its RSS feed:
 
-New episodes are therefore currently found through the automatic or manual search in Sonarr/Radarr, not through RSS sync. A real RSS feed is planned in [#204](https://github.com/st0o0/funkarr/issues/204).
+1. **Ingest:** every 15 minutes the `FeedIngestManager` asks MediathekViewWeb whether a new Filmliste update has been completed. If so, it collects every entry that appeared since the last run, using the `filmlisteTimestamp` of each entry (the time it first appeared in the list, not its broadcast time).
+2. **Grouping:** new entries are matched to rulesets by topic and aliases. Entries without a ruleset are counted but not published.
+3. **Evaluation:** each ruleset group runs through the normal search pipeline (scoring, enrichment, broadcast variants, match history with source `Feed`), so feed releases are identical to search results.
+4. **Gate:** only releases with a score of at least `MinConfidence` and season/episode (TV) or a TMDB/IMDB ID (movies) are published.
+5. **Feed:** the `FeedManager` stores published releases with a stable GUID and the first-seen time as `pubDate`, and removes them after the retention period.
+
+RSS requests return the feed newest first, so Sonarr and Radarr can page through it without gaps. If the feed has no releases for the requested category yet (for example right after installation), FunkArr returns a single validation entry (`FunkArr.Validation.…`) so the indexer test succeeds. Its download link is rejected, so it never starts a download. The **Feed** page in the web UI shows the published releases and the last ingest run.
 
 ## Download Pipeline
 

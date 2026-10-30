@@ -10,6 +10,46 @@ public sealed class MediathekApiModelTests
         PropertyNameCaseInsensitive = true
     };
 
+    [Theory]
+    [InlineData("1761800000", 1761800000L)]
+    [InlineData("\"1761800000\"", 1761800000L)]
+    [InlineData("\"\"", null)]
+    [InlineData("null", null)]
+    [InlineData("\"abc\"", null)]
+    public void FilmlisteTimestamp_is_read_leniently(string rawValue, long? expected)
+    {
+        var json = $$"""
+            {"result":{"results":[{"channel":"ARD","topic":"Tatort","title":"T","timestamp":1,"duration":60,
+            "filmlisteTimestamp":{{rawValue}}}],"queryInfo":{"totalResults":1,"filmlisteTimestamp":{{rawValue}}}},"err":null}
+            """;
+
+        var response = JsonSerializer.Deserialize<MediathekApiResponse>(json, _jsonOptions);
+
+        Assert.NotNull(response?.Result?.Results);
+        Assert.NotNull(response.Result.QueryInfo);
+        var item = Assert.Single(response.Result.Results);
+        Assert.Multiple(
+            () => Assert.Equal(expected, item.FilmlisteTimestamp),
+            () => Assert.Equal(expected, response.Result.QueryInfo.FilmlisteTimestamp));
+    }
+
+    [Fact]
+    public void FilmlisteTimestamp_missing_is_null()
+    {
+        const string json = """
+            {"result":{"results":[{"channel":"ARD","topic":"Tatort","title":"T","timestamp":1,"duration":60}],
+            "queryInfo":{"totalResults":1}},"err":null}
+            """;
+
+        var response = JsonSerializer.Deserialize<MediathekApiResponse>(json, _jsonOptions);
+
+        Assert.NotNull(response?.Result?.Results);
+        Assert.NotNull(response.Result.QueryInfo);
+        Assert.Multiple(
+            () => Assert.Null(Assert.Single(response.Result.Results).FilmlisteTimestamp),
+            () => Assert.Null(response.Result.QueryInfo.FilmlisteTimestamp));
+    }
+
     [Fact]
     public void Full_response_deserializes_all_fields()
     {

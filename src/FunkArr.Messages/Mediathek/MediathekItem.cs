@@ -12,4 +12,5 @@ public sealed record MediathekItem(
     string? UrlVideo,
     string? UrlVideoHd,
     string? UrlSubtitle,
-    string? UrlWebsite);
+    string? UrlWebsite,
+    long FilmlisteTimestamp = 0);

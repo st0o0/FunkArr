@@ -16,3 +16,5 @@ public interface IDownloadScheduler;
 public interface IDownloadRegion;
 public interface IDownloadHistoryManager;
 public interface IEnrichmentManager;
+public interface IFeedIngestManager;
+public interface IFeedManager;

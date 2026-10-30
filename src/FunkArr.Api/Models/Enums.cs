@@ -11,7 +11,8 @@ public enum SearchSource
     Sonarr,
     Radarr,
     Prowlarr,
-    Test
+    Test,
+    Feed
 }
 
 public enum FilterOp
