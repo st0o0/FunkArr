@@ -81,13 +81,15 @@ public sealed class FeedCrawlerTests : TestKit
 
         p.Resolver.ExpectMsg<QueryRegisteredRuleSets>();
         p.Resolver.Reply(new RegisteredRuleSetsResult(
-            [new RegisteredRuleSetEntry("tatort", "Tatort", [], new ExternalIds(null, null, null), "Tatort", MediaType.Show)]));
+            [new RegisteredRuleSetEntry("tatort", "Tatort", [], new ExternalIds(76290, "tt0806910", null), "Tatort", MediaType.Show)]));
 
         var evaluation = p.Tv.ExpectMsg<EvaluateSeries>();
         Assert.Multiple(
             () => Assert.Equal(SearchSource.Feed, evaluation.Source),
+            () => Assert.Equal(76290, evaluation.TvdbId),
+            () => Assert.Equal("tt0806910", evaluation.ImdbId),
             () => Assert.Equal("Herz aus Eis", Assert.Single(evaluation.Items).Title));
-        p.Tv.Reply(new SearchSeriesCompleted(evaluation.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
+        p.Tv.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
 
         var add = p.Feed.ExpectMsg<AddFeedEntries>();
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(_listTimestamp), Assert.Single(add.Entries).FirstSeenAt);
@@ -120,7 +122,7 @@ public sealed class FeedCrawlerTests : TestKit
         p.Resolver.Reply(new RegisteredRuleSetsResult(
             [new RegisteredRuleSetEntry("tatort", "Tatort", [], new ExternalIds(null, null, null), "Tatort", MediaType.Show)]));
         var evaluation = p.Tv.ExpectMsg<EvaluateSeries>();
-        p.Tv.Reply(new SearchSeriesFailed(evaluation.SearchId, new InvalidOperationException("boom")));
+        p.Tv.Reply(new EvaluateSeriesFailed(evaluation.SearchId, new InvalidOperationException("boom")));
 
         var outcome = await run;
 

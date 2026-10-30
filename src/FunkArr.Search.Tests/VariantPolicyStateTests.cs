@@ -20,7 +20,7 @@ public sealed class VariantPolicyStateTests
         var state = TvState();
         state.Apply(new QueryMediathekCompleted([Item(_standardTitle), Item(_adTitle)], 2));
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
         Assert.NotEmpty(result.Items);
         Assert.All(result.Items, i => Assert.DoesNotContain(".AD.", i.Title));
@@ -39,7 +39,7 @@ public sealed class VariantPolicyStateTests
             new ScoredItem(2, 0.0, false)
         ], []));
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
         Assert.NotEmpty(result.Items);
         Assert.All(result.Items, i => Assert.Multiple(
@@ -53,7 +53,7 @@ public sealed class VariantPolicyStateTests
         var state = TvState(new VariantOptions { AudioDescription = VariantPolicy.Allow });
         state.Apply(new QueryMediathekCompleted([Item(_adTitle)], 1));
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
         Assert.NotEmpty(result.Items);
         Assert.All(result.Items, i => Assert.Contains(".AD.GERMAN.", i.Title));
@@ -93,7 +93,7 @@ public sealed class VariantPolicyStateTests
         var state = MovieState();
         state.Apply(new QueryMediathekCompleted([Item("Die Brücke", "Film"), Item("Die Brücke (OmU)", "Film")], 2));
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
         Assert.NotEmpty(result.Items);
         Assert.All(result.Items, i => Assert.Contains(".GERMAN.", i.Title));
@@ -112,19 +112,19 @@ public sealed class VariantPolicyStateTests
         Assert.Equal(MediathekVariant.OriginalVersion, candidate.ExcludedVariant);
     }
 
-    private static TvSearchWorkerState TvState(VariantOptions? variants = null)
+    private static TvEvaluationState TvState(VariantOptions? variants = null)
     {
         var id = Guid.NewGuid();
-        var state = TvSearchWorkerState.From(id.ToString(), variants);
-        state.Init(new SearchSeries(id, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), _noSender);
+        var state = TvEvaluationState.From(id.ToString(), variants);
+        state.Init(new EvaluateSeries(id, SearchSource.Sonarr, []), _noSender);
         return state;
     }
 
-    private static MovieSearchWorkerState MovieState(VariantOptions? variants = null)
+    private static MovieEvaluationState MovieState(VariantOptions? variants = null)
     {
         var id = Guid.NewGuid();
-        var state = MovieSearchWorkerState.From(id.ToString(), variants);
-        state.Apply(new SearchMovie(id, SearchSource.Radarr, "Die Brücke", null, null, null, null), _noSender);
+        var state = MovieEvaluationState.From(id.ToString(), variants);
+        state.Init(new EvaluateMovies(id, SearchSource.Radarr, []), _noSender);
         return state;
     }
 

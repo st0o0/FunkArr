@@ -1,29 +1,33 @@
+using System.Diagnostics.CodeAnalysis;
 using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Shared;
 
 namespace FunkArr.Feed;
 
-internal sealed record RuleSetGroup(string RuleSetId, MediaType MediaType, MediathekItem[] Items);
+internal sealed record RuleSetGroup(string RuleSetId, MediaType MediaType, ExternalIds Ids, MediathekItem[] Items);
+
+internal sealed record RuleSetTarget(string RuleSetId, MediaType MediaType, ExternalIds Ids);
 
 internal sealed record GroupingResult(RuleSetGroup[] Groups, int Unmatched);
 
 internal sealed class RuleSetLookup
 {
-    private readonly Dictionary<string, (string RuleSetId, MediaType MediaType)> _byKey;
+    private readonly Dictionary<string, RuleSetTarget> _byKey;
 
-    private RuleSetLookup(Dictionary<string, (string, MediaType)> byKey)
+    private RuleSetLookup(Dictionary<string, RuleSetTarget> byKey)
     {
         _byKey = byKey;
     }
 
     internal static RuleSetLookup From(IEnumerable<RegisteredRuleSetEntry> entries)
     {
-        var byKey = new Dictionary<string, (string, MediaType)>(StringComparer.OrdinalIgnoreCase);
+        var byKey = new Dictionary<string, RuleSetTarget>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var entry in entries)
         {
-            var value = (entry.RuleSetId, entry.MediaType ?? MediaType.Show);
+            var value = new RuleSetTarget(entry.RuleSetId, entry.MediaType ?? MediaType.Show, entry.Ids);
 
             foreach (var key in entry.Aliases.Prepend(entry.Topic))
             {
@@ -39,9 +43,9 @@ internal sealed class RuleSetLookup
 
     internal bool TryMatch(string topic, out string ruleSetId, out MediaType mediaType)
     {
-        if (_byKey.TryGetValue(topic.Trim(), out var match))
+        if (TryMatch(topic, out RuleSetTarget? target))
         {
-            (ruleSetId, mediaType) = match;
+            (ruleSetId, mediaType) = (target.RuleSetId, target.MediaType);
             return true;
         }
 
@@ -50,30 +54,33 @@ internal sealed class RuleSetLookup
         return false;
     }
 
+    private bool TryMatch(string topic, [NotNullWhen(true)] out RuleSetTarget? target) =>
+        _byKey.TryGetValue(topic.Trim(), out target);
+
     internal GroupingResult Group(IEnumerable<MediathekItem> items)
     {
-        var groups = new Dictionary<string, (MediaType MediaType, List<MediathekItem> Items)>(StringComparer.Ordinal);
+        var groups = new Dictionary<string, (RuleSetTarget Target, List<MediathekItem> Items)>(StringComparer.Ordinal);
         var unmatched = 0;
 
         foreach (var item in items)
         {
-            if (!TryMatch(item.Topic, out var ruleSetId, out var mediaType))
+            if (!TryMatch(item.Topic, out RuleSetTarget? target))
             {
                 unmatched++;
                 continue;
             }
 
-            if (!groups.TryGetValue(ruleSetId, out var group))
+            if (!groups.TryGetValue(target.RuleSetId, out var group))
             {
-                group = (mediaType, []);
-                groups[ruleSetId] = group;
+                group = (target, []);
+                groups[target.RuleSetId] = group;
             }
 
             group.Items.Add(item);
         }
 
         return new GroupingResult(
-            [.. groups.Select(g => new RuleSetGroup(g.Key, g.Value.MediaType, [.. g.Value.Items]))],
+            [.. groups.Select(g => new RuleSetGroup(g.Key, g.Value.Target.MediaType, g.Value.Target.Ids, [.. g.Value.Items]))],
             unmatched);
     }
 }

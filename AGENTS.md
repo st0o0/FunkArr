@@ -81,6 +81,8 @@ SINGLETONS (Cluster Singleton)
 SHARD REGIONS (Sharded Entity)
 ├─ TvSearchWorker (non-persistent, per search request)            [Search]
 ├─ MovieSearchWorker (non-persistent, per search request)         [Search]
+├─ TvEvaluationWorker (non-persistent, per evaluation)            [Search]
+├─ MovieEvaluationWorker (non-persistent, per evaluation)         [Search]
 ├─ DownloadWorker (persistent, per download entity)               [Download]
 ├─ RuleSetWorker (non-persistent, per ruleset)                    [RuleSet]
 └─ HistoryWorker (persistent, per scoring history entity)         [History]
@@ -324,7 +326,7 @@ Do NOT use:
 | Domain     | Meter               | Instruments |
 |------------|---------------------|-------------|
 | Download   | `FunkArr.Download`  | completed, failed, duration, bytes, enqueued, cancelled, retries, move_failed, queue_size, active, paused, schedule_enabled |
-| Search     | `FunkArr.Search`    | requests, matches, no_match, duration, timeouts, failed, mediathek_errors, results_per_request |
+| Search     | `FunkArr.Search`    | requests, matches, no_match, duration, evaluations, evaluation_duration, timeouts, failed, mediathek_errors, results_per_request |
 | Scoring    | `FunkArr.Scoring`   | accepted, rejected, duration, runs, regex_timeouts, no_config |
 | Enrichment | `FunkArr.Enrichment`| requests, failed, duration, items_enriched, cache_entries |
 | History    | `FunkArr.History`   | recordings, trimmed, queries |
