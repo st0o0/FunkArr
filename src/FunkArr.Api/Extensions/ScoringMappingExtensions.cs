@@ -21,7 +21,8 @@ internal static class ScoringMappingExtensions
                     msg.EnrichmentTrace.ResolvedSeason, msg.EnrichmentTrace.ResolvedEpisode,
                     msg.EnrichmentTrace.ResolvedTitle, msg.EnrichmentTrace.ResolvedYear,
                     msg.EnrichmentTrace.DaysDiff, msg.EnrichmentTrace.Detail)
-                : null);
+                : null,
+            msg.ExcludedVariant is { } excluded ? (ApiModels.MediathekVariant)(int)excluded : null);
 
     internal static ApiModels.RuleTrace ToApi(this RuleTrace msg) =>
         new(msg.RuleId, msg.Priority, msg.Outcome.ToApi(),

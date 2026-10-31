@@ -14,7 +14,8 @@ public sealed record ItemTrace(
     string? MatchedRuleId,
     TracedIdentification? Identification,
     RuleTrace[] RuleTraces,
-    EnrichmentTraceOutput? EnrichmentTrace = null);
+    EnrichmentTraceOutput? EnrichmentTrace = null,
+    MediathekVariant? ExcludedVariant = null);
 
 public sealed record ScoreCandidate(
     string Title,

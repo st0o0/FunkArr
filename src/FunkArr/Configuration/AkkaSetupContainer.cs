@@ -5,6 +5,7 @@ using Akka.Remote.Hosting;
 using FunkArr.Core;
 using FunkArr.Download;
 using FunkArr.Enrichment;
+using FunkArr.Feed;
 using FunkArr.History;
 using FunkArr.RuleSet;
 using FunkArr.Scoring;
@@ -67,6 +68,7 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
         RegisterScoringActors(builder);
         RegisterRuleSetActors(builder);
         RegisterEnrichmentActors(builder);
+        RegisterFeedActors(builder);
     }
 
     private static void RegisterSearchActors(AkkaConfigurationBuilder builder)
@@ -88,7 +90,15 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 (_, _, resolver) => nttId => resolver.Props<MovieSearchWorker>(nttId),
                 new ShardMessageExtractor(),
                 new ShardOptions
-                { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30), ShouldPassivateIdleEntities = true });
+                { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30), ShouldPassivateIdleEntities = true })
+            .WithShardRegion<ITvEvaluationRegion>("tv-evaluation",
+                (_, _, resolver) => nttId => resolver.Props<TvEvaluationWorker>(nttId),
+                new ShardMessageExtractor(),
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30), ShouldPassivateIdleEntities = true })
+            .WithShardRegion<IMovieEvaluationRegion>("movie-evaluation",
+                (_, _, resolver) => nttId => resolver.Props<MovieEvaluationWorker>(nttId),
+                new ShardMessageExtractor(),
+                new ShardOptions { PassivateIdleEntityAfter = TimeSpan.FromSeconds(30), ShouldPassivateIdleEntities = true });
     }
 
     private static void RegisterDownloadActors(AkkaConfigurationBuilder builder)
@@ -139,5 +149,14 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
         builder
             .WithSingleton<IEnrichmentManager>("enrichment-manager",
                 (_, _, resolver) => resolver.Props<EnrichmentManager>());
+    }
+
+    private static void RegisterFeedActors(AkkaConfigurationBuilder builder)
+    {
+        builder
+            .WithSingleton<IFeedManager>("feed-manager",
+                (_, _, resolver) => resolver.Props<FeedManager>())
+            .WithSingleton<IFeedIngestManager>("feed-ingest-manager",
+                (_, _, resolver) => resolver.Props<FeedIngestManager>());
     }
 }

@@ -263,6 +263,21 @@ Get an API key at [thetvdb.com/api-information](https://thetvdb.com/api-informat
 Both keys are optional but recommended. Without them, FunkArr relies solely on ruleset patterns for matching, which works but produces fewer results.
 :::
 
+## RSS Feed
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FunkArr__Feed__Enabled` | `true` | Collect new Mediathek entries for the RSS sync of Sonarr and Radarr |
+| `FunkArr__Feed__Interval` | `00:15:00` | Time between two ingest runs |
+| `FunkArr__Feed__InitialLookback` | `2.00:00:00` | How far back the very first run looks |
+| `FunkArr__Feed__PageSize` | `100` | Entries per MediathekViewWeb page (1-500) |
+| `FunkArr__Feed__MaxPages` | `20` | Maximum pages per run |
+| `FunkArr__Feed__Retention` | `14.00:00:00` | How long published releases stay in the feed |
+| `FunkArr__Feed__MinConfidence` | `0.7` | Minimum match score for publishing (0-1) |
+| `FunkArr__Feed__MaxConcurrency` | `4` | Ruleset groups evaluated in parallel |
+
+A run that finds no new Filmliste update costs a single small request. If a run cannot cover all new entries within `MaxPages`, the Feed page reports a gap; increase `MaxPages` if this happens regularly.
+
 ## Scoring
 
 | Variable | Default | Description |
@@ -270,6 +285,17 @@ Both keys are optional but recommended. Without them, FunkArr relies solely on r
 | `FunkArr__Scoring__PoolSize` | `4` | Parallel scoring workers |
 
 The scoring pool processes Mediathek search results against rulesets in parallel. Each worker evaluates one ruleset match at a time. Increase for faster search responses on multi-core systems; the default of 4 works well for most setups.
+
+## Broadcast Variants
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FunkArr__Variants__AudioDescription` | `Exclude` | Audio description versions ("Audiodeskription", "Hörfassung") |
+| `FunkArr__Variants__SignLanguage` | `Exclude` | Sign language versions ("Gebärdensprache", "DGS") |
+| `FunkArr__Variants__PlainLanguage` | `Exclude` | Plain language versions ("Einfache/Leichte/Klare Sprache") |
+| `FunkArr__Variants__OriginalVersion` | `Exclude` | Original versions ("Originalfassung", "OV", "OmU") |
+
+Mediatheken often publish the same broadcast in several variants. FunkArr detects the variant from the title and topic of each entry. With `Exclude`, the variant never appears in search results, so Sonarr and Radarr cannot grab it automatically. With `Allow`, it is returned with a tag in the release title (`AD`, `DGS`, `EinfacheSprache`, `OV`), which you can match with a Custom Format, for example to prefer audio description. Original versions are released without the `GERMAN` language tag. The current policy is shown on the settings page.
 
 ## Match History
 

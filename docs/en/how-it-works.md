@@ -8,7 +8,8 @@ FunkArr is built on Akka.NET. Work is split across a few long-lived singleton ac
 
 | Domain | Actors | Responsibility |
 |--------|--------|----------------|
-| Search | `SearchManager`, `MediathekViewWebManager` (singletons), `TvSearchWorker`, `MovieSearchWorker` (sharded, one per search request) | Orchestrates a search and queries MediathekViewWeb |
+| Search | `SearchManager`, `MediathekViewWebManager` (singletons), `TvSearchWorker`, `MovieSearchWorker` (sharded, one per search request), `TvEvaluationWorker`, `MovieEvaluationWorker` (sharded, one per evaluation) | Queries MediathekViewWeb and evaluates the entries into releases (for search and feed) |
+| Feed | `FeedIngestManager`, `FeedManager` (singletons, persistent) | Ingests new Mediathek entries and builds the RSS feed |
 | RuleSet | `RuleSetResolver`, `RuleSetManager`, `RuleSetUpdater` (singletons), `RuleSetWorker` (sharded, one per ruleset) | Loads, merges and resolves rulesets, syncs community rulesets |
 | Scoring | `ScoringManager` (singleton) with a pool of `ScoringActor` | Evaluates Mediathek entries against ruleset rules |
 | Enrichment | `EnrichmentManager` (singleton) with TVDB and TMDB actor pools | Resolves season/episode and movie data via external APIs |
@@ -43,7 +44,7 @@ The SearchManager (cluster singleton) creates a search ID and hands the work to 
 
 Each search has a 30-second timeout (the controller itself times out after 45 seconds). If one part of a combined search fails or times out, the results from the other part are still returned.
 
-The search worker runs the following steps as a small state machine (resolve ruleset, query, score, enrich) and then replies to the SearchManager. Idle workers are passivated after 30 seconds.
+The search worker only resolves the ruleset by ID (if the request carries one) and queries MediathekViewWeb. It then hands the entries to a sharded evaluation worker (`TvEvaluationWorker` or `MovieEvaluationWorker`), which owns the evaluation pipeline: resolve the ruleset from the topic (if still unknown), score, enrich and record the scoring history. The RSS feed uses the same evaluation workers, so search and feed produce identical releases. Idle workers are passivated after 30 seconds.
 
 ### 3. MediathekViewWeb Query
 
@@ -53,7 +54,7 @@ The search worker runs the following steps as a small state machine (resolve rul
 
 The MediathekViewWebManager (cluster singleton) sends the search query to the MediathekViewWeb API. This searches the Mediathek database (ARD, ZDF, ORF, SRF and other broadcasters).
 
-Queries filter by topic (show name), are sorted by date (newest first), exclude future entries and ignore entries shorter than 5 minutes. API responses are cached for 5 minutes. Each result contains:
+Queries filter by topic (show name), are sorted by date (newest first), exclude entries whose broadcast lies in the future and ignore entries shorter than 5 minutes. Sonarr and Radarr only search for episodes and movies that have already aired, so upcoming entries would only take up room in the result window. Episodes that broadcasters publish in the Mediathek ahead of the broadcast reach Sonarr through the RSS feed instead (see below). API responses are cached for 5 minutes. Each result contains:
 
 - Channel, topic, title, description
 - Video URLs in different qualities (HD, normal, low)
@@ -81,6 +82,8 @@ Rulesets are managed separately from search:
 
 ### 5. Scoring
 
+**Broadcast variants:** Before scoring, every entry is classified as standard, audio description, sign language, plain language or original version, based on its title and topic. Variants excluded in the [configuration](/en/configuration#broadcast-variants) are removed from the results on every search path, also when no ruleset exists. In the match history they appear as excluded with the variant as reason, without any rule being evaluated.
+
 The scoring engine evaluates each Mediathek entry against the ruleset's rules. Three steps are performed for each rule (rules are sorted by priority, the first match wins):
 
 **Filter check:** Each rule can define filters that an entry must satisfy. Filters can check various fields (title, topic, channel, duration, description) with operators like equals, contains, regex, greater/less than. Filters can be combined with `all` (all must pass), `any` (one must pass) and `not` (none may pass).
@@ -99,7 +102,7 @@ The `ScoringManager` holds the matching configuration of every ruleset and distr
 
 ### 6. Metadata Enrichment
 
-After scoring, matches are enriched with external metadata (see the [Metadata Enrichment](#metadata-enrichment) section). This step is optional: if enrichment is not configured for the ruleset or fails, the scored results are returned as they are. Afterwards the search worker records the run in the scoring history of the ruleset (see [Scoring History](#scoring-history)).
+After scoring, matches are enriched with external metadata (see the [Metadata Enrichment](#metadata-enrichment) section). This step is optional: if enrichment is not configured for the ruleset or fails, the scored results are returned as they are. Afterwards the evaluation worker records the run in the scoring history of the ruleset (see [Scoring History](#scoring-history)).
 
 ### 7. Newznab Response
 
@@ -113,11 +116,17 @@ Results are returned as a Newznab RSS feed. Each entry contains:
 
 Search results are cached so that follow-up requests with pagination don't re-trigger the entire search.
 
-#### Requests without a search term (RSS sync and indexer test)
+#### RSS sync
 
-Sonarr, Radarr and Prowlarr send a search without a search term and without a media ID for their RSS sync and for the "Test" button (for example `t=tvsearch` without `q`). FunkArr does not start a search for these. It answers with exactly one validation entry (`FunkArr.Validation.…`) in the matching category, so the indexer test succeeds. The entry does not match any real series or movie, and its download link is rejected with a Newznab error, so it never starts a download.
+Sonarr, Radarr and Prowlarr send a search without a search term and without a media ID for their RSS sync and for the "Test" button (for example `t=tvsearch` without `q`). FunkArr answers these from its RSS feed:
 
-New episodes are therefore currently found through the automatic or manual search in Sonarr/Radarr, not through RSS sync. A real RSS feed is planned in [#204](https://github.com/st0o0/funkarr/issues/204).
+1. **Ingest:** every 15 minutes the `FeedIngestManager` asks MediathekViewWeb whether a new Filmliste update has been completed. If so, it collects every entry that appeared since the last run, using the `filmlisteTimestamp` of each entry (the time it first appeared in the list, not its broadcast time). This includes episodes published ahead of their broadcast, so Sonarr can grab them as soon as they are downloadable. They keep their scheduled broadcast date; to wait for the broadcast, turn on the air date restriction in a Sonarr release profile. Entries more than 90 days ahead are dropped as data errors.
+2. **Grouping:** new entries are matched to rulesets by topic and aliases. Entries without a ruleset are counted but not published.
+3. **Evaluation:** each ruleset group runs through the same evaluation workers as search (scoring, enrichment, broadcast variants, match history with source `Feed`), so feed releases are identical to search results.
+4. **Gate:** only releases with a score of at least `MinConfidence` and season/episode (TV) or a TMDB/IMDB ID (movies) are published.
+5. **Feed:** the `FeedManager` stores published releases with a stable GUID and the first-seen time as `pubDate`, and removes them after the retention period.
+
+RSS requests return the feed newest first, so Sonarr and Radarr can page through it without gaps. Feed pages are output-cached per page, category, API key and host, so RSS syncs and several clients are answered from memory. The `FeedManager` clears this cache whenever the feed changes (new releases, retention cleanup, restart), so new releases show up immediately; cache entries also expire after 30 minutes. Answers given while the feed was unavailable are never cached. If the feed has no releases for the requested category yet (for example right after installation), FunkArr returns a single validation entry (`FunkArr.Validation.…`) so the indexer test succeeds. Its download link is rejected, so it never starts a download. The **Feed** page in the web UI shows the published releases and the last ingest run.
 
 ## Download Pipeline
 
@@ -192,7 +201,7 @@ These traces are viewable in the web UI and help when debugging rulesets.
 
 ### Scoring History
 
-Every search request evaluated against a ruleset is recorded in that ruleset's scoring history. The search worker sends the result to a sharded, persistent `HistoryWorker` (one per ruleset), which stores the snapshots and trims them by count and age. After each recording it reports updated statistics to the `StatsCollector` (singleton), which keeps the statistics of all rulesets in memory for the UI and rebuilds them from the history workers at startup. Each snapshot records:
+Every search request evaluated against a ruleset is recorded in that ruleset's scoring history. The evaluation worker sends the result to a sharded, persistent `HistoryWorker` (one per ruleset), which stores the snapshots and trims them by count and age. After each recording it reports updated statistics to the `StatsCollector` (singleton), which keeps the statistics of all rulesets in memory for the UI and rebuilds them from the history workers at startup. Each snapshot records:
 
 - Search source (Sonarr, Radarr, Prowlarr or test)
 - Search query

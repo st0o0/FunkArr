@@ -24,6 +24,14 @@ public static class ScoringEngine
         for (var i = 0; i < items.Length; i++)
         {
             var candidate = items[i];
+
+            if (candidate.ExcludedVariant is { } excludedVariant)
+            {
+                scored[i] = new ScoredItem(i, 0.0, false);
+                itemTraces[i] = new ItemTrace(candidate, false, 0.0, null, null, [], ExcludedVariant: excludedVariant);
+                continue;
+            }
+
             var matched = false;
             var ruleTraces = new List<RuleTrace>();
             string? matchedRuleId = null;

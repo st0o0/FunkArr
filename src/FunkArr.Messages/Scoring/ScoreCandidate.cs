@@ -7,4 +7,5 @@ public sealed record ScoreCandidate(
     int Duration,
     int Quality,
     string? Description,
-    long Timestamp);
+    long Timestamp,
+    MediathekVariant? ExcludedVariant = null);

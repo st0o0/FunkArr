@@ -263,6 +263,21 @@ Einen API-Schlüssel gibt es unter [thetvdb.com/api-information](https://thetvdb
 Beide Schlüssel sind optional, aber empfohlen. Ohne sie verlässt sich FunkArr ausschließlich auf Regelwerk-Muster für die Zuordnung, was funktioniert, aber weniger Ergebnisse liefert.
 :::
 
+## RSS-Feed
+
+| Variable | Standard | Beschreibung |
+|----------|----------|-------------|
+| `FunkArr__Feed__Enabled` | `true` | Neue Mediathek-Einträge für den RSS-Sync von Sonarr und Radarr sammeln |
+| `FunkArr__Feed__Interval` | `00:15:00` | Abstand zwischen zwei Abrufen |
+| `FunkArr__Feed__InitialLookback` | `2.00:00:00` | Wie weit der allererste Abruf zurückschaut |
+| `FunkArr__Feed__PageSize` | `100` | Einträge pro MediathekViewWeb-Seite (1-500) |
+| `FunkArr__Feed__MaxPages` | `20` | Maximale Seiten pro Abruf |
+| `FunkArr__Feed__Retention` | `14.00:00:00` | Wie lange veröffentlichte Releases im Feed bleiben |
+| `FunkArr__Feed__MinConfidence` | `0.7` | Mindest-Score für die Veröffentlichung (0-1) |
+| `FunkArr__Feed__MaxConcurrency` | `4` | Parallel ausgewertete Regelwerk-Gruppen |
+
+Ein Abruf ohne neues Filmlisten-Update kostet nur eine kleine Anfrage. Kann ein Abruf nicht alle neuen Einträge innerhalb von `MaxPages` abdecken, zeigt die Feed-Seite eine Lücke an; passiert das regelmäßig, `MaxPages` erhöhen.
+
 ## Scoring
 
 | Variable | Standard | Beschreibung |
@@ -270,6 +285,17 @@ Beide Schlüssel sind optional, aber empfohlen. Ohne sie verlässt sich FunkArr 
 | `FunkArr__Scoring__PoolSize` | `4` | Parallele Scoring-Worker |
 
 Der Scoring-Pool verarbeitet Mediathek-Suchergebnisse parallel gegen Regelwerke. Jeder Worker wertet einen Regelwerk-Match gleichzeitig aus. Erhöhe den Wert für schnellere Suchantworten auf Multi-Core-Systemen; der Standardwert von 4 funktioniert für die meisten Setups gut.
+
+## Sendungsfassungen
+
+| Variable | Standard | Beschreibung |
+|----------|----------|-------------|
+| `FunkArr__Variants__AudioDescription` | `Exclude` | Fassungen mit Audiodeskription ("Audiodeskription", "Hörfassung") |
+| `FunkArr__Variants__SignLanguage` | `Exclude` | Fassungen mit Gebärdensprache ("Gebärdensprache", "DGS") |
+| `FunkArr__Variants__PlainLanguage` | `Exclude` | Fassungen in Einfacher, Leichter oder Klarer Sprache |
+| `FunkArr__Variants__OriginalVersion` | `Exclude` | Originalfassungen ("Originalfassung", "OV", "OmU") |
+
+Mediatheken veröffentlichen dieselbe Sendung oft in mehreren Fassungen. FunkArr erkennt die Fassung an Titel und Thema jedes Eintrags. Mit `Exclude` erscheint die Fassung nie in den Suchergebnissen, Sonarr und Radarr können sie also nicht automatisch laden. Mit `Allow` wird sie mit einer Kennzeichnung im Release-Titel ausgeliefert (`AD`, `DGS`, `EinfacheSprache`, `OV`), auf die du ein Custom Format setzen kannst, zum Beispiel um Audiodeskription zu bevorzugen. Originalfassungen erhalten keine `GERMAN`-Sprachkennzeichnung. Die aktuelle Einstellung steht auf der Einstellungsseite.
 
 ## Match-Verlauf
 

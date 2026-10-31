@@ -17,6 +17,7 @@ const router = createRouter({
     { path: '/rulesets/:id/history', component: () => import('./views/ScoringHistory.vue'), meta: { title: 'Scoring History' } },
     { path: '/rulesets/:id/history/:requestId', component: () => import('./views/ScoringDetail.vue'), meta: { title: 'Scoring Detail' } },
     { path: '/activity/:id', component: () => import('./views/DownloadDetail.vue'), meta: { title: 'Download Detail' } },
+    { path: '/feed', component: () => import('./views/Feed.vue'), meta: { title: 'Feed' } },
     { path: '/settings', component: () => import('./views/Settings.vue'), meta: { title: 'Settings' } },
     { path: '/queue', redirect: '/activity' },
     { path: '/history', redirect: '/activity' },

@@ -13,6 +13,11 @@ public sealed class ScoringSetupContainer : IServiceSetupContainer
             .ValidateOnStart();
 
         services
+            .AddOptions<VariantOptions>()
+            .Bind(configuration.GetSection(VariantOptions.SectionName))
+            .ValidateOnStart();
+
+        services
             .AddOptions<ScoringHistoryOptions>()
             .Bind(configuration.GetSection(ScoringHistoryOptions.SectionName))
             .ValidateOnStart();

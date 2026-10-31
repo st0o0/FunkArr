@@ -18,6 +18,7 @@
     <ProjectReference Include="..\FunkArr.Scoring\FunkArr.Scoring.csproj" />
     <ProjectReference Include="..\FunkArr.History\FunkArr.History.csproj" />
     <ProjectReference Include="..\FunkArr.Enrichment\FunkArr.Enrichment.csproj" />
+    <ProjectReference Include="..\FunkArr.Feed\FunkArr.Feed.csproj" />
   </ItemGroup>
 
   <ItemGroup>

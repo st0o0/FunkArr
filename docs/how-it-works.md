@@ -8,7 +8,8 @@ FunkArr basiert auf Akka.NET. Die Arbeit verteilt sich auf wenige langlebige Sin
 
 | Domäne | Aktoren | Aufgabe |
 |--------|---------|---------|
-| Search | `SearchManager`, `MediathekViewWebManager` (Singletons), `TvSearchWorker`, `MovieSearchWorker` (geshardet, einer pro Suchanfrage) | Koordiniert eine Suche und fragt MediathekViewWeb ab |
+| Search | `SearchManager`, `MediathekViewWebManager` (Singletons), `TvSearchWorker`, `MovieSearchWorker` (geshardet, einer pro Suchanfrage), `TvEvaluationWorker`, `MovieEvaluationWorker` (geshardet, einer pro Auswertung) | Fragt MediathekViewWeb ab und wertet die Einträge zu Releases aus (für Suche und Feed) |
+| Feed | `FeedIngestManager`, `FeedManager` (Singletons, persistent) | Liest neue Mediathek-Einträge ein und baut den RSS-Feed |
 | RuleSet | `RuleSetResolver`, `RuleSetManager`, `RuleSetUpdater` (Singletons), `RuleSetWorker` (geshardet, einer pro Regelwerk) | Lädt, vereint und löst Regelwerke auf, synchronisiert Community-Regelwerke |
 | Scoring | `ScoringManager` (Singleton) mit einem Pool aus `ScoringActor` | Wertet Mediathek-Einträge gegen Regelwerk-Regeln aus |
 | Enrichment | `EnrichmentManager` (Singleton) mit TVDB- und TMDB-Aktor-Pools | Bestimmt Staffel/Episode und Filmdaten über externe APIs |
@@ -43,7 +44,7 @@ Der SearchManager (Cluster-Singleton) erzeugt eine Such-ID und übergibt die Arb
 
 Jede Suche hat ein Timeout von 30 Sekunden (der Controller selbst bricht nach 45 Sekunden ab). Wenn bei einer kombinierten Suche ein Teil fehlschlägt oder das Timeout erreicht, werden die Ergebnisse des anderen Teils trotzdem zurückgegeben.
 
-Der Such-Worker durchläuft die folgenden Schritte als kleine Zustandsmaschine (Regelwerk auflösen, abfragen, bewerten, anreichern) und antwortet dann dem SearchManager. Inaktive Worker werden nach 30 Sekunden passiviert.
+Der Such-Worker löst nur das Regelwerk per ID auf (falls die Anfrage eine enthält) und fragt MediathekViewWeb ab. Die Einträge übergibt er dann an einen geshardeten Auswertungs-Worker (`TvEvaluationWorker` oder `MovieEvaluationWorker`), dem die Auswertungs-Pipeline gehört: Regelwerk über das Topic auflösen (falls noch unbekannt), bewerten, anreichern und den Scoring-Verlauf protokollieren. Der RSS-Feed nutzt dieselben Auswertungs-Worker, sodass Suche und Feed identische Releases erzeugen. Inaktive Worker werden nach 30 Sekunden passiviert.
 
 ### 3. MediathekViewWeb-Abfrage
 
@@ -53,7 +54,7 @@ Der Such-Worker durchläuft die folgenden Schritte als kleine Zustandsmaschine (
 
 Der MediathekViewWebManager (Cluster-Singleton) sendet die Suchanfrage an die MediathekViewWeb-API. Diese durchsucht die Mediathek-Datenbank (ARD, ZDF, ORF, SRF und weitere Sender).
 
-Die Abfragen filtern nach Topic (Sendungsname), sind nach Datum absteigend sortiert, schließen zukünftige Einträge aus und ignorieren Einträge unter 5 Minuten Länge. API-Antworten werden 5 Minuten zwischengespeichert. Die Ergebnisse enthalten für jeden Eintrag:
+Die Abfragen filtern nach Topic (Sendungsname), sind nach Datum absteigend sortiert, schließen Einträge mit Sendetermin in der Zukunft aus und ignorieren Einträge unter 5 Minuten Länge. Sonarr und Radarr suchen nur nach bereits ausgestrahlten Folgen und Filmen, kommende Einträge würden also nur Platz im Ergebnisfenster belegen. Folgen, die Sender vorab in der Mediathek veröffentlichen, erreichen Sonarr stattdessen über den RSS-Feed (siehe unten). API-Antworten werden 5 Minuten zwischengespeichert. Die Ergebnisse enthalten für jeden Eintrag:
 
 - Sender, Thema, Titel, Beschreibung
 - Video-URLs in verschiedenen Qualitäten (HD, normal, niedrig)
@@ -81,6 +82,8 @@ Regelwerke werden getrennt von der Suche verwaltet:
 
 ### 5. Scoring
 
+**Sendungsfassungen:** Vor dem Scoring wird jeder Eintrag anhand von Titel und Thema als Standard, Audiodeskription, Gebärdensprache, Einfache Sprache oder Originalfassung eingeordnet. In der [Konfiguration](/configuration#sendungsfassungen) ausgeschlossene Fassungen werden auf jedem Suchweg aus den Ergebnissen entfernt, auch wenn es kein Regelwerk gibt. Im Match-Verlauf erscheinen sie als ausgeschlossen, mit der Fassung als Grund und ohne dass eine Regel ausgewertet wird.
+
 Die Scoring-Engine wertet jeden Mediathek-Eintrag gegen die Regeln des Regelwerks aus. Dabei werden drei Schritte für jede Regel durchlaufen (Regeln sind nach Priorität sortiert, die erste passende gewinnt):
 
 **Filter-Prüfung:** Jede Regel kann Filter definieren, die ein Eintrag erfüllen muss. Filter können auf verschiedene Felder prüfen (Titel, Thema, Sender, Dauer, Beschreibung) mit Operatoren wie Gleichheit, Enthält, Regex, größer/kleiner. Filter lassen sich mit `all` (alle müssen passen), `any` (einer muss passen) und `not` (keiner darf passen) kombinieren.
@@ -99,7 +102,7 @@ Der `ScoringManager` hält die Matching-Konfiguration jedes Regelwerks und verte
 
 ### 6. Metadaten-Anreicherung
 
-Nach dem Scoring werden die Treffer mit externen Metadaten angereichert (siehe Abschnitt [Metadaten-Anreicherung](#metadaten-anreicherung)). Dieser Schritt ist optional: Ist die Anreicherung für das Regelwerk nicht konfiguriert oder schlägt sie fehl, werden die bewerteten Ergebnisse unverändert zurückgegeben. Anschließend protokolliert der Such-Worker den Lauf im Scoring-Verlauf des Regelwerks (siehe [Scoring-Verlauf](#scoring-verlauf)).
+Nach dem Scoring werden die Treffer mit externen Metadaten angereichert (siehe Abschnitt [Metadaten-Anreicherung](#metadaten-anreicherung)). Dieser Schritt ist optional: Ist die Anreicherung für das Regelwerk nicht konfiguriert oder schlägt sie fehl, werden die bewerteten Ergebnisse unverändert zurückgegeben. Anschließend protokolliert der Auswertungs-Worker den Lauf im Scoring-Verlauf des Regelwerks (siehe [Scoring-Verlauf](#scoring-verlauf)).
 
 ### 7. Newznab-Antwort
 
@@ -113,11 +116,17 @@ Die Ergebnisse werden als Newznab-RSS-Feed zurückgegeben. Jeder Eintrag enthäl
 
 Suchergebnisse werden zwischengespeichert, damit eine Folgeanfrage mit Pagination nicht erneut die gesamte Suche auslöst.
 
-#### Anfragen ohne Suchbegriff (RSS-Sync und Indexer-Test)
+#### RSS-Sync
 
-Sonarr, Radarr und Prowlarr senden für den RSS-Sync und für den "Test"-Button eine Suche ohne Suchbegriff und ohne Medien-ID (zum Beispiel `t=tvsearch` ohne `q`). FunkArr startet dafür keine Suche, sondern antwortet mit genau einem Validierungseintrag (`FunkArr.Validation.…`) in der passenden Kategorie, damit der Indexer-Test erfolgreich ist. Der Eintrag passt zu keiner echten Serie und keinem echten Film, und sein Download-Link wird mit einem Newznab-Fehler abgelehnt, sodass er nie einen Download auslöst.
+Sonarr, Radarr und Prowlarr senden für den RSS-Sync und für den "Test"-Button eine Suche ohne Suchbegriff und ohne Medien-ID (zum Beispiel `t=tvsearch` ohne `q`). FunkArr beantwortet sie aus seinem RSS-Feed:
 
-Neue Folgen werden deshalb aktuell nicht per RSS-Sync, sondern über die automatische oder manuelle Suche in Sonarr/Radarr gefunden. Ein echter RSS-Feed ist in [#204](https://github.com/st0o0/funkarr/issues/204) geplant.
+1. **Einlesen:** Alle 15 Minuten fragt der `FeedIngestManager` bei MediathekViewWeb nach, ob ein neues Filmlisten-Update abgeschlossen ist. Wenn ja, sammelt er alle Einträge, die seit dem letzten Lauf neu hinzugekommen sind, anhand ihres `filmlisteTimestamp` (Zeitpunkt der ersten Aufnahme in die Liste, nicht der Sendetermin). Dazu gehören auch Folgen, die vor ihrer Ausstrahlung veröffentlicht werden, sodass Sonarr sie greifen kann, sobald sie abrufbar sind. Sie behalten ihren geplanten Sendetermin; wer auf die Ausstrahlung warten möchte, aktiviert in einem Sonarr-Release-Profil die Sperre vor dem Sendetermin. Einträge mehr als 90 Tage in der Zukunft werden als Datenfehler verworfen.
+2. **Zuordnung:** Neue Einträge werden über Thema und Aliase den Regelwerken zugeordnet. Einträge ohne Regelwerk werden gezählt, aber nicht veröffentlicht.
+3. **Auswertung:** Jede Regelwerk-Gruppe läuft durch dieselben Auswertungs-Worker wie die Suche (Scoring, Anreicherung, Sendungsfassungen, Match-Verlauf mit Quelle `Feed`). Feed-Releases sind dadurch identisch mit Suchergebnissen.
+4. **Prüfung:** Veröffentlicht werden nur Releases mit einem Score von mindestens `MinConfidence` und mit Staffel/Folge (Serien) bzw. TMDB-/IMDB-ID (Filme).
+5. **Feed:** Der `FeedManager` speichert veröffentlichte Releases mit stabiler GUID und dem Zeitpunkt der ersten Sichtung als `pubDate` und entfernt sie nach der Aufbewahrungsdauer.
+
+RSS-Anfragen liefern den Feed mit den neuesten Einträgen zuerst, sodass Sonarr und Radarr lückenlos blättern können. Feed-Seiten werden pro Seite, Kategorie, API-Schlüssel und Host zwischengespeichert, sodass RSS-Syncs und mehrere Clients aus dem Speicher beantwortet werden. Der `FeedManager` leert diesen Zwischenspeicher, sobald sich der Feed ändert (neue Releases, Aufräumen nach Aufbewahrungsdauer, Neustart), neue Releases erscheinen also sofort; Einträge verfallen außerdem nach 30 Minuten. Antworten, die gegeben wurden, während der Feed nicht erreichbar war, werden nie zwischengespeichert. Enthält der Feed für die angefragte Kategorie noch keine Releases (zum Beispiel direkt nach der Installation), antwortet FunkArr mit einem einzelnen Validierungseintrag (`FunkArr.Validation.…`), damit der Indexer-Test erfolgreich ist. Sein Download-Link wird abgelehnt, er löst also nie einen Download aus. Die Seite **Feed** in der Weboberfläche zeigt die veröffentlichten Releases und den letzten Abruf.
 
 ## Download-Pipeline
 
@@ -192,7 +201,7 @@ Diese Traces sind in der Web-UI einsehbar und helfen beim Debuggen von Regelwerk
 
 ### Scoring-Verlauf
 
-Jede Suchanfrage, die über ein Regelwerk ausgewertet wird, wird im Scoring-Verlauf des jeweiligen Regelwerks gespeichert. Der Such-Worker sendet das Ergebnis an einen geshardeten, persistenten `HistoryWorker` (einer pro Regelwerk), der die Snapshots speichert und nach Anzahl und Alter beschneidet. Nach jeder Aufzeichnung meldet er aktualisierte Statistiken an den `StatsCollector` (Singleton), der die Statistiken aller Regelwerke für die UI im Speicher hält und sie beim Start aus den History-Workern wiederherstellt. Pro Snapshot werden aufgezeichnet:
+Jede Suchanfrage, die über ein Regelwerk ausgewertet wird, wird im Scoring-Verlauf des jeweiligen Regelwerks gespeichert. Der Auswertungs-Worker sendet das Ergebnis an einen geshardeten, persistenten `HistoryWorker` (einer pro Regelwerk), der die Snapshots speichert und nach Anzahl und Alter beschneidet. Nach jeder Aufzeichnung meldet er aktualisierte Statistiken an den `StatsCollector` (Singleton), der die Statistiken aller Regelwerke für die UI im Speicher hält und sie beim Start aus den History-Workern wiederherstellt. Pro Snapshot werden aufgezeichnet:
 
 - Quelle der Suche (Sonarr, Radarr, Prowlarr oder Test)
 - Suchbegriff

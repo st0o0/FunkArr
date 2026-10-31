@@ -7,26 +7,37 @@ using FunkArr.Messages.Search;
 
 namespace FunkArr.Search.Tests;
 
-public sealed class MovieSearchWorkerStateTests
+public sealed class MovieEvaluationStateTests
 {
     private static readonly IActorRef _noSender = ActorRefs.Nobody;
 
     [Fact]
-    public void Init_sets_all_fields_from_command()
+    public void Init_sets_fields_and_sources_from_command()
     {
         var id = Guid.NewGuid();
-        var state = MovieSearchWorkerState.From(id.ToString());
-        var cmd = new SearchMovie(id, SearchSource.Radarr, "Das Boot", "tt0806910", 550, 25, 10);
+        var state = MovieEvaluationState.From(id.ToString());
 
-        state.Apply(cmd, _noSender);
+        state.Init(new EvaluateMovies(id, SearchSource.Feed, [MakeMediathekItem(title: "Das Boot")], "tt0806910", 550), _noSender);
 
-        Assert.Equal(id, state.SearchId);
-        Assert.Equal(SearchSource.Radarr, state.Source);
-        Assert.Equal("Das Boot", state.Query);
-        Assert.Equal("tt0806910", state.ImdbId);
-        Assert.Equal(550, state.TmdbId);
-        Assert.Equal(25, state.Limit);
-        Assert.Equal(10, state.Offset);
+        Assert.Multiple(
+            () => Assert.Equal(id, state.SearchId),
+            () => Assert.Equal(SearchSource.Feed, state.Source),
+            () => Assert.Equal("tt0806910", state.ImdbId),
+            () => Assert.Equal(550, state.TmdbId),
+            () => Assert.Equal("Das Boot", Assert.Single(state.Sources).Title));
+    }
+
+    [Fact]
+    public void TryGetRuleSetRequest_uses_topic_of_first_source()
+    {
+        var state = InitState(imdbId: "tt123", tmdbId: 550);
+        state.Apply(new QueryMediathekCompleted([MakeMediathekItem(topic: "Das Boot")], 1));
+
+        Assert.True(state.TryGetRuleSetRequest(out var request));
+        Assert.NotNull(request);
+        Assert.Multiple(
+            () => Assert.Equal("Das Boot", request.TopicOrAlias),
+            () => Assert.Null(request.Ids));
     }
 
     [Fact]
@@ -88,19 +99,6 @@ public sealed class MovieSearchWorkerStateTests
         var item = Assert.Single(state.Items);
         var mi = Assert.IsType<MovieIdentity>(item.Identity);
         Assert.Equal("tt999", mi.ImdbId);
-    }
-
-    [Fact]
-    public void TryGetRuleSetRequest_returns_true_with_id_lookup()
-    {
-        var state = InitState(imdbId: "tt123", tmdbId: 550);
-
-        var result = state.TryGetRuleSetRequest(out var request);
-
-        Assert.True(result);
-        Assert.NotNull(request);
-        Assert.Null(request.TopicOrAlias);
-        Assert.Equal("tt123", request.Ids?.ImdbId);
     }
 
     [Fact]
@@ -172,29 +170,14 @@ public sealed class MovieSearchWorkerStateTests
     }
 
     [Fact]
-    public void TryGetMediathekQuery_uses_title_and_topic_fields_for_movies()
-    {
-        var state = InitState(query: "Das Boot");
-
-        var result = state.TryGetMediathekQuery(out var query);
-
-        Assert.True(result);
-        Assert.NotNull(query);
-        Assert.Equal(3600, query.DurationMin);
-        var field = Assert.Single(query.Fields);
-        Assert.Contains("title", field.Fields);
-        Assert.Contains("topic", field.Fields);
-    }
-
-    [Fact]
     public void ToSearchCompleted_returns_movie_completed_type()
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem(url: "https://v.mp4")], 1));
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
-        Assert.IsType<SearchMovieCompleted>(result);
+        Assert.IsType<EvaluateMoviesCompleted>(result);
         Assert.Single(result.Items);
     }
 
@@ -248,11 +231,11 @@ public sealed class MovieSearchWorkerStateTests
         Assert.Equal(0.4f, request.Config.Title.Threshold);
     }
 
-    private static MovieSearchWorkerState InitState(string? imdbId = null, int? tmdbId = null, string? query = null)
+    private static MovieEvaluationState InitState(string? imdbId = null, int? tmdbId = null)
     {
         var id = Guid.NewGuid();
-        var state = MovieSearchWorkerState.From(id.ToString());
-        state.Apply(new SearchMovie(id, SearchSource.Radarr, query, imdbId, tmdbId, null, null), _noSender);
+        var state = MovieEvaluationState.From(id.ToString());
+        state.Init(new EvaluateMovies(id, SearchSource.Radarr, [], imdbId, tmdbId), _noSender);
         return state;
     }
 

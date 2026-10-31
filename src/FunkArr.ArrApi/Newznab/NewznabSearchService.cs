@@ -3,6 +3,7 @@ using Akka.Hosting;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
 using FunkArr.Messages;
+using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,15 +20,13 @@ public sealed class NewznabSearchService(
     internal const int MaxLimit = 500;
     internal const int DefaultLimit = 100;
 
+    private static readonly TimeSpan _feedTimeout = TimeSpan.FromSeconds(5);
+
     internal async Task<SearchServiceResult> Search(IndexerRequest req, string baseUrl, string apiKey, CancellationToken ct)
     {
         if (IsWithoutSearchCriteria(req))
         {
-            var validationCategory = ValidationCategory(req);
-            logger.LogDebug("Answering {Function} request without search criteria with a validation item ({Category})",
-                req.T, validationCategory.Label);
-            return new SearchServiceResult.Success(
-                ValidationRss.Create(validationCategory, req.Offset ?? 0, timeProvider.GetUtcNow(), baseUrl, apiKey));
+            return await FeedOrValidation(req, baseUrl, apiKey, ct);
         }
 
         var (cmd, category) = BuildCommand(req);
@@ -102,40 +101,55 @@ public sealed class NewznabSearchService(
 
     internal static Rss ToRss(
         SearchResultItem[] items, int total, int offset,
-        string baseUrl, string apiKey, NewznabCategory category)
-    {
-        var rssItems = items.Select(item =>
-        {
-            var nzbPayload = string.Join('\t',
-                Strip(item.Title),
-                Strip(item.Url),
-                Strip(item.SubtitleUrl ?? ""),
-                Strip(item.Channel),
-                item.Duration.ToString(),
-                item.Size.ToString(),
-                category == NewznabCategory.Movie ? "movie" : "tv");
-            var nzbId = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(nzbPayload));
-            var getNzbUrl = $"{baseUrl}/index/api?t=get&id={Uri.EscapeDataString(nzbId)}&apikey={Uri.EscapeDataString(apiKey)}";
-            return new Item
-            {
-                Title = item.Title,
-                Guid = new ItemGuid { Value = nzbId, IsPermaLink = false },
-                Link = getNzbUrl,
-                PubDate = item.AiredAt?.ToString("R") ?? "",
-                Category = category.DisplayName(item.Quality),
-                Description = $"{item.Channel} - {item.Topic}",
-                Enclosure = new Enclosure { Url = getNzbUrl, Length = item.Size },
-                Attributes = BuildAttributes(item, category)
-            };
-        }).ToList();
+        string baseUrl, string apiKey, NewznabCategory category) =>
+        CreateRss([.. items.Select(item => ToItem(item, category, baseUrl, apiKey))], total, offset);
 
-        return new Rss
+    internal static Rss ToFeedRss(FeedEntry[] entries, int total, int offset, string baseUrl, string apiKey) =>
+        CreateRss(
+        [
+            .. entries.Select(entry => ToItem(
+                entry.Item,
+                entry.MediaType == MediaType.Movie ? NewznabCategory.Movie : NewznabCategory.Tv,
+                baseUrl,
+                apiKey,
+                entry.StableId,
+                entry.FirstSeenAt))
+        ], total, offset);
+
+    private static Rss CreateRss(List<Item> items, int total, int offset) =>
+        new()
         {
             Channel = new Channel
             {
                 Response = new NewznabResponse { Offset = offset, Total = total },
-                Items = rssItems
+                Items = items
             }
+        };
+
+    private static Item ToItem(
+        SearchResultItem item, NewznabCategory category, string baseUrl, string apiKey,
+        string? guid = null, DateTimeOffset? pubDate = null)
+    {
+        var nzbPayload = string.Join('\t',
+            Strip(item.Title),
+            Strip(item.Url),
+            Strip(item.SubtitleUrl ?? ""),
+            Strip(item.Channel),
+            item.Duration.ToString(),
+            item.Size.ToString(),
+            category == NewznabCategory.Movie ? "movie" : "tv");
+        var nzbId = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(nzbPayload));
+        var getNzbUrl = $"{baseUrl}/index/api?t=get&id={Uri.EscapeDataString(nzbId)}&apikey={Uri.EscapeDataString(apiKey)}";
+        return new Item
+        {
+            Title = item.Title,
+            Guid = new ItemGuid { Value = guid ?? nzbId, IsPermaLink = false },
+            Link = getNzbUrl,
+            PubDate = (pubDate ?? item.AiredAt)?.ToString("R") ?? "",
+            Category = category.DisplayName(item.Quality),
+            Description = $"{item.Channel} - {item.Topic}",
+            Enclosure = new Enclosure { Url = getNzbUrl, Length = item.Size },
+            Attributes = BuildAttributes(item, category)
         };
     }
 
@@ -214,6 +228,58 @@ public sealed class NewznabSearchService(
         return (cmd, category);
     }
 
+    private async Task<SearchServiceResult> FeedOrValidation(IndexerRequest req, string baseUrl, string apiKey, CancellationToken ct)
+    {
+        var offset = Math.Max(0, req.Offset ?? 0);
+        var limit = CapLimit(req.Limit) ?? DefaultLimit;
+        var feedAnswered = false;
+
+        try
+        {
+            var feed = await registry.GetAsync<IFeedManager>(ct);
+            var response = await feed.Ask<FeedResponse>(new QueryFeed(FeedMediaType(req), offset, limit), _feedTimeout, ct);
+            feedAnswered = response is FeedResult;
+            if (response is FeedResult { Total: > 0 } result)
+            {
+                return new SearchServiceResult.Success(ToFeedRss(result.Entries, result.Total, offset, baseUrl, apiKey));
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Feed unavailable for {Function} request, answering with a validation item", req.T);
+        }
+
+        var validationCategory = ValidationCategory(req);
+        logger.LogDebug("Answering {Function} request without feed entries with a validation item ({Category})",
+            req.T, validationCategory.Label);
+        return new SearchServiceResult.Success(
+            ValidationRss.Create(validationCategory, offset, timeProvider.GetUtcNow(), baseUrl, apiKey),
+            Cacheable: feedAnswered);
+    }
+
+    internal static MediaType? FeedMediaType(IndexerRequest req) => req.T switch
+    {
+        "tvsearch" => MediaType.Show,
+        "movie" => MediaType.Movie,
+        "search" when RequestsOnlyMovieCategories(req.Cat) => MediaType.Movie,
+        "search" when RequestsOnlyTvCategories(req.Cat) => MediaType.Show,
+        _ => null
+    };
+
+    internal static bool RequestsOnlyTvCategories(string? cat)
+    {
+        var categories = ParseCategories(cat);
+        return categories.Length > 0 && categories.All(c => NewznabCategory.FromCat(c) == NewznabCategory.Tv);
+    }
+
+    private static int[] ParseCategories(string? cat) =>
+    [
+        .. (cat ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(ParseInt)
+            .OfType<int>()
+    ];
+
     internal static bool IsWithoutSearchCriteria(IndexerRequest req) =>
         req.T is "tvsearch" or "movie" or "search"
         && string.IsNullOrWhiteSpace(req.Q)
@@ -230,12 +296,7 @@ public sealed class NewznabSearchService(
 
     internal static bool RequestsOnlyMovieCategories(string? cat)
     {
-        var categories = (cat ?? "")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(ParseInt)
-            .OfType<int>()
-            .ToArray();
-
+        var categories = ParseCategories(cat);
         return categories.Length > 0 && categories.All(c => NewznabCategory.FromCat(c) == NewznabCategory.Movie);
     }
 

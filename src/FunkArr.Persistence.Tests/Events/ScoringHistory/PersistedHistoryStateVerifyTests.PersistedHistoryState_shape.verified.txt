@@ -64,7 +64,8 @@
             "ResolvedYear": null,
             "DaysDiff": null,
             "Detail": null
-          }
+          },
+          "ExcludedVariant": null
         }
       ]
     },

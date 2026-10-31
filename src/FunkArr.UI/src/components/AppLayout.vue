@@ -164,6 +164,12 @@ const navItems = computed<NavItem[]>(() => [
     icon: '<path d="M2 4h12M2 8h12M2 12h8"/><circle cx="13" cy="12" r="1.5"/>',
   },
   {
+    to: '/feed',
+    label: t('nav.feed'),
+    exact: false,
+    icon: '<path d="M3 3a10 10 0 0110 10"/><path d="M3 7a6 6 0 016 6"/><circle cx="4" cy="12" r="1.2"/>',
+  },
+  {
     to: '/settings',
     label: t('nav.settings'),
     exact: false,

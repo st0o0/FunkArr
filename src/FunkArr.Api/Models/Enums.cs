@@ -11,7 +11,8 @@ public enum SearchSource
     Sonarr,
     Radarr,
     Prowlarr,
-    Test
+    Test,
+    Feed
 }
 
 public enum FilterOp
@@ -59,6 +60,21 @@ public enum RuntimeMode
 {
     Tiebreaker,
     Filter
+}
+
+public enum MediathekVariant
+{
+    Standard,
+    AudioDescription,
+    SignLanguage,
+    PlainLanguage,
+    OriginalVersion
+}
+
+public enum VariantPolicy
+{
+    Exclude,
+    Allow
 }
 
 public enum RuleOutcome

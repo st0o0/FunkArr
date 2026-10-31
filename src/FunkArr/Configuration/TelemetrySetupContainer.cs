@@ -23,6 +23,7 @@ public sealed class TelemetrySetupContainer : IServiceSetupContainer
                 .AddMeter("FunkArr.Enrichment")
                 .AddMeter("FunkArr.History")
                 .AddMeter("FunkArr.RuleSet")
+                .AddMeter("FunkArr.Feed")
                 .AddMeter("FunkArr.ExternalApi")
                 .AddPrometheusExporter());
     }

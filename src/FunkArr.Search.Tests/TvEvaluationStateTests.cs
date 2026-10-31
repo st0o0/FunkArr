@@ -2,32 +2,56 @@ using Akka.Actor;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 
 namespace FunkArr.Search.Tests;
 
-public sealed class TvSearchWorkerStateTests
+public sealed class TvEvaluationStateTests
 {
     private static readonly IActorRef _noSender = ActorRefs.Nobody;
 
     [Fact]
-    public void Init_sets_all_fields_from_command()
+    public void Init_sets_fields_and_sources_from_command()
     {
         var id = Guid.NewGuid();
-        var state = TvSearchWorkerState.From(id.ToString());
-        var cmd = new SearchSeries(id, SearchSource.Sonarr, "Tatort", 2, 5, 83214, "tt123", 25, 10);
+        var state = TvEvaluationState.From(id.ToString());
+        var cmd = new EvaluateSeries(id, SearchSource.Feed, [MakeMediathekItem("ARD", "Tatort", "Ep1")], 83214, "tt123", 2);
 
         state.Init(cmd, _noSender);
 
-        Assert.Equal(id, state.SearchId);
-        Assert.Equal(SearchSource.Sonarr, state.Source);
-        Assert.Equal("Tatort", state.Query);
-        Assert.Equal(2, state.Season);
-        Assert.Equal(83214, state.TvdbId);
-        Assert.Equal("tt123", state.ImdbId);
-        Assert.Equal(25, state.Limit);
-        Assert.Equal(10, state.Offset);
+        Assert.Multiple(
+            () => Assert.Equal(id, state.SearchId),
+            () => Assert.Equal(SearchSource.Feed, state.Source),
+            () => Assert.Equal(83214, state.TvdbId),
+            () => Assert.Equal("tt123", state.ImdbId),
+            () => Assert.Equal(2, state.Season),
+            () => Assert.Equal("Ep1", Assert.Single(state.Sources).Title),
+            () => Assert.Null(state.RuleSetId));
+    }
+
+    [Fact]
+    public void Init_with_resolved_ruleset_skips_ruleset_request()
+    {
+        var id = Guid.NewGuid();
+        var state = TvEvaluationState.From(id.ToString());
+
+        state.Init(new EvaluateSeries(id, SearchSource.Sonarr, [MakeMediathekItem()],
+            RuleSet: new RuleSetResolved("tatort", "Tatort", "Tatort")), _noSender);
+
+        Assert.Multiple(
+            () => Assert.Equal("tatort", state.RuleSetId),
+            () => Assert.Equal("Tatort", state.MediaName),
+            () => Assert.False(state.TryGetRuleSetRequest(out _)));
+    }
+
+    [Fact]
+    public void TryGetRuleSetRequest_returns_false_when_no_sources()
+    {
+        var state = InitState(tvdbId: 83214, imdbId: "tt123");
+
+        Assert.False(state.TryGetRuleSetRequest(out _));
     }
 
     [Fact]
@@ -131,20 +155,6 @@ public sealed class TvSearchWorkerStateTests
         var result = state.TryGetRuleSetRequest(out _);
 
         Assert.False(result);
-    }
-
-    [Fact]
-    public void TryGetRuleSetRequest_returns_true_with_id_lookup_when_no_sources()
-    {
-        var state = InitState(tvdbId: 83214, imdbId: "tt123");
-
-        var result = state.TryGetRuleSetRequest(out var request);
-
-        Assert.True(result);
-        Assert.NotNull(request);
-        Assert.Null(request.TopicOrAlias);
-        Assert.Equal(83214, request.Ids?.TvdbId);
-        Assert.Equal("tt123", request.Ids?.ImdbId);
     }
 
     [Fact]
@@ -259,7 +269,7 @@ public sealed class TvSearchWorkerStateTests
             new ScoredItem(1, 0.9, true)
         ], []));
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
         Assert.True(result.Items.Length >= 2);
         Assert.True(result.Items[0].Score >= result.Items[1].Score);
@@ -271,7 +281,7 @@ public sealed class TvSearchWorkerStateTests
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem(url: "https://v.mp4")], 1));
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
         var item = Assert.Single(result.Items);
         Assert.Equal(0.0, item.Score);
@@ -282,7 +292,7 @@ public sealed class TvSearchWorkerStateTests
     {
         var state = InitState();
 
-        var result = state.ToSearchCompleted();
+        var result = state.ToCompleted();
 
         Assert.Empty(result.Items);
         Assert.Equal(0, result.Total);
@@ -338,11 +348,11 @@ public sealed class TvSearchWorkerStateTests
         Assert.Equal("Roomservice", candidate.ConstructedTitle);
     }
 
-    private static TvSearchWorkerState InitState(int? tvdbId = null, string? imdbId = null, string? query = null)
+    private static TvEvaluationState InitState(int? tvdbId = null, string? imdbId = null)
     {
-        var state = TvSearchWorkerState.From(Guid.NewGuid().ToString());
-        state.Init(new SearchSeries(Guid.NewGuid(), SearchSource.Sonarr, query, null, null, tvdbId, imdbId, null, null),
-            _noSender);
+        var id = Guid.NewGuid();
+        var state = TvEvaluationState.From(id.ToString());
+        state.Init(new EvaluateSeries(id, SearchSource.Sonarr, [], tvdbId, imdbId), _noSender);
         return state;
     }
 

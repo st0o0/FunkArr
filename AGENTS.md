@@ -23,12 +23,13 @@ src/
   FunkArr.Core/                   # Common types, Akka/Servus refs
   FunkArr.Api/                    # Internal REST API (Minimal APIs, OpenAPI-first)
   FunkArr.ArrApi/                 # Newznab + SABnzbd adapter (controller-based API)
-  FunkArr.Search/                 # MediathekViewWeb query + fetch
+  FunkArr.Search/                 # MediathekViewWeb query + release evaluation
   FunkArr.Download/               # Download pipeline, FFmpeg, subtitles, muxing
   FunkArr.RuleSet/                # Ruleset registry, models, GitHub sync, generator
   FunkArr.Scoring/                # Match scoring, stats, diagnostics
   FunkArr.History/                # Scoring history recording + stats aggregation
   FunkArr.Enrichment/             # TMDB + TVDB metadata enrichment
+  FunkArr.Feed/                   # RSS feed ingest + feed store
   FunkArr.Messages/               # Commands, queries, responses (all domains)
   FunkArr.Persistence/            # DTOs (extend-only, versioned)
   FunkArr.UI/                     # Vue.js frontend (Vite + Tailwind)
@@ -38,6 +39,7 @@ src/
   FunkArr.Scoring.Tests/
   FunkArr.History.Tests/
   FunkArr.Enrichment.Tests/
+  FunkArr.Feed.Tests/
   FunkArr.Api.Tests/
   FunkArr.ArrApi.Tests/
   FunkArr.Architecture.Tests/     # ArchUnit conventions
@@ -47,7 +49,7 @@ src/
 ## Architecture guardrails
 
 - **Domain isolation.** Domain projects (Search, Download, RuleSet, Scoring, History,
-  Enrichment) must not reference each other. Communication only through Messages.
+  Enrichment, Feed) must not reference each other. Communication only through Messages.
 - **Reference direction:** Host -> Api/ArrApi -> Domains -> Core -> Messages/Persistence.
   Never upward, never cross-domain.
 - **Core bundles framework refs.** FunkArr.Core references Messages + Persistence and
@@ -76,11 +78,15 @@ SINGLETONS (Cluster Singleton)
 ├─ EnrichmentManager (non-persistent)                             [Enrichment]
 │  ├─ TvdbEnrichmentActor pool (child, via ResolveChildActor)
 │  └─ TmdbEnrichmentActor pool (child, via ResolveChildActor)
-└─ StatsCollector (non-persistent)                                [History]
+├─ StatsCollector (non-persistent)                                [History]
+├─ FeedIngestManager (persistent, IWithTimers)                    [Feed]
+└─ FeedManager (persistent)                                       [Feed]
 
 SHARD REGIONS (Sharded Entity)
 ├─ TvSearchWorker (non-persistent, per search request)            [Search]
 ├─ MovieSearchWorker (non-persistent, per search request)         [Search]
+├─ TvEvaluationWorker (non-persistent, per evaluation)            [Search]
+├─ MovieEvaluationWorker (non-persistent, per evaluation)         [Search]
 ├─ DownloadWorker (persistent, per download entity)               [Download]
 ├─ RuleSetWorker (non-persistent, per ruleset)                    [RuleSet]
 └─ HistoryWorker (persistent, per scoring history entity)         [History]
@@ -324,10 +330,11 @@ Do NOT use:
 | Domain     | Meter               | Instruments |
 |------------|---------------------|-------------|
 | Download   | `FunkArr.Download`  | completed, failed, duration, bytes, enqueued, cancelled, retries, move_failed, queue_size, active, paused, schedule_enabled |
-| Search     | `FunkArr.Search`    | requests, matches, no_match, duration, timeouts, failed, mediathek_errors, results_per_request |
+| Search     | `FunkArr.Search`    | requests, matches, no_match, duration, evaluations, evaluation_duration, timeouts, failed, mediathek_errors, results_per_request |
 | Scoring    | `FunkArr.Scoring`   | accepted, rejected, duration, runs, regex_timeouts, no_config |
 | Enrichment | `FunkArr.Enrichment`| requests, failed, duration, items_enriched, cache_entries |
 | History    | `FunkArr.History`   | recordings, trimmed, queries |
+| Feed       | `FunkArr.Feed`      | crawls, probes_unchanged, items_seen, unmatched, published, rejected, gaps, crawl_duration, entries |
 | RuleSet    | `FunkArr.RuleSet`   | loaded, removed, active, update_checks, updates_applied, update_errors, validation_errors, scans, file_events |
 | Host       | `FunkArr.ExternalApi`| requests, duration (HTTP client delegating handler) |
 

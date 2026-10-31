@@ -17,6 +17,7 @@ internal static class PersistenceMapping
             SearchSource.Radarr => PersistedSearchSource.Radarr,
             SearchSource.Prowlarr => PersistedSearchSource.Prowlarr,
             SearchSource.Test => PersistedSearchSource.Test,
+            SearchSource.Feed => PersistedSearchSource.Feed,
             _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
 
@@ -27,6 +28,7 @@ internal static class PersistenceMapping
             PersistedSearchSource.Radarr => SearchSource.Radarr,
             PersistedSearchSource.Prowlarr => SearchSource.Prowlarr,
             PersistedSearchSource.Test => SearchSource.Test,
+            PersistedSearchSource.Feed => SearchSource.Feed,
             _ => throw new ArgumentOutOfRangeException(nameof(source), source, null)
         };
 
@@ -38,7 +40,8 @@ internal static class PersistenceMapping
             trace.Matched, trace.Score, trace.MatchedRuleId,
             trace.Identification?.ToPersistence(),
             [.. trace.RuleTraces.Select(r => r.ToPersistence())],
-            trace.EnrichmentTrace?.ToPersistence());
+            trace.EnrichmentTrace?.ToPersistence(),
+            trace.ExcludedVariant is { } excluded ? (PersistedMediathekVariant)(int)excluded : null);
 
     public static ItemTrace ToDomain(this PersistedItemTrace trace) =>
         new(new ScoreCandidate(
@@ -48,7 +51,8 @@ internal static class PersistenceMapping
             trace.Matched, trace.Score, trace.MatchedRuleId,
             trace.Identification?.ToDomain(),
             [.. trace.RuleTraces.Select(r => r.ToDomain())],
-            trace.EnrichmentTrace?.ToDomain());
+            trace.EnrichmentTrace?.ToDomain(),
+            trace.ExcludedVariant is { } excluded ? (MediathekVariant)(int)excluded : null);
 
     public static PersistedRuleTrace ToPersistence(this RuleTrace trace) =>
         new(trace.RuleId, trace.Priority, (PersistedRuleOutcome)(int)trace.Outcome,
