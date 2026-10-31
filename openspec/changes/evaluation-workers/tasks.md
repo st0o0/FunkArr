@@ -8,8 +8,7 @@
 ## 2. Evaluation workers
 
 - [x] 2.1 Add `TvEvaluationState` / `MovieEvaluationState` (ruleset, scoring, enrichment, history, releases) and `TvEvaluationWorker` / `MovieEvaluationWorker`. Verify with evaluation state and worker tests (topic resolution, resolved ruleset, no ruleset, scoring failure, enrichment success/failure, empty input).
-- [x] 2.2 Add `funkarr.feed.evaluations_total` / `funkarr.feed.evaluation_duration_seconds`. Verify the docs list them.
-- [x] 2.3 Move the evaluation pipeline and its tests from `FunkArr.Search` to `FunkArr.Feed` and register the evaluation regions with the Feed actors. Verify no Search type references remain in Feed (and vice versa) and the architecture tests pass.
+- [x] 2.2 Add `funkarr.search.evaluations_total` / `funkarr.search.evaluation_duration_seconds`. Verify the docs list them.
 
 ## 3. Search workers
 

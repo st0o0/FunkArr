@@ -11,55 +11,58 @@ using FunkArr.Messages.Scoring.History;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
 
-namespace FunkArr.Feed;
+namespace FunkArr.Search;
 
-public sealed class MovieEvaluationState
+public sealed class TvEvaluationState
 {
     private Guid _scoringRequestId;
     private ScoringOrigin? _scoringOrigin;
+    private readonly Dictionary<int, string?> _constructedTitles = [];
 
-    private MovieIdentity BaseIdentity => new(ImdbId, TmdbId, null);
+    private ShowIdentity BaseIdentity => new(ImdbId, TvdbId, null, null);
 
     public Guid SearchId { get; private set; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
     public SearchSource Source { get; private set; }
     public SourceInfo[] Sources { get; private set; } = [];
-    public string? RuleSetId { get; set; }
+    public string? RuleSetId { get; private set; }
+    public int? TvdbId { get; private set; }
     public string? ImdbId { get; private set; }
-    public int? TmdbId { get; private set; }
-    public string? MediaName { get; set; }
+    public int? Season { get; private set; }
+    public string? MediaName { get; private set; }
     public EnrichmentConfig? EnrichmentConfig { get; private set; }
     public EnrichedItem[] Items { get; private set; } = [];
-    public ItemTrace[] ItemTraces { get; set; } = [];
+    public ItemTrace[] ItemTraces { get; private set; } = [];
 
     private readonly VariantOptions _variants;
 
-    private MovieEvaluationState(string nttId, VariantOptions variants)
+    private TvEvaluationState(string nttId, VariantOptions variants)
     {
         SearchId = Guid.Parse(nttId);
         _variants = variants;
     }
 
-    public static MovieEvaluationState From(string nttId, VariantOptions? variants = null) =>
+    public static TvEvaluationState From(string nttId, VariantOptions? variants = null) =>
         new(nttId, variants ?? new VariantOptions());
 
-    public void Init(EvaluateMovies cmd, IActorRef replyTo)
+    public void Init(EvaluateSeries cmd, IActorRef replyTo)
     {
         ReplyTo = replyTo;
         Source = cmd.Source;
+        TvdbId = cmd.TvdbId;
         ImdbId = cmd.ImdbId;
-        TmdbId = cmd.TmdbId;
+        Season = cmd.Season;
         Sources = [.. cmd.Items.Select(SourceInfo.From)];
 
         if (cmd.RuleSet is { } ruleSet)
         {
-            Apply(ruleSet.RuleSetId, ruleSet.MediaName, ruleSet.Enrichment);
+            ApplyRuleSet(ruleSet.RuleSetId, ruleSet.MediaName, ruleSet.Enrichment);
         }
     }
 
     public void Apply(QueryMediathekCompleted result) => Sources = [.. result.Items.Select(SourceInfo.From)];
 
-    public void Apply(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
+    public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
     {
         RuleSetId = ruleSetId;
         MediaName = mediaName;
@@ -70,12 +73,21 @@ public sealed class MovieEvaluationState
     {
         var effectiveMediaName = MediaName ?? (Sources.Length > 0 ? Sources[0].Topic : "");
 
+        _constructedTitles.Clear();
+        foreach (var s in scored.Results)
+        {
+            if (s.Metadata?.ConstructedTitle is not null)
+            {
+                _constructedTitles[s.Index] = s.Metadata.ConstructedTitle;
+            }
+        }
+
         Items =
         [
             .. scored.Results.Select(s =>
             {
                 var baseDisplay = ReleaseDisplay.From(Sources[s.Index].Title, effectiveMediaName);
-                var constructedTitle = s.Metadata?.ConstructedTitle;
+                var constructedTitle = _constructedTitles.GetValueOrDefault(s.Index);
                 var display = constructedTitle is not null
                     ? baseDisplay with { EpisodeTitle = constructedTitle }
                     : baseDisplay;
@@ -86,7 +98,11 @@ public sealed class MovieEvaluationState
                     s.Score,
                     s.Matched,
                     s.Metadata is not null,
-                    BaseIdentity,
+                    BaseIdentity with
+                    {
+                        Season = s.Metadata?.Season,
+                        Episode = s.Metadata?.Episode
+                    },
                     Match: null,
                     Display: display);
             })
@@ -95,35 +111,30 @@ public sealed class MovieEvaluationState
         ItemTraces = scored.ItemTraces;
     }
 
-    public void Apply(EnrichMoviesCompleted enriched)
+    public void Apply(EnrichEpisodesCompleted enriched)
     {
-        var lookup = enriched.Movies.ToDictionary(m => m.Index);
+        var lookup = enriched.Episodes.ToDictionary(e => e.Index);
 
         Items =
         [
             .. Items.Select(item =>
             {
-                if (!lookup.TryGetValue(item.Index, out var movie))
+                if (!lookup.TryGetValue(item.Index, out var ep))
                 {
                     return item;
                 }
 
                 var display = item.Display;
-                if (display is not null && movie.Confidence >= 0.9f && !string.IsNullOrEmpty(movie.Title))
+                if (display is not null && ep.Confidence >= 0.9f && !string.IsNullOrEmpty(ep.EpisodeName))
                 {
-                    display = display with { EpisodeTitle = movie.Title };
+                    display = display with { EpisodeTitle = ep.EpisodeName };
                 }
 
-                var mi = (MovieIdentity)item.Identity;
+                var showId = (ShowIdentity)item.Identity;
                 return item with
                 {
-                    Identity = mi with
-                    {
-                        ImdbId = movie.ImdbId ?? mi.ImdbId,
-                        TmdbId = movie.TmdbId ?? mi.TmdbId,
-                        Year = movie.Year
-                    },
-                    Match = new MatchInfo(movie.Confidence, movie.Method),
+                    Identity = showId with { Season = ep.Season, Episode = ep.Episode },
+                    Match = new MatchInfo(ep.Confidence, ep.Method),
                     Display = display
                 };
             })
@@ -168,11 +179,11 @@ public sealed class MovieEvaluationState
         return true;
     }
 
-    public bool TryGetEnrichmentRequest([NotNullWhen(true)] out EnrichMovies? request)
+    public bool TryGetEnrichmentRequest([NotNullWhen(true)] out EnrichEpisodes? request)
     {
         request = null;
 
-        if (ImdbId is null && TmdbId is null)
+        if (TvdbId is null)
         {
             return false;
         }
@@ -183,10 +194,16 @@ public sealed class MovieEvaluationState
         }
 
         var candidates = Items
-            .Where(e => e.Matched)
-            .Select(e => new MovieCandidate(
-                e.Index, e.Source.Title,
-                e.Source.AiredAt, e.Source.Duration))
+            .Where(e => e is { Matched: true, HasScoringMetadata: true, Match: null })
+            .Select(e =>
+            {
+                var si = (ShowIdentity)e.Identity;
+                return new EpisodeCandidate(
+                    e.Index, e.Source.Title,
+                    _constructedTitles.GetValueOrDefault(e.Index),
+                    e.Source.AiredAt, e.Source.Duration,
+                    si.Season, si.Episode);
+            })
             .ToArray();
 
         if (candidates.Length == 0)
@@ -194,26 +211,26 @@ public sealed class MovieEvaluationState
             return false;
         }
 
-        request = new EnrichMovies(ImdbId, TmdbId, candidates, EnrichmentConfig);
+        request = new EnrichEpisodes(TvdbId.Value, Season, candidates, EnrichmentConfig);
         return true;
     }
 
-    public EvaluateMoviesCompleted ToCompleted()
+    public EvaluateSeriesCompleted ToCompleted()
     {
         var items = Items.Length > 0 ? Items : UnscoredItems();
 
         var results = items
             .Where(e => !_variants.IsExcluded(e.Source.Variant))
-            .SelectMany(e => SceneRelease.ForMovie(e, MediaName).Expand())
+            .SelectMany(e => SceneRelease.ForShow(e, MediaName).Expand())
             .OrderByDescending(r => r.Score)
             .ToArray();
 
-        return new EvaluateMoviesCompleted(SearchId, results, results.Length);
+        return new EvaluateSeriesCompleted(SearchId, results, results.Length);
     }
 
-    public void MergeEnrichmentIntoTraces(EnrichedMovie[] enriched)
+    public void MergeEnrichmentIntoTraces(EnrichedEpisode[] enriched)
     {
-        var lookup = enriched.ToDictionary(m => m.Index);
+        var lookup = enriched.ToDictionary(e => e.Index);
         ItemTraces =
         [
             .. ItemTraces.Select(trace =>
@@ -229,13 +246,13 @@ public sealed class MovieEvaluationState
                     return trace;
                 }
 
-                if (lookup.TryGetValue(candidateIndex, out var movie))
+                if (lookup.TryGetValue(candidateIndex, out var ep))
                 {
                     return trace with
                     {
                         EnrichmentTrace = new EnrichmentTrace(
-                            movie.Method, movie.Confidence, true,
-                            ResolvedTitle: movie.Title, ResolvedYear: movie.Year)
+                            ep.Method, ep.Confidence, true,
+                            ep.Season, ep.Episode, ep.EpisodeName)
                     };
                 }
 
@@ -243,7 +260,7 @@ public sealed class MovieEvaluationState
                 {
                     EnrichmentTrace = new EnrichmentTrace(
                         MatchMethod.TitleMatch, 0f, false,
-                        Detail: "no matching movie found")
+                        Detail: "no matching episode found")
                 };
             })
         ];

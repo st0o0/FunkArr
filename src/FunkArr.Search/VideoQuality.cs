@@ -1,4 +1,4 @@
-namespace FunkArr.Feed;
+namespace FunkArr.Search;
 
 internal sealed record VideoVariant(string Url, int Quality, long EstimatedSize);
 

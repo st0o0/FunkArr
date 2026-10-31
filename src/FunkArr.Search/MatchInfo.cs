@@ -1,6 +1,6 @@
 using FunkArr.Messages.Enrichment;
 
-namespace FunkArr.Feed;
+namespace FunkArr.Search;
 
 public sealed record MatchInfo(
     float Confidence,

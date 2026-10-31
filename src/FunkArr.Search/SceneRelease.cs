@@ -2,7 +2,7 @@ using FunkArr.Messages;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
 
-namespace FunkArr.Feed;
+namespace FunkArr.Search;
 
 public sealed record SceneRelease(
     string MediaName,

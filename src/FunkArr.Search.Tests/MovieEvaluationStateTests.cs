@@ -5,7 +5,7 @@ using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 
-namespace FunkArr.Feed.Tests;
+namespace FunkArr.Search.Tests;
 
 public sealed class MovieEvaluationStateTests
 {
