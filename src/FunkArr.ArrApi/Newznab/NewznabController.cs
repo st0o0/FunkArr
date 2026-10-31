@@ -2,6 +2,7 @@ using FunkArr.ArrApi.Newznab.Models;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FunkArr.ArrApi.Newznab;
 
@@ -15,6 +16,7 @@ public sealed class NewznabController(NewznabSearchService search, TimeProvider 
     private const string _applicationNzb = "application/x-nzb";
 
     [HttpGet]
+    [OutputCache(PolicyName = NewznabFeedCache.PolicyName)]
     public async Task<IActionResult> Handle([FromQuery] IndexerRequest req, CancellationToken cancellationToken)
     {
         return (req.T ?? "") switch

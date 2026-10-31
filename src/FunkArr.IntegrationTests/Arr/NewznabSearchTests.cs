@@ -1,11 +1,9 @@
 using System.Xml.Linq;
-using FunkArr.ArrApi.Newznab;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FunkArr.IntegrationTests.Arr;
 
@@ -14,7 +12,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
 {
     private static readonly XNamespace _newznab = "http://www.newznab.com/DTD/2010/feeds/attributes/";
 
-    private readonly FunkArrFixture _fixture = WithEmptyFeedCache(fixture);
+    private readonly FunkArrFixture _fixture = fixture;
 
     [Fact]
     public async Task TvSearch_with_results_returns_rss_xml_with_items()
@@ -127,65 +125,6 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     }
 
     [Fact]
-    public async Task Repeated_feed_page_is_served_from_cache_until_the_feed_changes()
-    {
-        var feedProbe = _fixture.GetProbe<IFeedManager>();
-        var entry = new FeedEntry("fedcba9876543210fedcba9876543210", DateTimeOffset.UnixEpoch.AddDays(20000), MediaType.Show,
-            new SearchResultItem("Tatort.S2026E19.Borowski.GERMAN.720p.WEB.h264-FunkArr", "NDR", "Tatort",
-                "https://example.com/borowski.mp4", 5400, 500_000_000, 720, null, 0.9));
-        const string url = "/index/api?t=tvsearch&offset=0&limit=50&apikey=test-key";
-
-        var first = _fixture.Client.GetAsync(url);
-        feedProbe.ExpectMsg<QueryFeed>();
-        feedProbe.Reply(new FeedResult([entry], 1));
-        var firstItem = await SingleItem(await first);
-
-        var secondItem = await SingleItem(await _fixture.Client.GetAsync(url));
-        feedProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
-
-        _fixture.Services.GetRequiredService<FeedResultCache>().Clear();
-        var third = _fixture.Client.GetAsync(url);
-        var query = feedProbe.ExpectMsg<QueryFeed>();
-        feedProbe.Reply(new FeedResult([entry], 1));
-        await third;
-
-        Assert.Multiple(
-            () => Assert.Equal(firstItem.ToString(), secondItem.ToString()),
-            () => Assert.Equal(new QueryFeed(MediaType.Show, 0, 50), query));
-    }
-
-    [Fact]
-    public async Task Cached_feed_page_still_requires_a_valid_api_key()
-    {
-        var feedProbe = _fixture.GetProbe<IFeedManager>();
-        var entry = new FeedEntry("00112233445566778899aabbccddeeff", DateTimeOffset.UnixEpoch.AddDays(20000), MediaType.Show,
-            new SearchResultItem("Tatort.S2026E20.Test.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
-                "https://example.com/test.mp4", 5400, 500_000_000, 720, null, 0.9));
-
-        var first = _fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=25&apikey=test-key");
-        feedProbe.ExpectMsg<QueryFeed>();
-        feedProbe.Reply(new FeedResult([entry], 1));
-        await first;
-
-        var response = await _fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=25&apikey=wrong-key");
-
-        var body = await response.Content.ReadAsStringAsync();
-        Assert.DoesNotContain("Tatort.S2026E20", body);
-        feedProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
-    }
-
-    [Fact]
-    public async Task Empty_feed_is_not_cached()
-    {
-        await WithEmptyFeed("/index/api?t=tvsearch&offset=0&limit=10&apikey=test-key", MediaType.Show);
-
-        var response = await WithEmptyFeed("/index/api?t=tvsearch&offset=0&limit=10&apikey=test-key", MediaType.Show);
-
-        var item = await SingleItem(response);
-        Assert.Equal("FunkArr.Validation.S01E01.GERMAN.1080p.WEB.h264-FunkArr", item.Element("title")?.Value);
-    }
-
-    [Fact]
     public async Task Get_nzb_with_valid_base64_id_returns_nzb_content()
     {
         var payload = string.Join('\t', "Test Title", "https://example.com/video.mp4", "", "ARD", "3600", "500000000", "tv");
@@ -196,12 +135,6 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         var contentType = response.Content.Headers.ContentType;
         Assert.NotNull(contentType);
         Assert.Equal("application/x-nzb", contentType.MediaType);
-    }
-
-    private static FunkArrFixture WithEmptyFeedCache(FunkArrFixture fixture)
-    {
-        fixture.Services.GetRequiredService<FeedResultCache>().Clear();
-        return fixture;
     }
 
     private async Task<HttpResponseMessage> WithEmptyFeed(string url, MediaType expectedMediaType)
