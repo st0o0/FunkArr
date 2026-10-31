@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
                 TimeProvider.System);
         });
 
+        services.AddSingleton<FeedResultCache>();
         services.AddScoped<NewznabSearchService>();
         services.AddScoped<SabnzbdQueueService>();
         services.AddScoped<SabnzbdDownloadService>();

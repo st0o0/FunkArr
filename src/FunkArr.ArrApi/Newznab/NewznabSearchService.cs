@@ -13,6 +13,7 @@ namespace FunkArr.ArrApi.Newznab;
 public sealed class NewznabSearchService(
     IActorRegistry registry,
     SearchResultCache cache,
+    FeedResultCache feedCache,
     IOptions<ArrApiOptions> options,
     TimeProvider timeProvider,
     ILogger<NewznabSearchService> logger)
@@ -235,9 +236,7 @@ public sealed class NewznabSearchService(
 
         try
         {
-            var feed = await registry.GetAsync<IFeedManager>(ct);
-            var response = await feed.Ask<FeedResponse>(new QueryFeed(FeedMediaType(req), offset, limit), _feedTimeout, ct);
-            if (response is FeedResult { Total: > 0 } result)
+            if (await FeedPage(new FeedPageKey(FeedMediaType(req), offset, limit), ct) is { Total: > 0 } result)
             {
                 return new SearchServiceResult.Success(ToFeedRss(result.Entries, result.Total, offset, baseUrl, apiKey));
             }
@@ -252,6 +251,29 @@ public sealed class NewznabSearchService(
             req.T, validationCategory.Label);
         return new SearchServiceResult.Success(
             ValidationRss.Create(validationCategory, offset, timeProvider.GetUtcNow(), baseUrl, apiKey));
+    }
+
+    private async Task<FeedResult?> FeedPage(FeedPageKey key, CancellationToken ct)
+    {
+        if (feedCache.TryGet(key, out var cached))
+        {
+            return cached;
+        }
+
+        var generation = feedCache.Generation;
+        var feed = await registry.GetAsync<IFeedManager>(ct);
+        var response = await feed.Ask<FeedResponse>(new QueryFeed(key.MediaType, key.Offset, key.Limit), _feedTimeout, ct);
+        if (response is not FeedResult result)
+        {
+            return null;
+        }
+
+        if (result.Total > 0)
+        {
+            feedCache.Store(key, result, generation);
+        }
+
+        return result;
     }
 
     internal static MediaType? FeedMediaType(IndexerRequest req) => req.T switch
