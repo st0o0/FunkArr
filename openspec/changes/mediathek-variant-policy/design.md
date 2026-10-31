@@ -25,7 +25,7 @@ See proposal.md for motivation.
 
 Issue #203 placed detection in Scoring. Implementation showed that scoring does not see every item (no ruleset, no matching config), and that `Matched=false` items are still returned. The only point every item passes is `SourceInfo.From`, in Search. So:
 
-- `VariantDetector` (static, pure; moved with the evaluation pipeline to `FunkArr.Feed` by `evaluation-workers`) computes `MediathekVariant` from title and topic. `SourceInfo` carries it.
+- `VariantDetector` (static, pure, in `FunkArr.Search`) computes `MediathekVariant` from title and topic. `SourceInfo` carries it.
 - The worker states filter excluded items in `ToSearchCompleted`, covering scored, unmatched and unscored results with one rule.
 - Search marks excluded candidates with `ScoreCandidate.ExcludedVariant`. Scoring only records them: it skips rule evaluation and writes the reason into the trace. The policy itself never reaches Scoring.
 

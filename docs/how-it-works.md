@@ -8,8 +8,8 @@ FunkArr basiert auf Akka.NET. Die Arbeit verteilt sich auf wenige langlebige Sin
 
 | Domäne | Aktoren | Aufgabe |
 |--------|---------|---------|
-| Search | `SearchManager`, `MediathekViewWebManager` (Singletons), `TvSearchWorker`, `MovieSearchWorker` (geshardet, einer pro Suchanfrage) | Koordiniert eine Suche und fragt MediathekViewWeb ab |
-| Feed | `FeedIngestManager`, `FeedManager` (Singletons, persistent), `TvEvaluationWorker`, `MovieEvaluationWorker` (geshardet, einer pro Auswertung) | Wertet Mediathek-Einträge zu Releases aus (für Suche und Feed) und baut den RSS-Feed |
+| Search | `SearchManager`, `MediathekViewWebManager` (Singletons), `TvSearchWorker`, `MovieSearchWorker` (geshardet, einer pro Suchanfrage), `TvEvaluationWorker`, `MovieEvaluationWorker` (geshardet, einer pro Auswertung) | Fragt MediathekViewWeb ab und wertet die Einträge zu Releases aus (für Suche und Feed) |
+| Feed | `FeedIngestManager`, `FeedManager` (Singletons, persistent) | Liest neue Mediathek-Einträge ein und baut den RSS-Feed |
 | RuleSet | `RuleSetResolver`, `RuleSetManager`, `RuleSetUpdater` (Singletons), `RuleSetWorker` (geshardet, einer pro Regelwerk) | Lädt, vereint und löst Regelwerke auf, synchronisiert Community-Regelwerke |
 | Scoring | `ScoringManager` (Singleton) mit einem Pool aus `ScoringActor` | Wertet Mediathek-Einträge gegen Regelwerk-Regeln aus |
 | Enrichment | `EnrichmentManager` (Singleton) mit TVDB- und TMDB-Aktor-Pools | Bestimmt Staffel/Episode und Filmdaten über externe APIs |
@@ -44,7 +44,7 @@ Der SearchManager (Cluster-Singleton) erzeugt eine Such-ID und übergibt die Arb
 
 Jede Suche hat ein Timeout von 30 Sekunden (der Controller selbst bricht nach 45 Sekunden ab). Wenn bei einer kombinierten Suche ein Teil fehlschlägt oder das Timeout erreicht, werden die Ergebnisse des anderen Teils trotzdem zurückgegeben.
 
-Der Such-Worker löst nur das Regelwerk per ID auf (falls die Anfrage eine enthält) und fragt MediathekViewWeb ab. Die Einträge übergibt er dann an einen geshardeten Auswertungs-Worker der Feed-Domäne (`TvEvaluationWorker` oder `MovieEvaluationWorker`), dem die Auswertungs-Pipeline gehört: Regelwerk über das Topic auflösen (falls noch unbekannt), bewerten, anreichern und den Scoring-Verlauf protokollieren. Der RSS-Feed nutzt dieselben Auswertungs-Worker, sodass Suche und Feed identische Releases erzeugen. Inaktive Worker werden nach 30 Sekunden passiviert.
+Der Such-Worker löst nur das Regelwerk per ID auf (falls die Anfrage eine enthält) und fragt MediathekViewWeb ab. Die Einträge übergibt er dann an einen geshardeten Auswertungs-Worker (`TvEvaluationWorker` oder `MovieEvaluationWorker`), dem die Auswertungs-Pipeline gehört: Regelwerk über das Topic auflösen (falls noch unbekannt), bewerten, anreichern und den Scoring-Verlauf protokollieren. Der RSS-Feed nutzt dieselben Auswertungs-Worker, sodass Suche und Feed identische Releases erzeugen. Inaktive Worker werden nach 30 Sekunden passiviert.
 
 ### 3. MediathekViewWeb-Abfrage
 

@@ -1,4 +1,4 @@
-namespace FunkArr.Feed;
+namespace FunkArr.Search;
 
 public sealed record EnrichedItem(
     int Index,

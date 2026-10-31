@@ -10,7 +10,7 @@ using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 using Microsoft.Extensions.Options;
 
-namespace FunkArr.Feed.Tests;
+namespace FunkArr.Search.Tests;
 
 public sealed class MovieEvaluationWorkerTests : TestKit
 {

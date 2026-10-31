@@ -8,8 +8,8 @@ FunkArr is built on Akka.NET. Work is split across a few long-lived singleton ac
 
 | Domain | Actors | Responsibility |
 |--------|--------|----------------|
-| Search | `SearchManager`, `MediathekViewWebManager` (singletons), `TvSearchWorker`, `MovieSearchWorker` (sharded, one per search request) | Orchestrates a search and queries MediathekViewWeb |
-| Feed | `FeedIngestManager`, `FeedManager` (singletons, persistent), `TvEvaluationWorker`, `MovieEvaluationWorker` (sharded, one per evaluation) | Evaluates Mediathek entries into releases (for search and feed) and builds the RSS feed |
+| Search | `SearchManager`, `MediathekViewWebManager` (singletons), `TvSearchWorker`, `MovieSearchWorker` (sharded, one per search request), `TvEvaluationWorker`, `MovieEvaluationWorker` (sharded, one per evaluation) | Queries MediathekViewWeb and evaluates the entries into releases (for search and feed) |
+| Feed | `FeedIngestManager`, `FeedManager` (singletons, persistent) | Ingests new Mediathek entries and builds the RSS feed |
 | RuleSet | `RuleSetResolver`, `RuleSetManager`, `RuleSetUpdater` (singletons), `RuleSetWorker` (sharded, one per ruleset) | Loads, merges and resolves rulesets, syncs community rulesets |
 | Scoring | `ScoringManager` (singleton) with a pool of `ScoringActor` | Evaluates Mediathek entries against ruleset rules |
 | Enrichment | `EnrichmentManager` (singleton) with TVDB and TMDB actor pools | Resolves season/episode and movie data via external APIs |
@@ -44,7 +44,7 @@ The SearchManager (cluster singleton) creates a search ID and hands the work to 
 
 Each search has a 30-second timeout (the controller itself times out after 45 seconds). If one part of a combined search fails or times out, the results from the other part are still returned.
 
-The search worker only resolves the ruleset by ID (if the request carries one) and queries MediathekViewWeb. It then hands the entries to a sharded evaluation worker of the Feed domain (`TvEvaluationWorker` or `MovieEvaluationWorker`), which owns the evaluation pipeline: resolve the ruleset from the topic (if still unknown), score, enrich and record the scoring history. The RSS feed uses the same evaluation workers, so search and feed produce identical releases. Idle workers are passivated after 30 seconds.
+The search worker only resolves the ruleset by ID (if the request carries one) and queries MediathekViewWeb. It then hands the entries to a sharded evaluation worker (`TvEvaluationWorker` or `MovieEvaluationWorker`), which owns the evaluation pipeline: resolve the ruleset from the topic (if still unknown), score, enrich and record the scoring history. The RSS feed uses the same evaluation workers, so search and feed produce identical releases. Idle workers are passivated after 30 seconds.
 
 ### 3. MediathekViewWeb Query
 

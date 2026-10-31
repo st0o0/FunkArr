@@ -34,8 +34,8 @@ The search worker resolves the ruleset only when the request has media IDs (need
 ### Pre-released entries only in the feed
 Search workers send one `QueryMediathek` with `future=false` and receive one response; pre-released entries are only handled by the feed (see `include-prereleased-entries`).
 
-### Evaluation lives in the Feed domain
-The release pipeline (evaluation workers, `SourceInfo`, `SceneRelease`, `ReleaseDisplay`, `EnrichedItem`, `VariantDetector`, …) moves from `FunkArr.Search` to `FunkArr.Feed`. After the split, Search only queries MediathekViewWeb; nothing in Search used these types except the evaluation itself. Search reaches the evaluation through `ITvEvaluationRegion` / `IMovieEvaluationRegion` in Core and the `Evaluate*` messages, so no project reference between the domains is needed. The feed crawler talks to the same regions. A separate `FunkArr.Evaluation` project was considered but adds a project for what is the core of the feed anyway.
+### Evaluation stays in the Search domain
+The evaluation workers and the release pipeline (`SourceInfo`, `SceneRelease`, `ReleaseDisplay`, `EnrichedItem`, `VariantDetector`, …) live in `FunkArr.Search`. Turning Mediathek entries into releases is the core result of searching; the feed is one more consumer of it, like the Newznab adapter. The pipeline is tied to the Mediathek data model (field mapping, size estimation in `MediathekClient`). The feed reaches the evaluation through `ITvEvaluationRegion` / `IMovieEvaluationRegion` in Core and the `Evaluate*` messages, so no project reference between the domains is needed. Moving it to `FunkArr.Feed` was tried and reverted: it made search depend on the feed domain for its own result.
 
 ## Risks / Trade-offs
 

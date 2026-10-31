@@ -35,6 +35,8 @@ FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit la
 | `funkarr_search_failed_total` | Counter | Fehlgeschlagene Suchen (Tag: `source`) |
 | `funkarr_search_mediathek_errors_total` | Counter | MediathekViewWeb API-Fehler |
 | `funkarr_search_results_per_request` | Histogram | Ergebnisanzahl pro Suchanfrage |
+| `funkarr_search_evaluations_total` | Counter | Anzahl der Auswertungen durch die Auswertungs-Worker (Tags: `source`, `type`, `status`) |
+| `funkarr_search_evaluation_duration_seconds` | Histogram | Dauer einer Auswertung von der Regelwerk-Auflösung bis zu den Releases (Tags: `source`, `type`) |
 | `funkarr_search_mediathek_cache_hits_total` | Counter | Cache-Treffer bei MediathekViewWeb-Antworten |
 | `funkarr_search_mediathek_cache_misses_total` | Counter | Cache-Fehlzugriffe bei MediathekViewWeb-Antworten |
 
@@ -42,8 +44,6 @@ FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit la
 
 | Metrik | Typ | Beschreibung |
 |--------|-----|-------------|
-| `funkarr_feed_evaluations_total` | Counter | Anzahl der Auswertungen durch die Auswertungs-Worker (Tags: `source`, `type`, `status`) |
-| `funkarr_feed_evaluation_duration_seconds` | Histogram | Dauer einer Auswertung von der Regelwerk-Auflösung bis zu den Releases (Tags: `source`, `type`) |
 | `funkarr_feed_crawls_total` | Counter | Einlese-Läufe nach Ergebnis |
 | `funkarr_feed_probes_unchanged_total` | Counter | Läufe ohne neues Filmlisten-Update |
 | `funkarr_feed_items_seen_total` | Counter | Neu eingesammelte Mediathek-Einträge |

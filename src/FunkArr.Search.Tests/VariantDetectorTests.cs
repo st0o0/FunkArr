@@ -1,7 +1,7 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
 
-namespace FunkArr.Feed.Tests;
+namespace FunkArr.Search.Tests;
 
 public sealed class VariantDetectorTests
 {
