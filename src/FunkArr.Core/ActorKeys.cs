@@ -20,3 +20,4 @@ public interface IDownloadHistoryManager;
 public interface IEnrichmentManager;
 public interface IFeedIngestManager;
 public interface IFeedManager;
+public interface IFeedCache;

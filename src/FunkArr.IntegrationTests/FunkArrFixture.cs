@@ -28,6 +28,8 @@ public sealed class FunkArrFixture : IAsyncLifetime
 
     public TestProbe GetProbe<TKey>() => _probes[typeof(TKey)];
 
+    public IServiceProvider Services => _app.Services;
+
     public async ValueTask InitializeAsync()
     {
         _tempDir = Path.Combine(Path.GetTempPath(), $"funkarr-int-{Guid.NewGuid():N}");

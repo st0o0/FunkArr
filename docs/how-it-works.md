@@ -126,7 +126,7 @@ Sonarr, Radarr und Prowlarr senden für den RSS-Sync und für den "Test"-Button 
 4. **Prüfung:** Veröffentlicht werden nur Releases mit einem Score von mindestens `MinConfidence` und mit Staffel/Folge (Serien) bzw. TMDB-/IMDB-ID (Filme).
 5. **Feed:** Der `FeedManager` speichert veröffentlichte Releases mit stabiler GUID und dem Zeitpunkt der ersten Sichtung als `pubDate` und entfernt sie nach der Aufbewahrungsdauer.
 
-RSS-Anfragen liefern den Feed mit den neuesten Einträgen zuerst, sodass Sonarr und Radarr lückenlos blättern können. Enthält der Feed für die angefragte Kategorie noch keine Releases (zum Beispiel direkt nach der Installation), antwortet FunkArr mit einem einzelnen Validierungseintrag (`FunkArr.Validation.…`), damit der Indexer-Test erfolgreich ist. Sein Download-Link wird abgelehnt, er löst also nie einen Download aus. Die Seite **Feed** in der Weboberfläche zeigt die veröffentlichten Releases und den letzten Abruf.
+RSS-Anfragen liefern den Feed mit den neuesten Einträgen zuerst, sodass Sonarr und Radarr lückenlos blättern können. Feed-Seiten werden im Speicher vorgehalten und ohne erneute Anfrage beim Feed-Aktor beantwortet; der Zwischenspeicher wird geleert, sobald sich der Feed ändert (neue Releases oder Aufräumen nach Aufbewahrungsdauer), Antworten sind also nie veraltet. Enthält der Feed für die angefragte Kategorie noch keine Releases (zum Beispiel direkt nach der Installation), antwortet FunkArr mit einem einzelnen Validierungseintrag (`FunkArr.Validation.…`), damit der Indexer-Test erfolgreich ist. Sein Download-Link wird abgelehnt, er löst also nie einen Download aus. Die Seite **Feed** in der Weboberfläche zeigt die veröffentlichten Releases und den letzten Abruf.
 
 ## Download-Pipeline
 
