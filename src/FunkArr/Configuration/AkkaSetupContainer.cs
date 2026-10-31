@@ -2,7 +2,6 @@ using Akka.Cluster.Hosting;
 using Akka.Hosting;
 using Akka.Persistence.Sql.Hosting;
 using Akka.Remote.Hosting;
-using FunkArr.ArrApi.Newznab;
 using FunkArr.Core;
 using FunkArr.Download;
 using FunkArr.Enrichment;
@@ -64,19 +63,12 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
                 SeedNodes = ["akka.tcp://funkarr@localhost:2552"]
             });
 
-        RegisterAdapterActors(builder);
         RegisterSearchActors(builder);
         RegisterDownloadActors(builder);
         RegisterScoringActors(builder);
         RegisterRuleSetActors(builder);
         RegisterEnrichmentActors(builder);
         RegisterFeedActors(builder);
-    }
-
-    private static void RegisterAdapterActors(AkkaConfigurationBuilder builder)
-    {
-        builder.WithActors((system, registry, resolver) =>
-            registry.Register<IFeedCache>(system.ActorOf(resolver.Props<FeedCacheActor>(), "feed-cache")));
     }
 
     private static void RegisterSearchActors(AkkaConfigurationBuilder builder)

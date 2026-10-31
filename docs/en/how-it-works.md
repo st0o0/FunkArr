@@ -126,7 +126,7 @@ Sonarr, Radarr and Prowlarr send a search without a search term and without a me
 4. **Gate:** only releases with a score of at least `MinConfidence` and season/episode (TV) or a TMDB/IMDB ID (movies) are published.
 5. **Feed:** the `FeedManager` stores published releases with a stable GUID and the first-seen time as `pubDate`, and removes them after the retention period.
 
-RSS requests return the feed newest first, so Sonarr and Radarr can page through it without gaps. Feed pages are kept in memory and answered without asking the feed actor again; the cache is cleared whenever the feed changes (new releases or retention cleanup), so responses are never stale. If the feed has no releases for the requested category yet (for example right after installation), FunkArr returns a single validation entry (`FunkArr.Validation.…`) so the indexer test succeeds. Its download link is rejected, so it never starts a download. The **Feed** page in the web UI shows the published releases and the last ingest run.
+RSS requests return the feed newest first, so Sonarr and Radarr can page through it without gaps. Feed pages are output-cached for 60 seconds per page, category, API key and host, so the pages of one RSS sync and requests from several clients are answered from memory. New releases appear at most a minute later, well within the 15-minute ingest interval. If the feed has no releases for the requested category yet (for example right after installation), FunkArr returns a single validation entry (`FunkArr.Validation.…`) so the indexer test succeeds. Its download link is rejected, so it never starts a download. The **Feed** page in the web UI shows the published releases and the last ingest run.
 
 ## Download Pipeline
 

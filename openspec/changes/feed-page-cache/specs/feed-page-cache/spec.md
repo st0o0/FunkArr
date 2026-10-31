@@ -1,39 +1,27 @@
 ## Purpose
 
-Defines how RSS feed pages are cached in the Newznab adapter and when the cache is invalidated.
+Defines how RSS feed pages on the Newznab API are cached.
 
 ## ADDED Requirements
 
-### Requirement: Repeated feed pages are served from cache
-The Newznab adapter SHALL cache non-empty feed pages per media type, offset and limit and SHALL answer a repeated RSS request for the same page without querying the `FeedManager`, until the feed changes.
+### Requirement: RSS feed pages are output-cached
+The Newznab API SHALL output-cache responses to RSS requests (`t=tvsearch`, `t=movie` or `t=search` without `q`, `tvdbid`, `imdbid` and `tmdbid`) for 60 seconds, keyed by `t`, `cat`, `offset`, `limit`, `apikey`, host and scheme.
 
 #### Scenario: Same page twice
-- **WHEN** Sonarr requests `t=tvsearch&offset=0&limit=50` twice without a feed change in between
-- **THEN** the `FeedManager` SHALL receive exactly one `QueryFeed`
-- **AND** both responses SHALL contain the same items
+- **WHEN** Sonarr requests `t=tvsearch&offset=0&limit=100` twice within 60 seconds with the same API key
+- **THEN** the second response SHALL be served from the cache without querying the feed
 
-#### Scenario: Different page
-- **WHEN** a cached page exists for offset 0 and Sonarr requests offset 50
-- **THEN** the adapter SHALL query the `FeedManager` for offset 50
+#### Scenario: Next page
+- **WHEN** a cached page exists for offset 0 and Sonarr requests offset 100
+- **THEN** the request SHALL be a cache miss
 
-### Requirement: Feed changes invalidate the cache
-The `FeedManager` SHALL send `FeedChanged` to the feed cache after persisting new entries, after persisting expired entries and after recovery. On `FeedChanged` the cache SHALL drop all pages. A page fetched before the invalidation SHALL NOT be stored after it.
+#### Scenario: Different API key
+- **WHEN** a page is cached for one API key and the same page is requested with another key
+- **THEN** the request SHALL be a cache miss and go through the API key check
 
-#### Scenario: New releases published
-- **WHEN** an ingest run adds entries to the feed
-- **THEN** the next RSS request SHALL query the `FeedManager` again
+### Requirement: Searches and other functions are not cached
+Requests with search criteria, `t=get` and `t=caps` SHALL NOT be output-cached.
 
-#### Scenario: Query racing with a change
-- **WHEN** a feed query starts, the feed changes, and the query then completes
-- **THEN** its result SHALL NOT be stored in the cache
-
-### Requirement: Only feed data is cached
-The API key check and the rendering of links with base URL and API key SHALL run on every request. Empty feed results and failed feed queries SHALL NOT be cached.
-
-#### Scenario: Wrong API key
-- **WHEN** a page is cached and a request for it carries a wrong API key
-- **THEN** the response SHALL be the API key error, not the cached page
-
-#### Scenario: Empty feed
-- **WHEN** the feed has no entries and the same RSS request arrives twice
-- **THEN** the `FeedManager` SHALL be queried both times and both responses SHALL be the validation item
+#### Scenario: Text search
+- **WHEN** `t=tvsearch&q=Tatort` is requested twice
+- **THEN** both requests SHALL be handled by the controller

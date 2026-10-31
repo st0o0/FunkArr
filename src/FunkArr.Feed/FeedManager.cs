@@ -5,7 +5,6 @@ using FunkArr.Core;
 using FunkArr.Messages.Feed;
 using FunkArr.Persistence.Events.Feed;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
 
 namespace FunkArr.Feed;
 
@@ -18,7 +17,6 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
     private sealed record TrimFeed;
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly IActorRef _feedCache = Context.GetActor<IFeedCache>();
     private readonly IOptionsMonitor<FeedOptions> _options;
     private readonly TimeProvider _timeProvider;
     private FeedManagerState _state = FeedManagerState.Empty;
@@ -44,7 +42,6 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
         Recover<RecoveryCompleted>(_ =>
         {
             Telemetry.SetEntries(_state.Entries.Count);
-            _feedCache.Tell(new FeedChanged());
             Timers.StartPeriodicTimer(_trimTimerKey, new TrimFeed(), _trimInterval);
         });
 
@@ -77,7 +74,6 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
         {
             _state = _state.Apply(e);
             Telemetry.SetEntries(_state.Entries.Count);
-            _feedCache.Tell(new FeedChanged());
             MaybeSnapshot();
             Sender.Tell(new AddFeedEntriesCompleted(fresh.Length));
         });
@@ -97,7 +93,6 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
         {
             _state = _state.Apply(e);
             Telemetry.SetEntries(_state.Entries.Count);
-            _feedCache.Tell(new FeedChanged());
             _log.Info("Removed {Count} feed entries older than the retention period", e.StableIds.Length);
             MaybeSnapshot();
         });
