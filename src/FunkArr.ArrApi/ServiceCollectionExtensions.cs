@@ -1,5 +1,6 @@
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Sabnzbd;
+using FunkArr.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -24,6 +25,7 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddOutputCache(NewznabFeedCache.AddPolicy);
+        services.AddSingleton<IFeedCacheInvalidator, OutputCacheFeedInvalidator>();
         services.AddScoped<NewznabSearchService>();
         services.AddScoped<SabnzbdQueueService>();
         services.AddScoped<SabnzbdDownloadService>();
