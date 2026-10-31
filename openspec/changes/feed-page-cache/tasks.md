@@ -8,4 +8,4 @@
 ## 2. Docs and verification
 
 - [x] 2.1 Describe the cache in how-it-works (both languages).
-- [ ] 2.2 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
+- [x] 2.2 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
