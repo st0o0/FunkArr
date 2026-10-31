@@ -2,6 +2,7 @@ using FunkArr.ArrApi.Newznab;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,7 +22,15 @@ public sealed class NewznabFeedCacheTests : IAsyncLifetime
 
         _app = builder.Build();
         _app.UseOutputCache();
-        _app.MapGet("/index/api", () => $"call {Interlocked.Increment(ref _calls)}")
+        _app.MapGet("/index/api", (HttpContext context) =>
+            {
+                if (context.Request.Query.ContainsKey("fail"))
+                {
+                    NewznabFeedCache.DoNotStore(context);
+                }
+
+                return $"call {Interlocked.Increment(ref _calls)}";
+            })
             .CacheOutput(NewznabFeedCache.PolicyName);
 
         await _app.StartAsync();
@@ -75,6 +84,31 @@ public sealed class NewznabFeedCacheTests : IAsyncLifetime
         await Get(url);
 
         Assert.Equal(2, _calls);
+    }
+
+    [Fact]
+    public async Task Invalidation_evicts_cached_feed_pages()
+    {
+        await Get("/index/api?t=tvsearch&offset=0&limit=100&apikey=key");
+        var invalidator = new OutputCacheFeedInvalidator(_app.Services.GetRequiredService<IOutputCacheStore>());
+
+        await invalidator.InvalidateAsync(CancellationToken.None);
+        var response = await Get("/index/api?t=tvsearch&offset=0&limit=100&apikey=key");
+
+        Assert.Multiple(
+            () => Assert.Equal("call 2", response),
+            () => Assert.Equal(2, _calls));
+    }
+
+    [Fact]
+    public async Task Response_marked_as_not_storable_is_not_cached()
+    {
+        await Get("/index/api?t=tvsearch&offset=0&limit=100&apikey=key&fail=1");
+        var response = await Get("/index/api?t=tvsearch&offset=0&limit=100&apikey=key&fail=1");
+
+        Assert.Multiple(
+            () => Assert.Equal("call 2", response),
+            () => Assert.Equal(2, _calls));
     }
 
     [Theory]

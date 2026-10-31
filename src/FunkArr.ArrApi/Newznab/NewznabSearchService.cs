@@ -232,11 +232,13 @@ public sealed class NewznabSearchService(
     {
         var offset = Math.Max(0, req.Offset ?? 0);
         var limit = CapLimit(req.Limit) ?? DefaultLimit;
+        var feedAnswered = false;
 
         try
         {
             var feed = await registry.GetAsync<IFeedManager>(ct);
             var response = await feed.Ask<FeedResponse>(new QueryFeed(FeedMediaType(req), offset, limit), _feedTimeout, ct);
+            feedAnswered = response is FeedResult;
             if (response is FeedResult { Total: > 0 } result)
             {
                 return new SearchServiceResult.Success(ToFeedRss(result.Entries, result.Total, offset, baseUrl, apiKey));
@@ -251,7 +253,8 @@ public sealed class NewznabSearchService(
         logger.LogDebug("Answering {Function} request without feed entries with a validation item ({Category})",
             req.T, validationCategory.Label);
         return new SearchServiceResult.Success(
-            ValidationRss.Create(validationCategory, offset, timeProvider.GetUtcNow(), baseUrl, apiKey));
+            ValidationRss.Create(validationCategory, offset, timeProvider.GetUtcNow(), baseUrl, apiKey),
+            Cacheable: feedAnswered);
     }
 
     internal static MediaType? FeedMediaType(IndexerRequest req) => req.T switch
