@@ -101,10 +101,16 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         Command<FeedCrawlEvent>(msg => WhenCurrent(msg.RunId, () => _run = _run!.Apply(msg)));
         Command<CrawlStreamCompleted>(_ => throw new InvalidOperationException("Feed crawl stream completed unexpectedly"));
         Command<CrawlStreamFailed>(msg => throw new InvalidOperationException("Feed crawl stream failed", msg.Cause));
-        Command<SaveSnapshotSuccess>(e => DeleteMessages(e.Metadata.SequenceNr));
+        Command<SaveSnapshotSuccess>(e =>
+        {
+            DeleteMessages(e.Metadata.SequenceNr);
+            DeleteSnapshots(new SnapshotSelectionCriteria(e.Metadata.SequenceNr - 1));
+        });
         Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Feed crawl snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
         Command<DeleteMessagesSuccess>(_ => { });
         Command<DeleteMessagesFailure>(e => _log.Warning(e.Cause, "Feed crawl journal cleanup failed up to sequence {SequenceNr}", e.ToSequenceNr));
+        Command<DeleteSnapshotsSuccess>(_ => { });
+        Command<DeleteSnapshotsFailure>(e => _log.Warning(e.Cause, "Feed crawl snapshot cleanup failed"));
     }
 
     private void StartRun()

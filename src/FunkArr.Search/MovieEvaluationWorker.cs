@@ -28,8 +28,11 @@ public sealed class MovieEvaluationWorker : ReceiveActor
 
     private readonly Stopwatch _stopwatch = new();
 
-    public MovieEvaluationWorker(string nttId, IOptionsMonitor<VariantOptions>? variantOptions = null)
+    private readonly TimeProvider _timeProvider;
+
+    public MovieEvaluationWorker(string nttId, TimeProvider timeProvider, IOptionsMonitor<VariantOptions>? variantOptions = null)
     {
+        _timeProvider = timeProvider;
         _state = MovieEvaluationState.From(nttId, variantOptions?.CurrentValue);
 
         Receive<EvaluateMovies>(cmd =>
@@ -119,7 +122,7 @@ public sealed class MovieEvaluationWorker : ReceiveActor
 
     private void RecordHistory()
     {
-        var record = _state.BuildRecordHistory();
+        var record = _state.BuildRecordHistory(_timeProvider.GetUtcNow());
         if (record is not null)
         {
             _historyRegion.Tell(record);

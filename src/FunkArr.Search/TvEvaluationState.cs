@@ -266,7 +266,7 @@ public sealed class TvEvaluationState
         ];
     }
 
-    public RecordHistory? BuildRecordHistory()
+    public RecordHistory? BuildRecordHistory(DateTimeOffset now)
     {
         if (RuleSetId is null || _scoringOrigin is null || ItemTraces.Length == 0)
         {
@@ -278,7 +278,7 @@ public sealed class TvEvaluationState
 
         return new RecordHistory(
             _scoringRequestId, RuleSetId, _scoringOrigin,
-            DateTimeOffset.UtcNow,
+            now,
             Sources.Length, matchedCount, enrichedCount,
             ItemTraces);
     }

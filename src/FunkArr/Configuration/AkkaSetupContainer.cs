@@ -12,8 +12,8 @@ using FunkArr.Scoring;
 using FunkArr.Search;
 using LinqToDB;
 using Microsoft.Extensions.Options;
-using Servus.Akka.Startup;
 using Servus.Akka;
+using Servus.Akka.Startup;
 
 namespace FunkArr.Configuration;
 

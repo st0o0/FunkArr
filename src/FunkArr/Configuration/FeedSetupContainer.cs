@@ -16,6 +16,8 @@ public sealed class FeedSetupContainer : IServiceSetupContainer
             .Validate(o => o.MaxCatchUp > TimeSpan.Zero, "FunkArr:Feed:MaxCatchUp must be positive")
             .Validate(o => o.MaxConcurrency > 0, "FunkArr:Feed:MaxConcurrency must be positive")
             .Validate(o => o.MinConfidence is >= 0 and <= 1, "FunkArr:Feed:MinConfidence must be between 0 and 1")
+            .Validate(o => o.Retention > TimeSpan.Zero, "FunkArr:Feed:Retention must be positive")
+            .Validate(o => o.InitialLookback > TimeSpan.Zero, "FunkArr:Feed:InitialLookback must be positive")
             .ValidateOnStart();
     }
 }

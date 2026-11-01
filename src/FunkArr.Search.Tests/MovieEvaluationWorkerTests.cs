@@ -32,7 +32,7 @@ public sealed class MovieEvaluationWorkerTests : TestKit
     }
 
     private IActorRef CreateWorker(Guid evaluationId) =>
-        Sys.ActorOf(Props.Create(() => new MovieEvaluationWorker(evaluationId.ToString(), (IOptionsMonitor<VariantOptions>?)null)));
+        Sys.ActorOf(Props.Create(() => new MovieEvaluationWorker(evaluationId.ToString(), TimeProvider.System, (IOptionsMonitor<VariantOptions>?)null)));
 
     [Fact]
     public void Evaluation_resolves_ruleset_from_topic_and_returns_scored_results()
