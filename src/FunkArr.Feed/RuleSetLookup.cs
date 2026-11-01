@@ -21,6 +21,8 @@ internal sealed class RuleSetLookup
         _byKey = byKey;
     }
 
+    internal static readonly RuleSetLookup Empty = From([]);
+
     internal static RuleSetLookup From(IEnumerable<RegisteredRuleSetEntry> entries)
     {
         var byKey = new Dictionary<string, RuleSetTarget>(StringComparer.OrdinalIgnoreCase);

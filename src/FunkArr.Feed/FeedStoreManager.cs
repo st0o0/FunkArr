@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.Feed;
 
-public sealed class FeedManager : ReceivePersistentActor, IWithTimers
+public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
 {
     private const int _snapshotInterval = 50;
     private const string _trimTimerKey = "trim";
@@ -22,13 +22,13 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
     private readonly IOptionsMonitor<FeedOptions> _options;
     private readonly IFeedCacheInvalidator _cacheInvalidator;
     private readonly TimeProvider _timeProvider;
-    private FeedManagerState _state = FeedManagerState.Empty;
+    private FeedStoreManagerState _state = FeedStoreManagerState.Empty;
 
     public ITimerScheduler Timers { get; set; } = null!;
 
-    public override string PersistenceId => "feed";
+    public override string PersistenceId => "feed-store";
 
-    public FeedManager(IOptionsMonitor<FeedOptions> options, IFeedCacheInvalidator cacheInvalidator, TimeProvider timeProvider)
+    public FeedStoreManager(IOptionsMonitor<FeedOptions> options, IFeedCacheInvalidator cacheInvalidator, TimeProvider timeProvider)
     {
         _options = options;
         _cacheInvalidator = cacheInvalidator;
@@ -36,9 +36,9 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
 
         Recover<SnapshotOffer>(offer =>
         {
-            if (offer.Snapshot is PersistedFeedState persisted)
+            if (offer.Snapshot is PersistedFeedStoreState persisted)
             {
-                _state = FeedManagerState.FromPersistence(persisted);
+                _state = FeedStoreManagerState.FromPersistence(persisted);
             }
         });
         Recover<FeedEntriesAdded>(evt => _state = _state.Apply(evt));
@@ -50,7 +50,7 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
             Timers.StartPeriodicTimer(_trimTimerKey, new TrimFeed(), _trimInterval);
         });
 
-        Command<AddFeedEntries>(HandleAdd);
+        Command<PublishFeedEntries>(HandleAdd);
         Command<QueryFeed>(query => Sender.Tell(_state.Query(query)));
         Command<TrimFeed>(_ => Trim());
         Command<CacheInvalidated>(_ => { });
@@ -67,12 +67,12 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
         Command<DeleteSnapshotsFailure>(e => _log.Warning(e.Cause, "Feed snapshot cleanup failed"));
     }
 
-    private void HandleAdd(AddFeedEntries cmd)
+    private void HandleAdd(PublishFeedEntries cmd)
     {
         var fresh = _state.NewEntries(cmd.Entries);
         if (fresh.Length == 0)
         {
-            Sender.Tell(new AddFeedEntriesCompleted(0));
+            Sender.Tell(new PublishFeedEntriesCompleted(0));
             return;
         }
 
@@ -83,7 +83,7 @@ public sealed class FeedManager : ReceivePersistentActor, IWithTimers
             Telemetry.SetEntries(_state.Entries.Count);
             InvalidateCache();
             MaybeSnapshot();
-            Sender.Tell(new AddFeedEntriesCompleted(fresh.Length));
+            Sender.Tell(new PublishFeedEntriesCompleted(fresh.Length));
         });
 
         Trim();

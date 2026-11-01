@@ -3,7 +3,7 @@
 ## 1. Feed
 
 - [x] 1.1 Query the feed ingest with `future=true`. Verify with a feed crawler test asserting the flag.
-- [x] 1.2 Drop entries more than 90 days ahead (`FeedIngestPlanner.WithinLead`). Verify with a planner test.
+- [x] 1.2 Drop entries more than 90 days ahead (`FeedCrawlPlanner.WithinLead`). Verify with a planner test.
 
 ## 2. Search
 

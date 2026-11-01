@@ -236,7 +236,7 @@ public sealed class NewznabSearchService(
 
         try
         {
-            var feed = await registry.GetAsync<IFeedManager>(ct);
+            var feed = await registry.GetAsync<IFeedStoreManager>(ct);
             var response = await feed.Ask<FeedResponse>(new QueryFeed(FeedMediaType(req), offset, limit), _feedTimeout, ct);
             feedAnswered = response is FeedResult;
             if (response is FeedResult { Total: > 0 } result)

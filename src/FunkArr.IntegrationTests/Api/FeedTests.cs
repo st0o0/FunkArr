@@ -16,8 +16,8 @@ public sealed class FeedTests(FunkArrFixture fixture)
     [Fact]
     public async Task Feed_overview_returns_entries_and_ingest_status()
     {
-        var feedProbe = _fixture.GetProbe<IFeedManager>();
-        var ingestProbe = _fixture.GetProbe<IFeedIngestManager>();
+        var feedProbe = _fixture.GetProbe<IFeedStoreManager>();
+        var ingestProbe = _fixture.GetProbe<IFeedCrawlManager>();
         var lastRun = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
         var entry = new FeedEntry("0123456789abcdef0123456789abcdef", lastRun, FunkArr.Messages.MediaType.Show,
             new SearchResultItem("Tatort.S2026E18.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
@@ -29,8 +29,8 @@ public sealed class FeedTests(FunkArrFixture fixture)
         var query = feedProbe.ExpectMsg<QueryFeed>();
         Assert.Equal(10, query.Limit);
         feedProbe.Reply(new FeedResult([entry], 1));
-        ingestProbe.ExpectMsg<QueryFeedIngestStatus>();
-        ingestProbe.Reply(new FeedIngestStatusResult(true, false, 1_761_800_000, lastRun, "completed", 12, 1, 3, false, 0));
+        ingestProbe.ExpectMsg<QueryFeedCrawlStatus>();
+        ingestProbe.Reply(new FeedCrawlStatusResult(true, false, 1_761_800_000, lastRun, "completed", 12, 1, 3, false, 0));
 
         var response = await task;
 
@@ -50,11 +50,11 @@ public sealed class FeedTests(FunkArrFixture fixture)
     [Fact]
     public async Task Crawl_returns_accepted_and_triggers_ingest()
     {
-        var ingestProbe = _fixture.GetProbe<IFeedIngestManager>();
+        var ingestProbe = _fixture.GetProbe<IFeedCrawlManager>();
 
         var response = await _fixture.Client.PostAsync("/api/feed/crawl", null);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        ingestProbe.ExpectMsg<TriggerFeedCrawl>();
+        ingestProbe.ExpectMsg<StartFeedCrawl>();
     }
 }

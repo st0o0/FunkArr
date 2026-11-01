@@ -8,7 +8,7 @@ using NSubstitute;
 
 namespace FunkArr.Feed.Tests;
 
-public sealed class FeedManagerTests : TestKit
+public sealed class FeedStoreManagerTests : TestKit
 {
     private static readonly DateTimeOffset _firstSeen = DateTimeOffset.UtcNow;
 
@@ -20,7 +20,7 @@ public sealed class FeedManagerTests : TestKit
         var options = Substitute.For<IOptionsMonitor<FeedOptions>>();
         options.CurrentValue.Returns(new FeedOptions());
         var invalidator = _invalidator;
-        return Sys.ActorOf(Props.Create(() => new FeedManager(options, invalidator, TimeProvider.System)));
+        return Sys.ActorOf(Props.Create(() => new FeedStoreManager(options, invalidator, TimeProvider.System)));
     }
 
     [Fact]
@@ -37,10 +37,10 @@ public sealed class FeedManagerTests : TestKit
         var manager = CreateManager();
         AwaitAssert(() => _invalidator.Received(1).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3));
 
-        manager.Tell(new AddFeedEntries([TestData.Entry("a", _firstSeen)]));
+        manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
 
-        var completed = ExpectMsg<AddFeedEntriesCompleted>();
-        Assert.Equal(1, completed.Added);
+        var completed = ExpectMsg<PublishFeedEntriesCompleted>();
+        Assert.Equal(1, completed.Published);
         AwaitAssert(() => _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3));
     }
 
@@ -48,14 +48,14 @@ public sealed class FeedManagerTests : TestKit
     public void Adding_only_known_entries_keeps_the_feed_cache()
     {
         var manager = CreateManager();
-        manager.Tell(new AddFeedEntries([TestData.Entry("a", _firstSeen)]));
-        ExpectMsg<AddFeedEntriesCompleted>();
+        manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
+        ExpectMsg<PublishFeedEntriesCompleted>();
         AwaitAssert(() => _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3));
 
-        manager.Tell(new AddFeedEntries([TestData.Entry("a", _firstSeen)]));
+        manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
 
-        var completed = ExpectMsg<AddFeedEntriesCompleted>();
-        Assert.Equal(0, completed.Added);
+        var completed = ExpectMsg<PublishFeedEntriesCompleted>();
+        Assert.Equal(0, completed.Published);
         _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>());
     }
 
@@ -65,8 +65,8 @@ public sealed class FeedManagerTests : TestKit
         var manager = CreateManager();
         _invalidator.InvalidateAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException(new InvalidOperationException("store down")));
 
-        manager.Tell(new AddFeedEntries([TestData.Entry("a", _firstSeen)]));
-        ExpectMsg<AddFeedEntriesCompleted>();
+        manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
+        ExpectMsg<PublishFeedEntriesCompleted>();
         manager.Tell(new QueryFeed(MediaType.Show, 0, 10));
 
         var result = ExpectMsg<FeedResult>();

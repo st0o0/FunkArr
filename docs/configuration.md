@@ -271,7 +271,8 @@ Beide Schlüssel sind optional, aber empfohlen. Ohne sie verlässt sich FunkArr 
 | `FunkArr__Feed__Interval` | `00:15:00` | Abstand zwischen zwei Abrufen |
 | `FunkArr__Feed__InitialLookback` | `2.00:00:00` | Wie weit der allererste Abruf zurückschaut |
 | `FunkArr__Feed__PageSize` | `100` | Einträge pro MediathekViewWeb-Seite (1-500) |
-| `FunkArr__Feed__MaxPages` | `20` | Maximale Seiten pro Abruf |
+| `FunkArr__Feed__MaxPages` | `200` | Maximale Seiten pro Abruf (Schutzgrenze) |
+| `FunkArr__Feed__MaxCatchUp` | `7.00:00:00` | Wie weit ein Abruf nach einem Ausfall höchstens nachholt |
 | `FunkArr__Feed__Retention` | `14.00:00:00` | Wie lange veröffentlichte Releases im Feed bleiben |
 | `FunkArr__Feed__MinConfidence` | `0.7` | Mindest-Score für die Veröffentlichung (0-1) |
 | `FunkArr__Feed__MaxConcurrency` | `4` | Parallel ausgewertete Regelwerk-Gruppen |

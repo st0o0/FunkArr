@@ -19,15 +19,15 @@ The Newznab API SHALL output-cache responses to RSS requests (`t=tvsearch`, `t=m
 - **WHEN** a page is cached for one API key and the same page is requested with another key
 - **THEN** the request SHALL be a cache miss and go through the API key check
 
-### Requirement: The FeedManager invalidates the cache on every feed change
-The `FeedManager` SHALL invalidate the `feed` cache tag after persisting new entries, after persisting expired entries and after recovery. A failed invalidation SHALL be logged and SHALL NOT affect the feed.
+### Requirement: The FeedStoreManager invalidates the cache on every feed change
+The `FeedStoreManager` SHALL invalidate the `feed` cache tag after persisting new entries, after persisting expired entries and after recovery. A failed invalidation SHALL be logged and SHALL NOT affect the feed.
 
 #### Scenario: New releases published
 - **WHEN** an ingest run adds entries to the feed
 - **THEN** the cache SHALL be invalidated and the next RSS request SHALL query the feed again
 
 #### Scenario: Only known entries
-- **WHEN** `AddFeedEntries` contains only entries already in the feed
+- **WHEN** `PublishFeedEntries` contains only entries already in the feed
 - **THEN** the cache SHALL NOT be invalidated
 
 ### Requirement: Fallback answers are not stored

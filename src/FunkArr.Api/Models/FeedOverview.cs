@@ -3,7 +3,7 @@ namespace FunkArr.Api.Models;
 public sealed record FeedOverviewResponse(
     FeedEntryOutput[] Entries,
     int Total,
-    FeedIngestStatusOutput Ingest);
+    FeedCrawlStatusOutput Ingest);
 
 public sealed record FeedEntryOutput(
     string StableId,
@@ -16,7 +16,7 @@ public sealed record FeedEntryOutput(
     string? Season,
     string? Episode);
 
-public sealed record FeedIngestStatusOutput(
+public sealed record FeedCrawlStatusOutput(
     bool Enabled,
     bool Running,
     DateTimeOffset? LastRunAt,

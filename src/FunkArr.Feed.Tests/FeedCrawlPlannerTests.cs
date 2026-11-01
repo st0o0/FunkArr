@@ -2,7 +2,7 @@ using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Feed.Tests;
 
-public sealed class FeedIngestPlannerTests
+public sealed class FeedCrawlPlannerTests
 {
     [Theory]
     [InlineData(0, 0, false)]
@@ -12,29 +12,37 @@ public sealed class FeedIngestPlannerTests
     [InlineData(0, 200, true)]
     public void HasUpdate_compares_list_timestamp_with_cursor(long cursor, long listTimestamp, bool expected)
     {
-        Assert.Equal(expected, FeedIngestPlanner.HasUpdate(cursor, listTimestamp));
+        Assert.Equal(expected, FeedCrawlPlanner.HasUpdate(cursor, listTimestamp));
     }
 
     [Fact]
     public void Window_uses_cursor_when_present()
     {
-        var window = FeedIngestPlanner.Window(1_000, 5_000, TimeSpan.FromHours(48));
+        var window = FeedCrawlPlanner.Window(1_000, 5_000, TimeSpan.FromHours(48), TimeSpan.FromDays(7));
 
-        Assert.Equal(new IngestWindow(1_000, 5_000), window);
+        Assert.Equal(new CrawlWindow(1_000, 5_000), window);
     }
 
     [Fact]
     public void Window_uses_initial_lookback_on_first_run()
     {
-        var window = FeedIngestPlanner.Window(0, 200_000, TimeSpan.FromHours(48));
+        var window = FeedCrawlPlanner.Window(0, 200_000, TimeSpan.FromHours(48), TimeSpan.FromDays(7));
 
-        Assert.Equal(new IngestWindow(200_000 - 172_800, 200_000), window);
+        Assert.Equal(new CrawlWindow(200_000 - 172_800, 200_000), window);
+    }
+
+    [Fact]
+    public void Window_is_truncated_to_max_catch_up_after_a_long_outage()
+    {
+        var window = FeedCrawlPlanner.Window(1_000, 2_000_000, TimeSpan.FromHours(48), TimeSpan.FromDays(7));
+
+        Assert.Equal(new CrawlWindow(2_000_000 - 604_800, 2_000_000, Truncated: true), window);
     }
 
     [Fact]
     public void EvaluatePage_collects_window_and_skips_entries_still_indexing()
     {
-        var window = new IngestWindow(100, 200);
+        var window = new CrawlWindow(100, 200);
         MediathekItem[] page =
         [
             TestData.Item("indexing", filmlisteTimestamp: 250),
@@ -42,7 +50,7 @@ public sealed class FeedIngestPlannerTests
             TestData.Item("b", filmlisteTimestamp: 150)
         ];
 
-        var result = FeedIngestPlanner.EvaluatePage(page, window, pageSize: 3);
+        var result = FeedCrawlPlanner.EvaluatePage(page, window, pageSize: 3);
 
         Assert.Multiple(
             () => Assert.Equal(new[] { "a", "b" }, result.Collected.Select(i => i.Title).ToArray()),
@@ -53,7 +61,7 @@ public sealed class FeedIngestPlannerTests
     [Fact]
     public void EvaluatePage_stops_at_first_entry_at_or_below_cursor()
     {
-        var window = new IngestWindow(100, 200);
+        var window = new CrawlWindow(100, 200);
         MediathekItem[] page =
         [
             TestData.Item("a", filmlisteTimestamp: 150),
@@ -61,7 +69,7 @@ public sealed class FeedIngestPlannerTests
             TestData.Item("older", filmlisteTimestamp: 90)
         ];
 
-        var result = FeedIngestPlanner.EvaluatePage(page, window, pageSize: 3);
+        var result = FeedCrawlPlanner.EvaluatePage(page, window, pageSize: 3);
 
         Assert.Multiple(
             () => Assert.Equal("a", Assert.Single(result.Collected).Title),
@@ -71,10 +79,10 @@ public sealed class FeedIngestPlannerTests
     [Fact]
     public void EvaluatePage_treats_missing_timestamp_as_not_new()
     {
-        var window = new IngestWindow(100, 200);
+        var window = new CrawlWindow(100, 200);
         MediathekItem[] page = [TestData.Item("missing", filmlisteTimestamp: 0)];
 
-        var result = FeedIngestPlanner.EvaluatePage(page, window, pageSize: 1);
+        var result = FeedCrawlPlanner.EvaluatePage(page, window, pageSize: 1);
 
         Assert.Multiple(
             () => Assert.Empty(result.Collected),
@@ -84,22 +92,27 @@ public sealed class FeedIngestPlannerTests
     [Fact]
     public void EvaluatePage_ends_on_partial_page()
     {
-        var window = new IngestWindow(100, 200);
+        var window = new CrawlWindow(100, 200);
         MediathekItem[] page = [TestData.Item("a", filmlisteTimestamp: 150)];
 
-        var result = FeedIngestPlanner.EvaluatePage(page, window, pageSize: 50);
+        var result = FeedCrawlPlanner.EvaluatePage(page, window, pageSize: 50);
 
         Assert.True(result.ReachedEnd);
     }
 
     [Fact]
-    public void Distinct_removes_duplicates_across_pages()
+    public void DistinctAcrossPages_removes_duplicates_from_later_pages()
     {
         var item = TestData.Item("a", url: "https://example.com/a.mp4");
+        var distinct = FeedCrawlPlanner.DistinctAcrossPages();
 
-        var result = FeedIngestPlanner.Distinct([item, item with { Title = "a (copy)" }, TestData.Item("b")]);
+        var first = Assert.Single(distinct(new PageEvaluation([item, item with { Title = "a (copy)" }], false, 0)));
+        var second = Assert.Single(distinct(new PageEvaluation([item, TestData.Item("b")], true, 0)));
 
-        Assert.Equal(new[] { "a", "b" }, result.Select(i => i.Title).ToArray());
+        Assert.Multiple(
+            () => Assert.Equal(new[] { "a" }, first.Collected.Select(i => i.Title).ToArray()),
+            () => Assert.Equal(new[] { "b" }, second.Collected.Select(i => i.Title).ToArray()),
+            () => Assert.True(second.ReachedEnd));
     }
 
     [Fact]
@@ -110,7 +123,7 @@ public sealed class FeedIngestPlannerTests
         var upcoming = TestData.Item("upcoming") with { Timestamp = now.AddDays(89).ToUnixTimeSeconds() };
         var garbage = TestData.Item("garbage") with { Timestamp = now.AddDays(1159).ToUnixTimeSeconds() };
 
-        var kept = FeedIngestPlanner.WithinLead([aired, upcoming, garbage], now);
+        var kept = FeedCrawlPlanner.WithinLead([aired, upcoming, garbage], now);
 
         Assert.Equal(new[] { "aired", "upcoming" }, kept.Select(i => i.Title).ToArray());
     }

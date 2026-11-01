@@ -25,6 +25,6 @@ _None._
 
 ## Impact
 
-- **Feed:** `FeedCrawler` queries with `future=true`; `FeedIngestPlanner.WithinLead` drops implausible dates.
+- **Feed:** the feed crawl queries with `future=true`; `FeedCrawlPlanner.WithinLead` drops implausible dates.
 - **Search / Api:** queries keep `future=false` (unchanged behaviour on `main`).
 - No configuration option, no persistence change.

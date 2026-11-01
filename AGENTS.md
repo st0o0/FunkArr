@@ -79,8 +79,9 @@ SINGLETONS (Cluster Singleton)
 │  ├─ TvdbEnrichmentActor pool (child, via ResolveChildActor)
 │  └─ TmdbEnrichmentActor pool (child, via ResolveChildActor)
 ├─ StatsCollector (non-persistent)                                [History]
-├─ FeedIngestManager (persistent, IWithTimers)                    [Feed]
-└─ FeedManager (persistent)                                       [Feed]
+├─ FeedCrawlManager (persistent, IWithTimers)                     [Feed]
+│  └─ Runs each crawl as an Akka.Streams pipeline (FeedCrawlPipeline)
+└─ FeedStoreManager (persistent)                                  [Feed]
 
 SHARD REGIONS (Sharded Entity)
 ├─ TvSearchWorker (non-persistent, per search request)            [Search]

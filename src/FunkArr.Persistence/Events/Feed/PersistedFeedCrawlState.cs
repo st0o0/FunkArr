@@ -1,6 +1,6 @@
 namespace FunkArr.Persistence.Events.Feed;
 
-public sealed record PersistedFeedIngestState(
+public sealed record PersistedFeedCrawlState(
     long Cursor,
     DateTimeOffset? LastRunAt,
     string? LastOutcome,

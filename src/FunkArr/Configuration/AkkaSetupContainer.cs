@@ -154,9 +154,9 @@ public sealed class AkkaSetupContainer : ActorSystemSetupContainer
     private static void RegisterFeedActors(AkkaConfigurationBuilder builder)
     {
         builder
-            .WithSingleton<IFeedManager>("feed-manager",
-                (_, _, resolver) => resolver.Props<FeedManager>())
-            .WithSingleton<IFeedIngestManager>("feed-ingest-manager",
-                (_, _, resolver) => resolver.Props<FeedIngestManager>());
+            .WithSingleton<IFeedStoreManager>("feed-store-manager",
+                (_, _, resolver) => resolver.Props<FeedStoreManager>())
+            .WithSingleton<IFeedCrawlManager>("feed-crawl-manager",
+                (_, _, resolver) => resolver.Props<FeedCrawlManager>());
     }
 }

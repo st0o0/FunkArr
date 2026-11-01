@@ -98,7 +98,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task TvSearch_without_query_returns_feed_entries()
     {
-        var feedProbe = _fixture.GetProbe<IFeedManager>();
+        var feedProbe = _fixture.GetProbe<IFeedStoreManager>();
         var searchProbe = _fixture.GetProbe<ISearchManager>();
         var firstSeen = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
         var entry = new FeedEntry("0123456789abcdef0123456789abcdef", firstSeen, MediaType.Show,
@@ -139,7 +139,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
 
     private async Task<HttpResponseMessage> WithEmptyFeed(string url, MediaType expectedMediaType)
     {
-        var feedProbe = _fixture.GetProbe<IFeedManager>();
+        var feedProbe = _fixture.GetProbe<IFeedStoreManager>();
         var task = _fixture.Client.GetAsync(url);
 
         var query = feedProbe.ExpectMsg<QueryFeed>();

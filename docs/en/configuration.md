@@ -268,10 +268,11 @@ Both keys are optional but recommended. Without them, FunkArr relies solely on r
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `FunkArr__Feed__Enabled` | `true` | Collect new Mediathek entries for the RSS sync of Sonarr and Radarr |
-| `FunkArr__Feed__Interval` | `00:15:00` | Time between two ingest runs |
+| `FunkArr__Feed__Interval` | `00:15:00` | Time between two crawl runs |
 | `FunkArr__Feed__InitialLookback` | `2.00:00:00` | How far back the very first run looks |
 | `FunkArr__Feed__PageSize` | `100` | Entries per MediathekViewWeb page (1-500) |
-| `FunkArr__Feed__MaxPages` | `20` | Maximum pages per run |
+| `FunkArr__Feed__MaxPages` | `200` | Maximum pages per run (safety limit) |
+| `FunkArr__Feed__MaxCatchUp` | `7.00:00:00` | How far a run catches up after an outage at most |
 | `FunkArr__Feed__Retention` | `14.00:00:00` | How long published releases stay in the feed |
 | `FunkArr__Feed__MinConfidence` | `0.7` | Minimum match score for publishing (0-1) |
 | `FunkArr__Feed__MaxConcurrency` | `4` | Ruleset groups evaluated in parallel |

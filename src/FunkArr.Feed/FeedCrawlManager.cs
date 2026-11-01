@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Persistence;
+using Akka.Streams;
 using FunkArr.Core;
 using FunkArr.Messages.Feed;
 using FunkArr.Persistence.Events.Feed;
@@ -9,7 +10,7 @@ using Servus.Akka;
 
 namespace FunkArr.Feed;
 
-public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
+public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
 {
     private const int _snapshotInterval = 20;
     private const string _tickTimerKey = "tick";
@@ -22,34 +23,35 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<FeedOptions> _feedOptions;
     private readonly TimeProvider _timeProvider;
-    private readonly FeedCrawler _crawler;
-    private FeedIngestState _state = FeedIngestState.Empty;
-    private bool _running;
+    private readonly FeedCrawlPipeline _pipeline;
+    private readonly IMaterializer _materializer = Context.Materializer();
+    private FeedCrawlManagerState _state = FeedCrawlManagerState.Empty;
+    private RunningCrawl? _run;
 
     public ITimerScheduler Timers { get; set; } = null!;
 
-    public override string PersistenceId => "feed-ingest";
+    public override string PersistenceId => "feed-crawl";
 
-    public FeedIngestManager(
+    public FeedCrawlManager(
         IOptionsMonitor<FeedOptions> feedOptions,
         TimeProvider timeProvider)
     {
         _feedOptions = feedOptions;
         _timeProvider = timeProvider;
-        _crawler = new FeedCrawler(
-            new FeedCrawlerActors(
+        _pipeline = new FeedCrawlPipeline(
+            FeedCrawlStages.FromActors(
                 Context.GetActor<IMediathekManager>(),
                 Context.GetActor<IRuleSetResolver>(),
                 Context.GetActor<ITvEvaluationRegion>(),
                 Context.GetActor<IMovieEvaluationRegion>(),
-                Context.GetActor<IFeedManager>()),
+                Context.GetActor<IFeedStoreManager>()),
             timeProvider);
 
         Recover<SnapshotOffer>(offer =>
         {
-            if (offer.Snapshot is PersistedFeedIngestState persisted)
+            if (offer.Snapshot is PersistedFeedCrawlState persisted)
             {
-                _state = FeedIngestState.FromPersistence(persisted);
+                _state = FeedCrawlManagerState.FromPersistence(persisted);
             }
         });
         Recover<FeedCursorAdvanced>(evt => _state = _state.Apply(evt));
@@ -57,24 +59,24 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
         Recover<RecoveryCompleted>(_ => ScheduleNext(_startupDelay));
 
         Command<Tick>(_ => StartRun());
-        Command<TriggerFeedCrawl>(_ => StartRun());
-        Command<QueryFeedIngestStatus>(_ =>
-            Sender.Tell(_state.ToStatus(_feedOptions.CurrentValue.Enabled, _running)));
+        Command<StartFeedCrawl>(_ => StartRun());
+        Command<QueryFeedCrawlStatus>(_ =>
+            Sender.Tell(_state.ToStatus(_feedOptions.CurrentValue.Enabled, _run is not null)));
         Command<RunFinished>(msg => HandleOutcome(msg.Outcome));
         Command<RunCrashed>(msg =>
         {
-            _log.Error(msg.Cause, "Feed ingest run crashed");
+            _log.Error(msg.Cause, "Feed crawl crashed");
             HandleOutcome(new FeedRunOutcome(FeedRunStatus.Failed, 0, 0, 0, 0, false, TimeSpan.Zero, msg.Cause.Message));
         });
         Command<SaveSnapshotSuccess>(e => DeleteMessages(e.Metadata.SequenceNr));
-        Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Feed ingest snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
+        Command<SaveSnapshotFailure>(f => _log.Warning(f.Cause, "Feed crawl snapshot save failed at sequence {SequenceNr}", f.Metadata.SequenceNr));
         Command<DeleteMessagesSuccess>(_ => { });
-        Command<DeleteMessagesFailure>(e => _log.Warning(e.Cause, "Feed ingest journal cleanup failed up to sequence {SequenceNr}", e.ToSequenceNr));
+        Command<DeleteMessagesFailure>(e => _log.Warning(e.Cause, "Feed crawl journal cleanup failed up to sequence {SequenceNr}", e.ToSequenceNr));
     }
 
     private void StartRun()
     {
-        if (_running)
+        if (_run is not null)
         {
             return;
         }
@@ -86,17 +88,23 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        _running = true;
         Timers.Cancel(_tickTimerKey);
-        _log.Debug("Feed ingest run started at cursor {Cursor}", _state.Cursor);
+        _log.Debug("Feed crawl started at cursor {Cursor}", _state.Cursor);
 
-        _crawler.RunAsync(_state.Cursor, feed, CancellationToken.None)
-            .PipeTo(Self, success: outcome => new RunFinished(outcome), failure: ex => new RunCrashed(ex));
+        _run = _pipeline.Run(_state.Cursor, feed, _materializer);
+        _run.Completion.PipeTo(Self, success: outcome => new RunFinished(outcome), failure: ex => new RunCrashed(ex));
+    }
+
+    protected override void PostStop()
+    {
+        _run?.Cancel();
+        base.PostStop();
     }
 
     private void HandleOutcome(FeedRunOutcome outcome)
     {
-        _running = false;
+        _run?.Cancellation.Dispose();
+        _run = null;
         var now = _timeProvider.GetUtcNow();
         RecordTelemetry(outcome);
 
@@ -107,7 +115,7 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
                 {
                     _state = _state.Apply(e);
                     _log.Info(
-                        "Feed ingest completed: cursor {Cursor}, {NewItems} new entries, {Published} published, {Unmatched} without ruleset, gap {Gap}",
+                        "Feed crawl completed: cursor {Cursor}, {NewItems} new entries, {Published} published, {Unmatched} without ruleset, gap {Gap}",
                         e.Cursor, e.NewItems, e.Published, e.Unmatched, e.Gap);
                     MaybeSnapshot();
                 });
@@ -117,7 +125,7 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
                 Persist(failed, e =>
                 {
                     _state = _state.Apply(e);
-                    _log.Warning("Feed ingest run failed ({Failures} in a row): {Reason}", e.ConsecutiveFailures, e.Reason);
+                    _log.Warning("Feed crawl failed ({Failures} in a row): {Reason}", e.ConsecutiveFailures, e.Reason);
                     MaybeSnapshot();
                 });
                 break;
@@ -139,6 +147,16 @@ public sealed class FeedIngestManager : ReceivePersistentActor, IWithTimers
         if (outcome.Status == FeedRunStatus.Unchanged)
         {
             Telemetry.ProbesUnchanged.Add(1);
+        }
+
+        if (outcome.NewItems > 0)
+        {
+            Telemetry.ItemsSeen.Add(outcome.NewItems);
+        }
+
+        if (outcome.Unmatched > 0)
+        {
+            Telemetry.Unmatched.Add(outcome.Unmatched);
         }
 
         if (outcome.Published > 0)

@@ -2,7 +2,7 @@ using FunkArr.Persistence.Events.Feed;
 
 namespace FunkArr.Feed.Tests;
 
-public sealed class FeedIngestStateTests
+public sealed class FeedCrawlManagerStateTests
 {
     private static readonly DateTimeOffset _now = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
 
@@ -12,9 +12,9 @@ public sealed class FeedIngestStateTests
     [Fact]
     public void Completed_run_advances_cursor()
     {
-        var evt = Assert.IsType<FeedCursorAdvanced>(FeedIngestState.Empty.Decide(Outcome(FeedRunStatus.Completed), _now));
+        var evt = Assert.IsType<FeedCursorAdvanced>(FeedCrawlManagerState.Empty.Decide(Outcome(FeedRunStatus.Completed), _now));
 
-        var state = FeedIngestState.Empty.Apply(evt);
+        var state = FeedCrawlManagerState.Empty.Apply(evt);
 
         Assert.Multiple(
             () => Assert.Equal(500, state.Cursor),
@@ -26,13 +26,13 @@ public sealed class FeedIngestStateTests
     [Fact]
     public void Unchanged_run_persists_nothing()
     {
-        Assert.Null(FeedIngestState.Empty.Decide(Outcome(FeedRunStatus.Unchanged), _now));
+        Assert.Null(FeedCrawlManagerState.Empty.Decide(Outcome(FeedRunStatus.Unchanged), _now));
     }
 
     [Fact]
     public void Failed_run_keeps_cursor_and_counts_failures()
     {
-        var state = FeedIngestState.Empty with { Cursor = 100 };
+        var state = FeedCrawlManagerState.Empty with { Cursor = 100 };
 
         var evt = Assert.IsType<FeedRunFailed>(state.Decide(Outcome(FeedRunStatus.Failed), _now));
         state = state.Apply(evt);
@@ -46,7 +46,7 @@ public sealed class FeedIngestStateTests
     [Fact]
     public void Third_failure_advances_cursor_with_gap()
     {
-        var state = FeedIngestState.Empty with { Cursor = 100, ConsecutiveFailures = 2 };
+        var state = FeedCrawlManagerState.Empty with { Cursor = 100, ConsecutiveFailures = 2 };
 
         var evt = Assert.IsType<FeedCursorAdvanced>(state.Decide(Outcome(FeedRunStatus.Failed), _now));
 
@@ -59,7 +59,7 @@ public sealed class FeedIngestStateTests
     [Fact]
     public void Third_failure_without_list_timestamp_keeps_cursor()
     {
-        var state = FeedIngestState.Empty with { Cursor = 100, ConsecutiveFailures = 2 };
+        var state = FeedCrawlManagerState.Empty with { Cursor = 100, ConsecutiveFailures = 2 };
 
         var evt = Assert.IsType<FeedRunFailed>(state.Decide(Outcome(FeedRunStatus.Failed, listTimestamp: 0), _now));
 
@@ -69,7 +69,7 @@ public sealed class FeedIngestStateTests
     [Fact]
     public void Status_reflects_state()
     {
-        var state = FeedIngestState.Empty.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, true));
+        var state = FeedCrawlManagerState.Empty.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, true));
 
         var status = state.ToStatus(enabled: true, running: false);
 

@@ -3,7 +3,7 @@ using FunkArr.Persistence.Events.Feed;
 
 namespace FunkArr.Feed;
 
-public sealed record FeedIngestState(
+public sealed record FeedCrawlManagerState(
     long Cursor,
     DateTimeOffset? LastRunAt,
     string? LastOutcome,
@@ -15,16 +15,16 @@ public sealed record FeedIngestState(
 {
     internal const int MaxConsecutiveFailures = 3;
 
-    public static readonly FeedIngestState Empty = new(0, null, null, 0, 0, 0, false, 0);
+    public static readonly FeedCrawlManagerState Empty = new(0, null, null, 0, 0, 0, false, 0);
 
-    public static FeedIngestState FromPersistence(PersistedFeedIngestState persisted) =>
+    public static FeedCrawlManagerState FromPersistence(PersistedFeedCrawlState persisted) =>
         new(persisted.Cursor, persisted.LastRunAt, persisted.LastOutcome, persisted.LastNewItems,
             persisted.LastPublished, persisted.LastUnmatched, persisted.LastGap, persisted.ConsecutiveFailures);
 }
 
-public static class FeedIngestStateExtensions
+public static class FeedCrawlManagerStateExtensions
 {
-    public static FeedIngestState Apply(this FeedIngestState state, FeedCursorAdvanced evt) =>
+    public static FeedCrawlManagerState Apply(this FeedCrawlManagerState state, FeedCursorAdvanced evt) =>
         state with
         {
             Cursor = evt.Cursor,
@@ -37,7 +37,7 @@ public static class FeedIngestStateExtensions
             ConsecutiveFailures = 0
         };
 
-    public static FeedIngestState Apply(this FeedIngestState state, FeedRunFailed evt) =>
+    public static FeedCrawlManagerState Apply(this FeedCrawlManagerState state, FeedRunFailed evt) =>
         state with
         {
             LastRunAt = evt.FailedAt,
@@ -45,10 +45,10 @@ public static class FeedIngestStateExtensions
             ConsecutiveFailures = evt.ConsecutiveFailures
         };
 
-    public static FeedIngestState WithUnchangedRun(this FeedIngestState state, DateTimeOffset at) =>
+    public static FeedCrawlManagerState WithUnchangedRun(this FeedCrawlManagerState state, DateTimeOffset at) =>
         state with { LastRunAt = at, LastOutcome = "unchanged" };
 
-    internal static object? Decide(this FeedIngestState state, FeedRunOutcome outcome, DateTimeOffset now)
+    internal static object? Decide(this FeedCrawlManagerState state, FeedRunOutcome outcome, DateTimeOffset now)
     {
         switch (outcome.Status)
         {
@@ -58,7 +58,7 @@ public static class FeedIngestStateExtensions
 
             case FeedRunStatus.Failed:
                 var failures = state.ConsecutiveFailures + 1;
-                if (failures >= FeedIngestState.MaxConsecutiveFailures && outcome.ListTimestamp > state.Cursor)
+                if (failures >= FeedCrawlManagerState.MaxConsecutiveFailures && outcome.ListTimestamp > state.Cursor)
                 {
                     return new FeedCursorAdvanced(outcome.ListTimestamp, now, outcome.NewItems, outcome.Published,
                         outcome.Unmatched, Gap: true);
@@ -71,11 +71,11 @@ public static class FeedIngestStateExtensions
         }
     }
 
-    public static FeedIngestStatusResult ToStatus(this FeedIngestState state, bool enabled, bool running) =>
+    public static FeedCrawlStatusResult ToStatus(this FeedCrawlManagerState state, bool enabled, bool running) =>
         new(enabled, running, state.Cursor, state.LastRunAt, state.LastOutcome, state.LastNewItems,
             state.LastPublished, state.LastUnmatched, state.LastGap, state.ConsecutiveFailures);
 
-    public static PersistedFeedIngestState GetPersistenceState(this FeedIngestState state) =>
+    public static PersistedFeedCrawlState GetPersistenceState(this FeedCrawlManagerState state) =>
         new(state.Cursor, state.LastRunAt, state.LastOutcome, state.LastNewItems, state.LastPublished,
             state.LastUnmatched, state.LastGap, state.ConsecutiveFailures);
 }

@@ -147,8 +147,8 @@ public sealed class FunkArrFixture : IAsyncLifetime
         Register<IStatsCollector>();
         Register<IEnrichmentManager>();
         Register<IDownloadScheduler>();
-        Register<IFeedManager>();
-        Register<IFeedIngestManager>();
+        Register<IFeedStoreManager>();
+        Register<IFeedCrawlManager>();
 
         return probes;
 

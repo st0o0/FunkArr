@@ -8,7 +8,7 @@
 ## 2. Invalidation
 
 - [x] 2.1 Add `IFeedCacheInvalidator` (Core) and `OutputCacheFeedInvalidator` (ArrApi, `EvictByTagAsync("feed")`). Verify with the eviction test.
-- [x] 2.2 Call the invalidator from `FeedManager` after persisted adds, persisted expiries and recovery; log failures. Verify with FeedManager actor tests (recovery, new entries, known entries only, failing invalidator).
+- [x] 2.2 Call the invalidator from `FeedStoreManager` after persisted adds, persisted expiries and recovery; log failures. Verify with FeedStoreManager actor tests (recovery, new entries, known entries only, failing invalidator).
 
 ## 3. Docs and verification
 

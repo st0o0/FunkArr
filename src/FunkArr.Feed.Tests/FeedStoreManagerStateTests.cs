@@ -4,12 +4,12 @@ using FunkArr.Persistence.Events.Feed;
 
 namespace FunkArr.Feed.Tests;
 
-public sealed class FeedManagerStateTests
+public sealed class FeedStoreManagerStateTests
 {
     private static readonly DateTimeOffset _t0 = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
 
-    private static FeedManagerState With(params FeedEntry[] entries) =>
-        FeedManagerState.Empty.Apply(new FeedEntriesAdded([.. entries.Select(e => e.ToPersistence())]));
+    private static FeedStoreManagerState With(params FeedEntry[] entries) =>
+        FeedStoreManagerState.Empty.Apply(new FeedEntriesAdded([.. entries.Select(e => e.ToPersistence())]));
 
     [Fact]
     public void NewEntries_skips_known_ids_and_keeps_earliest_duplicate()
@@ -126,7 +126,7 @@ public sealed class FeedManagerStateTests
     {
         var original = TestData.Entry("a", _t0);
 
-        var restored = FeedManagerState.FromPersistence(With(original).GetPersistenceState());
+        var restored = FeedStoreManagerState.FromPersistence(With(original).GetPersistenceState());
 
         var entry = Assert.Single(restored.Entries.Values);
         Assert.Multiple(

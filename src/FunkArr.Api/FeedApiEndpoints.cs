@@ -27,17 +27,17 @@ public static class FeedApiEndpoints
         group.MapGet("", async (int? limit, IActorRegistry registry, CancellationToken ct) =>
         {
             var take = Math.Clamp(limit ?? _defaultLimit, 1, _maxLimit);
-            var feed = await registry.GetAsync<IFeedManager>(ct);
-            var ingest = await registry.GetAsync<IFeedIngestManager>(ct);
+            var feed = await registry.GetAsync<IFeedStoreManager>(ct);
+            var ingest = await registry.GetAsync<IFeedCrawlManager>(ct);
 
             var feedTask = feed.Ask<FeedResponse>(new QueryFeed(null, 0, take), _askTimeout, ct);
-            var statusTask = ingest.Ask<FeedIngestStatusResponse>(new QueryFeedIngestStatus(), _askTimeout, ct);
+            var statusTask = ingest.Ask<FeedCrawlStatusResponse>(new QueryFeedCrawlStatus(), _askTimeout, ct);
             var feedResponse = await feedTask;
             var statusResponse = await statusTask;
 
             return (feedResponse, statusResponse) switch
             {
-                (FeedResult entries, FeedIngestStatusResult status) => Results.Ok(ToApi(entries, status)),
+                (FeedResult entries, FeedCrawlStatusResult status) => Results.Ok(ToApi(entries, status)),
                 _ => Results.Problem(statusCode: 500, title: "Feed unavailable")
             };
         })
@@ -49,8 +49,8 @@ public static class FeedApiEndpoints
 
         group.MapPost("/crawl", async (IActorRegistry registry, CancellationToken ct) =>
         {
-            var ingest = await registry.GetAsync<IFeedIngestManager>(ct);
-            ingest.Tell(new TriggerFeedCrawl());
+            var ingest = await registry.GetAsync<IFeedCrawlManager>(ct);
+            ingest.Tell(new StartFeedCrawl());
             return Results.Accepted();
         })
         .WithSummary("Start a feed ingest run")
@@ -60,7 +60,7 @@ public static class FeedApiEndpoints
         return app;
     }
 
-    internal static ApiModels.FeedOverviewResponse ToApi(FeedResult entries, FeedIngestStatusResult status) =>
+    internal static ApiModels.FeedOverviewResponse ToApi(FeedResult entries, FeedCrawlStatusResult status) =>
         new(
             [
                 .. entries.Entries.Select(e => new ApiModels.FeedEntryOutput(
@@ -75,7 +75,7 @@ public static class FeedApiEndpoints
                     e.Item.Metadata?.Episode))
             ],
             entries.Total,
-            new ApiModels.FeedIngestStatusOutput(
+            new ApiModels.FeedCrawlStatusOutput(
                 status.Enabled,
                 status.Running,
                 status.LastRunAt,
