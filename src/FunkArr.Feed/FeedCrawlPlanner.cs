@@ -63,19 +63,9 @@ internal static class FeedCrawlPlanner
     internal static string? PrimaryUrl(MediathekItem item) =>
         item.UrlVideoHd ?? item.UrlVideo ?? item.UrlVideoLow;
 
-    internal static Func<PageEvaluation, IEnumerable<PageEvaluation>> DistinctAcrossPages()
+    internal static Func<MediathekItem, IEnumerable<MediathekItem>> DistinctByStableId()
     {
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        return page =>
-        [
-            page with
-            {
-                Collected =
-                [
-                    .. page.Collected.Where(item =>
-                        PrimaryUrl(item) is { } url && seen.Add(FeedGate.StableIdFor(item.Channel, url)))
-                ]
-            }
-        ];
+        return item => PrimaryUrl(item) is { } url && seen.Add(FeedGate.StableIdFor(item.Channel, url)) ? [item] : [];
     }
 }

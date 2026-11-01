@@ -101,18 +101,14 @@ public sealed class FeedCrawlPlannerTests
     }
 
     [Fact]
-    public void DistinctAcrossPages_removes_duplicates_from_later_pages()
+    public void DistinctByStableId_keeps_the_first_occurrence_per_run()
     {
         var item = TestData.Item("a", url: "https://example.com/a.mp4");
-        var distinct = FeedCrawlPlanner.DistinctAcrossPages();
+        var distinct = FeedCrawlPlanner.DistinctByStableId();
 
-        var first = Assert.Single(distinct(new PageEvaluation([item, item with { Title = "a (copy)" }], false, 0)));
-        var second = Assert.Single(distinct(new PageEvaluation([item, TestData.Item("b")], true, 0)));
+        var kept = new[] { item, item with { Title = "a (copy)" }, TestData.Item("b") }.SelectMany(distinct).ToArray();
 
-        Assert.Multiple(
-            () => Assert.Equal(new[] { "a" }, first.Collected.Select(i => i.Title).ToArray()),
-            () => Assert.Equal(new[] { "b" }, second.Collected.Select(i => i.Title).ToArray()),
-            () => Assert.True(second.ReachedEnd));
+        Assert.Equal(new[] { "a", "b" }, kept.Select(i => i.Title).ToArray());
     }
 
     [Fact]

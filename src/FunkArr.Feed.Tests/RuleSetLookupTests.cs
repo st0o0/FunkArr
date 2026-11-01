@@ -27,27 +27,4 @@ public sealed class RuleSetLookupTests
             () => Assert.Equal(expectedId, ruleSetId),
             () => Assert.Equal(expectedType, mediaType));
     }
-
-    [Fact]
-    public void Group_collects_items_per_ruleset_and_counts_unmatched()
-    {
-        var lookup = RuleSetLookup.From(_entries);
-
-        var result = lookup.Group(
-        [
-            TestData.Item("a", "Tatort"),
-            TestData.Item("b", "Tatort (ARD)"),
-            TestData.Item("c", "Das Boot"),
-            TestData.Item("d", "Unbekannt")
-        ]);
-
-        Assert.Equal(1, result.Unmatched);
-        Assert.Equal(2, result.Groups.Length);
-        var tatort = Assert.Single(result.Groups, g => g.RuleSetId == "tatort");
-        var boot = Assert.Single(result.Groups, g => g.RuleSetId == "das-boot");
-        Assert.Multiple(
-            () => Assert.Equal(2, tatort.Items.Length),
-            () => Assert.Equal(MediaType.Movie, boot.MediaType),
-            () => Assert.Equal(new ExternalIds(null, "tt0082096", 387), boot.Ids));
-    }
 }

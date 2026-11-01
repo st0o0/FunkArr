@@ -4,8 +4,8 @@ Defines how a feed crawl runs: as one stream from the MediathekViewWeb probe to 
 
 ## ADDED Requirements
 
-### Requirement: A crawl runs as one stream
-Each crawl SHALL run as a single Akka.Streams pipeline whose stages are: probe, ruleset lookup, page fetching, window evaluation, de-duplication, ruleset grouping, evaluation with the feed gate, publishing, and an aggregated outcome. External dependencies SHALL be injected as functions.
+### Requirement: Crawls run through one long-lived stream
+The `FeedCrawlManager` SHALL materialize a single Akka.Streams graph once and run every crawl through it: page fetching, window evaluation, de-duplication, ruleset matching, grouping per ruleset, evaluation with the feed gate and batched publishing. The stream SHALL report its progress to the manager as messages; the manager SHALL probe MediathekViewWeb and load the rulesets before offering a crawl.
 
 #### Scenario: Unchanged Filmliste
 - **WHEN** the probe reports a list timestamp not newer than the cursor
@@ -23,15 +23,15 @@ The crawl SHALL keep at most three page queries in flight, preserve page order, 
 - **THEN** no more than three page queries SHALL be issued
 
 ### Requirement: Failures are reported per group
-A failed evaluation of one ruleset group SHALL NOT stop other groups. A failed group, a failed publish or a failed MediathekViewWeb query SHALL make the crawl `Failed`; queue-full answers SHALL be retried twice with backoff before failing.
+A failed evaluation of one ruleset group SHALL NOT stop other groups. A failed group, a failed publish or a failed MediathekViewWeb query SHALL make the crawl `Failed`, and the crawl stream SHALL keep serving later crawls.
 
 #### Scenario: Failing group
 - **WHEN** the evaluation of the only group throws
 - **THEN** the outcome SHALL be `Failed` with `1 of 1 ruleset groups failed` and nothing SHALL be published
 
-#### Scenario: Queue stays full
-- **WHEN** MediathekViewWeb answers queue-full three times for the probe
-- **THEN** the outcome SHALL be `Failed` with `MediathekViewWeb queue full` and list timestamp 0
+#### Scenario: Failing page
+- **WHEN** a page query answers with an error
+- **THEN** the outcome SHALL be `Failed` with `MediathekViewWeb query failed: …` and the cursor SHALL stay
 
 ### Requirement: Gaps are explicit
 A crawl SHALL report a gap when it stops at `MaxPages` before reaching the cursor, or when the cursor is older than `MaxCatchUp` and the window was truncated.
@@ -44,9 +44,9 @@ A crawl SHALL report a gap when it stops at `MaxPages` before reaching the curso
 - **WHEN** the cursor is far older than `MaxCatchUp`
 - **THEN** the window SHALL start at `ListTimestamp − MaxCatchUp` and the outcome SHALL report a gap
 
-### Requirement: A running crawl can be cancelled
-The `FeedCrawlManager` SHALL cancel a running crawl when it stops.
+### Requirement: Crawls do not overlap
+A crawl request while a crawl is running SHALL be ignored.
 
-#### Scenario: Cancel
-- **WHEN** a crawl is waiting for MediathekViewWeb and is cancelled
-- **THEN** its completion SHALL fail with `Feed crawl cancelled`
+#### Scenario: Second start
+- **WHEN** `StartFeedCrawl` arrives while a crawl waits for its probe
+- **THEN** no second probe SHALL be sent and the status SHALL report the crawl as running

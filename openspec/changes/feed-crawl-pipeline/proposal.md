@@ -4,9 +4,10 @@ A feed run was one large `async` method (`FeedCrawler`) driven by `FeedIngestMan
 
 ## What Changes
 
-- Each crawl runs as one Akka.Streams pipeline (`FeedCrawlPipeline`): probe → load rulesets → pages with up to three in flight → window and end detection → de-duplication across pages → grouping per ruleset → parallel evaluation → feed gate → batched publishing → aggregated outcome. Every step is a stream stage; dependencies (MediathekViewWeb query, ruleset lookup, evaluation, publishing) are injected as lambdas (`FeedCrawlStages`).
+- The `FeedCrawlManager` owns one long-lived Akka.Streams graph, materialized once like the `MediathekViewWebManager` stream: `Source.Queue<FeedCrawlPlan>` → `ConcatMany(crawl)` → `Sink.ActorRef(Self)`. Each crawl is an item flow: pages with up to three in flight → end detection → entries in the window → 90-day cap → de-duplication across pages → ruleset match → `GroupBy` ruleset with `GroupedWithin` → parallel evaluation → feed gate → `GroupedWithin` batches → publishing. The `Ask` calls to MediathekViewWeb, the Search evaluation regions and the store sit directly in the stage lambdas.
+- The actor keeps the run state (`FeedCrawlRun`): it probes and loads rulesets, offers the plan, and folds the events the stream sends back (pages, collected and matched entries, published batches, finished/failed) into the outcome.
 - Backpressure: pages are only fetched as fast as evaluation keeps up; fetching stops as soon as a page reaches the cursor.
-- The crawl can be cancelled (kill switch and cancellation token) when the manager stops.
+- The stream lives and dies with the manager; results of older runs are ignored by run id.
 - No silent gap: the window is crawled completely (safety limit `MaxPages` 200), and after an outage the crawl catches up on at most `MaxCatchUp` (7 days), reported as a gap.
 - **Renames:** `FeedIngestManager` → `FeedCrawlManager`, `FeedManager` → `FeedStoreManager`, `AddFeedEntries` → `PublishFeedEntries`, `TriggerFeedCrawl` → `StartFeedCrawl`, `QueryFeedIngestStatus` → `QueryFeedCrawlStatus`, `FeedIngestPlanner` → `FeedCrawlPlanner`; persistence ids `feed-crawl` / `feed-store`.
 
@@ -22,7 +23,7 @@ _None_ (the `rss-feed` change is not archived yet; its behaviour is kept, only t
 
 ## Impact
 
-- **Feed:** `FeedCrawlManager`, `FeedCrawlPipeline`, `FeedCrawlStages`, `FeedCrawlSteps`, `FeedCrawlPlanner`, `FeedStoreManager`; `FeedCrawler` removed.
+- **Feed:** `FeedCrawlManager` (stream + run handling), `FeedCrawlPlan`, `FeedCrawlRun`, `FeedCrawlPlanner`, `FeedStoreManager`; `FeedCrawler` removed.
 - **Messages / Persistence / Core:** renamed types and actor keys; `FeedOptions.MaxCatchUp`, `MaxPages` default 200.
 - **Api / ArrApi / Host:** use the renamed keys and messages; HTTP contracts unchanged.
 - Version 0.x and #210 not merged yet, so the persistence id change needs no migration.
