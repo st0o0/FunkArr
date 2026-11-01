@@ -37,7 +37,7 @@ internal sealed class FeedCrawlPipeline(FeedCrawlStages stages, TimeProvider tim
             .ConcatMany(plan => plan.Probed.HasUpdate
                 ? Crawl(plan, options, ct)
                 : Source.Single<CrawlStep>(plan.Probed))
-            .Recover(ex => new Option<CrawlStep>(new CrawlFailed(ex.Message)))
+            .Recover(ex => Option<CrawlStep>.Create(new CrawlFailed(ex.Message)))
             .ViaMaterialized(KillSwitches.Single<CrawlStep>(), Keep.Right)
             .ToMaterialized(Sink.Aggregate<CrawlStep, FeedRunStats>(FeedRunStats.Empty, (s, step) => s.Add(step)), Keep.Both)
             .Run(materializer);

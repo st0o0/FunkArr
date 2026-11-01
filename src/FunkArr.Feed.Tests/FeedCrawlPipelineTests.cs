@@ -199,7 +199,8 @@ public sealed class FeedCrawlPipelineTests : TestKit
 
         run.Cancel();
 
-        var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run.Completion.WaitAsync(_timeout));
-        Assert.Equal("Feed crawl cancelled", ex.Message);
+        var ex = await Assert.ThrowsAsync<AggregateException>(() => run.Completion.WaitAsync(_timeout));
+        var cancelled = Assert.IsType<OperationCanceledException>(Assert.Single(ex.InnerExceptions), exactMatch: false);
+        Assert.Equal("Feed crawl cancelled", cancelled.Message);
     }
 }
