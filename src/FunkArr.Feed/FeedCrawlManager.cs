@@ -9,6 +9,7 @@ using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
+using FunkArr.Messages.Search;
 using FunkArr.Persistence.Events.Feed;
 using Microsoft.Extensions.Options;
 using Servus.Akka;
