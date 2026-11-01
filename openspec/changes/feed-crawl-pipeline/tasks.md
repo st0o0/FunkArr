@@ -14,4 +14,4 @@
 ## 3. Docs and verification
 
 - [x] 3.1 Update how-it-works, configuration (both languages) and AGENTS.md.
-- [ ] 3.2 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
+- [x] 3.2 Run `dotnet format --verify-no-changes` and all test projects via CI and verify they pass.
