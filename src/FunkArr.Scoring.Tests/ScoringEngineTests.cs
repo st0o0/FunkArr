@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 
@@ -36,6 +37,34 @@ public sealed class ScoringEngineTests
         Assert.Equal(0.9, item.Score, 2);
         var item2 = Assert.Single(traces);
         Assert.True(item2.Matched);
+    }
+
+    [Fact]
+    public void Score_skips_rules_for_excluded_variant()
+    {
+        var config = Config(0.9f, ChannelRule("ARD"));
+        var candidates = new[]
+        {
+            Candidate() with { ExcludedVariant = MediathekVariant.AudioDescription },
+            Candidate()
+        };
+
+        var (scored, traces) = ScoringEngine.Score(config, candidates);
+
+        Assert.Equal(2, scored.Length);
+        Assert.Equal(2, traces.Length);
+        Assert.Multiple(
+            () => Assert.False(scored[0].Matched),
+            () => Assert.Equal(0.0, scored[0].Score),
+            () => Assert.Null(scored[0].Metadata),
+            () => Assert.False(traces[0].Matched),
+            () => Assert.Equal(0.0, traces[0].Score),
+            () => Assert.Null(traces[0].MatchedRuleId),
+            () => Assert.Null(traces[0].Identification),
+            () => Assert.Empty(traces[0].RuleTraces),
+            () => Assert.Equal(MediathekVariant.AudioDescription, traces[0].ExcludedVariant),
+            () => Assert.True(scored[1].Matched),
+            () => Assert.Null(traces[1].ExcludedVariant));
     }
 
     [Fact]
