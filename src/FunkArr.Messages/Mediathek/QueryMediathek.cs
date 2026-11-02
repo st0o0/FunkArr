@@ -14,7 +14,8 @@ public abstract record QueryMediathekResponse;
 
 public sealed record QueryMediathekCompleted(
     MediathekItem[] Items,
-    int Total) : QueryMediathekResponse;
+    int Total,
+    long ListTimestamp = 0) : QueryMediathekResponse;
 
 public abstract record QueryMediathekFailed : QueryMediathekResponse;
 
