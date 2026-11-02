@@ -1,3 +1,4 @@
+using FunkArr.Messages;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
 
@@ -41,12 +42,21 @@ public sealed record SceneRelease(
         }
 
         parts.Add(Sanitize(EpisodeTitle));
-        parts.Add("GERMAN");
+        parts.AddRange(VariantTokens(Item.Source.Variant));
         parts.Add(MapQuality(quality));
         parts.Add("WEB.h264-FunkArr");
 
         return CollapseDots(string.Join('.', parts));
     }
+
+    private static string[] VariantTokens(MediathekVariant variant) => variant switch
+    {
+        MediathekVariant.AudioDescription => ["AD", "GERMAN"],
+        MediathekVariant.SignLanguage => ["DGS", "GERMAN"],
+        MediathekVariant.PlainLanguage => ["EinfacheSprache", "GERMAN"],
+        MediathekVariant.OriginalVersion => ["OV"],
+        _ => ["GERMAN"]
+    };
 
     public SearchResultItem[] Expand()
     {

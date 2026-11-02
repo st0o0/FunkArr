@@ -51,11 +51,13 @@ public sealed class MediathekClient(HttpClient httpClient, IDistributedCache cac
                 UrlVideo: r.UrlVideo,
                 UrlVideoHd: r.UrlVideoHd,
                 UrlSubtitle: r.UrlSubtitle,
-                UrlWebsite: r.UrlWebsite))
+                UrlWebsite: r.UrlWebsite,
+                FilmlisteTimestamp: r.FilmlisteTimestamp ?? 0))
             .ToArray();
 
         var total = apiResponse?.Result?.QueryInfo?.TotalResults ?? items.Length;
-        var result = new MediathekQueryResult(items, total);
+        var listTimestamp = apiResponse?.Result?.QueryInfo?.FilmlisteTimestamp ?? 0;
+        var result = new MediathekQueryResult(items, total, listTimestamp);
 
         await cache.SetAsync(cacheKey, result, _cacheTtl, cancellationToken);
 

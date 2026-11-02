@@ -12,7 +12,8 @@ internal sealed record MediathekApiResult(
     [property: JsonPropertyName("queryInfo")] MediathekApiQueryInfo? QueryInfo);
 
 internal sealed record MediathekApiQueryInfo(
-    [property: JsonPropertyName("totalResults")] int TotalResults);
+    [property: JsonPropertyName("totalResults")] int TotalResults,
+    [property: JsonPropertyName("filmlisteTimestamp"), JsonConverter(typeof(LenientInt64Converter))] long? FilmlisteTimestamp = null);
 
 internal sealed record MediathekApiItem(
     [property: JsonPropertyName("channel")] string? Channel,
@@ -26,7 +27,8 @@ internal sealed record MediathekApiItem(
     [property: JsonPropertyName("url_video_low")] string? UrlVideoLow,
     [property: JsonPropertyName("url_video_hd")] string? UrlVideoHd,
     [property: JsonPropertyName("url_subtitle")] string? UrlSubtitle,
-    [property: JsonPropertyName("url_website")] string? UrlWebsite);
+    [property: JsonPropertyName("url_website")] string? UrlWebsite,
+    [property: JsonPropertyName("filmlisteTimestamp"), JsonConverter(typeof(LenientInt64Converter))] long? FilmlisteTimestamp = null);
 
 internal sealed class EmptyStringToNullConverter : JsonConverter<string?>
 {
@@ -42,6 +44,32 @@ internal sealed class EmptyStringToNullConverter : JsonConverter<string?>
         else
         {
             writer.WriteStringValue(value);
+        }
+    }
+}
+
+internal sealed class LenientInt64Converter : JsonConverter<long?>
+{
+    public override bool HandleNull => true;
+
+    public override long? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType switch
+        {
+            JsonTokenType.Number when reader.TryGetInt64(out var number) => number,
+            JsonTokenType.String when long.TryParse(reader.GetString(), System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out var parsed) => parsed,
+            _ => null
+        };
+
+    public override void Write(Utf8JsonWriter writer, long? value, JsonSerializerOptions options)
+    {
+        if (value is null)
+        {
+            writer.WriteNullValue();
+        }
+        else
+        {
+            writer.WriteNumberValue(value.Value);
         }
     }
 }
