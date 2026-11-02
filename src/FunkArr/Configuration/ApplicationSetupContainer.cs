@@ -1,6 +1,5 @@
 using FunkArr.Api;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Servus.Application.Startup;
@@ -44,6 +43,7 @@ public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApp
             .WithRequestTimeout(TimeSpan.FromSeconds(5));
 
         app.MapSystemApi();
+        app.MapFeedApi();
         app.MapSetupArrApi();
         app.MapControllers();
 
