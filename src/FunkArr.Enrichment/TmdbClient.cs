@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Terp.Diagnostics;
 
 namespace FunkArr.Enrichment;
 
@@ -28,12 +29,12 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         if (cached is not null)
         {
             log.LogDebug("TMDB cache hit for movie {TmdbId}", tmdbId);
-            Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "hit"));
+            Telemetry.Requests.Up(new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "hit"));
             return cached;
         }
 
         log.LogDebug("TMDB cache miss for movie {TmdbId}, fetching", tmdbId);
-        Telemetry.Requests.Add(1, new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "miss"));
+        Telemetry.Requests.Up(new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "miss"));
         var sw = Stopwatch.StartNew();
         var movie = await FetchMovieAsync(tmdbId);
         if (movie is null)

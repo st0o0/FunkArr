@@ -3,7 +3,7 @@ using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.Feed;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
+using Terp.Akka;
 
 namespace FunkArr.Feed;
 

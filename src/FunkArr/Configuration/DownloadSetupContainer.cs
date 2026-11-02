@@ -4,26 +4,26 @@ using FunkArr.Core;
 using FunkArr.Download;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Servus.Application.Startup;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class DownloadSetupContainer : ApplicationSetupContainer<WebApplication>, IServiceSetupContainer
+public sealed class DownloadSetupContainer : ISetup<IServiceCollection>, ISetup<WebApplication>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void Setup(IServiceCollection services, SetupContext context)
     {
         services.AddSingleton<IValidateOptions<DownloadOptions>, DownloadOptionsValidator>();
 
         services
             .AddOptions<DownloadOptions>()
-            .Bind(configuration.GetSection(DownloadOptions.SectionName))
+            .Bind(context.Configuration.GetSection(DownloadOptions.SectionName))
             .ValidateOnStart();
 
-        services.AddDownloadServices(configuration);
+        services.AddDownloadServices(context.Configuration);
 
         services.AddHealthChecks()
             .AddCheck<FfmpegHealthCheck>("ffmpeg", failureStatus: HealthStatus.Unhealthy);
     }
 
-    protected override void SetupApplication(WebApplication app) => app.MapDownloadsApi();
+    public void Setup(WebApplication app, SetupContext _) => app.MapDownloadsApi();
 }

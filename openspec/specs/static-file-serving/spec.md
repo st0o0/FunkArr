@@ -34,5 +34,5 @@ The .NET host SHALL configure a fallback route that serves `index.html` for any 
 The `ApplicationSetupContainer` SHALL configure middleware in the correct order: `UseStaticFiles()` before endpoint mapping, and the SPA fallback as the last mapped route so it does not interfere with API or ArrApi endpoints.
 
 #### Scenario: Middleware order
-- **WHEN** reviewing `ApplicationSetupContainer.SetupApplication`
+- **WHEN** reviewing `ApplicationSetupContainer.Setup(WebApplication, SetupContext)`
 - **THEN** `UseStaticFiles()` is called before `MapRuleSetApi()`, `MapIndexerApi()`, `MapDownloadApi()`, and the SPA fallback is mapped last

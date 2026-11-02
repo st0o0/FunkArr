@@ -39,7 +39,7 @@ The MediathekClient SHALL accept `IDistributedCache` via constructor injection a
 
 ### Requirement: MediathekClient DI registration
 
-The MediathekClient SHALL be registered as a typed HttpClient via `services.AddHttpClient<MediathekClient>` in `SearchSetupContainer`. The registration SHALL configure the base address, `ExternalApiMetricsHandler`, and `AddStandardResilienceHandler` - matching the existing named client configuration.
+The MediathekClient SHALL be registered as a typed HttpClient via `services.AddHttpClient<MediathekClient>` in `SearchSetupContainer`. The registration SHALL configure the base address, `TerpHttpMetricsHandler`, and `AddStandardResilienceHandler` - matching the existing named client configuration.
 
 #### Scenario: Typed client registration
 

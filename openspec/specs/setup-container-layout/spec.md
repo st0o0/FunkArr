@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines the ownership and ordering of Servus setup containers, ensuring each domain owns its registrations and cross-cutting infrastructure lives in CoreSetupContainer.
+Defines the ownership and ordering of Terp setup containers, ensuring each domain owns its registrations and cross-cutting infrastructure lives in CoreSetupContainer.
 
 ## Requirements
 
@@ -59,11 +59,11 @@ ScoringSetupContainer SHALL register ScoringOptions, ScoringHistoryOptions, and 
 The ServiceSetupContainer SHALL be deleted. Its registrations SHALL be distributed to CoreSetupContainer and domain-specific containers.
 
 #### Scenario: No ServiceSetupContainer in chain
-- **WHEN** the AppBuilder chain is constructed in Program.cs
+- **WHEN** the builder.Setups() chain is constructed in Program.cs
 - **THEN** ServiceSetupContainer SHALL NOT appear in the chain
 
 ### Requirement: Container chain ordering
-The AppBuilder chain in Program.cs SHALL follow the order: Logging, Telemetry, Core, Akka, domain containers (Search, Download, Scoring, RuleSet, Enrichment), ArrApi, Application.
+The builder.Setups() chain in Program.cs SHALL follow the order: Logging, Telemetry, Core, Akka, domain containers (Search, Download, Scoring, RuleSet, Enrichment), ArrApi, Application, then app.Setups(): Search, Download, RuleSet, Application.
 
 #### Scenario: Infrastructure before domains
 - **WHEN** the host boots

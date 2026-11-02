@@ -1,14 +1,14 @@
 using FunkArr.Api;
 using FunkArr.ArrApi;
-using Servus.Application.Startup;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class ArrApiSetupContainer : IServiceSetupContainer
+public sealed class ArrApiSetupContainer : ISetup<IServiceCollection>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void Setup(IServiceCollection services, SetupContext context)
     {
-        services.AddArrApiServices(configuration);
+        services.AddArrApiServices(context.Configuration);
 
         services.AddHttpClient<ArrSetupClient>(client =>
         {

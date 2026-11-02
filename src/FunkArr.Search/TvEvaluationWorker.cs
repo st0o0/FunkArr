@@ -7,7 +7,8 @@ using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.Search;
 

@@ -3,12 +3,12 @@ using Akka.Event;
 using Akka.Persistence;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using Akka.Streams.Supervision;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.Download;
 
@@ -96,7 +96,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
             _downloadRegion.Tell(new InitDownload(downloadId, cmd.Media));
 
-            Telemetry.Enqueued.Add(1);
+            Telemetry.Enqueued.Up();
             Sender.Tell(new DownloadAdded(downloadId));
             _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
             UpdateGauges();
@@ -139,7 +139,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         Source.From(pageIds)
             .Select(id => new QueryWorkerStatus(id))
             .Ask<WorkerStatusResult>(_downloadRegion, _fanOutTimeout, 8)
-            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .ResumeOnError()
             .Select(r =>
             {
                 var priority = LookupPriority(state, r.DownloadId);
@@ -174,7 +174,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         });
         DeferAsync("notify", _ =>
         {
-            Telemetry.Cancelled.Add(1);
+            Telemetry.Cancelled.Up();
             UpdateGauges();
             _downloadRegion.Tell(new CancelDownload(cmd.DownloadId));
             Sender.Tell(new DeleteDownloadResult(true, null));
@@ -211,7 +211,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             _state = _state.Apply(e);
             MaybeSnapshot();
-            Telemetry.SetPaused(true);
+            Telemetry.Paused.Record(true ? 1 : 0);
             _log.Info("Downloads paused by user");
             Sender.Tell(new PauseDownloadsResult(true));
         });
@@ -229,7 +229,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             _state = _state.Apply(e);
             MaybeSnapshot();
-            Telemetry.SetPaused(false);
+            Telemetry.Paused.Record(false ? 1 : 0);
             _log.Info("Downloads resumed by user");
             Sender.Tell(new ResumeDownloadsResult(true));
             DispatchNext();
@@ -402,8 +402,8 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void UpdateGauges()
     {
-        Telemetry.SetQueueSize(_state.Queued.Count);
-        Telemetry.SetActiveDownloads(_state.Dispatched.Count);
+        Telemetry.QueueSize.Record(_state.Queued.Count);
+        Telemetry.Active.Record(_state.Dispatched.Count);
     }
 
     private void MaybeSnapshot()

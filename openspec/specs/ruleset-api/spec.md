@@ -90,7 +90,7 @@ All ruleset API endpoints (`GET /api/rulesets`, `GET /api/rulesets/{id}`, `GET /
 - **THEN** all `/api/rulesets` endpoints SHALL be registered through a single `MapGroup` call in `RuleSetApiEndpoints.MapRuleSetApi()`
 
 #### Scenario: Endpoint registration
-- **WHEN** `ApplicationSetupContainer.SetupApplication` runs
+- **WHEN** `ApplicationSetupContainer.Setup(WebApplication, SetupContext)` runs
 - **THEN** `app.MapRuleSetApi()` is called to register all ruleset read, write, test, and export endpoints
 - **AND** `app.MapMediathekApi()` is called to register the mediathek proxy endpoints
 

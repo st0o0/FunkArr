@@ -1,7 +1,7 @@
 using Akka.Actor;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
-using Servus.Akka;
+using Terp.Akka;
 
 namespace FunkArr.Feed;
 

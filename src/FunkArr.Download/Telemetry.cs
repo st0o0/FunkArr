@@ -36,21 +36,15 @@ internal static class Telemetry
     internal static readonly Histogram<double> SubtitleDuration = _meter.CreateHistogram<double>(
         "funkarr.download.subtitle_duration_seconds", "s", "Subtitle preparation duration in seconds");
 
-    private static int _queueSize;
-    private static int _activeDownloads;
-    private static int _paused;
-    private static int _scheduleEnabled = 1;
+    internal static readonly Gauge<int> QueueSize = _meter.CreateGauge<int>(
+        "funkarr.download.queue_size", description: "Current download queue depth");
 
-    static Telemetry()
-    {
-        _meter.CreateObservableGauge("funkarr.download.queue_size", () => _queueSize, description: "Current download queue depth");
-        _meter.CreateObservableGauge("funkarr.download.active", () => _activeDownloads, description: "Currently active downloads");
-        _meter.CreateObservableGauge("funkarr.download.paused", () => _paused, description: "Whether downloads are paused");
-        _meter.CreateObservableGauge("funkarr.download.schedule_enabled", () => _scheduleEnabled, description: "Whether download schedule is active");
-    }
+    internal static readonly Gauge<int> Active = _meter.CreateGauge<int>(
+        "funkarr.download.active", description: "Currently active downloads");
 
-    internal static void SetQueueSize(int size) => _queueSize = size;
-    internal static void SetActiveDownloads(int count) => _activeDownloads = count;
-    internal static void SetPaused(bool paused) => _paused = paused ? 1 : 0;
-    internal static void SetScheduleEnabled(bool enabled) => _scheduleEnabled = enabled ? 1 : 0;
+    internal static readonly Gauge<int> Paused = _meter.CreateGauge<int>(
+        "funkarr.download.paused", description: "Whether downloads are paused");
+
+    internal static readonly Gauge<int> ScheduleEnabled = _meter.CreateGauge<int>(
+        "funkarr.download.schedule_enabled", description: "Whether download schedule is active");
 }

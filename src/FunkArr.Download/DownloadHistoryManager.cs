@@ -5,6 +5,7 @@ using FunkArr.Core;
 using FunkArr.Messages.Download;
 using FunkArr.Persistence.Events.Download;
 using Microsoft.Extensions.Options;
+using Terp.Diagnostics;
 
 namespace FunkArr.Download;
 
@@ -77,7 +78,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
             if (cmd.Completion.Status == DownloadStatus.Completed)
             {
-                Telemetry.DownloadsCompleted.Add(1);
+                Telemetry.DownloadsCompleted.Up();
                 if (cmd.Completion.Size > 0)
                 {
                     Telemetry.DownloadBytes.Add(cmd.Completion.Size);

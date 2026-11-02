@@ -3,20 +3,21 @@ using FunkArr.Api;
 using FunkArr.Api.HealthChecks;
 using FunkArr.Search;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Servus.Application.Startup;
+using Terp.Diagnostics;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class SearchSetupContainer : ApplicationSetupContainer<WebApplication>, IServiceSetupContainer
+public sealed class SearchSetupContainer : ISetup<IServiceCollection>, ISetup<WebApplication>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void Setup(IServiceCollection services, SetupContext _)
     {
         services.AddHttpClient<MediathekClient>(client =>
         {
             client.BaseAddress = new Uri("https://mediathekviewweb.de/api/query");
             client.DefaultRequestHeaders.Add("Accept", MediaTypeNames.Application.Json);
         })
-        .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("mediathekviewweb"))
+        .AddHttpMessageHandler(() => new TerpHttpMetricsHandler("mediathekviewweb"))
         .AddStandardResilienceHandler(options =>
         {
             options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(45);
@@ -29,5 +30,5 @@ public sealed class SearchSetupContainer : ApplicationSetupContainer<WebApplicat
             .AddCheck<MediathekViewWebHealthCheck>("mediathekviewweb", failureStatus: HealthStatus.Degraded);
     }
 
-    protected override void SetupApplication(WebApplication app) => app.MapMediathekApi();
+    public void Setup(WebApplication app, SetupContext _) => app.MapMediathekApi();
 }

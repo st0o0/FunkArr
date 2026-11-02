@@ -1,15 +1,15 @@
 using FunkArr.Core;
-using Servus.Application.Startup;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class FeedSetupContainer : IServiceSetupContainer
+public sealed class FeedSetupContainer : ISetup<IServiceCollection>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void Setup(IServiceCollection services, SetupContext context)
     {
         services
             .AddOptions<FeedOptions>()
-            .Bind(configuration.GetSection(FeedOptions.SectionName))
+            .Bind(context.Configuration.GetSection(FeedOptions.SectionName))
             .Validate(o => o.Interval > TimeSpan.Zero, "FunkArr:Feed:Interval must be positive")
             .Validate(o => o.PageSize is > 0 and <= 500, "FunkArr:Feed:PageSize must be between 1 and 500")
             .Validate(o => o.MaxPages > 0, "FunkArr:Feed:MaxPages must be positive")

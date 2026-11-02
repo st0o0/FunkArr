@@ -8,7 +8,7 @@ using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
-using Servus.Akka;
+using Terp.Akka;
 
 namespace FunkArr.Feed;
 

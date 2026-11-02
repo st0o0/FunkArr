@@ -39,7 +39,7 @@ Individual csproj files SHALL NOT specify package versions.
 
 Key package groups:
 - Akka.NET: Hosting, Persistence.Sql.Hosting, Streams, Cluster.Sharding, Logger.Serilog
-- Servus, Servus.Akka
+- Terp, Terp.Akka
 - Serilog + enrichers/sinks
 - xUnit v3, Akka.Hosting.TestKit, Verify.XunitV3
 - ArchUnitNET

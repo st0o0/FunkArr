@@ -18,8 +18,8 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="Akka.Streams" />
-    <PackageReference Include="Servus" />
-    <PackageReference Include="Servus.Akka" />
+<PackageReference Include="Terp" />
+    <PackageReference Include="Terp.Akka" />
     <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>
 

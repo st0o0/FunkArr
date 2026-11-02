@@ -5,6 +5,7 @@ using FunkArr.Core;
 using FunkArr.Messages.Feed;
 using FunkArr.Persistence.Events.Feed;
 using Microsoft.Extensions.Options;
+using Terp.Diagnostics;
 
 namespace FunkArr.Feed;
 
@@ -163,12 +164,12 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
     private static void RecordTelemetry(CrawlResult result)
     {
         var outcomeTag = new KeyValuePair<string, object?>("status", result.Status.ToString().ToLowerInvariant());
-        Telemetry.Crawls.Add(1, outcomeTag);
+        Telemetry.Crawls.Up(outcomeTag);
         Telemetry.CrawlDuration.Record(result.Duration.TotalSeconds, outcomeTag);
 
         if (result.Status == CrawlStatus.Unchanged)
         {
-            Telemetry.ProbesUnchanged.Add(1);
+            Telemetry.ProbesUnchanged.Up();
         }
 
         if (result.NewItems > 0)
@@ -188,7 +189,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
         if (result.Gap)
         {
-            Telemetry.Gaps.Add(1);
+            Telemetry.Gaps.Up();
         }
     }
 

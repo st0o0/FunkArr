@@ -5,26 +5,26 @@ using FunkArr.Core;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using Servus.Application.Startup;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class CoreSetupContainer : IServiceSetupContainer
+public sealed class CoreSetupContainer : ISetup<IServiceCollection>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void Setup(IServiceCollection services, SetupContext context)
     {
         services
             .AddOptions<FunkArrOptions>()
-            .Bind(configuration.GetSection(FunkArrOptions.SectionName))
+            .Bind(context.Configuration.GetSection(FunkArrOptions.SectionName))
             .ValidateOnStart();
 
         services
             .AddOptions<PostgresOptions>()
-            .Bind(configuration.GetSection(PostgresOptions.SectionName));
+            .Bind(context.Configuration.GetSection(PostgresOptions.SectionName));
 
         services
             .AddOptions<RoutingOptions>()
-            .Bind(configuration.GetSection(RoutingOptions.SectionName))
+            .Bind(context.Configuration.GetSection(RoutingOptions.SectionName))
             .ValidateOnStart();
 
         services.AddSingleton<IValidateOptions<RoutingOptions>, RoutingOptionsValidator>();

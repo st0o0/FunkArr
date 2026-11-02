@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
+using Terp.Diagnostics;
 using static FunkArr.Messages.Scoring.FilterGroupOp;
 
 namespace FunkArr.Scoring;
@@ -16,7 +17,7 @@ public static class ScoringEngine
         MatchingConfig config, ScoreCandidate[] items)
     {
         var sw = Stopwatch.StartNew();
-        Telemetry.Runs.Add(1);
+        Telemetry.Runs.Up();
         var sortedRules = config.Rules.OrderBy(r => r.Priority).ToArray();
         var scored = new ScoredItem[items.Length];
         var itemTraces = new ItemTrace[items.Length];
@@ -306,7 +307,7 @@ public static class ScoringEngine
         }
         catch (RegexMatchTimeoutException)
         {
-            Telemetry.RegexTimeouts.Add(1);
+            Telemetry.RegexTimeouts.Up();
             return false;
         }
     }
@@ -477,7 +478,7 @@ public static class ScoringEngine
         }
         catch (RegexMatchTimeoutException)
         {
-            Telemetry.RegexTimeouts.Add(1);
+            Telemetry.RegexTimeouts.Up();
             return null;
         }
     }
@@ -519,7 +520,7 @@ public static class ScoringEngine
         }
         catch (RegexMatchTimeoutException)
         {
-            Telemetry.RegexTimeouts.Add(1);
+            Telemetry.RegexTimeouts.Up();
         }
 
         return null;

@@ -2,13 +2,13 @@ using FunkArr.Api;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
-using Servus.Application.Startup;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class ApplicationSetupContainer : ApplicationSetupContainer<WebApplication>
+public sealed class ApplicationSetupContainer : ISetup<WebApplication>
 {
-    protected override void SetupApplication(WebApplication app)
+    public void Setup(WebApplication app, SetupContext _)
     {
         app.MapOpenApi();
         app.MapScalarApiReference(options =>

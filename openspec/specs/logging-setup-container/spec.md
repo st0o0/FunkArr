@@ -1,11 +1,11 @@
 ## Purpose
 
-Dedicated Servus setup container that configures Serilog as the application's logging pipeline, ensuring logging is available before any other setup container runs.
+Dedicated Terp setup that configures Serilog as the application's logging pipeline, ensuring logging is available before any other setup container runs.
 
 ## Requirements
 
-### Requirement: LoggingSetupContainer as IServiceSetupContainer
-`LoggingSetupContainer` SHALL implement `IServiceSetupContainer` and configure Serilog
+### Requirement: LoggingSetupContainer as ISetup<IServiceCollection>
+`LoggingSetupContainer` SHALL implement `ISetup<IServiceCollection>` and configure Serilog
 via `services.AddSerilog(...)`. It SHALL configure:
 - `ReadFrom.Configuration(configuration)` for level overrides from appsettings
 - `Enrich.WithMachineName()`, `Enrich.WithThreadId()`, `Enrich.FromLogContext()`
@@ -13,14 +13,14 @@ via `services.AddSerilog(...)`. It SHALL configure:
 - `WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")`
 
 #### Scenario: Serilog configured via container
-- **WHEN** the host boots with LoggingSetupContainer in the AppBuilder chain
+- **WHEN** the host boots with LoggingSetupContainer in the builder.Setups() chain
 - **THEN** log output uses the structured template with all enrichment properties
 
 #### Scenario: Container reads log levels from configuration
 - **WHEN** `appsettings.json` sets `Serilog:MinimumLevel:Default` to `Warning`
 - **THEN** only Warning-level and above messages appear in console output
 
-### Requirement: LoggingSetupContainer is first in AppBuilder chain
+### Requirement: LoggingSetupContainer is first in builder.Setups() chain
 `LoggingSetupContainer` SHALL be the first `.WithSetup<T>()` call in the AppBuilder
 chain, before `FunkArrServiceSetup`, `FunkArrActorSystemSetup`, and
 `FunkArrApplicationSetup`.

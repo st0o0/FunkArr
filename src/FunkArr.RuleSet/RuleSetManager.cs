@@ -4,11 +4,11 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using Akka.Streams.Supervision;
 using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
-using Servus.Akka;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.RuleSet;
 
@@ -73,7 +73,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
 
         _state = _state with { KnownRuleSets = current };
         _log.Info("Initial scan: discovered {Count} rulesets", current.Count);
-        Telemetry.Scans.Add(1);
+        Telemetry.Scans.Up();
 
         SetupWatchers();
     }
@@ -88,7 +88,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
         }
 
         _state = _state with { KnownRuleSets = current };
-        Telemetry.Scans.Add(1);
+        Telemetry.Scans.Up();
         _log.Info("Re-scan: discovered {Count} rulesets", current.Count);
     }
 
@@ -158,7 +158,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
 
         _state = new RuleSetManagerState(KnownRuleSets: current, FullRescanRequested: false, PendingIds: _state.PendingIds.Clear());
 
-        Telemetry.Scans.Add(1);
+        Telemetry.Scans.Up();
 
         if (added > 0 || updated > 0 || removed > 0)
         {
@@ -228,14 +228,14 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
     private void HandleWorkerReady(WorkerReady msg)
     {
         _summaries = _summaries.SetItem(msg.RuleSetId, new WorkerSummary(msg.RuleCount, msg.SourceType));
-        Telemetry.SetActiveCount(_summaries.Count);
+        Telemetry.Active.Record(_summaries.Count);
     }
 
     private void HandleWorkerRemoved(WorkerRemoved msg)
     {
         _summaries = _summaries.Remove(msg.RuleSetId);
         _state = _state with { KnownRuleSets = _state.KnownRuleSets.Remove(msg.RuleSetId) };
-        Telemetry.SetActiveCount(_summaries.Count);
+        Telemetry.Active.Record(_summaries.Count);
     }
 
     private void HandleQueryListWithStats()
@@ -252,7 +252,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
         Source.From(summaries.Keys)
             .Select(id => new QueryScoringStats(id))
             .Ask<ScoringStatsQueryResult>(historyRegion, _statsTimeout, 4)
-            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .ResumeOnError()
             .RunWith(Sink.Seq<ScoringStatsQueryResult>(), _materializer)
             .PipeTo(Sender, Self,
                 success: items => BuildListWithStatsResult(summaries, items),
@@ -289,28 +289,28 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
 
         watcher.Created += (_, e) =>
         {
-            Telemetry.FileEvents.Add(1, new KeyValuePair<string, object?>("type", "created"));
+            Telemetry.FileEvents.Up(new KeyValuePair<string, object?>("type", "created"));
             self.Tell(new FileChanged(Path.GetFileNameWithoutExtension(e.FullPath)));
         };
         watcher.Changed += (_, e) =>
         {
-            Telemetry.FileEvents.Add(1, new KeyValuePair<string, object?>("type", "changed"));
+            Telemetry.FileEvents.Up(new KeyValuePair<string, object?>("type", "changed"));
             self.Tell(new FileChanged(Path.GetFileNameWithoutExtension(e.FullPath)));
         };
         watcher.Deleted += (_, e) =>
         {
-            Telemetry.FileEvents.Add(1, new KeyValuePair<string, object?>("type", "deleted"));
+            Telemetry.FileEvents.Up(new KeyValuePair<string, object?>("type", "deleted"));
             self.Tell(new FileChanged(Path.GetFileNameWithoutExtension(e.FullPath)));
         };
         watcher.Renamed += (_, e) =>
         {
-            Telemetry.FileEvents.Add(1, new KeyValuePair<string, object?>("type", "renamed"));
+            Telemetry.FileEvents.Up(new KeyValuePair<string, object?>("type", "renamed"));
             self.Tell(new FileChanged(Path.GetFileNameWithoutExtension(e.OldFullPath)));
             self.Tell(new FileChanged(Path.GetFileNameWithoutExtension(e.FullPath)));
         };
         watcher.Error += (_, _) =>
         {
-            Telemetry.FileEvents.Add(1, new KeyValuePair<string, object?>("type", "error"));
+            Telemetry.FileEvents.Up(new KeyValuePair<string, object?>("type", "error"));
             self.Tell(new FullRescanRequested());
         };
 

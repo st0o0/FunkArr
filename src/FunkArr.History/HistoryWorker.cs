@@ -5,7 +5,8 @@ using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Persistence.Events.ScoringHistory;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.History;
 
@@ -56,24 +57,24 @@ public sealed class HistoryWorker : ReceivePersistentActor
                     SaveSnapshot(_state.GetPersistenceState());
                 }
 
-                Telemetry.Recordings.Add(1);
+                Telemetry.Recordings.Up();
                 _statsCollector.Tell(new UpdateStats(nttId, _state.Stats));
             });
         });
 
         Command<QueryScoringHistory>(query =>
         {
-            Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "history"));
+            Telemetry.Queries.Up(new KeyValuePair<string, object?>("type", "history"));
             Sender.Tell(_state.QueryHistory(query));
         });
         Command<QueryScoringDetail>(query =>
         {
-            Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "detail"));
+            Telemetry.Queries.Up(new KeyValuePair<string, object?>("type", "detail"));
             Sender.Tell(_state.QueryDetail(query));
         });
         Command<QueryScoringStats>(query =>
         {
-            Telemetry.Queries.Add(1, new KeyValuePair<string, object?>("type", "stats"));
+            Telemetry.Queries.Up(new KeyValuePair<string, object?>("type", "stats"));
             Sender.Tell(new ScoringStatsQueryResult(nttId, _state.Stats));
         });
         Command<SaveSnapshotSuccess>(e =>

@@ -10,7 +10,7 @@ context: |
   ## Tech Stack
   - .NET 10 (net10.0), C#, ASP.NET Minimal API
   - Akka.NET (Hosting, Persistence.Sql, Cluster Sharding, Streams, Logger.Serilog)
-  - Servus + Servus.Akka (AppBuilder startup, actor registration/resolution, safe child communication, Option<T>, ServusTrace)
+  - Terp + Terp.Akka (ISetup<T> startup, ActorSystemSetup, actor registry helpers, BackoffOnFailure, Backoff)
   - SQLite (Akka.Persistence backend)
   - FFmpeg (video/subtitle remuxing to MKV, stream-copy)
   - Serilog (structured logging)
@@ -26,7 +26,7 @@ context: |
   - Domain projects must not reference each other — communication only through Messages
   - Adapter projects (IndexerApi, DownloadApi) are thin translators, no business logic
   - Reference direction: Host → Api/Adapters → Domains → Messages/Persistence/Shared
-  - Servus AppBuilder startup (3 setup containers: Service, ActorSystem, Application)
+  - Terp ISetup<T> startup (setup containers per domain, applied via builder.Setups().Add<T>() / app.Setups().Add<T>())
   - Actor naming: *Manager (singleton), *Worker (sharded entity), *Actor (other)
   - Actors use ReceiveActor directly, explicit State records, Receive<T>() dispatch
   - No separate Event types: Command → Actor → Persistence DTO → State update

@@ -1,7 +1,6 @@
 using FunkArr.Configuration;
 using Serilog;
-using Servus.Application.Startup;
-using ApplicationSetupContainer = FunkArr.Configuration.ApplicationSetupContainer;
+using Terp.Hosting;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -13,22 +12,28 @@ try
     var builder = WebApplication.CreateBuilder(args);
     builder.Logging.ClearProviders();
 
-    var runner = AppBuilder.Create(builder, b => b.Build())
-        .WithSetup<LoggingSetupContainer>()
-        .WithSetup<TelemetrySetupContainer>()
-        .WithSetup<CoreSetupContainer>()
-        .WithSetup<AkkaSetupContainer>()
-        .WithSetup<SearchSetupContainer>()
-        .WithSetup<DownloadSetupContainer>()
-        .WithSetup<ScoringSetupContainer>()
-        .WithSetup<RuleSetSetupContainer>()
-        .WithSetup<EnrichmentSetupContainer>()
-        .WithSetup<FeedSetupContainer>()
-        .WithSetup<ArrApiSetupContainer>()
-        .WithSetup<ApplicationSetupContainer>()
-        .Build();
+    builder.Setups()
+        .Add<LoggingSetupContainer>()
+        .Add<TelemetrySetupContainer>()
+        .Add<CoreSetupContainer>()
+        .Add<AkkaSetupContainer>()
+        .Add<SearchSetupContainer>()
+        .Add<DownloadSetupContainer>()
+        .Add<ScoringSetupContainer>()
+        .Add<RuleSetSetupContainer>()
+        .Add<EnrichmentSetupContainer>()
+        .Add<FeedSetupContainer>()
+        .Add<ArrApiSetupContainer>();
 
-    await runner.RunAsync();
+    var app = builder.Build();
+
+    app.Setups()
+        .Add<SearchSetupContainer>()
+        .Add<DownloadSetupContainer>()
+        .Add<RuleSetSetupContainer>()
+        .Add<ApplicationSetupContainer>();
+
+    await app.RunAsync();
 }
 catch (Exception ex)
 {

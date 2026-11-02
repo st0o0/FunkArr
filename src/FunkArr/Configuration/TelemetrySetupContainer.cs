@@ -1,12 +1,12 @@
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
-using Servus.Application.Startup;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class TelemetrySetupContainer : IServiceSetupContainer
+public sealed class TelemetrySetupContainer : ISetup<IServiceCollection>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void Setup(IServiceCollection services, SetupContext _)
     {
         var version = typeof(TelemetrySetupContainer).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
@@ -24,7 +24,7 @@ public sealed class TelemetrySetupContainer : IServiceSetupContainer
                 .AddMeter("FunkArr.History")
                 .AddMeter("FunkArr.RuleSet")
                 .AddMeter("FunkArr.Feed")
-                .AddMeter("FunkArr.ExternalApi")
+                .AddMeter("System.Net.Http")
                 .AddPrometheusExporter());
     }
 }

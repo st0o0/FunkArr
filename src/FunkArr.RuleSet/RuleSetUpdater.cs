@@ -4,7 +4,8 @@ using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.RuleSet;
 
@@ -49,7 +50,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
 
     private async Task HandleCheckForUpdates()
     {
-        Telemetry.UpdateChecks.Add(1);
+        Telemetry.UpdateChecks.Up();
 
         try
         {
@@ -57,7 +58,7 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
         }
         catch (Exception ex)
         {
-            Telemetry.UpdateErrors.Add(1);
+            Telemetry.UpdateErrors.Up();
             _log.Warning(ex, "Failed to check for community ruleset updates");
         }
 
@@ -116,14 +117,14 @@ public sealed class RuleSetUpdater : ReceiveActor, IWithTimers
             _dataFiles.WriteText(versionFile, release.Value.Version);
 
             _log.Info("Community rulesets updated to version {Version}", release.Value.Version);
-            Telemetry.UpdatesApplied.Add(1);
+            Telemetry.UpdatesApplied.Up();
 
             var manager = await Context.GetActorAsync<IRuleSetManager>();
             manager.Tell(new RuleSetManager.ScanRuleSets());
         }
         catch (Exception ex)
         {
-            Telemetry.UpdateErrors.Add(1);
+            Telemetry.UpdateErrors.Up();
             _log.Error(ex, "Failed to extract community rulesets");
         }
         finally

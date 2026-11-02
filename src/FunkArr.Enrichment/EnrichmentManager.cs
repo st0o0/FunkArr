@@ -1,7 +1,7 @@
 using Akka.Actor;
 using Akka.Routing;
-using FunkArr.Core;
 using FunkArr.Messages.Enrichment;
+using Terp.Akka;
 
 namespace FunkArr.Enrichment;
 

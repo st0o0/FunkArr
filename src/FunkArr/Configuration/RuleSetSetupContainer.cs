@@ -1,17 +1,17 @@
 using FunkArr.Api;
 using FunkArr.Core;
 using FunkArr.RuleSet;
-using Servus.Application.Startup;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class RuleSetSetupContainer : ApplicationSetupContainer<WebApplication>, IServiceSetupContainer
+public sealed class RuleSetSetupContainer : ISetup<IServiceCollection>, ISetup<WebApplication>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration configuration)
+    public void Setup(IServiceCollection services, SetupContext context)
     {
         services
             .AddOptions<RuleSetUpdaterOptions>()
-            .Bind(configuration.GetSection(RuleSetUpdaterOptions.SectionName))
+            .Bind(context.Configuration.GetSection(RuleSetUpdaterOptions.SectionName))
             .ValidateOnStart();
 
         services.AddSingleton<IRuleSetValidator, RuleSetValidator>();
@@ -35,5 +35,5 @@ public sealed class RuleSetSetupContainer : ApplicationSetupContainer<WebApplica
         });
     }
 
-    protected override void SetupApplication(WebApplication app) => app.MapRuleSetApi();
+    public void Setup(WebApplication app, SetupContext _) => app.MapRuleSetApi();
 }

@@ -40,7 +40,7 @@ knowledge. Load both when applicable.
 | Persistence DTOs / events | `funkarr-message` + `akka-skills:persistence` |
 | Persistence infrastructure setup | `akka-skills:persistence-setup` |
 | Actor tests | `funkarr-test` + `akka-skills:testing` |
-| Servus setup containers | `akka-skills:setup-container` |
+| Terp setup containers (ISetup<T>) | `akka-skills:setup-container` |
 | Logging in actors | `akka-skills:logging` |
 | API endpoints | `funkarr-endpoint` |
 | Solution structure questions | `akka-skills:project-structure` |

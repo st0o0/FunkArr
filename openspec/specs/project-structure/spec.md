@@ -19,11 +19,11 @@ Search, Download, RuleSet, Scoring, Enrichment, Messages, Persistence.
 ### Requirement: Core project
 `FunkArr.Core` SHALL use `Microsoft.NET.Sdk` and reference Messages and Persistence.
 It SHALL declare NuGet references for Akka.NET (Hosting, Cluster.Sharding, Streams,
-Persistence.Sql.Hosting, Logger.Serilog), Servus, and Servus.Akka.
+Persistence.Sql.Hosting, Logger.Serilog), Terp, and Terp.Akka.
 
-#### Scenario: Domain projects inherit Akka/Servus via Core
+#### Scenario: Domain projects inherit Akka/Terp via Core
 - **WHEN** a domain project references Core
-- **THEN** Akka.NET and Servus types are available without additional NuGet references
+- **THEN** Akka.NET and Terp types are available without additional NuGet references
 
 ### Requirement: Messages project
 `FunkArr.Messages` SHALL use `Microsoft.NET.Sdk` with no project or NuGet references.

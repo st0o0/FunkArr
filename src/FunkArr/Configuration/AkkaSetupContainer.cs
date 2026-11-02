@@ -12,14 +12,14 @@ using FunkArr.Scoring;
 using FunkArr.Search;
 using LinqToDB;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
-using Servus.Akka.Startup;
+using Terp.Akka;
+using Terp.Akka.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class AkkaSetupContainer : ActorSystemSetupContainer
+public sealed class AkkaSetupContainer : ActorSystemSetup
 {
-    protected override string GetActorSystemName() => "funkarr";
+    protected override string ActorSystemName => "funkarr";
 
     protected override void BuildSystem(AkkaConfigurationBuilder builder, IServiceProvider serviceProvider)
     {

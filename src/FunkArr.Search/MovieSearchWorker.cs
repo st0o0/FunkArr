@@ -5,8 +5,9 @@ using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Search;
-using Servus.Akka;
-using Servus.Resilience;
+using Terp.Akka;
+using Terp.Diagnostics;
+using Terp.Resilience;
 
 namespace FunkArr.Search;
 
@@ -97,7 +98,7 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
             else
             {
                 _log.Warning("Movie search {SearchId} queue full, retries exhausted", _state.SearchId);
-                Telemetry.Timeouts.Add(1);
+                Telemetry.Timeouts.Up();
                 Reply(new SearchMovieFailed(_state.SearchId,
                     new InvalidOperationException("MediathekViewWeb query queue full after retries")));
             }
@@ -145,23 +146,23 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
         _stopwatch.Stop();
         var sourceTag = new KeyValuePair<string, object?>("source", _state.Source.ToString().ToLowerInvariant());
         var typeTag = new KeyValuePair<string, object?>("type", "movie");
-        Telemetry.SearchRequests.Add(1, sourceTag);
+        Telemetry.SearchRequests.Up(sourceTag);
         Telemetry.SearchDuration.Record(_stopwatch.Elapsed.TotalSeconds, sourceTag, typeTag);
         if (response is SearchMovieCompleted completed)
         {
             Telemetry.ResultsPerRequest.Record(completed.Items.Length);
             if (completed.Items.Length > 0)
             {
-                Telemetry.SearchMatches.Add(1, sourceTag);
+                Telemetry.SearchMatches.Up(sourceTag);
             }
             else
             {
-                Telemetry.SearchNoMatch.Add(1, sourceTag);
+                Telemetry.SearchNoMatch.Up(sourceTag);
             }
         }
         else
         {
-            Telemetry.SearchNoMatch.Add(1, sourceTag);
+            Telemetry.SearchNoMatch.Up(sourceTag);
         }
 
         _state.ReplyTo.Tell(response);

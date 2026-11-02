@@ -270,7 +270,7 @@ The system SHALL update the `FfmpegResult` record to include a `FailureKind` fie
 - **THEN** it SHALL contain `Success` (bool), `ExitCode` (int), `Error` (string?), `ElapsedSeconds` (int), `FailureKind` (FailureKind, default Permanent)
 
 ### Requirement: IDownloadHistoryManager marker interface
-The system SHALL define an `IDownloadHistoryManager` marker interface for resolving the DownloadHistoryManager via Servus actor registry.
+The system SHALL define an `IDownloadHistoryManager` marker interface for resolving the DownloadHistoryManager via the Terp.Akka actor registry helpers.
 
 #### Scenario: Actor resolution
 - **WHEN** the DownloadHistoryManager needs to be resolved

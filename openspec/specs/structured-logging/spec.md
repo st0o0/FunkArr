@@ -6,9 +6,9 @@ Structured logging via Serilog with plain-text console output and enrichment pro
 
 ### Requirement: Serilog console logging with fixed template
 The application SHALL use Serilog with a console sink and a single plain-text output
-template. Serilog SHALL be configured in `LoggingSetupContainer` (an `IServiceSetupContainer`)
+template. Serilog SHALL be configured in `LoggingSetupContainer` (an `ISetup<IServiceCollection>`)
 via `services.AddSerilog(...)`. Default log providers SHALL be cleared with
-`builder.Logging.ClearProviders()` in Program.cs before the AppBuilder chain.
+`builder.Logging.ClearProviders()` in Program.cs before the builder.Setups() chain.
 
 Non-actor code (API endpoints, HTTP clients, services) SHALL use `ILogger<T>` from `Microsoft.Extensions.Logging` for logging. Actor code SHALL continue using Akka's `ILoggingAdapter`. Both flow through the Serilog pipeline.
 
@@ -35,14 +35,14 @@ The application SHALL use Akka.Logger.Serilog so that all Akka.NET internal logg
 - **THEN** the message SHALL appear in the Serilog console output with the same template and enrichment as application-level log entries
 
 ### Requirement: Bootstrap logger for crash safety
-Program.cs SHALL create a Serilog bootstrap logger before the AppBuilder chain:
+Program.cs SHALL create a Serilog bootstrap logger before the builder.Setups() chain:
 `Log.Logger = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Debug().CreateBootstrapLogger()`.
 The entire startup SHALL be wrapped in try/catch/finally:
 - `catch`: `Log.Fatal(ex, "Application terminated unexpectedly")`
 - `finally`: `await Log.CloseAndFlushAsync()`
 
 #### Scenario: Startup failure is logged
-- **WHEN** the AppBuilder chain throws an exception during startup
+- **WHEN** the builder.Setups() chain throws an exception during startup
 - **THEN** the exception is logged to console via `Log.Fatal` before the process exits
 
 #### Scenario: Bootstrap logger replaced by real logger

@@ -6,8 +6,9 @@ using FunkArr.Messages.Download;
 using FunkArr.Messages.Shared;
 using FunkArr.Persistence.Events.Download;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
-using Servus.Resilience;
+using Terp.Akka;
+using Terp.Diagnostics;
+using Terp.Resilience;
 
 namespace FunkArr.Download;
 
@@ -180,7 +181,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             }
             catch (Exception ex)
             {
-                Telemetry.MoveFailed.Add(1);
+                Telemetry.MoveFailed.Up();
                 _log.Warning(ex, "Download {DownloadId} move failed: {Title}", _downloadId, _state.Media!.Title);
                 msg = msg with { Success = false, Error = $"Move failed: {ex.Message}" };
             }
@@ -236,7 +237,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
         var attempt = _state.Attempt + 1;
-        Telemetry.Retries.Add(1, new KeyValuePair<string, object?>("reason",
+        Telemetry.Retries.Up(new KeyValuePair<string, object?>("reason",
             _state.LastFailureKind?.ToString().ToLowerInvariant() ?? "unknown"));
         _log.Info("Download {DownloadId} retry attempt {Attempt}: {Title}", _downloadId, attempt, _state.Media!.Title);
         var evt = new DownloadAttemptStarted(_downloadId, attempt);

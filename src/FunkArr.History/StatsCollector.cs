@@ -3,11 +3,10 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using Akka.Streams.Supervision;
 using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
-using Servus.Akka;
+using Terp.Akka;
 
 namespace FunkArr.History;
 
@@ -35,7 +34,7 @@ public sealed class StatsCollector : ReceiveActor
         Source.From(result.Entries)
             .Select(e => new QueryScoringStats(e.RuleSetId))
             .Ask<ScoringStatsQueryResult>(Context.GetActor<IHistoryRegion>(), _backfillTimeout, 4)
-            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .ResumeOnError()
             .RunWith(Sink.Seq<ScoringStatsQueryResult>(), _materializer)
             .PipeTo(Self,
                 success: items => new BackfillComplete(items),

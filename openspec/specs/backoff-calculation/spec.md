@@ -1,8 +1,8 @@
 ## ADDED Requirements
 
-### Requirement: Backoff delays use Servus BackoffPolicy
+### Requirement: Backoff delays use Terp BackoffPolicy
 
-All actor retry delay calculations SHALL use `Servus.Resilience.BackoffPolicy` instead of hand-rolled implementations. Delays SHALL use `DelayWithJitter` to apply ±25% random spread.
+All actor retry delay calculations SHALL use `Terp.Resilience.BackoffPolicy` instead of hand-rolled implementations. Delays SHALL use `DelayWithJitter` to apply ±25% random spread.
 
 #### Scenario: Search worker retries with jitter
 - **WHEN** a search worker receives a queue-full response and retries

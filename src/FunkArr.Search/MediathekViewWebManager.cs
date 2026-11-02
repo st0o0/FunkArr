@@ -2,8 +2,9 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using Akka.Streams.Supervision;
 using FunkArr.Messages.Mediathek;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.Search;
 
@@ -43,7 +44,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
                     return new StreamFailure(ex, tuple.RequestId);
                 }
             })
-            .WithAttributes(ActorAttributes.CreateSupervisionStrategy(Deciders.ResumingDecider))
+            .ResumeOnError()
             .To(Sink.ActorRef<StreamResponse>(Self, StreamComplete.Instance, ex => new StreamFailure(ex, Guid.Empty)))
             .Run(materializer);
 
@@ -89,7 +90,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
 
         Receive<StreamFailure>(msg =>
         {
-            Telemetry.MediathekErrors.Add(1);
+            Telemetry.MediathekErrors.Up();
             _log.Warning(msg.Cause, "MediathekViewWeb query {RequestId} failed", msg.RequestId);
             if (_pending.Remove(msg.RequestId, out var sender))
             {

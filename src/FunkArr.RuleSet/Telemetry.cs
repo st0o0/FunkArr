@@ -12,12 +12,8 @@ internal static class Telemetry
     internal static readonly Counter<long> Removed = _meter.CreateCounter<long>(
         "funkarr.ruleset.removed_total", description: "Total rulesets removed");
 
-    private static int _activeCount;
-
-    static Telemetry()
-    {
-        _meter.CreateObservableGauge("funkarr.ruleset.active", () => _activeCount, description: "Active ruleset count");
-    }
+    internal static readonly Gauge<int> Active = _meter.CreateGauge<int>(
+        "funkarr.ruleset.active", description: "Active ruleset count");
 
     internal static readonly Counter<long> UpdateChecks = _meter.CreateCounter<long>(
         "funkarr.ruleset.update_checks_total", description: "Total community update checks");
@@ -37,5 +33,4 @@ internal static class Telemetry
     internal static readonly Counter<long> FileEvents = _meter.CreateCounter<long>(
         "funkarr.ruleset.file_events_total", description: "Total filesystem watcher events");
 
-    internal static void SetActiveCount(int count) => _activeCount = count;
 }

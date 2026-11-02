@@ -4,6 +4,7 @@ using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Terp.Diagnostics;
 
 namespace FunkArr.Search;
 
@@ -25,11 +26,11 @@ public sealed class MediathekClient(HttpClient httpClient, IDistributedCache cac
         if (cached is not null)
         {
             log.LogDebug("MediathekViewWeb cache hit");
-            Telemetry.MediathekCacheHits.Add(1);
+            Telemetry.MediathekCacheHits.Up();
             return cached;
         }
 
-        Telemetry.MediathekCacheMisses.Add(1);
+        Telemetry.MediathekCacheMisses.Up();
 
         using var content = new StringContent(json, System.Text.Encoding.UTF8, MediaTypeNames.Text.Plain);
         using var response = await httpClient.PostAsync("", content, cancellationToken);

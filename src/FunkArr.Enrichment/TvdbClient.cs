@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Terp.Diagnostics;
 
 namespace FunkArr.Enrichment;
 
@@ -32,12 +33,12 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         if (cached is not null)
         {
             log.LogDebug("TVDB cache hit for series {SeriesId}", seriesId);
-            Telemetry.Requests.Add(1, _apiTag, new KeyValuePair<string, object?>("status", "hit"));
+            Telemetry.Requests.Up(_apiTag, new KeyValuePair<string, object?>("status", "hit"));
             return cached;
         }
 
         log.LogDebug("TVDB cache miss for series {SeriesId}, fetching", seriesId);
-        Telemetry.Requests.Add(1, _apiTag, new KeyValuePair<string, object?>("status", "miss"));
+        Telemetry.Requests.Up(_apiTag, new KeyValuePair<string, object?>("status", "miss"));
         var sw = Stopwatch.StartNew();
         var episodes = await FetchEpisodesAsync(seriesId);
         Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, _apiTag);

@@ -3,7 +3,7 @@ using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
 using Microsoft.Extensions.Options;
-using Servus.Akka;
+using Terp.Akka;
 
 namespace FunkArr.Download;
 
@@ -42,7 +42,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
         if (schedule.Count == 0)
         {
             _log.Info("No download schedule configured, enabling downloads");
-            Telemetry.SetScheduleEnabled(true);
+            Telemetry.ScheduleEnabled.Record(true ? 1 : 0);
             _downloadManager.Tell(new ScheduleEnabled());
             return;
         }
@@ -52,7 +52,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
         if (DownloadScheduleHelper.IsWithinSchedule(now, schedule))
         {
             _log.Info("Within download schedule window, enabling downloads");
-            Telemetry.SetScheduleEnabled(true);
+            Telemetry.ScheduleEnabled.Record(true ? 1 : 0);
             _downloadManager.Tell(new ScheduleEnabled());
 
             var delayToEnd = DelayUntilWindowEnd(now, schedule);
@@ -63,7 +63,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
             var delay = DownloadScheduleHelper.DelayUntilNextWindow(now, schedule);
             var nextWindow = _timeProvider.GetLocalNow().Add(delay);
             _log.Info("Outside download schedule, next window at {NextWindow}", nextWindow);
-            Telemetry.SetScheduleEnabled(false);
+            Telemetry.ScheduleEnabled.Record(false ? 1 : 0);
             _downloadManager.Tell(new ScheduleDisabled(nextWindow));
 
             Timers.StartSingleTimer(_timerKey, new Evaluate(), delay);

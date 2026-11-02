@@ -1,12 +1,13 @@
 using FunkArr.Core;
 using FunkArr.Enrichment;
-using Servus.Application.Startup;
+using Terp.Diagnostics;
+using Terp.Hosting;
 
 namespace FunkArr.Configuration;
 
-public sealed class EnrichmentSetupContainer : IServiceSetupContainer
+public sealed class EnrichmentSetupContainer : ISetup<IServiceCollection>
 {
-    public void SetupServices(IServiceCollection services, IConfiguration _)
+    public void Setup(IServiceCollection services, SetupContext _)
     {
         services
             .AddOptions<TvdbOptions>()
@@ -20,7 +21,7 @@ public sealed class EnrichmentSetupContainer : IServiceSetupContainer
         {
             client.BaseAddress = new Uri("https://api4.thetvdb.com/v4/");
         })
-        .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("tvdb"))
+        .AddHttpMessageHandler(() => new TerpHttpMetricsHandler("tvdb"))
         .AddStandardResilienceHandler(options =>
         {
             options.Retry.DelayGenerator = RetryAfterDefaults.DelayGenerator;
@@ -32,7 +33,7 @@ public sealed class EnrichmentSetupContainer : IServiceSetupContainer
         {
             client.BaseAddress = new Uri("https://api.themoviedb.org/3/");
         })
-        .AddHttpMessageHandler(() => new ExternalApiMetricsHandler("tmdb"))
+        .AddHttpMessageHandler(() => new TerpHttpMetricsHandler("tmdb"))
         .AddStandardResilienceHandler(options =>
         {
             options.Retry.DelayGenerator = RetryAfterDefaults.DelayGenerator;

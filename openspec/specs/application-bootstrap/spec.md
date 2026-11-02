@@ -1,11 +1,11 @@
 ## Purpose
 
-Host bootstrap configuration using Servus AppBuilder, Serilog structured logging, Akka.NET actor system, configuration binding, and health endpoints.
+Host bootstrap configuration using Terp ISetup startup, Serilog structured logging, Akka.NET actor system, configuration binding, and health endpoints.
 
 ## Requirements
 
-### Requirement: Servus AppBuilder startup
-The host SHALL use `AppBuilder.Create(builder, b => b.Build())` with setup containers chained via `.WithSetup<T>()` in this order:
+### Requirement: Terp ISetup startup
+The host SHALL use `builder.Setups().Add<T>()` with setup containers in this order:
 1. `LoggingSetupContainer`
 2. `TelemetrySetupContainer`
 3. `CoreSetupContainer`
@@ -16,26 +16,40 @@ The host SHALL use `AppBuilder.Create(builder, b => b.Build())` with setup conta
 8. `RuleSetSetupContainer`
 9. `EnrichmentSetupContainer`
 10. `ArrApiSetupContainer`
-11. `ApplicationSetupContainer`
 
-The AppBuilder chain and `await runner.RunAsync()` SHALL be wrapped in a
-try/catch/finally block. The catch block SHALL call `Log.Fatal(ex, ...)` and
+After `builder.Build()`, the host SHALL use `app.Setups().Add<T>()` for
+containers that implement `ISetup<WebApplication>` in this order:
+1. `SearchSetupContainer`
+2. `DownloadSetupContainer`
+3. `RuleSetSetupContainer`
+4. `ApplicationSetupContainer`
+
+`ApplicationSetupContainer` SHALL be last in `app.Setups()` because it registers
+the catch-all `/api/{**rest}` route and `MapFallbackToFile`.
+
+The `builder.Setups().Add<T>()` chain and `await app.RunAsync()` SHALL be wrapped
+in a try/catch/finally block. The catch block SHALL call `Log.Fatal(ex, ...)` and
 the finally block SHALL call `await Log.CloseAndFlushAsync()`.
 
-#### Scenario: Host boots with updated container chain
-- **WHEN** `dotnet run` is executed from `src/FunkArr/`
-- **THEN** the application starts without errors using the updated container chain
+#### Scenario: Host boots with Terp setup chain
+- **WHEN** the host starts via docker compose
+- **THEN** the application starts without errors using builder.Setups().Add<T>() and app.Setups().Add<T>()
 
 #### Scenario: Setup containers are invoked in order
 - **WHEN** the host boots
-- **THEN** containers execute in the order listed above, with infrastructure before domains and ApplicationSetupContainer last
+- **THEN** builder setups execute in the order listed above, with infrastructure before domains
+- **AND** app setups execute with ApplicationSetupContainer last
+
+#### Scenario: Unknown API path returns 404
+- **WHEN** a request is made to `/api/nonexistent`
+- **THEN** the response is 404 JSON, not the SPA index.html
 
 ### Requirement: Serilog structured logging
-The host SHALL create a bootstrap logger before the AppBuilder chain via
+The host SHALL create a bootstrap logger before the builder.Setups() chain via
 `Log.Logger = new LoggerConfiguration().WriteTo.Console().MinimumLevel.Debug().CreateBootstrapLogger()`.
 The full Serilog configuration SHALL be handled by `LoggingSetupContainer`, not
 inline in Program.cs. `builder.Logging.ClearProviders()` SHALL be called in
-Program.cs before the AppBuilder chain.
+Program.cs before the builder.Setups() chain.
 
 #### Scenario: Console log output uses structured template
 - **WHEN** the application starts
@@ -150,7 +164,7 @@ These computed properties SHALL NOT be bindable from configuration. Only `DataPa
 - **THEN** the response status is 200 and body is `"Alive"`
 
 #### Scenario: ApplicationSetupContainer has no manual DI resolution
-- **WHEN** reviewing `ApplicationSetupContainer.SetupApplication`
+- **WHEN** reviewing `ApplicationSetupContainer.Setup(WebApplication, SetupContext)`
 - **THEN** the method SHALL NOT call `GetRequiredService<IActorRegistry>()`, `GetRequiredService<IOptions<FunkArrOptions>>()`, or `registry.Get<T>()`
 
 #### Scenario: Health check responds when healthy
@@ -162,7 +176,7 @@ These computed properties SHALL NOT be bindable from configuration. Only `DataPa
 - **THEN** the setup health check endpoint responds (not 404)
 
 #### Scenario: Static files and SPA fallback are mapped
-- **WHEN** reviewing `ApplicationSetupContainer.SetupApplication`
+- **WHEN** reviewing `ApplicationSetupContainer.Setup(WebApplication, SetupContext)`
 - **THEN** `UseStaticFiles()` is called before endpoint mapping, `MapRuleSetApi()` and `MapSetupApi()` are called, and a SPA fallback route is registered last
 
 #### Scenario: SPA fallback does not intercept API routes

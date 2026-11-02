@@ -5,7 +5,8 @@ using FunkArr.Messages;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.RuleSet.DiskModel;
-using Servus.Akka;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.RuleSet;
 
@@ -80,7 +81,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
         var manager = Context.GetActor<IRuleSetManager>();
         manager.Tell(new WorkerReady(_nttId, config?.Rules.Length ?? 0, sourceType));
-        Telemetry.Loaded.Add(1, new KeyValuePair<string, object?>("source", sourceType));
+        Telemetry.Loaded.Up(new KeyValuePair<string, object?>("source", sourceType));
     }
 
     private void HandleRemove(RemoveRuleSet msg)
@@ -95,7 +96,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
         var manager = Context.GetActor<IRuleSetManager>();
         manager.Tell(new WorkerRemoved(_nttId));
-        Telemetry.Removed.Add(1);
+        Telemetry.Removed.Up();
     }
 
     private void HandleQueryDetail(QueryRuleSetDetail msg)
@@ -148,7 +149,7 @@ public sealed class RuleSetWorker : ReceiveActor
         if (errors.Count > 0)
         {
             _store.DeleteLocal(_nttId);
-            Telemetry.ValidationErrors.Add(1);
+            Telemetry.ValidationErrors.Up();
             Sender.Tell(new CreateLocalRuleSetValidationFailed([.. errors]));
             return;
         }
@@ -171,7 +172,7 @@ public sealed class RuleSetWorker : ReceiveActor
         if (errors.Count > 0)
         {
             _store.DeleteLocal(_nttId);
-            Telemetry.ValidationErrors.Add(1);
+            Telemetry.ValidationErrors.Up();
             Sender.Tell(new UpdateLocalRuleSetValidationFailed([.. errors]));
             return;
         }
@@ -226,7 +227,7 @@ public sealed class RuleSetWorker : ReceiveActor
         var errors = _validator.Validate(json);
         if (errors.Count > 0)
         {
-            Telemetry.ValidationErrors.Add(1);
+            Telemetry.ValidationErrors.Up();
             Sender.Tell(new ExportRuleSetValidationFailed([.. errors]));
             return;
         }

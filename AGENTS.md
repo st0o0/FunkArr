@@ -20,7 +20,7 @@ Multi-project solution with domain isolation:
 src/
   FunkArr.slnx
   FunkArr/                        # Host: Program.cs, Startup, DI, Config
-  FunkArr.Core/                   # Common types, Akka/Servus refs
+  FunkArr.Core/                   # Common types, Akka/Terp refs
   FunkArr.Api/                    # Internal REST API (Minimal APIs, OpenAPI-first)
   FunkArr.ArrApi/                 # Newznab + SABnzbd adapter (controller-based API)
   FunkArr.Search/                 # MediathekViewWeb query + release evaluation
@@ -53,7 +53,7 @@ src/
 - **Reference direction:** Host -> Api/ArrApi -> Domains -> Core -> Messages/Persistence.
   Never upward, never cross-domain.
 - **Core bundles framework refs.** FunkArr.Core references Messages + Persistence and
-  declares Akka/Servus NuGet packages. Domain projects reference only Core.
+  declares Akka/Terp NuGet packages. Domain projects reference only Core.
 - **ArrApi is a thin adapter.** Translates Newznab/SABnzbd protocols to domain
   commands/queries. No business logic.
 - **ArchUnitNET** tests enforce reference direction, naming conventions, and domain
@@ -276,21 +276,25 @@ Revisit once version hits 1.0+.
   Messages<->Persistence conversion lives in the domain project, not in Core.
   Core references Messages + Persistence but doesn't contain mapping logic.
 
-## Servus & Servus.Akka usage
+## Terp & Terp.Akka usage
 
 Use:
-- **AppBuilder startup** - per-domain setup containers. Shared:
-  `ServiceSetupContainer` (Core DI), `LoggingSetupContainer`,
-  `AkkaSetupContainer` (actors), `ApplicationSetupContainer` (app chrome).
-- **Actor registration** - `WithResolvableActors(b => b.Register<T>("name"))`.
-- **Actor resolution** - `context.GetActor<T>()`, `context.ResolveChildActor<T>()`.
-- **Safe child communication** - `context.GetChild("name")` -> `Option<IActorRef>`,
-  `context.ChildTell()`, `context.ChildForward()`.
-- **`Option<T>` extensions** - `Match(some, none)` pattern.
+- **Packages** - Terp (ISetup<T> in namespace Terp.Hosting, Resilience,
+  Diagnostics), Terp.Akka (depends on Terp).
+- **Setup startup** - per-domain setup containers implementing
+  ISetup<IServiceCollection> (and ISetup<WebApplication> for endpoints);
+  applied in Program.cs with builder.Setups().Add<T>() before Build and
+  app.Setups().Add<T>() after Build. Order matters: Logging and Telemetry
+  first, ApplicationSetupContainer last in app.Setups().
+- **Actor system** - AkkaSetupContainer derives from ActorSystemSetup
+  (ActorSystemName, BuildSystem); one actor system per host.
+- **Actor resolution** - `context.GetActor<T>()`, `context.GetActorAsync<T>()`,
+  `context.ResolveChildActor<T>()` (Terp.Akka).
+- **Backoff** - `props.BackoffOnFailure(...)` (Terp.Akka) and
+  `Terp.Resilience.Backoff.Create(...).DelayWithJitter(...)`.
 
 Do NOT use:
 - `HandlerRegistry` - use `Receive<T>()` directly.
-- `LocalEntityRegion` - use Akka.NET Cluster Sharding.
 - `ActorRef<T>` - use `IActorRef` + `IActorRegistry`.
 - Concurrency utils (`NamedSemaphoreSlimStore`, etc.).
 

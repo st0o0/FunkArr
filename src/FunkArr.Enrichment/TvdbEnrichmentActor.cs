@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Messages.Enrichment;
+using Terp.Diagnostics;
 
 namespace FunkArr.Enrichment;
 
@@ -46,7 +47,7 @@ internal sealed class TvdbEnrichmentActor : ReceiveActor
         }
         catch (Exception ex)
         {
-            Telemetry.Failed.Add(1, new KeyValuePair<string, object?>("api", "tvdb"));
+            Telemetry.Failed.Up(new KeyValuePair<string, object?>("api", "tvdb"));
             _log.Warning(ex, "TVDB enrichment failed for series {TvdbId}", msg.TvdbId);
             Sender.Tell(new EnrichEpisodesFailed(ex));
         }

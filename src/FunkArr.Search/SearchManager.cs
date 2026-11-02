@@ -2,7 +2,8 @@ using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.Search;
-using Servus.Akka;
+using Terp.Akka;
+using Terp.Diagnostics;
 
 namespace FunkArr.Search;
 
