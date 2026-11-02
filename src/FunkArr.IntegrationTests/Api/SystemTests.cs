@@ -83,4 +83,24 @@ public sealed class SystemTests(FunkArrFixture fixture)
         Assert.NotNull(result.ChannelRoutes);
         Assert.Equal("Direct", result.DefaultRoute);
     }
+
+    [Fact]
+    public async Task Variants_ReturnsDefaultPolicy()
+    {
+        var response = await _fixture.Client.GetAsync("/api/system/variants");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<VariantsResponse>();
+        Assert.NotNull(result);
+        var expected = new[]
+        {
+            MediathekVariant.AudioDescription,
+            MediathekVariant.SignLanguage,
+            MediathekVariant.PlainLanguage,
+            MediathekVariant.OriginalVersion
+        };
+        Assert.Equal(expected, result.Variants.Select(v => v.Variant).ToArray());
+        Assert.All(result.Variants, v => Assert.Equal(FunkArr.Api.Models.VariantPolicy.Exclude, v.Policy));
+    }
 }
