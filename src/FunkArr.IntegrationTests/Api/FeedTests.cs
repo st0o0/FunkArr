@@ -3,8 +3,6 @@ using System.Net.Http.Json;
 using FunkArr.Api.Models;
 using FunkArr.Core;
 using FunkArr.Messages.Feed;
-using FunkArr.Messages.Search;
-using FunkArr.Messages.Shared;
 
 namespace FunkArr.IntegrationTests.Api;
 
@@ -20,9 +18,9 @@ public sealed class FeedTests(FunkArrFixture fixture)
         var ingestProbe = _fixture.GetProbe<IFeedCrawlManager>();
         var lastRun = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
         var entry = new FeedEntry("0123456789abcdef0123456789abcdef", lastRun, FunkArr.Messages.MediaType.Show,
-            new SearchResultItem("Tatort.S2026E18.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
-                "https://example.com/v.mp4", 5400, 1_000_000, 720, null, 0.9,
-                Metadata: new MatchMetadata(null, "2026", "18", null, null)));
+            "Tatort.S2026E18.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
+            "https://example.com/v.mp4", 5400, 1_000_000, 720, null, 0.9, null,
+            null, "2026", "18");
 
         var task = _fixture.Client.GetAsync("/api/feed?limit=10");
 

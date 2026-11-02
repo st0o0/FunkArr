@@ -30,5 +30,9 @@ internal static class TestData
             new MatchMetadata(new ExternalIds(null, imdbId, tmdbId), season, episode, null, null));
 
     internal static FeedEntry Entry(string stableId, DateTimeOffset firstSeen, MediaType mediaType = MediaType.Show) =>
-        new(stableId, firstSeen, mediaType, Result($"https://example.com/{stableId}.mp4"));
+        new(stableId, firstSeen, mediaType,
+            "Tatort.S2026E18.Herz.aus.Eis.GERMAN.720p.WEB.h264-FunkArr",
+            "ARD", "Tatort", $"https://example.com/{stableId}.mp4",
+            5400, 1_000_000, 720, null, 0.9, null,
+            null, "2026", "18");
 }

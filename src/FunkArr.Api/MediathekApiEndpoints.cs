@@ -6,7 +6,6 @@ using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Timeouts;
 using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
@@ -23,7 +22,8 @@ public static class MediathekApiEndpoints
             .AddEndpointFilter<EndpointExceptionFilter>();
         group.WithRequestTimeout(TimeSpan.FromSeconds(60));
 
-        group.MapGet("/search", async ([AsParameters] ApiModels.MediathekSearchRequest req, IActorRegistry registry, CancellationToken ct) =>
+        group.MapGet("/search", async ([AsParameters] ApiModels.MediathekSearchRequest req, IActorRegistry registry,
+            CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(req.Q) && string.IsNullOrWhiteSpace(req.Channel) && string.IsNullOrWhiteSpace(req.Topic))
             {

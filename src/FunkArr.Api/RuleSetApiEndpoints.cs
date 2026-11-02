@@ -10,7 +10,6 @@ using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Extensions.DependencyInjection;
 using ApiModels = FunkArr.Api.Models;

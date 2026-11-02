@@ -20,3 +20,6 @@ public sealed class NewznabCollection : ICollectionFixture<FunkArrFixture>;
 
 [CollectionDefinition("Sabnzbd")]
 public sealed class SabnzbdCollection : ICollectionFixture<FunkArrFixture>;
+
+[CollectionDefinition("Feed")]
+public sealed class FeedCollection : ICollectionFixture<FunkArrFixture>;

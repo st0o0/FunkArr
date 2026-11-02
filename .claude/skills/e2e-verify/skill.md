@@ -23,8 +23,8 @@ designed so each step builds the state for subsequent steps.
 
 ## Architecture
 
-The main agent (Opus) handles all sequential/browser work (Phases 0-4), then spawns
-3 Haiku subagents for independent API test groups while doing its own concurrent work.
+The main agent (Opus) handles all sequential/browser work (Phases 0-4), then runs
+API subagents in two waves to avoid state conflicts.
 
 ```
 Main Agent (Opus):
@@ -34,25 +34,30 @@ Main Agent (Opus):
   Phase 3: Downloads - Pause, Queue ops, Resume, Active, Wait, History
   Phase 4: Scoring history + Dashboard post-search + Pagination + Radarr
 
-  --> All state is now built. Collect IDs needed by subagents, then spawn:
+  --> All state is now built. Collect IDs needed by subagents, then:
 
-  Agent "api-readonly" (Haiku):   Newznab + System + Mediathek + read-only errors
-  Agent "api-downloads" (Haiku):  SABnzbd + Download API + concurrency limit
-  Agent "api-rulesets" (Haiku):   RuleSet CRUD API + ruleset error handling
+  Wave 1 (EXCLUSIVE - no other agents touch downloads):
+    Agent "api-downloads" (Haiku):  SABnzbd + Download API + queue ops
+    Main agent: WAIT for api-downloads to finish before Wave 2
 
-  Main agent concurrently:        SSE resilience + Radarr search flow + Scoring API
+  Wave 2 (PARALLEL - downloads agent is done, no more queue mutations):
+    Agent "api-readonly" (Haiku):   Newznab + System + Mediathek + read-only errors
+    Agent "api-rulesets" (Haiku):   RuleSet CRUD API + ruleset error handling
+    Main agent concurrently:        SSE resilience + Radarr search flow + Scoring API
 
   --> Collect subagent results, validate edge cases, write results file
 ```
 
 ### Subagent isolation
 
-- **api-readonly**: Sections 20, 22, 27, 29.1-29.2, 29.5. Pure GET requests.
-- **api-downloads**: Sections 21, 28, 29.11. Mutates download state. Runs its own
-  pause/add/test/resume sequence internally.
-- **api-rulesets**: Sections 23, 29.3-29.4. Mutates ruleset state.
-- **Main agent concurrent**: Sections 19, 26, 29.9-29.10. SSE tests need docker
-  pause/unpause. Radarr flow needs Sonarr/Radarr state.
+- **api-downloads** (Wave 1, exclusive): Sections 21, 28, 29.11. Mutates download
+  state. Runs ALONE — no other agent may touch downloads, trigger Sonarr/Radarr
+  searches, or resume the pipeline while this agent runs. The agent guards its own
+  state by re-pausing and re-verifying the queue before each mutation phase.
+- **api-readonly** (Wave 2): Sections 20, 22, 27, 29.1-29.2, 29.5. Pure GET requests.
+- **api-rulesets** (Wave 2): Sections 23, 29.3-29.4. Mutates ruleset state.
+- **Main agent concurrent** (Wave 2): Sections 19, 26, 29.9-29.10. SSE tests need
+  docker pause/unpause. Radarr flow needs Sonarr/Radarr state.
 
 ### Subagent result validation
 
@@ -121,11 +126,10 @@ Key UI details:
   "Create Download Client". Click BOTH for each service.
 - Activity page has 2 tabs: Queue (default, shows active + queued) and History
 
-## Phase 5: Parallel API Verification
+## Phase 5: API Verification (Two Waves)
 
-After Phase 4, all state is built. Collect dynamic IDs needed by subagents, then
-launch all 3 Agent calls in a **single message** so they run concurrently.
-Use `model: "haiku"` for all subagents.
+After Phase 4, all state is built. Download tests run first (exclusive), then
+read-only and ruleset tests run in parallel.
 
 ### Step 1: Collect state for subagent prompts
 
@@ -139,10 +143,13 @@ $rulesets = Invoke-RestMethod "http://localhost:6969/api/rulesets"
 $communityId = ($rulesets.rulesets | Where-Object { $_.sourceType -eq 0 } | Select-Object -First 1).ruleSetId
 ```
 
-### Step 2: Spawn 3 subagents + do own concurrent work
+### Step 2: Wave 1 — Launch api-downloads ALONE
 
-Substitute `<FAILED_ID>` and `<COMMUNITY_ID>` in the prompt templates below
-with the actual IDs collected in Step 1.
+Spawn the download agent and **wait for it to finish** before proceeding.
+Do NOT launch any other subagents or trigger Sonarr/Radarr searches during
+this phase. Do NOT do SSE resilience tests (docker pause) during this phase.
+
+Substitute `<FAILED_ID>` in the prompt template below.
 
 #### Agent "api-readonly" prompt template
 
@@ -208,13 +215,35 @@ Return ONLY a markdown table, no other text:
 #### Agent "api-downloads" prompt template
 
 ```
-You are testing a REST API's download management. Tests MUST run in the exact order
-listed because they modify shared state. Use PowerShell Invoke-RestMethod or
-Invoke-WebRequest and curl for multipart uploads.
+You are testing a REST API's download management. You have EXCLUSIVE access to the
+download pipeline — no other agent is running. Tests MUST run in the exact order
+listed because they modify shared state.
+
+Use PowerShell Invoke-RestMethod or Invoke-WebRequest and curl for multipart uploads.
+Run ALL commands in a single PowerShell call per phase to minimize timing gaps.
 
 Base URL: http://localhost:6969
 API Key: funkarr-dev-api-key-01
 Failed download ID from history: <FAILED_ID>  (substitute actual ID)
+
+## CRITICAL: State guard before every mutation phase
+
+Before ANY phase that mutates queue state (C, D, E, F), run this guard:
+
+```powershell
+# Ensure pipeline is paused
+$q = Invoke-RestMethod "http://localhost:6969/download/api?mode=queue&apikey=funkarr-dev-api-key-01"
+if (-not $q.queue.paused) {
+    Invoke-RestMethod "http://localhost:6969/api/downloads/pause" -Method Post | Out-Null
+    Start-Sleep -Seconds 1
+}
+# Verify queue items are still Queued (not Downloading)
+$q = Invoke-RestMethod "http://localhost:6969/download/api?mode=queue&apikey=funkarr-dev-api-key-01"
+$queued = ($q.queue.slots | Where-Object { $_.status -eq "Queued" }).Count
+Write-Host "Guard: paused=$($q.queue.paused), queued=$queued"
+```
+
+If items have moved to Downloading or history, re-upload fresh NZBs before proceeding.
 
 ## Test sequence
 
@@ -236,9 +265,12 @@ Failed download ID from history: <FAILED_ID>  (substitute actual ID)
 | 28.3 | Settings | GET /api/downloads/settings -> concurrency, schedule |
 
 ### Phase C: Pause + add items for queue operation tests
+
+Run state guard first, then:
+
 1. Pause pipeline: POST /api/downloads/pause (28.4)
-2. Upload 3 NZB files via SABnzbd addfile for queue testing. Use this XML template
-   for each (change N to 1, 2, 3):
+2. Upload 4 NZB files (need 4: swap needs 2 with same priority, plus delete 1, plus
+   force-start 1). Use this XML template for each (change N to 1, 2, 3, 4):
 
 <?xml version="1.0" encoding="utf-8"?>
 <nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">
@@ -256,30 +288,36 @@ Failed download ID from history: <FAILED_ID>  (substitute actual ID)
   </file>
 </nzb>
 
-Upload each by writing XML to a temp file and using:
-curl -s -X POST "http://localhost:6969/download/api?apikey=funkarr-dev-api-key-01&mode=addfile&cat=show" -F "name=@<file>"
+Upload each: curl -s -X POST "http://localhost:6969/download/api?apikey=funkarr-dev-api-key-01&mode=addfile&cat=show" -F "name=@<file>"
 **Important**: API key MUST be a query parameter, not a form field.
 
 | # | Test | Method |
 |---|------|--------|
 | 21.6 | Addfile | Upload NZB -> returns status: true or nzo_ids |
 
-3. Get queue to find item IDs for subsequent tests.
+3. Verify queue: GET queue, confirm 4 items with status "Queued".
 
 ### Phase D: SABnzbd queue operations (with items in queue)
-| # | Test | Method |
-|---|------|--------|
-| 21.8 | Priority | GET /download/api?mode=queue&name=priority&value=<id>&value2=1&apikey=<key> -> priority changed |
-| 21.9 | Swap | GET /download/api?mode=queue&name=switch&value=<id1>&value2=<id2>&apikey=<key> -> swapped |
-| 21.7 | Delete | GET /download/api?mode=queue&name=delete&value=<id>&apikey=<key> -> removed |
 
-### Phase E: Internal queue operations (with remaining items)
+Run state guard. Then run all 3 operations in ONE PowerShell call:
+
 | # | Test | Method |
 |---|------|--------|
-| 28.6 | Force-start | POST /api/downloads/queue/<id>/force-start -> 200 |
-| 28.7 | Move | POST /api/downloads/queue/<id>/move with {"position":0} -> 200 |
-| 28.8 | Priority | POST /api/downloads/queue/<id>/priority with {"priority":"High"} -> 200 |
-| 28.9 | Swap | POST /api/downloads/queue/swap with {"id1":"<id1>","id2":"<id2>"} -> 200 (both items must have same priority for swap to work) |
+| 21.8 | Priority | GET /download/api?mode=queue&name=priority&value=<id3>&value2=1&apikey=<key> -> priority changed. THEN reset it back: ?mode=queue&name=priority&value=<id3>&value2=0 (so all items have same priority for swap) |
+| 21.9 | Swap | GET /download/api?mode=queue&name=switch&value=<id1>&value2=<id2>&apikey=<key> -> swapped (both must have same priority — use items that were NOT priority-changed) |
+| 21.7 | Delete | GET /download/api?mode=queue&name=delete&value=<id4>&apikey=<key> -> removed (delete the 4th item, keep 3 for Phase E) |
+
+### Phase E: Internal queue operations (with 3 remaining items)
+
+Run state guard. Then run move, priority, and swap BEFORE force-start (force-start
+dispatches the item, so it must be last):
+
+| # | Test | Method |
+|---|------|--------|
+| 28.7 | Move | POST /api/downloads/queue/<id1>/move with {"position":0} -> 200 |
+| 28.8 | Priority | POST /api/downloads/queue/<id2>/priority with {"priority":"High"} -> 200. THEN reset: POST with {"priority":"Normal"} |
+| 28.9 | Swap | POST /api/downloads/queue/swap with {"id1":"<id1>","id2":"<id3>"} -> 200 (both must have same priority — verify with GET queue first) |
+| 28.6 | Force-start | POST /api/downloads/queue/<id1>/force-start -> 200 (run LAST — dispatches the item) |
 
 ### Phase F: Resume + concurrency test
 | # | Test | Method |
@@ -363,9 +401,12 @@ Return ONLY a markdown table, no other text:
 | ... | ... | ... | ... |
 ```
 
-### Step 3: Main agent concurrent work
+### Step 3: Wave 2 — Launch api-readonly + api-rulesets + main concurrent work
 
-While subagents run, the main agent executes these tests itself:
+After api-downloads finishes, launch api-readonly and api-rulesets in a
+**single message** so they run concurrently. Use `model: "haiku"` for both.
+
+While those subagents run, the main agent executes these tests itself:
 
 **Scoring API verification (Section 19)**:
 - `GET /api/rulesets/{id}/history?limit=5` - verify response structure
@@ -382,7 +423,7 @@ While subagents run, the main agent executes these tests itself:
 
 ### Step 4: Collect results and write file
 
-Wait for all 3 subagents to complete. Parse their result tables. For any FAIL
+Wait for all subagents to complete. Parse their result tables. For any FAIL
 results from Haiku agents, verify the failure is genuine:
 - Re-run the specific failing request from the main agent
 - If Haiku misinterpreted the response, correct to PASS with a note
@@ -428,4 +469,6 @@ Mark each test:
 - Follow the execution order exactly - it creates state for later tests
 - If a test fails because state setup failed, mark both the setup failure and the dependent test as FAIL
 - Subagent prompts contain templates with `<PLACEHOLDER>` values - substitute actual IDs before spawning
-- Launch all 3 subagents in ONE message (single response with 3 Agent tool calls) for true parallelism
+- Wave 1: Launch api-downloads ALONE and wait for it to complete
+- Wave 2: Launch api-readonly + api-rulesets in ONE message (2 Agent tool calls) for true parallelism
+- NEVER trigger Sonarr/Radarr searches or docker pause/unpause during Wave 1

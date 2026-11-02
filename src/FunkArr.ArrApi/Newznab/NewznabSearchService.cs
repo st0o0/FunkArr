@@ -5,6 +5,7 @@ using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
+using FunkArr.Messages.Shared;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -108,7 +109,9 @@ public sealed class NewznabSearchService(
         CreateRss(
         [
             .. entries.Select(entry => ToItem(
-                entry.Item,
+                new SearchResultItem(entry.Title, entry.Channel, entry.Topic, entry.Url,
+                    entry.Duration, entry.Size, entry.Quality, entry.AiredAt, entry.Score,
+                    entry.SubtitleUrl, new MatchMetadata(entry.Ids, entry.Season, entry.Episode, null, null)),
                 entry.MediaType == MediaType.Movie ? NewznabCategory.Movie : NewznabCategory.Tv,
                 baseUrl,
                 apiKey,

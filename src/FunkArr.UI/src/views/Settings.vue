@@ -69,6 +69,21 @@
         <div v-else class="text-sm text-text-muted">{{ $t('common.loading') }}</div>
       </section>
 
+      <!-- Broadcast Variants -->
+      <section class="bg-surface-raised border border-border-default rounded-lg p-4">
+        <h2 class="text-sm font-medium text-text-primary mb-3">{{ $t('settings.variants') }}</h2>
+        <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm" v-if="variants">
+          <template v-for="entry in variants.variants" :key="entry.variant">
+            <dt class="text-text-secondary">{{ $t(`variants.${mediathekVariantName(entry.variant)}`) }}</dt>
+            <dd :class="entry.policy === VariantPolicy.Allow ? 'text-status-ok' : 'text-text-muted'">
+              {{ entry.policy === VariantPolicy.Allow ? $t('settings.variantAllowed') : $t('settings.variantExcluded') }}
+            </dd>
+          </template>
+        </dl>
+        <div v-else class="text-sm text-text-muted">{{ $t('common.loading') }}</div>
+        <p class="text-xs text-text-muted mt-3">{{ $t('settings.variantsHint') }}</p>
+      </section>
+
       <!-- System -->
       <section class="bg-surface-raised border border-border-default rounded-lg p-4">
         <h2 class="text-sm font-medium text-text-primary mb-3">{{ $t('settings.system') }}</h2>
@@ -128,7 +143,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { getDownloadSettings, type DownloadSettingsResponse } from '../api/downloads'
-import { getCacheStats, getSetupHealth, getSystemVersion, getRoutes, getLogs, type CacheStatsResponse, type SetupHealthCheck, type VersionResponse, type RoutesResponse, type LogEntry } from '../api/setup'
+import { getCacheStats, getSetupHealth, getSystemVersion, getRoutes, getLogs, getVariants, type CacheStatsResponse, type SetupHealthCheck, type VersionResponse, type RoutesResponse, type LogEntry, type VariantsResponse } from '../api/setup'
+import { mediathekVariantName } from '../api/enumMaps'
+import { VariantPolicy } from '../api/enums'
 import { useLogStream } from '../composables/useLogStream'
 
 const downloadSettings = ref<DownloadSettingsResponse | null>(null)
@@ -136,6 +153,7 @@ const cache = ref<CacheStatsResponse | null>(null)
 const health = ref<SetupHealthCheck | null>(null)
 const version = ref<VersionResponse | null>(null)
 const routes = ref<RoutesResponse | null>(null)
+const variants = ref<VariantsResponse | null>(null)
 
 const { entries: streamEntries, release } = useLogStream()
 const initialLogs = ref<LogEntry[]>([])
@@ -192,6 +210,7 @@ onMounted(async () => {
     getSystemVersion(),
     getRoutes(),
     getLogs(),
+    getVariants(),
   ])
 
   if (results[0].status === 'fulfilled') downloadSettings.value = results[0].value
@@ -200,6 +219,7 @@ onMounted(async () => {
   if (results[3].status === 'fulfilled') version.value = results[3].value
   if (results[4].status === 'fulfilled') routes.value = results[4].value
   if (results[5].status === 'fulfilled') initialLogs.value = results[5].value
+  if (results[6].status === 'fulfilled') variants.value = results[6].value
 })
 
 onUnmounted(release)

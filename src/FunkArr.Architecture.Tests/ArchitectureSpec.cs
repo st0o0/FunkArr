@@ -18,6 +18,7 @@ public sealed class ArchitectureSpec
     private static readonly Assembly _scoringAssembly = typeof(Scoring.AssemblyMarker).Assembly;
     private static readonly Assembly _historyAssembly = typeof(History.AssemblyMarker).Assembly;
     private static readonly Assembly _enrichmentAssembly = typeof(Enrichment.AssemblyMarker).Assembly;
+    private static readonly Assembly _feedAssembly = typeof(Feed.AssemblyMarker).Assembly;
     private static readonly Assembly _apiAssembly = typeof(Api.AssemblyMarker).Assembly;
     private static readonly Assembly _arrApiAssembly = typeof(ArrApi.AssemblyMarker).Assembly;
 
@@ -33,6 +34,7 @@ public sealed class ArchitectureSpec
                 _scoringAssembly,
                 _historyAssembly,
                 _enrichmentAssembly,
+                _feedAssembly,
                 _apiAssembly,
                 _arrApiAssembly)
             .Build();
@@ -50,6 +52,7 @@ public sealed class ArchitectureSpec
     private static readonly IObjectProvider<IType> _scoringLayer = InAssembly(_scoringAssembly);
     private static readonly IObjectProvider<IType> _historyLayer = InAssembly(_historyAssembly);
     private static readonly IObjectProvider<IType> _enrichmentLayer = InAssembly(_enrichmentAssembly);
+    private static readonly IObjectProvider<IType> _feedLayer = InAssembly(_feedAssembly);
     private static readonly IObjectProvider<IType> _apiLayer = InAssembly(_apiAssembly);
     private static readonly IObjectProvider<IType> _arrApiLayer = InAssembly(_arrApiAssembly);
 
@@ -157,6 +160,19 @@ public sealed class ArchitectureSpec
     }
 
     [Fact]
+    public void Feed_should_not_depend_on_other_domains()
+    {
+        Types().That().Are(_feedLayer)
+            .Should().NotDependOnAnyTypesThat().Are(_searchLayer)
+            .AndShould().NotDependOnAnyTypesThat().Are(_downloadLayer)
+            .AndShould().NotDependOnAnyTypesThat().Are(_ruleSetLayer)
+            .AndShould().NotDependOnAnyTypesThat().Are(_scoringLayer)
+            .AndShould().NotDependOnAnyTypesThat().Are(_historyLayer)
+            .AndShould().NotDependOnAnyTypesThat().Are(_enrichmentLayer)
+            .Check(_architecture);
+    }
+
+    [Fact]
     public void Domains_should_not_depend_on_adapters()
     {
         Types().That().Are(_searchLayer)
@@ -188,6 +204,11 @@ public sealed class ArchitectureSpec
             .Should().NotDependOnAnyTypesThat().Are(_apiLayer)
             .AndShould().NotDependOnAnyTypesThat().Are(_arrApiLayer)
             .Check(_architecture);
+
+        Types().That().Are(_feedLayer)
+            .Should().NotDependOnAnyTypesThat().Are(_apiLayer)
+            .AndShould().NotDependOnAnyTypesThat().Are(_arrApiLayer)
+            .Check(_architecture);
     }
 
     [Fact]
@@ -212,7 +233,7 @@ public sealed class ArchitectureSpec
         var allLayers = new[]
         {
             _messagesLayer, _persistenceLayer, _searchLayer, _downloadLayer,
-            _ruleSetLayer, _scoringLayer, _historyLayer, _enrichmentLayer
+            _ruleSetLayer, _scoringLayer, _historyLayer, _enrichmentLayer, _feedLayer
         };
 
         foreach (var layer in allLayers)

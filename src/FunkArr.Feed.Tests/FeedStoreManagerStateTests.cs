@@ -130,10 +130,10 @@ public sealed class FeedStoreManagerStateTests
 
         var entry = Assert.Single(restored.Entries.Values);
         Assert.Multiple(
-            () => Assert.Equal(original.Item.Title, entry.Item.Title),
-            () => Assert.Equal(original.Item.Url, entry.Item.Url),
-            () => Assert.Equal("2026", entry.Item.Metadata?.Season),
-            () => Assert.Equal("18", entry.Item.Metadata?.Episode),
+            () => Assert.Equal(original.Title, entry.Title),
+            () => Assert.Equal(original.Url, entry.Url),
+            () => Assert.Equal("2026", entry.Season),
+            () => Assert.Equal("18", entry.Episode),
             () => Assert.Equal(original.FirstSeenAt, entry.FirstSeenAt));
     }
 }

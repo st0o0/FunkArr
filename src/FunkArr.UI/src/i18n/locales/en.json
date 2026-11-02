@@ -6,7 +6,8 @@
     "settings": "Settings",
     "setup": "Setup",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "feed": "Feed"
   },
   "home": {
     "title": "Overview",
@@ -313,7 +314,8 @@
     "ruleTraces": "{count} rule trace(s)",
     "allFilter": "All",
     "matchedFilter": "Matched",
-    "unmatchedFilter": "Unmatched"
+    "unmatchedFilter": "Unmatched",
+    "excludedVariant": "Excluded: {variant}"
   },
   "queue": {
     "downloading": "Downloading",
@@ -410,7 +412,11 @@
     "communityRulesets": "Community Rulesets",
     "apiKey": "API Key",
     "logs": "Logs",
-    "noLogs": "No log entries"
+    "noLogs": "No log entries",
+    "variants": "Broadcast variants",
+    "variantsHint": "Set with FunkArr__Variants__<Variant>=Allow or Exclude",
+    "variantAllowed": "Allowed",
+    "variantExcluded": "Excluded"
   },
   "downloadDetail": {
     "loading": "Loading...",
@@ -435,5 +441,32 @@
   },
   "attribution": {
     "poweredBy": "Powered by"
+  },
+  "variants": {
+    "standard": "Standard",
+    "audioDescription": "Audio description",
+    "signLanguage": "Sign language",
+    "plainLanguage": "Plain language",
+    "originalVersion": "Original version"
+  },
+  "feed": {
+    "title": "RSS feed",
+    "crawlNow": "Crawl now",
+    "crawlStarted": "Feed crawl started",
+    "lastRun": "Last ingest run",
+    "status": "Status",
+    "lastRunAt": "Last run",
+    "never": "never",
+    "newEntries": "New entries",
+    "published": "Published",
+    "unmatched": "Without ruleset",
+    "warnings": "Warnings",
+    "gap": "Not all new entries could be covered in the last run",
+    "failures": "{count} failed runs in a row",
+    "hint": "Sonarr and Radarr pick up these releases with their RSS sync. Entries without a matching ruleset are not published.",
+    "entries": "Published releases ({count})",
+    "empty": "No releases published yet.",
+    "disabled": "disabled",
+    "running": "running"
   }
 }
