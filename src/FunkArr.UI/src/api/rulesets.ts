@@ -160,6 +160,7 @@ export interface ItemTrace {
   identification: TracedIdentification | null
   ruleTraces: RuleTrace[]
   enrichmentTrace: EnrichmentTrace | null
+  excludedVariant?: number | null
 }
 
 export interface ScoringDetail {

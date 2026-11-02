@@ -51,6 +51,12 @@
             >
               {{ item.matched ? $t('preview.matched') : $t('preview.noMatch') }}
             </span>
+            <span
+              v-if="item.excludedVariant != null"
+              class="text-xs px-1.5 py-0.5 rounded bg-surface-elevated text-status-warn"
+            >
+              {{ $t('scoring.excludedVariant', { variant: $t(`variants.${mediathekVariantName(item.excludedVariant)}`) }) }}
+            </span>
             <span class="text-text-secondary text-xs tabular-nums">score {{ item.score.toFixed(2) }}</span>
           </div>
 
@@ -108,7 +114,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getScoringDetail, type ScoringDetail } from '../api/rulesets'
-import { RuleOutcome, searchSourceName } from '../api/enumMaps'
+import { RuleOutcome, searchSourceName, mediathekVariantName } from '../api/enumMaps'
 import SkeletonCard from '../components/SkeletonCard.vue'
 import AppBreadcrumb from '../components/AppBreadcrumb.vue'
 import { strategyLabel } from '../utils/strategy'

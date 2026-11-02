@@ -102,9 +102,9 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         var searchProbe = _fixture.GetProbe<ISearchManager>();
         var firstSeen = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
         var entry = new FeedEntry("0123456789abcdef0123456789abcdef", firstSeen, MediaType.Show,
-            new SearchResultItem("Tatort.S2026E18.Herz.aus.Eis.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
-                "https://example.com/video.mp4", 5400, 500_000_000, 720, null, 0.9,
-                Metadata: new MatchMetadata(null, "2026", "18", null, null)));
+            "Tatort.S2026E18.Herz.aus.Eis.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
+            "https://example.com/video.mp4", 5400, 500_000_000, 720, null, 0.9, null,
+            null, "2026", "18");
 
         var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=100&apikey=test-key");
 

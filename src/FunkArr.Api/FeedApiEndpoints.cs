@@ -66,12 +66,12 @@ public static class FeedApiEndpoints
                     e.StableId,
                     e.FirstSeenAt,
                     (ApiModels.MediaType)(int)e.MediaType,
-                    e.Item.Title,
-                    e.Item.Channel,
-                    e.Item.Topic,
-                    e.Item.Quality,
-                    e.Item.Metadata?.Season,
-                    e.Item.Metadata?.Episode))
+                    e.Title,
+                    e.Channel,
+                    e.Topic,
+                    e.Quality,
+                    e.Season,
+                    e.Episode))
             ],
             entries.Total,
             new ApiModels.FeedCrawlStatusOutput(

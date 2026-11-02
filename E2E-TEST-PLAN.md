@@ -24,7 +24,7 @@ sets up each scenario deterministically before the tests that need it.
 
 | Scenario | Setup recipe | Required for |
 |---|---|---|
-| **Clean slate** | Fresh volumes, no data | 0.x, 14.x (health), initial dashboard |
+| **Clean slate** | Fresh volumes, no data | 0.x, 14.x (health), initial dashboard, 30.x (feed empty) |
 | **Sonarr ready** | Tatort added (tvdbId 83214), root folder `/shared/tv` | 17.x |
 | **Radarr ready** | Movie added (e.g. Schachnovelle tmdbId 1740919), root folder `/shared/movies` | 26.x |
 | **Services configured** | Setup wizard or API configures Prowlarr/Sonarr/Radarr | 17.x, 26.x |
@@ -35,7 +35,8 @@ sets up each scenario deterministically before the tests that need it.
 | **Active download** | Resume pipeline -> downloads become active | 3.3-3.6, 18.1 |
 | **Failed download** | Upload NZB with invalid URL via SABnzbd addfile | 5.6-5.8, 18.4-18.5, 21.14 |
 | **Pagination data** | Trigger searches to generate scoring entries (count non-deterministic) | 5.10, 12.5-12.6 |
-| **Post-search** | Completed downloads + scoring history exist | 1.5-1.8, 5.x, 12.x, 13.x, 19.x |
+| **Post-search** | Completed downloads + scoring history exist | 1.5-1.8, 5.x, 12.x, 13.x, 19.x, 30.x (feed populated) |
+| **Feed populated** | Feed ingest has run and published entries | 30.x, 31.x, 33.x |
 
 ### Setup Recipe: Paused pipeline with queued items
 
@@ -339,7 +340,7 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 ## 2. Sidebar & Global Navigation
 
 - [ ] **2.1** FunkArr logo click navigates to `/`
-- [ ] **2.2** Sidebar nav: Übersicht → `/`, Aktivität → `/activity`, Regelwerke → `/rulesets`
+- [ ] **2.2** Sidebar nav: Übersicht → `/`, Aktivität → `/activity`, Regelwerke → `/rulesets`, Feed → `/feed`
 - [ ] **2.3** Einrichtung link → `/setup`
 - [ ] **2.4** Sidebar collapse button → icons only mode
 - [ ] **2.5** Sidebar expand button → full labels restored
@@ -626,24 +627,35 @@ The Queue tab is the default tab and shows both active downloads and queued item
 
 ---
 
-## 17. Sonarr → FunkArr Search Flow (E2E)
+## 17. Sonarr → FunkArr Search Flow (E2E with Import)
 
-**API-driven flow testing the complete integration.**
+**API-driven flow testing the complete integration from search to Sonarr import.**
 
-- [ ] **17.1** Trigger episode search via Sonarr API:
+The test is only complete when Sonarr has imported the file — `downloadFolderImported`
+in the Sonarr history. A download that stays in `importBlocked` is a failure (usually
+a permissions issue on the shared volume).
+
+**Permission fix** (run once before import tests): The FunkArr container writes
+downloads as its own user (uid 1654). Sonarr runs as `nobody`. Fix shared volume
+permissions so Sonarr can read the completed downloads:
+```powershell
+docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777 /shared/downloads/complete/"
+```
+
+- [ ] **17.1** Trigger season search via Sonarr API (season search finds more matches than single-episode):
   ```
   POST http://localhost:8989/api/v3/command
-  { "name": "EpisodeSearch", "episodeIds": [<episodeId>] }
+  { "name": "SeasonSearch", "seriesId": <seriesId>, "seasonNumber": <n> }
   ```
-- [ ] **17.2** FunkArr receives Newznab tvsearch request (check logs)
-- [ ] **17.3** Mediathek query returns results
-- [ ] **17.4** Scoring matches items with correct rule
-- [ ] **17.5** Enrichment resolves season/episode via TVDB
-- [ ] **17.6** Only 1 scoring history entry created (pagination cache working)
-- [ ] **17.7** Sonarr receives results and initiates download via SABnzbd API
-- [ ] **17.8** Download appears in FunkArr Activity (Aktiv tab) with progress
-- [ ] **17.9** Download completes, appears in Verlauf tab as Completed
-- [ ] **17.10** Downloaded file accessible at `/shared/downloads/complete`
+- [ ] **17.2** FunkArr receives Newznab tvsearch request (check FunkArr logs for `tvsearch` query)
+- [ ] **17.3** Sonarr reports "Season search completed. N reports downloaded." with N > 0
+- [ ] **17.4** FunkArr download queue shows grabbed items (`GET /download/api?mode=queue`)
+- [ ] **17.5** Wait for downloads to complete: poll Sonarr queue until `totalRecords=0` or `status=completed`
+- [ ] **17.6** Fix permissions if needed (see above), trigger `ProcessMonitoredDownloads` command
+- [ ] **17.7** Sonarr history shows `downloadFolderImported` events for the searched episodes
+- [ ] **17.8** Sonarr episode files exist: `GET /api/v3/episodefile?seriesId=<id>` returns files with correct season/quality
+- [ ] **17.9** MKV files on disk at `/shared/tv/<series>/<season>/`
+✅ **PASS criteria**: Sonarr history has `downloadFolderImported` for at least 1 episode from the search
 
 ---
 
@@ -712,9 +724,10 @@ The Queue tab is the default tab and shows both active downloads and queued item
 - [ ] **22.3** `GET /api/system/storage` → disk usage
 - [ ] **22.4** `GET /api/system/cache` → enrichment cache stats (TVDB/TMDB counts + oldest entry)
 - [ ] **22.5** `GET /api/system/routes` → network route configuration (Direct default + Austria proxy)
-- [ ] **22.6** `GET /api/system/logs` → recent log entries from ring buffer
-- [ ] **22.7** `GET /api/system/logs/stream` → SSE connection opens, log entries stream in real-time
-- [ ] **22.8** `GET /openapi/v1.json` → valid OpenAPI spec document with all /api endpoints
+- [ ] **22.6** `GET /api/system/variants` → variant policies (4 entries, default all Exclude)
+- [ ] **22.7** `GET /api/system/logs` → recent log entries from ring buffer
+- [ ] **22.8** `GET /api/system/logs/stream` → SSE connection opens, log entries stream in real-time
+- [ ] **22.9** `GET /openapi/v1.json` → valid OpenAPI spec document with all /api endpoints (includes /api/feed routes)
 
 ---
 
@@ -735,7 +748,7 @@ The Queue tab is the default tab and shows both active downloads and queued item
 
 **Route**: `/settings`
 
-- [ ] **24.1** Page loads with all sections: Download-Einstellungen, Metadaten-Cache, Netzwerkrouten, System
+- [ ] **24.1** Page loads with all sections: Download-Einstellungen, Broadcast Variants, Metadaten-Cache, Netzwerkrouten, System
 - [ ] **24.2** Download settings: shows concurrent download limit and schedule config
 - [ ] **24.3** Cache stats: TVDB and TMDB entry counts displayed
 - [ ] **24.4** Network routes: configured routes listed (Direct, Austria proxy)
@@ -796,24 +809,161 @@ The Queue tab is the default tab and shows both active downloads and queued item
 
 ---
 
-## 29. Error Handling & Edge Cases
+## 29. Broadcast Variants
+
+### Settings UI
+
+- [ ] **29.1** Navigate to `/settings` → "Broadcast variants" section visible
+- [ ] **29.2** Shows four variant types: Audio Description, Sign Language, Plain Language, Original Version
+- [ ] **29.3** Default policy for all variants: "Excluded" (muted label)
+- [ ] **29.4** Hint text: config key `FunkArr__Variants__<Variant>=Allow or Exclude`
+
+### API
+
+- [ ] **29.5** `GET /api/system/variants` → JSON array with 4 entries, each has `variant` and `policy` fields
+- [ ] **29.6** Default response: all variants have `policy: "Exclude"`
+
+### Scoring Detail Integration
+
+- [ ] **29.7** After a Sonarr search that includes variant entries: scoring detail shows orange "Excluded: {variant}" badge on excluded items
+- [ ] **29.8** Non-variant items show no variant badge
+
+---
+
+## 30. RSS Feed Page (UI)
+
+**Route**: `/feed`
+
+### Empty State (before first ingest)
+
+- [ ] **30.1** Page loads with header "RSS feed"
+- [ ] **30.2** "Crawl now" button visible in header
+- [ ] **30.3** Last ingest run section shows "Status: Never" when no crawl has run
+- [ ] **30.4** Published releases section shows "No releases published yet."
+
+### After Feed Ingest
+
+- [ ] **30.5** Click "Crawl now" → button becomes disabled, toast "Feed crawl started"
+- [ ] **30.6** After crawl completes: last ingest run section updates with status, last run time, new entries count, published count
+- [ ] **30.7** "Without ruleset" count shows entries that couldn't be matched to a ruleset
+- [ ] **30.8** Published releases section shows entries with: relative timestamp, title (truncated), S##E## (if present), channel, quality in px
+- [ ] **30.9** Entry count shown in section header
+- [ ] **30.10** Hint text explains Sonarr/Radarr pick up releases via RSS sync
+
+### Error States
+
+- [ ] **30.11** "Crawl now" disabled when ingest is already running
+- [ ] **30.12** Gap warning shown if crawl couldn't cover the full window (e.g. after long downtime)
+- [ ] **30.13** Consecutive failures count displayed when > 0
+
+---
+
+## 31. Feed API
+
+- [ ] **31.1** `GET /api/feed` → JSON with `entries[]`, `total`, and `ingest` status object
+- [ ] **31.2** `GET /api/feed?limit=5` → at most 5 entries returned
+- [ ] **31.3** `GET /api/feed?limit=500` → max 500 entries (upper bound)
+- [ ] **31.4** `POST /api/feed/crawl` → 202 Accepted (triggers immediate crawl)
+- [ ] **31.5** `ingest` object contains: `enabled`, `running`, `lastRunAt`, `lastOutcome`, `lastNewItems`, `lastPublished`, `lastUnmatched`, `lastGap`, `consecutiveFailures`
+- [ ] **31.6** After crawl: `entries[]` contains items with `stableId`, `firstSeenAt`, `mediaType`, `title`, `channel`, `topic`, `quality`, `season`, `episode`
+- [ ] **31.7** Entries sorted by `firstSeenAt` descending (newest first)
+- [ ] **31.8** Duplicate crawl trigger while running → still returns 202 (idempotent)
+
+---
+
+## 32. Newznab RSS Sync (Empty Query)
+
+### Feed-backed RSS
+
+- [ ] **32.1** `GET /index/api?t=tvsearch&apikey=<key>` (no q, no IDs) → returns feed entries filtered to TV (mediaType=Show)
+- [ ] **32.2** `GET /index/api?t=movie&apikey=<key>` (no q, no IDs) → returns feed entries filtered to Movie
+- [ ] **32.3** `GET /index/api?t=search&apikey=<key>` (no q, no IDs) → returns all feed entries (both TV + Movie)
+- [ ] **32.4** Feed-backed RSS items have proper Newznab attributes: `pubDate` = `FirstSeenAt`, GUID = `StableId`
+- [ ] **32.5** Feed-backed RSS respects `offset` and `limit` parameters for pagination
+
+### Validation Fallback (empty feed)
+
+- [ ] **32.6** With empty feed: `GET /index/api?t=tvsearch&apikey=<key>` → single validation item with title `FunkArr.Validation.S01E01.GERMAN.1080p.WEB.h264-FunkArr`
+- [ ] **32.7** Validation item GUID: `funkarr-validation-tv`
+- [ ] **32.8** With empty feed: `GET /index/api?t=movie&apikey=<key>` → validation item with title `FunkArr.Validation.2024.GERMAN.1080p.WEB.h264-FunkArr`
+- [ ] **32.9** Validation item GUID: `funkarr-validation-movie`
+- [ ] **32.10** Validation item size: ~1 GB
+- [ ] **32.11** Validation item description contains "FunkArr validation entry"
+
+### Output Caching
+
+- [ ] **32.12** Two identical empty-query requests within 30 min return the same response (cached)
+- [ ] **32.13** After new feed entries are published, cached response is invalidated (new request returns updated entries)
+
+---
+
+## 33. Pre-Released Entries
+
+- [ ] **33.1** Trigger Sonarr search for an episode → scoring history shows candidates from both aired and pre-released Mediathek entries
+- [ ] **33.2** Pre-released and regular entries are merged by video URL (no duplicates)
+- [ ] **33.3** `GET /api/mediathek/search?q=<topic>&limit=10` → may include entries with future air dates
+
+---
+
+## 34. Evaluation Workers
+
+- [ ] **34.1** After Sonarr search: scoring history entry has `source: "sonarr"` (search workers delegate to evaluation workers internally)
+- [ ] **34.2** After feed crawl: scoring history entries have `source: "feed"`
+- [ ] **34.3** Feed-sourced scoring entries show enrichment data (TVDB/TMDB IDs resolved)
+- [ ] **34.4** `GET /api/rulesets/{id}/history` → entries from both "sonarr" and "feed" sources appear
+
+---
+
+## 35. Feed → Sonarr Import (E2E with Import)
+
+**Tests the complete feed ingest → Newznab RSS → Sonarr RSS sync → download → import chain.**
+
+This is the primary way Sonarr discovers new releases from German public broadcasters.
+The test verifies that the FeedCrawlWorker's 6 Become phases produce valid Newznab
+entries that Sonarr can grab and import end-to-end.
+
+**Prerequisites**: Sonarr configured with FunkArr indexer (RSS enabled) and SABnzbd
+download client. A monitored series that has entries in the feed (e.g. "In aller
+Freundschaft" tvdbId=147521). Feed crawl completed with entries published.
+
+- [ ] **35.1** Feed crawl completed: `GET /api/feed?limit=1` → `ingest.lastOutcome = "completed"`, `total > 0`
+- [ ] **35.2** Newznab RSS returns feed entries: `GET /index/api?t=tvsearch&apikey=<key>&limit=5` → items with `tvdbid`, `season`, `episode` attributes
+- [ ] **35.3** Trigger RSS sync in Sonarr:
+  ```
+  POST http://localhost:8989/api/v3/command
+  { "name": "RssSync" }
+  ```
+- [ ] **35.4** Sonarr reports "RSS Sync Completed. Reports found: N, Reports grabbed: M" with M > 0
+- [ ] **35.5** FunkArr download queue shows grabbed items: `GET /download/api?mode=queue&apikey=<key>` → slots present
+- [ ] **35.6** Wait for downloads to complete: poll FunkArr SABnzbd queue until slots empty or all completed
+- [ ] **35.7** Fix permissions on completed downloads (see section 17 note), trigger Sonarr `ProcessMonitoredDownloads`
+- [ ] **35.8** Sonarr history shows `downloadFolderImported` events for RSS-grabbed episodes
+- [ ] **35.9** Sonarr episode list: `GET /api/v3/episodefile?seriesId=<id>` → files with quality, size, path
+- [ ] **35.10** MKV files on disk at `/shared/tv/<series>/<season>/` with correct naming
+✅ **PASS criteria**: At least 1 episode grabbed via RSS sync reaches `downloadFolderImported` in Sonarr history
+
+---
+
+## 36. Error Handling & Edge Cases
 
 ### API Errors
-- [ ] **29.1** `GET /api/nonexistent` → 404
-- [ ] **29.2** `GET /api/rulesets/nonexistent-id` → 404, not 500
-- [ ] **29.3** `POST /api/rulesets` with invalid JSON → 400 with validation details
-- [ ] **29.4** `DELETE /api/rulesets/{community-id}` → error (community protected)
-- [ ] **29.5** Newznab `GET /index/api?t=invalid&apikey=<key>` → proper error response
+- [ ] **36.1** `GET /api/nonexistent` → 404
+- [ ] **36.2** `GET /api/rulesets/nonexistent-id` → 404, not 500
+- [ ] **36.3** `POST /api/rulesets` with invalid JSON → 400 with validation details
+- [ ] **36.4** `DELETE /api/rulesets/{community-id}` → error (community protected)
+- [ ] **36.5** Newznab `GET /index/api?t=invalid&apikey=<key>` → proper error response
+- [ ] **36.6** `GET /api/feed?limit=999` → clamped to max 500, no error
 
 ### Legacy Redirects
-- [ ] **29.6** Navigate to `/queue` → redirects to `/activity`
-- [ ] **29.7** Navigate to `/history` → redirects to `/activity`
-- [ ] **29.8** Navigate to `/search` → redirects to `/rulesets`
+- [ ] **36.7** Navigate to `/queue` → redirects to `/activity`
+- [ ] **36.8** Navigate to `/history` → redirects to `/activity`
+- [ ] **36.9** Navigate to `/search` → redirects to `/rulesets`
 
 ### Resilience
-- [ ] **29.9** Queue SSE: disconnect network briefly → stream reconnects, state recovers
-- [ ] **29.10** Log SSE: disconnect → stream reconnects, new entries appear
-- [ ] **29.11** Concurrent download limit: with limit=2, queue 3 downloads → only 2 active, 1 waiting
+- [ ] **36.10** Queue SSE: disconnect network briefly → stream reconnects, state recovers
+- [ ] **36.11** Log SSE: disconnect → stream reconnects, new entries appear
+- [ ] **36.12** Concurrent download limit: with limit=2, queue 3 downloads → only 2 active, 1 waiting
+- [ ] **36.13** Feed crawl during MVW indexing (HTTP 503): crawl retries with backoff, no crash
 
 ---
 
@@ -825,32 +975,46 @@ the state required by subsequent steps.
 1. **Startup**: Docker compose up, wait for health (sections 14, 22)
 2. **Setup wizard**: Full walkthrough - health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
 3. **Dashboard (clean)**: Verify stat cards, links, version on clean slate (section 1.1-1.4, 1.9)
-4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links (section 2)
-5. **Settings page**: All sections visible, download config, cache stats, routes, log viewer (section 24)
-6. **Legacy redirects**: /queue, /history, /search redirect correctly (section 29.6-29.8)
-7. **Create local ruleset**: Via UI (section 9) - creates state for source filters + delete tests
-8. **Edit Tatort**: Via UI editor, add alias, save - creates merged ruleset (section 8).
-   After saving, **validate the roundtrip**: `GET /api/rulesets/tatort/raw` and compare
-   regex patterns against the community source to ensure no double-escaping occurred.
-   If editing via API instead of UI, read "API Ruleset Roundtrip Pitfalls" above.
-9. **Rulesets list**: Search, ALL filter combinations (type + source), both sort options (section 6)
-10. **Ruleset detail + export**: Tatort (merged) - identity, enrichment, expand/collapse, **export first** (section 11), then delete overlay (sections 7, 10.1-10.2). Export requires the local overlay to exist.
-11. **Delete local ruleset**: Delete the section 9 ruleset via confirmation flow (section 10.3-10.6)
-12. **Pause pipeline**: `POST /api/downloads/pause` - prevent downloads from starting
-13. **Trigger 3+ Sonarr searches**: Different episodes while paused - items queue (section 17.1-17.6)
-14. **Upload failed NZB**: Add NZB with invalid URL via SABnzbd addfile - queues bad download
-15. **Queue tests**: Queue tab shows queued items, queue operations (sections 4, 25.3-25.6, 28.6-28.9)
-16. **Resume pipeline**: `POST /api/downloads/resume` - downloads start
-17. **Active download tests**: Queue tab during download, cancel one, global speed (sections 3.3-3.6, 18.1)
-18. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
-19. **Generate history pagination data**: Upload 20 NZBs with bad URLs (10x show, 10x movie) via SABnzbd addfile, poll until history has >= 26 entries
-20. **History tests**: History tab, completed + failed status, retry, delete, category filter, pagination (sections 5, 18.3-18.5)
-21. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)
-22. **Generate scoring history entries**: Trigger 10+ Sonarr searches across seasons 2015-2026 (1 per season, 5s spacing to avoid queue saturation)
-23. **Scoring history**: List, API pagination (limit/offset), click through to detail, filter tabs, traces (sections 12-13)
-24. **Scoring verification**: API check for enrichment + rule traces (section 19)
-25. **Radarr search**: Add movie to Radarr, trigger search (section 26)
-26. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD, Mediathek, Download APIs (sections 20-23, 27-28)
-27. **Error handling**: Invalid routes, bad IDs, malformed requests (section 29.1-29.5)
-28. **SSE resilience**: Pause/unpause container, verify stream reconnects (section 29.9-29.10)
-29. **Concurrency limit**: Queue 3 downloads with limit=2, verify 2 active + 1 waiting (section 29.11)
+4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links incl. Feed (section 2)
+5. **Settings page**: All sections visible, download config, cache stats, routes, **broadcast variants**, log viewer (sections 24, 29.1-29.4)
+6. **Variants API**: `GET /api/system/variants` returns 4 variants with Exclude policy (section 29.5-29.6)
+7. **Legacy redirects**: /queue, /history, /search redirect correctly (section 36.7-36.9)
+8. **RSS sync validation (empty feed)**: Newznab empty-query returns validation items before feed exists (section 32.6-32.11)
+9. **Feed page (empty)**: `/feed` shows empty state, crawl button (section 30.1-30.4)
+10. **Feed API (empty)**: `GET /api/feed` returns empty entries, ingest status (section 31.1, 31.5)
+11. **Create local ruleset**: Via UI (section 9) - creates state for source filters + delete tests
+12. **Edit Tatort**: Via UI editor, add alias, save - creates merged ruleset (section 8).
+    After saving, **validate the roundtrip**: `GET /api/rulesets/tatort/raw` and compare
+    regex patterns against the community source to ensure no double-escaping occurred.
+    If editing via API instead of UI, read "API Ruleset Roundtrip Pitfalls" above.
+13. **Rulesets list**: Search, ALL filter combinations (type + source), both sort options (section 6)
+14. **Ruleset detail + export**: Tatort (merged) - identity, enrichment, expand/collapse, **export first** (section 11), then delete overlay (sections 7, 10.1-10.2). Export requires the local overlay to exist.
+15. **Delete local ruleset**: Delete the section 9 ruleset via confirmation flow (section 10.3-10.6)
+16. **Trigger feed crawl**: `POST /api/feed/crawl` → 202, wait for completion (section 31.4)
+17. **Feed page (populated)**: Crawl now button, ingest status, published entries visible (section 30.5-30.10)
+18. **Feed API (populated)**: Entries with limit/pagination, ingest status fields (section 31.1-31.8)
+19. **RSS sync with feed**: Newznab empty-query now returns feed entries (section 32.1-32.5)
+20. **RSS output caching**: Verify cached responses and cache invalidation (section 32.12-32.13)
+21. **Evaluation workers**: Feed-sourced scoring entries appear with `source: "feed"` (section 34.2-34.4)
+22. **Pause pipeline**: `POST /api/downloads/pause` - prevent downloads from starting
+23. **Trigger 3+ Sonarr searches**: Different episodes while paused - items queue (section 17.1-17.6)
+24. **Pre-released entries**: Scoring history shows both aired and pre-released candidates (section 33)
+25. **Upload failed NZB**: Add NZB with invalid URL via SABnzbd addfile - queues bad download
+26. **Queue tests**: Queue tab shows queued items, queue operations (sections 4, 25.3-25.6, 28.6-28.9)
+27. **Resume pipeline**: `POST /api/downloads/resume` - downloads start
+28. **Active download tests**: Queue tab during download, cancel one, global speed (sections 3.3-3.6, 18.1)
+29. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
+30. **Search → Import verification**: Fix shared volume permissions, trigger Sonarr `ProcessMonitoredDownloads`, verify `downloadFolderImported` in Sonarr history, episode files exist (section 17.5-17.9)
+31. **Feed → Import verification**: Trigger RSS sync in Sonarr, wait for grabs + downloads, fix permissions, verify `downloadFolderImported` in Sonarr history (section 35.1-35.10)
+32. **Generate history pagination data**: Upload 20 NZBs with bad URLs (10x show, 10x movie) via SABnzbd addfile, poll until history has >= 26 entries
+33. **History tests**: History tab, completed + failed status, retry, delete, category filter, pagination (sections 5, 18.3-18.5)
+34. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)
+35. **Generate scoring history entries**: Trigger 10+ Sonarr searches across seasons 2015-2026 (1 per season, 5s spacing to avoid queue saturation)
+36. **Scoring history + variants**: List, API pagination (limit/offset), click through to detail, filter tabs, traces, variant badges (sections 12-13, 29.7-29.8)
+37. **Scoring verification**: API check for enrichment + rule traces, both sonarr + feed sources (sections 19, 34.1)
+38. **Radarr search**: Add movie to Radarr, trigger search (section 26)
+39. **API smoke tests**: Newznab, SABnzbd, System, RuleSet CRUD, Mediathek, Download, Feed APIs (sections 20-23, 27-28, 31)
+40. **Error handling**: Invalid routes, bad IDs, malformed requests, feed limit clamping (section 36.1-36.6)
+41. **SSE resilience**: Pause/unpause container, verify stream reconnects (section 36.10-36.11)
+42. **Concurrency limit**: Queue 3 downloads with limit=2, verify 2 active + 1 waiting (section 36.12)
+43. **Feed crawl resilience**: MVW 503 handling, backoff behavior (section 36.13)
