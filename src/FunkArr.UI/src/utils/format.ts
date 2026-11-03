@@ -42,8 +42,10 @@ export function formatRelativeDate(isoString: string): string {
   const diffSeconds = Math.floor(diffMs / 1000)
 
   if (diffSeconds < 60) return 'just now'
-  if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)} minutes ago`
-  if (diffSeconds < 86400) return `${Math.floor(diffSeconds / 3600)} hours ago`
+  const minutes = Math.floor(diffSeconds / 60)
+  if (diffSeconds < 3600) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+  const hours = Math.floor(diffSeconds / 3600)
+  if (diffSeconds < 86400) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
 
   return date.toLocaleDateString('de-DE', {
     day: '2-digit',
