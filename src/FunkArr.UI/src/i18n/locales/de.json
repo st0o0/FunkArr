@@ -390,6 +390,11 @@
     "category": "Kategorie",
     "size": "Groesse",
     "phase": "Phase",
+    "phases": {
+      "videodownload": "Download",
+      "remuxing": "Remux",
+      "moving": "Verschieben"
+    },
     "priority": "Prioritaet",
     "filePath": "Dateipfad",
     "duration": "Dauer",

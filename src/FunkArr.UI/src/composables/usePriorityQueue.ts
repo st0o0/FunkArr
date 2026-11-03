@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 import { useQueueStream } from './useQueueStream'
-import { QueueStatus } from '../api/enums'
+import { QueueStatus, QueuePriority } from '../api/enums'
 
 export function usePriorityQueue() {
   const stream = useQueueStream()
@@ -14,15 +14,15 @@ export function usePriorityQueue() {
   )
 
   const high = computed(() =>
-    queued.value.filter(i => i.priority === 'High')
+    queued.value.filter(i => i.priority === QueuePriority.High)
   )
 
   const normal = computed(() =>
-    queued.value.filter(i => i.priority === 'Normal')
+    queued.value.filter(i => i.priority === QueuePriority.Normal)
   )
 
   const low = computed(() =>
-    queued.value.filter(i => i.priority === 'Low')
+    queued.value.filter(i => i.priority === QueuePriority.Low)
   )
 
   const totalSpeed = computed(() =>

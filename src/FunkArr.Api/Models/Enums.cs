@@ -91,3 +91,17 @@ public enum MatchMethod
     AirdateMatch,
     YearMatch
 }
+
+public enum QueuePhase
+{
+    VideoDownload,
+    Remuxing,
+    Moving
+}
+
+public enum QueuePriority
+{
+    Low = -1,
+    Normal = 0,
+    High = 1
+}

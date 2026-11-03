@@ -58,16 +58,16 @@ const position = ref({ x: 0, y: 0 })
 const currentItem = ref<QueueItem | null>(null)
 
 const isActive = computed(() => currentItem.value?.status === QueueStatus.Processing)
-const currentPriority = computed(() => currentItem.value?.priority ?? 'Normal')
+const currentPriority = computed(() => currentItem.value?.priority ?? 0)
 
 const priorities = computed(() => [
-  { value: 'High', label: t('queue.priorityHigh'), color: 'text-status-warn' },
-  { value: 'Normal', label: t('queue.priorityNormal'), color: 'text-text-body' },
-  { value: 'Low', label: t('queue.priorityLow'), color: 'text-status-info' },
+  { value: 1, label: t('queue.priorityHigh'), color: 'text-status-warn' },
+  { value: 0, label: t('queue.priorityNormal'), color: 'text-text-body' },
+  { value: -1, label: t('queue.priorityLow'), color: 'text-status-info' },
 ])
 
 const emit = defineEmits<{
-  priority: [id: string, priority: string]
+  priority: [id: string, priority: number]
   forceStart: [id: string]
   delete: [id: string]
 }>()
@@ -85,7 +85,7 @@ function close() {
   currentItem.value = null
 }
 
-function handlePriority(priority: string) {
+function handlePriority(priority: number) {
   if (currentItem.value && priority !== currentPriority.value) {
     emit('priority', currentItem.value.downloadId, priority)
   }

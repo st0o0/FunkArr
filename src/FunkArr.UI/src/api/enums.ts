@@ -1,4 +1,6 @@
 export const QueueStatus = { Processing: 0, Queued: 1 } as const
+export const QueuePhase = { VideoDownload: 0, Remuxing: 1, Moving: 2 } as const
+export const QueuePriority = { Low: -1, Normal: 0, High: 1 } as const
 export const HistoryStatus = { Completed: 0, Failed: 1 } as const
 export const SourceType = { Community: 0, Local: 1, Merged: 2 } as const
 export const MediaType = { Show: 0, Movie: 1 } as const

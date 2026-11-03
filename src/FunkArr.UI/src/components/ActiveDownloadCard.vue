@@ -35,7 +35,7 @@
       </div>
       <div class="flex justify-between text-xs text-text-secondary mt-1.5">
         <span class="tabular-nums">
-          <span class="text-text-muted">{{ item.phase === 'remuxing' ? t('activity.phaseRemuxing') : t('activity.phaseDownloading') }}</span>
+          <span class="text-text-muted">{{ item.phase === QueuePhase.Remuxing ? t('activity.phaseRemuxing') : t('activity.phaseDownloading') }}</span>
           {{ item.percentage }}% · {{ formatSize(item.bytesDownloaded) }} / {{ formatSize(item.totalBytes) }}
         </span>
         <span class="tabular-nums">{{ formatSpeed(item.speed) }} · ETA {{ item.eta }}</span>
@@ -47,6 +47,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { QueueItem } from '../api/downloads'
+import { QueuePhase } from '../api/enums'
 import { formatSize, formatSpeed } from '../utils/format'
 import ReleaseTitle from './ReleaseTitle.vue'
 

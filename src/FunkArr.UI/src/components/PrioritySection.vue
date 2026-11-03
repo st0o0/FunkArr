@@ -41,7 +41,7 @@ import QueueCard from './QueueCard.vue'
 
 const props = defineProps<{
   items: QueueItem[]
-  priority: 'High' | 'Normal' | 'Low'
+  priority: number
   label: string
   showEmpty?: boolean
 }>()
@@ -49,7 +49,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   menu: [event: MouseEvent, item: QueueItem]
   reorder: [item: QueueItem, newIndex: number]
-  priorityChange: [item: QueueItem, newIndex: number, newPriority: string]
+  priorityChange: [item: QueueItem, newIndex: number, newPriority: number]
   dragStart: []
   dragEnd: []
 }>()
@@ -60,17 +60,14 @@ watch(() => props.items, (newItems) => {
   localItems.value = [...newItems]
 }, { deep: true })
 
-const lineColor = {
-  High: 'bg-status-warn/30',
-  Normal: 'bg-border-default',
-  Low: 'bg-status-info/30',
-}[props.priority]
+const priorityColors: Record<number, { line: string; label: string }> = {
+  1: { line: 'bg-status-warn/30', label: 'text-status-warn' },
+  0: { line: 'bg-border-default', label: 'text-text-secondary' },
+  [-1]: { line: 'bg-status-info/30', label: 'text-status-info' },
+}
 
-const labelColor = {
-  High: 'text-status-warn',
-  Normal: 'text-text-secondary',
-  Low: 'text-status-info',
-}[props.priority]
+const lineColor = priorityColors[props.priority]?.line ?? 'bg-border-default'
+const labelColor = priorityColors[props.priority]?.label ?? 'text-text-secondary'
 
 function onDragStart() {
   emit('dragStart')

@@ -39,9 +39,23 @@
             <dt class="text-text-secondary">{{ $t('downloadDetail.size') }}</dt>
             <dd class="text-text-primary">{{ formatBytes(item.totalBytes) }}</dd>
           </div>
-          <div v-if="isActive && item.phase">
-            <dt class="text-text-secondary">{{ $t('downloadDetail.phase') }}</dt>
-            <dd class="text-text-primary">{{ item.phase }}</dd>
+          <div v-if="isActive && item.phase" class="col-span-2">
+            <dt class="text-text-secondary mb-2">{{ $t('downloadDetail.phase') }}</dt>
+            <dd>
+              <div class="flex items-center gap-1">
+                <template v-for="(step, idx) in phaseLabels" :key="step.key">
+                  <div class="flex items-center gap-1.5">
+                    <div class="flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0"
+                      :class="stepClass(step.key)">
+                      <svg v-if="isStepDone(step.key)" class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5 6.5-7" /></svg>
+                      <span v-else>{{ idx + 1 }}</span>
+                    </div>
+                    <span class="text-xs whitespace-nowrap" :class="stepLabelClass(step.key)">{{ step.label }}</span>
+                  </div>
+                  <div v-if="idx < phaseLabels.length - 1" class="w-6 h-px shrink-0" :class="isStepDone(step.key) ? 'bg-green-500/50' : 'bg-border-default'" />
+                </template>
+              </div>
+            </dd>
           </div>
           <div v-if="item.priority">
             <dt class="text-text-secondary">{{ $t('downloadDetail.priority') }}</dt>
@@ -84,9 +98,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useQueueStream } from '../composables/useQueueStream'
 import { getHistory, deleteQueueItem, deleteHistoryItem, retryDownload, forceStartDownload } from '../api/downloads'
 import type { QueueItem, HistoryItem } from '../api/downloads'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -114,18 +131,22 @@ const item = computed(() => {
     totalBytes: historyItem.value.totalBytes,
     bytesDownloaded: historyItem.value.totalBytes,
     percentage: 100,
-    phase: '',
+    phase: -1,
     speed: 0,
     eta: '',
-    priority: '',
+    priority: 0,
   } as QueueItem
   return null
 })
 
 const isActive = computed(() => queueItem.value !== null)
 
+const phaseNames = ['Download', 'Remux', 'Move'] as const
 const statusLabel = computed(() => {
-  if (isActive.value) return queueItem.value?.phase || 'Queued'
+  if (isActive.value) {
+    const p = queueItem.value?.phase ?? -1
+    return p >= 0 && p < phaseNames.length ? phaseNames[p] : 'Queued'
+  }
   if (historyItem.value?.status === 2) return 'Completed'
   if (historyItem.value?.status === 3) return 'Failed'
   return 'Unknown'
@@ -137,6 +158,39 @@ const statusClass = computed(() => {
   if (historyItem.value?.status === 3) return 'bg-red-500/20 text-red-400'
   return 'bg-surface-elevated text-text-secondary'
 })
+
+const phaseSteps = [
+  { value: 0, i18nKey: 'videodownload' },
+  { value: 1, i18nKey: 'remuxing' },
+  { value: 2, i18nKey: 'moving' },
+] as const
+
+const phaseLabels = computed(() => phaseSteps.map(s => ({
+  key: s.value,
+  label: t(`downloadDetail.phases.${s.i18nKey}`),
+})))
+
+const currentPhase = computed(() => item.value?.phase ?? -1)
+
+function isStepDone(key: number): boolean {
+  return key < currentPhase.value
+}
+
+function isStepCurrent(key: number): boolean {
+  return key === currentPhase.value
+}
+
+function stepClass(key: number): string {
+  if (isStepDone(key)) return 'bg-green-500/20 text-green-400'
+  if (isStepCurrent(key)) return 'bg-accent text-white'
+  return 'bg-surface-elevated text-text-secondary'
+}
+
+function stepLabelClass(key: number): string {
+  if (isStepDone(key)) return 'text-green-400'
+  if (isStepCurrent(key)) return 'text-accent font-medium'
+  return 'text-text-secondary'
+}
 
 onMounted(async () => {
   try {

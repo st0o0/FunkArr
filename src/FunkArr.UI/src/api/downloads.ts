@@ -9,10 +9,10 @@ export interface QueueItem {
   totalBytes: number
   bytesDownloaded: number
   percentage: number
-  phase: string
+  phase: number
   speed: number
   eta: string
-  priority: string
+  priority: number
 }
 
 export interface QueueResponse {
@@ -102,13 +102,13 @@ export function getHistoryCategories(): Promise<string[]> {
   return fetchJson('/api/downloads/history/categories')
 }
 
-export function moveDownload(id: string, position: number, priority?: string) {
+export function moveDownload(id: string, position: number, priority?: number) {
   const body: Record<string, unknown> = { position }
-  if (priority) body.priority = priority
+  if (priority !== undefined) body.priority = priority
   return fetchJsonAction(`/api/downloads/queue/${id}/move`, 'POST', body)
 }
 
-export function setDownloadPriority(id: string, priority: string) {
+export function setDownloadPriority(id: string, priority: number) {
   return fetchJsonAction(`/api/downloads/queue/${id}/priority`, 'POST', { priority })
 }
 

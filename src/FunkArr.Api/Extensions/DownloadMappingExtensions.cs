@@ -48,10 +48,10 @@ internal static class DownloadMappingExtensions
             item.TotalBytes,
             item.Progress.BytesDownloaded,
             percentage,
-            phase.ToString().ToLowerInvariant(),
+            MapPhase(phase),
             speed,
             eta,
-            item.Priority.ToString());
+            (ApiModels.QueuePriority)(int)item.Priority);
     }
 
     internal static ApiModels.DownloadHistoryResponse ToApi(this HistoryResult result) =>
@@ -67,4 +67,11 @@ internal static class DownloadMappingExtensions
             item.Completion.Status == DownloadStatus.Completed ? ApiModels.HistoryStatus.Completed : ApiModels.HistoryStatus.Failed,
             item.Completion.Status == DownloadStatus.Failed ? item.Completion.FailMessage : null,
             DateTimeOffset.FromUnixTimeSeconds(item.Completion.CompletedAt));
+
+    private static ApiModels.QueuePhase MapPhase(DownloadPhase phase) => phase switch
+    {
+        DownloadPhase.Remuxing => ApiModels.QueuePhase.Remuxing,
+        DownloadPhase.Moving => ApiModels.QueuePhase.Moving,
+        _ => ApiModels.QueuePhase.VideoDownload
+    };
 }

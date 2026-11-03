@@ -58,7 +58,7 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
 
         var task = _fixture.Client.PostAsJsonAsync(
             $"/api/downloads/queue/{id}/priority",
-            new { priority = "High" });
+            new { priority = 1 });
 
         var probe = _fixture.GetProbe<IDownloadManager>();
         var msg = probe.ExpectMsg<SetDownloadPriority>();

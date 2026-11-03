@@ -45,7 +45,7 @@ public sealed class DownloadMappingExtensionsTests
 
         var result = item.ToApi();
 
-        Assert.Equal("videodownload", result.Phase);
+        Assert.Equal(QueuePhase.VideoDownload, result.Phase);
         Assert.Equal(20, result.Percentage);
     }
 
@@ -68,7 +68,7 @@ public sealed class DownloadMappingExtensionsTests
 
         var result = item.ToApi();
 
-        Assert.Equal("remuxing", result.Phase);
+        Assert.Equal(QueuePhase.Remuxing, result.Phase);
         Assert.Equal(50, result.Percentage);
     }
 
@@ -95,7 +95,7 @@ public sealed class DownloadMappingExtensionsTests
     }
 
     [Fact]
-    public void Queue_item_maps_high_priority_as_string()
+    public void Queue_item_maps_high_priority()
     {
         var item = new QueueItem(
             DownloadId: Guid.NewGuid(),
@@ -113,7 +113,7 @@ public sealed class DownloadMappingExtensionsTests
 
         var result = item.ToApi();
 
-        Assert.Equal("High", result.Priority);
+        Assert.Equal(QueuePriority.High, result.Priority);
     }
 
     [Fact]
@@ -136,6 +136,6 @@ public sealed class DownloadMappingExtensionsTests
         var result = item.ToApi();
 
         Assert.Equal(Models.MediaType.Movie, result.Category);
-        Assert.Equal("Low", result.Priority);
+        Assert.Equal(QueuePriority.Low, result.Priority);
     }
 }

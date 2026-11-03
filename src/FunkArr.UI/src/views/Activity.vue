@@ -82,7 +82,7 @@
         <!-- Priority buckets -->
         <PrioritySection
           :items="high"
-          priority="High"
+          :priority="1"
           :label="$t('queue.priorityHigh')"
           :show-empty="isDragActive"
           @menu="openContextMenu"
@@ -93,7 +93,7 @@
         />
         <PrioritySection
           :items="normal"
-          priority="Normal"
+          :priority="0"
           :label="$t('queue.priorityNormal')"
           :show-empty="isDragActive"
           @menu="openContextMenu"
@@ -104,7 +104,7 @@
         />
         <PrioritySection
           :items="low"
-          priority="Low"
+          :priority="-1"
           :label="$t('queue.priorityLow')"
           :show-empty="isDragActive"
           @menu="openContextMenu"
@@ -316,7 +316,7 @@ async function handleReorder(item: QueueItem, newIndex: number) {
   }
 }
 
-async function handlePriorityChange(item: QueueItem, newIndex: number, newPriority: string) {
+async function handlePriorityChange(item: QueueItem, newIndex: number, newPriority: number) {
   try {
     await moveDownload(item.downloadId, newIndex, newPriority)
   } catch {
@@ -324,7 +324,7 @@ async function handlePriorityChange(item: QueueItem, newIndex: number, newPriori
   }
 }
 
-async function handleSetPriority(id: string, priority: string) {
+async function handleSetPriority(id: string, priority: number) {
   try {
     await setDownloadPriority(id, priority)
     toast(t('queue.priorityChanged'))

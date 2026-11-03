@@ -424,6 +424,11 @@
     "category": "Category",
     "size": "Size",
     "phase": "Phase",
+    "phases": {
+      "videodownload": "Download",
+      "remuxing": "Remux",
+      "moving": "Move"
+    },
     "priority": "Priority",
     "filePath": "File Path",
     "duration": "Duration",

@@ -28,13 +28,13 @@ public sealed record DownloadQueueItem(
     long TotalBytes,
     long BytesDownloaded,
     int Percentage,
-    string Phase,
+    QueuePhase Phase,
     long Speed,
     string Eta,
-    string Priority);
+    QueuePriority Priority);
 
-public sealed record MoveRequest([property: Range(0, int.MaxValue)] int Position, string? Priority = null);
+public sealed record MoveRequest([property: Range(0, int.MaxValue)] int Position, QueuePriority? Priority = null);
 
-public sealed record PriorityRequest([property: Required] string Priority);
+public sealed record PriorityRequest([property: Required] QueuePriority Priority);
 
 public sealed record SwapRequest(Guid Id1, Guid Id2);
