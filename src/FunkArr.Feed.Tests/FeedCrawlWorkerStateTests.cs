@@ -221,7 +221,7 @@ public sealed class FeedCrawlWorkerStateTests
     }
 
     [Fact]
-    public void GetCrawlResult_failed_on_page_error()
+    public void GetCrawlResult_failed_on_page_error_with_zero_items()
     {
         var state = FeedCrawlWorkerState.Empty
             .ForInput(_input)
@@ -234,7 +234,68 @@ public sealed class FeedCrawlWorkerStateTests
 
         Assert.Multiple(
             () => Assert.Equal(CrawlStatus.Failed, result.Status),
-            () => Assert.Equal("network error", result.Error));
+            () => Assert.Equal("network error", result.Error),
+            () => Assert.Equal(0, result.NewItems),
+            () => Assert.Equal(0, result.Unmatched));
+    }
+
+    [Fact]
+    public void GetCrawlResult_completed_partial_on_page_error_with_collected_items()
+    {
+        var state = FeedCrawlWorkerState.Empty
+            .ForInput(_input)
+            .ApplyProbe(2_000_000)
+            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
+            .StartHarvesting(2)
+            .ApplyPageResult(new PageResult(0, [TestData.Item()], false, null))
+            .ApplyPageResult(new PageResult(100, [], true, "server error"))
+            .StartEvaluating(1)
+            .ApplyGroupResult(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
+
+        var result = state.GetCrawlResult(TimeSpan.FromSeconds(3));
+
+        Assert.Multiple(
+            () => Assert.Equal(CrawlStatus.CompletedPartial, result.Status),
+            () => Assert.True(result.Gap),
+            () => Assert.Equal(1, result.NewItems),
+            () => Assert.Equal(1, result.Published),
+            () => Assert.Null(result.Error));
+    }
+
+    [Fact]
+    public void GetCrawlResult_completed_partial_regardless_of_page_arrival_order()
+    {
+        var successPage = new PageResult(0, [TestData.Item()], false, null);
+        var errorPage = new PageResult(100, [], true, "server error");
+
+        var stateErrorLast = FeedCrawlWorkerState.Empty
+            .ForInput(_input)
+            .ApplyProbe(2_000_000)
+            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
+            .StartHarvesting(2)
+            .ApplyPageResult(successPage)
+            .ApplyPageResult(errorPage)
+            .StartEvaluating(1)
+            .ApplyGroupResult(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
+
+        var stateErrorFirst = FeedCrawlWorkerState.Empty
+            .ForInput(_input)
+            .ApplyProbe(2_000_000)
+            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
+            .StartHarvesting(2)
+            .ApplyPageResult(errorPage)
+            .ApplyPageResult(successPage)
+            .StartEvaluating(1)
+            .ApplyGroupResult(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
+
+        var resultErrorLast = stateErrorLast.GetCrawlResult(TimeSpan.FromSeconds(1));
+        var resultErrorFirst = stateErrorFirst.GetCrawlResult(TimeSpan.FromSeconds(1));
+
+        Assert.Multiple(
+            () => Assert.Equal(CrawlStatus.CompletedPartial, resultErrorLast.Status),
+            () => Assert.Equal(CrawlStatus.CompletedPartial, resultErrorFirst.Status),
+            () => Assert.Equal(resultErrorLast.Published, resultErrorFirst.Published),
+            () => Assert.Equal(resultErrorLast.NewItems, resultErrorFirst.NewItems));
     }
 
     [Fact]

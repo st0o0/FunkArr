@@ -91,10 +91,16 @@ internal static class FeedCrawlWorkerStateExtensions
         var published = state.AcceptedEntries.Count;
         var truncated = state.Window?.Truncated ?? false;
 
+        if (state.PageError is not null && collected == 0)
+        {
+            return CrawlResult.ForFailed(state.ListTimestamp, 0, 0, 0,
+                truncated, duration, state.PageError);
+        }
+
         if (state.PageError is not null)
         {
-            return CrawlResult.ForFailed(state.ListTimestamp, collected, unmatched, published,
-                truncated, duration, state.PageError);
+            return CrawlResult.ForCompletedPartial(state.ListTimestamp, collected, unmatched, published,
+                duration);
         }
 
         if (state.FailedGroups > 0)

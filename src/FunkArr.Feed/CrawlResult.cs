@@ -1,6 +1,6 @@
 namespace FunkArr.Feed;
 
-public enum CrawlStatus { Completed, Unchanged, Failed }
+public enum CrawlStatus { Completed, CompletedPartial, Unchanged, Failed }
 
 public sealed record CrawlInput(
     long Cursor,
@@ -28,6 +28,10 @@ public sealed record CrawlResult(
     internal static CrawlResult ForCompleted(long ts, int items, int unmatched, int published,
         bool gap, TimeSpan duration) =>
         new(CrawlStatus.Completed, ts, items, published, unmatched, gap, duration, null);
+
+    internal static CrawlResult ForCompletedPartial(long ts, int items, int unmatched, int published,
+        TimeSpan duration) =>
+        new(CrawlStatus.CompletedPartial, ts, items, published, unmatched, Gap: true, duration, null);
 
     internal static CrawlResult ForFailed(long ts, int items, int unmatched, int published,
         bool gap, TimeSpan duration, string error) =>

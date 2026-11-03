@@ -157,26 +157,27 @@ public sealed class FeedCrawlWorker : ReceiveActor
     {
         _state = _state.ApplyPageResult(page);
 
-        if (page.Error is not null)
-        {
-            if (_state.PendingPages == 0)
-            {
-                Complete(_state.GetCrawlResult(_timeProvider.GetElapsedTime(_state.Input.StartedAt)));
-            }
-
-            return;
-        }
-
-        if (!_state.ReachedEnd && _state.NextOffset / _state.Input.PageSize < _state.Input.MaxPages)
+        if (page.Error is null
+            && !_state.ReachedEnd
+            && _state.NextOffset / _state.Input.PageSize < _state.Input.MaxPages)
         {
             _state = _state.FireNextPage();
             _pageFetchPool.Tell(new FetchPage(
                 _state.NextOffset - _state.Input.PageSize, _state.Window!, _state.Input.PageSize));
         }
 
-        if (_state.PendingPages == 0)
+        if (_state.PendingPages > 0)
+        {
+            return;
+        }
+
+        if (_state.CollectedItems.Count > 0)
         {
             StartEvaluating();
+        }
+        else
+        {
+            Complete(_state.GetCrawlResult(_timeProvider.GetElapsedTime(_state.Input.StartedAt)));
         }
     }
 

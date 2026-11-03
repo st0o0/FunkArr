@@ -27,6 +27,22 @@ public sealed class FeedCrawlManagerStateTests
     }
 
     [Fact]
+    public void Completed_partial_advances_cursor_with_gap()
+    {
+        var state = FeedCrawlManagerState.Empty
+            .Apply(new FeedRunFailed(_now, "error", 1))
+            .Apply(new FeedRunFailed(_now, "error", 2))
+            .Apply(new FeedCursorAdvanced(500, _now, 100, 10, 90, true));
+
+        Assert.Multiple(
+            () => Assert.Equal(500, state.Cursor),
+            () => Assert.Equal(10, state.LastPublished),
+            () => Assert.Equal("completed_with_gap", state.LastOutcome),
+            () => Assert.Equal(0, state.ConsecutiveFailures),
+            () => Assert.True(state.LastGap));
+    }
+
+    [Fact]
     public void Failed_run_keeps_cursor_and_counts_failures()
     {
         var state = (FeedCrawlManagerState.Empty with { Cursor = 100 })

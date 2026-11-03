@@ -98,6 +98,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
         switch (result.Status)
         {
             case CrawlStatus.Completed:
+            case CrawlStatus.CompletedPartial:
                 Persist(new FeedCursorAdvanced(result.ListTimestamp, now, result.NewItems, result.Published,
                     result.Unmatched, result.Gap), e =>
                 {
