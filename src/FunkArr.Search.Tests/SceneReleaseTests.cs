@@ -191,6 +191,31 @@ public sealed class SceneReleaseTests
         Assert.Equal("Show.S01E01.Title.Special.Edition.GERMAN.720p.WEB.h264-FunkArr", release.FormatTitle(720));
     }
 
+    [Theory]
+    [InlineData("Folge 1 · Staffel 2 | Babylon Berlin", "Folge.1.Staffel.2.Babylon.Berlin")]
+    [InlineData("Mord – Eine Geschichte", "Mord.Eine.Geschichte")]
+    [InlineData("Normal Title", "Normal.Title")]
+    public void FormatTitle_StripsUnicodePunctuation(string episodeTitle, string expected)
+    {
+        var item = MakeItem(season: "01", episode: "01",
+            display: new ReleaseDisplay("Show", episodeTitle));
+
+        var release = SceneRelease.ForShow(item, null);
+
+        Assert.Contains(expected, release.FormatTitle(720));
+    }
+
+    [Fact]
+    public void FormatTitle_StripsGermanQuotesAndEllipsis()
+    {
+        var item = MakeItem(season: "01", episode: "01",
+            display: new ReleaseDisplay("Show", "„Zitat“ und …mehr"));
+
+        var release = SceneRelease.ForShow(item, null);
+
+        Assert.Contains("Zitat.und.mehr", release.FormatTitle(720));
+    }
+
     [Fact]
     public void FormatTitle_UmlautsPreserved()
     {

@@ -104,7 +104,8 @@ public sealed record SceneRelease(
         value.Length < 2 ? value.PadLeft(2, '0') : value;
 
     private static readonly char[] _invalidChars =
-        ['/', ':', ';', '"', '\'', '@', '#', '?', '$', '%', '^', '*', '+', '=', '!', '<', '>', ',', '(', ')', '&'];
+        ['/', ':', ';', '"', '\'', '@', '#', '?', '$', '%', '^', '*', '+', '=', '!', '<', '>', ',', '(', ')', '&',
+         '|', '·', '–', '—', '…', '„', '“', '”', '‘', '’', '[', ']', '{', '}', '~', '\\'];
 
     private static string Sanitize(string input)
     {
