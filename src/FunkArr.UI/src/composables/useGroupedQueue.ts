@@ -13,7 +13,7 @@ export interface QueueGroup {
 }
 
 export function useGroupedQueue() {
-  const { items, totalSlots, activeCount, queuedCount, connected, release } = useQueueStream()
+  const { items, totalSlots, activeCount, queuedCount, isPaused, connected, release } = useQueueStream()
 
   const groups = computed<QueueGroup[]>(() => {
     const map = new Map<string, QueueItem[]>()
@@ -48,5 +48,5 @@ export function useGroupedQueue() {
 
   const totalSpeed = computed(() => items.value.reduce((sum, i) => sum + i.speed, 0))
 
-  return { groups, items, activeCount, queuedCount, totalSpeed, totalSlots, connected, release }
+  return { groups, items, activeCount, queuedCount, isPaused, totalSpeed, totalSlots, connected, release }
 }
