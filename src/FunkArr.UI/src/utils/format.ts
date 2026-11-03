@@ -20,9 +20,9 @@ export function formatDuration(seconds: number): string {
   return `${m}m ${String(s).padStart(2, '0')}s`
 }
 
-export function formatAbsoluteDate(isoString: string): string {
+export function formatAbsoluteDate(isoString: string, locale?: string): string {
   const date = new Date(isoString)
-  return date.toLocaleDateString('de-DE', {
+  return date.toLocaleDateString(locale ?? navigator.language, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -35,19 +35,20 @@ export function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`
 }
 
-export function formatRelativeDate(isoString: string): string {
+export function formatRelativeDate(isoString: string, locale?: string): string {
   const date = new Date(isoString)
   const now = Date.now()
   const diffMs = now - date.getTime()
   const diffSeconds = Math.floor(diffMs / 1000)
 
-  if (diffSeconds < 60) return 'just now'
-  const minutes = Math.floor(diffSeconds / 60)
-  if (diffSeconds < 3600) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
-  const hours = Math.floor(diffSeconds / 3600)
-  if (diffSeconds < 86400) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
+  const rtf = new Intl.RelativeTimeFormat(locale ?? navigator.language, { numeric: 'auto' })
 
-  return date.toLocaleDateString('de-DE', {
+  if (diffSeconds < 60) return rtf.format(-diffSeconds, 'second')
+  if (diffSeconds < 3600) return rtf.format(-Math.floor(diffSeconds / 60), 'minute')
+  if (diffSeconds < 86400) return rtf.format(-Math.floor(diffSeconds / 3600), 'hour')
+  if (diffSeconds < 604800) return rtf.format(-Math.floor(diffSeconds / 86400), 'day')
+
+  return date.toLocaleDateString(locale ?? navigator.language, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

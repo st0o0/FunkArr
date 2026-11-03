@@ -147,8 +147,8 @@
               <col class="w-24" />
               <col class="w-20" />
               <col class="w-24" />
-              <col class="w-36" />
-              <col class="w-20" />
+              <col class="w-44" />
+              <col class="w-28" />
             </colgroup>
             <thead>
               <tr class="bg-surface-raised text-left text-xs text-text-secondary border-b border-border-default">
@@ -194,8 +194,8 @@
                     {{ item.status === HistoryStatus.Completed ? 'Completed' : 'Failed' }}
                   </span>
                 </td>
-                <td class="px-3 py-2.5 text-text-secondary text-xs tabular-nums" :title="formatRelativeDate(item.completedAt)">{{ formatAbsoluteDate(item.completedAt) }}</td>
-                <td class="px-3 py-2.5 text-right">
+                <td class="px-3 py-2.5 text-text-secondary text-xs tabular-nums whitespace-nowrap" :title="formatRelativeDate(item.completedAt)">{{ formatAbsoluteDate(item.completedAt) }}</td>
+                <td class="px-3 py-2.5 text-right whitespace-nowrap">
                   <div class="flex items-center justify-end gap-1">
                     <button
                       v-if="item.status === HistoryStatus.Failed"

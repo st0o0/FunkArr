@@ -44,7 +44,7 @@
 
     <!-- Status line -->
     <div v-if="overview" class="text-xs text-text-muted mb-4">
-      {{ $t('feed.statusLine', { outcome: overview.ingest.lastOutcome ?? $t('feed.never') }) }}
+      {{ $t('feed.statusLine', { outcome: statusLabel }) }}
     </div>
 
     <!-- Filter Bar -->
@@ -175,12 +175,20 @@ const {
 
 const allChannels = ref<string[]>([])
 
+const outcomeLabels: Record<string, string> = {
+  completed: 'feed.outcomeCompleted',
+  completed_with_gap: 'feed.outcomePartial',
+  failed: 'feed.outcomeFailed',
+  unchanged: 'feed.outcomeUnchanged'
+}
+
 const statusLabel = computed(() => {
   const ingest = overview.value?.ingest
   if (!ingest) return ''
   if (!ingest.enabled) return t('feed.disabled')
   if (ingest.running) return t('feed.running')
-  return ingest.lastOutcome ?? t('feed.never')
+  const key = ingest.lastOutcome ? outcomeLabels[ingest.lastOutcome] : null
+  return key ? t(key) : t('feed.never')
 })
 
 const statusColor = computed(() => {
