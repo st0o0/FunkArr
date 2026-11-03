@@ -11,16 +11,16 @@ a change (proposal/design/specs/tasks) - `/opsx:apply` to implement - `/opsx:arc
 
 ### Project skills (FunkArr-specific)
 
-- `funkarr-actor` -- **Load before creating/modifying any actor.** Pathfinder
+- `funkarr-actor` - **Load before creating/modifying any actor.** Pathfinder
   pattern with FunkArr namespaces, Persist/DeferAsync/SaveSnapshot pattern.
-- `funkarr-message` -- **Load before creating/modifying messages or persistence
+- `funkarr-message` - **Load before creating/modifying messages or persistence
   DTOs.** Commands, queries, events, three type worlds (Messages, Persistence, API).
-- `funkarr-endpoint` -- **Load before creating/modifying API endpoints.** Minimal
+- `funkarr-endpoint` - **Load before creating/modifying API endpoints.** Minimal
   API + actor Ask, for FunkArr.Api only.
-- `funkarr-test` -- **Load before writing tests.** TestKit with DataPaths,
+- `funkarr-test` - **Load before writing tests.** TestKit with DataPaths,
   TestDataFiles.
 
-### Akka.NET skills -- when to load
+### Akka.NET skills - when to load
 
 **Always load the relevant skill before writing Akka code.** The project skills
 above are FunkArr-specific templates; the akka-skills below provide deep pattern

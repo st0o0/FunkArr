@@ -11,7 +11,7 @@ dotnet build src/FunkArr.slnx
 dotnet format src/FunkArr.slnx --verify-no-changes
 ```
 
-Tests use xUnit v3 on Microsoft Testing Platform -- run with `dotnet run`, not `dotnet test`:
+Tests use xUnit v3 on Microsoft Testing Platform - run with `dotnet run`, not `dotnet test`:
 
 ```powershell
 dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
