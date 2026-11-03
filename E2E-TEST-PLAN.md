@@ -303,7 +303,10 @@ docker compose -f docker-compose.dev.yml up -d
 - [ ] **0.5** Setup wizard: Sonarr/Radarr/Prowlarr configs need re-creation
 - [ ] **0.6** Sonarr at :8989 needs initial series setup (add Tatort)
 
-### Re-add Tatort to Sonarr after reset
+### Re-add series to Sonarr after reset
+
+Add Tatort (for search tests) and In aller Freundschaft (for RSS sync tests — must not
+be searched manually so RSS sync can grab fresh episodes).
 
 ```powershell
 $apiKey = "funkarr-dev-api-key-01"
@@ -314,8 +317,12 @@ Invoke-RestMethod "http://localhost:8989/api/v3/rootfolder?apikey=$apiKey" -Meth
 # Create /shared/tv dir if needed (funkarr container has write access)
 docker exec funkarr mkdir -p /shared/tv
 
-# Add Tatort directly (SkyHook may be unavailable)
+# Add Tatort (for manual search tests)
 $body = '{"title":"Tatort","tvdbId":83214,"qualityProfileId":1,"rootFolderPath":"/shared/tv","monitored":true,"seasonFolder":false,"addOptions":{"searchForMissingEpisodes":false}}'
+Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method Post -ContentType "application/json" -Body $body
+
+# Add In aller Freundschaft (for RSS sync test — do NOT trigger manual searches)
+$body = '{"title":"In aller Freundschaft","tvdbId":147521,"qualityProfileId":1,"rootFolderPath":"/shared/tv","monitored":true,"seasonFolder":false,"addOptions":{"searchForMissingEpisodes":false}}'
 Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method Post -ContentType "application/json" -Body $body
 ```
 
@@ -923,8 +930,9 @@ The test verifies that the FeedCrawlWorker's 6 Become phases produce valid Newzn
 entries that Sonarr can grab and import end-to-end.
 
 **Prerequisites**: Sonarr configured with FunkArr indexer (RSS enabled) and SABnzbd
-download client. A monitored series that has entries in the feed (e.g. "In aller
-Freundschaft" tvdbId=147521). Feed crawl completed with entries published.
+download client. "In aller Freundschaft" (tvdbId=147521) added as a monitored series
+but never manually searched — this ensures RSS sync can grab episodes that Sonarr
+doesn't already have. Feed crawl completed with entries published.
 
 - [ ] **35.1** Feed crawl completed: `GET /api/feed?limit=1` → `ingest.lastOutcome = "completed"`, `total > 0`
 - [ ] **35.2** Newznab RSS returns feed entries: `GET /index/api?t=tvsearch&apikey=<key>&limit=5` → items with `tvdbid`, `season`, `episode` attributes
@@ -973,15 +981,15 @@ Every test must be PASS or FAIL. No skips. Execute in this order - each step set
 the state required by subsequent steps.
 
 1. **Startup**: Docker compose up, wait for health (sections 14, 22)
-2. **Setup wizard**: Full walkthrough - health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
-3. **Dashboard (clean)**: Verify stat cards, links, version on clean slate (section 1.1-1.4, 1.9)
-4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links incl. Feed (section 2)
-5. **Settings page**: All sections visible, download config, cache stats, routes, **broadcast variants**, log viewer (sections 24, 29.1-29.4)
-6. **Variants API**: `GET /api/system/variants` returns 4 variants with Exclude policy (section 29.5-29.6)
-7. **Legacy redirects**: /queue, /history, /search redirect correctly (section 36.7-36.9)
-8. **RSS sync validation (empty feed)**: Newznab empty-query returns validation items before feed exists (section 32.6-32.11)
-9. **Feed page (empty)**: `/feed` shows empty state, crawl button (section 30.1-30.4)
-10. **Feed API (empty)**: `GET /api/feed` returns empty entries, ingest status (section 31.1, 31.5)
+2. **RSS sync validation (empty feed)**: Run IMMEDIATELY after health passes (before 60s mark — auto-crawl starts after ~60s). Newznab empty-query returns validation items before feed exists (section 32.6-32.11). Also test feed empty state: `/feed` UI (section 30.1-30.4) and `GET /api/feed` (section 31.1, 31.5)
+3. **Setup wizard**: Full walkthrough - health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
+4. **Dashboard (clean)**: Verify stat cards, links, version on clean slate (section 1.1-1.4, 1.9)
+5. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links incl. Feed (section 2)
+6. **Settings page**: All sections visible, download config, cache stats, routes, **broadcast variants**, log viewer (sections 24, 29.1-29.4)
+7. **Variants API**: `GET /api/system/variants` returns 4 variants with Exclude policy (section 29.5-29.6)
+8. **Legacy redirects**: /queue, /history, /search redirect correctly (section 36.7-36.9)
+9. **Feed page (empty)**: Verify empty state if not already tested in step 2 (section 30.1-30.4)
+10. **Feed API (empty)**: Verify empty entries if not already tested in step 2 (section 31.1, 31.5)
 11. **Create local ruleset**: Via UI (section 9) - creates state for source filters + delete tests
 12. **Edit Tatort**: Via UI editor, add alias, save - creates merged ruleset (section 8).
     After saving, **validate the roundtrip**: `GET /api/rulesets/tatort/raw` and compare
@@ -1005,7 +1013,7 @@ the state required by subsequent steps.
 28. **Active download tests**: Queue tab during download, cancel one, global speed (sections 3.3-3.6, 18.1)
 29. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
 30. **Search → Import verification**: Fix shared volume permissions, trigger Sonarr `ProcessMonitoredDownloads`, verify `downloadFolderImported` in Sonarr history, episode files exist (section 17.5-17.9)
-31. **Feed → Import verification**: Trigger RSS sync in Sonarr, wait for grabs + downloads, fix permissions, verify `downloadFolderImported` in Sonarr history (section 35.1-35.10)
+31. **Feed → Import verification**: Trigger RSS sync in Sonarr — "In aller Freundschaft" (never manually searched) provides fresh episodes for RSS grabs. Wait for downloads, fix permissions, verify `downloadFolderImported` in Sonarr history (section 35.1-35.10)
 32. **Generate history pagination data**: Upload 20 NZBs with bad URLs (10x show, 10x movie) via SABnzbd addfile, poll until history has >= 26 entries
 33. **History tests**: History tab, completed + failed status, retry, delete, category filter, pagination (sections 5, 18.3-18.5)
 34. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)
