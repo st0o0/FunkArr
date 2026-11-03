@@ -23,13 +23,18 @@ public static class FeedApiEndpoints
             .AddEndpointFilter<EndpointExceptionFilter>();
         group.WithRequestTimeout(TimeSpan.FromSeconds(30));
 
-        group.MapGet("", async (int? limit, IActorRegistry registry, CancellationToken ct) =>
+        group.MapGet("", async (
+            int? limit, int? offset, string? type, string? channel, int? quality, string? q,
+            IActorRegistry registry, CancellationToken ct) =>
         {
             var take = Math.Clamp(limit ?? _defaultLimit, 1, _maxLimit);
+            var skip = Math.Max(0, offset ?? 0);
+            var mediaType = ParseMediaType(type);
             var feed = await registry.GetAsync<IFeedStoreManager>(ct);
             var ingest = await registry.GetAsync<IFeedCrawlManager>(ct);
 
-            var feedTask = feed.Ask<FeedResponse>(new QueryFeed(null, 0, take), _askTimeout, ct);
+            var feedTask = feed.Ask<FeedResponse>(
+                new QueryFeed(mediaType, skip, take, channel, quality, q), _askTimeout, ct);
             var statusTask = ingest.Ask<FeedCrawlStatusResponse>(new QueryFeedCrawlStatus(), _askTimeout, ct);
             var feedResponse = await feedTask;
             var statusResponse = await statusTask;
@@ -74,6 +79,7 @@ public static class FeedApiEndpoints
                     e.Episode))
             ],
             entries.Total,
+            entries.FilteredTotal,
             new ApiModels.FeedCrawlStatusOutput(
                 status.Enabled,
                 status.Running,
@@ -84,4 +90,11 @@ public static class FeedApiEndpoints
                 status.LastUnmatched,
                 status.LastGap,
                 status.ConsecutiveFailures));
+
+    private static Messages.MediaType? ParseMediaType(string? type) => type?.ToLowerInvariant() switch
+    {
+        "show" => Messages.MediaType.Show,
+        "movie" => Messages.MediaType.Movie,
+        _ => null
+    };
 }

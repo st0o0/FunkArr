@@ -85,16 +85,28 @@ public static class FeedStoreManagerStateExtensions
 
     public static FeedResult Query(this FeedStoreManagerState state, QueryFeed query)
     {
-        var source = query.MediaType is { } mediaType
+        IEnumerable<FeedEntry> source = query.MediaType is { } mediaType
             ? state.ForType(mediaType)
             : state.Newest;
 
-        var page = source
+        if (query.Channel is { } channel)
+            source = source.Where(e => e.Channel.Contains(channel, StringComparison.OrdinalIgnoreCase));
+
+        if (query.Quality is { } quality)
+            source = source.Where(e => e.Quality == quality);
+
+        if (query.Search is { Length: > 0 } search)
+            source = source.Where(e =>
+                e.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                e.Topic.Contains(search, StringComparison.OrdinalIgnoreCase));
+
+        var filtered = source.ToArray();
+        var page = filtered
             .Skip(Math.Max(0, query.Offset))
             .Take(Math.Max(0, query.Limit))
             .ToArray();
 
-        return new FeedResult(page, source.Count);
+        return new FeedResult(page, state.Newest.Count, filtered.Length);
     }
 
     public static PersistedFeedStoreState GetPersistenceState(this FeedStoreManagerState state) =>

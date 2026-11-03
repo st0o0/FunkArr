@@ -113,7 +113,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
             () => Assert.Equal(MediaType.Show, query.MediaType),
             () => Assert.Equal(0, query.Offset),
             () => Assert.Equal(100, query.Limit));
-        feedProbe.Reply(new FeedResult([entry], 1));
+        feedProbe.Reply(new FeedResult([entry], 1, 1));
 
         var item = await SingleItem(await task);
         Assert.Multiple(
@@ -144,7 +144,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
 
         var query = feedProbe.ExpectMsg<QueryFeed>();
         Assert.Equal(expectedMediaType, query.MediaType);
-        feedProbe.Reply(new FeedResult([], 0));
+        feedProbe.Reply(new FeedResult([], 0, 0));
 
         return await task;
     }

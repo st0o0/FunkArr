@@ -25,11 +25,30 @@ export interface FeedIngestStatusOutput {
 export interface FeedOverviewResponse {
   entries: FeedEntryOutput[]
   total: number
+  filteredTotal: number
   ingest: FeedIngestStatusOutput
 }
 
-export async function getFeed(limit = 100): Promise<FeedOverviewResponse> {
-  const res = await fetch(`/api/feed?limit=${limit}`)
+export interface FeedQueryParams {
+  limit?: number
+  offset?: number
+  type?: string
+  channel?: string
+  quality?: number
+  q?: string
+}
+
+export async function getFeed(params: FeedQueryParams = {}): Promise<FeedOverviewResponse> {
+  const searchParams = new URLSearchParams()
+  if (params.limit) searchParams.set('limit', String(params.limit))
+  if (params.offset) searchParams.set('offset', String(params.offset))
+  if (params.type) searchParams.set('type', params.type)
+  if (params.channel) searchParams.set('channel', params.channel)
+  if (params.quality) searchParams.set('quality', String(params.quality))
+  if (params.q) searchParams.set('q', params.q)
+
+  const qs = searchParams.toString()
+  const res = await fetch(`/api/feed${qs ? `?${qs}` : ''}`)
   if (!res.ok) {
     throw new Error(`${res.status} ${res.statusText}`)
   }

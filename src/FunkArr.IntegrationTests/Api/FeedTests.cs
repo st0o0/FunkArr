@@ -26,7 +26,7 @@ public sealed class FeedTests(FunkArrFixture fixture)
 
         var query = feedProbe.ExpectMsg<QueryFeed>();
         Assert.Equal(10, query.Limit);
-        feedProbe.Reply(new FeedResult([entry], 1));
+        feedProbe.Reply(new FeedResult([entry], 1, 1));
         ingestProbe.ExpectMsg<QueryFeedCrawlStatus>();
         ingestProbe.Reply(new FeedCrawlStatusResult(true, false, 1_761_800_000, lastRun, "completed", 12, 1, 3, false, 0));
 

@@ -3,6 +3,7 @@ namespace FunkArr.Api.Models;
 public sealed record FeedOverviewResponse(
     FeedEntryOutput[] Entries,
     int Total,
+    int FilteredTotal,
     FeedCrawlStatusOutput Ingest);
 
 public sealed record FeedEntryOutput(

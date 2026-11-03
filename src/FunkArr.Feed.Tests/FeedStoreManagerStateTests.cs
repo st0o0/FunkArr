@@ -52,7 +52,8 @@ public sealed class FeedStoreManagerStateTests
         var page = state.Query(new QueryFeed(MediaType.Show, 1, 2));
 
         Assert.Multiple(
-            () => Assert.Equal(3, page.Total),
+            () => Assert.Equal(4, page.Total),
+            () => Assert.Equal(3, page.FilteredTotal),
             () => Assert.Equal(new[] { "mid", "old" }, page.Entries.Select(e => e.StableId).ToArray()));
     }
 
@@ -61,7 +62,10 @@ public sealed class FeedStoreManagerStateTests
     {
         var state = With(TestData.Entry("a", _t0), TestData.Entry("m", _t0, MediaType.Movie));
 
-        Assert.Equal(2, state.Query(new QueryFeed(null, 0, 100)).Total);
+        var result = state.Query(new QueryFeed(null, 0, 100));
+        Assert.Multiple(
+            () => Assert.Equal(2, result.Total),
+            () => Assert.Equal(2, result.FilteredTotal));
     }
 
     [Fact]
@@ -89,9 +93,11 @@ public sealed class FeedStoreManagerStateTests
         var shows = state.Query(new QueryFeed(MediaType.Show, 0, 10));
         var all = state.Query(new QueryFeed(null, 0, 10));
         Assert.Multiple(
-            () => Assert.Equal(2, shows.Total),
+            () => Assert.Equal(3, shows.Total),
+            () => Assert.Equal(2, shows.FilteredTotal),
             () => Assert.Equal(new[] { "a", "b" }, shows.Entries.Select(e => e.StableId).ToArray()),
             () => Assert.Equal(3, all.Total),
+            () => Assert.Equal(3, all.FilteredTotal),
             () => Assert.Equal(new[] { "movie", "a", "b" }, all.Entries.Select(e => e.StableId).ToArray()),
             () => Assert.Equal(3, state.Entries.Count));
     }
@@ -104,8 +110,62 @@ public sealed class FeedStoreManagerStateTests
         var movies = state.Query(new QueryFeed(MediaType.Movie, 0, 10));
 
         Assert.Multiple(
-            () => Assert.Equal(0, movies.Total),
+            () => Assert.Equal(1, movies.Total),
+            () => Assert.Equal(0, movies.FilteredTotal),
             () => Assert.Empty(movies.Entries));
+    }
+
+    [Fact]
+    public void Query_filters_by_channel()
+    {
+        var state = With(
+            TestData.Entry("ard", _t0),
+            TestData.Entry("zdf", _t0.AddHours(1)));
+
+        var zdfEntry = state.Entries["zdf"] with { Channel = "ZDF" };
+        state = FeedStoreManagerState.Empty
+            .Apply(new FeedEntriesAdded([state.Entries["ard"].ToPersistence()]));
+        state = state.Apply(new FeedEntriesAdded([zdfEntry.ToPersistence()]));
+
+        var result = state.Query(new QueryFeed(null, 0, 10, Channel: "ZDF"));
+
+        Assert.Multiple(
+            () => Assert.Equal(2, result.Total),
+            () => Assert.Equal(1, result.FilteredTotal),
+            () => Assert.Equal("zdf", Assert.Single(result.Entries).StableId));
+    }
+
+    [Fact]
+    public void Query_filters_by_quality_and_search()
+    {
+        var state = With(
+            TestData.Entry("a", _t0),
+            TestData.Entry("b", _t0.AddHours(1)));
+
+        var result = state.Query(new QueryFeed(null, 0, 10, Search: "Tatort"));
+
+        Assert.Multiple(
+            () => Assert.Equal(2, result.Total),
+            () => Assert.Equal(2, result.FilteredTotal));
+
+        var noMatch = state.Query(new QueryFeed(null, 0, 10, Search: "Nonexistent"));
+        Assert.Equal(0, noMatch.FilteredTotal);
+    }
+
+    [Fact]
+    public void Query_combined_filters_with_offset_beyond_range()
+    {
+        var state = With(
+            TestData.Entry("a", _t0),
+            TestData.Entry("b", _t0.AddHours(1)),
+            TestData.Entry("c", _t0.AddHours(2)));
+
+        var result = state.Query(new QueryFeed(null, 100, 10, Search: "Tatort"));
+
+        Assert.Multiple(
+            () => Assert.Equal(3, result.Total),
+            () => Assert.Equal(3, result.FilteredTotal),
+            () => Assert.Empty(result.Entries));
     }
 
     [Fact]

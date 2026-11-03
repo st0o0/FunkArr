@@ -1,5 +1,6 @@
 <template>
   <div class="max-w-5xl mx-auto">
+    <!-- Header -->
     <div class="flex items-center justify-between mb-5">
       <h1 class="text-xl font-semibold text-text-primary tracking-tight">{{ $t('feed.title') }}</h1>
       <button
@@ -12,79 +13,167 @@
       </button>
     </div>
 
-    <div class="space-y-4">
-      <section class="bg-surface-raised border border-border-default rounded-lg p-4">
-        <h2 class="text-sm font-medium text-text-primary mb-3">{{ $t('feed.lastRun') }}</h2>
-        <dl v-if="overview" class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
-          <div>
-            <dt class="text-text-secondary">{{ $t('feed.status') }}</dt>
-            <dd class="text-text-primary">{{ statusLabel }}</dd>
-          </div>
-          <div>
-            <dt class="text-text-secondary">{{ $t('feed.lastRunAt') }}</dt>
-            <dd class="text-text-primary tabular-nums">
-              {{ overview.ingest.lastRunAt ? formatRelativeDate(overview.ingest.lastRunAt) : $t('feed.never') }}
-            </dd>
-          </div>
-          <div>
-            <dt class="text-text-secondary">{{ $t('feed.newEntries') }}</dt>
-            <dd class="text-text-primary tabular-nums">{{ overview.ingest.lastNewItems }}</dd>
-          </div>
-          <div>
-            <dt class="text-text-secondary">{{ $t('feed.published') }}</dt>
-            <dd class="text-text-primary tabular-nums">{{ overview.ingest.lastPublished }}</dd>
-          </div>
-          <div>
-            <dt class="text-text-secondary">{{ $t('feed.unmatched') }}</dt>
-            <dd class="text-text-primary tabular-nums">{{ overview.ingest.lastUnmatched }}</dd>
-          </div>
-          <div v-if="overview.ingest.lastGap || overview.ingest.consecutiveFailures > 0">
-            <dt class="text-text-secondary">{{ $t('feed.warnings') }}</dt>
-            <dd class="text-status-warn">
-              <span v-if="overview.ingest.lastGap" class="block">{{ $t('feed.gap') }}</span>
-              <span v-if="overview.ingest.consecutiveFailures > 0" class="block">
-                {{ $t('feed.failures', { count: overview.ingest.consecutiveFailures }) }}
-              </span>
-            </dd>
-          </div>
-        </dl>
-        <div v-else-if="error" class="text-sm text-status-fail">{{ error }}</div>
-        <div v-else class="text-sm text-text-muted">{{ $t('common.loading') }}</div>
-        <p class="text-xs text-text-muted mt-3">{{ $t('feed.hint') }}</p>
-      </section>
+    <!-- Stat Cards -->
+    <div v-if="overview" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="bg-surface-raised border border-border-default rounded-lg p-3">
+        <div class="text-xs text-text-secondary">{{ $t('feed.totalEntries') }}</div>
+        <div class="text-lg font-semibold text-text-primary tabular-nums">{{ overview.total }}</div>
+        <div class="text-xs text-text-muted">{{ $t('feed.totalLabel') }}</div>
+      </div>
+      <div class="bg-surface-raised border border-border-default rounded-lg p-3">
+        <div class="text-xs text-text-secondary">{{ $t('feed.lastCrawl') }}</div>
+        <div class="text-lg font-semibold text-accent tabular-nums">+{{ overview.ingest.lastPublished }}</div>
+        <div class="text-xs text-text-muted">
+          {{ overview.ingest.lastRunAt ? formatRelativeDate(overview.ingest.lastRunAt) : $t('feed.never') }}
+        </div>
+      </div>
+      <div class="bg-surface-raised border border-border-default rounded-lg p-3">
+        <div class="text-xs text-text-secondary">{{ $t('feed.unmatched') }}</div>
+        <div class="text-lg font-semibold text-text-primary tabular-nums">{{ overview.ingest.lastUnmatched }}</div>
+        <div class="text-xs text-text-muted">{{ $t('feed.unmatchedLabel') }}</div>
+      </div>
+      <div class="bg-surface-raised border border-border-default rounded-lg p-3">
+        <div class="text-xs text-text-secondary">{{ $t('feed.statusCard') }}</div>
+        <div class="text-lg font-semibold tabular-nums" :class="statusColor">{{ statusLabel }}</div>
+        <div v-if="overview.ingest.consecutiveFailures > 0" class="text-xs text-status-warn">
+          {{ $t('feed.failures', { count: overview.ingest.consecutiveFailures }) }}
+        </div>
+        <div v-else-if="overview.ingest.lastGap" class="text-xs text-status-warn">{{ $t('feed.gap') }}</div>
+      </div>
+    </div>
 
-      <section class="bg-surface-raised border border-border-default rounded-lg p-4">
-        <h2 class="text-sm font-medium text-text-primary mb-3">
-          {{ $t('feed.entries', { count: overview?.total ?? 0 }) }}
-        </h2>
-        <div v-if="overview && overview.entries.length === 0" class="text-sm text-text-muted">{{ $t('feed.empty') }}</div>
-        <div v-else-if="overview" class="divide-y divide-border-default">
-          <div v-for="entry in overview.entries" :key="entry.stableId" class="py-2 text-sm flex items-baseline gap-3">
-            <span class="text-text-secondary tabular-nums text-xs w-28 shrink-0">{{ formatRelativeDate(entry.firstSeenAt) }}</span>
-            <span class="text-text-primary truncate flex-1" :title="entry.title">{{ entry.title }}</span>
-            <span v-if="entry.season && entry.episode" class="text-text-secondary text-xs tabular-nums">S{{ entry.season }}E{{ entry.episode }}</span>
-            <span class="text-text-secondary text-xs">{{ entry.channel }}</span>
-            <span class="text-text-muted text-xs tabular-nums">{{ entry.quality }}p</span>
+    <!-- Status line -->
+    <div v-if="overview" class="text-xs text-text-muted mb-4">
+      {{ $t('feed.statusLine', { outcome: overview.ingest.lastOutcome ?? $t('feed.never') }) }}
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+      <input
+        type="text"
+        :placeholder="$t('feed.searchPlaceholder')"
+        :value="search"
+        @input="setSearch(($event.target as HTMLInputElement).value)"
+        class="flex-1 min-w-[200px] px-3 py-1.5 text-sm rounded-md bg-surface-raised border border-border-default text-text-primary placeholder-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+      />
+      <select
+        :value="channelFilter"
+        @change="channelFilter = ($event.target as HTMLSelectElement).value"
+        class="px-2 py-1.5 text-sm rounded-md bg-surface-raised border border-border-default text-text-primary"
+      >
+        <option value="">{{ $t('feed.allChannels') }}</option>
+        <option v-for="ch in allChannels" :key="ch" :value="ch">{{ ch }}</option>
+      </select>
+      <select
+        :value="typeFilter"
+        @change="typeFilter = ($event.target as HTMLSelectElement).value"
+        class="px-2 py-1.5 text-sm rounded-md bg-surface-raised border border-border-default text-text-primary"
+      >
+        <option value="">{{ $t('feed.allTypes') }}</option>
+        <option value="show">{{ $t('feed.typeShow') }}</option>
+        <option value="movie">{{ $t('feed.typeMovie') }}</option>
+      </select>
+      <select
+        :value="qualityFilter ?? ''"
+        @change="qualityFilter = ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null"
+        class="px-2 py-1.5 text-sm rounded-md bg-surface-raised border border-border-default text-text-primary"
+      >
+        <option value="">{{ $t('feed.allQualities') }}</option>
+        <option value="480">480p</option>
+        <option value="720">720p</option>
+        <option value="1080">1080p</option>
+      </select>
+    </div>
+
+    <!-- Entry Table -->
+    <section class="bg-surface-raised border border-border-default rounded-lg overflow-hidden">
+      <div v-if="loading && !overview" class="p-4 text-sm text-text-muted">{{ $t('common.loading') }}</div>
+      <div v-else-if="error" class="p-4 text-sm text-status-fail">{{ error }}</div>
+      <div v-else-if="overview && overview.entries.length === 0" class="p-4 text-sm text-text-muted">{{ $t('feed.empty') }}</div>
+      <table v-else-if="overview" class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border-default text-left text-xs text-text-secondary">
+            <th class="px-4 py-2 font-medium">{{ $t('feed.colTime') }}</th>
+            <th class="px-4 py-2 font-medium">{{ $t('feed.colTitle') }}</th>
+            <th class="px-4 py-2 font-medium">{{ $t('feed.colChannel') }}</th>
+            <th class="px-4 py-2 font-medium">{{ $t('feed.colQuality') }}</th>
+            <th class="px-4 py-2 font-medium">{{ $t('feed.colType') }}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-default">
+          <tr v-for="entry in overview.entries" :key="entry.stableId" class="hover:bg-surface-elevated/50">
+            <td class="px-4 py-2 text-text-secondary tabular-nums text-xs whitespace-nowrap">{{ formatRelativeDate(entry.firstSeenAt) }}</td>
+            <td class="px-4 py-2 text-text-primary truncate max-w-md" :title="entry.title">
+              {{ entry.title }}
+              <span v-if="entry.season && entry.episode" class="ml-1 text-xs text-text-secondary tabular-nums">S{{ entry.season }}E{{ entry.episode }}</span>
+            </td>
+            <td class="px-4 py-2 text-text-secondary text-xs">{{ entry.channel }}</td>
+            <td class="px-4 py-2 text-text-muted text-xs tabular-nums">{{ entry.quality }}p</td>
+            <td class="px-4 py-2 text-text-secondary text-xs">{{ entry.mediaType === 0 ? $t('feed.typeShow') : $t('feed.typeMovie') }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div v-if="overview && overview.filteredTotal > 0" class="flex items-center justify-between px-4 py-3 border-t border-border-default text-xs text-text-secondary">
+        <span class="tabular-nums">
+          {{ (page - 1) * pageSize + 1 }}-{{ Math.min(page * pageSize, overview.filteredTotal) }}
+          {{ $t('common.of') }} {{ overview.filteredTotal }}
+          <span v-if="overview.filteredTotal !== overview.total" class="text-text-muted">({{ overview.total }} {{ $t('feed.totalLabel') }})</span>
+        </span>
+        <div class="flex items-center gap-3">
+          <div class="flex gap-1">
+            <button
+              v-for="size in [25, 50, 100]"
+              :key="size"
+              @click="setPageSize(size)"
+              class="px-2 py-0.5 rounded transition-colors"
+              :class="pageSize === size ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-text-secondary'"
+            >
+              {{ size }}
+            </button>
+          </div>
+          <div class="flex gap-1.5">
+            <button
+              :disabled="page <= 1"
+              @click="page--"
+              class="px-2.5 py-1 rounded-md border border-border-default text-text-secondary hover:bg-surface-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              {{ $t('feed.prev') }}
+            </button>
+            <button
+              :disabled="page >= totalPages"
+              @click="page++"
+              class="px-2.5 py-1 rounded-md border border-border-default text-text-secondary hover:bg-surface-elevated disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              {{ $t('feed.next') }}
+            </button>
           </div>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
+
+    <!-- Hint -->
+    <p class="text-xs text-text-muted mt-3">{{ $t('feed.hint') }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { getFeed, triggerFeedCrawl, type FeedOverviewResponse } from '../api/feed'
+import { onMounted, ref, computed } from 'vue'
 import { formatRelativeDate } from '../utils/format'
-import { useToast } from '../composables/useToast'
+import { useFeed } from '../composables/useFeed'
+import { useI18n } from 'vue-i18n'
+import { getFeed } from '../api/feed'
 
 const { t } = useI18n()
-const { toast } = useToast()
+const {
+  overview, error, loading, crawling,
+  page, pageSize, totalPages,
+  search, channelFilter, typeFilter, qualityFilter,
+  load, crawl, setSearch, setPageSize
+} = useFeed()
 
-const overview = ref<FeedOverviewResponse | null>(null)
-const error = ref<string | null>(null)
-const crawling = ref(false)
+const allChannels = ref<string[]>([])
 
 const statusLabel = computed(() => {
   const ingest = overview.value?.ingest
@@ -94,26 +183,25 @@ const statusLabel = computed(() => {
   return ingest.lastOutcome ?? t('feed.never')
 })
 
-async function load() {
+const statusColor = computed(() => {
+  const outcome = overview.value?.ingest.lastOutcome
+  if (!outcome) return 'text-text-muted'
+  if (outcome === 'completed') return 'text-status-ok'
+  if (outcome === 'completed_with_gap') return 'text-status-warn'
+  if (outcome === 'failed') return 'text-status-fail'
+  return 'text-text-primary'
+})
+
+async function loadChannels() {
   try {
-    overview.value = await getFeed()
-    error.value = null
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : String(e)
-  }
+    const full = await getFeed({ limit: 500 })
+    const set = new Set(full.entries.map(e => e.channel))
+    allChannels.value = [...set].sort()
+  } catch {}
 }
 
-async function crawl() {
-  crawling.value = true
-  try {
-    await triggerFeedCrawl()
-    toast(t('feed.crawlStarted'))
-  } catch (e) {
-    toast(e instanceof Error ? e.message : String(e), 'error')
-  } finally {
-    crawling.value = false
-  }
-}
-
-onMounted(load)
+onMounted(async () => {
+  await load()
+  await loadChannels()
+})
 </script>
