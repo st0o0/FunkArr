@@ -1,42 +1,32 @@
-<h1 align="center">FunkArr</h1>
+# funkarr
 
-<p align="center">
-  German-language public broadcaster Mediathek integration for the *arr ecosystem
-</p>
+[![Release](https://img.shields.io/github/v/release/st0o0/funkarr?sort=semver&style=flat-square)](https://github.com/st0o0/funkarr/releases)
+[![GHCR](https://img.shields.io/badge/ghcr.io-st0o0%2Ffunkarr-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/st0o0/funkarr/pkgs/container/funkarr)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-<p align="center">
-  <a href="https://github.com/st0o0/funkarr/releases"><img src="https://img.shields.io/github/v/release/st0o0/funkarr?style=flat-square" alt="Release" /></a>
-  <a href="https://ghcr.io/st0o0/funkarr"><img src="https://img.shields.io/badge/ghcr.io-st0o0%2Ffunkarr-2496ED?style=flat-square&logo=docker&logoColor=white" alt="GHCR" /></a>
-  <a href="https://github.com/st0o0/funkarr/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License" /></a>
-  <img src="https://img.shields.io/badge/.NET-10.0-512bd4?style=flat-square" alt=".NET 10" />
-</p>
-
----
-
-Searches ARD, ZDF, ORF, SRF, and other German-language public broadcaster Mediatheken via [MediathekViewWeb](https://mediathekviewweb.de/), downloads video and subtitles, remuxes to MKV with FFmpeg, and exposes standard APIs so Sonarr, Radarr, and Prowlarr treat it like a Usenet indexer and download client.
+German-language public broadcaster Mediathek integration for the *arr ecosystem. Searches ARD, ZDF, ORF, SRF, and other Mediatheken via [MediathekViewWeb](https://mediathekviewweb.de/), downloads video and subtitles, remuxes to MKV with FFmpeg, and exposes standard APIs so Sonarr, Radarr, and Prowlarr treat it like a Usenet indexer and download client.
 
 No Usenet account needed. No torrents. Just direct downloads from public media libraries.
 
 ## Features
 
-- **Newznab indexer API** - add FunkArr in Prowlarr or directly in Sonarr/Radarr as an indexer
-- **SABnzbd download client API** - add it as a SABnzbd download client in Sonarr/Radarr
-- **Community rulesets** - map messy Mediathek titles to structured season/episode format, auto-synced from GitHub ([browse catalog](https://funkarr.st0o0.net/en/rulesets/catalog))
-- **RuleSet builder** - create and test rulesets with a visual editor and debugger in the web UI
-- **Metadata resolution** - resolves series and movies via TMDB and TVDB for accurate matching
-- **Match intelligence** - tracks which mappings worked so results improve over time
-- **Subtitle handling** - downloads or extracts subtitles from HLS streams, converts to SRT
-- **Network routing and proxy** - route channel-specific traffic through VPN or proxy for geo-restricted content (ORF, SRF, etc.)
-- **Download scheduling** - define time windows for downloads to run, pause automatically outside schedule
-- **Health checks** - real health checks for FFmpeg, MediathekViewWeb connectivity, and directory write access
-- **Observability** - Prometheus `/metrics` endpoint with download, search, scoring, enrichment, ruleset, and external API health metrics
-- **Web UI** - download queue with detail view, activity and scoring history, ruleset management, settings with log viewer, and setup health checks
-- **Single container** - runs on any Docker host, SQLite by default, PUID/PGID support
+- **Newznab indexer API** -- add FunkArr in Prowlarr or directly in Sonarr/Radarr as an indexer
+- **SABnzbd download client API** -- add it as a SABnzbd download client in Sonarr/Radarr
+- **Community rulesets** -- map messy Mediathek titles to structured season/episode format, auto-synced from GitHub ([browse catalog](https://funkarr.st0o0.net/en/rulesets/catalog))
+- **RuleSet builder** -- create and test rulesets with a visual editor and debugger in the web UI
+- **Metadata resolution** -- resolves series and movies via TMDB and TVDB for accurate matching
+- **Match intelligence** -- tracks which mappings worked so results improve over time
+- **Subtitle handling** -- downloads or extracts subtitles from HLS streams, converts to SRT
+- **Network routing and proxy** -- route channel-specific traffic through VPN or proxy for geo-restricted content (ORF, SRF, etc.)
+- **Download scheduling** -- define time windows for downloads to run, pause automatically outside schedule
+- **Health checks** -- real health checks for FFmpeg, MediathekViewWeb connectivity, and directory write access
+- **Observability** -- Prometheus `/metrics` endpoint with download, search, scoring, enrichment, ruleset, and external API health metrics
+- **Web UI** -- download queue with detail view, activity and scoring history, ruleset management, settings with log viewer, and setup health checks
+- **Single container** -- runs on any Docker host, SQLite by default, PUID/PGID support
 
 ## Quick Start
 
 ```yaml
-# docker-compose.yml
 services:
   funkarr:
     image: ghcr.io/st0o0/funkarr:latest
@@ -83,13 +73,13 @@ The web UI is available at `http://localhost:8080`.
 
 ## Rulesets
 
-Mediathek titles are messy - "Tatort" episodes might appear as "Tatort: Der letzte Schrei" with no season or episode number. Rulesets map these titles to structured season/episode format so Sonarr can match them.
+Mediathek titles are messy -- "Tatort" episodes might appear as "Tatort: Der letzte Schrei" with no season or episode number. Rulesets map these titles to structured season/episode format so Sonarr can match them.
 
 Community rulesets sync automatically from GitHub. **98 rulesets** covering the most popular shows and movies are included out of the box. You can also create custom rulesets in the web UI (Rulesets section), which includes a debugger to test rules against live Mediathek data.
 
 ### Confidence Levels
 
-Each ruleset carries a confidence score (0.0 – 1.0) that reflects how reliably its rules can identify episodes. The score flows through to Sonarr/Radarr as match quality and affects which results are prioritized.
+Each ruleset carries a confidence score (0.0 -- 1.0) that reflects how reliably its rules can identify episodes. The score flows through to Sonarr/Radarr as match quality and affects which results are prioritized.
 
 | Strategy | Confidence | Rationale |
 |----------|-----------|-----------|
@@ -103,7 +93,7 @@ Each ruleset carries a confidence score (0.0 – 1.0) that reflects how reliably
 
 ## Configuration
 
-All configuration is via environment variables. Defaults work out of the box - the only required setting is `FunkArr__Download__Path` if you want downloads written to a mounted volume.
+All configuration is via environment variables. Defaults work out of the box -- the only required setting is `FunkArr__Download__Path` if you want downloads written to a mounted volume.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -112,7 +102,7 @@ All configuration is via environment variables. Defaults work out of the box - t
 | **Downloads** | | |
 | `FunkArr__Download__Path` | `data/downloads` | Root download directory (contains `incomplete/` and `complete/`) |
 | `FunkArr__Download__ConcurrentDownloads` | `3` | Max parallel downloads |
-| `FunkArr__Download__Categories__0__Name` | - | Category name (e.g. `tv`) - map Sonarr/Radarr categories to subdirectories |
+| `FunkArr__Download__Categories__0__Name` | - | Category name (e.g. `tv`) -- map Sonarr/Radarr categories to subdirectories |
 | `FunkArr__Download__Categories__0__Dir` | - | Subdirectory for this category (e.g. `tv`) |
 | `FunkArr__Download__DownloadSchedule__0__Start` | - | Schedule window start time (e.g. `02:00`) |
 | `FunkArr__Download__DownloadSchedule__0__End` | - | Schedule window end time (e.g. `06:00`) |
@@ -133,7 +123,7 @@ All configuration is via environment variables. Defaults work out of the box - t
 | `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Days before old snapshots are pruned |
 | `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Interval between snapshots |
 | **PostgreSQL** | | |
-| `FunkArr__Postgres__Host` | _(empty)_ | PostgreSQL host - set to switch from SQLite to Postgres |
+| `FunkArr__Postgres__Host` | _(empty)_ | PostgreSQL host -- set to switch from SQLite to Postgres |
 | `FunkArr__Postgres__Port` | `5432` | PostgreSQL port |
 | `FunkArr__Postgres__User` | _(empty)_ | PostgreSQL user |
 | `FunkArr__Postgres__Password` | _(empty)_ | PostgreSQL password |
@@ -141,15 +131,19 @@ All configuration is via environment variables. Defaults work out of the box - t
 
 See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://funkarr.st0o0.net/en/configuration).
 
-## Build & Test
+## Image
 
-All commands run from the repo root:
+- **Registry:** `ghcr.io/st0o0/funkarr`
+- **Tags:** semantic version (`0.3.1`), `latest`
+- **Architectures:** `linux/amd64`
+
+## Development
 
 ```powershell
 dotnet build src/FunkArr.slnx
 ```
 
-Tests use xUnit v3 on Microsoft Testing Platform - run with `dotnet run`, not `dotnet test`:
+Tests use xUnit v3 on Microsoft Testing Platform -- run with `dotnet run`, not `dotnet test`:
 
 ```powershell
 dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
@@ -171,6 +165,8 @@ Format check (CI enforces this):
 ```powershell
 dotnet format src/FunkArr.slnx --verify-no-changes
 ```
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/); releases and the GHCR image are cut automatically by release-please.
 
 ## Alternatives
 
