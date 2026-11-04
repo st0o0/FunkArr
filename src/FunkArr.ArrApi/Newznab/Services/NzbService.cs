@@ -4,7 +4,7 @@ using System.Xml.Serialization;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
 
-namespace FunkArr.ArrApi.Newznab;
+namespace FunkArr.ArrApi.Newznab.Services;
 
 public static class NzbService
 {

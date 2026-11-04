@@ -3,7 +3,7 @@ using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using static FunkArr.Messages.Download.DownloadPhaseExtensions;
 
-namespace FunkArr.ArrApi.Sabnzbd;
+namespace FunkArr.ArrApi.Sabnzbd.Services;
 
 internal static class SabnzbdResponseMapper
 {

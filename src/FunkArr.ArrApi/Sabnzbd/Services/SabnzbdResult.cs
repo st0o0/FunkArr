@@ -1,4 +1,4 @@
-namespace FunkArr.ArrApi.Sabnzbd;
+namespace FunkArr.ArrApi.Sabnzbd.Services;
 
 public abstract record SabnzbdResult
 {

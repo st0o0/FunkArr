@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using DownloadQueueResponse = FunkArr.Messages.Download.QueueResponse;
 
-namespace FunkArr.ArrApi.Sabnzbd;
+namespace FunkArr.ArrApi.Sabnzbd.Services;
 
 public sealed class SabnzbdQueueService(
     IActorRegistry registry,

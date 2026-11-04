@@ -1,4 +1,4 @@
-using FunkArr.ArrApi.Newznab;
+using FunkArr.ArrApi.Newznab.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OutputCaching;

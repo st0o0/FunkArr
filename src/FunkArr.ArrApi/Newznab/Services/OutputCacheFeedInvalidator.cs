@@ -1,7 +1,7 @@
 using FunkArr.Core;
 using Microsoft.AspNetCore.OutputCaching;
 
-namespace FunkArr.ArrApi.Newznab;
+namespace FunkArr.ArrApi.Newznab.Services;
 
 public sealed class OutputCacheFeedInvalidator(IOutputCacheStore store) : IFeedCacheInvalidator
 {

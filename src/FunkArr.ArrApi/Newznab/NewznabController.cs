@@ -1,4 +1,6 @@
 using FunkArr.ArrApi.Newznab.Models;
+using FunkArr.ArrApi.Newznab.Requests;
+using FunkArr.ArrApi.Newznab.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.HttpLogging;

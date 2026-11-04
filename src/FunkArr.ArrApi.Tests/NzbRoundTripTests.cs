@@ -1,5 +1,6 @@
 using System.Xml.Serialization;
 using FunkArr.ArrApi.Newznab;
+using FunkArr.ArrApi.Newznab.Models;
 
 namespace FunkArr.ArrApi.Tests;
 

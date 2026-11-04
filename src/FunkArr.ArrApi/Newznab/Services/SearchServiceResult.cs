@@ -1,6 +1,6 @@
 using FunkArr.ArrApi.Newznab.Models;
 
-namespace FunkArr.ArrApi.Newznab;
+namespace FunkArr.ArrApi.Newznab.Services;
 
 public abstract record SearchServiceResult
 {

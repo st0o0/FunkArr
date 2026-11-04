@@ -1,5 +1,5 @@
-using FunkArr.ArrApi.Newznab;
-using FunkArr.ArrApi.Sabnzbd;
+using FunkArr.ArrApi.Newznab.Services;
+using FunkArr.ArrApi.Sabnzbd.Services;
 using FunkArr.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

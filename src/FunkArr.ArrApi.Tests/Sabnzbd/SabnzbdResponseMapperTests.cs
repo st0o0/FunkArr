@@ -1,4 +1,4 @@
-using FunkArr.ArrApi.Sabnzbd;
+using FunkArr.ArrApi.Sabnzbd.Services;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
 using FunkArr.Messages.Shared;

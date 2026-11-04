@@ -5,6 +5,8 @@ using Akka.Hosting;
 using Akka.TestKit;
 using Akka.TestKit.Xunit;
 using FunkArr.ArrApi.Sabnzbd;
+using FunkArr.ArrApi.Sabnzbd.Requests;
+using FunkArr.ArrApi.Sabnzbd.Services;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;

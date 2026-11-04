@@ -1,6 +1,7 @@
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.ArrApi.Newznab.Models;
+using FunkArr.ArrApi.Newznab.Requests;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
@@ -9,7 +10,7 @@ using FunkArr.Messages.Shared;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace FunkArr.ArrApi.Newznab;
+namespace FunkArr.ArrApi.Newznab.Services;
 
 public sealed class NewznabSearchService(
     IActorRegistry registry,

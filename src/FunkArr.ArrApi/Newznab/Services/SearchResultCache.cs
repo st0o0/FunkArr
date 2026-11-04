@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using FunkArr.Messages.Search;
 
-namespace FunkArr.ArrApi.Newznab;
+namespace FunkArr.ArrApi.Newznab.Services;
 
 public sealed class SearchResultCache(TimeSpan ttl, TimeProvider timeProvider)
 {

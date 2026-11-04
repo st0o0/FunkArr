@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace FunkArr.ArrApi.Sabnzbd;
+namespace FunkArr.ArrApi.Sabnzbd.Requests;
 
 public sealed record DownloadPostRequest(
     [FromQuery(Name = "mode")] string? Mode,

@@ -1,5 +1,5 @@
-using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
+using FunkArr.ArrApi.Newznab.Services;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
 

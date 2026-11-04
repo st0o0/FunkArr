@@ -6,9 +6,9 @@
 
 ## 2. Move files and namespaces
 
-- [ ] 2.1 Move `Nzb.cs` to `Newznab/Models/Nzb.cs`; move `SabnzbdConstants.cs` to `Sabnzbd/`
-- [ ] 2.2 Create `Requests/` and `Services/` folders per protocol and move request records and services with matching namespaces (content unchanged)
-- [ ] 2.3 Fix usings and test namespaces; build at 0 warnings, `FunkArr.Architecture.Tests` and all group 1 tests green
+- [x] 2.1 Move `Nzb.cs` to `Newznab/Models/Nzb.cs`; move `SabnzbdConstants.cs` to `Sabnzbd/`
+- [x] 2.2 Create `Requests/` and `Services/` folders per protocol and move request records and services with matching namespaces (content unchanged)
+- [x] 2.3 Fix usings and test namespaces; build at 0 warnings, `FunkArr.Architecture.Tests` and all group 1 tests green
 
 ## 3. Typed SABnzbd responses
 

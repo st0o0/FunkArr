@@ -1,4 +1,4 @@
-namespace FunkArr.ArrApi;
+namespace FunkArr.ArrApi.Sabnzbd;
 
 public static class SabnzbdConstants
 {

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace FunkArr.ArrApi.Newznab;
+namespace FunkArr.ArrApi.Newznab.Requests;
 
 public sealed record IndexerRequest(
     [FromQuery(Name = "t")] string? T,

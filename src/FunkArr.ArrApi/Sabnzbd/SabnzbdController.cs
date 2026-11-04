@@ -1,4 +1,6 @@
 using FunkArr.ArrApi.Sabnzbd.Models;
+using FunkArr.ArrApi.Sabnzbd.Requests;
+using FunkArr.ArrApi.Sabnzbd.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.HttpLogging;

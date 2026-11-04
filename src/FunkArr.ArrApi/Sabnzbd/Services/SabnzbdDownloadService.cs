@@ -1,6 +1,6 @@
 using Akka.Actor;
 using Akka.Hosting;
-using FunkArr.ArrApi.Newznab;
+using FunkArr.ArrApi.Newznab.Services;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
 using FunkArr.Messages.Shared;
@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace FunkArr.ArrApi.Sabnzbd;
+namespace FunkArr.ArrApi.Sabnzbd.Services;
 
 public sealed class SabnzbdDownloadService(
     IActorRegistry registry,

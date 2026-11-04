@@ -1,5 +1,5 @@
 using System.Text;
-using FunkArr.ArrApi.Newznab;
+using FunkArr.ArrApi.Newznab.Services;
 using Microsoft.Extensions.Time.Testing;
 
 namespace FunkArr.ArrApi.Tests.Newznab;

@@ -1,4 +1,4 @@
-using FunkArr.ArrApi.Newznab;
+using FunkArr.ArrApi.Newznab.Services;
 using FunkArr.Messages;
 using FunkArr.Messages.Search;
 using Microsoft.Extensions.Time.Testing;

@@ -1,6 +1,6 @@
 using FunkArr.ArrApi.Newznab.Models;
 
-namespace FunkArr.ArrApi.Newznab;
+namespace FunkArr.ArrApi.Newznab.Services;
 
 internal static class ValidationRss
 {
