@@ -33,7 +33,7 @@ internal static class SabnzbdResponseMapper
             ? Path.GetDirectoryName(Path.Join(completePath, item.Completion.RelativePath))
             : null,
         Status: MapHistoryStatus(item.Completion.Status),
-        FailMessage: item.Completion.FailMessage,
+        FailMessage: item.Completion.FailMessage ?? string.Empty,
         CompletedOn: item.Completion.CompletedAt);
 
     internal static string FormatSpeed(QueueItem item)

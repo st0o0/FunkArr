@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Hosting;
+using FunkArr.Api.Extensions;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
 using FunkArr.Messages.Feed;
@@ -70,7 +71,7 @@ public static class FeedApiEndpoints
                 .. entries.Entries.Select(e => new ApiModels.FeedEntryOutput(
                     e.StableId,
                     e.FirstSeenAt,
-                    (ApiModels.MediaType)(int)e.MediaType,
+                    e.MediaType.ToApi(),
                     e.Title,
                     e.Channel,
                     e.Topic,

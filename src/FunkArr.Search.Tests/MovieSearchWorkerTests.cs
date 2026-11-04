@@ -45,7 +45,7 @@ public sealed class MovieSearchWorkerTests : TestKit
             () => Assert.Equal("Das Boot", field.Query),
             () => Assert.Equal(3600, query.DurationMin));
 
-        var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
+        var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(SearchSource.Radarr, evaluation.Source),
             () => Assert.Equal("Das Boot", Assert.Single(evaluation.Items).Title),
@@ -54,7 +54,7 @@ public sealed class MovieSearchWorkerTests : TestKit
             "https://x.com/v.mp4", 7200, 0, 720, null, 0.9);
         p.Evaluation.Reply(new EvaluateMoviesCompleted(evaluation.SearchId, [resultItem], 1));
 
-        var result = ExpectMsg<SearchMovieCompleted>();
+        var result = ExpectMsg<SearchMovieCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Equal(resultItem, Assert.Single(result.Items)));
@@ -72,7 +72,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var query = AnswerQuery(p.Mediathek, new QueryMediathekCompleted([], 0));
         Assert.Empty(query.Fields);
 
-        var result = ExpectMsg<SearchMovieCompleted>();
+        var result = ExpectMsg<SearchMovieCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Empty(result.Items));
@@ -87,7 +87,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt0806910", 550, null, null), TestActor);
 
-        var resolve = p.Resolver.ExpectMsg<ResolveRuleSet>();
+        var resolve = p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Null(resolve.TopicOrAlias),
             () => Assert.Equal("tt0806910", resolve.Ids?.ImdbId),
@@ -98,7 +98,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         var query = AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Tatort")], 1));
         Assert.Equal("Tatort", Assert.Single(query.Fields).Query);
 
-        var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
+        var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(ruleSet, evaluation.RuleSet),
             () => Assert.Equal("tt0806910", evaluation.ImdbId),
@@ -114,14 +114,14 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, null, "tt9999999", null, null, null), TestActor);
 
-        p.Resolver.ExpectMsg<ResolveRuleSet>();
+        p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         p.Resolver.Reply(new RuleSetFailed(new RuleSetNotFoundException("")));
 
-        var result = ExpectMsg<SearchMovieCompleted>();
+        var result = ExpectMsg<SearchMovieCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Empty(result.Items),
             () => Assert.Equal(0, result.Total));
-        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -134,10 +134,10 @@ public sealed class MovieSearchWorkerTests : TestKit
         worker.Tell(new SearchMovie(searchId, SearchSource.Radarr, "Das Boot", null, null, null, null), TestActor);
 
         AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Das Boot")], 1));
-        var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>();
+        var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>(cancellationToken: TestContext.Current.CancellationToken);
         p.Evaluation.Reply(new EvaluateMoviesFailed(evaluation.SearchId, new Exception("Scoring error")));
 
-        var result = ExpectMsg<SearchMovieFailed>();
+        var result = ExpectMsg<SearchMovieFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Contains("Scoring error", result.Cause.Message));

@@ -29,7 +29,7 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
         manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
-        var result = ExpectMsg<ScoreCompleted>();
+        var result = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Results);
         Assert.True(item.Matched);
         Assert.Equal(0.9, item.Score, 0.001);
@@ -47,7 +47,7 @@ public sealed class ScoringManagerTests : TestKit
         };
 
         manager.Tell(new ScoreItems(Guid.Empty, "nonexistent", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
-        var result = ExpectMsg<ScoreCompleted>();
+        var result = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.Results.Length);
         Assert.All(result.Results, r =>
@@ -68,7 +68,7 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
         manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
-        var result = ExpectMsg<ScoreCompleted>();
+        var result = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Results);
         Assert.True(item.Matched);
         Assert.Equal(0.99, item.Score, 0.001);
@@ -85,12 +85,12 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
 
         manager.Tell(new ScoreItems(Guid.Empty, "show-a", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
-        var resultA = ExpectMsg<ScoreCompleted>();
+        var resultA = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var itemA = Assert.Single(resultA.Results);
         Assert.Equal(0.8, itemA.Score, 0.001);
 
         manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
-        var resultB = ExpectMsg<ScoreCompleted>();
+        var resultB = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var itemB = Assert.Single(resultB.Results);
         Assert.Equal(0.6, itemB.Score, 0.001);
     }
@@ -104,7 +104,7 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[] { new ScoreCandidate("Test", "Test", "ARD", 5400, 720, null, 0) };
         manager.Tell(new ScoreItems(requestId, "nonexistent", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
-        var result = ExpectMsg<ScoreCompleted>();
+        var result = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(requestId, result.RequestId);
     }
 
@@ -119,7 +119,7 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
         manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
-        var result = ExpectMsg<ScoreCompleted>();
+        var result = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Results);
         Assert.False(item.Matched);
         Assert.Equal(0.0, item.Score);
@@ -135,7 +135,7 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[] { new ScoreCandidate("Test", "Test", "ARD", 5400, 720, null, 0) };
         manager.Tell(new ScoreItems(Guid.Empty, "test", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
 
-        var result = ExpectMsg<ScoreCompleted>();
+        var result = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Results);
         Assert.False(item.Matched);
     }
@@ -153,7 +153,7 @@ public sealed class ScoringManagerTests : TestKit
         var candidates = new[] { new ScoreCandidate("Sendung vom 24.10.2024", "Test", "ARD", 5400, 720, null, 0) };
 
         manager.Tell(new ScoreItems(Guid.Empty, "show-b", new ScoringOrigin(SearchSource.Sonarr, "test"), candidates));
-        var result = ExpectMsg<ScoreCompleted>();
+        var result = ExpectMsg<ScoreCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Results);
         Assert.Equal(0.6, item.Score, 0.001);
         Assert.True(item.Matched);

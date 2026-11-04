@@ -14,7 +14,7 @@ public sealed class MediathekViewWebHealthCheckTests
         var check = new MediathekViewWebHealthCheck(factory);
         var context = CreateContext(HealthStatus.Degraded);
 
-        var result = await check.CheckHealthAsync(context);
+        var result = await check.CheckHealthAsync(context, TestContext.Current.CancellationToken);
 
         Assert.Equal(HealthStatus.Healthy, result.Status);
     }
@@ -26,7 +26,7 @@ public sealed class MediathekViewWebHealthCheckTests
         var check = new MediathekViewWebHealthCheck(factory);
         var context = CreateContext(HealthStatus.Degraded);
 
-        var result = await check.CheckHealthAsync(context);
+        var result = await check.CheckHealthAsync(context, TestContext.Current.CancellationToken);
 
         Assert.Equal(HealthStatus.Degraded, result.Status);
         Assert.Contains("503", result.Description);
@@ -39,7 +39,7 @@ public sealed class MediathekViewWebHealthCheckTests
         var check = new MediathekViewWebHealthCheck(factory);
         var context = CreateContext(HealthStatus.Degraded);
 
-        var result = await check.CheckHealthAsync(context);
+        var result = await check.CheckHealthAsync(context, TestContext.Current.CancellationToken);
 
         Assert.Equal(HealthStatus.Degraded, result.Status);
         Assert.Contains("unreachable", result.Description);

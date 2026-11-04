@@ -45,9 +45,9 @@ public sealed class TvSearchWorkerTests : TestKit
             () => Assert.Equal("Tatort", field.Query),
             () => Assert.Equal(300, query.DurationMin),
             () => Assert.False(query.Future));
-        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
 
-        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>();
+        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.NotEqual(searchId, evaluation.SearchId),
             () => Assert.Equal(SearchSource.Sonarr, evaluation.Source),
@@ -57,7 +57,7 @@ public sealed class TvSearchWorkerTests : TestKit
             "https://x.com/1.mp4", 5400, 0, 720, null, 0.9);
         p.Evaluation.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [resultItem], 1));
 
-        var result = ExpectMsg<SearchSeriesCompleted>();
+        var result = ExpectMsg<SearchSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Equal(1, result.Total),
@@ -73,7 +73,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, null, 2026, null, 83214, null, null, null), TestActor);
 
-        var resolve = p.Resolver.ExpectMsg<ResolveRuleSet>();
+        var resolve = p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Null(resolve.TopicOrAlias),
             () => Assert.Equal(83214, resolve.Ids?.TvdbId));
@@ -83,7 +83,7 @@ public sealed class TvSearchWorkerTests : TestKit
         var query = AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Tatort", "Roomservice", "https://x.com/1.mp4")], 1));
         Assert.Equal("Tatort", Assert.Single(query.Fields).Query);
 
-        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>();
+        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(ruleSet, evaluation.RuleSet),
             () => Assert.Equal(83214, evaluation.TvdbId),
@@ -99,15 +99,15 @@ public sealed class TvSearchWorkerTests : TestKit
 
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, null, null, null, 99999, null, null, null), TestActor);
 
-        p.Resolver.ExpectMsg<ResolveRuleSet>();
+        p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         p.Resolver.Reply(new RuleSetFailed(new RuleSetNotFoundException("")));
 
-        var result = ExpectMsg<SearchSeriesCompleted>();
+        var result = ExpectMsg<SearchSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Empty(result.Items),
             () => Assert.Equal(0, result.Total));
-        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -121,11 +121,11 @@ public sealed class TvSearchWorkerTests : TestKit
 
         AnswerQuery(p.Mediathek, new QueryMediathekCompleted([], 0));
 
-        var result = ExpectMsg<SearchSeriesCompleted>();
+        var result = ExpectMsg<SearchSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Empty(result.Items));
-        p.Evaluation.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        p.Evaluation.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -138,10 +138,10 @@ public sealed class TvSearchWorkerTests : TestKit
         worker.Tell(new SearchSeries(searchId, SearchSource.Sonarr, "Tatort", null, null, null, null, null, null), TestActor);
 
         AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Tatort", "Test", "https://x.com/v.mp4")], 1));
-        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>();
+        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>(cancellationToken: TestContext.Current.CancellationToken);
         p.Evaluation.Reply(new EvaluateSeriesFailed(evaluation.SearchId, new Exception("Scoring error")));
 
-        var result = ExpectMsg<SearchSeriesFailed>();
+        var result = ExpectMsg<SearchSeriesFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Contains("Scoring error", result.Cause.Message));
@@ -158,11 +158,11 @@ public sealed class TvSearchWorkerTests : TestKit
 
         AnswerQuery(p.Mediathek, new QueryMediathekError(new Exception("HTTP 500")));
 
-        var result = ExpectMsg<SearchSeriesFailed>();
+        var result = ExpectMsg<SearchSeriesFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Contains("HTTP 500", result.Cause.Message));
-        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(500));
+        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -178,10 +178,10 @@ public sealed class TvSearchWorkerTests : TestKit
 
         AnswerQuery(p.Mediathek, new QueryMediathekCompleted([Item("Tatort", "Test", "https://x.com/v.mp4")], 1), TimeSpan.FromSeconds(5));
 
-        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>(TimeSpan.FromSeconds(5));
+        var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>(TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         p.Evaluation.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [], 0));
 
-        var result = ExpectMsg<SearchSeriesCompleted>(TimeSpan.FromSeconds(5));
+        var result = ExpectMsg<SearchSeriesCompleted>(TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(searchId, result.SearchId);
     }
 
@@ -198,7 +198,7 @@ public sealed class TvSearchWorkerTests : TestKit
         AnswerQuery(p.Mediathek, new QueryMediathekQueueFull(), TimeSpan.FromSeconds(5));
         AnswerQuery(p.Mediathek, new QueryMediathekQueueFull(), TimeSpan.FromSeconds(5));
 
-        var result = ExpectMsg<SearchSeriesFailed>(TimeSpan.FromSeconds(5));
+        var result = ExpectMsg<SearchSeriesFailed>(TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(searchId, result.SearchId),
             () => Assert.Contains("queue full", result.Cause.Message));

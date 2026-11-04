@@ -33,10 +33,10 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
                     Duration: 5400)
             ]);
 
-        var task = _fixture.Client.PostAsJsonAsync("/api/rulesets/test", request);
+        var task = _fixture.Client.PostAsJsonAsync("/api/rulesets/test", request, cancellationToken: TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IScoringManager>();
-        var msg = probe.ExpectMsg<TestScoreItems>();
+        var msg = probe.ExpectMsg<TestScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new ScoreCompleted(
             msg.RequestId,
             [],
@@ -57,7 +57,7 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<TestScoreResponse>();
+        var result = await response.Content.ReadFromJsonAsync<TestScoreResponse>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
 
         var trace = Assert.Single(result.ItemTraces);

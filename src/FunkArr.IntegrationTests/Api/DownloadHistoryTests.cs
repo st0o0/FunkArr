@@ -17,17 +17,17 @@ public sealed class DownloadHistoryTests(FunkArrFixture fixture)
         var completed = TestData.CompletedItem();
         var failed = TestData.FailedItem();
 
-        var task = _fixture.Client.GetAsync("/api/downloads/history");
+        var task = _fixture.Client.GetAsync("/api/downloads/history", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadHistoryManager>();
-        probe.ExpectMsg<QueryHistory>();
+        probe.ExpectMsg<QueryHistory>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new HistoryResult([completed, failed], TotalItems: 2));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<DownloadHistoryResponse>();
+        var result = await response.Content.ReadFromJsonAsync<DownloadHistoryResponse>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
 
         Assert.Equal(2, result.Items.Length);
@@ -48,10 +48,10 @@ public sealed class DownloadHistoryTests(FunkArrFixture fixture)
     [Fact]
     public async Task GetHistoryStats_ReturnsTypedResponse()
     {
-        var task = _fixture.Client.GetAsync("/api/downloads/history/stats");
+        var task = _fixture.Client.GetAsync("/api/downloads/history/stats", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadHistoryManager>();
-        probe.ExpectMsg<QueryHistoryStats>();
+        probe.ExpectMsg<QueryHistoryStats>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new HistoryStatsResult(
             TotalCompleted: 42,
             TotalFailed: 3,
@@ -63,7 +63,7 @@ public sealed class DownloadHistoryTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<HistoryStatsResponse>();
+        var result = await response.Content.ReadFromJsonAsync<HistoryStatsResponse>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal(42, result.TotalCompleted);
         Assert.Equal(3, result.TotalFailed);
@@ -75,17 +75,17 @@ public sealed class DownloadHistoryTests(FunkArrFixture fixture)
     [Fact]
     public async Task GetHistoryCategories_ReturnsArray()
     {
-        var task = _fixture.Client.GetAsync("/api/downloads/history/categories");
+        var task = _fixture.Client.GetAsync("/api/downloads/history/categories", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadHistoryManager>();
-        probe.ExpectMsg<QueryHistoryCategories>();
+        probe.ExpectMsg<QueryHistoryCategories>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new HistoryCategoriesResult(["tv", "movie"]));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<string[]>();
+        var result = await response.Content.ReadFromJsonAsync<string[]>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal(2, result.Length);
         Assert.Contains("tv", result);

@@ -17,10 +17,10 @@ public sealed class DownloadQueueTests(FunkArrFixture fixture)
         var processing = TestData.ProcessingItem();
         var queued = TestData.QueueItem("Tagesschau.2024-01-15");
 
-        var task = _fixture.Client.GetAsync("/api/downloads/queue");
+        var task = _fixture.Client.GetAsync("/api/downloads/queue", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        var msg = probe.ExpectMsg<QueryQueue>();
+        var msg = probe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new QueueResult(
             [processing, queued],
             TotalSlots: 3,
@@ -33,7 +33,7 @@ public sealed class DownloadQueueTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<DownloadQueueResponse>();
+        var result = await response.Content.ReadFromJsonAsync<DownloadQueueResponse>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
 
         Assert.Equal(2, result.Items.Length);
@@ -57,10 +57,10 @@ public sealed class DownloadQueueTests(FunkArrFixture fixture)
     [Fact]
     public async Task GetQueue_Empty_ReturnsEmptyItems()
     {
-        var task = _fixture.Client.GetAsync("/api/downloads/queue");
+        var task = _fixture.Client.GetAsync("/api/downloads/queue", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        probe.ExpectMsg<QueryQueue>();
+        probe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new QueueResult(
             [],
             TotalSlots: 3,
@@ -73,7 +73,7 @@ public sealed class DownloadQueueTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<DownloadQueueResponse>();
+        var result = await response.Content.ReadFromJsonAsync<DownloadQueueResponse>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Empty(result.Items);
         Assert.Equal(0, result.ActiveCount);

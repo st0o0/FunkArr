@@ -16,9 +16,9 @@ public sealed class SabnzbdHistoryTests(FunkArrFixture fixture)
     {
         var historyProbe = _fixture.GetProbe<IDownloadHistoryManager>();
 
-        var task = _fixture.Client.GetAsync("/download/api?mode=history&apikey=test-key");
+        var task = _fixture.Client.GetAsync("/download/api?mode=history&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = historyProbe.ExpectMsg<QueryHistory>();
+        var msg = historyProbe.ExpectMsg<QueryHistory>(cancellationToken: TestContext.Current.CancellationToken);
         var items = new[]
         {
             TestData.CompletedItem(),
@@ -30,7 +30,7 @@ public sealed class SabnzbdHistoryTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         var history = json.GetProperty("history");
         Assert.Equal(2, history.GetProperty("noofslots").GetInt32());
 
@@ -49,10 +49,9 @@ public sealed class SabnzbdHistoryTests(FunkArrFixture fixture)
         var historyProbe = _fixture.GetProbe<IDownloadHistoryManager>();
         var downloadId = Guid.NewGuid();
 
-        var task = _fixture.Client.GetAsync(
-            $"/download/api?mode=history&name=delete&value={downloadId}&apikey=test-key");
+        var task = _fixture.Client.GetAsync($"/download/api?mode=history&name=delete&value={downloadId}&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = historyProbe.ExpectMsg<RemoveHistoryEntry>();
+        var msg = historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(downloadId, msg.DownloadId);
         historyProbe.Reply(new DeleteDownloadResult(true, null));
 
@@ -60,7 +59,7 @@ public sealed class SabnzbdHistoryTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(json.GetProperty("status").GetBoolean());
     }
 }

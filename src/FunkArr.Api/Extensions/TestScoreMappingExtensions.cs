@@ -34,9 +34,7 @@ internal static class TestScoreMappingExtensions
 
     private static MsgScoring.IdentificationSpec? ToIdentification(this RuleInput rule)
     {
-        var strategy = rule.Strategy is not null
-            ? (MsgScoring.IdentificationStrategy)(int)rule.Strategy
-            : (MsgScoring.IdentificationStrategy?)null;
+        var strategy = rule.Strategy?.ToMessage();
 
         return strategy switch
         {
@@ -75,10 +73,10 @@ internal static class TestScoreMappingExtensions
 
         var parts = titleRules
             .Select(tr => new MsgScoring.TitlePart(
-                (MsgScoring.TitlePartType)(int)tr.Type,
+                tr.Type.ToMessage(),
                 Value: tr.Value,
                 Pattern: tr.Pattern,
-                Field: tr.Field is not null ? (MsgScoring.FilterField)(int)tr.Field : null,
+                Field: tr.Field?.ToMessage(),
                 CaptureGroup: tr.CaptureGroup))
             .ToArray();
 
@@ -112,8 +110,8 @@ internal static class TestScoreMappingExtensions
             {
                 result.Add(new MsgScoring.FilterNode.ConditionNode(
                     new MsgScoring.FilterCondition(
-                        (MsgScoring.FilterField)(int)node.Field.Value,
-                        (MsgScoring.FilterOp)(int)node.Op.Value,
+                        node.Field.Value.ToMessage(),
+                        node.Op.Value.ToMessage(),
                         node.Value)));
             }
         }

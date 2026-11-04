@@ -28,7 +28,7 @@ public sealed class DownloadSchedulerTests : TestKit
 
         Sys.ActorOf(Props.Create(() => new DownloadScheduler(time, options)));
 
-        _managerProbe.ExpectMsg<ScheduleEnabled>();
+        _managerProbe.ExpectMsg<ScheduleEnabled>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class DownloadSchedulerTests : TestKit
 
         Sys.ActorOf(Props.Create(() => new DownloadScheduler(time, options)));
 
-        _managerProbe.ExpectMsg<ScheduleEnabled>();
+        _managerProbe.ExpectMsg<ScheduleEnabled>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public sealed class DownloadSchedulerTests : TestKit
 
         Sys.ActorOf(Props.Create(() => new DownloadScheduler(time, options)));
 
-        var msg = _managerProbe.ExpectMsg<ScheduleDisabled>();
+        var msg = _managerProbe.ExpectMsg<ScheduleDisabled>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(msg.NextWindow);
     }
 
@@ -70,10 +70,10 @@ public sealed class DownloadSchedulerTests : TestKit
         });
 
         Sys.ActorOf(Props.Create(() => new DownloadScheduler(time, options)));
-        _managerProbe.ExpectMsg<ScheduleDisabled>();
+        _managerProbe.ExpectMsg<ScheduleDisabled>(cancellationToken: TestContext.Current.CancellationToken);
 
         options.Update(new DownloadOptions());
-        _managerProbe.ExpectMsg<ScheduleEnabled>();
+        _managerProbe.ExpectMsg<ScheduleEnabled>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -83,13 +83,13 @@ public sealed class DownloadSchedulerTests : TestKit
         var options = new TestOptionsMonitor<DownloadOptions>(new DownloadOptions());
 
         Sys.ActorOf(Props.Create(() => new DownloadScheduler(time, options)));
-        _managerProbe.ExpectMsg<ScheduleEnabled>();
+        _managerProbe.ExpectMsg<ScheduleEnabled>(cancellationToken: TestContext.Current.CancellationToken);
 
         options.Update(new DownloadOptions
         {
             DownloadSchedule = [new DownloadTimeSlot { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }]
         });
 
-        _managerProbe.ExpectMsg<ScheduleDisabled>();
+        _managerProbe.ExpectMsg<ScheduleDisabled>(cancellationToken: TestContext.Current.CancellationToken);
     }
 }

@@ -15,7 +15,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("die-anstalt", "Die Anstalt", []));
 
         resolver.Tell(new ResolveRuleSet("Die Anstalt"));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("die-anstalt", result.RuleSetId);
     }
@@ -29,7 +29,7 @@ public sealed class RuleSetResolverTests : TestKit
             ["Bares für Rares - die tägliche Show"]));
 
         resolver.Tell(new ResolveRuleSet("Bares für Rares - die tägliche Show"));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("bares-fuer-rares", result.RuleSetId);
     }
@@ -40,7 +40,7 @@ public sealed class RuleSetResolverTests : TestKit
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
         resolver.Tell(new ResolveRuleSet("Unknown Show"));
-        var result = ExpectMsg<RuleSetFailed>();
+        var result = ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
 
         var notFound = Assert.IsType<RuleSetNotFoundException>(result.Cause);
         Assert.Equal("Unknown Show", notFound.TopicOrAlias);
@@ -55,14 +55,14 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("test-show", "Test Show", ["New Alias"]));
 
         resolver.Tell(new ResolveRuleSet("Old Alias"));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
 
         resolver.Tell(new ResolveRuleSet("New Alias"));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("test-show", result.RuleSetId);
 
         resolver.Tell(new ResolveRuleSet("Test Show"));
-        var topicResult = ExpectMsg<RuleSetResolved>();
+        var topicResult = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("test-show", topicResult.RuleSetId);
     }
 
@@ -74,7 +74,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("die-anstalt", "Die Anstalt", []));
 
         resolver.Tell(new ResolveRuleSet("die anstalt"));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("die-anstalt", result.RuleSetId);
     }
@@ -88,16 +88,16 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("show-b", "Show B", ["Alias B"]));
 
         resolver.Tell(new ResolveRuleSet("Show A"));
-        Assert.Equal("show-a", ExpectMsg<RuleSetResolved>().RuleSetId);
+        Assert.Equal("show-a", ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken).RuleSetId);
 
         resolver.Tell(new ResolveRuleSet("Show B"));
-        Assert.Equal("show-b", ExpectMsg<RuleSetResolved>().RuleSetId);
+        Assert.Equal("show-b", ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken).RuleSetId);
 
         resolver.Tell(new ResolveRuleSet("Alias A"));
-        Assert.Equal("show-a", ExpectMsg<RuleSetResolved>().RuleSetId);
+        Assert.Equal("show-a", ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken).RuleSetId);
 
         resolver.Tell(new ResolveRuleSet("Alias B"));
-        Assert.Equal("show-b", ExpectMsg<RuleSetResolved>().RuleSetId);
+        Assert.Equal("show-b", ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken).RuleSetId);
     }
 
     [Fact]
@@ -108,15 +108,15 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("test-show", "Test Show", ["Test Alias"]));
 
         resolver.Tell(new ResolveRuleSet("Test Show"));
-        ExpectMsg<RuleSetResolved>();
+        ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         resolver.Tell(new DeregisterRuleSet("test-show"));
 
         resolver.Tell(new ResolveRuleSet("Test Show"));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
 
         resolver.Tell(new ResolveRuleSet("Test Alias"));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("nonexistent"));
 
         resolver.Tell(new ResolveRuleSet("anything"));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -141,10 +141,10 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("show-a"));
 
         resolver.Tell(new ResolveRuleSet("Show A"));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
 
         resolver.Tell(new ResolveRuleSet("Show B"));
-        Assert.Equal("show-b", ExpectMsg<RuleSetResolved>().RuleSetId);
+        Assert.Equal("show-b", ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken).RuleSetId);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(83214, null, null)));
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(83214, null, null)));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("tatort", result.RuleSetId);
         Assert.Equal("Tatort", result.Topic);
@@ -169,7 +169,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(null, "tt0806910", null)));
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(null, "tt0806910", null)));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("tatort", result.RuleSetId);
         Assert.Equal("Tatort", result.Topic);
@@ -183,7 +183,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(null, null, 2116)));
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(null, null, 2116)));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("tatort", result.RuleSetId);
         Assert.Equal("Tatort", result.Topic);
@@ -197,7 +197,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(83214, null, null)));
 
         resolver.Tell(new ResolveRuleSet("Tatort", new ExternalIds(99999, null, null)));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("tatort", result.RuleSetId);
     }
@@ -208,7 +208,7 @@ public sealed class RuleSetResolverTests : TestKit
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(99999, null, null)));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -220,10 +220,10 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], new ExternalIds(99999, null, null)));
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(83214, null, null)));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(99999, null, null)));
-        Assert.Equal("tatort", ExpectMsg<RuleSetResolved>().RuleSetId);
+        Assert.Equal("tatort", ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken).RuleSetId);
     }
 
     [Fact]
@@ -236,10 +236,10 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("tatort"));
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(83214, null, null)));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
 
         resolver.Tell(new ResolveRuleSet(null, new ExternalIds(null, "tt0806910", null)));
-        ExpectMsg<RuleSetFailed>();
+        ExpectMsg<RuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", []));
 
         resolver.Tell(new ResolveRuleSet("Tatort"));
-        var result = ExpectMsg<RuleSetResolved>();
+        var result = ExpectMsg<RuleSetResolved>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("tatort", result.RuleSetId);
         Assert.Equal("Tatort", result.Topic);
@@ -262,7 +262,7 @@ public sealed class RuleSetResolverTests : TestKit
         var resolver = Sys.ActorOf(Props.Create(() => new RuleSetResolver()));
 
         resolver.Tell(new QueryRegisteredRuleSets());
-        var result = ExpectMsg<RegisteredRuleSetsResult>();
+        var result = ExpectMsg<RegisteredRuleSetsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Empty(result.Entries);
     }
@@ -275,7 +275,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", ["Tatort Münster"], new ExternalIds(83214, "tt0806910", null)));
 
         resolver.Tell(new QueryRegisteredRuleSets());
-        var result = ExpectMsg<RegisteredRuleSetsResult>();
+        var result = ExpectMsg<RegisteredRuleSetsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         var entry = Assert.Single(result.Entries);
         Assert.Equal("tatort", entry.RuleSetId);
@@ -293,7 +293,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("tatort", "Tatort", [], MediaName: "Tatort (TV Series)"));
 
         resolver.Tell(new QueryRegisteredRuleSets());
-        var result = ExpectMsg<RegisteredRuleSetsResult>();
+        var result = ExpectMsg<RegisteredRuleSetsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         var entry = Assert.Single(result.Entries);
         Assert.Equal("Tatort (TV Series)", entry.MediaName);
@@ -307,7 +307,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("test", "Test", []));
 
         resolver.Tell(new QueryRegisteredRuleSets());
-        var result = ExpectMsg<RegisteredRuleSetsResult>();
+        var result = ExpectMsg<RegisteredRuleSetsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         var entry = Assert.Single(result.Entries);
         Assert.Null(entry.MediaName);
@@ -323,7 +323,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new RegisterRuleSet("show-c", "Show C", []));
 
         resolver.Tell(new QueryRegisteredRuleSets());
-        var result = ExpectMsg<RegisteredRuleSetsResult>();
+        var result = ExpectMsg<RegisteredRuleSetsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(3, result.Entries.Length);
         Assert.Contains(result.Entries, e => e.RuleSetId == "show-a");
@@ -341,7 +341,7 @@ public sealed class RuleSetResolverTests : TestKit
         resolver.Tell(new DeregisterRuleSet("show-a"));
 
         resolver.Tell(new QueryRegisteredRuleSets());
-        var result = ExpectMsg<RegisteredRuleSetsResult>();
+        var result = ExpectMsg<RegisteredRuleSetsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         var entry = Assert.Single(result.Entries);
         Assert.Equal("show-b", entry.RuleSetId);

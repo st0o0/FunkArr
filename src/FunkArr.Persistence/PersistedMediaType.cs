@@ -2,6 +2,6 @@ namespace FunkArr.Persistence;
 
 public enum PersistedMediaType
 {
-    Show,
-    Movie
+    Show = 0,
+    Movie = 1
 }

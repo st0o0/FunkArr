@@ -17,13 +17,12 @@ public sealed class SabnzbdDownloadTests(FunkArrFixture fixture)
         var downloadProbe = _fixture.GetProbe<IDownloadManager>();
         var downloadId = Guid.NewGuid();
 
-        var task = _fixture.Client.GetAsync(
-            $"/download/api?mode=retry&value={downloadId}&apikey=test-key");
+        var task = _fixture.Client.GetAsync($"/download/api?mode=retry&value={downloadId}&apikey=test-key", TestContext.Current.CancellationToken);
 
         var historyProbe = _fixture.GetProbe<IDownloadHistoryManager>();
-        historyProbe.ExpectMsg<RemoveHistoryEntry>();
+        historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
 
-        var msg = downloadProbe.ExpectMsg<RetryDownload>();
+        var msg = downloadProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(downloadId, msg.DownloadId);
         downloadProbe.Reply(new RetryDownloadResult(true, null));
 
@@ -31,7 +30,7 @@ public sealed class SabnzbdDownloadTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(json.GetProperty("status").GetBoolean());
     }
 
@@ -40,16 +39,16 @@ public sealed class SabnzbdDownloadTests(FunkArrFixture fixture)
     {
         var downloadProbe = _fixture.GetProbe<IDownloadManager>();
 
-        var task = _fixture.Client.GetAsync("/download/api?mode=pause&apikey=test-key");
+        var task = _fixture.Client.GetAsync("/download/api?mode=pause&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = downloadProbe.ExpectMsg<PauseDownloads>();
+        var msg = downloadProbe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         downloadProbe.Reply(new PauseDownloadsResult(true));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(json.GetProperty("status").GetBoolean());
     }
 
@@ -58,16 +57,16 @@ public sealed class SabnzbdDownloadTests(FunkArrFixture fixture)
     {
         var downloadProbe = _fixture.GetProbe<IDownloadManager>();
 
-        var task = _fixture.Client.GetAsync("/download/api?mode=resume&apikey=test-key");
+        var task = _fixture.Client.GetAsync("/download/api?mode=resume&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = downloadProbe.ExpectMsg<ResumeDownloads>();
+        var msg = downloadProbe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         downloadProbe.Reply(new ResumeDownloadsResult(true));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(json.GetProperty("status").GetBoolean());
     }
 }

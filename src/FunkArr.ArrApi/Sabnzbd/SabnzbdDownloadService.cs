@@ -176,7 +176,12 @@ public sealed class SabnzbdDownloadService(
                     : new SabnzbdResult.Error(forceResult.Error ?? "Force start failed");
             }
 
-            var priority = (DownloadPriority)Math.Clamp(priorityInt, -1, 1);
+            var priority = Math.Clamp(priorityInt, -1, 1) switch
+            {
+                -1 => DownloadPriority.Low,
+                0 => DownloadPriority.Normal,
+                _ => DownloadPriority.High
+            };
             var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), Timeout, ct);
             return result is SetDownloadPriorityCompleted
                 ? new SabnzbdResult.Ok(new { status = true })

@@ -19,9 +19,9 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     {
         var searchProbe = _fixture.GetProbe<ISearchManager>();
 
-        var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&q=Tatort&apikey=test-key");
+        var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&q=Tatort&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = searchProbe.ExpectMsg<SearchCommand>();
+        var msg = searchProbe.ExpectMsg<SearchCommand>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("Tatort", msg.Query);
 
         var items = new[]
@@ -35,7 +35,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
 
         var response = await task;
 
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var doc = XDocument.Parse(content);
         var ns = XNamespace.Get("http://www.newznab.com/DTD/2010/newnzab/");
 
@@ -61,7 +61,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         Assert.Multiple(
             () => Assert.Equal("FunkArr.Validation.S01E01.GERMAN.1080p.WEB.h264-FunkArr", item.Element("title")?.Value),
             () => Assert.Equal("5040", CategoryAttribute(item)));
-        searchProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        searchProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         Assert.Multiple(
             () => Assert.Equal("FunkArr.Validation.2024.GERMAN.1080p.WEB.h264-FunkArr", item.Element("title")?.Value),
             () => Assert.Equal("2040", CategoryAttribute(item)));
-        searchProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        searchProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -87,9 +87,9 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         var link = item.Element("link")?.Value;
         Assert.NotNull(link);
 
-        var getResponse = await _fixture.Client.GetAsync(new Uri(link).PathAndQuery);
+        var getResponse = await _fixture.Client.GetAsync(new Uri(link).PathAndQuery, TestContext.Current.CancellationToken);
 
-        var doc = XDocument.Parse(await getResponse.Content.ReadAsStringAsync());
+        var doc = XDocument.Parse(await getResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Multiple(
             () => Assert.Equal("error", doc.Root?.Name.LocalName),
             () => Assert.Equal("201", doc.Root?.Attribute("code")?.Value));
@@ -106,9 +106,9 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
             "https://example.com/video.mp4", 5400, 500_000_000, 720, null, 0.9, null,
             null, "2026", "18");
 
-        var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=100&apikey=test-key");
+        var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=100&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var query = feedProbe.ExpectMsg<QueryFeed>();
+        var query = feedProbe.ExpectMsg<QueryFeed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(MediaType.Show, query.MediaType),
             () => Assert.Equal(0, query.Offset),
@@ -121,7 +121,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
             () => Assert.Equal("0123456789abcdef0123456789abcdef", item.Element("guid")?.Value),
             () => Assert.Equal("Fri, 30 Oct 2026 12:00:00 GMT", item.Element("pubDate")?.Value),
             () => Assert.Equal("5040", CategoryAttribute(item)));
-        searchProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        searchProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         var payload = string.Join('\t', "Test Title", "https://example.com/video.mp4", "", "ARD", "3600", "500000000", "tv");
         var id = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload));
 
-        var response = await _fixture.Client.GetAsync($"/index/api?t=get&id={Uri.EscapeDataString(id)}&apikey=test-key");
+        var response = await _fixture.Client.GetAsync($"/index/api?t=get&id={Uri.EscapeDataString(id)}&apikey=test-key", TestContext.Current.CancellationToken);
 
         var contentType = response.Content.Headers.ContentType;
         Assert.NotNull(contentType);

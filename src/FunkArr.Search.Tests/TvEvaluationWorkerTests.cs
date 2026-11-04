@@ -47,18 +47,18 @@ public sealed class TvEvaluationWorkerTests : TestKit
                 null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null)
         ]), TestActor);
 
-        var resolveRequest = p.Resolver.ExpectMsg<ResolveRuleSet>();
+        var resolveRequest = p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("Tatort", resolveRequest.TopicOrAlias);
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
 
-        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>();
+        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Single(scoreRequest.Candidates),
             () => Assert.Equal("tatort", scoreRequest.RuleSetId),
             () => Assert.Equal(SearchSource.Sonarr, scoreRequest.Origin.Source));
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.95, true)], []));
 
-        var result = ExpectMsg<EvaluateSeriesCompleted>();
+        var result = ExpectMsg<EvaluateSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(evaluationId, result.SearchId);
         Assert.Equal(2, result.Items.Length);
         Assert.Contains(result.Items, i => i.Title.Contains("1080p") && i.Url == "https://example.com/hd.mp4");
@@ -76,12 +76,12 @@ public sealed class TvEvaluationWorkerTests : TestKit
         worker.Tell(new EvaluateSeries(evaluationId, SearchSource.Sonarr, [Item("Tatort", "Tatort: Test")],
             TvdbId: 83214, RuleSet: new RuleSetResolved("tatort", "Tatort")), TestActor);
 
-        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>();
+        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("tatort", scoreRequest.RuleSetId);
-        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
-        var result = ExpectMsg<EvaluateSeriesCompleted>();
+        var result = ExpectMsg<EvaluateSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Equal(83214, item.Metadata?.Ids?.TvdbId);
     }
@@ -95,12 +95,12 @@ public sealed class TvEvaluationWorkerTests : TestKit
 
         worker.Tell(new EvaluateSeries(evaluationId, SearchSource.Sonarr, [Item("Tatort", "Test")]), TestActor);
 
-        p.Resolver.ExpectMsg<ResolveRuleSet>();
+        p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
-        p.Scoring.ExpectMsg<ScoreItems>();
+        p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoringFailed(new Exception("Scoring error")));
 
-        var result = ExpectMsg<EvaluateSeriesFailed>();
+        var result = ExpectMsg<EvaluateSeriesFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(evaluationId, result.SearchId),
             () => Assert.Contains("Scoring error", result.Cause.Message));
@@ -116,14 +116,14 @@ public sealed class TvEvaluationWorkerTests : TestKit
         worker.Tell(new EvaluateSeries(evaluationId, SearchSource.Sonarr, [Item("Unknown Show", "Episode 1", "ZDF")]),
             TestActor);
 
-        p.Resolver.ExpectMsg<ResolveRuleSet>();
+        p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         p.Resolver.Reply(new RuleSetFailed(new RuleSetNotFoundException("Unknown Show")));
 
-        var result = ExpectMsg<EvaluateSeriesCompleted>();
+        var result = ExpectMsg<EvaluateSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(evaluationId, result.SearchId);
         var item = Assert.Single(result.Items);
         Assert.Equal(0.0, item.Score);
-        p.Scoring.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+        p.Scoring.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -135,11 +135,11 @@ public sealed class TvEvaluationWorkerTests : TestKit
 
         worker.Tell(new EvaluateSeries(evaluationId, SearchSource.Feed, []), TestActor);
 
-        var completed = ExpectMsg<EvaluateSeriesCompleted>();
+        var completed = ExpectMsg<EvaluateSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Empty(completed.Items),
             () => Assert.Equal(0, completed.Total));
-        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -155,18 +155,18 @@ public sealed class TvEvaluationWorkerTests : TestKit
                 null, "https://x.com/v.mp4", null, null, null)
         ], TvdbId: 83214), TestActor);
 
-        var resolve = p.Resolver.ExpectMsg<ResolveRuleSet>();
+        var resolve = p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("Tatort", resolve.TopicOrAlias);
         p.Resolver.Reply(new RuleSetResolved("tatort", "Tatort"));
 
-        var score = p.Scoring.ExpectMsg<ScoreItems>();
+        var score = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(SearchSource.Feed, score.Origin.Source);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, DateTimeOffset.FromUnixTimeSeconds(1788113728)))
         ], []));
 
-        var enrichRequest = p.Enrichment.ExpectMsg<EnrichEpisodes>();
+        var enrichRequest = p.Enrichment.ExpectMsg<EnrichEpisodes>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(83214, enrichRequest.TvdbId),
             () => Assert.Null(enrichRequest.Season),
@@ -176,7 +176,7 @@ public sealed class TvEvaluationWorkerTests : TestKit
             new EnrichedEpisode(0, "2026", "09", "Roomservice", 0.85f, MatchMethod.TitleMatch)
         ]));
 
-        var result = ExpectMsg<EvaluateSeriesCompleted>();
+        var result = ExpectMsg<EvaluateSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Multiple(
             () => Assert.Contains("S2026E09", item.Title),
@@ -199,13 +199,13 @@ public sealed class TvEvaluationWorkerTests : TestKit
                 1788113728, 1835, 600000000, null, "https://x.com/v.mp4", null, null, null)
         ], TvdbId: 390284, Season: 2026, RuleSet: new RuleSetResolved("zdf-magazin-royale", "ZDF Magazin Royale")), TestActor);
 
-        p.Scoring.ExpectMsg<ScoreItems>();
+        p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.95, true, new MetadataSpec("2026", "01", DateTimeOffset.FromUnixTimeSeconds(1788113728)))
         ], []));
 
-        var enrichMsg = p.Enrichment.ExpectMsg<EnrichEpisodes>();
+        var enrichMsg = p.Enrichment.ExpectMsg<EnrichEpisodes>(cancellationToken: TestContext.Current.CancellationToken);
         var candidate = Assert.Single(enrichMsg.Candidates);
         Assert.Multiple(
             () => Assert.Equal(2026, enrichMsg.Season),
@@ -217,7 +217,7 @@ public sealed class TvEvaluationWorkerTests : TestKit
             new EnrichedEpisode(0, "2026", "1", "Episode Title", 0.9f, MatchMethod.AirdateMatch)
         ]));
 
-        var result = ExpectMsg<EvaluateSeriesCompleted>();
+        var result = ExpectMsg<EvaluateSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Multiple(
             () => Assert.Equal("2026", item.Metadata?.Season),
@@ -237,16 +237,16 @@ public sealed class TvEvaluationWorkerTests : TestKit
                 null, "https://x.com/v.mp4", null, null, null)
         ], TvdbId: 83214, Season: 2026, RuleSet: new RuleSetResolved("tatort", "Tatort")), TestActor);
 
-        p.Scoring.ExpectMsg<ScoreItems>();
+        p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, DateTimeOffset.FromUnixTimeSeconds(1788113728)))
         ], []));
 
-        p.Enrichment.ExpectMsg<EnrichEpisodes>();
+        p.Enrichment.ExpectMsg<EnrichEpisodes>(cancellationToken: TestContext.Current.CancellationToken);
         p.Enrichment.Reply(new EnrichEpisodesFailed(new Exception("KEKW")));
 
-        var result = ExpectMsg<EvaluateSeriesCompleted>();
+        var result = ExpectMsg<EvaluateSeriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Multiple(
             () => Assert.Null(item.Metadata?.Season),

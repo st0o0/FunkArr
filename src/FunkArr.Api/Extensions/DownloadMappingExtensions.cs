@@ -42,7 +42,7 @@ internal static class DownloadMappingExtensions
             item.Title,
             status,
             item.Channel,
-            (ApiModels.MediaType)(int)item.Category,
+            item.Category.ToApi(),
             item.HasSubtitles,
             item.TotalDuration,
             item.TotalBytes,
@@ -51,7 +51,7 @@ internal static class DownloadMappingExtensions
             MapPhase(phase),
             speed,
             eta,
-            (ApiModels.QueuePriority)(int)item.Priority);
+            item.Priority.ToApi());
     }
 
     internal static ApiModels.DownloadHistoryResponse ToApi(this HistoryResult result) =>
@@ -60,7 +60,7 @@ internal static class DownloadMappingExtensions
     internal static ApiModels.DownloadHistoryItem ToApi(this HistoryItem item) =>
         new(item.DownloadId.ToString(),
             item.Completion.Title,
-            (ApiModels.MediaType)(int)item.Completion.Category,
+            item.Completion.Category.ToApi(),
             item.Completion.Size,
             item.Completion.DownloadTimeSeconds,
             item.Completion.Status == DownloadStatus.Completed ? item.Completion.RelativePath : null,

@@ -16,7 +16,7 @@ public sealed class DistributedCacheExtensionsTests
     {
         var cache = CreateCache();
 
-        var result = await cache.GetAsync<TestData>("nonexistent");
+        var result = await cache.GetAsync<TestData>("nonexistent", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Null(result);
     }
@@ -27,8 +27,8 @@ public sealed class DistributedCacheExtensionsTests
         var cache = CreateCache();
         var data = new TestData("test", 42);
 
-        await cache.SetAsync("key", data, TimeSpan.FromMinutes(5));
-        var result = await cache.GetAsync<TestData>("key");
+        await cache.SetAsync("key", data, TimeSpan.FromMinutes(5), cancellationToken: TestContext.Current.CancellationToken);
+        var result = await cache.GetAsync<TestData>("key", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("test", result.Name);
@@ -40,9 +40,9 @@ public sealed class DistributedCacheExtensionsTests
     {
         var cache = CreateCache();
 
-        await cache.SetAsync("key", new TestData("first", 1), TimeSpan.FromMinutes(5));
-        await cache.SetAsync("key", new TestData("second", 2), TimeSpan.FromMinutes(5));
-        var result = await cache.GetAsync<TestData>("key");
+        await cache.SetAsync("key", new TestData("first", 1), TimeSpan.FromMinutes(5), cancellationToken: TestContext.Current.CancellationToken);
+        await cache.SetAsync("key", new TestData("second", 2), TimeSpan.FromMinutes(5), cancellationToken: TestContext.Current.CancellationToken);
+        var result = await cache.GetAsync<TestData>("key", cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("second", result.Name);

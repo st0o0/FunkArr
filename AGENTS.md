@@ -314,6 +314,26 @@ Do NOT use:
 - `TimeProvider` everywhere, never `DateTime.Now` or `DateTime.UtcNow` directly.
 - `dotnet format` enforced - run after editing `.cs` files. CI rejects violations.
 
+## Enum conventions
+
+- **Persistence enums have explicit `int` values.** Every member of every enum in
+  `FunkArr.Persistence` is assigned a value (`Show = 0, Movie = 1`), starting at 0.
+  Values are a stored contract: never change, reuse, or reorder them. New members get
+  a new, unused value (gaps are fine, e.g. `PersistedSearchSource.Feed = 4`).
+- **Enum-to-enum mapping uses exhaustive `switch` expressions** with
+  `_ => throw new ArgumentOutOfRangeException(nameof(value), value, null)`. Never convert
+  between enum types with numeric casts (`(Target)(int)source`). Applies to
+  Messages <-> Persistence and Api <-> Messages. Nullable enums: `x?.ToPersistence()`.
+- A missing switch arm is a compile error (CS8509 under warnings-as-errors).
+
+## Warnings
+
+- `TreatWarningsAsErrors` is on for all projects (`src/Directory.Build.props`). The build
+  must stay at 0 warnings; fix the cause, don't add `NoWarn`.
+- Tests pass `TestContext.Current.CancellationToken` to every call that accepts a
+  `CancellationToken` (xUnit1051). The analyzer's code fix can apply it:
+  `dotnet format analyzers src/FunkArr.slnx --diagnostics xUnit1051 --severity info`.
+
 ## Metrics conventions
 
 - **Pattern**: Each domain has a static `Telemetry` class with `internal static

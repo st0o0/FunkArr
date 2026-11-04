@@ -222,7 +222,7 @@ public static class DownloadsApiEndpoints
 
         group.MapPost("/queue/{id:guid}/move", async (Guid id, ApiModels.MoveRequest body, IActorRegistry registry, CancellationToken ct) =>
         {
-            var priority = body.Priority is not null ? (DownloadPriority)(int)body.Priority : (DownloadPriority?)null;
+            var priority = body.Priority?.ToMessage();
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<MoveDownloadResponse>(new MoveDownload(id, body.Position, priority), _askTimeout, ct);
             return result switch
@@ -241,7 +241,7 @@ public static class DownloadsApiEndpoints
 
         group.MapPost("/queue/{id:guid}/priority", async (Guid id, ApiModels.PriorityRequest body, IActorRegistry registry, CancellationToken ct) =>
         {
-            var priority = (DownloadPriority)(int)body.Priority;
+            var priority = body.Priority.ToMessage();
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(id, priority), _askTimeout, ct);
             return result switch

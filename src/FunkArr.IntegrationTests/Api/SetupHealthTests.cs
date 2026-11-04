@@ -12,11 +12,11 @@ public sealed class SetupHealthTests(FunkArrFixture fixture)
     [Fact]
     public async Task SetupHealth_ReturnsCheckEntries()
     {
-        var response = await _fixture.Client.GetAsync("/api/system/setup");
+        var response = await _fixture.Client.GetAsync("/api/system/setup", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<SetupHealthCheck>();
+        var result = await response.Content.ReadFromJsonAsync<SetupHealthCheck>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.NotNull(result.Checks);
         Assert.NotNull(result.SetupConnectionInfo);

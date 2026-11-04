@@ -71,6 +71,18 @@ public sealed class SabnzbdResponseMapperTests
     }
 
     [Fact]
+    public void BuildHistorySlot_without_failure_message_yields_empty_fail_message()
+    {
+        var item = new HistoryItem(
+            Guid.NewGuid(), new DownloadCompletion("Completed Show", MediaType.Show,
+            1_000_000, DownloadStatus.Completed, "shows/show.mkv", null, 120, 1719360000));
+
+        var slot = SabnzbdResponseMapper.BuildHistorySlot(item, "/data/complete");
+
+        Assert.Equal(string.Empty, slot.FailMessage);
+    }
+
+    [Fact]
     public void FormatSpeed_returns_bytes_per_second_for_processing()
     {
         var item = new QueueItem(

@@ -22,18 +22,18 @@ public sealed class FeedTests(FunkArrFixture fixture)
             "https://example.com/v.mp4", 5400, 1_000_000, 720, null, 0.9, null,
             null, "2026", "18");
 
-        var task = _fixture.Client.GetAsync("/api/feed?limit=10");
+        var task = _fixture.Client.GetAsync("/api/feed?limit=10", TestContext.Current.CancellationToken);
 
-        var query = feedProbe.ExpectMsg<QueryFeed>();
+        var query = feedProbe.ExpectMsg<QueryFeed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(10, query.Limit);
         feedProbe.Reply(new FeedResult([entry], 1, 1));
-        ingestProbe.ExpectMsg<QueryFeedCrawlStatus>();
+        ingestProbe.ExpectMsg<QueryFeedCrawlStatus>(cancellationToken: TestContext.Current.CancellationToken);
         ingestProbe.Reply(new FeedCrawlStatusResult(true, false, 1_761_800_000, lastRun, "completed", 12, 1, 3, false, 0));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<FeedOverviewResponse>();
+        var result = await response.Content.ReadFromJsonAsync<FeedOverviewResponse>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         var output = Assert.Single(result.Entries);
         Assert.Multiple(
@@ -50,9 +50,9 @@ public sealed class FeedTests(FunkArrFixture fixture)
     {
         var ingestProbe = _fixture.GetProbe<IFeedCrawlManager>();
 
-        var response = await _fixture.Client.PostAsync("/api/feed/crawl", null);
+        var response = await _fixture.Client.PostAsync("/api/feed/crawl", null, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
-        ingestProbe.ExpectMsg<StartFeedCrawl>();
+        ingestProbe.ExpectMsg<StartFeedCrawl>(cancellationToken: TestContext.Current.CancellationToken);
     }
 }

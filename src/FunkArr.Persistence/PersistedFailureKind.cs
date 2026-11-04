@@ -2,6 +2,6 @@ namespace FunkArr.Persistence;
 
 public enum PersistedFailureKind
 {
-    Transient,
-    Permanent
+    Transient = 0,
+    Permanent = 1
 }

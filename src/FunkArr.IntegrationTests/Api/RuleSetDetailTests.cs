@@ -16,10 +16,10 @@ public sealed class RuleSetDetailTests(FunkArrFixture fixture)
     [Fact]
     public async Task Detail_ReturnsRuleSetDetail()
     {
-        var task = _fixture.Client.GetAsync("/api/rulesets/tatort");
+        var task = _fixture.Client.GetAsync("/api/rulesets/tatort", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IRuleSetRegion>();
-        probe.ExpectMsg<QueryRuleSetDetail>();
+        probe.ExpectMsg<QueryRuleSetDetail>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new RuleSetDetailResult(
             "tatort",
             new RuleSetDetailResult.RuleSetIdentity(
@@ -47,7 +47,7 @@ public sealed class RuleSetDetailTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<RuleSetDetail>();
+        var result = await response.Content.ReadFromJsonAsync<RuleSetDetail>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.Equal("tatort", result.RuleSetId);
         Assert.Equal("Tatort", result.Identity.Topic);
@@ -61,10 +61,10 @@ public sealed class RuleSetDetailTests(FunkArrFixture fixture)
     [Fact]
     public async Task Detail_NotFound_Returns404()
     {
-        var task = _fixture.Client.GetAsync("/api/rulesets/nonexistent");
+        var task = _fixture.Client.GetAsync("/api/rulesets/nonexistent", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IRuleSetRegion>();
-        probe.ExpectMsg<QueryRuleSetDetail>();
+        probe.ExpectMsg<QueryRuleSetDetail>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new RuleSetDetailFailed(new Exception("not found")));
 
         var response = await task;

@@ -43,10 +43,10 @@ public sealed class MediathekApiEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Search_without_query_terms_returns_bad_request()
     {
-        var response = await Client.GetAsync("/api/mediathek/search");
+        var response = await Client.GetAsync("/api/mediathek/search", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var body = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("At least one of q, channel, or topic is required", body);
     }
 

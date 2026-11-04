@@ -16,10 +16,10 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.DeleteAsync($"/api/downloads/queue/{id}");
+        var task = _fixture.Client.DeleteAsync($"/api/downloads/queue/{id}", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        var msg = probe.ExpectMsg<DeleteDownload>();
+        var msg = probe.ExpectMsg<DeleteDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, msg.DownloadId);
         probe.Reply(new DeleteDownloadResult(true, null));
 
@@ -27,7 +27,7 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.True(result.Success);
     }
@@ -37,17 +37,17 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.DeleteAsync($"/api/downloads/queue/{id}");
+        var task = _fixture.Client.DeleteAsync($"/api/downloads/queue/{id}", TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        probe.ExpectMsg<DeleteDownload>();
+        probe.ExpectMsg<DeleteDownload>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new DeleteDownloadResult(false, "Not found"));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(result.Success);
         Assert.Equal("Not found", result.Error);
@@ -58,20 +58,20 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null);
+        var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null, TestContext.Current.CancellationToken);
 
         var managerProbe = _fixture.GetProbe<IDownloadManager>();
-        var managerMsg = managerProbe.ExpectMsg<RetryDownload>();
+        var managerMsg = managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, managerMsg.DownloadId);
         managerProbe.Reply(new RetryDownloadResult(true, null));
 
         var response = await task;
 
         // History cleanup is owned by the DownloadManager, not the endpoint
-        _fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.True(result.Success);
     }
@@ -81,18 +81,18 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null);
+        var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null, TestContext.Current.CancellationToken);
 
         var managerProbe = _fixture.GetProbe<IDownloadManager>();
-        managerProbe.ExpectMsg<RetryDownload>();
+        managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new RetryDownloadResult(false, "Not failed"));
 
         var response = await task;
 
-        _fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(result.Success);
         Assert.Equal("Not failed", result.Error);
@@ -103,10 +103,10 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsync($"/api/downloads/queue/{id}/force-start", null);
+        var task = _fixture.Client.PostAsync($"/api/downloads/queue/{id}/force-start", null, TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        var msg = probe.ExpectMsg<ForceStartDownload>();
+        var msg = probe.ExpectMsg<ForceStartDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, msg.DownloadId);
         probe.Reply(new ForceStartDownloadResult(true, null));
 
@@ -114,7 +114,7 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.True(result.Success);
     }
@@ -124,17 +124,17 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsync($"/api/downloads/queue/{id}/force-start", null);
+        var task = _fixture.Client.PostAsync($"/api/downloads/queue/{id}/force-start", null, TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        probe.ExpectMsg<ForceStartDownload>();
+        probe.ExpectMsg<ForceStartDownload>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new ForceStartDownloadResult(false, "Not queued"));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(result.Success);
         Assert.Equal("Not queued", result.Error);

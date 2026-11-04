@@ -14,22 +14,22 @@ public sealed class SabnzbdVersionTests(FunkArrFixture fixture)
     [Fact]
     public async Task Version_returns_expected_version()
     {
-        var response = await _fixture.Client.GetAsync("/download/api?mode=version&apikey=test-key");
+        var response = await _fixture.Client.GetAsync("/download/api?mode=version&apikey=test-key", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("4.3.3", json.GetProperty("version").GetString());
     }
 
     [Fact]
     public async Task Config_returns_json_with_misc_and_categories()
     {
-        var response = await _fixture.Client.GetAsync("/download/api?mode=get_config&apikey=test-key");
+        var response = await _fixture.Client.GetAsync("/download/api?mode=get_config&apikey=test-key", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         var config = json.GetProperty("config");
         Assert.True(config.TryGetProperty("misc", out _));
         Assert.True(config.TryGetProperty("categories", out _));
@@ -40,16 +40,16 @@ public sealed class SabnzbdVersionTests(FunkArrFixture fixture)
     {
         var downloadProbe = _fixture.GetProbe<IDownloadManager>();
 
-        var task = _fixture.Client.GetAsync("/download/api?mode=fullstatus&apikey=test-key");
+        var task = _fixture.Client.GetAsync("/download/api?mode=fullstatus&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = downloadProbe.ExpectMsg<QueryQueue>();
+        var msg = downloadProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         downloadProbe.Reply(new QueueResult([], 0, 0, false, false, null));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(json.TryGetProperty("status", out var status));
         Assert.True(status.TryGetProperty("paused", out _));
         Assert.True(status.TryGetProperty("completedir", out _));
@@ -58,7 +58,7 @@ public sealed class SabnzbdVersionTests(FunkArrFixture fixture)
     [Fact]
     public async Task Missing_api_key_returns_403()
     {
-        var response = await _fixture.Client.GetAsync("/download/api?mode=version");
+        var response = await _fixture.Client.GetAsync("/download/api?mode=version", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -66,7 +66,7 @@ public sealed class SabnzbdVersionTests(FunkArrFixture fixture)
     [Fact]
     public async Task Wrong_api_key_returns_403()
     {
-        var response = await _fixture.Client.GetAsync("/download/api?mode=version&apikey=wrong-key");
+        var response = await _fixture.Client.GetAsync("/download/api?mode=version&apikey=wrong-key", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -74,11 +74,11 @@ public sealed class SabnzbdVersionTests(FunkArrFixture fixture)
     [Fact]
     public async Task Invalid_mode_returns_400_with_error()
     {
-        var response = await _fixture.Client.GetAsync("/download/api?mode=invalid&apikey=test-key");
+        var response = await _fixture.Client.GetAsync("/download/api?mode=invalid&apikey=test-key", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.False(json.GetProperty("status").GetBoolean());
         Assert.True(json.TryGetProperty("error", out _));
     }

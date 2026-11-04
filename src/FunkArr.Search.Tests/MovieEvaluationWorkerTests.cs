@@ -47,20 +47,20 @@ public sealed class MovieEvaluationWorkerTests : TestKit
                 null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null)
         ]), TestActor);
 
-        var resolveRequest = p.Resolver.ExpectMsg<ResolveRuleSet>();
+        var resolveRequest = p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("Das Boot", resolveRequest.TopicOrAlias);
         p.Resolver.Reply(new RuleSetResolved("das-boot", "Das Boot"));
 
-        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>();
+        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("das-boot", scoreRequest.RuleSetId);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.9, true)], []));
 
-        var result = ExpectMsg<EvaluateMoviesCompleted>();
+        var result = ExpectMsg<EvaluateMoviesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(evaluationId, result.SearchId);
         Assert.Equal(2, result.Items.Length);
         Assert.Contains(result.Items, i => i.Quality == 1080);
         Assert.Contains(result.Items, i => i.Quality == 720);
-        p.Enrichment.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        p.Enrichment.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -72,10 +72,10 @@ public sealed class MovieEvaluationWorkerTests : TestKit
 
         worker.Tell(new EvaluateMovies(evaluationId, SearchSource.Radarr, [Item("Unknown Movie")]), TestActor);
 
-        p.Resolver.ExpectMsg<ResolveRuleSet>();
+        p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         p.Resolver.Reply(new RuleSetFailed(new RuleSetNotFoundException("Unknown Movie")));
 
-        var result = ExpectMsg<EvaluateMoviesCompleted>();
+        var result = ExpectMsg<EvaluateMoviesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Equal(0.0, item.Score);
     }
@@ -93,16 +93,16 @@ public sealed class MovieEvaluationWorkerTests : TestKit
                 null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null)
         ], ImdbId: "tt0806910", RuleSet: new RuleSetResolved("tatort", "Tatort")), TestActor);
 
-        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>();
+        var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("tatort", scoreRequest.RuleSetId);
-        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.85, true)], []));
 
-        var enrichRequest = p.Enrichment.ExpectMsg<EnrichMovies>();
+        var enrichRequest = p.Enrichment.ExpectMsg<EnrichMovies>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("tt0806910", enrichRequest.ImdbId);
         p.Enrichment.Reply(new EnrichMoviesFailed(new Exception("Not configured")));
 
-        var result = ExpectMsg<EvaluateMoviesCompleted>();
+        var result = ExpectMsg<EvaluateMoviesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Items.Length);
         Assert.All(result.Items, i => Assert.Multiple(
             () => Assert.Equal("tt0806910", i.Metadata?.Ids?.ImdbId),
@@ -118,21 +118,21 @@ public sealed class MovieEvaluationWorkerTests : TestKit
 
         worker.Tell(new EvaluateMovies(evaluationId, SearchSource.Feed, [Item("Fight Club")], TmdbId: 550), TestActor);
 
-        p.Resolver.ExpectMsg<ResolveRuleSet>();
+        p.Resolver.ExpectMsg<ResolveRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
         p.Resolver.Reply(new RuleSetResolved("fight-club", "Fight Club"));
 
-        var score = p.Scoring.ExpectMsg<ScoreItems>();
+        var score = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(SearchSource.Feed, score.Origin.Source);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty, [new ScoredItem(0, 0.7, true)], []));
 
-        var enrichRequest = p.Enrichment.ExpectMsg<EnrichMovies>();
+        var enrichRequest = p.Enrichment.ExpectMsg<EnrichMovies>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(550, enrichRequest.TmdbId);
         p.Enrichment.Reply(new EnrichMoviesCompleted(
         [
             new EnrichedMovie(0, "Fight Club", 1999, null, 550, 0.95f, MatchMethod.TitleMatch)
         ]));
 
-        var result = ExpectMsg<EvaluateMoviesCompleted>();
+        var result = ExpectMsg<EvaluateMoviesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Multiple(
             () => Assert.Equal(550, item.Metadata?.Ids?.TmdbId),
@@ -150,10 +150,10 @@ public sealed class MovieEvaluationWorkerTests : TestKit
         worker.Tell(new EvaluateMovies(evaluationId, SearchSource.Radarr, [Item("Das Boot")],
             RuleSet: new RuleSetResolved("das-boot", "Das Boot")), TestActor);
 
-        p.Scoring.ExpectMsg<ScoreItems>();
+        p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoringFailed(new Exception("Scoring error")));
 
-        var result = ExpectMsg<EvaluateMoviesFailed>();
+        var result = ExpectMsg<EvaluateMoviesFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(evaluationId, result.SearchId),
             () => Assert.Contains("Scoring error", result.Cause.Message));

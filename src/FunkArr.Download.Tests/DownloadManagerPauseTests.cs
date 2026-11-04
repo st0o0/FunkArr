@@ -32,13 +32,13 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager(concurrentDownloads: 1);
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>(r => r.Success);
+        ExpectMsg<PauseDownloadsResult>(r => r.Success, cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        ExpectMsg<DownloadAdded>();
+        ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
 
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -47,16 +47,16 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager(concurrentDownloads: 1);
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>();
+        ExpectMsg<PauseDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
+        ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ResumeDownloads());
-        ExpectMsg<ResumeDownloadsResult>(r => r.Success);
+        ExpectMsg<ResumeDownloadsResult>(r => r.Success, cancellationToken: TestContext.Current.CancellationToken);
 
-        _regionProbe.ExpectMsg<StartDownload>();
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -65,10 +65,10 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager();
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>(r => r.Success);
+        ExpectMsg<PauseDownloadsResult>(r => r.Success, cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>(r => r.Success);
+        ExpectMsg<PauseDownloadsResult>(r => r.Success, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager();
 
         manager.Tell(new ResumeDownloads());
-        ExpectMsg<ResumeDownloadsResult>(r => r.Success);
+        ExpectMsg<ResumeDownloadsResult>(r => r.Success, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -86,15 +86,15 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager(concurrentDownloads: 1);
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var added = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectMsg<StartDownload>();
+        var added = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>();
+        ExpectMsg<PauseDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new SlotFree(added.DownloadId));
-        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -103,17 +103,17 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager(concurrentDownloads: 3);
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>();
+        ExpectMsg<PauseDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var added = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
+        var added = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ForceStartDownload(added.DownloadId));
-        var result = ExpectMsg<ForceStartDownloadResult>();
+        var result = ExpectMsg<ForceStartDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
-        _regionProbe.ExpectMsg<StartDownload>(msg => msg.DownloadId == added.DownloadId);
+        _regionProbe.ExpectMsg<StartDownload>(msg => msg.DownloadId == added.DownloadId, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager();
 
         manager.Tell(new ForceStartDownload(Guid.NewGuid()));
-        var result = ExpectMsg<ForceStartDownloadResult>();
+        var result = ExpectMsg<ForceStartDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Equal("Item not queued", result.Error);
@@ -134,12 +134,12 @@ public sealed class DownloadManagerPauseTests : TestKit
         var manager = CreateManager(concurrentDownloads: 3);
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var added = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectMsg<StartDownload>();
+        var added = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ForceStartDownload(added.DownloadId));
-        var result = ExpectMsg<ForceStartDownloadResult>();
+        var result = ExpectMsg<ForceStartDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Equal("Item already dispatched", result.Error);

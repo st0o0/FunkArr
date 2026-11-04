@@ -35,10 +35,10 @@ public sealed class DownloadManagerScheduleGateTests : TestKit
         manager.Tell(new ScheduleDisabled(nextWindow));
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        ExpectMsg<DownloadAdded>();
+        ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
 
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -49,12 +49,12 @@ public sealed class DownloadManagerScheduleGateTests : TestKit
         manager.Tell(new ScheduleDisabled(null));
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
+        ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ScheduleEnabled());
 
-        _regionProbe.ExpectMsg<StartDownload>();
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -63,14 +63,14 @@ public sealed class DownloadManagerScheduleGateTests : TestKit
         var manager = CreateManager(concurrentDownloads: 1);
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>();
+        ExpectMsg<PauseDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
+        ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ScheduleEnabled());
-        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -81,13 +81,13 @@ public sealed class DownloadManagerScheduleGateTests : TestKit
         manager.Tell(new ScheduleDisabled(null));
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
+        ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ResumeDownloads());
-        ExpectMsg<ResumeDownloadsResult>();
+        ExpectMsg<ResumeDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
-        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -98,14 +98,14 @@ public sealed class DownloadManagerScheduleGateTests : TestKit
         manager.Tell(new ScheduleDisabled(null));
 
         manager.Tell(new AddDownload(new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var added = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
+        var added = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ForceStartDownload(added.DownloadId));
-        var result = ExpectMsg<ForceStartDownloadResult>();
+        var result = ExpectMsg<ForceStartDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
-        _regionProbe.ExpectMsg<StartDownload>();
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -115,12 +115,12 @@ public sealed class DownloadManagerScheduleGateTests : TestKit
         var nextWindow = DateTimeOffset.UtcNow.AddHours(2);
 
         manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>();
+        ExpectMsg<PauseDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new ScheduleDisabled(nextWindow));
 
         manager.Tell(new QueryQueue());
-        var result = ExpectMsg<QueueResult>();
+        var result = ExpectMsg<QueueResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.IsPaused);
         Assert.False(result.IsScheduleActive);

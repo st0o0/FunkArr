@@ -49,7 +49,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id = Guid.NewGuid();
 
         var task = service.DeleteFromQueue(id.ToString(), CancellationToken.None);
-        managerProbe.ExpectMsg<DeleteDownload>();
+        managerProbe.ExpectMsg<DeleteDownload>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new DeleteDownloadResult(true, null));
         var result = await task;
 
@@ -63,7 +63,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id = Guid.NewGuid();
 
         var task = service.DeleteFromQueue(id.ToString(), CancellationToken.None);
-        managerProbe.ExpectMsg<DeleteDownload>();
+        managerProbe.ExpectMsg<DeleteDownload>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new DeleteDownloadResult(false, "Not found"));
         var result = await task;
 
@@ -89,7 +89,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id = Guid.NewGuid();
 
         var task = service.DeleteFromHistory(id.ToString(), CancellationToken.None);
-        historyProbe.ExpectMsg<RemoveHistoryEntry>();
+        historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
         historyProbe.Reply(new DeleteDownloadResult(true, null));
         var result = await task;
 
@@ -114,8 +114,8 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id = Guid.NewGuid();
 
         var task = service.Retry(id.ToString(), CancellationToken.None);
-        historyProbe.ExpectMsg<RemoveHistoryEntry>();
-        var retryMsg = managerProbe.ExpectMsg<RetryDownload>();
+        historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
+        var retryMsg = managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, retryMsg.DownloadId);
         managerProbe.Reply(new RetryDownloadResult(true, null));
         var result = await task;
@@ -141,7 +141,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id = Guid.NewGuid();
 
         var task = service.SetPriority(id.ToString(), "0", CancellationToken.None);
-        managerProbe.ExpectMsg<SetDownloadPriority>();
+        managerProbe.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new SetDownloadPriorityCompleted());
         var result = await task;
 
@@ -155,7 +155,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id = Guid.NewGuid();
 
         var task = service.SetPriority(id.ToString(), "2", CancellationToken.None);
-        var forceMsg = managerProbe.ExpectMsg<ForceStartDownload>();
+        var forceMsg = managerProbe.ExpectMsg<ForceStartDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, forceMsg.DownloadId);
         managerProbe.Reply(new ForceStartDownloadResult(true, null));
         var result = await task;
@@ -193,7 +193,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id = Guid.NewGuid();
 
         var task = service.SetPriority(id.ToString(), "1", CancellationToken.None);
-        managerProbe.ExpectMsg<SetDownloadPriority>();
+        managerProbe.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new SetDownloadPriorityFailed("Download not found"));
         var result = await task;
 
@@ -209,7 +209,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id2 = Guid.NewGuid();
 
         var task = service.Swap(id1.ToString(), id2.ToString(), CancellationToken.None);
-        var swapMsg = managerProbe.ExpectMsg<SwapDownloads>();
+        var swapMsg = managerProbe.ExpectMsg<SwapDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id1, swapMsg.DownloadId1);
         Assert.Equal(id2, swapMsg.DownloadId2);
         managerProbe.Reply(new SwapDownloadsCompleted());
@@ -237,7 +237,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         var id2 = Guid.NewGuid();
 
         var task = service.Swap(id1.ToString(), id2.ToString(), CancellationToken.None);
-        managerProbe.ExpectMsg<SwapDownloads>();
+        managerProbe.ExpectMsg<SwapDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new SwapDownloadsFailed("Items not adjacent"));
         var result = await task;
 

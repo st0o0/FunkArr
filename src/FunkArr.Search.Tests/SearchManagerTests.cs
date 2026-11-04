@@ -28,11 +28,11 @@ public sealed class SearchManagerTests : TestKit
         gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
-        var forwarded = tvProbe.ExpectMsg<SearchSeries>();
+        var forwarded = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("Tatort", forwarded.Query);
         Assert.NotEqual(Guid.Empty, forwarded.SearchId);
 
-        movieProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        movieProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -45,10 +45,10 @@ public sealed class SearchManagerTests : TestKit
         gateway.Tell(new SearchCommand(SearchSource.Radarr, "Das Boot", null, null, null,
             new SearchCommand.MovieParams(null, null)), TestActor);
 
-        var forwarded = movieProbe.ExpectMsg<SearchMovie>();
+        var forwarded = movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("Das Boot", forwarded.Query);
 
-        tvProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        tvProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -60,8 +60,8 @@ public sealed class SearchManagerTests : TestKit
 
         gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", 5040, null, null, null), TestActor);
 
-        tvProbe.ExpectMsg<SearchSeries>();
-        movieProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
+        movieProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -73,8 +73,8 @@ public sealed class SearchManagerTests : TestKit
 
         gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", 2040, null, null, null), TestActor);
 
-        movieProbe.ExpectMsg<SearchMovie>();
-        tvProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
+        tvProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -86,8 +86,8 @@ public sealed class SearchManagerTests : TestKit
 
         gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
-        tvProbe.ExpectMsg<SearchSeries>();
-        movieProbe.ExpectMsg<SearchMovie>();
+        tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
+        movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -99,19 +99,19 @@ public sealed class SearchManagerTests : TestKit
 
         gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
-        var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
-        var movieCmd = movieProbe.ExpectMsg<SearchMovie>();
+        var tvCmd = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
+        var movieCmd = movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
 
         var tvItem = new SearchResultItem("TV Show", "ARD", "Topic", "url", 5400, 100, 720, null, 0.9);
         var movieItem = new SearchResultItem("Movie", "ZDF", "Film", "url2", 7200, 200, 1080, null, 0.8);
 
         gateway.Tell(new SearchSeriesCompleted(tvCmd.SearchId, [tvItem], 1));
 
-        ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
 
         gateway.Tell(new SearchMovieCompleted(movieCmd.SearchId, [movieItem], 1));
 
-        var result = ExpectMsg<SearchCommandCompleted>();
+        var result = ExpectMsg<SearchCommandCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Items.Length);
         Assert.Equal("TV Show", result.Items[0].Title);
         Assert.Equal("Movie", result.Items[1].Title);
@@ -127,12 +127,12 @@ public sealed class SearchManagerTests : TestKit
         gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
-        var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
+        var tvCmd = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
         var item = new SearchResultItem("Tatort: Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.95);
 
         gateway.Tell(new SearchSeriesCompleted(tvCmd.SearchId, [item], 1));
 
-        var result = ExpectMsg<SearchCommandCompleted>();
+        var result = ExpectMsg<SearchCommandCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(result.Items);
     }
 
@@ -146,10 +146,10 @@ public sealed class SearchManagerTests : TestKit
         gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
-        var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
+        var tvCmd = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
         gateway.Tell(new SearchSeriesFailed(tvCmd.SearchId, new Exception("Error")));
 
-        var result = ExpectMsg<SearchCommandFailed>();
+        var result = ExpectMsg<SearchCommandFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("Error", result.Cause.Message);
     }
 
@@ -167,9 +167,9 @@ public sealed class SearchManagerTests : TestKit
         gateway.Tell(new SearchCommand(SearchSource.Sonarr, "Tatort", null, null, null,
             new SearchCommand.TvParams(null, null, null, null)), TestActor);
 
-        tvProbe.ExpectMsg<SearchSeries>();
+        tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
 
-        var result = ExpectMsg<SearchCommandFailed>(TimeSpan.FromSeconds(5));
+        var result = ExpectMsg<SearchCommandFailed>(TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("timed out", result.Cause.Message);
     }
 
@@ -182,17 +182,17 @@ public sealed class SearchManagerTests : TestKit
 
         gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
-        var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
-        var movieCmd = movieProbe.ExpectMsg<SearchMovie>();
+        var tvCmd = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
+        var movieCmd = movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
 
         var tvItem = new SearchResultItem("TV Show", "ARD", "Topic", "url", 5400, 100, 720, null, 0.9);
         gateway.Tell(new SearchSeriesCompleted(tvCmd.SearchId, [tvItem], 1));
 
-        ExpectNoMsg(TimeSpan.FromMilliseconds(100));
+        ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
 
         gateway.Tell(new SearchMovieFailed(movieCmd.SearchId, new Exception("Movie search failed")));
 
-        var result = ExpectMsg<SearchCommandCompleted>();
+        var result = ExpectMsg<SearchCommandCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Equal("TV Show", item.Title);
     }
@@ -206,16 +206,16 @@ public sealed class SearchManagerTests : TestKit
 
         gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
-        var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
-        var movieCmd = movieProbe.ExpectMsg<SearchMovie>();
+        var tvCmd = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
+        var movieCmd = movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
 
         gateway.Tell(new SearchSeriesFailed(tvCmd.SearchId, new Exception("TV failed")));
 
-        var result = ExpectMsg<SearchCommandFailed>();
+        var result = ExpectMsg<SearchCommandFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("TV failed", result.Cause.Message);
 
         gateway.Tell(new SearchMovieFailed(movieCmd.SearchId, new Exception("Movie failed")));
-        ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+        ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -231,13 +231,13 @@ public sealed class SearchManagerTests : TestKit
 
         gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
 
-        var tvCmd = tvProbe.ExpectMsg<SearchSeries>();
-        movieProbe.ExpectMsg<SearchMovie>();
+        var tvCmd = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
+        movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
 
         var tvItem = new SearchResultItem("TV Show", "ARD", "Topic", "url", 5400, 100, 720, null, 0.9);
         gateway.Tell(new SearchSeriesCompleted(tvCmd.SearchId, [tvItem], 1));
 
-        var result = ExpectMsg<SearchCommandCompleted>(TimeSpan.FromSeconds(5));
+        var result = ExpectMsg<SearchCommandCompleted>(TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
         Assert.Equal("TV Show", item.Title);
     }

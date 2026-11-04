@@ -47,7 +47,7 @@ public sealed class HistoryWorkerTests : TestKit
 
         worker.Tell(cmd, TestActor);
 
-        var update = _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        var update = _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("rs-test", update.RuleSetId);
         Assert.NotNull(update.Stats.LastRun);
         Assert.Equal(1, update.Stats.TotalRuns);
@@ -59,13 +59,13 @@ public sealed class HistoryWorkerTests : TestKit
         var worker = CreateWorker();
 
         worker.Tell(CreateCommand(Guid.NewGuid()), TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(CreateCommand(Guid.NewGuid()), TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(CreateCommand(Guid.NewGuid()), TestActor);
-        var update = _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        var update = _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(3, update.Stats.TotalRuns);
     }
 
@@ -78,17 +78,17 @@ public sealed class HistoryWorkerTests : TestKit
         var id3 = Guid.NewGuid();
 
         worker.Tell(CreateCommand(id1, timestamp: _now), TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(CreateCommand(id2, timestamp: _now.AddHours(1)), TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(CreateCommand(id3, timestamp: _now.AddHours(2)), TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(new QueryScoringHistory("rs-test", 0, 2), TestActor);
 
-        var result = ExpectMsg<ScoringHistoryResult>();
+        var result = ExpectMsg<ScoringHistoryResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(3, result.TotalCount);
         Assert.Equal(2, result.Snapshots.Length);
         Assert.Equal(id3, result.Snapshots[0].RequestId);
@@ -102,11 +102,11 @@ public sealed class HistoryWorkerTests : TestKit
         var requestId = Guid.NewGuid();
 
         worker.Tell(CreateCommand(requestId, candidateCount: 8, matchedCount: 4), TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(new QueryScoringDetail("rs-test", requestId), TestActor);
 
-        var response = ExpectMsg<ScoringDetailResponse>();
+        var response = ExpectMsg<ScoringDetailResponse>(cancellationToken: TestContext.Current.CancellationToken);
         var result = Assert.IsType<ScoringDetailResult>(response);
         Assert.Equal(requestId, result.RequestId);
         Assert.Equal(SearchSource.Sonarr, result.Source);
@@ -120,7 +120,7 @@ public sealed class HistoryWorkerTests : TestKit
 
         worker.Tell(new QueryScoringDetail("rs-test", Guid.NewGuid()), TestActor);
 
-        var response = ExpectMsg<ScoringDetailResponse>();
+        var response = ExpectMsg<ScoringDetailResponse>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.IsType<ScoringDetailFailed>(response);
     }
 
@@ -130,11 +130,11 @@ public sealed class HistoryWorkerTests : TestKit
         var worker = CreateWorker();
 
         worker.Tell(CreateCommand(Guid.NewGuid(), candidateCount: 10, matchedCount: 5, enrichedCount: 3), TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(new QueryScoringStats("rs-test"), TestActor);
 
-        var result = ExpectMsg<ScoringStatsQueryResult>();
+        var result = ExpectMsg<ScoringStatsQueryResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("rs-test", result.RuleSetId);
         Assert.NotNull(result.Stats.LastRun);
         Assert.NotNull(result.Stats.MatchRate);
@@ -151,7 +151,7 @@ public sealed class HistoryWorkerTests : TestKit
 
         worker.Tell(new QueryScoringStats("rs-test"), TestActor);
 
-        var result = ExpectMsg<ScoringStatsQueryResult>();
+        var result = ExpectMsg<ScoringStatsQueryResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("rs-test", result.RuleSetId);
         Assert.Null(result.Stats.LastRun);
         Assert.Null(result.Stats.MatchRate);
@@ -175,11 +175,11 @@ public sealed class HistoryWorkerTests : TestKit
             new ScoringOrigin(SearchSource.Sonarr, "tatort"), _now, 1, 1, 0, traces);
 
         worker.Tell(cmd, TestActor);
-        _statsCollectorProbe.ExpectMsg<UpdateStats>();
+        _statsCollectorProbe.ExpectMsg<UpdateStats>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(new QueryScoringDetail("rs-test", requestId), TestActor);
 
-        var response = ExpectMsg<ScoringDetailResponse>();
+        var response = ExpectMsg<ScoringDetailResponse>(cancellationToken: TestContext.Current.CancellationToken);
         var result = Assert.IsType<ScoringDetailResult>(response);
         var trace = Assert.Single(result.ItemTraces);
         Assert.True(trace.Matched);
@@ -198,7 +198,7 @@ public sealed class HistoryWorkerTests : TestKit
 
         worker.Tell(new QueryScoringStats("my-ruleset"), TestActor);
 
-        var result = ExpectMsg<ScoringStatsQueryResult>();
+        var result = ExpectMsg<ScoringStatsQueryResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("my-ruleset", result.RuleSetId);
     }
 

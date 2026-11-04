@@ -56,7 +56,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var queueResult = new QueueResult([], 0, 0, false, false, null);
 
         var task = service.GetQueue(0, 10, null, CancellationToken.None);
-        managerProbe.ExpectMsg<QueryQueue>();
+        managerProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(queueResult);
         var result = await task;
 
@@ -70,7 +70,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var (service, managerProbe, _) = CreateService();
 
         var task = service.GetQueue(0, 10, null, CancellationToken.None);
-        managerProbe.ExpectMsg<QueryQueue>();
+        managerProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new QueueFailed(new Exception("fail")));
         var result = await task;
 
@@ -92,7 +92,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var queueResult = new QueueResult(items, 1, 1, false, false, null);
 
         var task = service.GetQueue(0, 10, null, CancellationToken.None);
-        managerProbe.ExpectMsg<QueryQueue>();
+        managerProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(queueResult);
         var result = await task;
 
@@ -109,7 +109,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var historyResult = new HistoryResult([], 0);
 
         var task = service.GetHistory(0, 10, null, CancellationToken.None);
-        historyProbe.ExpectMsg<QueryHistory>();
+        historyProbe.ExpectMsg<QueryHistory>(cancellationToken: TestContext.Current.CancellationToken);
         historyProbe.Reply(historyResult);
         var result = await task;
 
@@ -124,7 +124,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var queueResult = new QueueResult([], 0, 0, false, false, null);
 
         var task = service.GetFullStatus(CancellationToken.None);
-        managerProbe.ExpectMsg<QueryQueue>();
+        managerProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(queueResult);
         var result = await task;
 
@@ -138,7 +138,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var (service, managerProbe, _) = CreateService();
 
         var task = service.GetFullStatus(CancellationToken.None);
-        managerProbe.ExpectMsg<QueryQueue>();
+        managerProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new QueueFailed(new Exception("fail")));
         var result = await task;
 
@@ -152,7 +152,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var (service, managerProbe, _) = CreateService();
 
         var task = service.PauseQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<PauseDownloads>();
+        managerProbe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new PauseDownloadsResult(true));
         var result = await task;
 
@@ -165,7 +165,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var (service, managerProbe, _) = CreateService();
 
         var task = service.PauseQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<PauseDownloads>();
+        managerProbe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new PauseDownloadsResult(false));
         var result = await task;
 
@@ -179,7 +179,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var (service, managerProbe, _) = CreateService();
 
         var task = service.ResumeQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<ResumeDownloads>();
+        managerProbe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new ResumeDownloadsResult(true));
         var result = await task;
 
@@ -192,7 +192,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         var (service, managerProbe, _) = CreateService();
 
         var task = service.ResumeQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<ResumeDownloads>();
+        managerProbe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new ResumeDownloadsResult(false));
         var result = await task;
 

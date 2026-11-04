@@ -14,17 +14,17 @@ public sealed class DownloadPipelineTests(FunkArrFixture fixture)
     [Fact]
     public async Task Pause_ReturnsOperationResult()
     {
-        var task = _fixture.Client.PostAsync("/api/downloads/pause", null);
+        var task = _fixture.Client.PostAsync("/api/downloads/pause", null, TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        probe.ExpectMsg<PauseDownloads>();
+        probe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new PauseDownloadsResult(true));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.True(result.Success);
     }
@@ -32,17 +32,17 @@ public sealed class DownloadPipelineTests(FunkArrFixture fixture)
     [Fact]
     public async Task Resume_ReturnsOperationResult()
     {
-        var task = _fixture.Client.PostAsync("/api/downloads/resume", null);
+        var task = _fixture.Client.PostAsync("/api/downloads/resume", null, TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
-        probe.ExpectMsg<ResumeDownloads>();
+        probe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new ResumeDownloadsResult(true));
 
         var response = await task;
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
+        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.True(result.Success);
     }

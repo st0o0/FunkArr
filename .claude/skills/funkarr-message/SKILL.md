@@ -155,6 +155,7 @@ public sealed record ScoringRecorded(
 - No `Event` or `Dto` suffix
 - Events are extend-only (never remove fields, only add)
 - Events may reference types from `FunkArr.Messages` but never from domain projects
+- Enums in `FunkArr.Persistence` have explicit `int` values (from 0), frozen once assigned; map to/from Messages enums with exhaustive `switch` expressions, never numeric casts (see AGENTS.md "Enum conventions")
 
 ## Checklist
 
@@ -163,3 +164,4 @@ public sealed record ScoringRecorded(
 - [ ] `Failed` variant includes `Exception Cause`
 - [ ] No cross-domain response base types
 - [ ] Events in `FunkArr.Persistence/Events/<Domain>/`, past-tense name
+- [ ] Persistence enums: explicit values; enum mapping via exhaustive switch (no `(int)` casts)

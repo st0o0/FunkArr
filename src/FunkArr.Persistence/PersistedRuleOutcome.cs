@@ -2,7 +2,7 @@ namespace FunkArr.Persistence;
 
 public enum PersistedRuleOutcome
 {
-    Matched,
-    FilterFailed,
-    IdentificationFailed
+    Matched = 0,
+    FilterFailed = 1,
+    IdentificationFailed = 2
 }

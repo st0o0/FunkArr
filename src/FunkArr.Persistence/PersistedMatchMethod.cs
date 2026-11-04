@@ -2,8 +2,8 @@ namespace FunkArr.Persistence;
 
 public enum PersistedMatchMethod
 {
-    RegexExtracted,
-    TitleMatch,
-    AirdateMatch,
-    YearMatch
+    RegexExtracted = 0,
+    TitleMatch = 1,
+    AirdateMatch = 2,
+    YearMatch = 3
 }

@@ -45,7 +45,7 @@ public sealed class StatsCollectorTests : TestKit
         collector.Tell(new UpdateStats("rs-1", stats));
         collector.Tell(new QueryAllStats(), TestActor);
 
-        var result = ExpectMsg<AllStatsResult>();
+        var result = ExpectMsg<AllStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(result.Entries);
         Assert.Equal(stats, result.Entries["rs-1"]);
     }
@@ -60,7 +60,7 @@ public sealed class StatsCollectorTests : TestKit
         collector.Tell(new RemoveStats("rs-1"));
         collector.Tell(new QueryAllStats(), TestActor);
 
-        var result = ExpectMsg<AllStatsResult>();
+        var result = ExpectMsg<AllStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(result.Entries);
     }
 
@@ -71,7 +71,7 @@ public sealed class StatsCollectorTests : TestKit
 
         collector.Tell(new QueryAllStats(), TestActor);
 
-        var result = ExpectMsg<AllStatsResult>();
+        var result = ExpectMsg<AllStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(result.Entries);
     }
 
@@ -86,7 +86,7 @@ public sealed class StatsCollectorTests : TestKit
         collector.Tell(new UpdateStats("rs-2", stats2));
         collector.Tell(new QueryAllStats(), TestActor);
 
-        var result = ExpectMsg<AllStatsResult>();
+        var result = ExpectMsg<AllStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, result.Entries.Count);
         Assert.Equal(0.3, result.Entries["rs-1"].MatchRate);
         Assert.Equal(0.7, result.Entries["rs-2"].MatchRate);
@@ -103,7 +103,7 @@ public sealed class StatsCollectorTests : TestKit
         collector.Tell(new UpdateStats("rs-1", second));
         collector.Tell(new QueryAllStats(), TestActor);
 
-        var result = ExpectMsg<AllStatsResult>();
+        var result = ExpectMsg<AllStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(result.Entries);
         Assert.Equal(0.9, result.Entries["rs-1"].MatchRate);
     }
@@ -113,13 +113,13 @@ public sealed class StatsCollectorTests : TestKit
     {
         var actor = Sys.ActorOf(Props.Create<StatsCollector>());
 
-        _ruleSetResolverProbe.ExpectMsg<QueryRegisteredRuleSets>();
+        _ruleSetResolverProbe.ExpectMsg<QueryRegisteredRuleSets>(cancellationToken: TestContext.Current.CancellationToken);
 
         _ruleSetResolverProbe.Reply(new RegisteredRuleSetsResult([
             new RegisteredRuleSetEntry("rs-1", "Test Topic", [], new ExternalIds(null, null, null), null, null)
         ]));
 
-        var historyQuery = _historyRegionProbe.ExpectMsg<QueryScoringStats>();
+        var historyQuery = _historyRegionProbe.ExpectMsg<QueryScoringStats>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("rs-1", historyQuery.RuleSetId);
 
         _historyRegionProbe.Reply(new ScoringStatsQueryResult("rs-1", new ScoringStatsResult(DateTimeOffset.UtcNow, 0.6, 0.4, 8)));
@@ -129,10 +129,10 @@ public sealed class StatsCollectorTests : TestKit
             actor.Tell(new QueryAllStats(), TestActor);
             var r = ExpectMsg<AllStatsResult>();
             return r.Entries.Count == 1;
-        }, TimeSpan.FromSeconds(3));
+        }, TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
 
         actor.Tell(new QueryAllStats(), TestActor);
-        var result = ExpectMsg<AllStatsResult>();
+        var result = ExpectMsg<AllStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0.6, result.Entries["rs-1"].MatchRate);
     }
 }

@@ -41,7 +41,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
 
         manager.Tell(new QueryCacheStats());
 
-        var stats = ExpectMsg<CacheStatsResult>();
+        var stats = ExpectMsg<CacheStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, stats.TvdbEntries);
         Assert.Equal(0, stats.TmdbEntries);
         Assert.Null(stats.OldestEntry);
@@ -59,7 +59,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
 
         manager.Tell(new EnrichEpisodes(83214, 2026, candidates));
 
-        var response = ExpectMsg<EnrichEpisodesFailed>();
+        var response = ExpectMsg<EnrichEpisodesFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("not configured", response.Cause.Message);
     }
 
@@ -75,7 +75,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
 
         manager.Tell(new EnrichMovies(null, 550, candidates));
 
-        var response = ExpectMsg<EnrichMoviesFailed>();
+        var response = ExpectMsg<EnrichMoviesFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("not configured", response.Cause.Message);
     }
 }

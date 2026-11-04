@@ -21,7 +21,7 @@ public sealed class DirectoryHealthCheckTests
             var check = new DirectoryHealthCheck(dataPaths, dataFiles, p => p.DataRoot);
             var context = CreateContext(HealthStatus.Unhealthy);
 
-            var result = await check.CheckHealthAsync(context);
+            var result = await check.CheckHealthAsync(context, TestContext.Current.CancellationToken);
 
             Assert.Equal(HealthStatus.Healthy, result.Status);
         }
@@ -38,7 +38,7 @@ public sealed class DirectoryHealthCheckTests
         var check = new DirectoryHealthCheck(dataPaths, dataFiles, p => p.DataRoot);
         var context = CreateContext(HealthStatus.Unhealthy);
 
-        var result = await check.CheckHealthAsync(context);
+        var result = await check.CheckHealthAsync(context, TestContext.Current.CancellationToken);
 
         Assert.Equal(HealthStatus.Unhealthy, result.Status);
         Assert.Contains("not writable", result.Description);

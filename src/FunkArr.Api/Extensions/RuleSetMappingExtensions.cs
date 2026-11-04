@@ -21,7 +21,7 @@ internal static class RuleSetMappingExtensions
             [
                 .. msg.Rules.Select(r => new ApiModels.RuleSetDetailRule(
                     r.Id, r.Priority, r.Confidence,
-                    (ApiModels.IdentificationStrategy)(int)r.Strategy,
+                    r.Strategy.ToApi(),
                     r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
                     r.Filters.ToApi(), r.TitleRules?.Select(t => t.ToApi()).ToArray()))
             ],
@@ -32,23 +32,23 @@ internal static class RuleSetMappingExtensions
             ? null
             : new ApiModels.FilterGroupOutput(
                 output.All?.Select(c => new ApiModels.FilterConditionOutput(
-                    (ApiModels.FilterField)(int)c.Field, (ApiModels.FilterOp)(int)c.Op, c.Value)).ToArray(),
+                    c.Field.ToApi(), c.Op.ToApi(), c.Value)).ToArray(),
                 output.Any?.Select(c => new ApiModels.FilterConditionOutput(
-                    (ApiModels.FilterField)(int)c.Field, (ApiModels.FilterOp)(int)c.Op, c.Value)).ToArray(),
+                    c.Field.ToApi(), c.Op.ToApi(), c.Value)).ToArray(),
                 output.Not?.Select(c => new ApiModels.FilterConditionOutput(
-                    (ApiModels.FilterField)(int)c.Field, (ApiModels.FilterOp)(int)c.Op, c.Value)).ToArray());
+                    c.Field.ToApi(), c.Op.ToApi(), c.Value)).ToArray());
 
     internal static ApiModels.TitleRuleOutput ToApi(this MsgScoring.TitleRuleOutput output) =>
-        new((ApiModels.TitlePartType)(int)output.Type,
-            output.Field is null ? null : (ApiModels.FilterField)(int)output.Field,
+        new(output.Type.ToApi(),
+            output.Field?.ToApi(),
             output.Pattern, output.CaptureGroup, output.Value);
 
     internal static ApiModels.EnrichmentConfigOutput ToApi(this EnrichmentConfig config) =>
         new(config.Enabled,
-            [.. config.Methods.Select(m => (ApiModels.EnrichmentMethod)(int)m)],
+            [.. config.Methods.Select(m => m.ToApi())],
             new ApiModels.TitleMatchConfigOutput(config.Title.Threshold),
             new ApiModels.AirdateMatchConfigOutput(config.Airdate.Tolerance, config.Airdate.MinTitleAffinity),
-            new ApiModels.RuntimeMatchConfigOutput(config.Runtime.Tolerance, (ApiModels.RuntimeMode)(int)config.Runtime.Mode),
+            new ApiModels.RuntimeMatchConfigOutput(config.Runtime.Tolerance, config.Runtime.Mode.ToApi()),
             new ApiModels.YearMatchConfigOutput(config.Year.Tolerance));
 
     internal static CreateLocalRuleSet ToCommand(this ApiModels.CreateRuleSetRequest request) =>
@@ -70,12 +70,12 @@ internal static class RuleSetMappingExtensions
             [
                 .. request.Rules.Select(r => new RuleSetRuleInput(
                     r.Id, r.Priority, r.Confidence,
-                    r.Strategy is not null ? (MsgScoring.IdentificationStrategy)(int)r.Strategy : null,
+                    r.Strategy?.ToMessage(),
                     r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
                     r.Filters is not null ? MapFilters(r.Filters) : null,
                     r.TitleRules?.Select(t => new RuleSetTitleRuleInput(
-                        (MsgScoring.TitlePartType)(int)t.Type,
-                        t.Field is not null ? (MsgScoring.FilterField)(int)t.Field : null,
+                        t.Type.ToMessage(),
+                        t.Field?.ToMessage(),
                         t.Pattern, t.CaptureGroup, t.Value)).ToArray()))
             ],
             request.Standalone, request.Disable,
@@ -87,38 +87,38 @@ internal static class RuleSetMappingExtensions
             input.Not?.Select(MapCondition).ToArray());
 
     private static RuleSetFilterConditionInput MapCondition(ApiModels.FilterNodeInput c) =>
-        new((MsgScoring.FilterField)(int)(c.Field ?? 0),
-            (MsgScoring.FilterOp)(int)(c.Op ?? 0),
+        new((c.Field ?? ApiModels.FilterField.Title).ToMessage(),
+            (c.Op ?? ApiModels.FilterOp.Eq).ToMessage(),
             c.Value ?? "");
 
     internal static EnrichmentConfig ToMessage(this ApiModels.EnrichmentConfigInput input) =>
         new(input.Enabled ?? true,
             [
                 .. (input.Methods ?? [ApiModels.EnrichmentMethod.Title, ApiModels.EnrichmentMethod.Airdate])
-                .Select(m => (EnrichmentMethod)(int)m)
+                .Select(m => m.ToMessage())
             ],
             new TitleMatchConfig(input.Title?.Threshold ?? 0.7f),
             new AirdateMatchConfig(input.Airdate?.Tolerance ?? 7, input.Airdate?.MinTitleAffinity ?? 0.3f),
             new RuntimeMatchConfig(
                 input.Runtime?.Tolerance ?? 0.35f,
-                input.Runtime?.Mode is not null ? (RuntimeMode)(int)input.Runtime.Mode : RuntimeMode.Tiebreaker),
+                input.Runtime?.Mode?.ToMessage() ?? RuntimeMode.Tiebreaker),
             new YearMatchConfig(input.Year?.Tolerance ?? 1));
 
     internal static ApiModels.ScoringHistory ToApi(this ScoringHistoryResult msg) =>
         new(msg.RuleSetId, msg.TotalCount,
         [
             .. msg.Snapshots.Select(s => new ApiModels.ScoringSnapshotSummary(
-                s.RequestId, (ApiModels.SearchSource)(int)s.Source, s.Query, s.Timestamp,
+                s.RequestId, s.Source.ToApi(), s.Query, s.Timestamp,
                 s.CandidateCount, s.MatchedCount))
         ]);
 
     internal static ApiModels.ScoringDetail ToApi(this ScoringDetailResult msg) =>
-        new(msg.RequestId, (ApiModels.SearchSource)(int)msg.Source, msg.Query, msg.Timestamp,
+        new(msg.RequestId, msg.Source.ToApi(), msg.Query, msg.Timestamp,
             [.. msg.ItemTraces.Select(t => t.ToApi())]);
 
     private static Messages.MediaType ParseMediaType(string type) =>
         Enum.TryParse<ApiModels.MediaType>(type, true, out var parsed)
-            ? (Messages.MediaType)(int)parsed
+            ? parsed.ToMessage()
             : throw new ArgumentException($"Invalid media type '{type}'. Valid values: show, movie.");
 
     internal static ApiModels.SourceType ToApi(this string? sourceType) => sourceType switch

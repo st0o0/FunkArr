@@ -54,15 +54,15 @@ public sealed class DownloadManagerRetryTests : TestKit
         var id = EnqueueAndComplete(manager);
 
         manager.Tell(new RetryDownload(id));
-        var result = ExpectMsg<RetryDownloadResult>();
+        var result = ExpectMsg<RetryDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Null(result.Error);
 
         // Manager should send ResetDownload to region
-        _regionProbe.ExpectMsg<ResetDownload>(msg => msg.DownloadId == id);
+        _regionProbe.ExpectMsg<ResetDownload>(msg => msg.DownloadId == id, cancellationToken: TestContext.Current.CancellationToken);
         // Then dispatch → StartDownload
-        _regionProbe.ExpectMsg<StartDownload>(msg => msg.DownloadId == id);
+        _regionProbe.ExpectMsg<StartDownload>(msg => msg.DownloadId == id, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -72,18 +72,18 @@ public sealed class DownloadManagerRetryTests : TestKit
 
         // Add first download: it gets dispatched immediately
         manager.Tell(new AddDownload(new DownloadMedia("First", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var first = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectMsg<StartDownload>();
+        var first = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         // Add second download: queued but not dispatched (slot full)
         manager.Tell(new AddDownload(new DownloadMedia("Second", "https://example.com/v2.mp4", null, "ZDF", 1800, 500, MediaType.Show)));
-        var second = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
+        var second = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         // Retry the queued second download, should be rejected
         manager.Tell(new RetryDownload(second.DownloadId));
-        var result = ExpectMsg<RetryDownloadResult>();
+        var result = ExpectMsg<RetryDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Equal("Item is already queued", result.Error);
@@ -95,13 +95,13 @@ public sealed class DownloadManagerRetryTests : TestKit
         var manager = CreateManager(concurrentDownloads: 1);
 
         manager.Tell(new AddDownload(new DownloadMedia("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var added = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectMsg<StartDownload>();
+        var added = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         // Download is dispatched (active), retry should be rejected
         manager.Tell(new RetryDownload(added.DownloadId));
-        var result = ExpectMsg<RetryDownloadResult>();
+        var result = ExpectMsg<RetryDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Equal("Item is already queued", result.Error);
@@ -114,9 +114,9 @@ public sealed class DownloadManagerRetryTests : TestKit
         var id = EnqueueAndComplete(manager);
 
         manager.Tell(new RetryDownload(id));
-        ExpectMsg<RetryDownloadResult>(r => r.Success);
+        ExpectMsg<RetryDownloadResult>(r => r.Success, cancellationToken: TestContext.Current.CancellationToken);
 
-        var removal = _historyProbe.ExpectMsg<RemoveHistoryEntry>();
+        var removal = _historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, removal.DownloadId);
     }
 
@@ -125,14 +125,14 @@ public sealed class DownloadManagerRetryTests : TestKit
     {
         var manager = CreateManager(concurrentDownloads: 1);
         manager.Tell(new AddDownload(new DownloadMedia("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var added = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectMsg<StartDownload>();
+        var added = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new RetryDownload(added.DownloadId));
-        ExpectMsg<RetryDownloadResult>(r => !r.Success);
+        ExpectMsg<RetryDownloadResult>(r => !r.Success, cancellationToken: TestContext.Current.CancellationToken);
 
-        _historyProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _historyProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -142,11 +142,11 @@ public sealed class DownloadManagerRetryTests : TestKit
         var id = EnqueueAndComplete(manager);
 
         manager.Tell(new RetryDownload(id));
-        ExpectMsg<RetryDownloadResult>();
+        ExpectMsg<RetryDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
-        _regionProbe.ExpectMsg<ResetDownload>();
+        _regionProbe.ExpectMsg<ResetDownload>(cancellationToken: TestContext.Current.CancellationToken);
         // With 3 slots and nothing else running, it should dispatch immediately
-        _regionProbe.ExpectMsg<StartDownload>(msg => msg.DownloadId == id);
+        _regionProbe.ExpectMsg<StartDownload>(msg => msg.DownloadId == id, cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -156,26 +156,26 @@ public sealed class DownloadManagerRetryTests : TestKit
 
         // Fill the slot
         manager.Tell(new AddDownload(new DownloadMedia("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var active = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectMsg<StartDownload>();
+        var active = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         // Add and complete a second download by first freeing the slot, then re-filling
         manager.Tell(new SlotFree(active.DownloadId));
         manager.Tell(new AddDownload(new DownloadMedia("Blocking", "https://example.com/v2.mp4", null, "ZDF", 1800, 500, MediaType.Show)));
-        var blocking = ExpectMsg<DownloadAdded>();
-        _regionProbe.ExpectMsg<InitDownload>();
-        _regionProbe.ExpectMsg<StartDownload>();
+        var blocking = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
 
         // Complete the first download fully (it was already dequeued via SlotFree)
         // Now retry the first one, slot is taken by blocking
         manager.Tell(new RetryDownload(active.DownloadId));
-        var result = ExpectMsg<RetryDownloadResult>();
+        var result = ExpectMsg<RetryDownloadResult>(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
 
-        _regionProbe.ExpectMsg<ResetDownload>(msg => msg.DownloadId == active.DownloadId);
+        _regionProbe.ExpectMsg<ResetDownload>(msg => msg.DownloadId == active.DownloadId, cancellationToken: TestContext.Current.CancellationToken);
         // Should NOT get StartDownload because slot is full
-        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 }

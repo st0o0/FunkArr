@@ -28,20 +28,20 @@ public sealed class FeedStoreManagerTests : TestKit
     {
         CreateManager();
 
-        AwaitAssert(() => _invalidator.Received(1).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3));
+        AwaitAssert(() => _invalidator.Received(1).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3), cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public void Adding_new_entries_invalidates_the_feed_cache()
     {
         var manager = CreateManager();
-        AwaitAssert(() => _invalidator.Received(1).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3));
+        AwaitAssert(() => _invalidator.Received(1).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3), cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
 
-        var completed = ExpectMsg<PublishFeedEntriesCompleted>();
+        var completed = ExpectMsg<PublishFeedEntriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, completed.Published);
-        AwaitAssert(() => _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3));
+        AwaitAssert(() => _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3), cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -49,12 +49,12 @@ public sealed class FeedStoreManagerTests : TestKit
     {
         var manager = CreateManager();
         manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
-        ExpectMsg<PublishFeedEntriesCompleted>();
-        AwaitAssert(() => _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3));
+        ExpectMsg<PublishFeedEntriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
+        AwaitAssert(() => _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>()), TimeSpan.FromSeconds(3), cancellationToken: TestContext.Current.CancellationToken);
 
         manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
 
-        var completed = ExpectMsg<PublishFeedEntriesCompleted>();
+        var completed = ExpectMsg<PublishFeedEntriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(0, completed.Published);
         _invalidator.Received(2).InvalidateAsync(Arg.Any<CancellationToken>());
     }
@@ -66,10 +66,10 @@ public sealed class FeedStoreManagerTests : TestKit
         _invalidator.InvalidateAsync(Arg.Any<CancellationToken>()).Returns(Task.FromException(new InvalidOperationException("store down")));
 
         manager.Tell(new PublishFeedEntries([TestData.Entry("a", _firstSeen)]));
-        ExpectMsg<PublishFeedEntriesCompleted>();
+        ExpectMsg<PublishFeedEntriesCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         manager.Tell(new QueryFeed(MediaType.Show, 0, 10));
 
-        var result = ExpectMsg<FeedResult>();
+        var result = ExpectMsg<FeedResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("a", Assert.Single(result.Entries).StableId);
     }
 }

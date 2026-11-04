@@ -56,10 +56,10 @@ public sealed class EndpointExceptionFilterTests : IAsyncLifetime
     [InlineData("/test/timeout")]
     public async Task Timeouts_return_gateway_timeout(string path)
     {
-        var response = await Client.GetAsync(path);
+        var response = await Client.GetAsync(path, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.GatewayTimeout, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(problem);
         Assert.Equal("Gateway Timeout", problem.Title);
     }
@@ -67,10 +67,10 @@ public sealed class EndpointExceptionFilterTests : IAsyncLifetime
     [Fact]
     public async Task Unhandled_exception_returns_internal_server_error()
     {
-        var response = await Client.GetAsync("/test/failure");
+        var response = await Client.GetAsync("/test/failure", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(problem);
         Assert.Equal("Internal Server Error", problem.Title);
     }
@@ -78,10 +78,10 @@ public sealed class EndpointExceptionFilterTests : IAsyncLifetime
     [Fact]
     public async Task Unexpected_actor_response_returns_internal_server_error()
     {
-        var response = await Client.GetAsync("/api/mediathek/search?q=tatort");
+        var response = await Client.GetAsync("/api/mediathek/search?q=tatort", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(problem);
         Assert.Equal("Internal Server Error", problem.Title);
     }

@@ -98,7 +98,7 @@ public sealed class FeedCrawlManagerTests : TestKit
             () => Assert.Equal("unchanged", status.LastOutcome),
             () => Assert.False(status.Running),
             () => Assert.Equal(0, status.Cursor));
-        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+        p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -114,14 +114,14 @@ public sealed class FeedCrawlManagerTests : TestKit
         AnswerRuleSets(p);
         AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort, unknown] : [old], 3, _listTimestamp));
 
-        var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout);
+        var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
             () => Assert.Equal(SearchSource.Feed, evaluation.Source),
             () => Assert.Equal(76290, evaluation.TvdbId),
             () => Assert.Equal("Herz aus Eis", Assert.Single(evaluation.Items).Title));
         p.Tv.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
 
-        var publish = p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout);
+        var publish = p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(_listTimestamp), Assert.Single(publish.Entries).FirstSeenAt);
         p.Store.Reply(new PublishFeedEntriesCompleted(1));
 
@@ -147,7 +147,7 @@ public sealed class FeedCrawlManagerTests : TestKit
         AnswerProbe(p);
         AnswerRuleSets(p);
         AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort] : [old], 2, _listTimestamp));
-        var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout);
+        var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         p.Tv.Reply(new EvaluateSeriesFailed(evaluation.SearchId, new InvalidOperationException("boom")));
 
         var status = AwaitStatus(manager, s => s.LastOutcome is not null);
@@ -156,7 +156,7 @@ public sealed class FeedCrawlManagerTests : TestKit
             () => Assert.Contains("ruleset groups failed", status.LastOutcome!),
             () => Assert.Equal(0, status.Cursor),
             () => Assert.Equal(1, status.ConsecutiveFailures));
-        p.Store.ExpectNoMsg(TimeSpan.FromMilliseconds(200));
+        p.Store.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -168,10 +168,10 @@ public sealed class FeedCrawlManagerTests : TestKit
         AnswerProbe(p);
         AnswerRuleSets(p);
 
-        var query1 = p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout);
+        var query1 = p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         p.Mediathek.LastSender.Tell(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
 
-        if (p.Mediathek.ReceiveOne(TimeSpan.FromSeconds(1)) is QueryMediathek)
+        if (p.Mediathek.ReceiveOne(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken) is QueryMediathek)
         {
             p.Mediathek.LastSender.Tell(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
         }
@@ -189,11 +189,11 @@ public sealed class FeedCrawlManagerTests : TestKit
         var (manager, p) = Create();
 
         manager.Tell(new StartFeedCrawl());
-        p.Mediathek.ExpectMsg<QueryMediathek>();
+        p.Mediathek.ExpectMsg<QueryMediathek>(cancellationToken: TestContext.Current.CancellationToken);
         manager.Tell(new StartFeedCrawl());
 
-        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
+        p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
         manager.Tell(new QueryFeedCrawlStatus());
-        Assert.True(ExpectMsg<FeedCrawlStatusResult>().Running);
+        Assert.True(ExpectMsg<FeedCrawlStatusResult>(cancellationToken: TestContext.Current.CancellationToken).Running);
     }
 }

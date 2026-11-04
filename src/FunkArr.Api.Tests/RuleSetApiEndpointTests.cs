@@ -63,7 +63,7 @@ public sealed class RuleSetApiEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Get_raw_returns_404_for_unknown_ruleset()
     {
-        var response = await Client.GetAsync("/api/rulesets/missing-id/raw");
+        var response = await Client.GetAsync("/api/rulesets/missing-id/raw", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -75,11 +75,11 @@ public sealed class RuleSetApiEndpointTests : IAsyncLifetime
         var path = Path.Join(dataPaths.LocalRuleSets, "ard-tagesschau.json");
         _files[path] = "{\"ruleSetId\":\"ard-tagesschau\"}";
 
-        var response = await Client.GetAsync("/api/rulesets/ard-tagesschau/raw");
+        var response = await Client.GetAsync("/api/rulesets/ard-tagesschau/raw", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
-        var body = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Equal("{\"ruleSetId\":\"ard-tagesschau\"}", body);
     }
 }

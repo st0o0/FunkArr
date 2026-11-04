@@ -62,9 +62,9 @@ public sealed class RuleSetWorkerTests : TestKit
 
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", communityPath, null));
 
-        scoringProbe.ExpectMsg<MatchingConfig>();
-        resolverProbe.ExpectMsg<RegisterRuleSet>();
-        var ready = managerProbe.ExpectMsg<WorkerReady>();
+        scoringProbe.ExpectMsg<MatchingConfig>(cancellationToken: TestContext.Current.CancellationToken);
+        resolverProbe.ExpectMsg<RegisterRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
+        var ready = managerProbe.ExpectMsg<WorkerReady>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("test-show", ready.RuleSetId);
         Assert.Equal(1, ready.RuleCount);
         Assert.Equal("community", ready.SourceType);
@@ -79,12 +79,12 @@ public sealed class RuleSetWorkerTests : TestKit
         _dataFiles.WriteText(communityPath, _sampleJson);
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", communityPath, null));
 
-        scoringProbe.ExpectMsg<MatchingConfig>();
-        resolverProbe.ExpectMsg<RegisterRuleSet>();
-        managerProbe.ExpectMsg<WorkerReady>();
+        scoringProbe.ExpectMsg<MatchingConfig>(cancellationToken: TestContext.Current.CancellationToken);
+        resolverProbe.ExpectMsg<RegisterRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
+        managerProbe.ExpectMsg<WorkerReady>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(new QueryRuleSetDetail("test-show"), TestActor);
-        var detail = ExpectMsg<RuleSetDetailResult>();
+        var detail = ExpectMsg<RuleSetDetailResult>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("test-show", detail.RuleSetId);
         Assert.Equal("Test Show", detail.Identity.Topic);
     }
@@ -101,7 +101,7 @@ public sealed class RuleSetWorkerTests : TestKit
             null, null, null);
 
         worker.Tell(new CreateLocalRuleSet("test-show", body), TestActor);
-        var result = ExpectMsg<CreateLocalRuleSetCompleted>();
+        var result = ExpectMsg<CreateLocalRuleSetCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("test-show", result.RuleSetId);
         Assert.True(_store.ExistsLocal("test-show"));
     }
@@ -117,7 +117,7 @@ public sealed class RuleSetWorkerTests : TestKit
             null, null, null);
 
         worker.Tell(new CreateLocalRuleSet("test-show", body), TestActor);
-        var result = ExpectMsg<CreateLocalRuleSetFailed>();
+        var result = ExpectMsg<CreateLocalRuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(CreateLocalRuleSetFailureReason.AlreadyExists, result.Reason);
     }
 
@@ -129,12 +129,12 @@ public sealed class RuleSetWorkerTests : TestKit
         _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "local", "test-show.json"), _sampleJson);
 
         worker.Tell(new DeleteLocalRuleSet("test-show"), TestActor);
-        ExpectMsg<DeleteLocalRuleSetCompleted>();
+        ExpectMsg<DeleteLocalRuleSetCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.False(_store.ExistsLocal("test-show"));
 
-        scoringProbe.ExpectMsg<RemoveMatchingConfig>();
-        resolverProbe.ExpectMsg<DeregisterRuleSet>();
-        managerProbe.ExpectMsg<WorkerRemoved>();
+        scoringProbe.ExpectMsg<RemoveMatchingConfig>(cancellationToken: TestContext.Current.CancellationToken);
+        resolverProbe.ExpectMsg<DeregisterRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
+        managerProbe.ExpectMsg<WorkerRemoved>(cancellationToken: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class RuleSetWorkerTests : TestKit
         var worker = CreateWorkerWithProbes(out _, out _, out _);
 
         worker.Tell(new DeleteLocalRuleSet("test-show"), TestActor);
-        var result = ExpectMsg<DeleteLocalRuleSetFailed>();
+        var result = ExpectMsg<DeleteLocalRuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(DeleteLocalRuleSetFailureReason.NotFound, result.Reason);
     }
 
@@ -156,7 +156,7 @@ public sealed class RuleSetWorkerTests : TestKit
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", null, null));
 
         worker.Tell(new ExportRuleSet("test-show"), TestActor);
-        var result = ExpectMsg<ExportRuleSetFailed>();
+        var result = ExpectMsg<ExportRuleSetFailed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(ExportRuleSetFailureReason.NoLocalOverlay, result.Reason);
     }
 
@@ -168,12 +168,12 @@ public sealed class RuleSetWorkerTests : TestKit
         _dataFiles.WriteText(Path.Combine(_tempDir, "rulesets", "local", "test-show.json"), _sampleJson);
         worker.Tell(new RuleSetWorker.LoadRuleSet("test-show", null, null));
 
-        scoringProbe.ExpectMsg<MatchingConfig>();
-        resolverProbe.ExpectMsg<RegisterRuleSet>();
-        managerProbe.ExpectMsg<WorkerReady>();
+        scoringProbe.ExpectMsg<MatchingConfig>(cancellationToken: TestContext.Current.CancellationToken);
+        resolverProbe.ExpectMsg<RegisterRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
+        managerProbe.ExpectMsg<WorkerReady>(cancellationToken: TestContext.Current.CancellationToken);
 
         worker.Tell(new ExportRuleSet("test-show"), TestActor);
-        var result = ExpectMsg<ExportRuleSetCompleted>();
+        var result = ExpectMsg<ExportRuleSetCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains("Test Show", result.Json);
     }
 

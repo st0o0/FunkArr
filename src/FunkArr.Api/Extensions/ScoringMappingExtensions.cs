@@ -17,12 +17,12 @@ internal static class ScoringMappingExtensions
             [.. msg.RuleTraces.Select(rt => rt.ToApi())],
             msg.EnrichmentTrace is not null
                 ? new ApiModels.EnrichmentTraceOutput(
-                    (ApiModels.MatchMethod)(int)msg.EnrichmentTrace.Method, msg.EnrichmentTrace.Confidence, msg.EnrichmentTrace.Enriched,
+                    msg.EnrichmentTrace.Method.ToApi(), msg.EnrichmentTrace.Confidence, msg.EnrichmentTrace.Enriched,
                     msg.EnrichmentTrace.ResolvedSeason, msg.EnrichmentTrace.ResolvedEpisode,
                     msg.EnrichmentTrace.ResolvedTitle, msg.EnrichmentTrace.ResolvedYear,
                     msg.EnrichmentTrace.DaysDiff, msg.EnrichmentTrace.Detail)
                 : null,
-            msg.ExcludedVariant is { } excluded ? (ApiModels.MediathekVariant)(int)excluded : null);
+            msg.ExcludedVariant is { } excluded ? excluded.ToApi() : null);
 
     internal static ApiModels.RuleTrace ToApi(this RuleTrace msg) =>
         new(msg.RuleId, msg.Priority, msg.Outcome.ToApi(),

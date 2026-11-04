@@ -58,7 +58,7 @@ public static class RuleSetApiEndpoints
                 return new ApiModels.RuleSetListEntry(
                     e.RuleSetId, e.Topic, e.Aliases,
                     e.Ids.TvdbId, e.Ids.ImdbId, e.Ids.TmdbId,
-                    e.MediaName, e.MediaType is not null ? (ApiModels.MediaType)(int)e.MediaType : null,
+                    e.MediaName, e.MediaType?.ToApi(),
                     summary?.RuleCount ?? 0,
                     (summary?.SourceType).ToApi(),
                     stat?.LastRun,
