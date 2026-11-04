@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Serilog.Core;
 using Serilog.Events;
@@ -7,15 +8,18 @@ namespace FunkArr.Api;
 
 public sealed class RingBufferSink : ILogEventSink
 {
+    private const int _subscriberCapacity = 256;
+
     private readonly ConcurrentQueue<LogEntry> _buffer = new();
+    private readonly ConcurrentDictionary<Guid, Channel<LogEntry>> _subscribers = new();
     private readonly int _capacity;
-    private readonly Channel<LogEntry> _channel = Channel.CreateBounded<LogEntry>(
-        new BoundedChannelOptions(100) { FullMode = BoundedChannelFullMode.DropOldest });
 
     public RingBufferSink(int capacity = 500)
     {
         _capacity = capacity;
     }
+
+    public int SubscriberCount => _subscribers.Count;
 
     public void Emit(LogEvent logEvent)
     {
@@ -32,12 +36,54 @@ public sealed class RingBufferSink : ILogEventSink
             _buffer.TryDequeue(out _);
         }
 
-        _channel.Writer.TryWrite(entry);
+        foreach (var subscriber in _subscribers.Values)
+        {
+            subscriber.Writer.TryWrite(entry);
+        }
     }
 
     public LogEntry[] GetEntries() => [.. _buffer];
 
-    public ChannelReader<LogEntry> Reader => _channel.Reader;
+    public IAsyncEnumerable<LogEntry> Subscribe(CancellationToken ct)
+    {
+        var id = Guid.NewGuid();
+        var channel = Channel.CreateBounded<LogEntry>(new BoundedChannelOptions(_subscriberCapacity)
+        {
+            FullMode = BoundedChannelFullMode.DropOldest,
+            SingleReader = true
+        });
+
+        _subscribers[id] = channel;
+        var registration = ct.Register(() => Unsubscribe(id));
+
+        return ReadAsync(id, channel, registration, ct);
+    }
+
+    private async IAsyncEnumerable<LogEntry> ReadAsync(
+        Guid id, Channel<LogEntry> channel, CancellationTokenRegistration registration,
+        [EnumeratorCancellation] CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var entry in channel.Reader.ReadAllAsync(ct))
+            {
+                yield return entry;
+            }
+        }
+        finally
+        {
+            await registration.DisposeAsync();
+            Unsubscribe(id);
+        }
+    }
+
+    private void Unsubscribe(Guid id)
+    {
+        if (_subscribers.TryRemove(id, out var channel))
+        {
+            channel.Writer.TryComplete();
+        }
+    }
 }
 
 public sealed record LogEntry(

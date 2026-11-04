@@ -71,7 +71,7 @@ public static class MediathekApiEndpoints
                     statusCode: 503, title: "Service Busy", detail: "MediathekViewWeb query queue is full"),
                 QueryMediathekError error => Results.Problem(
                     statusCode: 502, title: "MediathekViewWeb Error", detail: error.Cause.Message),
-                _ => ApiResults.GatewayTimeout()
+                _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Search Mediathek")

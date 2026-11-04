@@ -1,3 +1,4 @@
+using Akka.Actor;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -18,7 +19,7 @@ internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> l
                 detail: ex.Message,
                 statusCode: 400);
         }
-        catch (TimeoutException ex)
+        catch (Exception ex) when (ex is TimeoutException or AskTimeoutException)
         {
             var endpoint = context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown";
             logger.LogWarning(ex, "Timeout in endpoint {Endpoint}", endpoint);
@@ -28,14 +29,17 @@ internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> l
         {
             throw;
         }
+        catch (UnexpectedActorResponseException ex)
+        {
+            var endpoint = context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown";
+            logger.LogError("Unexpected actor response {ResponseType} in endpoint {Endpoint}", ex.ResponseType, endpoint);
+            return ApiResults.InternalServerError();
+        }
         catch (Exception ex)
         {
             var endpoint = context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown";
             logger.LogError(ex, "Unhandled exception in endpoint {Endpoint}", endpoint);
-            return Results.Problem(
-                title: "Internal Server Error",
-                detail: "An unexpected error occurred",
-                statusCode: 500);
+            return ApiResults.InternalServerError();
         }
     }
 }

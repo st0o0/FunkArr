@@ -20,7 +20,7 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
     private static readonly BackoffPolicy _retryBackoff =
         Backoff.Create(TimeSpan.FromMilliseconds(500), multiplier: 3.0, maxDelay: TimeSpan.FromMilliseconds(1500));
 
-    private const int MaxRetries = 2;
+    private const int _maxRetries = 2;
 
     private sealed record RetryMediathekQuery(int Attempt);
 
@@ -88,7 +88,7 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
 
         Receive<QueryMediathekQueueFull>(_ =>
         {
-            if (_state.Attempt < MaxRetries)
+            if (_state.Attempt < _maxRetries)
             {
                 var delay = _retryBackoff.DelayWithJitter(_state.Attempt);
                 _log.Info("Movie search {SearchId} queue full, retry {Attempt} in {Delay}ms",

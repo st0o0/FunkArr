@@ -35,7 +35,7 @@ public static class DownloadsApiEndpoints
             {
                 QueueResult result => Results.Ok(result.ToApi()),
                 QueueFailed failed => Results.Problem(failed.Cause.Message, statusCode: 502),
-                _ => Results.Problem("Unexpected response", statusCode: 500)
+                _ => ApiResults.UnexpectedResponse(response)
             };
         })
         .WithSummary("Get download queue")
@@ -173,8 +173,6 @@ public static class DownloadsApiEndpoints
         group.MapPost("/{id:guid}/retry", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
-            history.Tell(new RemoveHistoryEntry(id));
             var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(id), _askTimeout, ct);
             return result.Success
                 ? Results.Ok(new ApiModels.OperationResult(true))
@@ -231,7 +229,7 @@ public static class DownloadsApiEndpoints
             {
                 MoveDownloadCompleted => Results.Ok(new ApiModels.OperationResult(true)),
                 MoveDownloadFailed f => Results.NotFound(new ApiModels.OperationResult(false, f.Reason)),
-                _ => Results.Problem("Unexpected response", statusCode: 500)
+                _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Move download to position")
@@ -250,7 +248,7 @@ public static class DownloadsApiEndpoints
             {
                 SetDownloadPriorityCompleted => Results.Ok(new ApiModels.OperationResult(true)),
                 SetDownloadPriorityFailed f => Results.NotFound(new ApiModels.OperationResult(false, f.Reason)),
-                _ => Results.Problem("Unexpected response", statusCode: 500)
+                _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Set download priority")
@@ -268,7 +266,7 @@ public static class DownloadsApiEndpoints
             {
                 SwapDownloadsCompleted => Results.Ok(new ApiModels.OperationResult(true)),
                 SwapDownloadsFailed f => Results.BadRequest(new ApiModels.OperationResult(false, f.Reason)),
-                _ => Results.Problem("Unexpected response", statusCode: 500)
+                _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Swap two downloads")

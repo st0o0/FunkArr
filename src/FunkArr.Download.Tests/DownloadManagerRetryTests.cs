@@ -13,12 +13,15 @@ namespace FunkArr.Download.Tests;
 public sealed class DownloadManagerRetryTests : TestKit
 {
     private readonly TestProbe _regionProbe;
+    private readonly TestProbe _historyProbe;
 
     public DownloadManagerRetryTests()
     {
         _regionProbe = CreateTestProbe();
+        _historyProbe = CreateTestProbe();
         var registry = ActorRegistry.For(Sys);
         registry.Register<IDownloadRegion>(_regionProbe);
+        registry.Register<IDownloadHistoryManager>(_historyProbe);
     }
 
     private IActorRef CreateManager(int concurrentDownloads = 3)
@@ -102,6 +105,34 @@ public sealed class DownloadManagerRetryTests : TestKit
 
         Assert.False(result.Success);
         Assert.Equal("Item is already queued", result.Error);
+    }
+
+    [Fact]
+    public void Accepted_retry_removes_history_entry()
+    {
+        var manager = CreateManager(concurrentDownloads: 1);
+        var id = EnqueueAndComplete(manager);
+
+        manager.Tell(new RetryDownload(id));
+        ExpectMsg<RetryDownloadResult>(r => r.Success);
+
+        var removal = _historyProbe.ExpectMsg<RemoveHistoryEntry>();
+        Assert.Equal(id, removal.DownloadId);
+    }
+
+    [Fact]
+    public void Rejected_retry_keeps_history_entry()
+    {
+        var manager = CreateManager(concurrentDownloads: 1);
+        manager.Tell(new AddDownload(new DownloadMedia("Active", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
+        var added = ExpectMsg<DownloadAdded>();
+        _regionProbe.ExpectMsg<InitDownload>();
+        _regionProbe.ExpectMsg<StartDownload>();
+
+        manager.Tell(new RetryDownload(added.DownloadId));
+        ExpectMsg<RetryDownloadResult>(r => !r.Success);
+
+        _historyProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
     }
 
     [Fact]

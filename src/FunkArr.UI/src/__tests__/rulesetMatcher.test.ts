@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { matchCandidate, tryMatch, type BuilderRule, type MatchExtractions } from '../composables/useRulesetMatcher'
+import { matchCandidate, tryMatch, type BuilderRule } from '../composables/useRulesetMatcher'
 import type { MediathekCandidate } from '../api/rulesets'
 import { Strategy } from '../api/enumMaps'
 

@@ -87,7 +87,7 @@ public static class RuleSetApiEndpoints
             {
                 RuleSetDetailResult detail => Results.Ok(detail.ToApi()),
                 RuleSetDetailFailed => Results.NotFound(),
-                _ => ApiResults.GatewayTimeout()
+                _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Get ruleset details")
@@ -117,7 +117,7 @@ public static class RuleSetApiEndpoints
             {
                 ScoringDetailResult detail => Results.Ok(detail.ToApi()),
                 ScoringDetailFailed => Results.NotFound(),
-                _ => ApiResults.GatewayTimeout()
+                _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Get scoring detail")
@@ -167,7 +167,7 @@ public static class RuleSetApiEndpoints
 
             if (result is not ScoreCompleted completed)
             {
-                return ApiResults.GatewayTimeout();
+                return ApiResults.UnexpectedResponse(result);
             }
 
             var itemTraces = completed.ItemTraces;
@@ -201,7 +201,7 @@ public static class RuleSetApiEndpoints
             CreateLocalRuleSetCompleted completed => Results.Created($"/api/rulesets/{completed.RuleSetId}", new ApiModels.CreatedRuleSetResponse(completed.RuleSetId)),
             CreateLocalRuleSetFailed { Reason: CreateLocalRuleSetFailureReason.AlreadyExists } => Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists")),
             CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
-            _ => ApiResults.GatewayTimeout()
+            _ => ApiResults.UnexpectedResponse(result)
         };
     }
 
@@ -216,7 +216,7 @@ public static class RuleSetApiEndpoints
             UpdateLocalRuleSetCompleted => Results.Ok(),
             UpdateLocalRuleSetFailed { Reason: UpdateLocalRuleSetFailureReason.NotFound } => Results.NotFound(),
             UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
-            _ => ApiResults.GatewayTimeout()
+            _ => ApiResults.UnexpectedResponse(result)
         };
     }
 
@@ -250,7 +250,7 @@ public static class RuleSetApiEndpoints
         {
             DeleteLocalRuleSetCompleted => Results.Ok(),
             DeleteLocalRuleSetFailed => Results.NotFound(),
-            _ => ApiResults.GatewayTimeout()
+            _ => ApiResults.UnexpectedResponse(result)
         };
     }
 
@@ -267,7 +267,7 @@ public static class RuleSetApiEndpoints
                 Results.Problem(statusCode: 400, title: "No local overlay",
                     detail: "Only locally modified rulesets can be exported. Edit this ruleset first to create a local overlay."),
             ExportRuleSetFailed => Results.NotFound(),
-            _ => ApiResults.GatewayTimeout()
+            _ => ApiResults.UnexpectedResponse(result)
         };
     }
 

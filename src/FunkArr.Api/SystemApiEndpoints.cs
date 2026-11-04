@@ -121,7 +121,7 @@ public static class SystemApiEndpoints
             ctx.Response.Headers.Connection = "keep-alive";
 
             var ct = ctx.RequestAborted;
-            await foreach (var entry in sink.Reader.ReadAllAsync(ct))
+            await foreach (var entry in sink.Subscribe(ct))
             {
                 var json = System.Text.Json.JsonSerializer.Serialize(entry, _sseJsonOptions);
                 await ctx.Response.WriteAsync($"data: {json}\n\n", ct);

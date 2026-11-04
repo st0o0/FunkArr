@@ -194,6 +194,7 @@ public sealed class DownloadManager : ReceivePersistentActor
             _state = _state.Apply(e);
             MaybeSnapshot();
             _downloadRegion.Tell(new ResetDownload(cmd.DownloadId));
+            Context.GetActor<IDownloadHistoryManager>().Tell(new RemoveHistoryEntry(cmd.DownloadId), ActorRefs.NoSender);
             Sender.Tell(new RetryDownloadResult(true, null));
             DispatchNext();
         });

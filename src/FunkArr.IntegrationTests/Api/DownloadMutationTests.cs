@@ -60,11 +60,6 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null);
 
-        // The endpoint does history.Tell(RemoveHistoryEntry) first, then manager.Ask(RetryDownload)
-        var historyProbe = _fixture.GetProbe<IDownloadHistoryManager>();
-        var historyMsg = historyProbe.ExpectMsg<RemoveHistoryEntry>();
-        Assert.Equal(id, historyMsg.DownloadId);
-
         var managerProbe = _fixture.GetProbe<IDownloadManager>();
         var managerMsg = managerProbe.ExpectMsg<RetryDownload>();
         Assert.Equal(id, managerMsg.DownloadId);
@@ -72,6 +67,8 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         var response = await task;
 
+        // History cleanup is owned by the DownloadManager, not the endpoint
+        _fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300));
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<OperationResult>();
@@ -80,14 +77,11 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     }
 
     [Fact]
-    public async Task Retry_FailedState_Returns400()
+    public async Task Retry_FailedState_Returns400_and_keeps_history()
     {
         var id = Guid.NewGuid();
 
         var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null);
-
-        var historyProbe = _fixture.GetProbe<IDownloadHistoryManager>();
-        historyProbe.ExpectMsg<RemoveHistoryEntry>();
 
         var managerProbe = _fixture.GetProbe<IDownloadManager>();
         managerProbe.ExpectMsg<RetryDownload>();
@@ -95,6 +89,7 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         var response = await task;
 
+        _fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300));
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<OperationResult>();
