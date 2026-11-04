@@ -58,7 +58,9 @@ export function useRulesetMatcher(
   return { results, matchedCount, total }
 }
 
-function matchCandidate(candidate: MediathekCandidate, rules: BuilderRule[]): MatchResult {
+export { type BuilderRule }
+
+export function matchCandidate(candidate: MediathekCandidate, rules: BuilderRule[]): MatchResult {
   for (const rule of rules) {
     const extractions = tryMatch(candidate, rule)
     if (extractions !== null) {
@@ -68,7 +70,7 @@ function matchCandidate(candidate: MediathekCandidate, rules: BuilderRule[]): Ma
   return { candidate, matchedRuleId: null, extractions: {} }
 }
 
-function tryMatch(candidate: MediathekCandidate, rule: BuilderRule): MatchExtractions | null {
+export function tryMatch(candidate: MediathekCandidate, rule: BuilderRule): MatchExtractions | null {
   switch (rule.strategy) {
     case Strategy.SeasonAndEpisodeNumber:
       return matchSeasonEpisode(candidate.title, rule)

@@ -5,12 +5,12 @@ on:
     branches: [main]
     paths:
       - 'src/FunkArr.UI/**'
-      - '.github/workflows/e2e-tests.yml'
+      - '.github/workflows/ui-tests.yml'
   pull_request:
     branches: [main]
     paths:
       - 'src/FunkArr.UI/**'
-      - '.github/workflows/e2e-tests.yml'
+      - '.github/workflows/ui-tests.yml'
 
 jobs:
   e2e:
@@ -30,6 +30,8 @@ jobs:
           cache-dependency-path: src/FunkArr.UI/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
+
+      - run: pnpm test
 
       - run: npx playwright install --with-deps chromium
 

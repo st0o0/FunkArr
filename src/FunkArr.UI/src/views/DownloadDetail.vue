@@ -109,6 +109,7 @@ import { getHistoryItem, deleteQueueItem, deleteHistoryItem, retryDownload, forc
 import type { HistoryItem } from '../api/downloads'
 import { QueueStatus, QueuePhase, QueuePriority, HistoryStatus } from '../api/enums'
 import { formatSpeed, formatSize, formatDuration } from '../utils/format'
+import { isStepDone as _isStepDone, isStepFailed as _isStepFailed, stepClass as _stepClass, stepLabelClass as _stepLabelClass, type DownloadState } from '../utils/phaseState'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -187,31 +188,29 @@ const phaseLabels = computed(() => phaseSteps.map(s => ({
   label: t(`downloadDetail.phases.${s.i18nKey}`),
 })))
 
+const downloadState = computed((): DownloadState => {
+  if (isActive.value) return 'active'
+  if (isCompleted.value) return 'completed'
+  if (isFailed.value) return 'failed'
+  return 'unknown'
+})
+
+const currentPhase = computed(() => isActive.value ? (queueItem.value?.phase ?? -1) : -1)
+
 function isStepDone(key: number): boolean {
-  if (isCompleted.value) return true
-  return isActive.value && key < (queueItem.value?.phase ?? -1)
+  return _isStepDone(key, downloadState.value, currentPhase.value)
 }
 
 function isStepFailed(key: number): boolean {
-  return isFailed.value && key === 0
-}
-
-function isStepCurrent(key: number): boolean {
-  return isActive.value && key === (queueItem.value?.phase ?? -1)
+  return _isStepFailed(key, downloadState.value)
 }
 
 function stepClass(key: number): string {
-  if (isStepDone(key)) return 'bg-green-500/20 text-green-400'
-  if (isStepFailed(key)) return 'bg-red-500/20 text-red-400'
-  if (isStepCurrent(key)) return 'bg-accent text-white'
-  return 'bg-surface-elevated text-text-secondary'
+  return _stepClass(key, downloadState.value, currentPhase.value)
 }
 
 function stepLabelClass(key: number): string {
-  if (isStepDone(key)) return 'text-green-400'
-  if (isStepFailed(key)) return 'text-red-400'
-  if (isStepCurrent(key)) return 'text-accent font-medium'
-  return 'text-text-secondary'
+  return _stepLabelClass(key, downloadState.value, currentPhase.value)
 }
 
 async function fetchHistoryById() {

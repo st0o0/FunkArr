@@ -178,33 +178,16 @@ import { useQueueStream } from '../composables/useQueueStream'
 import {
   getHistory, getHistoryCategories, getHistoryStats, deleteHistoryItem, retryDownload,
   deleteQueueItem, pauseDownloads, resumeDownloads,
-  type QueueItem, type HistoryItem, type HistoryResponse, type HistoryStatsResponse,
+  type HistoryResponse, type HistoryStatsResponse,
 } from '../api/downloads'
-import { QueueStatus, QueuePriority, HistoryStatus } from '../api/enums'
+import { QueueStatus } from '../api/enums'
 import EmptyState from '../components/EmptyState.vue'
 import ReleaseTitle from '../components/ReleaseTitle.vue'
 import { useToast } from '../composables/useToast'
-import { formatSpeed, formatSize, formatAbsoluteDate } from '../utils/format'
+import { formatSpeed, formatAbsoluteDate } from '../utils/format'
+import { queueItemToRow, historyItemToRow, type TableRow } from '../utils/activityMapping'
 
 type FilterId = 'all' | 'active' | 'queued' | 'completed' | 'failed'
-
-interface TableRow {
-  id: string
-  position: number | null
-  title: string
-  channel: string
-  type: 'active' | 'queued' | 'completed' | 'failed'
-  statusLabel: string
-  statusDot: string
-  phaseLabel: string
-  percentage: number
-  speed: number
-  priorityLabel: string
-  priority: number
-  size: string
-  failMessage: string | null
-  isQueue: boolean
-}
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -233,8 +216,6 @@ const needsHistory = computed(() => activeFilter.value === 'all' || activeFilter
 const showCategoryFilter = needsHistory
 const showPagination = computed(() => needsHistory.value && totalPages.value > 1)
 
-const phaseNames = ['Downloading', 'Remuxing', 'Moving'] as const
-
 const totalSpeed = computed(() =>
   queueItems.value
     .filter(i => i.status === QueueStatus.Processing)
@@ -246,53 +227,7 @@ const channels = computed(() => {
   return [...set].sort()
 })
 
-function priorityLabel(p: number): string {
-  if (p === QueuePriority.High) return t('queue.priorityHigh')
-  if (p === QueuePriority.Low) return t('queue.priorityLow')
-  return t('queue.priorityNormal')
-}
-
-function queueItemToRow(item: QueueItem, idx: number): TableRow {
-  const isActive = item.status === QueueStatus.Processing
-  return {
-    id: item.downloadId,
-    position: idx + 1,
-    title: item.title,
-    channel: item.channel,
-    type: isActive ? 'active' : 'queued',
-    statusLabel: isActive ? (phaseNames[item.phase] ?? 'Processing') : t('queue.queuedStatus'),
-    statusDot: isActive ? 'bg-accent' : 'bg-text-muted',
-    phaseLabel: phaseNames[item.phase] ?? 'Processing',
-    percentage: item.percentage,
-    speed: item.speed,
-    priorityLabel: priorityLabel(item.priority),
-    priority: item.priority,
-    size: item.totalBytes > 0 ? formatSize(item.totalBytes) : '-',
-    failMessage: null,
-    isQueue: true,
-  }
-}
-
-function historyItemToRow(item: HistoryItem): TableRow {
-  const isFailed = item.status === HistoryStatus.Failed
-  return {
-    id: item.downloadId,
-    position: null,
-    title: item.title,
-    channel: '',
-    type: isFailed ? 'failed' : 'completed',
-    statusLabel: isFailed ? 'Failed' : 'Completed',
-    statusDot: isFailed ? 'bg-status-fail' : 'bg-status-ok',
-    phaseLabel: '',
-    percentage: 0,
-    speed: 0,
-    priorityLabel: '',
-    priority: 0,
-    size: item.totalBytes > 0 ? formatSize(item.totalBytes) : '-',
-    failMessage: item.failMessage,
-    isQueue: false,
-  }
-}
+const tFn = (key: string) => t(key)
 
 const filteredQueueItems = computed(() => {
   let items = [...queueItems.value]
@@ -306,13 +241,13 @@ const filteredQueueItems = computed(() => {
 const activeRows = computed(() =>
   filteredQueueItems.value
     .filter(i => i.status === QueueStatus.Processing)
-    .map((item, idx) => queueItemToRow(item, idx))
+    .map((item, idx) => queueItemToRow(item, idx, tFn))
 )
 
 const queuedRows = computed(() =>
   filteredQueueItems.value
     .filter(i => i.status === QueueStatus.Queued)
-    .map((item, idx) => queueItemToRow(item, activeRows.value.length + idx))
+    .map((item, idx) => queueItemToRow(item, activeRows.value.length + idx, tFn))
 )
 
 const historyRows = computed(() =>
