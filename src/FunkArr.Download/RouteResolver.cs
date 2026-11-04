@@ -1,8 +1,9 @@
 using System.IO.Enumeration;
+using FunkArr.Core;
 using FunkArr.Core.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace FunkArr.Core;
+namespace FunkArr.Download;
 
 public sealed class RouteResolver(IOptionsMonitor<RoutingOptions> options) : IRouteResolver
 {

@@ -11,11 +11,11 @@ public sealed class EnrichmentSetupContainer : ISetup<IServiceCollection>
     public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptionsWithValidateOnStart<TvdbOptions>()
+            .AddOptionsWithValidateOnStart<TvdbOptions, TvdbOptionsValidator>()
             .Bind(context.Configuration.GetSection(TvdbOptions.SectionName));
 
         services
-            .AddOptionsWithValidateOnStart<TmdbOptions>()
+            .AddOptionsWithValidateOnStart<TmdbOptions, TmdbOptionsValidator>()
             .Bind(context.Configuration.GetSection(TmdbOptions.SectionName));
 
         services.AddHttpClient<TvdbClient>(client =>

@@ -27,7 +27,6 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
         services
             .AddOptionsWithValidateOnStart<RoutingOptions, RoutingOptionsValidator>()
             .Bind(context.Configuration.GetSection(RoutingOptions.SectionName));
-        services.AddSingleton<IRouteResolver, RouteResolver>();
 
         services.ConfigureHttpJsonOptions(options =>
         {

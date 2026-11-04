@@ -302,9 +302,17 @@ no multi-actor orchestration in the lambda body.
   `IActorRef` as constructor params.
 - **Actor naming**: `*Manager` (Cluster Singleton), `*Worker` (Sharded Entity
   or Local Entity Region), `*Actor` (everything else - pools, plain actors).
+- **PersistenceId convention**: Singletons use a literal
+  (`public override string PersistenceId => "feed-crawl";`). Entity actors
+  (sharded or local region) use the C# 14 `field` keyword — the getter
+  includes the prefix, the constructor assigns the raw entity ID:
+  ```csharp
+  public override string PersistenceId => $"download-{field}";
+  // constructor: PersistenceId = entityId;
+  ```
 - **Actor state pattern** (Pathfinder pattern): State in its own `<Actor>State.cs`
   file as a `sealed class` (not nested, not a record). Void instance methods
-  `Apply(event)` / `ProcessCommand(cmd)` mutate state in-place. Mutable
+  `Apply(event)` mutate state in-place. Mutable
   collections (`List<T>`, `Dictionary<K,V>`, `HashSet<T>`) — Akka's
   single-threaded mailbox guarantees safe mutation. `Empty` is a property
   (`public static XState Empty => new();`), never a shared static field.

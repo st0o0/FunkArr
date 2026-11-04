@@ -1,5 +1,6 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
+using FunkArr.Messages.History;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using FunkArr.Persistence;
@@ -10,6 +11,28 @@ namespace FunkArr.History;
 
 internal static class PersistenceMapping
 {
+    public static ScoringHistoryRecorded ToPersistence(this RecordHistory cmd) =>
+        new(
+            cmd.RequestId,
+            cmd.Origin.Source.ToPersistence(),
+            cmd.Origin.Query,
+            cmd.Timestamp,
+            cmd.CandidateCount,
+            cmd.MatchedCount,
+            cmd.EnrichedCount,
+            [.. cmd.ItemTraces.Select(t => t.ToPersistence())]);
+
+    public static ScoringHistoryRecorded ToPersistence(this HistoryState.HistoryEntry entry) =>
+        new(
+            entry.RequestId,
+            entry.Origin.Source.ToPersistence(),
+            entry.Origin.Query,
+            entry.Timestamp,
+            entry.CandidateCount,
+            entry.MatchedCount,
+            entry.EnrichedCount,
+            [.. entry.ItemTraces.Select(t => t.ToPersistence())]);
+
     public static PersistedSearchSource ToPersistence(this SearchSource source) =>
         source switch
         {

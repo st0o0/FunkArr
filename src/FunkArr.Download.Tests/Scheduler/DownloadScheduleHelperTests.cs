@@ -8,7 +8,7 @@ public sealed class DownloadScheduleHelperTests
     [Fact]
     public void IsWithinSchedule_empty_schedule_returns_true()
     {
-        var result = DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(15, 0), []);
+        var result = new TimeOnly(15, 0).IsWithinSchedule([]);
 
         Assert.True(result);
     }
@@ -21,7 +21,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(8, 0), End = new TimeOnly(17, 0) }
         };
 
-        Assert.True(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(12, 0), schedule));
+        Assert.True(new TimeOnly(12, 0).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(8, 0), End = new TimeOnly(17, 0) }
         };
 
-        Assert.False(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(20, 0), schedule));
+        Assert.False(new TimeOnly(20, 0).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(8, 0), End = new TimeOnly(17, 0) }
         };
 
-        Assert.True(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(8, 0), schedule));
+        Assert.True(new TimeOnly(8, 0).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(8, 0), End = new TimeOnly(17, 0) }
         };
 
-        Assert.False(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(17, 0), schedule));
+        Assert.False(new TimeOnly(17, 0).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }
         };
 
-        Assert.True(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(23, 30), schedule));
+        Assert.True(new TimeOnly(23, 30).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }
         };
 
-        Assert.True(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(1, 0), schedule));
+        Assert.True(new TimeOnly(1, 0).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }
         };
 
-        Assert.False(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(15, 0), schedule));
+        Assert.False(new TimeOnly(15, 0).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -99,8 +99,8 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }
         };
 
-        Assert.True(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(7, 0), schedule));
-        Assert.True(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(0, 30), schedule));
+        Assert.True(new TimeOnly(7, 0).IsWithinSchedule(schedule));
+        Assert.True(new TimeOnly(0, 30).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }
         };
 
-        Assert.False(DownloadScheduleHelper.IsWithinSchedule(new TimeOnly(15, 0), schedule));
+        Assert.False(new TimeOnly(15, 0).IsWithinSchedule(schedule));
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }
         };
 
-        var delay = DownloadScheduleHelper.DelayUntilNextWindow(new TimeOnly(15, 0), schedule);
+        var delay = new TimeOnly(15, 0).DelayUntilNextWindow(schedule);
 
         Assert.Equal(TimeSpan.FromHours(8), delay);
     }
@@ -136,7 +136,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(6, 0), End = new TimeOnly(8, 0) }
         };
 
-        var delay = DownloadScheduleHelper.DelayUntilNextWindow(new TimeOnly(10, 0), schedule);
+        var delay = new TimeOnly(10, 0).DelayUntilNextWindow(schedule);
 
         Assert.Equal(TimeSpan.FromHours(20), delay);
     }
@@ -150,7 +150,7 @@ public sealed class DownloadScheduleHelperTests
             new() { Start = new TimeOnly(23, 0), End = new TimeOnly(2, 0) }
         };
 
-        var delay = DownloadScheduleHelper.DelayUntilNextWindow(new TimeOnly(15, 0), schedule);
+        var delay = new TimeOnly(15, 0).DelayUntilNextWindow(schedule);
 
         Assert.Equal(TimeSpan.FromHours(8), delay);
     }
@@ -158,7 +158,7 @@ public sealed class DownloadScheduleHelperTests
     [Fact]
     public void DelayUntilNextWindow_empty_schedule_returns_zero()
     {
-        var delay = DownloadScheduleHelper.DelayUntilNextWindow(new TimeOnly(15, 0), []);
+        var delay = new TimeOnly(15, 0).DelayUntilNextWindow([]);
 
         Assert.Equal(TimeSpan.Zero, delay);
     }

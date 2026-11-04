@@ -33,7 +33,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     private CancellationTokenSource? _cts;
 
     public ITimerScheduler Timers { get; set; } = null!;
-    public override string PersistenceId { get; }
+    public override string PersistenceId => $"download-{field}";
 
     private sealed record RetryAttempt;
 
@@ -42,7 +42,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         IOptionsMonitor<DownloadOptions> options, TimeProvider timeProvider, string entityId)
     {
         _downloadId = Guid.Parse(entityId);
-        PersistenceId = $"download-{entityId}";
+        PersistenceId = entityId;
         _remuxer = remuxer;
         _dataFiles = dataFiles;
         _dataPaths = dataPaths;

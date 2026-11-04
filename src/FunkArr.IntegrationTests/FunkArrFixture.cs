@@ -10,6 +10,7 @@ using FunkArr.Core;
 using FunkArr.Core.Actors;
 using FunkArr.Core.Configuration;
 using FunkArr.Core.Data;
+using FunkArr.RuleSet;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.TestHost;
@@ -69,8 +70,8 @@ public sealed class FunkArrFixture : IAsyncLifetime
 
         services.AddSingleton<IFileSystem, FileSystem>();
         services.AddSingleton<IDataFiles, DataFiles>();
-        services.AddSingleton<RuleSet.RuleSetStore>();
-        services.AddSingleton<IRuleSetValidator, RuleSet.RuleSetValidator>();
+        services.AddSingleton<RuleSetStore>();
+        services.AddSingleton<IRuleSetValidator, RuleSetValidator>();
         services.AddSingleton(typeof(ILogger<>), typeof(NullLogger<>));
         services.AddSingleton(new RingBufferSink());
         services.AddSingleton(TimeProvider.System);

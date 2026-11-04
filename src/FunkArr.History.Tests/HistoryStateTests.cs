@@ -90,14 +90,14 @@ public sealed class HistoryStateTests
     }
 
     [Fact]
-    public void ProcessCommand_ReturnsEventAndApplyAddsEntry()
+    public void ToPersistence_ReturnsEventAndApplyAddsEntry()
     {
         var requestId = Guid.NewGuid();
         var origin = new ScoringOrigin(SearchSource.Sonarr, "test-query");
         var cmd = new RecordHistory(requestId, "rs-1", origin, _baseTime, 10, 5, 3, []);
 
         var state = HistoryState.Empty;
-        var evt = state.ProcessCommand(cmd);
+        var evt = cmd.ToPersistence();
         state.Apply(evt);
 
         var snapshot = Assert.Single(state.Snapshots);

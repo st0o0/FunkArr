@@ -2,9 +2,9 @@ using FunkArr.Core.Configuration;
 
 namespace FunkArr.Download.Scheduler;
 
-internal static class DownloadScheduleHelper
+internal static class TimeOnlyExtensions
 {
-    internal static bool IsWithinSchedule(TimeOnly now, List<DownloadTimeSlot> schedule)
+    internal static bool IsWithinSchedule(this TimeOnly now, List<DownloadTimeSlot> schedule)
     {
         if (schedule.Count == 0)
         {
@@ -13,7 +13,7 @@ internal static class DownloadScheduleHelper
 
         foreach (var slot in schedule)
         {
-            if (IsWithinSlot(now, slot))
+            if (now.IsWithinSlot(slot))
             {
                 return true;
             }
@@ -22,7 +22,7 @@ internal static class DownloadScheduleHelper
         return false;
     }
 
-    internal static TimeSpan DelayUntilNextWindow(TimeOnly now, List<DownloadTimeSlot> schedule)
+    internal static TimeSpan DelayUntilNextWindow(this TimeOnly now, List<DownloadTimeSlot> schedule)
     {
         if (schedule.Count == 0)
         {
@@ -33,7 +33,7 @@ internal static class DownloadScheduleHelper
 
         foreach (var slot in schedule)
         {
-            var delay = DelayUntil(now, slot.Start);
+            var delay = now.DelayUntil(slot.Start);
             if (delay < minDelay)
             {
                 minDelay = delay;
@@ -43,7 +43,7 @@ internal static class DownloadScheduleHelper
         return minDelay;
     }
 
-    private static bool IsWithinSlot(TimeOnly now, DownloadTimeSlot slot)
+    internal static bool IsWithinSlot(this TimeOnly now, DownloadTimeSlot slot)
     {
         if (slot.Start < slot.End)
         {
@@ -54,7 +54,7 @@ internal static class DownloadScheduleHelper
         return now >= slot.Start || now < slot.End;
     }
 
-    private static TimeSpan DelayUntil(TimeOnly now, TimeOnly target)
+    internal static TimeSpan DelayUntil(this TimeOnly now, TimeOnly target)
     {
         var diff = target - now;
         if (diff <= TimeSpan.Zero)

@@ -40,7 +40,7 @@ public sealed class HistoryWorker : ReceivePersistentActor
 
         Command<RecordHistory>(cmd =>
         {
-            var evt = _state.ProcessCommand(cmd);
+            var evt = cmd.ToPersistence();
             Persist(evt, _ =>
             {
                 var opts = _optionsMonitor.CurrentValue;

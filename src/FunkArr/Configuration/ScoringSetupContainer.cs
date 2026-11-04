@@ -12,7 +12,7 @@ public sealed class ScoringSetupContainer : ISetup<IServiceCollection>
             .Bind(context.Configuration.GetSection(ScoringOptions.SectionName));
 
         services
-            .AddOptionsWithValidateOnStart<VariantOptions>()
+            .AddOptionsWithValidateOnStart<VariantOptions, VariantOptionsValidator>()
             .Bind(context.Configuration.GetSection(VariantOptions.SectionName));
 
         services

@@ -61,17 +61,6 @@ public sealed class HistoryState
         return new ScoringStatsResult(lastRun, matchRate, enrichmentRate, snapshots.Count);
     }
 
-    public ScoringHistoryRecorded ProcessCommand(RecordHistory cmd) =>
-        new(
-            cmd.RequestId,
-            cmd.Origin.Source.ToPersistence(),
-            cmd.Origin.Query,
-            cmd.Timestamp,
-            cmd.CandidateCount,
-            cmd.MatchedCount,
-            cmd.EnrichedCount,
-            [.. cmd.ItemTraces.Select(t => t.ToPersistence())]);
-
     public void Apply(ScoringHistoryRecorded evt)
     {
         Snapshots.Add(new HistoryEntry(
@@ -142,16 +131,5 @@ public sealed class HistoryState
     public PersistedHistoryState GetSnapshot() => GetPersistenceState();
 
     public PersistedHistoryState GetPersistenceState() =>
-        new([
-            .. Snapshots
-                .Select(s => new ScoringHistoryRecorded(
-                    s.RequestId,
-                    s.Origin.Source.ToPersistence(),
-                    s.Origin.Query,
-                    s.Timestamp,
-                    s.CandidateCount,
-                    s.MatchedCount,
-                    s.EnrichedCount,
-                    [.. s.ItemTraces.Select(t => t.ToPersistence())]))
-        ]);
+        new([.. Snapshots.Select(s => s.ToPersistence())]);
 }

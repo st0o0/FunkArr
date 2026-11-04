@@ -50,7 +50,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
 
         var now = TimeOnly.FromTimeSpan(_timeProvider.GetLocalNow().TimeOfDay);
 
-        if (DownloadScheduleHelper.IsWithinSchedule(now, schedule))
+        if (now.IsWithinSchedule(schedule))
         {
             _log.Info("Within download schedule window, enabling downloads");
             Telemetry.ScheduleEnabled.Record(1);
@@ -61,7 +61,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
         }
         else
         {
-            var delay = DownloadScheduleHelper.DelayUntilNextWindow(now, schedule);
+            var delay = now.DelayUntilNextWindow(schedule);
             var nextWindow = _timeProvider.GetLocalNow().Add(delay);
             _log.Info("Outside download schedule, next window at {NextWindow}", nextWindow);
             Telemetry.ScheduleEnabled.Record(0);
@@ -77,12 +77,12 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
 
         foreach (var slot in schedule)
         {
-            if (!IsWithinSlot(now, slot))
+            if (!now.IsWithinSlot(slot))
             {
                 continue;
             }
 
-            var delay = DelayUntil(now, slot.End);
+            var delay = now.DelayUntil(slot.End);
             if (delay < minDelay)
             {
                 minDelay = delay;
@@ -90,26 +90,5 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
         }
 
         return minDelay == TimeSpan.MaxValue ? TimeSpan.FromHours(1) : minDelay;
-    }
-
-    private static bool IsWithinSlot(TimeOnly now, DownloadTimeSlot slot)
-    {
-        if (slot.Start < slot.End)
-        {
-            return now >= slot.Start && now < slot.End;
-        }
-
-        return now >= slot.Start || now < slot.End;
-    }
-
-    private static TimeSpan DelayUntil(TimeOnly now, TimeOnly target)
-    {
-        var diff = target - now;
-        if (diff <= TimeSpan.Zero)
-        {
-            diff += TimeSpan.FromHours(24);
-        }
-
-        return diff;
     }
 }

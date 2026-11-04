@@ -1,6 +1,6 @@
 using FunkArr.Messages.RuleSet;
 
-namespace FunkArr.Core;
+namespace FunkArr.RuleSet;
 
 public interface IRuleSetValidator
 {

@@ -1,5 +1,6 @@
 using FunkArr.Api;
 using FunkArr.Api.HealthChecks;
+using FunkArr.Core;
 using FunkArr.Core.Configuration;
 using FunkArr.Download;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -15,7 +16,8 @@ public sealed class DownloadSetupContainer : ISetup<IServiceCollection>, ISetup<
             .AddOptionsWithValidateOnStart<DownloadOptions, DownloadOptionsValidator>()
             .Bind(context.Configuration.GetSection(DownloadOptions.SectionName));
 
-        services.AddDownloadServices(context.Configuration);
+        services.AddSingleton<IRouteResolver, RouteResolver>();
+        services.AddDownloadServices();
 
         services.AddHealthChecks()
             .AddCheck<FfmpegHealthCheck>("ffmpeg", failureStatus: HealthStatus.Unhealthy);
