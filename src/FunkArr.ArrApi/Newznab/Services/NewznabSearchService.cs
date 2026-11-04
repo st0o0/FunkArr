@@ -7,13 +7,16 @@ using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace FunkArr.ArrApi.Newznab.Services;
 
 public sealed class NewznabSearchService(
     IActorRegistry registry,
-    SearchResultCache cache,
+    IMemoryCache cache,
+    IOptions<ArrApiOptions> arrApiOptions,
     TimeProvider timeProvider,
     ILogger<NewznabSearchService> logger)
 {
@@ -36,16 +39,19 @@ public sealed class NewznabSearchService(
 
         var offset = req.Offset ?? 0;
         var limit = req.Limit ?? DefaultLimit;
-        var key = SearchResultCache.BuildKey(cmd);
+        var key = BuildKey(cmd);
         try
         {
             var gateway = await registry.GetAsync<ISearchManager>(ct);
-            var allItems = await cache.GetOrAddAsync(key, async () =>
+            var cacheTtl = TimeSpan.FromSeconds(arrApiOptions.Value.SearchCacheTtlSeconds);
+            var allItems = await cache.GetOrCreateAsync(key, async entry =>
             {
+                entry.AbsoluteExpirationRelativeToNow = cacheTtl;
+                entry.Size = 1;
                 var fullCmd = cmd with { Offset = null, Limit = null };
                 var response = await gateway.Ask<SearchCommandResponse>(fullCmd, ct);
                 return response is SearchCommandCompleted completed ? completed.Items : [];
-            });
+            }) ?? [];
 
             var filtered = FilterBySeasonEpisode(allItems, cmd.Params as SearchCommand.TvParams);
             var paged = filtered.Skip(offset).Take(limit).ToArray();
@@ -306,4 +312,17 @@ public sealed class NewznabSearchService(
 
     internal static int? ParseInt(string? value) =>
         int.TryParse(value, out var result) ? result : null;
+
+    internal static string BuildKey(SearchCommand cmd) => cmd.Params switch
+    {
+        SearchCommand.TvParams tv =>
+            $"newznab:tv:{Normalize(cmd.Query)}:{tv.TvdbId}:{tv.ImdbId}",
+        SearchCommand.MovieParams movie =>
+            $"newznab:movie:{Normalize(cmd.Query)}:{movie.ImdbId}:{movie.TmdbId}",
+        _ =>
+            $"newznab:general:{Normalize(cmd.Query)}:{cmd.Cat}"
+    };
+
+    private static string Normalize(string? value) =>
+        value?.Trim().ToLowerInvariant() ?? "";
 }

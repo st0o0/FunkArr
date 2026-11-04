@@ -1,5 +1,3 @@
-using Akka.Actor;
-using Akka.Hosting;
 using FunkArr.Api.Extensions;
 using FunkArr.Api.HealthChecks;
 using FunkArr.Api.Infrastructure;
@@ -9,7 +7,6 @@ using FunkArr.Core;
 using FunkArr.Core.Actors;
 using FunkArr.Core.Configuration;
 using FunkArr.Core.Data;
-using FunkArr.Messages.Enrichment;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -99,20 +96,6 @@ public static class SystemApiEndpoints
         .WithSummary("Get storage status")
         .WithDescription("Returns disk space information for the complete and incomplete download directories.")
         .Produces<StorageStatusResponse>();
-
-        group.MapGet("/cache", async (IActorRegistry registry, CancellationToken ct) =>
-        {
-            var resolver = await registry.GetAsync<IEnrichmentManager>(ct);
-            var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), ct);
-            return Results.Ok(new CacheStatsResponse(
-                result.TvdbEntries,
-                result.TmdbEntries,
-                result.OldestEntry));
-        })
-        .WithSummary("Get metadata cache stats")
-        .WithDescription("Returns the number of cached TVDB and TMDB entries and the oldest cache entry timestamp.")
-        .Produces<CacheStatsResponse>()
-        .ProducesProblem(504);
 
         group.MapGet("/logs", (RingBufferSink sink) => Results.Ok((object?)sink.GetEntries()))
         .WithSummary("Get recent log entries")

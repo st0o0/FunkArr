@@ -1,6 +1,6 @@
 ## Purpose
 
-Typed HTTP client service for querying the MediathekViewWeb API, with distributed cache integration and telemetry.
+Typed HTTP client service for querying the MediathekViewWeb API, with in-memory cache integration and telemetry.
 
 ## Requirements
 
@@ -28,14 +28,24 @@ The `MediathekClient` SHALL be a plain DI service (not an actor) in the `FunkArr
 - **WHEN** a JSON query string is used for cache lookup
 - **THEN** the cache key SHALL be `mediathek:{json}` where `{json}` is the exact JSON string passed to `QueryAsync`
 
-### Requirement: MediathekClient uses IDistributedCache
+### Requirement: MediathekClient uses IMemoryCache
 
-The MediathekClient SHALL accept `IDistributedCache` via constructor injection and use the typed extension methods (`GetAsync<T>`, `SetAsync<T>`) for caching query responses. The cache key SHALL be derived from the JSON query string passed to `QueryAsync` using the format `mediathek:{json}`.
+The MediathekClient SHALL accept `IMemoryCache` via constructor injection (replacing `IDistributedCache`) and use it for caching query responses. Cache entries SHALL use `AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)` and `Size = 1`. The cache key format SHALL remain `mediathek:{json}`.
 
-#### Scenario: Cache TTL
+#### Scenario: Cache miss fetches from API
 
-- **WHEN** a response is cached
-- **THEN** the cache entry SHALL use an absolute expiration of 5 minutes
+- **WHEN** `QueryAsync` is called with a JSON query string and no cache entry exists
+- **THEN** the client SHALL POST to the MediathekViewWeb API, store the `MediathekQueryResult` in `IMemoryCache` with 5-minute absolute expiration and Size = 1, and return it
+
+#### Scenario: Cache hit returns stored object
+
+- **WHEN** `QueryAsync` is called with a JSON query string and a cache entry exists
+- **THEN** the client SHALL return the cached `MediathekQueryResult` without making an HTTP request
+
+#### Scenario: Cache key derivation unchanged
+
+- **WHEN** a JSON query string is used for cache lookup
+- **THEN** the cache key SHALL be `mediathek:{json}` where `{json}` is the exact JSON string passed to `QueryAsync`
 
 ### Requirement: MediathekClient DI registration
 
@@ -59,3 +69,4 @@ The MediathekClient SHALL record cache hit and cache miss counters on the `FunkA
 
 - **WHEN** a query requires an HTTP request
 - **THEN** the cache miss counter SHALL be incremented
+

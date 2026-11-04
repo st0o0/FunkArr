@@ -4,17 +4,16 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FunkArr.Core;
 using FunkArr.Core.Configuration;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Terp.Diagnostics;
 
 namespace FunkArr.Enrichment.Tvdb;
 
-public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IDistributedCache cache, ILogger<TvdbClient> log, TimeProvider timeProvider)
+public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOptions> options, IMemoryCache cache, ILogger<TvdbClient> log)
 {
     private static readonly KeyValuePair<string, object?> _apiTag = new("api", "tvdb");
 
@@ -30,8 +29,7 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
     public async Task<TvdbEpisode[]> GetEpisodesAsync(int seriesId)
     {
         var cacheKey = $"tvdb:episodes:{seriesId}";
-        var cached = await cache.GetAsync<TvdbEpisode[]>(cacheKey);
-        if (cached is not null)
+        if (cache.TryGetValue(cacheKey, out TvdbEpisode[]? cached) && cached is not null)
         {
             log.LogDebug("TVDB cache hit for series {SeriesId}", seriesId);
             Telemetry.Requests.Up(_apiTag, new KeyValuePair<string, object?>("status", "hit"));
@@ -43,8 +41,11 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         var sw = Stopwatch.StartNew();
         var episodes = await FetchEpisodesAsync(seriesId);
         Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, _apiTag);
-        var ttl = DetermineShowTtl(episodes);
-        await cache.SetAsync(cacheKey, episodes, ttl);
+        cache.Set(cacheKey, episodes, new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7),
+            Size = 1
+        });
         return episodes;
     }
 
@@ -101,17 +102,6 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         }
 
         return [.. episodes];
-    }
-
-    private TimeSpan DetermineShowTtl(TvdbEpisode[] episodes)
-    {
-        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
-        var hasUpcoming = episodes.Any(e =>
-            e.Aired is not null &&
-            DateOnly.TryParseExact(e.Aired, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var d) &&
-            d > today);
-        return hasUpcoming ? TimeSpan.FromDays(2) : TimeSpan.FromDays(7);
     }
 
     private async Task EnsureAuthenticated()

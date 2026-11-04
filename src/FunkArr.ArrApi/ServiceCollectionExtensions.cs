@@ -1,9 +1,7 @@
 using FunkArr.ArrApi.Newznab.Services;
 using FunkArr.ArrApi.Sabnzbd.Services;
-using FunkArr.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace FunkArr.ArrApi;
 
@@ -15,16 +13,7 @@ public static class ServiceCollectionExtensions
             .AddOptionsWithValidateOnStart<ArrApiOptions, ArrApiOptionsValidator>()
             .Bind(configuration.GetSection(ArrApiOptions.SectionName));
 
-        services.AddSingleton<SearchResultCache>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<ArrApiOptions>>().Value;
-            return new SearchResultCache(
-                TimeSpan.FromSeconds(options.SearchCacheTtlSeconds),
-                TimeProvider.System);
-        });
-
         services.AddOutputCache(NewznabFeedCache.AddPolicy);
-        services.AddSingleton<IFeedCacheInvalidator, OutputCacheFeedInvalidator>();
         services.AddScoped<NewznabSearchService>();
         services.AddScoped<SabnzbdQueueService>();
         services.AddScoped<SabnzbdDownloadService>();

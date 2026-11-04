@@ -254,17 +254,29 @@ The system SHALL support `o=json` query parameter on all Newznab endpoints to re
 - **WHEN** `FromCat(null)` is called
 - **THEN** the result SHALL be `null`
 
-### Requirement: SearchResultCache cleanup
-`SearchResultCache.GetOrAddAsync` SHALL remove pending entries in a `finally` block only. There SHALL be no redundant removal in a `catch` block. The cache key for TV searches SHALL be built from query, tvdbid, and imdbid only — season and episode SHALL NOT be part of the cache key because the Mediathek returns the same results regardless of the requested episode.
+### Requirement: Newznab search results are cached via IMemoryCache
 
-#### Scenario: Pending entry removed after success
-- **WHEN** `GetOrAddAsync` completes successfully
-- **THEN** the pending entry SHALL be removed from the `_pending` dictionary
+NewznabSearchService SHALL use `IMemoryCache` for caching search results (replacing the custom `SearchResultCache` class). Cache entries SHALL use `AbsoluteExpirationRelativeToNow` from `ArrApiOptions.SearchCacheTtlSeconds` (default 60s) and `Size = 1`.
 
-#### Scenario: Pending entry removed after failure
-- **WHEN** `GetOrAddAsync` throws an exception
-- **THEN** the pending entry SHALL be removed from the `_pending` dictionary via the `finally` block
-- **AND** the exception SHALL be rethrown
+#### Scenario: Cache miss executes search and caches result
+
+- **WHEN** a Newznab search request arrives and no cache entry exists for the derived key
+- **THEN** the service SHALL execute the search via actor Ask, store the result in `IMemoryCache`, and return it
+
+#### Scenario: Cache hit returns stored result
+
+- **WHEN** a Newznab search request arrives and a valid cache entry exists
+- **THEN** the service SHALL return the cached result without executing a search
+
+#### Scenario: Cache key format
+
+- **WHEN** a search request is processed
+- **THEN** the cache key SHALL follow the existing patterns: `tv:{query}:{tvdbId}:{imdbId}`, `movie:{query}:{imdbId}:{tmdbId}`, `general:{query}:{cat}`
+
+#### Scenario: Concurrent identical requests are deduplicated
+
+- **WHEN** multiple identical search requests arrive concurrently before the first completes
+- **THEN** only one search SHALL be executed, and all requests SHALL receive the same result
 
 #### Scenario: TV search cache key excludes season and episode
 - **WHEN** two TV searches are made for the same series but different episodes (`season=2026&ep=17` then `season=2026&ep=18`)
@@ -274,6 +286,20 @@ The system SHALL support `o=json` query parameter on all Newznab endpoints to re
 #### Scenario: Different series use different cache keys
 - **WHEN** TV searches are made for different series (different tvdbid)
 - **THEN** they SHALL use different cache keys and not share cached results
+
+### Requirement: OutputCache NewznabFeed TTL reduced to 5 minutes
+
+The NewznabFeed OutputCache policy SHALL use a duration of 5 minutes (reduced from 30 minutes). No active invalidation — TTL-only expiry.
+
+#### Scenario: Feed response cached for 5 minutes
+
+- **WHEN** a Newznab feed-mode request is served
+- **THEN** the OutputCache SHALL cache the response for 5 minutes
+
+#### Scenario: No active cache invalidation
+
+- **WHEN** FeedStoreManager persists new feed entries
+- **THEN** no OutputCache invalidation SHALL occur — the cache expires naturally via TTL
 
 ### Requirement: Newznab TV search filters results by season and episode
 When a TV search request includes both `season` and `ep` parameters and the cached results contain items with enriched season/episode newznab attributes, `NewznabSearchService` SHALL filter the results to only include items whose `season` and `episode` attributes match the requested values. Items without season/episode attributes SHALL be excluded when specific season/episode filtering is active. Filtering SHALL occur after cache retrieval and before pagination.

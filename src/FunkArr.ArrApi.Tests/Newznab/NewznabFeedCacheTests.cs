@@ -86,20 +86,6 @@ public sealed class NewznabFeedCacheTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Invalidation_evicts_cached_feed_pages()
-    {
-        await Get("/index/api?t=tvsearch&offset=0&limit=100&apikey=key");
-        var invalidator = new OutputCacheFeedInvalidator(_app.Services.GetRequiredService<IOutputCacheStore>());
-
-        await invalidator.InvalidateAsync(CancellationToken.None);
-        var response = await Get("/index/api?t=tvsearch&offset=0&limit=100&apikey=key");
-
-        Assert.Multiple(
-            () => Assert.Equal("call 2", response),
-            () => Assert.Equal(2, _calls));
-    }
-
-    [Fact]
     public async Task Response_marked_as_not_storable_is_not_cached()
     {
         await Get("/index/api?t=tvsearch&offset=0&limit=100&apikey=key&fail=1");

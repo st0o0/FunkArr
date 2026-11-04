@@ -3,8 +3,6 @@ using System.Net.Http.Json;
 using FunkArr.Api.Infrastructure;
 using FunkArr.Api.Models.Shared;
 using FunkArr.Api.Models.System;
-using FunkArr.Core.Actors;
-using FunkArr.Messages.Enrichment;
 using VariantPolicy = FunkArr.Api.Models.Shared.VariantPolicy;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -37,26 +35,6 @@ public sealed class SystemTests(FunkArrFixture fixture)
         Assert.NotNull(result.IncompleteDirectory);
         Assert.NotNull(result.CompleteDirectory.Path);
         Assert.NotNull(result.IncompleteDirectory.Path);
-    }
-
-    [Fact]
-    public async Task Cache_ReturnsCacheStats()
-    {
-        var task = fixture.Client.GetAsync("/api/system/cache", TestContext.Current.CancellationToken);
-
-        var probe = fixture.GetProbe<IEnrichmentManager>();
-        probe.ExpectMsg<QueryCacheStats>(cancellationToken: TestContext.Current.CancellationToken);
-        probe.Reply(new CacheStatsResult(42, 17, DateTimeOffset.UtcNow));
-
-        var response = await task;
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var result = await response.Content.ReadFromJsonAsync<CacheStatsResponse>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.NotNull(result);
-        Assert.Equal(42, result.TvdbEntries);
-        Assert.Equal(17, result.TmdbEntries);
-        Assert.NotNull(result.OldestEntry);
     }
 
     [Fact]

@@ -22,26 +22,6 @@
         <div v-else class="text-sm text-text-muted">{{ $t('common.loading') }}</div>
       </section>
 
-      <!-- Metadata Cache -->
-      <section class="bg-surface-raised border border-border-default rounded-lg p-4">
-        <h2 class="text-sm font-medium text-text-primary mb-3">{{ $t('settings.metadataCache') }}</h2>
-        <dl class="grid grid-cols-3 gap-x-6 gap-y-2 text-sm" v-if="cache">
-          <div>
-            <dt class="text-text-secondary">TVDB</dt>
-            <dd class="text-text-primary tabular-nums">{{ cache.tvdbEntries }} {{ $t('settings.entries') }}</dd>
-          </div>
-          <div>
-            <dt class="text-text-secondary">TMDB</dt>
-            <dd class="text-text-primary tabular-nums">{{ cache.tmdbEntries }} {{ $t('settings.entries') }}</dd>
-          </div>
-          <div>
-            <dt class="text-text-secondary">{{ $t('settings.oldestEntry') }}</dt>
-            <dd class="text-text-primary text-xs tabular-nums">{{ cache.oldestEntry ? new Date(cache.oldestEntry).toLocaleDateString() : '-' }}</dd>
-          </div>
-        </dl>
-        <div v-else class="text-sm text-text-muted">{{ $t('common.loading') }}</div>
-      </section>
-
       <!-- Network Routes -->
       <section class="bg-surface-raised border border-border-default rounded-lg p-4">
         <h2 class="text-sm font-medium text-text-primary mb-3">{{ $t('settings.networkRoutes') }}</h2>
@@ -143,13 +123,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { getDownloadSettings, type DownloadSettingsResponse } from '../api/downloads'
-import { getCacheStats, getSetupHealth, getSystemVersion, getRoutes, getLogs, getVariants, type CacheStatsResponse, type SetupHealthCheck, type VersionResponse, type RoutesResponse, type LogEntry, type VariantsResponse } from '../api/setup'
+import { getSetupHealth, getSystemVersion, getRoutes, getLogs, getVariants, type SetupHealthCheck, type VersionResponse, type RoutesResponse, type LogEntry, type VariantsResponse } from '../api/setup'
 import { mediathekVariantName } from '../api/enumMaps'
 import { VariantPolicy } from '../api/enums'
 import { useLogStream } from '../composables/useLogStream'
 
 const downloadSettings = ref<DownloadSettingsResponse | null>(null)
-const cache = ref<CacheStatsResponse | null>(null)
 const health = ref<SetupHealthCheck | null>(null)
 const version = ref<VersionResponse | null>(null)
 const routes = ref<RoutesResponse | null>(null)
@@ -205,7 +184,6 @@ function shortContext(ctx: string): string {
 onMounted(async () => {
   const results = await Promise.allSettled([
     getDownloadSettings(),
-    getCacheStats(),
     getSetupHealth(),
     getSystemVersion(),
     getRoutes(),
@@ -214,12 +192,11 @@ onMounted(async () => {
   ])
 
   if (results[0].status === 'fulfilled') downloadSettings.value = results[0].value
-  if (results[1].status === 'fulfilled') cache.value = results[1].value
-  if (results[2].status === 'fulfilled') health.value = results[2].value
-  if (results[3].status === 'fulfilled') version.value = results[3].value
-  if (results[4].status === 'fulfilled') routes.value = results[4].value
-  if (results[5].status === 'fulfilled') initialLogs.value = results[5].value
-  if (results[6].status === 'fulfilled') variants.value = results[6].value
+  if (results[1].status === 'fulfilled') health.value = results[1].value
+  if (results[2].status === 'fulfilled') version.value = results[2].value
+  if (results[3].status === 'fulfilled') routes.value = results[3].value
+  if (results[4].status === 'fulfilled') initialLogs.value = results[4].value
+  if (results[5].status === 'fulfilled') variants.value = results[5].value
 })
 
 onUnmounted(release)

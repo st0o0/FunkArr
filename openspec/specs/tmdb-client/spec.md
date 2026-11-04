@@ -57,16 +57,29 @@ The TMDB client SHALL expose a method to fetch alternative titles for a movie. I
 - **WHEN** a movie has no alternative titles
 - **THEN** the client SHALL return an empty array
 
-### Requirement: TMDB response caching
-The TmdbClient SHALL cache movie data using `IDistributedCache` (injected via constructor) with the typed extension methods from `DistributedCacheExtensions`. Cache keys SHALL follow the pattern `tmdb:movie:{id}`. Movie entries SHALL use a 30-day absolute expiration.
+### Requirement: TmdbClient uses IMemoryCache
 
-#### Scenario: Cache hit
-- **WHEN** `GetMovieAsync` is called for a movie ID that exists in the distributed cache
-- **THEN** the client SHALL return the cached `TmdbMovieData` without making an API call
+The TmdbClient SHALL accept `IMemoryCache` via constructor injection (replacing `IDistributedCache`) and use it for caching movie data. Cache entries SHALL use `AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7)` and `Size = 1`. The cache key format SHALL remain `tmdb:movie:{tmdbId}`.
 
-#### Scenario: Cache miss
-- **WHEN** `GetMovieAsync` is called for a movie ID not in the distributed cache
-- **THEN** the client SHALL fetch from the API and store the result in the distributed cache with a 30-day TTL
+#### Scenario: Cache miss fetches from API
+
+- **WHEN** `GetMovieAsync` is called for a TMDB ID and no cache entry exists
+- **THEN** the client SHALL fetch from the TMDB API, store the `TmdbMovieData` in `IMemoryCache` with 7-day absolute expiration and Size = 1, and return it
+
+#### Scenario: Cache hit returns stored object
+
+- **WHEN** `GetMovieAsync` is called for a TMDB ID and a cache entry exists
+- **THEN** the client SHALL return the cached `TmdbMovieData` without making an HTTP request
+
+#### Scenario: FindByImdbId checks cache after ID resolution
+
+- **WHEN** `FindByImdbIdAsync` resolves an IMDB ID to a TMDB ID
+- **THEN** the client SHALL check `IMemoryCache` for key `tmdb:movie:{tmdbId}` before making a second API call
+
+#### Scenario: TTL reduced to 7 days
+
+- **WHEN** a TMDB response is cached
+- **THEN** the TTL SHALL be 7 days (reduced from previous 30 days)
 
 #### Scenario: Disabled client cache behavior
 - **WHEN** no TMDB API key is configured and `GetMovieAsync` is called

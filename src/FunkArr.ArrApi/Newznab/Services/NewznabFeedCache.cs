@@ -9,7 +9,7 @@ public static class NewznabFeedCache
     public const string Tag = "feed";
 
     internal const string DoNotStoreKey = "FunkArr.NewznabFeed.DoNotStore";
-    internal static readonly TimeSpan Duration = TimeSpan.FromMinutes(30);
+    internal static readonly TimeSpan Duration = TimeSpan.FromMinutes(5);
 
     private static readonly string[] _feedFunctions = ["tvsearch", "movie", "search"];
     private static readonly string[] _criteria = ["q", "tvdbid", "imdbid", "tmdbid"];

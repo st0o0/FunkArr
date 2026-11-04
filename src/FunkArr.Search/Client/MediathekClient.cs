@@ -1,14 +1,13 @@
 using System.Net.Mime;
 using System.Text.Json;
-using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Terp.Diagnostics;
 
 namespace FunkArr.Search.Client;
 
-public sealed class MediathekClient(HttpClient httpClient, IDistributedCache cache, ILogger<MediathekClient> log)
+public sealed class MediathekClient(HttpClient httpClient, IMemoryCache cache, ILogger<MediathekClient> log)
 {
     private static readonly TimeSpan _cacheTtl = TimeSpan.FromMinutes(5);
 
@@ -22,8 +21,7 @@ public sealed class MediathekClient(HttpClient httpClient, IDistributedCache cac
     {
         var cacheKey = $"mediathek:{json}";
 
-        var cached = await cache.GetAsync<MediathekQueryResult>(cacheKey, cancellationToken);
-        if (cached is not null)
+        if (cache.TryGetValue(cacheKey, out MediathekQueryResult? cached) && cached is not null)
         {
             log.LogDebug("MediathekViewWeb cache hit");
             Telemetry.MediathekCacheHits.Up();
@@ -60,7 +58,7 @@ public sealed class MediathekClient(HttpClient httpClient, IDistributedCache cac
         var listTimestamp = apiResponse?.Result?.QueryInfo?.FilmlisteTimestamp ?? 0;
         var result = new MediathekQueryResult(items, total, listTimestamp);
 
-        await cache.SetAsync(cacheKey, result, _cacheTtl, cancellationToken);
+        cache.Set(cacheKey, result, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = _cacheTtl, Size = 1 });
 
         return result;
     }

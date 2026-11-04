@@ -53,20 +53,24 @@ The TVDB client SHALL expose a method to fetch all episodes for a given TVDB ser
 - **WHEN** the TVDB API returns a 5xx error
 - **THEN** the client SHALL log the error and return an empty episode list
 
-### Requirement: TVDB response caching
-The TvdbClient SHALL cache episode data using `IDistributedCache` (injected via constructor) with the typed extension methods from `DistributedCacheExtensions`. Cache keys SHALL follow the pattern `tvdb:episodes:{id}`. Episode entries SHALL use content-aware TTLs: 2-day for active shows (episodes with future or recent aired dates), 7-day for inactive shows.
+### Requirement: TvdbClient uses IMemoryCache
 
-#### Scenario: Cache hit
-- **WHEN** `GetEpisodesAsync` is called for a series ID that exists in the distributed cache
-- **THEN** the client SHALL return the cached `TvdbEpisode[]` without making an API call
+The TvdbClient SHALL accept `IMemoryCache` via constructor injection (replacing `IDistributedCache`) and use it for caching episode data. Cache entries SHALL use `AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7)` and `Size = 1`. The cache key format SHALL remain `tvdb:episodes:{seriesId}`.
 
-#### Scenario: Cache miss with active show
-- **WHEN** `GetEpisodesAsync` is called for a series ID not in cache, and the fetched episodes include future aired dates
-- **THEN** the client SHALL store the result with a 2-day TTL
+#### Scenario: Cache miss fetches from API
 
-#### Scenario: Cache miss with inactive show
-- **WHEN** `GetEpisodesAsync` is called for a series ID not in cache, and no episodes have future aired dates
-- **THEN** the client SHALL store the result with a 7-day TTL
+- **WHEN** `GetEpisodesAsync` is called for a series ID and no cache entry exists
+- **THEN** the client SHALL fetch from the TVDB API, store the result in `IMemoryCache` with 7-day absolute expiration and Size = 1, and return it
+
+#### Scenario: Cache hit returns stored object
+
+- **WHEN** `GetEpisodesAsync` is called for a series ID and a cache entry exists
+- **THEN** the client SHALL return the cached `TvdbEpisode[]` without making an HTTP request
+
+#### Scenario: Fixed 7-day TTL replaces content-aware TTL
+
+- **WHEN** a TVDB response is cached
+- **THEN** the TTL SHALL be 7 days regardless of whether the show has upcoming episodes (replacing the previous 2-day/7-day dynamic TTL)
 
 #### Scenario: Disabled client cache behavior
 - **WHEN** no TVDB API key is configured and `GetEpisodesAsync` is called

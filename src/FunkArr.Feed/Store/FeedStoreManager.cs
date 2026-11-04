@@ -1,7 +1,6 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Persistence;
-using FunkArr.Core;
 using FunkArr.Core.Configuration;
 using FunkArr.Messages.Feed;
 using FunkArr.Persistence.Events.Feed;
@@ -16,12 +15,9 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
     private static readonly TimeSpan _trimInterval = TimeSpan.FromHours(1);
 
     private sealed record TrimFeed;
-    private sealed record CacheInvalidated;
-    private sealed record CacheInvalidationFailed(Exception Cause);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<FeedOptions> _options;
-    private readonly IFeedCacheInvalidator _cacheInvalidator;
     private readonly TimeProvider _timeProvider;
     private FeedStoreManagerState _state = new();
 
@@ -29,10 +25,9 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
 
     public override string PersistenceId => "feed-store";
 
-    public FeedStoreManager(IOptionsMonitor<FeedOptions> options, IFeedCacheInvalidator cacheInvalidator, TimeProvider timeProvider)
+    public FeedStoreManager(IOptionsMonitor<FeedOptions> options, TimeProvider timeProvider)
     {
         _options = options;
-        _cacheInvalidator = cacheInvalidator;
         _timeProvider = timeProvider;
 
         Recover<SnapshotOffer>(offer =>
@@ -47,15 +42,12 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
         Recover<RecoveryCompleted>(_ =>
         {
             Telemetry.Entries.Record(_state.Entries.Count);
-            InvalidateCache();
             Timers.StartPeriodicTimer(_trimTimerKey, new TrimFeed(), _trimInterval);
         });
 
         Command<PublishFeedEntries>(HandleAdd);
         Command<QueryFeed>(query => Sender.Tell(_state.Query(query)));
         Command<TrimFeed>(_ => Trim());
-        Command<CacheInvalidated>(_ => { });
-        Command<CacheInvalidationFailed>(f => _log.Warning(f.Cause, "Feed cache invalidation failed"));
         Command<SaveSnapshotSuccess>(e =>
         {
             DeleteMessages(e.Metadata.SequenceNr);
@@ -82,7 +74,6 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
         {
             _state.Apply(e);
             Telemetry.Entries.Record(_state.Entries.Count);
-            InvalidateCache();
             MaybeSnapshot();
             Sender.Tell(new PublishFeedEntriesCompleted(fresh.Length));
         });
@@ -102,15 +93,10 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
         {
             _state.Apply(e);
             Telemetry.Entries.Record(_state.Entries.Count);
-            InvalidateCache();
             _log.Info("Removed {Count} feed entries older than the retention period", e.StableIds.Length);
             MaybeSnapshot();
         });
     }
-
-    private void InvalidateCache() =>
-        _cacheInvalidator.InvalidateAsync(CancellationToken.None)
-            .PipeTo(Self, success: () => new CacheInvalidated(), failure: ex => new CacheInvalidationFailed(ex));
 
     private void MaybeSnapshot()
     {

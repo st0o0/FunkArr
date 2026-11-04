@@ -37,12 +37,6 @@ export interface StorageStatusResponse {
   incompleteDirectory: StorageDirectory
 }
 
-export interface CacheStatsResponse {
-  tvdbEntries: number
-  tmdbEntries: number
-  oldestEntry: string | null
-}
-
 export interface VersionResponse {
   appVersion: string
   communityRulesetVersion: string | null
@@ -58,10 +52,6 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 export function getStorageStatus(): Promise<StorageStatusResponse> {
   return fetchJson('/api/system/storage')
-}
-
-export function getCacheStats(): Promise<CacheStatsResponse> {
-  return fetchJson('/api/system/cache')
 }
 
 export function getSystemVersion(): Promise<VersionResponse> {

@@ -60,7 +60,11 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
             options.CombineLogs = true;
         });
 
-        services.AddDistributedMemoryCache();
+        services.AddMemoryCache(options =>
+        {
+            options.SizeLimit = 2048;
+            options.TrackStatistics = true;
+        });
 
         services.AddProblemDetails();
         services.AddOpenApi();

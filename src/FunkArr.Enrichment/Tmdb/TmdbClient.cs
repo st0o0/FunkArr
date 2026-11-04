@@ -2,19 +2,18 @@ using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FunkArr.Core;
 using FunkArr.Core.Configuration;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Terp.Diagnostics;
 
 namespace FunkArr.Enrichment.Tmdb;
 
-public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOptions> options, IDistributedCache cache, ILogger<TmdbClient> log)
+public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOptions> options, IMemoryCache cache, ILogger<TmdbClient> log)
 {
-    private static readonly TimeSpan _movieTtl = TimeSpan.FromDays(30);
+    private static readonly TimeSpan _movieTtl = TimeSpan.FromDays(7);
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -26,8 +25,7 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
     public async Task<TmdbMovieData?> GetMovieDataAsync(int tmdbId)
     {
         var cacheKey = $"tmdb:movie:{tmdbId}";
-        var cached = await cache.GetAsync<TmdbMovieData>(cacheKey);
-        if (cached is not null)
+        if (cache.TryGetValue(cacheKey, out TmdbMovieData? cached))
         {
             log.LogDebug("TMDB cache hit for movie {TmdbId}", tmdbId);
             Telemetry.Requests.Up(new KeyValuePair<string, object?>("api", "tmdb"), new KeyValuePair<string, object?>("status", "hit"));
@@ -47,7 +45,7 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         var altTitles = await FetchAlternativeTitlesAsync(tmdbId);
         Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, new KeyValuePair<string, object?>("api", "tmdb"));
         var data = new TmdbMovieData(movie, altTitles);
-        await cache.SetAsync(cacheKey, data, _movieTtl);
+        cache.Set(cacheKey, data, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = _movieTtl, Size = 1 });
         return data;
     }
 
@@ -67,15 +65,14 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         }
 
         var cacheKey = $"tmdb:movie:{movie.Id}";
-        var cached = await cache.GetAsync<TmdbMovieData>(cacheKey);
-        if (cached is not null)
+        if (cache.TryGetValue(cacheKey, out TmdbMovieData? cached))
         {
             return cached;
         }
 
         var altTitles = await FetchAlternativeTitlesAsync(movie.Id);
         var data = new TmdbMovieData(movie, altTitles);
-        await cache.SetAsync(cacheKey, data, _movieTtl);
+        cache.Set(cacheKey, data, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = _movieTtl, Size = 1 });
         return data;
     }
 

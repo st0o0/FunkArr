@@ -19,7 +19,5 @@ public sealed class EnrichmentManager : ReceiveActor
 
         Receive<EnrichEpisodes>(tvdbPool.Forward);
         Receive<EnrichMovies>(tmdbPool.Forward);
-        Receive<QueryCacheStats>(_ =>
-            Sender.Tell(new CacheStatsResult(0, 0, null)));
     }
 }

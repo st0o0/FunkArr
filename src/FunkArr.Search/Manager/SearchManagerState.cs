@@ -8,7 +8,7 @@ public sealed class SearchManagerState
 {
     public static readonly SearchManagerState Empty = new();
 
-    public Dictionary<Guid, PendingSearch> Pending { get; } = [];
+    private Dictionary<Guid, PendingSearch> Pending { get; } = [];
 
     public sealed record PendingSearch(
         IActorRef OriginalSender,

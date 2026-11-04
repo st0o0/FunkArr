@@ -21,7 +21,7 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
         services.AddSingleton(new TestOptionsMonitor<TmdbOptions>(new TmdbOptions { ApiKey = "" }));
         services.AddSingleton<Microsoft.Extensions.Options.IOptionsMonitor<TmdbOptions>>(sp =>
             sp.GetRequiredService<TestOptionsMonitor<TmdbOptions>>());
-        services.AddDistributedMemoryCache();
+        services.AddMemoryCache();
         services.AddSingleton(TimeProvider.System);
         services.AddHttpClient<TvdbClient>();
         services.AddHttpClient<TmdbClient>();
@@ -34,19 +34,6 @@ public sealed class EnrichmentManagerTests() : TestKit(CreateConfig())
     {
         var resolver = DependencyResolver.For(Sys);
         return Sys.ActorOf(resolver.Props<EnrichmentManager>());
-    }
-
-    [Fact]
-    public void Cache_stats_returns_counts()
-    {
-        var manager = CreateManager();
-
-        manager.Tell(new QueryCacheStats());
-
-        var stats = ExpectMsg<CacheStatsResult>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(0, stats.TvdbEntries);
-        Assert.Equal(0, stats.TmdbEntries);
-        Assert.Null(stats.OldestEntry);
     }
 
     [Fact]

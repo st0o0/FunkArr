@@ -76,6 +76,7 @@ public sealed class FunkArrFixture : IAsyncLifetime
         services.AddSingleton(new RingBufferSink());
         services.AddSingleton(TimeProvider.System);
 
+        services.AddMemoryCache();
         services.AddHttpClient();
         services.AddHttpClient<ArrSetupClient>();
         services.AddOutputCache();

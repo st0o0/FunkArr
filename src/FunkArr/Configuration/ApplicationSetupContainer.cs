@@ -1,5 +1,7 @@
 using FunkArr.Api;
+using FunkArr.Enrichment;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 using Terp.Hosting;
@@ -10,6 +12,7 @@ public sealed class ApplicationSetupContainer : ISetup<WebApplication>
 {
     public void Setup(WebApplication app, SetupContext _)
     {
+        Telemetry.SetCache(app.Services.GetRequiredService<IMemoryCache>());
         app.MapOpenApi();
         app.MapScalarApiReference(options =>
         {
