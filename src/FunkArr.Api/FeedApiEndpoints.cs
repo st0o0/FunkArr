@@ -14,8 +14,6 @@ public static class FeedApiEndpoints
 {
     private const int _defaultLimit = 100;
     private const int _maxLimit = 500;
-    private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
-
     public static WebApplication MapFeedApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/feed")
@@ -35,8 +33,8 @@ public static class FeedApiEndpoints
             var ingest = await registry.GetAsync<IFeedCrawlManager>(ct);
 
             var feedTask = feed.Ask<FeedResponse>(
-                new QueryFeed(mediaType, skip, take, channel, quality, q), _askTimeout, ct);
-            var statusTask = ingest.Ask<FeedCrawlStatusResponse>(new QueryFeedCrawlStatus(), _askTimeout, ct);
+                new QueryFeed(mediaType, skip, take, channel, quality, q), ct);
+            var statusTask = ingest.Ask<FeedCrawlStatusResponse>(new QueryFeedCrawlStatus(), ct);
             var feedResponse = await feedTask;
             var statusResponse = await statusTask;
 

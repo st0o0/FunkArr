@@ -42,7 +42,6 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
     private string CompleteDir => _dataPaths.Complete.Replace('\\', '/');
 
     private (SabnzbdController Controller, TestProbe Manager, TestProbe History) CreateController(
-        ArrApiOptions? arrApiOptions = null,
         DownloadOptions? downloadOptions = null)
     {
         var registry = ActorRegistry.For(_system);
@@ -51,16 +50,13 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
         registry.Register<IDownloadManager>(manager);
         registry.Register<IDownloadHistoryManager>(history);
 
-        var apiOptions = Options.Create(arrApiOptions ?? new ArrApiOptions());
         var queue = new SabnzbdQueueService(
             registry,
-            apiOptions,
             Options.Create(downloadOptions ?? new DownloadOptions()),
             _dataPaths,
             NullLogger<SabnzbdQueueService>.Instance);
         var downloads = new SabnzbdDownloadService(
             registry,
-            apiOptions,
             NullLogger<SabnzbdDownloadService>.Instance);
 
         return (new SabnzbdController(queue, downloads), manager, history);

@@ -12,11 +12,8 @@ namespace FunkArr.ArrApi.Sabnzbd.Services;
 
 public sealed class SabnzbdDownloadService(
     IActorRegistry registry,
-    IOptions<ArrApiOptions> options,
     ILogger<SabnzbdDownloadService> logger)
 {
-    private TimeSpan Timeout => TimeSpan.FromSeconds(options.Value.DownloadTimeoutSeconds);
-
     internal async Task<SabnzbdResult> AddFile(IFormFile? file, string? cat, string? priority, CancellationToken ct)
     {
         if (file is null)
@@ -62,7 +59,7 @@ public sealed class SabnzbdDownloadService(
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var media = new DownloadMedia(title, videoUrl, subtitleUrl, channel, duration, size, category);
             var addCmd = new AddDownload(media, downloadPriority);
-            var addResult = await manager.Ask<DownloadAdded>(addCmd, Timeout, ct);
+            var addResult = await manager.Ask<DownloadAdded>(addCmd, ct);
 
             if (priority == "2")
             {
@@ -71,7 +68,7 @@ public sealed class SabnzbdDownloadService(
 
             return new SabnzbdResult.Ok(new { status = true, nzo_ids = new[] { addResult.DownloadId.ToString() } });
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout adding download for {Title}", title);
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -93,12 +90,12 @@ public sealed class SabnzbdDownloadService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(downloadId), Timeout, ct);
+            var result = await manager.Ask<DeleteDownloadResult>(new DeleteDownload(downloadId), ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error(result.Error ?? "Delete failed");
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout deleting download {DownloadId}", downloadId);
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -115,12 +112,12 @@ public sealed class SabnzbdDownloadService(
         try
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
-            var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(downloadId), Timeout, ct);
+            var result = await history.Ask<DeleteDownloadResult>(new RemoveHistoryEntry(downloadId), ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error(result.Error ?? "Delete failed");
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout deleting history entry {DownloadId}", downloadId);
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -140,12 +137,12 @@ public sealed class SabnzbdDownloadService(
             var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
 
             history.Tell(new RemoveHistoryEntry(downloadId));
-            var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(downloadId), Timeout, ct);
+            var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(downloadId), ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error(result.Error ?? "Retry failed");
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout retrying download {DownloadId}", downloadId);
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -170,7 +167,7 @@ public sealed class SabnzbdDownloadService(
 
             if (priorityInt == 2)
             {
-                var forceResult = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(downloadId), Timeout, ct);
+                var forceResult = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(downloadId), ct);
                 return forceResult.Success
                     ? new SabnzbdResult.Ok(new { status = true })
                     : new SabnzbdResult.Error(forceResult.Error ?? "Force start failed");
@@ -182,12 +179,12 @@ public sealed class SabnzbdDownloadService(
                 0 => DownloadPriority.Normal,
                 _ => DownloadPriority.High
             };
-            var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), Timeout, ct);
+            var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), ct);
             return result is SetDownloadPriorityCompleted
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error((result as SetDownloadPriorityFailed)?.Reason ?? "Priority change failed");
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout setting priority for {DownloadId}", downloadId);
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -204,12 +201,12 @@ public sealed class SabnzbdDownloadService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), Timeout, ct);
+            var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), ct);
             return result is SwapDownloadsCompleted
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error((result as SwapDownloadsFailed)?.Reason ?? "Swap failed");
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout swapping downloads {Id1} and {Id2}", id1, id2);
             return new SabnzbdResult.Error("Request timed out", 504);

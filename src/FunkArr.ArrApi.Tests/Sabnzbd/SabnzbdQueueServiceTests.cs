@@ -41,7 +41,6 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
 
         var service = new SabnzbdQueueService(
             registry,
-            Options.Create(new ArrApiOptions()),
             Options.Create(downloadOptions ?? new DownloadOptions()),
             _dataPaths,
             NullLogger<SabnzbdQueueService>.Instance);

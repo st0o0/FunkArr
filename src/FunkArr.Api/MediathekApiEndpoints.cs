@@ -12,8 +12,6 @@ namespace FunkArr.Api;
 
 public static class MediathekApiEndpoints
 {
-    private static readonly TimeSpan _queryTimeout = TimeSpan.FromSeconds(15);
-
     public static WebApplication MapMediathekApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/mediathek")
@@ -60,7 +58,7 @@ public static class MediathekApiEndpoints
                 DurationMin: req.DurationMin,
                 DurationMax: req.DurationMax);
 
-            var result = await manager.Ask<QueryMediathekResponse>(query, _queryTimeout, ct);
+            var result = await manager.Ask<QueryMediathekResponse>(query, ct);
             return result switch
             {
                 QueryMediathekCompleted completed => Results.Ok(

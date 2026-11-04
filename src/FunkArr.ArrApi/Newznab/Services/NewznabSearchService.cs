@@ -15,14 +15,11 @@ namespace FunkArr.ArrApi.Newznab.Services;
 public sealed class NewznabSearchService(
     IActorRegistry registry,
     SearchResultCache cache,
-    IOptions<ArrApiOptions> options,
     TimeProvider timeProvider,
     ILogger<NewznabSearchService> logger)
 {
     internal const int MaxLimit = 500;
     internal const int DefaultLimit = 100;
-
-    private static readonly TimeSpan _feedTimeout = TimeSpan.FromSeconds(5);
 
     internal async Task<SearchServiceResult> Search(IndexerRequest req, string baseUrl, string apiKey, CancellationToken ct)
     {
@@ -41,15 +38,13 @@ public sealed class NewznabSearchService(
         var offset = req.Offset ?? 0;
         var limit = req.Limit ?? DefaultLimit;
         var key = SearchResultCache.BuildKey(cmd);
-        var timeout = TimeSpan.FromSeconds(options.Value.SearchTimeoutSeconds);
-
         try
         {
             var gateway = await registry.GetAsync<ISearchManager>(ct);
             var allItems = await cache.GetOrAddAsync(key, async () =>
             {
                 var fullCmd = cmd with { Offset = null, Limit = null };
-                var response = await gateway.Ask<SearchCommandResponse>(fullCmd, timeout, ct);
+                var response = await gateway.Ask<SearchCommandResponse>(fullCmd, ct);
                 return response is SearchCommandCompleted completed ? completed.Items : [];
             });
 
@@ -58,7 +53,7 @@ public sealed class NewznabSearchService(
             var rss = ToRss(paged, filtered.Length, offset, baseUrl, apiKey, category);
             return new SearchServiceResult.Success(rss);
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Search timed out for {SearchType} query {Query}", cmd.Source, cmd.Query);
             return new SearchServiceResult.Failed("Search timed out");
@@ -241,7 +236,7 @@ public sealed class NewznabSearchService(
         try
         {
             var feed = await registry.GetAsync<IFeedStoreManager>(ct);
-            var response = await feed.Ask<FeedResponse>(new QueryFeed(FeedMediaType(req), offset, limit), _feedTimeout, ct);
+            var response = await feed.Ask<FeedResponse>(new QueryFeed(FeedMediaType(req), offset, limit), ct);
             feedAnswered = response is FeedResult;
             if (response is FeedResult { Total: > 0 } result)
             {

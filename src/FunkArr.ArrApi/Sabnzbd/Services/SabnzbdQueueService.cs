@@ -11,20 +11,17 @@ namespace FunkArr.ArrApi.Sabnzbd.Services;
 
 public sealed class SabnzbdQueueService(
     IActorRegistry registry,
-    IOptions<ArrApiOptions> arrApiOptions,
     IOptions<DownloadOptions> downloadOptions,
     DataPaths dataPaths,
     ILogger<SabnzbdQueueService> logger)
 {
-    private TimeSpan Timeout => TimeSpan.FromSeconds(arrApiOptions.Value.DownloadTimeoutSeconds);
-
     internal async Task<SabnzbdResult> GetQueue(int start, int limit, string? category, CancellationToken ct)
     {
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             if (await manager.Ask<DownloadQueueResponse>(
-                    new QueryQueue(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout, ct)
+                    new QueryQueue(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), ct)
                 is not QueueResult result)
             {
                 return new SabnzbdResult.Error("Queue query failed", 502);
@@ -42,7 +39,7 @@ public sealed class SabnzbdQueueService(
                 Speed: "0",
                 Slots: slots)));
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout querying download queue");
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -55,7 +52,7 @@ public sealed class SabnzbdQueueService(
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var response = await history.Ask<HistoryResult>(
-                new QueryHistory(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), Timeout, ct);
+                new QueryHistory(start, limit, SabnzbdResponseMapper.ParseMediaTypeNullable(category)), ct);
 
             var slots = response.Items.Select(item =>
                 SabnzbdResponseMapper.BuildHistorySlot(item, dataPaths.Complete)).ToArray();
@@ -64,7 +61,7 @@ public sealed class SabnzbdQueueService(
                 NoofSlots: response.TotalItems,
                 Slots: slots)));
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout querying download history");
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -76,7 +73,7 @@ public sealed class SabnzbdQueueService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(), Timeout, ct) is not QueueResult result)
+            if (await manager.Ask<DownloadQueueResponse>(new QueryQueue(), ct) is not QueueResult result)
             {
                 return new SabnzbdResult.Error("Queue query failed", 502);
             }
@@ -93,7 +90,7 @@ public sealed class SabnzbdQueueService(
                 Completedir: dataPaths.Complete.Replace('\\', '/'),
                 Speed: ((long)totalSpeed).ToString())));
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout querying full status");
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -105,12 +102,12 @@ public sealed class SabnzbdQueueService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), Timeout, ct);
+            var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error("Pause failed");
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout pausing queue");
             return new SabnzbdResult.Error("Request timed out", 504);
@@ -122,12 +119,12 @@ public sealed class SabnzbdQueueService(
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), Timeout, ct);
+            var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), ct);
             return result.Success
                 ? new SabnzbdResult.Ok(new { status = true })
                 : new SabnzbdResult.Error("Resume failed");
         }
-        catch (TimeoutException ex)
+        catch (OperationCanceledException ex)
         {
             logger.LogWarning(ex, "Timeout resuming queue");
             return new SabnzbdResult.Error("Request timed out", 504);

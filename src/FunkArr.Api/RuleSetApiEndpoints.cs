@@ -16,10 +16,6 @@ namespace FunkArr.Api;
 
 public static class RuleSetApiEndpoints
 {
-    private static readonly TimeSpan _queryTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan _testTimeout = TimeSpan.FromSeconds(15);
-
     public static WebApplication MapRuleSetApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/rulesets")
@@ -35,11 +31,11 @@ public static class RuleSetApiEndpoints
             var statsCollector = await registry.GetAsync<IStatsCollector>(ct);
 
             var resolverTask = resolver.Ask<RegisteredRuleSetsResult>(
-                new QueryRegisteredRuleSets(), _queryTimeout, ct);
+                new QueryRegisteredRuleSets(), ct);
             var summaryTask = manager.Ask<RuleSetSummaryResult>(
-                new QueryRuleSetSummaries(), _queryTimeout, ct);
+                new QueryRuleSetSummaries(), ct);
             var statsTask = statsCollector.Ask<AllStatsResult>(
-                new QueryAllStats(), _statsTimeout, ct);
+                new QueryAllStats(), ct);
 
             await Task.WhenAll(resolverTask, summaryTask, statsTask);
 
@@ -80,7 +76,7 @@ public static class RuleSetApiEndpoints
         {
             var region = await registry.GetAsync<IRuleSetRegion>(ct);
             var result = await region.Ask<RuleSetDetailResponse>(
-                new QueryRuleSetDetail(id), _queryTimeout, ct);
+                new QueryRuleSetDetail(id), ct);
             return result switch
             {
                 RuleSetDetailResult detail => Results.Ok(detail.ToApi()),
@@ -98,7 +94,7 @@ public static class RuleSetApiEndpoints
         {
             var historyRegion = await registry.GetAsync<IHistoryRegion>(ct);
             var result = await historyRegion.Ask<ScoringHistoryResult>(
-                new QueryScoringHistory(id, offset ?? 0, limit ?? 20), _queryTimeout, ct);
+                new QueryScoringHistory(id, offset ?? 0, limit ?? 20), ct);
             return Results.Ok(result.ToApi());
         })
         .WithSummary("Get scoring history")
@@ -110,7 +106,7 @@ public static class RuleSetApiEndpoints
         {
             var historyRegion = await registry.GetAsync<IHistoryRegion>(ct);
             var result = await historyRegion.Ask<ScoringDetailResponse>(
-                new QueryScoringDetail(id, requestId), _queryTimeout, ct);
+                new QueryScoringDetail(id, requestId), ct);
             return result switch
             {
                 ScoringDetailResult detail => Results.Ok(detail.ToApi()),
@@ -127,7 +123,7 @@ public static class RuleSetApiEndpoints
         group.MapPost("/", async (ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
         {
             var region = await registry.GetAsync<IRuleSetRegion>(ct);
-            var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), _queryTimeout, ct);
+            var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), ct);
 
             await cache.EvictByTagAsync("rulesets", ct);
             return result switch
@@ -148,7 +144,7 @@ public static class RuleSetApiEndpoints
         group.MapPut("/{id}", async (string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
         {
             var region = await registry.GetAsync<IRuleSetRegion>(ct);
-            var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), _queryTimeout, ct);
+            var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), ct);
 
             await cache.EvictByTagAsync("rulesets", ct);
             return result switch
@@ -168,7 +164,7 @@ public static class RuleSetApiEndpoints
         group.MapDelete("/{id}", async (string id, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
         {
             var region = await registry.GetAsync<IRuleSetRegion>(ct);
-            var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), _queryTimeout, ct);
+            var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), ct);
 
             await cache.EvictByTagAsync("rulesets", ct);
             return result switch
@@ -208,7 +204,7 @@ public static class RuleSetApiEndpoints
         group.MapGet("/{id}/export", async (string id, IActorRegistry registry, HttpContext httpContext, CancellationToken ct) =>
         {
             var region = await registry.GetAsync<IRuleSetRegion>(ct);
-            var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), _queryTimeout, ct);
+            var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), ct);
 
             if (result is ExportRuleSetCompleted completed)
             {
@@ -243,7 +239,7 @@ public static class RuleSetApiEndpoints
                     request.TvdbId, request.TmdbId, request.ImdbId,
                     request.Enrichment is not null && request.Enrichment.Enabled != false
                         ? request.Enrichment.ToMessage() : null),
-                _testTimeout, ct);
+                ct);
             return result switch
             {
                 TestScoreWithEnrichmentCompleted completed => Results.Ok(

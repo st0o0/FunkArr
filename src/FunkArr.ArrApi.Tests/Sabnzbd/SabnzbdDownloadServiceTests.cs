@@ -25,7 +25,6 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var service = new SabnzbdDownloadService(
             registry,
-            Options.Create(new ArrApiOptions()),
             NullLogger<SabnzbdDownloadService>.Instance);
 
         return (service, managerProbe, historyProbe);

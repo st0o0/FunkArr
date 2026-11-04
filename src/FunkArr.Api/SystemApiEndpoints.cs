@@ -16,7 +16,6 @@ public static class SystemApiEndpoints
 {
     private const string _defaultApiKey = "funkarr-default-api-key";
     private static readonly TimeSpan _httpTimeout = TimeSpan.FromSeconds(3);
-    private static readonly TimeSpan _askTimeout = TimeSpan.FromSeconds(10);
     private static readonly System.Text.Json.JsonSerializerOptions _sseJsonOptions = new()
     {
         PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
@@ -100,7 +99,7 @@ public static class SystemApiEndpoints
         group.MapGet("/cache", async (IActorRegistry registry, CancellationToken ct) =>
         {
             var resolver = await registry.GetAsync<IEnrichmentManager>(ct);
-            var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), _askTimeout, ct);
+            var result = await resolver.Ask<CacheStatsResult>(new QueryCacheStats(), ct);
             return Results.Ok(new CacheStatsResponse(
                 result.TvdbEntries,
                 result.TmdbEntries,
