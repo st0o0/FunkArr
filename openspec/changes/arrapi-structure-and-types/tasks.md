@@ -27,8 +27,8 @@
 
 ## 5. Verification
 
-- [ ] 5.1 `dotnet build src/FunkArr.slnx` at 0 warnings; `dotnet format src/FunkArr.slnx --verify-no-changes`
-- [ ] 5.2 Run `FunkArr.ArrApi.Tests`, `FunkArr.Architecture.Tests` and `FunkArr.IntegrationTests`
+- [x] 5.1 `dotnet build src/FunkArr.slnx` at 0 warnings; `dotnet format src/FunkArr.slnx --verify-no-changes`
+- [x] 5.2 Run `FunkArr.ArrApi.Tests`, `FunkArr.Architecture.Tests` and `FunkArr.IntegrationTests`
 - [ ] 5.3 Check against the dev stack (`docker compose -f docker-compose.dev.yml up -d --build`): Prowlarr indexer test, Sonarr/Radarr search and grab, SABnzbd client test; user takes part
 
 ## Working rules

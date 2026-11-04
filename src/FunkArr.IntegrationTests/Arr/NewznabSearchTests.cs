@@ -1,9 +1,9 @@
 using System.Xml.Linq;
+using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Core;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
-using FunkArr.Messages.Shared;
 
 namespace FunkArr.IntegrationTests.Arr;
 
@@ -125,10 +125,9 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     }
 
     [Fact]
-    public async Task Get_nzb_with_valid_base64_id_returns_nzb_content()
+    public async Task Get_nzb_with_valid_payload_id_returns_nzb_content()
     {
-        var payload = string.Join('\t', "Test Title", "https://example.com/video.mp4", "", "ARD", "3600", "500000000", "tv");
-        var id = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(payload));
+        var id = new NzbPayload("Test Title", "https://example.com/video.mp4", null, "ARD", 3600, 500_000_000, MediaType.Show).Encode();
 
         var response = await _fixture.Client.GetAsync($"/index/api?t=get&id={Uri.EscapeDataString(id)}&apikey=test-key", TestContext.Current.CancellationToken);
 
