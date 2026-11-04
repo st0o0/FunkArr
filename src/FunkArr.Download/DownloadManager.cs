@@ -14,6 +14,8 @@ namespace FunkArr.Download;
 
 public sealed class DownloadManager : ReceivePersistentActor
 {
+    private sealed record ConcurrencyChanged(int Limit);
+
     private const int _snapshotInterval = 25;
     private static readonly TimeSpan _fanOutTimeout = TimeSpan.FromSeconds(2);
 
@@ -77,9 +79,11 @@ public sealed class DownloadManager : ReceivePersistentActor
         Command<DeleteSnapshotsSuccess>(e => _log.Debug("Old snapshots cleaned up to sequence {SequenceNr}", e.Criteria.MaxSequenceNr));
         Command<DeleteSnapshotsFailure>(e => _log.Warning(e.Cause, "Snapshot cleanup failed"));
 
-        options.OnChange(opts =>
+        var self = Self;
+        options.OnChange(opts => self.Tell(new ConcurrencyChanged(opts.ConcurrentDownloads)));
+        Command<ConcurrencyChanged>(msg =>
         {
-            _maxConcurrent = opts.ConcurrentDownloads;
+            _maxConcurrent = msg.Limit;
             DispatchNext();
         });
     }
