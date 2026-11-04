@@ -12,11 +12,11 @@ The ScoringManager (Singleton) SHALL maintain a `Dictionary<string, MatchingConf
 - **THEN** the previous config is replaced with the new one
 
 ### Requirement: ScoringManager routes scoring to Router Pool
-The ScoringManager SHALL own a SmallestMailboxPool of ScoringActors and route scoring requests to the pool. When routing, it SHALL resolve the ScoringHistory ShardRegion and include it in the ExecuteScoring message along with RequestId and Origin from the ScoreItems command.
+The ScoringManager SHALL own a SmallestMailboxPool of ScoringActors and route scoring requests to the pool. When routing, it SHALL include the RequestId from the ScoreItems command in the ExecuteScoring message.
 
 #### Scenario: Route scoring request
-- **WHEN** ScoringManager receives ScoreItems with RequestId=abc, RuleSetId="die-anstalt", Origin=ScoringOrigin("sonarr", "Die Anstalt") and the config exists
-- **THEN** it sends ExecuteScoring(config, items, RequestId=abc, Origin, HistoryRef) to the Router Pool with the original Sender preserved
+- **WHEN** ScoringManager receives ScoreItems with RequestId=abc, RuleSetId="die-anstalt" and the config exists
+- **THEN** it sends ExecuteScoring(config, items, RequestId=abc) to the Router Pool with the original Sender preserved
 
 #### Scenario: Unknown ruleSetId
 - **WHEN** ScoringManager receives ScoreItems with a ruleSetId not in the dictionary
@@ -27,19 +27,11 @@ The ScoringManager SHALL own a SmallestMailboxPool of ScoringActors and route sc
 - **THEN** the Router Pool contains N ScoringActor instances
 
 ### Requirement: ScoringActor is stateless
-The ScoringActor SHALL hold no state. It receives ExecuteScoring messages containing config, items, RequestId, Origin, and HistoryRef. It SHALL reply to Sender with ScoreCompleted and fire-and-forget a RecordScoringResult to the HistoryRef.
+The ScoringActor SHALL hold no state. It receives ExecuteScoring messages containing config, items and RequestId. It SHALL reply to Sender with ScoreCompleted and SHALL NOT send anything to any other actor; history is recorded by the caller from ScoreCompleted.
 
 #### Scenario: Stateless processing with trace
-- **WHEN** ScoringActor receives ExecuteScoring with config, items, RequestId, Origin, and HistoryRef
-- **THEN** it SHALL evaluate all items against the config's rules, build a full ItemTrace per item, send ScoreCompleted(RequestId, scored) to Sender, and send RecordScoringResult(RequestId, RuleSetId, Origin, Timestamp, CandidateCount, MatchedCount, ItemTraces) to HistoryRef
-
-#### Scenario: History emission is fire-and-forget
-- **WHEN** ScoringActor sends RecordScoringResult to HistoryRef
-- **THEN** it SHALL use Tell (not Ask) and SHALL NOT wait for confirmation or handle failure
-
-#### Scenario: ScoreCompleted sent before history
-- **WHEN** ScoringActor completes evaluation
-- **THEN** it SHALL send ScoreCompleted to Sender first, then send RecordScoringResult to HistoryRef
+- **WHEN** ScoringActor receives ExecuteScoring with config, items and RequestId
+- **THEN** it SHALL evaluate all items against the config's rules, build a full ItemTrace per item, and send ScoreCompleted(RequestId, scored, itemTraces) to Sender
 
 #### Scenario: Concurrent scoring
 - **WHEN** two ScoreItems arrive at ScoringManager simultaneously and pool size >= 2
