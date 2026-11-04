@@ -12,11 +12,11 @@
 
 ## 3. Typed SABnzbd responses
 
-- [ ] 3.1 Add `SabnzbdStatusResponse`, `SabnzbdAddResponse` and typed config records (misc, categories, sorters) with `[JsonPropertyName]` matching the current JSON
-- [ ] 3.2 Make `SabnzbdResult.Ok` generic (`Ok<T>`) and update services and `MapResult` in the controller
-- [ ] 3.3 Add ArrApi enums for slot status and priority (`Unknown = 0`, `[JsonStringEnumMemberName]`, `[JsonConverter(typeof(JsonStringEnumConverter<T>))]`); map from Messages enums with exhaustive `switch` and `_ => throw`; update `QueueSlot`/`HistorySlot` and the mapper
-- [ ] 3.4 Replace the anonymous object in `SabnzbdApiKeyFilter` with `SabnzbdErrorResponse`
-- [ ] 3.5 Group 1 snapshot tests pass unchanged (JSON byte-identical); add mapper tests for enum mapping including the throwing arm
+- [x] 3.1 Add `SabnzbdStatusResponse`, `SabnzbdAddResponse` and typed config records (misc, categories, sorters) with `[JsonPropertyName]` matching the current JSON
+- [x] 3.2 Make the result type generic (`SabnzbdResult<T>` with `Ok`, `Error`, implicit conversions from `T` and `SabnzbdError`) and update services and `MapResult<T>` in the controller
+- [x] 3.3 Add ArrApi enums for slot status and priority (`Unknown = 0`, `[JsonStringEnumMemberName]`, `[JsonConverter(typeof(JsonStringEnumConverter<T>))]`); map from Messages enums with exhaustive `switch` and `_ => throw`; update `QueueSlot`/`HistorySlot` and the mapper
+- [x] 3.4 Replace the anonymous object in `SabnzbdApiKeyFilter` with `SabnzbdErrorResponse`
+- [x] 3.5 Group 1 snapshot tests pass unchanged (JSON byte-identical); add mapper tests for enum mapping including the throwing arm
 
 ## 4. NzbPayload
 

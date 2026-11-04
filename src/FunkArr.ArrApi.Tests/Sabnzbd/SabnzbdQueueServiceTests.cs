@@ -59,7 +59,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(queueResult);
         var result = await task;
 
-        var ok = Assert.IsType<SabnzbdResult.Ok>(result);
+        var ok = SabnzbdResultAssert.Ok(result);
         Assert.IsType<SabnzbdModels.QueueResponse>(ok.Data);
     }
 
@@ -73,7 +73,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(new QueueFailed(new Exception("fail")));
         var result = await task;
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal(502, error.StatusCode);
     }
 
@@ -95,7 +95,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(queueResult);
         var result = await task;
 
-        var ok = Assert.IsType<SabnzbdResult.Ok>(result);
+        var ok = SabnzbdResultAssert.Ok(result);
         var response = Assert.IsType<SabnzbdModels.QueueResponse>(ok.Data);
         var slot = Assert.Single(response.Queue.Slots);
         Assert.Equal("Test Show", slot.Filename);
@@ -112,7 +112,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         historyProbe.Reply(historyResult);
         var result = await task;
 
-        var ok = Assert.IsType<SabnzbdResult.Ok>(result);
+        var ok = SabnzbdResultAssert.Ok(result);
         Assert.IsType<SabnzbdModels.HistoryResponse>(ok.Data);
     }
 
@@ -127,7 +127,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(queueResult);
         var result = await task;
 
-        var ok = Assert.IsType<SabnzbdResult.Ok>(result);
+        var ok = SabnzbdResultAssert.Ok(result);
         Assert.IsType<SabnzbdModels.FullStatusResponse>(ok.Data);
     }
 
@@ -141,7 +141,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(new QueueFailed(new Exception("fail")));
         var result = await task;
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal(502, error.StatusCode);
     }
 
@@ -155,7 +155,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(new PauseDownloadsResult(true));
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(new PauseDownloadsResult(false));
         var result = await task;
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Pause failed", error.Message);
     }
 
@@ -182,7 +182,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(new ResumeDownloadsResult(true));
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         managerProbe.Reply(new ResumeDownloadsResult(false));
         var result = await task;
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Resume failed", error.Message);
     }
 
@@ -210,7 +210,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
 
         var result = service.GetConfig();
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
 
         var result = service.GetConfig();
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     public async ValueTask DisposeAsync()

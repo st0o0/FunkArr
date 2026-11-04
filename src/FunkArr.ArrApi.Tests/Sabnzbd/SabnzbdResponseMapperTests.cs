@@ -1,3 +1,4 @@
+using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.ArrApi.Sabnzbd.Services;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
@@ -17,7 +18,7 @@ public sealed class SabnzbdResponseMapperTests
 
         var slot = SabnzbdResponseMapper.BuildQueueSlot(item, 0);
 
-        Assert.Equal("Downloading", slot.Status);
+        Assert.Equal(SabnzbdQueueStatus.Downloading, slot.Status);
         Assert.Equal("Test Download", slot.Filename);
         Assert.Equal("tv", slot.Cat);
         Assert.Equal(0, slot.Index);
@@ -35,7 +36,7 @@ public sealed class SabnzbdResponseMapperTests
 
         var slot = SabnzbdResponseMapper.BuildQueueSlot(item, 3);
 
-        Assert.Equal("Queued", slot.Status);
+        Assert.Equal(SabnzbdQueueStatus.Queued, slot.Status);
         Assert.Equal(3, slot.Index);
         Assert.Equal("movie", slot.Cat);
     }
@@ -52,7 +53,7 @@ public sealed class SabnzbdResponseMapperTests
         Assert.Equal("Completed Show", slot.Name);
         Assert.Equal("Completed Show.nzb", slot.NzbName);
         Assert.Equal("tv", slot.Category);
-        Assert.Equal("Completed", slot.Status);
+        Assert.Equal(SabnzbdHistoryStatus.Completed, slot.Status);
         Assert.Equal(1_000_000, slot.Bytes);
     }
 
@@ -65,7 +66,7 @@ public sealed class SabnzbdResponseMapperTests
 
         var slot = SabnzbdResponseMapper.BuildHistorySlot(item, "/data/complete");
 
-        Assert.Equal("Failed", slot.Status);
+        Assert.Equal(SabnzbdHistoryStatus.Failed, slot.Status);
         Assert.Equal("Download error", slot.FailMessage);
         Assert.Null(slot.Storage);
     }
@@ -166,4 +167,62 @@ public sealed class SabnzbdResponseMapperTests
         Assert.Equal(DownloadPriority.Normal, SabnzbdResponseMapper.MapSabnzbdPriority(null));
         Assert.Equal(DownloadPriority.Normal, SabnzbdResponseMapper.MapSabnzbdPriority("abc"));
     }
+
+    [Theory]
+    [InlineData(DownloadPriority.Low, SabnzbdPriority.Low)]
+    [InlineData(DownloadPriority.Normal, SabnzbdPriority.Normal)]
+    [InlineData(DownloadPriority.High, SabnzbdPriority.High)]
+    public void BuildQueueSlot_maps_priority(DownloadPriority priority, SabnzbdPriority expected)
+    {
+        var slot = SabnzbdResponseMapper.BuildQueueSlot(QueueItemWith(DownloadStatus.Queued, priority), 0);
+
+        Assert.Equal(expected, slot.Priority);
+    }
+
+    [Fact]
+    public void BuildQueueSlot_throws_for_unexpected_priority()
+    {
+        var item = QueueItemWith(DownloadStatus.Queued, (DownloadPriority)99);
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => SabnzbdResponseMapper.BuildQueueSlot(item, 0));
+
+        Assert.Multiple(
+            () => Assert.Equal("priority", ex.ParamName),
+            () => Assert.Equal((DownloadPriority)99, ex.ActualValue));
+    }
+
+    [Theory]
+    [InlineData(DownloadStatus.Completed)]
+    [InlineData(DownloadStatus.Failed)]
+    public void BuildQueueSlot_throws_for_finished_status(DownloadStatus status)
+    {
+        var item = QueueItemWith(status, DownloadPriority.Normal);
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => SabnzbdResponseMapper.BuildQueueSlot(item, 0));
+
+        Assert.Multiple(
+            () => Assert.Equal("status", ex.ParamName),
+            () => Assert.Equal(status, ex.ActualValue));
+    }
+
+    [Theory]
+    [InlineData(DownloadStatus.Queued)]
+    [InlineData(DownloadStatus.Processing)]
+    public void BuildHistorySlot_throws_for_unfinished_status(DownloadStatus status)
+    {
+        var item = new HistoryItem(
+            Guid.NewGuid(),
+            new DownloadCompletion("Show", MediaType.Show, 0, status, null, null, 0, 0));
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => SabnzbdResponseMapper.BuildHistorySlot(item, "/data/complete"));
+
+        Assert.Multiple(
+            () => Assert.Equal("status", ex.ParamName),
+            () => Assert.Equal(status, ex.ActualValue));
+    }
+
+    private static QueueItem QueueItemWith(DownloadStatus status, DownloadPriority priority) =>
+        new(Guid.NewGuid(), "Title", status,
+            "ARD", false, 1_000, new DownloadProgress(0, 0, 0),
+            0, MediaType.Show, priority, DownloadPhase.Initialized, 0);
 }

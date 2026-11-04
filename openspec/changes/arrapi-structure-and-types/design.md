@@ -26,7 +26,7 @@ ArrApi/  ArrApiOptions, ApiKeyActionFilter, ServiceCollectionExtensions, Assembl
 Namespaces follow folders. Moves are done first and verified by the unchanged test suite.
 
 ### D2: Typed SABnzbd responses
-Add `SabnzbdStatusResponse(bool Status)`, `SabnzbdAddResponse(bool Status, IReadOnlyList<string> NzoIds)`, and typed config records (`misc`, `categories`, `sorters`) with `[JsonPropertyName]`. `SabnzbdResult.Ok<T>(T Data)`. The API-key filter uses `SabnzbdErrorResponse`.
+Add `SabnzbdStatusResponse(bool Status)`, `SabnzbdAddResponse(bool Status, IReadOnlyList<string> NzoIds)`, and typed config records (`misc`, `categories`, `sorters`) with `[JsonPropertyName]`. `SabnzbdResult<T>` replaces the untyped `SabnzbdResult.Ok(object)`: nested `Ok(T Data)` and `Error(string Message, int StatusCode)`, implicit conversions from `T` and from a non-generic `SabnzbdError`, so each service method returns its concrete response type and the controller maps with `MapResult<T>`. The API-key filter uses `SabnzbdErrorResponse`.
 
 Slot `status` and `priority` become enums with `[JsonConverter(typeof(JsonStringEnumConverter<T>))]` on the enum type (MVC controllers use their own `JsonOptions`, not `ConfigureHttpJsonOptions`) and `[JsonStringEnumMemberName]` wire names. Messages enums stay free of serialization attributes; mapping uses `switch` with `_ => throw`.
 

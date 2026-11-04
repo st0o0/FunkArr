@@ -21,7 +21,7 @@ public sealed class SabnzbdJsonTests
     [Fact]
     public void QueueSlot_serializes_with_sab_property_names()
     {
-        var slot = new QueueSlot("abc123", "Downloading", 0, "01:00:00", "500", "test.mkv", "sonarr", "250", "50", "Normal", "0");
+        var slot = new QueueSlot("abc123", SabnzbdQueueStatus.Downloading, 0, "01:00:00", "500", "test.mkv", "sonarr", "250", "50", SabnzbdPriority.Normal, "0");
         var json = JsonSerializer.Serialize(slot);
 
         Assert.Contains("\"nzo_id\":\"abc123\"", json);
@@ -47,7 +47,7 @@ public sealed class SabnzbdJsonTests
     [Fact]
     public void HistorySlot_serializes_with_sab_property_names()
     {
-        var slot = new HistorySlot("abc123", "test.mkv", "test.mkv", "sonarr", 1500000000, 120, "/downloads/test.mkv", "Completed", "", 1700000000);
+        var slot = new HistorySlot("abc123", "test.mkv", "test.mkv", "sonarr", 1500000000, 120, "/downloads/test.mkv", SabnzbdHistoryStatus.Completed, "", 1700000000);
         var json = JsonSerializer.Serialize(slot);
 
         Assert.Contains("\"nzo_id\":\"abc123\"", json);
@@ -62,7 +62,7 @@ public sealed class SabnzbdJsonTests
     [Fact]
     public void HistorySlot_null_storage_serializes()
     {
-        var slot = new HistorySlot("abc", "test", "test", "tv", 0, 0, null, "Failed", "connection error", 0);
+        var slot = new HistorySlot("abc", "test", "test", "tv", 0, 0, null, SabnzbdHistoryStatus.Failed, "connection error", 0);
         var json = JsonSerializer.Serialize(slot);
 
         Assert.Contains("\"storage\":null", json);

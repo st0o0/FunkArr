@@ -17,6 +17,6 @@ public sealed record HistorySlot(
     [property: JsonPropertyName("bytes")] long Bytes,
     [property: JsonPropertyName("download_time")] int DownloadTime,
     [property: JsonPropertyName("storage")] string? Storage,
-    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("status")] SabnzbdHistoryStatus Status,
     [property: JsonPropertyName("fail_message")] string FailMessage,
     [property: JsonPropertyName("completed_on")] long CompletedOn);

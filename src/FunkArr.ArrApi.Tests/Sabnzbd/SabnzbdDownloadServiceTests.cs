@@ -6,7 +6,6 @@ using FunkArr.ArrApi.Sabnzbd.Services;
 using FunkArr.Core;
 using FunkArr.Messages.Download;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 namespace FunkArr.ArrApi.Tests.Sabnzbd;
 
@@ -37,7 +36,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var result = await service.AddFile(null, null, null, CancellationToken.None);
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("No NZB file uploaded", error.Message);
     }
 
@@ -52,7 +51,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new DeleteDownloadResult(true, null));
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -66,7 +65,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new DeleteDownloadResult(false, "Not found"));
         var result = await task;
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Not found", error.Message);
     }
 
@@ -77,7 +76,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var result = await service.DeleteFromQueue("not-a-guid", CancellationToken.None);
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Item not found", error.Message);
     }
 
@@ -92,7 +91,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         historyProbe.Reply(new DeleteDownloadResult(true, null));
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -102,7 +101,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var result = await service.DeleteFromHistory("bad", CancellationToken.None);
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Item not found", error.Message);
     }
 
@@ -119,7 +118,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new RetryDownloadResult(true, null));
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -129,7 +128,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var result = await service.Retry("invalid", CancellationToken.None);
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Item not found", error.Message);
     }
 
@@ -144,7 +143,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new SetDownloadPriorityCompleted());
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -159,7 +158,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new ForceStartDownloadResult(true, null));
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -169,7 +168,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var result = await service.SetPriority("bad", "0", CancellationToken.None);
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Invalid nzo_id", error.Message);
     }
 
@@ -181,7 +180,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var result = await service.SetPriority(id.ToString(), "abc", CancellationToken.None);
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Invalid priority value", error.Message);
     }
 
@@ -196,7 +195,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new SetDownloadPriorityFailed("Download not found"));
         var result = await task;
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Download not found", error.Message);
     }
 
@@ -214,7 +213,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new SwapDownloadsCompleted());
         var result = await task;
 
-        Assert.IsType<SabnzbdResult.Ok>(result);
+        SabnzbdResultAssert.Ok(result);
     }
 
     [Fact]
@@ -224,7 +223,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
 
         var result = await service.Swap("bad1", "bad2", CancellationToken.None);
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Invalid nzo_id", error.Message);
     }
 
@@ -240,7 +239,7 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
         managerProbe.Reply(new SwapDownloadsFailed("Items not adjacent"));
         var result = await task;
 
-        var error = Assert.IsType<SabnzbdResult.Error>(result);
+        var error = SabnzbdResultAssert.Error(result);
         Assert.Equal("Items not adjacent", error.Message);
     }
 

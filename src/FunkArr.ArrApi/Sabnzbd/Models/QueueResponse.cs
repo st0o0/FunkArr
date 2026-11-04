@@ -16,7 +16,7 @@ public sealed record QueueData(
 
 public sealed record QueueSlot(
     [property: JsonPropertyName("nzo_id")] string NzoId,
-    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("status")] SabnzbdQueueStatus Status,
     [property: JsonPropertyName("index")] int Index,
     [property: JsonPropertyName("timeleft")] string Timeleft,
     [property: JsonPropertyName("mb")] string Mb,
@@ -24,5 +24,5 @@ public sealed record QueueSlot(
     [property: JsonPropertyName("cat")] string Cat,
     [property: JsonPropertyName("mbleft")] string Mbleft,
     [property: JsonPropertyName("percentage")] string Percentage,
-    [property: JsonPropertyName("priority")] string Priority,
+    [property: JsonPropertyName("priority")] SabnzbdPriority Priority,
     [property: JsonPropertyName("speed")] string Speed);

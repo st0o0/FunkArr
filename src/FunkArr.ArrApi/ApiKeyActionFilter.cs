@@ -1,5 +1,6 @@
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
+using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -36,5 +37,5 @@ public sealed class NewznabApiKeyFilter(IOptions<FunkArrOptions> options) : ApiK
 public sealed class SabnzbdApiKeyFilter(IOptions<FunkArrOptions> options) : ApiKeyActionFilter(options)
 {
     protected override IActionResult CreateErrorResult()
-        => new JsonResult(new { status = false, error = "API Key Incorrect" }) { StatusCode = 403 };
+        => new JsonResult(new SabnzbdErrorResponse(false, "API Key Incorrect")) { StatusCode = 403 };
 }

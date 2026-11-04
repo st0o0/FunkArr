@@ -8,7 +8,6 @@ using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace FunkArr.ArrApi.Newznab.Services;
 

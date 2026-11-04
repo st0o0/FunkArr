@@ -58,10 +58,10 @@ public sealed class SabnzbdController(
         return MapResult(await downloads.AddFile(name, req.Cat, req.Priority, cancellationToken));
     }
 
-    private ObjectResult MapResult(SabnzbdResult result) => result switch
+    private ObjectResult MapResult<T>(SabnzbdResult<T> result) => result switch
     {
-        SabnzbdResult.Ok ok => Ok(ok.Data),
-        SabnzbdResult.Error err => new ObjectResult(new SabnzbdErrorResponse(false, err.Message)) { StatusCode = err.StatusCode },
+        SabnzbdResult<T>.Ok ok => Ok(ok.Data),
+        SabnzbdResult<T>.Error err => new ObjectResult(new SabnzbdErrorResponse(false, err.Message)) { StatusCode = err.StatusCode },
         _ => StatusCode(500, new SabnzbdErrorResponse(false, "Unexpected result"))
     };
 }
