@@ -1,5 +1,6 @@
 using System.Text;
 using FunkArr.ArrApi.Newznab.Services;
+using FunkArr.Messages;
 using Microsoft.Extensions.Time.Testing;
 
 namespace FunkArr.ArrApi.Tests.Newznab;
@@ -12,7 +13,7 @@ public sealed class NzbWireTests
     public void GetNzb_with_all_fields_produces_expected_xml()
     {
         var id = NzbTestData.Id(
-            "Tatort", "https://example.com/video.mp4", "https://example.com/sub.vtt", "ARD", 5400, 1_234_567_890, "tv");
+            "Tatort", "https://example.com/video.mp4", "https://example.com/sub.vtt", "ARD", 5400, 1_234_567_890, MediaType.Show);
 
         var result = NzbService.GetNzb(id, _time);
 
@@ -25,7 +26,7 @@ public sealed class NzbWireTests
     [Fact]
     public void GetNzb_without_subtitle_omits_subtitle_meta()
     {
-        var id = NzbTestData.Id("Film", "https://example.com/film.mp4", null, "ZDF", 100, 200, "movie");
+        var id = NzbTestData.Id("Film", "https://example.com/film.mp4", null, "ZDF", 100, 200, MediaType.Movie);
 
         var result = NzbService.GetNzb(id, _time);
 

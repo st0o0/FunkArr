@@ -20,10 +20,10 @@
 
 ## 4. NzbPayload
 
-- [ ] 4.1 Add `NzbPayload` with `Encode()`/`Decode()` (JSON in Base64, local serializer options) and tests: round trip incl. tab in title and long title, optional subtitle, invalid Base64, invalid JSON, missing url
-- [ ] 4.2 Use `Encode()` in `NewznabSearchService.ToItem` and `Decode()` in `NzbService.GetNzb`; remove tab splitting, `Strip`, and positional parsing
-- [ ] 4.3 Build NZB `head/meta` from the payload; read uploaded NZB metas into a payload in the `addfile` flow; remove `NzbParseResult` and the `Meta("url")` fallback
-- [ ] 4.4 Update `NzbServiceTests`, `NzbGetTests`, `NzbRoundTripTests`, `NzbGeneratorTests`, `NzbParserTests`, `SearchResultMappingTests`, `SabnzbdDownloadServiceTests`
+- [x] 4.1 Add `NzbPayload` with `Encode()`/`Decode()` (JSON in Base64, local serializer options) and tests: round trip incl. tab in title and long title, optional subtitle, invalid Base64, invalid JSON, missing url
+- [x] 4.2 Use `Encode()` in `NewznabSearchService.ToItem` and `Decode()` in `NzbService.GetNzb`; remove tab splitting, `Strip`, and positional parsing
+- [x] 4.3 Build NZB `head/meta` from the payload; read uploaded NZB metas into a payload in the `addfile` flow; remove `NzbParseResult` and the `Meta("url")` fallback
+- [x] 4.4 Update `NzbServiceTests`, `NzbGetTests`, `NzbRoundTripTests`, `NzbGeneratorTests`, `NzbParserTests`, `SearchResultMappingTests`, `SabnzbdDownloadServiceTests`
 
 ## 5. Verification
 

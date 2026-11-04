@@ -128,15 +128,14 @@ public sealed class NewznabSearchService(
         SearchResultItem item, NewznabCategory category, string baseUrl, string apiKey,
         string? guid = null, DateTimeOffset? pubDate = null)
     {
-        var nzbPayload = string.Join('\t',
-            Strip(item.Title),
-            Strip(item.Url),
-            Strip(item.SubtitleUrl ?? ""),
-            Strip(item.Channel),
-            item.Duration.ToString(),
-            item.Size.ToString(),
-            category == NewznabCategory.Movie ? "movie" : "tv");
-        var nzbId = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(nzbPayload));
+        var nzbId = new NzbPayload(
+            item.Title,
+            item.Url,
+            string.IsNullOrEmpty(item.SubtitleUrl) ? null : item.SubtitleUrl,
+            item.Channel,
+            item.Duration,
+            item.Size,
+            category == NewznabCategory.Movie ? MediaType.Movie : MediaType.Show).Encode();
         var getNzbUrl = $"{baseUrl}/index/api?t=get&id={Uri.EscapeDataString(nzbId)}&apikey={Uri.EscapeDataString(apiKey)}";
         return new Item
         {
@@ -307,6 +306,4 @@ public sealed class NewznabSearchService(
 
     internal static int? ParseInt(string? value) =>
         int.TryParse(value, out var result) ? result : null;
-
-    private static string Strip(string value) => value.Replace('\t', ' ');
 }

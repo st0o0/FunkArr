@@ -2,6 +2,7 @@ using System.Text;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.ArrApi.Newznab.Services;
+using FunkArr.Messages;
 using FunkArr.Messages.Search;
 using FunkArr.Messages.Shared;
 
@@ -51,7 +52,7 @@ public sealed class SearchResultMappingTests
     }
 
     [Fact]
-    public void ToRss_encodes_nzb_id_as_base64()
+    public void ToRss_encodes_nzb_id_as_payload()
     {
         var items = new[]
         {
@@ -60,9 +61,28 @@ public sealed class SearchResultMappingTests
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
-        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(item.Guid.Value));
+        var decoded = NzbPayload.Decode(item.Guid.Value);
 
-        Assert.Equal("Title\thttps://example.com/v.mp4\t\tCH\t100\t0\ttv", decoded);
+        Assert.Equal(new NzbPayload("Title", "https://example.com/v.mp4", null, "CH", 100, 0, MediaType.Show), decoded);
+    }
+
+    [Fact]
+    public void ToRss_uses_movie_category_and_subtitle_in_nzb_payload()
+    {
+        var items = new[]
+        {
+            new SearchResultItem(
+                "Film", "ZDF", "Topic", "https://example.com/f.mp4", 200, 5, 720, null, 1.0,
+                "https://example.com/f.vtt")
+        };
+
+        var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Movie);
+        var item = Assert.Single(rss.Channel.Items);
+        var decoded = NzbPayload.Decode(item.Guid.Value);
+
+        Assert.Equal(
+            new NzbPayload("Film", "https://example.com/f.mp4", "https://example.com/f.vtt", "ZDF", 200, 5, MediaType.Movie),
+            decoded);
     }
 
     [Fact]
@@ -196,7 +216,7 @@ public sealed class SearchResultMappingTests
     }
 
     [Fact]
-    public void ToRss_strips_tabs_from_nzb_payload_fields()
+    public void ToRss_preserves_tabs_in_nzb_payload_fields()
     {
         var items = new[]
         {
@@ -207,12 +227,12 @@ public sealed class SearchResultMappingTests
 
         var rss = NewznabSearchService.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
-        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(item.Guid.Value));
-        var parts = decoded.Split('\t');
+        var decoded = NzbPayload.Decode(item.Guid.Value);
 
-        Assert.Equal(7, parts.Length);
-        Assert.Equal("Title with tabs", parts[0]);
-        Assert.Equal("Chan nel", parts[3]);
+        Assert.NotNull(decoded);
+        Assert.Multiple(
+            () => Assert.Equal("Title\twith\ttabs", decoded.Title),
+            () => Assert.Equal("Chan\tnel", decoded.Channel));
     }
 
     [Fact]

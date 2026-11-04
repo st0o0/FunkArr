@@ -413,7 +413,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
     public async Task AddFile_returns_status_and_nzo_ids()
     {
         var (controller, manager, _) = CreateController();
-        var nzb = NzbTestData.Generate("Tatort", "https://example.com/video.mp4", "https://example.com/sub.vtt", "ARD", 5400, 1_234_567_890, "tv");
+        var nzb = NzbTestData.Generate("Tatort", "https://example.com/video.mp4", "https://example.com/sub.vtt", "ARD", 5400, 1_234_567_890, MediaType.Show);
         var file = new FormFile(new MemoryStream(nzb), 0, nzb.Length, "name", "tatort.nzb");
 
         var task = controller.HandlePost(new DownloadPostRequest("addfile", null, null), file, TestContext.Current.CancellationToken);

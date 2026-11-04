@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Hosting;
+using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.ArrApi.Newznab.Services;
 using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Core;
@@ -21,7 +22,7 @@ public sealed class SabnzbdDownloadService(
             return new SabnzbdError("No NZB file uploaded");
         }
 
-        NzbParseResult parsed;
+        NzbPayload payload;
         try
         {
             await using var stream = file.OpenReadStream();
@@ -31,7 +32,7 @@ public sealed class SabnzbdDownloadService(
                 return new SabnzbdError("Invalid NZB file: not valid XML");
             }
 
-            parsed = result;
+            payload = result;
         }
         catch (Exception ex)
         {
@@ -39,25 +40,19 @@ public sealed class SabnzbdDownloadService(
             return new SabnzbdError("Invalid NZB file: not valid XML");
         }
 
-        var videoUrl = parsed.Meta(FunkArrHeaders.Url) ?? parsed.Meta("url");
-        if (string.IsNullOrEmpty(videoUrl))
+        if (string.IsNullOrEmpty(payload.Url))
         {
             return new SabnzbdError("Invalid NZB format: missing video URL");
         }
 
-        var title = parsed.Meta("title") ?? "Unknown";
-        var subtitleUrl = parsed.Meta(FunkArrHeaders.SubtitleUrl);
-        var channel = parsed.Meta(FunkArrHeaders.Channel) ?? "";
-        _ = int.TryParse(parsed.Meta(FunkArrHeaders.Duration), out var duration);
-        _ = long.TryParse(parsed.Meta(FunkArrHeaders.Size), out var size);
-        var categoryStr = cat ?? parsed.Meta(FunkArrHeaders.Category) ?? "";
-        var category = SabnzbdResponseMapper.ParseMediaType(categoryStr);
+        var category = cat is null ? payload.Category : SabnzbdResponseMapper.ParseMediaType(cat);
         var downloadPriority = SabnzbdResponseMapper.MapSabnzbdPriority(priority);
 
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var media = new DownloadMedia(title, videoUrl, subtitleUrl, channel, duration, size, category);
+            var media = new DownloadMedia(
+                payload.Title, payload.Url, payload.SubtitleUrl, payload.Channel, payload.Duration, payload.Size, category);
             var addCmd = new AddDownload(media, downloadPriority);
             var addResult = await manager.Ask<DownloadAdded>(addCmd, ct);
 
@@ -70,12 +65,12 @@ public sealed class SabnzbdDownloadService(
         }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex, "Timeout adding download for {Title}", title);
+            logger.LogWarning(ex, "Timeout adding download for {Title}", payload.Title);
             return new SabnzbdError("Request timed out", 504);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to add download for {Title}", title);
+            logger.LogError(ex, "Failed to add download for {Title}", payload.Title);
             return new SabnzbdError("Download request failed");
         }
     }
