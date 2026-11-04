@@ -242,7 +242,7 @@ public sealed class PersistenceMappingTests
     public void SearchSource_enums_have_matching_members()
     {
         Assert.Equal(
-            Enum.GetNames<SearchSource>(),
+            Enum.GetNames<SearchSource>().Where(n => n != "Unknown"),
             Enum.GetNames<PersistedSearchSource>());
     }
 
@@ -250,7 +250,7 @@ public sealed class PersistenceMappingTests
     public void MediathekVariant_enums_have_matching_members()
     {
         Assert.Equal(
-            Enum.GetNames<MediathekVariant>(),
+            Enum.GetNames<MediathekVariant>().Where(n => n != "Unknown"),
             Enum.GetNames<PersistedMediathekVariant>());
     }
 

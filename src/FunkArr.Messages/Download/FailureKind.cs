@@ -2,6 +2,6 @@ namespace FunkArr.Messages.Download;
 
 public enum FailureKind
 {
-    Transient,
-    Permanent
+    Transient = 0,
+    Permanent = 1
 }

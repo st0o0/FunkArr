@@ -2,8 +2,9 @@ namespace FunkArr.Api.Models.RuleSets;
 
 public enum TitlePartType
 {
-    Static,
-    Regex
+    Unknown = 0,
+    Static = 1,
+    Regex = 2
 }
 
 public sealed record TitleRuleOutput(

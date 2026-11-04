@@ -5,24 +5,27 @@ namespace FunkArr.Api.Models.Scoring;
 
 public enum MatchMethod
 {
-    RegexExtracted,
-    TitleMatch,
-    AirdateMatch,
-    YearMatch
+    Unknown = 0,
+    RegexExtracted = 1,
+    TitleMatch = 2,
+    AirdateMatch = 3,
+    YearMatch = 4
 }
 
 public enum RuleOutcome
 {
-    Matched,
-    FilterFailed,
-    IdentificationFailed
+    Unknown = 0,
+    Matched = 1,
+    FilterFailed = 2,
+    IdentificationFailed = 3
 }
 
 public enum SearchSource
 {
-    Sonarr,
-    Radarr,
-    Prowlarr,
+    Unknown = 0,
+    Sonarr = 1,
+    Radarr = 2,
+    Prowlarr = 3,
     Feed = 4
 }
 
@@ -61,9 +64,10 @@ public sealed record RuleTrace(
 
 public enum FilterOperator
 {
-    All,
-    Any,
-    Not
+    Unknown = 0,
+    All = 1,
+    Any = 2,
+    Not = 3
 }
 
 public sealed record FilterGroupTrace(

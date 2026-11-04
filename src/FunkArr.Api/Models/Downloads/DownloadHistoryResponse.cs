@@ -4,8 +4,9 @@ namespace FunkArr.Api.Models.Downloads;
 
 public enum HistoryStatus
 {
-    Completed,
-    Failed
+    Unknown = 0,
+    Completed = 1,
+    Failed = 2
 }
 
 public sealed record DownloadHistoryResponse(

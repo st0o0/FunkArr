@@ -15,6 +15,7 @@ public sealed class TestScoringWorker : ReceiveActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _scoringManager = Context.GetActor<IScoringManager>();
+    private readonly IActorRef _enrichmentManager = Context.GetActor<IEnrichmentManager>();
     private readonly TestScoringWorkerState _state = TestScoringWorkerState.Empty;
 
     public TestScoringWorker()
@@ -74,10 +75,9 @@ public sealed class TestScoringWorker : ReceiveActor
             return;
         }
 
-        var enrichmentManager = Context.GetActor<IEnrichmentManager>();
         var enrichRequest = _state.BuildEpisodeEnrichRequest(matchedIndices);
 
-        enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout)
+        _enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout)
             .PipeTo(Self,
                 success: r => new EpisodeEnrichmentResult(r, itemTraces, matchedIndices),
                 failure: _ => new EnrichmentFailed(itemTraces));
@@ -94,10 +94,9 @@ public sealed class TestScoringWorker : ReceiveActor
             return;
         }
 
-        var enrichmentManager = Context.GetActor<IEnrichmentManager>();
         var enrichRequest = _state.BuildMovieEnrichRequest(matchedIndices);
 
-        enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout)
+        _enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout)
             .PipeTo(Self,
                 success: r => new MovieEnrichmentResult(r, itemTraces, matchedIndices),
                 failure: _ => new EnrichmentFailed(itemTraces));

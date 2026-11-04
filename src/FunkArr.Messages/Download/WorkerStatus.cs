@@ -2,8 +2,8 @@ namespace FunkArr.Messages.Download;
 
 public enum WorkerStatus
 {
-    Initialized,
-    Downloading,
-    Completed,
-    Failed
+    Initialized = 0,
+    Downloading = 1,
+    Completed = 2,
+    Failed = 3
 }

@@ -2,9 +2,10 @@ namespace FunkArr.Api.Models.System;
 
 public enum CheckStatus
 {
-    Ok,
-    Warn,
-    Fail
+    Unknown = 0,
+    Ok = 1,
+    Warn = 2,
+    Fail = 3
 }
 
 public sealed record SetupHealthCheck(

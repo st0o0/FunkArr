@@ -1,6 +1,13 @@
 namespace FunkArr.Feed;
 
-public enum CrawlStatus { Completed, CompletedPartial, Unchanged, Failed }
+public enum CrawlStatus
+{
+    Unknown = 0,
+    Completed = 1,
+    CompletedPartial = 2,
+    Unchanged = 3,
+    Failed = 4
+}
 
 public sealed record CrawlInput(
     long Cursor,

@@ -23,8 +23,7 @@ public sealed class TestScoringWorkerState
 
     public bool HasEnrichmentConfig() => _request.EnrichmentConfig is not null;
 
-    public bool IsShowWithTvdb() =>
-        _request.MediaType == Messages.MediaType.Show && _request.TvdbId is not null;
+    public bool IsShowWithTvdb() => _request is { MediaType: Messages.MediaType.Show, TvdbId: not null };
 
     public bool IsMovieWithExternalId() =>
         _request.MediaType == Messages.MediaType.Movie &&

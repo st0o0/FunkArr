@@ -4,15 +4,17 @@ namespace FunkArr.Api.Models.Downloads;
 
 public enum QueueStatus
 {
-    Processing,
-    Queued
+    Unknown = 0,
+    Processing = 1,
+    Queued = 2
 }
 
 public enum QueuePhase
 {
-    VideoDownload,
-    Remuxing,
-    Moving
+    Unknown = 0,
+    VideoDownload = 1,
+    Remuxing = 2,
+    Moving = 3
 }
 
 public enum QueuePriority
@@ -21,6 +23,7 @@ public enum QueuePriority
     Normal = 0,
     High = 1
 }
+
 
 public sealed record DownloadQueueResponse(
     DownloadQueueItem[] Items,

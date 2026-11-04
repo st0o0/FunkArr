@@ -2,6 +2,7 @@ namespace FunkArr.Messages.Enrichment;
 
 public enum RuntimeMode
 {
-    Tiebreaker,
-    Filter
+    Unknown = 0,
+    Tiebreaker = 1,
+    Filter = 2
 }

@@ -2,6 +2,7 @@ namespace FunkArr.Messages.Enrichment;
 
 public enum EnrichmentMethod
 {
-    Title,
-    Airdate
+    Unknown = 0,
+    Title = 1,
+    Airdate = 2
 }

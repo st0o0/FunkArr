@@ -10,9 +10,9 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
 {
     public enum SearchType
     {
-        Tv,
-        Movie,
-        Both
+        Tv = 0,
+        Movie = 1,
+        Both = 2
     }
 
     private sealed record SearchTimeout(Guid SearchId);

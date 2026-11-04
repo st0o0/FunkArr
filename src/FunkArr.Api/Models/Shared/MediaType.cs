@@ -2,6 +2,7 @@ namespace FunkArr.Api.Models.Shared;
 
 public enum MediaType
 {
-    Show,
-    Movie
+    Unknown = 0,
+    Show = 1,
+    Movie = 2
 }

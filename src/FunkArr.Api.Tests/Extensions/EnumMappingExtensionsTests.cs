@@ -57,6 +57,14 @@ public sealed class EnumMappingExtensionsTests
         AssertRoundtrip<MsgDownload.DownloadPriority, QueuePriority>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
+    public void UnknownApiValue_Throws() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => MediaType.Unknown.ToMessage());
+
+    [Fact]
+    public void UnknownMessageValue_Throws() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() => Msg.MediaType.Unknown.ToApi());
+
+    [Fact]
     public void UndefinedApiValue_Throws()
     {
         var ex = Assert.Throws<ArgumentOutOfRangeException>(() => ((QueuePriority)5).ToMessage());
@@ -78,8 +86,9 @@ public sealed class EnumMappingExtensionsTests
         where TMessage : struct, Enum
         where TApi : struct, Enum
     {
-        var messageValues = Enum.GetValues<TMessage>();
-        Assert.Equal(messageValues.Length, Enum.GetValues<TApi>().Length);
+        var messageValues = Enum.GetValues<TMessage>().Where(v => v.ToString() != "Unknown").ToArray();
+        var apiValues = Enum.GetValues<TApi>().Where(v => v.ToString() != "Unknown").ToArray();
+        Assert.Equal(messageValues.Length, apiValues.Length);
 
         foreach (var message in messageValues)
         {

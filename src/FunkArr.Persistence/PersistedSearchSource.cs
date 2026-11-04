@@ -2,8 +2,8 @@ namespace FunkArr.Persistence;
 
 public enum PersistedSearchSource
 {
-    Sonarr,
-    Radarr,
-    Prowlarr,
+    Sonarr = 0,
+    Radarr = 1,
+    Prowlarr = 2,
     Feed = 4
 }

@@ -2,9 +2,10 @@ namespace FunkArr.Messages.Scoring;
 
 public enum IdentificationStrategy
 {
-    SeasonAndEpisodeNumber,
-    AbsoluteEpisodeNumber,
-    TitleExact,
-    TitleIncludes,
-    AirdateExtraction
+    Unknown = 0,
+    SeasonAndEpisodeNumber = 1,
+    AbsoluteEpisodeNumber = 2,
+    TitleExact = 3,
+    TitleIncludes = 4,
+    AirdateExtraction = 5
 }

@@ -2,6 +2,7 @@ namespace FunkArr.Core;
 
 public enum VariantPolicy
 {
-    Exclude,
-    Allow
+    Unknown = 0,
+    Exclude = 1,
+    Allow = 2
 }

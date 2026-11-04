@@ -2,6 +2,7 @@ namespace FunkArr.Messages.Scoring;
 
 public enum TitlePartType
 {
-    Static,
-    Regex
+    Unknown = 0,
+    Static = 1,
+    Regex = 2
 }

@@ -4,10 +4,10 @@ namespace FunkArr.Api.Models.RuleSets;
 
 public enum SourceType
 {
-    Community,
-    Local,
-    Merged,
-    Unknown
+    Unknown = 0,
+    Community = 1,
+    Local = 2,
+    Merged = 3
 }
 
 public sealed record RuleSetListResponse(

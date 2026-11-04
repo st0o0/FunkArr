@@ -4,23 +4,26 @@ namespace FunkArr.Api.Models.RuleSets;
 
 public enum EnrichmentMethod
 {
-    Title,
-    Airdate
+    Unknown = 0,
+    Title = 1,
+    Airdate = 2
 }
 
 public enum RuntimeMode
 {
-    Tiebreaker,
-    Filter
+    Unknown = 0,
+    Tiebreaker = 1,
+    Filter = 2
 }
 
 public enum IdentificationStrategy
 {
-    SeasonAndEpisodeNumber,
-    AbsoluteEpisodeNumber,
-    TitleExact,
-    TitleIncludes,
-    AirdateExtraction
+    Unknown = 0,
+    SeasonAndEpisodeNumber = 1,
+    AbsoluteEpisodeNumber = 2,
+    TitleExact = 3,
+    TitleIncludes = 4,
+    AirdateExtraction = 5
 }
 
 public sealed record EnrichmentConfigOutput(

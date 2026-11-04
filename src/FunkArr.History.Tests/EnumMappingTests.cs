@@ -127,7 +127,7 @@ public sealed class EnumMappingTests
         where TDomain : struct, Enum
         where TPersisted : struct, Enum
     {
-        var domainValues = Enum.GetValues<TDomain>();
+        var domainValues = Enum.GetValues<TDomain>().Where(v => v.ToString() != "Unknown").ToArray();
         var persistedValues = Enum.GetValues<TPersisted>();
         Assert.Equal(domainValues.Length, persistedValues.Length);
 
