@@ -60,5 +60,10 @@ src/FunkArr.UI/test-results/
 src/FunkArr.UI/playwright-report/
 src/FunkArr.UI/public/mockServiceWorker.js
 
+# Claude Code (skills and commands are tracked explicitly)
+.claude/*
+!.claude/skills/
+!.claude/commands/
+
 # Generated catalog
 data/community/CATALOG.md
