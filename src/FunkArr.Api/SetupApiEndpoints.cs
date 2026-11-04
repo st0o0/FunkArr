@@ -7,9 +7,9 @@ using Microsoft.Extensions.Options;
 
 namespace FunkArr.Api;
 
-public static class SetupArrEndpoints
+public static class SetupApiEndpoints
 {
-    public static WebApplication MapSetupArrApi(this WebApplication app)
+    public static WebApplication MapSetupApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/setup")
             .WithTags("Setup")

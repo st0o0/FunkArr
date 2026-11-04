@@ -12,8 +12,7 @@ public sealed class ArrSetupClient(HttpClient httpClient)
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<ArrResourceResponse> PostResourceAsync<T>(
-        ArrConnection connection, string apiPath, T payload)
+    public async Task<ArrResourceResponse> PostResourceAsync<T>(ArrConnection connection, string apiPath, T payload)
     {
         if (!Uri.TryCreate(connection.BaseUrl, UriKind.Absolute, out var baseUri) ||
             baseUri.Scheme is not ("http" or "https"))

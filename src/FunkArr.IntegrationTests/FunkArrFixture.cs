@@ -104,7 +104,7 @@ public sealed class FunkArrFixture : IAsyncLifetime
         _app.MapDownloadsApi();
         _app.MapRuleSetApi();
         _app.MapMediathekApi();
-        _app.MapSetupArrApi();
+        _app.MapSetupApi();
         _app.MapControllers();
 
         await _app.StartAsync();

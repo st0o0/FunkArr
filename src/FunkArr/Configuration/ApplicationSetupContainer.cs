@@ -44,7 +44,7 @@ public sealed class ApplicationSetupContainer : ISetup<WebApplication>
 
         app.MapSystemApi();
         app.MapFeedApi();
-        app.MapSetupArrApi();
+        app.MapSetupApi();
         app.MapControllers();
 
         app.MapPrometheusScrapingEndpoint("/metrics");
