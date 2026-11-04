@@ -1,3 +1,4 @@
+using Akka.Actor;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +18,12 @@ internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> l
                 title: "Bad Request",
                 detail: ex.Message,
                 statusCode: 400);
+        }
+        catch (AskTimeoutException ex)
+        {
+            var endpoint = context.HttpContext.GetEndpoint()?.DisplayName ?? "unknown";
+            logger.LogWarning(ex, "Ask timeout in endpoint {Endpoint}", endpoint);
+            return ApiResults.GatewayTimeout();
         }
         catch (TimeoutException ex)
         {
