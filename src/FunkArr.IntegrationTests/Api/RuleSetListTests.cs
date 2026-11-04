@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.RuleSets;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Shared;
@@ -12,14 +12,12 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("RuleSets")]
 public sealed class RuleSetListTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task List_ReturnsRuleSetsWithStatsAndSummaries()
     {
-        var task = _fixture.Client.GetAsync("/api/rulesets", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/rulesets", TestContext.Current.CancellationToken);
 
-        var resolverProbe = _fixture.GetProbe<IRuleSetResolver>();
+        var resolverProbe = fixture.GetProbe<IRuleSetResolver>();
         resolverProbe.ExpectMsg<QueryRegisteredRuleSets>(cancellationToken: TestContext.Current.CancellationToken);
         resolverProbe.Reply(new RegisteredRuleSetsResult(
         [
@@ -29,14 +27,14 @@ public sealed class RuleSetListTests(FunkArrFixture fixture)
                 "Tatort", Messages.MediaType.Show)
         ]));
 
-        var managerProbe = _fixture.GetProbe<IRuleSetManager>();
+        var managerProbe = fixture.GetProbe<IRuleSetManager>();
         managerProbe.ExpectMsg<QueryRuleSetSummaries>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new RuleSetSummaryResult(
         [
             new RuleSetSummaryEntry("tatort", 3, "community")
         ]));
 
-        var statsProbe = _fixture.GetProbe<IStatsCollector>();
+        var statsProbe = fixture.GetProbe<IStatsCollector>();
         statsProbe.ExpectMsg<QueryAllStats>(cancellationToken: TestContext.Current.CancellationToken);
         statsProbe.Reply(new AllStatsResult(
             ImmutableDictionary<string, ScoringStatsResult>.Empty.Add(
@@ -61,17 +59,17 @@ public sealed class RuleSetListTests(FunkArrFixture fixture)
     [Fact]
     public async Task List_Empty_ReturnsEmptyArray()
     {
-        var task = _fixture.Client.GetAsync("/api/rulesets", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/rulesets", TestContext.Current.CancellationToken);
 
-        var resolverProbe = _fixture.GetProbe<IRuleSetResolver>();
+        var resolverProbe = fixture.GetProbe<IRuleSetResolver>();
         resolverProbe.ExpectMsg<QueryRegisteredRuleSets>(cancellationToken: TestContext.Current.CancellationToken);
         resolverProbe.Reply(new RegisteredRuleSetsResult([]));
 
-        var managerProbe = _fixture.GetProbe<IRuleSetManager>();
+        var managerProbe = fixture.GetProbe<IRuleSetManager>();
         managerProbe.ExpectMsg<QueryRuleSetSummaries>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new RuleSetSummaryResult([]));
 
-        var statsProbe = _fixture.GetProbe<IStatsCollector>();
+        var statsProbe = fixture.GetProbe<IStatsCollector>();
         statsProbe.ExpectMsg<QueryAllStats>(cancellationToken: TestContext.Current.CancellationToken);
         statsProbe.Reply(new AllStatsResult(ImmutableDictionary<string, ScoringStatsResult>.Empty));
 

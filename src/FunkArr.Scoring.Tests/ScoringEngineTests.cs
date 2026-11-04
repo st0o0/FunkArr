@@ -73,7 +73,7 @@ public sealed class ScoringEngineTests
         var config = Config(0.9f, ChannelRule("ZDF"));
         var candidates = new[] { Candidate() };
 
-        var (scored, traces) = ScoringEngine.Score(config, candidates);
+        var (scored, _) = ScoringEngine.Score(config, candidates);
 
         var item = Assert.Single(scored);
         Assert.False(item.Matched);

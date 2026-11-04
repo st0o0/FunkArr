@@ -1,7 +1,7 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Routing;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using FunkArr.Messages.Scoring;
 using Microsoft.Extensions.Options;
 using Terp.Diagnostics;

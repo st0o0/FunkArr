@@ -1,9 +1,11 @@
 using Akka.Actor;
 using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
+using FunkArr.Search.Workers;
 
 namespace FunkArr.Search.Tests;
 

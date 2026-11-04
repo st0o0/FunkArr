@@ -1,4 +1,4 @@
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using Terp.Hosting;
 
 namespace FunkArr.Configuration;

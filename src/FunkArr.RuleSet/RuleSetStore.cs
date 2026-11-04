@@ -1,8 +1,9 @@
 using System.Collections.Immutable;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using FunkArr.Core;
+using FunkArr.Core.Data;
 using FunkArr.RuleSet.DiskModel;
+using FunkArr.RuleSet.Manager;
 
 namespace FunkArr.RuleSet;
 

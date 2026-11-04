@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 
 namespace FunkArr.IntegrationTests.Arr;
@@ -9,16 +9,14 @@ namespace FunkArr.IntegrationTests.Arr;
 [Collection("Sabnzbd")]
 public sealed class SabnzbdQueueTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task Queue_with_items_returns_sabnzbd_format_slots()
     {
-        var downloadProbe = _fixture.GetProbe<IDownloadManager>();
+        var downloadProbe = fixture.GetProbe<IDownloadManager>();
 
-        var task = _fixture.Client.GetAsync("/download/api?mode=queue&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/download/api?mode=queue&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = downloadProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
+        downloadProbe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         var items = new[]
         {
             TestData.QueueItem("Tatort.S01E05.720p.WEB-DL"),
@@ -44,10 +42,10 @@ public sealed class SabnzbdQueueTests(FunkArrFixture fixture)
     [Fact]
     public async Task Queue_delete_returns_success()
     {
-        var downloadProbe = _fixture.GetProbe<IDownloadManager>();
+        var downloadProbe = fixture.GetProbe<IDownloadManager>();
         var downloadId = Guid.NewGuid();
 
-        var task = _fixture.Client.GetAsync($"/download/api?mode=queue&name=delete&value={downloadId}&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync($"/download/api?mode=queue&name=delete&value={downloadId}&apikey=test-key", TestContext.Current.CancellationToken);
 
         var msg = downloadProbe.ExpectMsg<DeleteDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(downloadId, msg.DownloadId);
@@ -64,10 +62,10 @@ public sealed class SabnzbdQueueTests(FunkArrFixture fixture)
     [Fact]
     public async Task Queue_priority_returns_success()
     {
-        var downloadProbe = _fixture.GetProbe<IDownloadManager>();
+        var downloadProbe = fixture.GetProbe<IDownloadManager>();
         var downloadId = Guid.NewGuid();
 
-        var task = _fixture.Client.GetAsync($"/download/api?mode=queue&name=priority&value={downloadId}&value2=1&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync($"/download/api?mode=queue&name=priority&value={downloadId}&value2=1&apikey=test-key", TestContext.Current.CancellationToken);
 
         var msg = downloadProbe.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(downloadId, msg.DownloadId);
@@ -84,11 +82,11 @@ public sealed class SabnzbdQueueTests(FunkArrFixture fixture)
     [Fact]
     public async Task Queue_swap_returns_success()
     {
-        var downloadProbe = _fixture.GetProbe<IDownloadManager>();
+        var downloadProbe = fixture.GetProbe<IDownloadManager>();
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
 
-        var task = _fixture.Client.GetAsync($"/download/api?mode=queue&name=switch&value={id1}&value2={id2}&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync($"/download/api?mode=queue&name=switch&value={id1}&value2={id2}&apikey=test-key", TestContext.Current.CancellationToken);
 
         var msg = downloadProbe.ExpectMsg<SwapDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id1, msg.DownloadId1);

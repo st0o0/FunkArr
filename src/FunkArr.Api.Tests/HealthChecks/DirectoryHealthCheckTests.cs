@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using FunkArr.Api.HealthChecks;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Core.Data;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

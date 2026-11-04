@@ -5,7 +5,7 @@ using FunkArr.Api.Infrastructure;
 using FunkArr.Api.Models.Feed;
 using FunkArr.Api.Models.Shared;
 using FunkArr.Api.Validation;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Feed;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

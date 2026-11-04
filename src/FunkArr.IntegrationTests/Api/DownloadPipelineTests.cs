@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.Shared;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -9,14 +9,12 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Downloads")]
 public sealed class DownloadPipelineTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task Pause_ReturnsOperationResult()
     {
-        var task = _fixture.Client.PostAsync("/api/downloads/queue/pause", null, TestContext.Current.CancellationToken);
+        var task = fixture.Client.PostAsync("/api/downloads/queue/pause", null, TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         probe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new PauseDownloadsResult(true));
 
@@ -32,9 +30,9 @@ public sealed class DownloadPipelineTests(FunkArrFixture fixture)
     [Fact]
     public async Task Resume_ReturnsOperationResult()
     {
-        var task = _fixture.Client.PostAsync("/api/downloads/queue/resume", null, TestContext.Current.CancellationToken);
+        var task = fixture.Client.PostAsync("/api/downloads/queue/resume", null, TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         probe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new ResumeDownloadsResult(true));
 

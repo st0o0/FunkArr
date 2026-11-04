@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.Downloads;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -9,17 +9,15 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Downloads")]
 public sealed class DownloadHistoryTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task GetHistory_WithEntries_ReturnsTypedResponse()
     {
         var completed = TestData.CompletedItem();
         var failed = TestData.FailedItem();
 
-        var task = _fixture.Client.GetAsync("/api/downloads/history", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/downloads/history", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadHistoryManager>();
+        var probe = fixture.GetProbe<IDownloadHistoryManager>();
         probe.ExpectMsg<QueryHistory>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new HistoryResult([completed, failed], TotalItems: 2));
 
@@ -48,9 +46,9 @@ public sealed class DownloadHistoryTests(FunkArrFixture fixture)
     [Fact]
     public async Task GetHistoryStats_ReturnsTypedResponse()
     {
-        var task = _fixture.Client.GetAsync("/api/downloads/history/stats", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/downloads/history/stats", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadHistoryManager>();
+        var probe = fixture.GetProbe<IDownloadHistoryManager>();
         probe.ExpectMsg<QueryHistoryStats>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new HistoryStatsResult(
             TotalCompleted: 42,
@@ -75,9 +73,9 @@ public sealed class DownloadHistoryTests(FunkArrFixture fixture)
     [Fact]
     public async Task GetHistoryCategories_ReturnsArray()
     {
-        var task = _fixture.Client.GetAsync("/api/downloads/history/categories", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/downloads/history/categories", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadHistoryManager>();
+        var probe = fixture.GetProbe<IDownloadHistoryManager>();
         probe.ExpectMsg<QueryHistoryCategories>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new HistoryCategoriesResult(["tv", "movie"]));
 

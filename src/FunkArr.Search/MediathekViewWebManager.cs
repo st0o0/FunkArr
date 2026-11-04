@@ -3,6 +3,7 @@ using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Search.Client;
 using Terp.Akka;
 using Terp.Diagnostics;
 

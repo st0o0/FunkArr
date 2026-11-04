@@ -2,7 +2,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.ArrApi.Newznab.Requests;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;

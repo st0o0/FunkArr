@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.RuleSets;
 using FunkArr.Api.Models.Scoring;
-using FunkArr.Messages;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Scoring;
 using IdentificationStrategy = FunkArr.Api.Models.RuleSets.IdentificationStrategy;
 using MsgHistory = FunkArr.Messages.Scoring.History;
@@ -12,8 +12,6 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("RuleSets")]
 public sealed class RuleSetScoringTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task TestScoring_ReturnsItemTraces()
     {
@@ -35,10 +33,10 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
                     Duration: 5400)
             ]);
 
-        var task = _fixture.Client.PostAsJsonAsync("/api/rulesets/test", request, cancellationToken: TestContext.Current.CancellationToken);
+        var task = fixture.Client.PostAsJsonAsync("/api/rulesets/test", request, cancellationToken: TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<ITestScoringRegion>();
-        var msg = probe.ExpectMsg<TestScoreWithEnrichment>(cancellationToken: TestContext.Current.CancellationToken);
+        var probe = fixture.GetProbe<ITestScoringRegion>();
+        probe.ExpectMsg<TestScoreWithEnrichment>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new TestScoreWithEnrichmentCompleted(
             [
                 new MsgHistory.ItemTrace(

@@ -1,5 +1,5 @@
 using System.IO.Abstractions.TestingHelpers;
-using FunkArr.Core;
+using FunkArr.Core.Data;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FunkArr.Download.Tests;

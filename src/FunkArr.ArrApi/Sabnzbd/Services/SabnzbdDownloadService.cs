@@ -3,7 +3,7 @@ using Akka.Hosting;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.ArrApi.Newznab.Services;
 using FunkArr.ArrApi.Sabnzbd.Models;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 using FunkArr.Messages.Shared;
 using Microsoft.AspNetCore.Http;

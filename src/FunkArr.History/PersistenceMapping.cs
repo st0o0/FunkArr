@@ -81,14 +81,14 @@ internal static class PersistenceMapping
         new(trace.Season, trace.Episode, trace.Title);
 
     public static PersistedIdentificationTrace ToPersistence(this IdentificationTrace trace) =>
-        new(trace.Strategy is not null ? trace.Strategy.Value.ToPersistence() : null,
+        new(trace.Strategy?.ToPersistence(),
             trace.Attempted,
-            trace.Detail is not null ? trace.Detail.Value.ToPersistence() : null);
+            trace.Detail?.ToPersistence());
 
     public static IdentificationTrace ToDomain(this PersistedIdentificationTrace trace) =>
-        new(trace.Strategy is not null ? trace.Strategy.Value.ToDomain() : null,
+        new(trace.Strategy?.ToDomain(),
             trace.Attempted,
-            trace.Detail is not null ? trace.Detail.Value.ToDomain() : null);
+            trace.Detail?.ToDomain());
 
     public static PersistedEnrichmentTrace ToPersistence(this EnrichmentTrace trace) =>
         new(trace.Method.ToPersistence(), trace.Confidence, trace.Enriched,

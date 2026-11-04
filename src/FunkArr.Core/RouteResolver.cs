@@ -1,4 +1,5 @@
 using System.IO.Enumeration;
+using FunkArr.Core.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Core;

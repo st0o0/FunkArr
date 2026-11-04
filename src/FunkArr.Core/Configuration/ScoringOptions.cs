@@ -1,4 +1,4 @@
-namespace FunkArr.Core;
+namespace FunkArr.Core.Configuration;
 
 public sealed class ScoringOptions
 {

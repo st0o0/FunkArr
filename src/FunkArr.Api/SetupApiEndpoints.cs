@@ -1,7 +1,7 @@
 using FunkArr.Api.Infrastructure;
 using FunkArr.Api.Models.Setup;
 using FunkArr.Api.Validation;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;

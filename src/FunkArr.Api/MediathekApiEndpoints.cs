@@ -5,7 +5,7 @@ using FunkArr.Api.Infrastructure;
 using FunkArr.Api.Models.Mediathek;
 using FunkArr.Api.Models.Shared;
 using FunkArr.Api.Validation;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

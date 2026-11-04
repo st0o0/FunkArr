@@ -1,5 +1,6 @@
 using FunkArr.Messages;
 using FunkArr.Messages.Mediathek;
+using FunkArr.Search.Models;
 
 namespace FunkArr.Search.Tests;
 

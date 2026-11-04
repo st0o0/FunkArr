@@ -1,4 +1,4 @@
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 
 namespace FunkArr.Feed.Tests;
 

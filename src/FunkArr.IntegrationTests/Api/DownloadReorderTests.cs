@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.Shared;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -9,16 +9,14 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Downloads")]
 public sealed class DownloadReorderTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task Move_Success_ReturnsOk()
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/move", new { position = 0 }, cancellationToken: TestContext.Current.CancellationToken);
+        var task = fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/move", new { position = 0 }, cancellationToken: TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         var msg = probe.ExpectMsg<MoveDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, msg.DownloadId);
         Assert.Equal(0, msg.Position);
@@ -38,11 +36,11 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var response = await _fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/move", new { position = 0, priority = "Invalid" }, cancellationToken: TestContext.Current.CancellationToken);
+        var response = await fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/move", new { position = 0, priority = "Invalid" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         probe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
@@ -51,9 +49,9 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/priority", new { priority = 1 }, cancellationToken: TestContext.Current.CancellationToken);
+        var task = fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/priority", new { priority = 1 }, cancellationToken: TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         var msg = probe.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, msg.DownloadId);
         Assert.Equal(DownloadPriority.High, msg.Priority);
@@ -73,11 +71,11 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var response = await _fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/priority", new { priority = "Invalid" }, cancellationToken: TestContext.Current.CancellationToken);
+        var response = await fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/priority", new { priority = "Invalid" }, cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         probe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
     }
 
@@ -87,9 +85,9 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsJsonAsync("/api/downloads/queue/swap", new { id1, id2 }, cancellationToken: TestContext.Current.CancellationToken);
+        var task = fixture.Client.PostAsJsonAsync("/api/downloads/queue/swap", new { id1, id2 }, cancellationToken: TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         var msg = probe.ExpectMsg<SwapDownloads>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id1, msg.DownloadId1);
         Assert.Equal(id2, msg.DownloadId2);

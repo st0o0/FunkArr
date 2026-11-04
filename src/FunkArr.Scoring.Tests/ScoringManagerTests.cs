@@ -1,6 +1,6 @@
 using Akka.Actor;
 using Akka.TestKit.Xunit;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Tests.Shared;

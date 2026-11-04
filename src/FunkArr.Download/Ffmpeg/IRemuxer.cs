@@ -1,0 +1,13 @@
+using FunkArr.Messages.Download;
+
+namespace FunkArr.Download.Ffmpeg;
+
+public sealed record ProgressUpdate(long TotalSize, long OutTimeUs, double Speed);
+
+public sealed record FfmpegResult(bool Success, int ExitCode, string? Error, int ElapsedSeconds, FailureKind FailureKind = FailureKind.Permanent);
+
+public interface IRemuxer
+{
+    Task<FfmpegResult> RunAsync(
+        RemuxOptions options, Action<ProgressUpdate> onProgress, CancellationToken ct);
+}

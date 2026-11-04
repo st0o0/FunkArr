@@ -1,5 +1,7 @@
 using System.Net;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Download.Ffmpeg;
+using FunkArr.Download.Subtitles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

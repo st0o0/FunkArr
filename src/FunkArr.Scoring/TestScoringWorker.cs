@@ -1,7 +1,7 @@
 using Akka.Actor;
 using Akka.Cluster.Sharding;
 using Akka.Event;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;

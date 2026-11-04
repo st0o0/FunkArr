@@ -1,6 +1,6 @@
 using System.Xml.Linq;
 using FunkArr.ArrApi.Newznab.Models;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
@@ -12,14 +12,12 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
 {
     private static readonly XNamespace _newznab = "http://www.newznab.com/DTD/2010/feeds/attributes/";
 
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task TvSearch_with_results_returns_rss_xml_with_items()
     {
-        var searchProbe = _fixture.GetProbe<ISearchManager>();
+        var searchProbe = fixture.GetProbe<ISearchManager>();
 
-        var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&q=Tatort&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/index/api?t=tvsearch&q=Tatort&apikey=test-key", TestContext.Current.CancellationToken);
 
         var msg = searchProbe.ExpectMsg<SearchCommand>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("Tatort", msg.Query);
@@ -37,7 +35,6 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
 
         var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var doc = XDocument.Parse(content);
-        var ns = XNamespace.Get("http://www.newznab.com/DTD/2010/newnzab/");
 
         var channel = doc.Root?.Element("channel");
         Assert.NotNull(channel);
@@ -52,7 +49,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task TvSearch_without_query_returns_validation_item_without_searching()
     {
-        var searchProbe = _fixture.GetProbe<ISearchManager>();
+        var searchProbe = fixture.GetProbe<ISearchManager>();
 
         var response = await WithEmptyFeed(
             "/index/api?t=tvsearch&cat=5030,5040&extended=1&offset=0&limit=100&apikey=test-key", MediaType.Show);
@@ -67,7 +64,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task MovieSearch_without_query_returns_validation_item_instead_of_error()
     {
-        var searchProbe = _fixture.GetProbe<ISearchManager>();
+        var searchProbe = fixture.GetProbe<ISearchManager>();
 
         var response = await WithEmptyFeed(
             "/index/api?t=movie&cat=2000,2040&offset=0&limit=100&apikey=test-key", MediaType.Movie);
@@ -87,7 +84,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         var link = item.Element("link")?.Value;
         Assert.NotNull(link);
 
-        var getResponse = await _fixture.Client.GetAsync(new Uri(link).PathAndQuery, TestContext.Current.CancellationToken);
+        var getResponse = await fixture.Client.GetAsync(new Uri(link).PathAndQuery, TestContext.Current.CancellationToken);
 
         var doc = XDocument.Parse(await getResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         Assert.Multiple(
@@ -98,15 +95,15 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task TvSearch_without_query_returns_feed_entries()
     {
-        var feedProbe = _fixture.GetProbe<IFeedStoreManager>();
-        var searchProbe = _fixture.GetProbe<ISearchManager>();
+        var feedProbe = fixture.GetProbe<IFeedStoreManager>();
+        var searchProbe = fixture.GetProbe<ISearchManager>();
         var firstSeen = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
         var entry = new FeedEntry("0123456789abcdef0123456789abcdef", firstSeen, MediaType.Show,
             "Tatort.S2026E18.Herz.aus.Eis.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
             "https://example.com/video.mp4", 5400, 500_000_000, 720, null, 0.9, null,
             null, "2026", "18");
 
-        var task = _fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=100&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/index/api?t=tvsearch&offset=0&limit=100&apikey=test-key", TestContext.Current.CancellationToken);
 
         var query = feedProbe.ExpectMsg<QueryFeed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
@@ -129,7 +126,7 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
     {
         var id = new NzbPayload("Test Title", "https://example.com/video.mp4", null, "ARD", 3600, 500_000_000, MediaType.Show).Encode();
 
-        var response = await _fixture.Client.GetAsync($"/index/api?t=get&id={Uri.EscapeDataString(id)}&apikey=test-key", TestContext.Current.CancellationToken);
+        var response = await fixture.Client.GetAsync($"/index/api?t=get&id={Uri.EscapeDataString(id)}&apikey=test-key", TestContext.Current.CancellationToken);
 
         var contentType = response.Content.Headers.ContentType;
         Assert.NotNull(contentType);
@@ -138,8 +135,8 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
 
     private async Task<HttpResponseMessage> WithEmptyFeed(string url, MediaType expectedMediaType)
     {
-        var feedProbe = _fixture.GetProbe<IFeedStoreManager>();
-        var task = _fixture.Client.GetAsync(url);
+        var feedProbe = fixture.GetProbe<IFeedStoreManager>();
+        var task = fixture.Client.GetAsync(url);
 
         var query = feedProbe.ExpectMsg<QueryFeed>();
         Assert.Equal(expectedMediaType, query.MediaType);

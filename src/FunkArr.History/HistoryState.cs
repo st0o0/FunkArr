@@ -92,7 +92,7 @@ public sealed class HistoryState
 
         if (trimmed.Count > maxSnapshots)
         {
-            trimmed = trimmed.Skip(trimmed.Count - maxSnapshots).ToList();
+            trimmed = [.. trimmed.Skip(trimmed.Count - maxSnapshots)];
         }
 
         if (trimmed.Count == Snapshots.Count)

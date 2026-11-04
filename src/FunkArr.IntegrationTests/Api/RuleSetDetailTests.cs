@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.RuleSets;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Shared;
 using MsgEnrichment = FunkArr.Messages.Enrichment;
@@ -11,14 +11,12 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("RuleSets")]
 public sealed class RuleSetDetailTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task Detail_ReturnsRuleSetDetail()
     {
-        var task = _fixture.Client.GetAsync("/api/rulesets/tatort", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/rulesets/tatort", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IRuleSetRegion>();
+        var probe = fixture.GetProbe<IRuleSetRegion>();
         probe.ExpectMsg<QueryRuleSetDetail>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new RuleSetDetailResult(
             "tatort",
@@ -61,9 +59,9 @@ public sealed class RuleSetDetailTests(FunkArrFixture fixture)
     [Fact]
     public async Task Detail_NotFound_Returns404()
     {
-        var task = _fixture.Client.GetAsync("/api/rulesets/nonexistent", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/rulesets/nonexistent", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IRuleSetRegion>();
+        var probe = fixture.GetProbe<IRuleSetRegion>();
         probe.ExpectMsg<QueryRuleSetDetail>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new RuleSetDetailFailed(new Exception("not found")));
 

@@ -1,7 +1,8 @@
 using Akka.Actor;
 using Akka.Event;
 using Akka.Persistence;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
+using FunkArr.Core.Configuration;
 using FunkArr.Messages.History;
 using FunkArr.Persistence.Events.ScoringHistory;
 using Microsoft.Extensions.Options;

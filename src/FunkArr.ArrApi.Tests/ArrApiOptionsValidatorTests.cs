@@ -1,5 +1,3 @@
-using FunkArr.ArrApi;
-
 namespace FunkArr.ArrApi.Tests;
 
 public sealed class ArrApiOptionsValidatorTests

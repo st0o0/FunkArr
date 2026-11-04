@@ -3,7 +3,7 @@ using Akka.Hosting;
 using Akka.TestKit;
 using Akka.TestKit.Xunit;
 using FunkArr.ArrApi.Sabnzbd.Services;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 using Microsoft.Extensions.Logging.Abstractions;
 

@@ -1,7 +1,8 @@
 using System.Net;
 using Akka.Actor;
 using Akka.Hosting;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Core.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;

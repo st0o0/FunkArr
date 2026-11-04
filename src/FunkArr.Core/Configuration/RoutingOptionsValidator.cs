@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using Terp.Options;
 
-namespace FunkArr.Core;
+namespace FunkArr.Core.Configuration;
 
 public sealed class RoutingOptionsValidator : IValidateOptions<RoutingOptions>
 {

@@ -1,7 +1,7 @@
 using System.Net.Mime;
 using FunkArr.Api;
 using FunkArr.Api.HealthChecks;
-using FunkArr.Search;
+using FunkArr.Search.Client;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Terp.Diagnostics;
 using Terp.Hosting;

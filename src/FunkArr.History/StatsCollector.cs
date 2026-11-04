@@ -3,7 +3,7 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using Terp.Akka;
@@ -15,7 +15,7 @@ public sealed class StatsCollector : ReceiveActor
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IMaterializer _materializer = Context.Materializer();
 
-    private StatsCollectorState _state = StatsCollectorState.Empty;
+    private readonly StatsCollectorState _state = StatsCollectorState.Empty;
 
     private static readonly TimeSpan _backfillTimeout = TimeSpan.FromSeconds(5);
 
@@ -26,7 +26,7 @@ public sealed class StatsCollector : ReceiveActor
         Receive<RemoveStats>(msg => _state.Apply(msg));
         Receive<RegisteredRuleSetsResult>(HandleBackfillRuleSets);
         Receive<BackfillComplete>(HandleBackfillComplete);
-        Receive<BackfillFailed>(msg => { _log.Error(msg.Cause, ""); });
+        Receive<BackfillFailed>(msg => _log.Error(msg.Cause, ""));
     }
 
     private void HandleBackfillRuleSets(RegisteredRuleSetsResult result)

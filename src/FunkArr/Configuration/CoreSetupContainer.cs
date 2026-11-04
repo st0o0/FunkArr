@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using FunkArr.Api.HealthChecks;
 using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Core.Data;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;

@@ -1,6 +1,7 @@
 using System.IO.Abstractions;
 using FunkArr.Api.Models.System;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Core.Data;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FunkArr.Api.Tests;

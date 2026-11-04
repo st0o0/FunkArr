@@ -1,4 +1,4 @@
-using FunkArr.Core;
+using FunkArr.Core.Data;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace FunkArr.Api.HealthChecks;

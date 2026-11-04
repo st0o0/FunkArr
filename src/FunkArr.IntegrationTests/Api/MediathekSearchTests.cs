@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.Mediathek;
 using FunkArr.Api.Models.Shared;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -10,14 +10,12 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Mediathek")]
 public sealed class MediathekSearchTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task Search_WithResults_ReturnsTypedResponse()
     {
-        var task = _fixture.Client.GetAsync("/api/mediathek/search?q=Tatort", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/mediathek/search?q=Tatort", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IMediathekManager>();
+        var probe = fixture.GetProbe<IMediathekManager>();
         probe.ExpectMsg<QueryMediathek>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(TestData.MediathekSearchResult(count: 2));
 
@@ -39,7 +37,7 @@ public sealed class MediathekSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task Search_WithoutParams_Returns400()
     {
-        var response = await _fixture.Client.GetAsync("/api/mediathek/search", TestContext.Current.CancellationToken);
+        var response = await fixture.Client.GetAsync("/api/mediathek/search", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
@@ -51,9 +49,9 @@ public sealed class MediathekSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task Search_ByChannel_ReturnsResults()
     {
-        var task = _fixture.Client.GetAsync("/api/mediathek/search?channel=ZDF", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/mediathek/search?channel=ZDF", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IMediathekManager>();
+        var probe = fixture.GetProbe<IMediathekManager>();
         var msg = probe.ExpectMsg<QueryMediathek>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains(msg.Fields, f => f.Fields.Contains("channel"));
         probe.Reply(TestData.MediathekSearchResult(count: 1));
@@ -70,9 +68,9 @@ public sealed class MediathekSearchTests(FunkArrFixture fixture)
     [Fact]
     public async Task Search_ByTopic_ReturnsResults()
     {
-        var task = _fixture.Client.GetAsync("/api/mediathek/search?topic=Tatort", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/mediathek/search?topic=Tatort", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IMediathekManager>();
+        var probe = fixture.GetProbe<IMediathekManager>();
         var msg = probe.ExpectMsg<QueryMediathek>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Contains(msg.Fields, f => f.Fields.Contains("topic"));
         probe.Reply(TestData.MediathekSearchResult(count: 1));

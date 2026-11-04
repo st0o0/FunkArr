@@ -1,7 +1,9 @@
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.ArrApi.Sabnzbd.Models;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
+using FunkArr.Core.Configuration;
+using FunkArr.Core.Data;
 using FunkArr.Messages.Download;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using FunkArr.Messages;
 
 namespace FunkArr.Search.Tests;

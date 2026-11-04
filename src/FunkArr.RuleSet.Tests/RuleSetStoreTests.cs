@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Core.Data;
 using FunkArr.RuleSet.DiskModel;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

@@ -1,5 +1,6 @@
 using FunkArr.Api;
 using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using FunkArr.RuleSet;
 using Terp.Hosting;
 

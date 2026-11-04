@@ -1,9 +1,8 @@
 using FunkArr.Api;
 using FunkArr.Api.HealthChecks;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using FunkArr.Download;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
 using Terp.Hosting;
 
 namespace FunkArr.Configuration;

@@ -1,7 +1,9 @@
 using Akka.Actor;
 using Akka.DependencyInjection;
 using Akka.TestKit.Xunit;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Enrichment.Tmdb;
+using FunkArr.Enrichment.Tvdb;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.DependencyInjection;

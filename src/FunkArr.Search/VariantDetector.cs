@@ -5,19 +5,22 @@ namespace FunkArr.Search;
 
 internal static class VariantDetector
 {
+    private sealed record Value(MediathekVariant Variant, Regex Pattern);
+
     private const RegexOptions _options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
     private static readonly TimeSpan _timeout = TimeSpan.FromMilliseconds(100);
 
-    private static readonly (MediathekVariant Variant, Regex Pattern)[] _patterns =
+    private static readonly Value[] _patterns =
     [
-        (MediathekVariant.AudioDescription,
+        new(MediathekVariant.AudioDescription,
             new Regex(@"\baudio-?deskription\b|\bhörfassung\b|\(\s*AD\s*\)|\bmit\s+AD\b", _options, _timeout)),
-        (MediathekVariant.SignLanguage,
+        new(MediathekVariant.SignLanguage,
             new Regex(@"\bgebärdensprache\b|\bDGS\b", _options, _timeout)),
-        (MediathekVariant.PlainLanguage,
+        new(MediathekVariant.PlainLanguage,
             new Regex(@"\b(klare|leichte|einfache)r?\s+sprache\b", _options, _timeout)),
-        (MediathekVariant.OriginalVersion,
-            new Regex(@"\boriginal(version|fassung)\b|\boriginal\s+mit\s+untertiteln?\b|\bOV\b|\bOmU\b", _options, _timeout))
+        new(MediathekVariant.OriginalVersion,
+            new Regex(@"\boriginal(version|fassung)\b|\boriginal\s+mit\s+untertiteln?\b|\bOV\b|\bOmU\b", _options,
+                _timeout))
     ];
 
     internal static MediathekVariant Detect(string? title, string? topic)

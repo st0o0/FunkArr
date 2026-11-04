@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Infrastructure;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

@@ -1,7 +1,7 @@
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.ArrApi.Sabnzbd.Models;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;

@@ -7,12 +7,10 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Setup")]
 public sealed class SetupHealthTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task SetupHealth_ReturnsCheckEntries()
     {
-        var response = await _fixture.Client.GetAsync("/api/system/setup", TestContext.Current.CancellationToken);
+        var response = await fixture.Client.GetAsync("/api/system/setup", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

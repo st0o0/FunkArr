@@ -1,4 +1,4 @@
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;

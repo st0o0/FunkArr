@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.Feed;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Feed;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -9,20 +9,18 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Feed")]
 public sealed class FeedTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task Feed_overview_returns_entries_and_ingest_status()
     {
-        var feedProbe = _fixture.GetProbe<IFeedStoreManager>();
-        var ingestProbe = _fixture.GetProbe<IFeedCrawlManager>();
+        var feedProbe = fixture.GetProbe<IFeedStoreManager>();
+        var ingestProbe = fixture.GetProbe<IFeedCrawlManager>();
         var lastRun = new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
         var entry = new FeedEntry("0123456789abcdef0123456789abcdef", lastRun, FunkArr.Messages.MediaType.Show,
             "Tatort.S2026E18.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
             "https://example.com/v.mp4", 5400, 1_000_000, 720, null, 0.9, null,
             null, "2026", "18");
 
-        var task = _fixture.Client.GetAsync("/api/feed?limit=10", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/feed?limit=10", TestContext.Current.CancellationToken);
 
         var query = feedProbe.ExpectMsg<QueryFeed>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(10, query.Limit);
@@ -48,9 +46,9 @@ public sealed class FeedTests(FunkArrFixture fixture)
     [Fact]
     public async Task Crawl_returns_accepted_and_triggers_ingest()
     {
-        var ingestProbe = _fixture.GetProbe<IFeedCrawlManager>();
+        var ingestProbe = fixture.GetProbe<IFeedCrawlManager>();
 
-        var response = await _fixture.Client.PostAsync("/api/feed/crawl", null, TestContext.Current.CancellationToken);
+        var response = await fixture.Client.PostAsync("/api/feed/crawl", null, TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         ingestProbe.ExpectMsg<StartFeedCrawl>(cancellationToken: TestContext.Current.CancellationToken);

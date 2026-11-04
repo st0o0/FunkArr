@@ -2,7 +2,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using Akka.TestKit;
 using Akka.TestKit.Xunit;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Shared;

@@ -1,5 +1,6 @@
-using FunkArr.Core;
-using FunkArr.Enrichment;
+using FunkArr.Core.Configuration;
+using FunkArr.Enrichment.Tmdb;
+using FunkArr.Enrichment.Tvdb;
 using Terp.Diagnostics;
 using Terp.Hosting;
 

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FunkArr.Api.Models.Downloads;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -9,18 +9,16 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Downloads")]
 public sealed class DownloadQueueTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task GetQueue_WithActiveAndQueuedItems_ReturnsTypedResponse()
     {
         var processing = TestData.ProcessingItem();
         var queued = TestData.QueueItem("Tagesschau.2024-01-15");
 
-        var task = _fixture.Client.GetAsync("/api/downloads/queue", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/downloads/queue", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
-        var msg = probe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
+        var probe = fixture.GetProbe<IDownloadManager>();
+        probe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new QueueResult(
             [processing, queued],
             TotalSlots: 3,
@@ -57,9 +55,9 @@ public sealed class DownloadQueueTests(FunkArrFixture fixture)
     [Fact]
     public async Task GetQueue_Empty_ReturnsEmptyItems()
     {
-        var task = _fixture.Client.GetAsync("/api/downloads/queue", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/api/downloads/queue", TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IDownloadManager>();
+        var probe = fixture.GetProbe<IDownloadManager>();
         probe.ExpectMsg<QueryQueue>(cancellationToken: TestContext.Current.CancellationToken);
         probe.Reply(new QueueResult(
             [],

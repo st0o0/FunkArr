@@ -1,4 +1,5 @@
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
+using FunkArr.Core.Data;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Download.Tests;

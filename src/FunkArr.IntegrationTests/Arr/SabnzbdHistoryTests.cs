@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Download;
 
 namespace FunkArr.IntegrationTests.Arr;
@@ -9,16 +9,14 @@ namespace FunkArr.IntegrationTests.Arr;
 [Collection("Sabnzbd")]
 public sealed class SabnzbdHistoryTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task History_with_items_returns_sabnzbd_format_slots()
     {
-        var historyProbe = _fixture.GetProbe<IDownloadHistoryManager>();
+        var historyProbe = fixture.GetProbe<IDownloadHistoryManager>();
 
-        var task = _fixture.Client.GetAsync("/download/api?mode=history&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync("/download/api?mode=history&apikey=test-key", TestContext.Current.CancellationToken);
 
-        var msg = historyProbe.ExpectMsg<QueryHistory>(cancellationToken: TestContext.Current.CancellationToken);
+        historyProbe.ExpectMsg<QueryHistory>(cancellationToken: TestContext.Current.CancellationToken);
         var items = new[]
         {
             TestData.CompletedItem(),
@@ -46,10 +44,10 @@ public sealed class SabnzbdHistoryTests(FunkArrFixture fixture)
     [Fact]
     public async Task History_delete_returns_success()
     {
-        var historyProbe = _fixture.GetProbe<IDownloadHistoryManager>();
+        var historyProbe = fixture.GetProbe<IDownloadHistoryManager>();
         var downloadId = Guid.NewGuid();
 
-        var task = _fixture.Client.GetAsync($"/download/api?mode=history&name=delete&value={downloadId}&apikey=test-key", TestContext.Current.CancellationToken);
+        var task = fixture.Client.GetAsync($"/download/api?mode=history&name=delete&value={downloadId}&apikey=test-key", TestContext.Current.CancellationToken);
 
         var msg = historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(downloadId, msg.DownloadId);

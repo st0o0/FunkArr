@@ -1,6 +1,6 @@
 using FunkArr.Api.Models.Shared;
 using FunkArr.Api.Models.System;
-using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using VariantPolicy = FunkArr.Core.VariantPolicy;
 
 namespace FunkArr.Api.Extensions;

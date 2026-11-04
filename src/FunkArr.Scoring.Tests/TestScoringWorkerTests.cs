@@ -2,7 +2,7 @@ using Akka.Actor;
 using Akka.Hosting;
 using Akka.TestKit;
 using Akka.TestKit.Xunit;
-using FunkArr.Core;
+using FunkArr.Core.Actors;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
@@ -84,7 +84,7 @@ public sealed class TestScoringWorkerTests : TestKit
             MediaType: Messages.MediaType.Show, TvdbId: 12345,
             EnrichmentConfig: enrichmentConfig));
 
-        var scoreMsg = scoringProbe.ExpectMsg<TestScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
+        scoringProbe.ExpectMsg<TestScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         var traces = new[] { MatchedTrace() };
         scoringProbe.Reply(new ScoreCompleted(_testScoringId, [], traces));
 
@@ -117,7 +117,7 @@ public sealed class TestScoringWorkerTests : TestKit
             MediaType: Messages.MediaType.Movie, TmdbId: 550,
             EnrichmentConfig: enrichmentConfig));
 
-        var scoreMsg = scoringProbe.ExpectMsg<TestScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
+        scoringProbe.ExpectMsg<TestScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         var traces = new[] { MatchedTrace() };
         scoringProbe.Reply(new ScoreCompleted(_testScoringId, [], traces));
 

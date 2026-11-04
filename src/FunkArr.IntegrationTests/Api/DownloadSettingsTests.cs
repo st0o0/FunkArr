@@ -7,12 +7,10 @@ namespace FunkArr.IntegrationTests.Api;
 [Collection("Downloads")]
 public sealed class DownloadSettingsTests(FunkArrFixture fixture)
 {
-    private readonly FunkArrFixture _fixture = fixture;
-
     [Fact]
     public async Task GetSettings_ReturnsTypedResponse()
     {
-        var response = await _fixture.Client.GetAsync("/api/downloads/settings", TestContext.Current.CancellationToken);
+        var response = await fixture.Client.GetAsync("/api/downloads/settings", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

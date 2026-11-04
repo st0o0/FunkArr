@@ -1,4 +1,5 @@
 using FunkArr.Core;
+using FunkArr.Core.Configuration;
 using FunkArr.Tests.Shared;
 
 namespace FunkArr.Download.Tests;
