@@ -15,20 +15,16 @@ public sealed class TestScoringWorker : ReceiveActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _scoringManager = Context.GetActor<IScoringManager>();
-
-    private IActorRef _replyTo = ActorRefs.Nobody;
-    private TestScoreWithEnrichment _request = null!;
+    private readonly TestScoringWorkerState _state = TestScoringWorkerState.Empty;
 
     public TestScoringWorker()
     {
-
         Receive<TestScoreWithEnrichment>(HandleRequest);
     }
 
     private void HandleRequest(TestScoreWithEnrichment msg)
     {
-        _request = msg;
-        _replyTo = Sender;
+        _state.Apply(msg, Sender);
 
         _scoringManager.Ask<ScoreItemsResponse>(
             new TestScoreItems(msg.TestScoringId, msg.Config, msg.Candidates),
@@ -48,22 +44,19 @@ public sealed class TestScoringWorker : ReceiveActor
     {
         var itemTraces = completed.ItemTraces;
 
-        if (_request.EnrichmentConfig is null)
+        if (!_state.HasEnrichmentConfig())
         {
             Reply(new TestScoreWithEnrichmentCompleted(itemTraces));
             return;
         }
 
-        var isShow = _request.MediaType == Messages.MediaType.Show;
-        var isMovie = _request.MediaType == Messages.MediaType.Movie;
-
-        if (isShow && _request.TvdbId is not null)
+        if (_state.IsShowWithTvdb())
         {
             RequestEpisodeEnrichment(itemTraces);
             return;
         }
 
-        if (isMovie && (_request.TmdbId is not null || _request.ImdbId is not null))
+        if (_state.IsMovieWithExternalId())
         {
             RequestMovieEnrichment(itemTraces);
             return;
@@ -74,7 +67,7 @@ public sealed class TestScoringWorker : ReceiveActor
 
     private void RequestEpisodeEnrichment(ItemTrace[] itemTraces)
     {
-        var matchedIndices = BuildEpisodeCandidates(itemTraces);
+        var matchedIndices = _state.BuildEpisodeCandidates(itemTraces);
         if (matchedIndices.Count == 0)
         {
             Reply(new TestScoreWithEnrichmentCompleted(itemTraces));
@@ -82,9 +75,7 @@ public sealed class TestScoringWorker : ReceiveActor
         }
 
         var enrichmentManager = Context.GetActor<IEnrichmentManager>();
-        var enrichRequest = new EnrichEpisodes(
-            _request.TvdbId!.Value, Season: null,
-            [.. matchedIndices.Select(m => m.Candidate)], _request.EnrichmentConfig!);
+        var enrichRequest = _state.BuildEpisodeEnrichRequest(matchedIndices);
 
         enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout)
             .PipeTo(Self,
@@ -96,7 +87,7 @@ public sealed class TestScoringWorker : ReceiveActor
 
     private void RequestMovieEnrichment(ItemTrace[] itemTraces)
     {
-        var matchedIndices = BuildMovieCandidates(itemTraces);
+        var matchedIndices = _state.BuildMovieCandidates(itemTraces);
         if (matchedIndices.Count == 0)
         {
             Reply(new TestScoreWithEnrichmentCompleted(itemTraces));
@@ -104,9 +95,7 @@ public sealed class TestScoringWorker : ReceiveActor
         }
 
         var enrichmentManager = Context.GetActor<IEnrichmentManager>();
-        var enrichRequest = new EnrichMovies(
-            _request.ImdbId, _request.TmdbId,
-            [.. matchedIndices.Select(m => m.Candidate)], _request.EnrichmentConfig!);
+        var enrichRequest = _state.BuildMovieEnrichRequest(matchedIndices);
 
         enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout)
             .PipeTo(Self,
@@ -131,33 +120,7 @@ public sealed class TestScoringWorker : ReceiveActor
             return;
         }
 
-        var enrichedLookup = completed.Episodes.ToDictionary(e => e.Index);
-        var result = new ItemTrace[msg.ItemTraces.Length];
-        Array.Copy(msg.ItemTraces, result, msg.ItemTraces.Length);
-
-        foreach (var (traceIndex, candidate) in msg.MatchedIndices)
-        {
-            var trace = result[traceIndex];
-            if (enrichedLookup.TryGetValue(candidate.Index, out var enriched))
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        enriched.Method, enriched.Confidence, true,
-                        enriched.Season, enriched.Episode, enriched.EpisodeName)
-                };
-            }
-            else
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        MatchMethod.TitleMatch, 0f, false,
-                        Detail: "no matching episode found")
-                };
-            }
-        }
-
+        var result = _state.MergeEpisodeEnrichment(completed, msg.ItemTraces, msg.MatchedIndices);
         Reply(new TestScoreWithEnrichmentCompleted(result));
     }
 
@@ -169,39 +132,13 @@ public sealed class TestScoringWorker : ReceiveActor
             return;
         }
 
-        var enrichedLookup = completed.Movies.ToDictionary(m => m.Index);
-        var result = new ItemTrace[msg.ItemTraces.Length];
-        Array.Copy(msg.ItemTraces, result, msg.ItemTraces.Length);
-
-        foreach (var (traceIndex, candidate) in msg.MatchedIndices)
-        {
-            var trace = result[traceIndex];
-            if (enrichedLookup.TryGetValue(candidate.Index, out var enriched))
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        enriched.Method, enriched.Confidence, true,
-                        ResolvedTitle: enriched.Title, ResolvedYear: enriched.Year)
-                };
-            }
-            else
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        MatchMethod.TitleMatch, 0f, false,
-                        Detail: "no matching movie found")
-                };
-            }
-        }
-
+        var result = _state.MergeMovieEnrichment(completed, msg.ItemTraces, msg.MatchedIndices);
         Reply(new TestScoreWithEnrichmentCompleted(result));
     }
 
     private void Reply(TestScoreWithEnrichmentResponse response)
     {
-        _replyTo.Tell(response);
+        _state.Reply(response);
         Context.Parent.Tell(new Passivate(PoisonPill.Instance));
     }
 
@@ -209,61 +146,6 @@ public sealed class TestScoringWorker : ReceiveActor
     {
         _log.Warning(failed.Cause, "Test scoring failed");
         Reply(failed);
-    }
-
-    private static List<(int TraceIndex, EpisodeCandidate Candidate)> BuildEpisodeCandidates(ItemTrace[] itemTraces)
-    {
-        var matchedIndices = new List<(int TraceIndex, EpisodeCandidate Candidate)>();
-
-        for (var i = 0; i < itemTraces.Length; i++)
-        {
-            var trace = itemTraces[i];
-            if (!trace.Matched)
-            {
-                continue;
-            }
-
-            var airedAt = trace.Candidate.Timestamp > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(trace.Candidate.Timestamp)
-                : (DateTimeOffset?)null;
-
-            matchedIndices.Add((i, new EpisodeCandidate(
-                matchedIndices.Count,
-                trace.Candidate.Title,
-                trace.Identification?.Title,
-                airedAt,
-                trace.Candidate.Duration,
-                trace.Identification?.Season,
-                trace.Identification?.Episode)));
-        }
-
-        return matchedIndices;
-    }
-
-    private static List<(int TraceIndex, MovieCandidate Candidate)> BuildMovieCandidates(ItemTrace[] itemTraces)
-    {
-        var matchedIndices = new List<(int TraceIndex, MovieCandidate Candidate)>();
-
-        for (var i = 0; i < itemTraces.Length; i++)
-        {
-            var trace = itemTraces[i];
-            if (!trace.Matched)
-            {
-                continue;
-            }
-
-            var airedAt = trace.Candidate.Timestamp > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(trace.Candidate.Timestamp)
-                : (DateTimeOffset?)null;
-
-            matchedIndices.Add((i, new MovieCandidate(
-                matchedIndices.Count,
-                trace.Candidate.Title,
-                airedAt,
-                trace.Candidate.Duration)));
-        }
-
-        return matchedIndices;
     }
 
     private sealed record EpisodeEnrichmentResult(
