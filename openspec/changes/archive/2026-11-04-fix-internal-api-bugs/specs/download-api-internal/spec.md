@@ -8,7 +8,7 @@ The system SHALL respond to `POST /api/downloads/{id}/retry` by sending exactly 
 - **THEN** the system SHALL send `RetryDownload` to the Manager
 - **AND** respond with HTTP 200 and JSON `{"success":true}`
 
-#### Scenario: Retry failure keeps history
+#### Scenario: Retry failure
 - **WHEN** `POST /api/downloads/{id}/retry` is requested and the Manager returns failure
 - **THEN** the response SHALL be HTTP 400 with JSON `{"success":false,"error":"<message>"}`
 - **AND** the download's history entry SHALL still exist

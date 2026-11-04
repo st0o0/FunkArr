@@ -3,9 +3,7 @@
 ## Purpose
 
 Configurable auto-retry with exponential backoff for transient download failures. Tracks attempts and classifies failures to decide whether retry is appropriate.
-
 ## Requirements
-
 ### Requirement: DownloadWorker retries transient failures when enabled
 The DownloadWorker SHALL retry downloads that fail with a transient failure when retry is enabled in DownloadOptions. The Worker SHALL schedule a self-message via IWithTimers after an exponential backoff delay.
 
@@ -110,3 +108,18 @@ The `FfmpegRunner` SHALL classify errors as transient or permanent based on erro
 #### Scenario: Cancellation is not retried
 - **WHEN** FFmpeg is cancelled via CancellationToken
 - **THEN** the failure SHALL be classified as `FailureKind.Permanent` (not retriable)
+
+### Requirement: Manual retry removes history only after acceptance
+`DownloadManager` SHALL tell the DownloadHistoryManager `RemoveHistoryEntry` for a download only after `DownloadEnqueued` for that retry has been persisted. A rejected retry SHALL NOT touch history.
+
+#### Scenario: Accepted retry
+- **WHEN** `RetryDownload` is received for a download that is not queued
+- **THEN** `DownloadEnqueued` is persisted
+- **AND** `RemoveHistoryEntry` is sent to the DownloadHistoryManager
+- **AND** the reply is `RetryDownloadResult(true, null)`
+
+#### Scenario: Rejected retry keeps history
+- **WHEN** `RetryDownload` is received for a download that is already queued
+- **THEN** the reply is `RetryDownloadResult(false, "Item is already queued")`
+- **AND** no `RemoveHistoryEntry` is sent
+

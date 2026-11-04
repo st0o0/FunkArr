@@ -134,17 +134,17 @@ The system SHALL respond to `DELETE /api/downloads/history/{id}` by sending a `R
 - **THEN** the response SHALL be HTTP 404 with JSON `{"success":false,"error":"Item not found"}`
 
 ### Requirement: Retry failed download endpoint
-The system SHALL respond to `POST /api/downloads/{id}/retry` by sending a `RetryDownload` message to the DownloadManager and removing the history entry.
+The system SHALL respond to `POST /api/downloads/{id}/retry` by sending exactly one `RetryDownload` to the DownloadManager. The endpoint SHALL NOT contact the DownloadHistoryManager; history cleanup is owned by the DownloadManager (see `download-retry`).
 
 #### Scenario: Successful retry
 - **WHEN** `POST /api/downloads/{id}/retry` is requested for a failed download
-- **THEN** the system SHALL send `RemoveHistoryEntry` to the HistoryActor
-- **AND** send `RetryDownload` to the Manager
+- **THEN** the system SHALL send `RetryDownload` to the Manager
 - **AND** respond with HTTP 200 and JSON `{"success":true}`
 
 #### Scenario: Retry failure
 - **WHEN** `POST /api/downloads/{id}/retry` is requested and the Manager returns failure
 - **THEN** the response SHALL be HTTP 400 with JSON `{"success":false,"error":"<message>"}`
+- **AND** the download's history entry SHALL still exist
 
 ### Requirement: API response models
 The internal API SHALL use its own response model records in `FunkArr.Api/Models/`, decoupled from the actor message types. The API layer SHALL compute derived fields (percentage, phase, speed, ETA) from the raw actor data. The `DownloadQueueItem` SHALL include a `phase` field of type string with value `"downloading"` or `"remuxing"`.
