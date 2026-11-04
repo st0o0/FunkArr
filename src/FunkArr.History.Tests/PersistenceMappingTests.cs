@@ -15,7 +15,6 @@ public sealed class PersistenceMappingTests
     [InlineData(SearchSource.Sonarr, PersistedSearchSource.Sonarr)]
     [InlineData(SearchSource.Radarr, PersistedSearchSource.Radarr)]
     [InlineData(SearchSource.Prowlarr, PersistedSearchSource.Prowlarr)]
-    [InlineData(SearchSource.Test, PersistedSearchSource.Test)]
     [InlineData(SearchSource.Feed, PersistedSearchSource.Feed)]
     public void SearchSource_DirectRoundtrip_PreservesValue(SearchSource domain, PersistedSearchSource expected)
     {
@@ -325,7 +324,7 @@ public sealed class PersistenceMappingTests
     [InlineData(SearchSource.Sonarr)]
     [InlineData(SearchSource.Radarr)]
     [InlineData(SearchSource.Prowlarr)]
-    [InlineData(SearchSource.Test)]
+    [InlineData(SearchSource.Feed)]
     public void SearchSource_Roundtrip_AllValues(SearchSource source)
     {
         var origin = new ScoringOrigin(source, "test-query");
@@ -438,7 +437,7 @@ public sealed class PersistenceMappingTests
         var candidate = new ScoreCandidate("Title", "Topic", "ARD", 0, 720, null, _baseTime.ToUnixTimeSeconds());
         var trace = new ItemTrace(candidate, false, 0, null, null, [ruleTrace], null);
         var cmd = new RecordHistory(Guid.NewGuid(), "rs-1",
-            new ScoringOrigin(SearchSource.Test, "query"), _baseTime, 1, 0, 0, [trace]);
+            new ScoringOrigin(SearchSource.Sonarr, "query"), _baseTime, 1, 0, 0, [trace]);
 
         var (state, _) = HistoryState.Empty.ProcessCommand(cmd);
         var restored = HistoryState.FromPersistence(state.GetPersistenceState());

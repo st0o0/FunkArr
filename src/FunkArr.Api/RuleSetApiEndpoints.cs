@@ -162,10 +162,10 @@ public static class RuleSetApiEndpoints
             var (config, candidates) = request.ToMessage();
 
             var manager = await registry.GetAsync<IScoringManager>(ct);
-            var result = await manager.Ask<TestScoreItemsResponse>(
+            var result = await manager.Ask<ScoreItemsResponse>(
                 new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout, ct);
 
-            if (result is not TestScoreCompleted completed)
+            if (result is not ScoreCompleted completed)
             {
                 return ApiResults.GatewayTimeout();
             }

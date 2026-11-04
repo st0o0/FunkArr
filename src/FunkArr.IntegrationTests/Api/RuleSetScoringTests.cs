@@ -37,8 +37,9 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
 
         var probe = _fixture.GetProbe<IScoringManager>();
         var msg = probe.ExpectMsg<TestScoreItems>();
-        probe.Reply(new TestScoreCompleted(
+        probe.Reply(new ScoreCompleted(
             msg.RequestId,
+            [],
             [
                 new MsgHistory.ItemTrace(
                     new Messages.Scoring.ScoreCandidate("Tatort S01E05 Der letzte Fall", "Tatort", "ARD", 5400, 0, null, 0),

@@ -5,6 +5,5 @@ public enum PersistedSearchSource
     Sonarr,
     Radarr,
     Prowlarr,
-    Test,
-    Feed
+    Feed = 4
 }

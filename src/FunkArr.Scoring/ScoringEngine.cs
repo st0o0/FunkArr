@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using Terp.Diagnostics;
-using static FunkArr.Messages.Scoring.FilterGroupOp;
 
 namespace FunkArr.Scoring;
 
@@ -13,8 +12,7 @@ public static class ScoringEngine
     private static readonly TimeSpan _regexTimeout = TimeSpan.FromMilliseconds(100);
     private static readonly CultureInfo _germanCulture = CultureInfo.GetCultureInfo("de-DE");
 
-    public static (ScoredItem[] Scored, ItemTrace[] Traces) Score(
-        MatchingConfig config, ScoreCandidate[] items)
+    public static ScoringResult Score(MatchingConfig config, ScoreCandidate[] items)
     {
         var sw = Stopwatch.StartNew();
         Telemetry.Runs.Up();
@@ -89,15 +87,15 @@ public static class ScoringEngine
         Telemetry.Rejected.Add(rejected, ruleSetTag);
         sw.Stop();
         Telemetry.Duration.Record(sw.Elapsed.TotalSeconds);
-        return (scored, itemTraces);
+        return new ScoringResult(scored, itemTraces);
     }
 
-    private static (bool passed, FilterGroupTrace? trace) EvaluateFiltersTraced(
+    private static FilterEvaluation EvaluateFiltersTraced(
         FilterSpec? filters, ScoreCandidate candidate)
     {
         if (filters is null)
         {
-            return (true, null);
+            return new FilterEvaluation(true, null);
         }
 
         var subGroups = new List<FilterNodeTrace>();
@@ -105,7 +103,7 @@ public static class ScoringEngine
 
         if (filters.All is { Length: > 0 })
         {
-            var (passed, trace) = EvaluateGroupTraced(filters.All, All, candidate);
+            var (passed, trace) = EvaluateGroupTraced(filters.All, FilterGroupOp.All, candidate);
             subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
             if (!passed)
             {
@@ -115,7 +113,7 @@ public static class ScoringEngine
 
         if (filters.Any is { Length: > 0 })
         {
-            var (passed, trace) = EvaluateGroupTraced(filters.Any, Any, candidate);
+            var (passed, trace) = EvaluateGroupTraced(filters.Any, FilterGroupOp.Any, candidate);
             subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
             if (!passed)
             {
@@ -125,7 +123,7 @@ public static class ScoringEngine
 
         if (filters.Not is { Length: > 0 })
         {
-            var (passed, trace) = EvaluateGroupTraced(filters.Not, Not, candidate);
+            var (passed, trace) = EvaluateGroupTraced(filters.Not, FilterGroupOp.Not, candidate);
             subGroups.Add(new FilterNodeTrace(null, null, null, null, passed, false, trace));
             if (!passed)
             {
@@ -135,92 +133,85 @@ public static class ScoringEngine
 
         return subGroups.Count switch
         {
-            0 => (true, null),
-            1 => (overallPassed, subGroups[0].Group),
-            _ => (overallPassed, new FilterGroupTrace(All, overallPassed, [.. subGroups]))
+            0 => new FilterEvaluation(true, null),
+            1 => new FilterEvaluation(overallPassed, subGroups[0].Group),
+            _ => new FilterEvaluation(overallPassed, new FilterGroupTrace(FilterGroupOp.All, overallPassed, [.. subGroups]))
         };
     }
 
-    private static (bool passed, FilterGroupTrace trace) EvaluateGroupTraced(
-        FilterNode[] nodes, FilterGroupOp op, ScoreCandidate candidate)
+    private static FilterEvaluation EvaluateGroupTraced(FilterNode[] nodes, FilterGroupOp op, ScoreCandidate candidate)
     {
         var nodeTraces = new List<FilterNodeTrace>(nodes.Length);
         bool groupPassed;
 
         switch (op)
         {
-            case All:
+            case FilterGroupOp.All:
+                var failed = false;
+                foreach (var node in nodes)
                 {
-                    var failed = false;
-                    foreach (var node in nodes)
+                    if (failed)
                     {
-                        if (failed)
-                        {
-                            nodeTraces.Add(CreateSkippedNodeTrace(node));
-                            continue;
-                        }
-
-                        var (result, trace) = EvaluateNodeTraced(node, candidate);
-                        nodeTraces.Add(trace);
-                        if (!result)
-                        {
-                            failed = true;
-                        }
+                        nodeTraces.Add(CreateSkippedNodeTrace(node));
+                        continue;
                     }
 
-                    groupPassed = !failed;
-                    break;
-                }
-            case Any:
-                {
-                    var found = false;
-                    foreach (var node in nodes)
+                    var (result, trace) = EvaluateNodeTraced(node, candidate);
+                    nodeTraces.Add(trace);
+                    if (!result)
                     {
-                        if (found)
-                        {
-                            nodeTraces.Add(CreateSkippedNodeTrace(node));
-                            continue;
-                        }
+                        failed = true;
+                    }
+                }
 
-                        var (result, trace) = EvaluateNodeTraced(node, candidate);
-                        nodeTraces.Add(trace);
-                        if (result)
-                        {
-                            found = true;
-                        }
+                groupPassed = !failed;
+                break;
+            case FilterGroupOp.Any:
+                var found = false;
+                foreach (var node in nodes)
+                {
+                    if (found)
+                    {
+                        nodeTraces.Add(CreateSkippedNodeTrace(node));
+                        continue;
                     }
 
-                    groupPassed = found;
-                    break;
-                }
-            case Not:
-                {
-                    var anyMatched = false;
-                    foreach (var node in nodes)
+                    var (result, trace) = EvaluateNodeTraced(node, candidate);
+                    nodeTraces.Add(trace);
+                    if (result)
                     {
-                        if (anyMatched)
-                        {
-                            nodeTraces.Add(CreateSkippedNodeTrace(node));
-                            continue;
-                        }
+                        found = true;
+                    }
+                }
 
-                        var (result, trace) = EvaluateNodeTraced(node, candidate);
-                        nodeTraces.Add(trace);
-                        if (result)
-                        {
-                            anyMatched = true;
-                        }
+                groupPassed = found;
+                break;
+            case FilterGroupOp.Not:
+                var anyMatched = false;
+                foreach (var node in nodes)
+                {
+                    if (anyMatched)
+                    {
+                        nodeTraces.Add(CreateSkippedNodeTrace(node));
+                        continue;
                     }
 
-                    groupPassed = !anyMatched;
-                    break;
+                    var (result, trace) = EvaluateNodeTraced(node, candidate);
+                    nodeTraces.Add(trace);
+                    if (result)
+                    {
+                        anyMatched = true;
+                    }
                 }
+
+                groupPassed = !anyMatched;
+                break;
             default:
                 groupPassed = false;
                 break;
         }
 
-        return (groupPassed, new FilterGroupTrace(op, groupPassed, [.. nodeTraces]));
+        return new FilterEvaluation(groupPassed, new FilterGroupTrace(op, groupPassed, [.. nodeTraces]));
     }
 
     private static FilterNodeTrace CreateSkippedNodeTrace(FilterNode node) => node switch
@@ -231,7 +222,7 @@ public static class ScoringEngine
         _ => new FilterNodeTrace(null, null, null, null, false, true, null)
     };
 
-    private static (bool result, FilterNodeTrace trace) EvaluateNodeTraced(
+    private static NodeEvaluation EvaluateNodeTraced(
         FilterNode node, ScoreCandidate candidate)
     {
         switch (node)
@@ -239,28 +230,28 @@ public static class ScoringEngine
             case FilterNode.ConditionNode c:
                 {
                     var (result, actualValue) = EvaluateConditionTraced(c.Condition, candidate);
-                    return (result, new FilterNodeTrace(
+                    return new NodeEvaluation(result, new FilterNodeTrace(
                         c.Condition.Field.ToString(), c.Condition.Op.ToString(),
                         c.Condition.Value, actualValue, result, false, null));
                 }
             case FilterNode.GroupNode g:
                 {
                     var (passed, groupTrace) = EvaluateFiltersTraced(g.Group, candidate);
-                    return (passed, new FilterNodeTrace(
+                    return new NodeEvaluation(passed, new FilterNodeTrace(
                         null, null, null, null, passed, false, groupTrace));
                 }
             default:
-                return (false, new FilterNodeTrace(null, null, null, null, false, false, null));
+                return new NodeEvaluation(false, new FilterNodeTrace(null, null, null, null, false, false, null));
         }
     }
 
-    private static (bool result, string? actualValue) EvaluateConditionTraced(
+    private static ConditionResult EvaluateConditionTraced(
         FilterCondition condition, ScoreCandidate candidate)
     {
         var fieldValue = ResolveField(condition.Field, candidate);
         if (fieldValue is null)
         {
-            return (false, null);
+            return new ConditionResult(false, null);
         }
 
         var result = condition.Op switch
@@ -274,7 +265,7 @@ public static class ScoringEngine
             _ => false
         };
 
-        return (result, fieldValue);
+        return new ConditionResult(result, fieldValue);
     }
 
     private static string? ResolveField(FilterField field, ScoreCandidate candidate) => field switch
@@ -312,18 +303,19 @@ public static class ScoringEngine
         }
     }
 
-    private static (bool success, IdentificationTrace trace, TracedIdentification? identification)
-        IdentifyTraced(IdentificationSpec spec, ScoreCandidate candidate) => spec.Strategy switch
+    private static IdentificationResult IdentifyTraced(IdentificationSpec spec, ScoreCandidate candidate) =>
+        spec.Strategy switch
         {
             IdentificationStrategy.SeasonAndEpisodeNumber => IdentifyRegexCaptureTraced(spec, candidate),
             IdentificationStrategy.AbsoluteEpisodeNumber => IdentifyRegexCaptureTraced(spec, candidate),
             IdentificationStrategy.TitleExact => IdentifyTitleConstructionTraced(spec, candidate, exact: true),
             IdentificationStrategy.TitleIncludes => IdentifyTitleConstructionTraced(spec, candidate, exact: false),
             IdentificationStrategy.AirdateExtraction => IdentifyAirdateTraced(candidate),
-            _ => (false, new IdentificationTrace(null, false, IdentificationFailureReason.UnknownStrategy), null)
+            _ => new IdentificationResult(
+                false, new IdentificationTrace(null, false, IdentificationFailureReason.UnknownStrategy), null)
         };
 
-    private static (bool, IdentificationTrace, TracedIdentification?) IdentifyRegexCaptureTraced(
+    private static IdentificationResult IdentifyRegexCaptureTraced(
         IdentificationSpec spec, ScoreCandidate candidate)
     {
         string? season = null;
@@ -333,48 +325,36 @@ public static class ScoringEngine
             season = ExtractCapture(candidate.Title, spec.SeasonPattern, spec.CaptureGroup);
             if (season is null)
             {
-                return (false,
-                    new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.SeasonPatternNotMatched),
-                    null);
+                return IdentificationResult.Failed(spec.Strategy, IdentificationFailureReason.SeasonPatternNotMatched);
             }
         }
 
         if (spec.EpisodePattern is null)
         {
-            return (false,
-                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.NoEpisodePatternConfigured),
-                null);
+            return IdentificationResult.Failed(spec.Strategy, IdentificationFailureReason.NoEpisodePatternConfigured);
         }
 
         var episode = ExtractCapture(candidate.Title, spec.EpisodePattern, spec.CaptureGroup);
         if (episode is null)
         {
-            return (false,
-                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.EpisodePatternNotMatched),
-                null);
+            return IdentificationResult.Failed(spec.Strategy, IdentificationFailureReason.EpisodePatternNotMatched);
         }
 
-        return (true,
-            new IdentificationTrace(spec.Strategy, true, null),
-            new TracedIdentification(season, episode, null));
+        return IdentificationResult.Matched(spec.Strategy, new TracedIdentification(season, episode, null));
     }
 
-    private static (bool, IdentificationTrace, TracedIdentification?) IdentifyTitleConstructionTraced(
+    private static IdentificationResult IdentifyTitleConstructionTraced(
         IdentificationSpec spec, ScoreCandidate candidate, bool exact = true)
     {
         if (spec.TitleParts is not { Length: > 0 })
         {
-            return (false,
-                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.NoTitlePartsConfigured),
-                null);
+            return IdentificationResult.Failed(spec.Strategy, IdentificationFailureReason.NoTitlePartsConfigured);
         }
 
         var constructedTitle = BuildTitle(spec.TitleParts, candidate);
         if (constructedTitle is null)
         {
-            return (false,
-                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.TitlePartRegexNotMatched),
-                null);
+            return IdentificationResult.Failed(spec.Strategy, IdentificationFailureReason.TitlePartRegexNotMatched);
         }
 
         var matched = exact
@@ -384,31 +364,24 @@ public static class ScoringEngine
 
         if (!matched)
         {
-            return (false,
-                new IdentificationTrace(spec.Strategy, true, IdentificationFailureReason.TitleDoesNotMatch),
-                null);
+            return IdentificationResult.Failed(spec.Strategy, IdentificationFailureReason.TitleDoesNotMatch);
         }
 
-        return (true,
-            new IdentificationTrace(spec.Strategy, true, null),
-            new TracedIdentification(null, null, constructedTitle));
+        return IdentificationResult.Matched(spec.Strategy, new TracedIdentification(null, null, constructedTitle));
     }
 
-    private static (bool, IdentificationTrace, TracedIdentification?) IdentifyAirdateTraced(
-        ScoreCandidate candidate)
+    private static IdentificationResult IdentifyAirdateTraced(ScoreCandidate candidate)
     {
         var date = ExtractGermanDate(candidate.Title);
         if (date is null)
         {
-            return (false,
-                new IdentificationTrace(IdentificationStrategy.AirdateExtraction, true, IdentificationFailureReason.NoDateFoundInTitle),
-                null);
+            return IdentificationResult.Failed(
+                IdentificationStrategy.AirdateExtraction, IdentificationFailureReason.NoDateFoundInTitle);
         }
 
         var formatted = date.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        return (true,
-            new IdentificationTrace(IdentificationStrategy.AirdateExtraction, true, null),
-            new TracedIdentification(null, null, formatted));
+        return IdentificationResult.Matched(
+            IdentificationStrategy.AirdateExtraction, new TracedIdentification(null, null, formatted));
     }
 
     private static string? BuildTitle(TitlePart[] parts, ScoreCandidate candidate)

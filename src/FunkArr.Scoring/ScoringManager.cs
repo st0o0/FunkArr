@@ -2,7 +2,6 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Routing;
 using FunkArr.Core;
-using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using Microsoft.Extensions.Options;
 using Terp.Diagnostics;
@@ -39,11 +38,9 @@ public sealed class ScoringManager : ReceiveActor
             return;
         }
 
-        _router.Tell(new ExecuteScoring(config, msg.Candidates, msg.RequestId, msg.Origin), Sender);
+        _router.Tell(new ExecuteScoring(config, msg.Candidates, msg.RequestId), Sender);
     }
 
     private void HandleTestScoreItems(TestScoreItems msg)
-    {
-        _router.Tell(new ExecuteScoring(msg.Config, msg.Candidates, msg.RequestId, new ScoringOrigin(SearchSource.Test, "ad-hoc")), Sender);
-    }
+        => _router.Tell(new ExecuteScoring(msg.Config, msg.Candidates, msg.RequestId), Sender);
 }

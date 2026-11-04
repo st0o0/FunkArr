@@ -121,15 +121,15 @@ The ScoringActor SHALL evaluate rules in ascending priority order. The first rul
 - **THEN** the priority 1 rule's result is used
 
 ### Requirement: ExecuteScoring message carries trace context
-The internal ExecuteScoring message (ScoringManager -> ScoringActor) SHALL carry RequestId (Guid), Origin (ScoringOrigin), and HistoryRef (IActorRef) in addition to the existing Config and Items.
+The internal ExecuteScoring message (ScoringManager -> ScoringActor) SHALL carry Config, Items and RequestId (Guid). It SHALL NOT carry a ScoringOrigin; the origin is only part of the public ScoreItems message.
 
 #### Scenario: ExecuteScoring fields
 - **WHEN** ScoringManager constructs an ExecuteScoring message
-- **THEN** it SHALL contain: Config (MatchingConfig), Items (ScoreCandidate[]), RequestId (Guid), Origin (ScoringOrigin), HistoryRef (IActorRef)
+- **THEN** it SHALL contain: Config (MatchingConfig), Items (ScoreCandidate[]), RequestId (Guid)
 
-#### Scenario: HistoryRef resolution
-- **WHEN** ScoringManager starts
-- **THEN** it SHALL resolve the ScoringHistory ShardRegion via Context.GetActor and cache the reference for use in all ExecuteScoring messages
+#### Scenario: Test and real scoring share one path
+- **WHEN** ScoringManager handles ScoreItems or TestScoreItems
+- **THEN** both produce the same ExecuteScoring shape and the ScoringActor does not distinguish between them
 
 ### Requirement: ScoreItems requires ruleSetId
 The ScoreItems message SHALL require a non-null RuleSetId, a RequestId (Guid) for correlation, a ScoringOrigin for provenance tracking, and a Candidates array.

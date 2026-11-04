@@ -25,7 +25,7 @@ public sealed class ScoringActorTests : TestKit
     private ScoreCompleted Score(MatchingConfig config, params ScoreCandidate[] items)
     {
         var actor = Sys.ActorOf(Props.Create<ScoringActor>());
-        actor.Tell(new ExecuteScoring(config, items, Guid.Empty, new ScoringOrigin(SearchSource.Sonarr, "test")));
+        actor.Tell(new ExecuteScoring(config, items, Guid.Empty));
         return ExpectMsg<ScoreCompleted>();
     }
 
@@ -530,7 +530,7 @@ public sealed class ScoringActorTests : TestKit
     private ScoreCompleted ScoreWithTrace(MatchingConfig config, params ScoreCandidate[] items)
     {
         var actor = Sys.ActorOf(Props.Create<ScoringActor>());
-        actor.Tell(new ExecuteScoring(config, items, Guid.NewGuid(), new ScoringOrigin(SearchSource.Sonarr, "test")));
+        actor.Tell(new ExecuteScoring(config, items, Guid.NewGuid()));
         return ExpectMsg<ScoreCompleted>();
     }
 
