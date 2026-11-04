@@ -15,11 +15,11 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
     public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptionsWithValidateOnStart<FunkArrOptions>()
+            .AddOptionsWithValidateOnStart<FunkArrOptions, FunkArrOptionsValidator>()
             .Bind(context.Configuration.GetSection(FunkArrOptions.SectionName));
 
         services
-            .AddOptionsWithValidateOnStart<PostgresOptions>()
+            .AddOptionsWithValidateOnStart<PostgresOptions, PostgresOptionsValidator>()
             .Bind(context.Configuration.GetSection(PostgresOptions.SectionName));
 
         services

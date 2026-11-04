@@ -8,7 +8,7 @@ public sealed class ScoringSetupContainer : ISetup<IServiceCollection>
     public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptionsWithValidateOnStart<ScoringOptions>()
+            .AddOptionsWithValidateOnStart<ScoringOptions, ScoringOptionsValidator>()
             .Bind(context.Configuration.GetSection(ScoringOptions.SectionName));
 
         services
@@ -16,7 +16,7 @@ public sealed class ScoringSetupContainer : ISetup<IServiceCollection>
             .Bind(context.Configuration.GetSection(VariantOptions.SectionName));
 
         services
-            .AddOptionsWithValidateOnStart<ScoringHistoryOptions>()
+            .AddOptionsWithValidateOnStart<ScoringHistoryOptions, ScoringHistoryOptionsValidator>()
             .Bind(context.Configuration.GetSection(ScoringHistoryOptions.SectionName));
     }
 }

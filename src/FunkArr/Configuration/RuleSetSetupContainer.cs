@@ -10,7 +10,7 @@ public sealed class RuleSetSetupContainer : ISetup<IServiceCollection>, ISetup<W
     public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptionsWithValidateOnStart<RuleSetUpdaterOptions>()
+            .AddOptionsWithValidateOnStart<RuleSetUpdaterOptions, RuleSetUpdaterOptionsValidator>()
             .Bind(context.Configuration.GetSection(RuleSetUpdaterOptions.SectionName));
 
         services.AddSingleton<IRuleSetValidator, RuleSetValidator>();
