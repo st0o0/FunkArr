@@ -4,4 +4,4 @@ public sealed record DownloadSettingsResponse(
     int ConcurrentDownloads,
     DownloadTimeSlotResponse[] Schedule);
 
-public sealed record DownloadTimeSlotResponse(string Start, string End);
+public sealed record DownloadTimeSlotResponse(TimeOnly Start, TimeOnly End);

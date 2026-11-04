@@ -39,7 +39,7 @@ The `UpdateRuleSetRequest` SHALL be a fully typed record identical to `CreateRul
 - **THEN** the validator SHALL receive the same JSON structure as before (field names, nesting)
 
 ### Requirement: TestScoreRequest uses shared RuleInput
-`TestScoreRequest` SHALL be a sealed record. `DefaultConfidence` SHALL have `[Range(0.0, 1.0)]`. `Rules` SHALL have `[Required]` and `[MinLength(1)]`. `Candidates` SHALL have `[Required]` and `[MinLength(1)]`.
+`TestScoreRequest` SHALL be a sealed record. `DefaultConfidence` SHALL have `[Range(0.0, 1.0)]`. `Rules` SHALL have `[Required]` and `[MinLength(1)]`. `Candidates` SHALL have `[Required]` and `[MinLength(1)]`. `MediaType` SHALL be `MediaType?` (enum), not `string?`.
 
 #### Scenario: TestScore reuses RuleInput
 - **WHEN** a test score request is received
@@ -48,6 +48,10 @@ The `UpdateRuleSetRequest` SHALL be a fully typed record identical to `CreateRul
 #### Scenario: Empty candidates array
 - **WHEN** a POST request to `/api/rulesets/test` includes an empty `Candidates` array
 - **THEN** the API returns 400
+
+#### Scenario: MediaType is typed enum
+- **WHEN** a test score request includes `"mediaType": "show"`
+- **THEN** `TestScoreRequest.MediaType` SHALL be `MediaType.Show`, not the string `"show"`
 
 ### Requirement: No manual field extraction in HandleCreate
 The `HandleCreate` endpoint SHALL NOT use `request.Body.TryGetValue(...)` for field extraction. Required field validation SHALL be handled by ASP.NET model binding.
@@ -97,7 +101,7 @@ The `FilterSpec` model with `All`, `Any`, `Not` arrays of `FilterNode` SHALL des
 
 ### Requirement: DownloadHistoryRequest typed request record
 
-`DownloadHistoryRequest` SHALL be a sealed record with `[FromQuery]` attributes on all properties. The `DownloadsApiEndpoints` history endpoint SHALL bind this record via `[AsParameters]` instead of individual lambda parameters. The record SHALL include `[Range]` attributes: `Start` minimum 0, `Limit` range 1–1000.
+`DownloadHistoryRequest` SHALL be a sealed record with `[FromQuery]` attributes on all properties. The `DownloadsApiEndpoints` history endpoint SHALL bind this record via `[AsParameters]` instead of individual lambda parameters. The record SHALL include `[Range]` attributes: `Start` minimum 0, `Limit` range 1–1000. `Category` SHALL be `MediaType?` (enum), not `string?`.
 
 #### Scenario: History endpoint binds via AsParameters
 
@@ -108,6 +112,21 @@ The `FilterSpec` model with `All`, `Any`, `Not` arrays of `FilterNode` SHALL des
 
 - **WHEN** Start and Limit are null
 - **THEN** the handler SHALL apply defaults (Start=0, Limit=25) - defaulting stays in handler code
+
+#### Scenario: Category binds as enum
+- **WHEN** a GET request includes `category=movie`
+- **THEN** `DownloadHistoryRequest.Category` SHALL be `MediaType.Movie`
+
+### Requirement: MediaInput uses MediaType enum
+`MediaInput.Type` SHALL be `MediaType` (enum), not `string`. ASP.NET JSON deserialization SHALL handle the conversion from the camelCase string in the JSON body.
+
+#### Scenario: MediaInput type is enum
+- **WHEN** a create ruleset request includes `"media": {"name": "...", "type": "show"}`
+- **THEN** `MediaInput.Type` SHALL be `MediaType.Show`
+
+#### Scenario: Invalid media type in request body
+- **WHEN** a create request includes `"type": "podcast"`
+- **THEN** the API SHALL return 400 (JSON deserialization failure for unknown enum value)
 
 ### Requirement: CreateArrResourceRequest validated
 `CreateArrResourceRequest` SHALL include `[Required]` on `Url` and `ApiKey`, and `[SafeUrl]` on `Url` to prevent SSRF.
@@ -120,20 +139,3 @@ The `FilterSpec` model with `All`, `Any`, `Not` arrays of `FilterNode` SHALL des
 - **WHEN** a POST request includes `Url = "http://169.254.169.254/metadata"`
 - **THEN** the API returns 400 with SafeUrl validation error
 
-### Requirement: RuleSetApiEndpoints list handler extracted
-
-The RuleSetApiEndpoints list endpoint logic SHALL be extracted into a `private static` method (e.g., `HandleList`) matching the pattern of existing `HandleCreate`, `HandleUpdate`, `HandleDelete`, and `HandleExport` methods.
-
-#### Scenario: List handler is a named method
-
-- **WHEN** reviewing RuleSetApiEndpoints code
-- **THEN** the list endpoint SHALL delegate to a `private static` method, not contain inline fan-out logic in the lambda
-
-### Requirement: Single SerializeForDisk method
-
-RuleSetApiEndpoints SHALL have exactly one `SerializeForDisk` helper method, not duplicated implementations.
-
-#### Scenario: No duplicate serialization methods
-
-- **WHEN** reviewing RuleSetApiEndpoints code
-- **THEN** there SHALL be exactly one `SerializeForDisk` method covering both Create and Update serialization needs

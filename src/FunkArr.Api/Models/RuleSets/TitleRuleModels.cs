@@ -1,5 +1,11 @@
 namespace FunkArr.Api.Models;
 
+public enum TitlePartType
+{
+    Static,
+    Regex
+}
+
 public sealed record TitleRuleOutput(
     TitlePartType Type,
     FilterField? Field = null,

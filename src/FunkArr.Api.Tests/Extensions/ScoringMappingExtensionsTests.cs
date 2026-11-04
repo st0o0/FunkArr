@@ -146,18 +146,18 @@ public sealed class ScoringMappingExtensionsTests
         Assert.Equal(10, result.Priority);
         Assert.Equal(ApiModels.RuleOutcome.Matched, result.Outcome);
         Assert.NotNull(result.FilterTrace);
-        Assert.Equal("All", result.FilterTrace.Operator);
+        Assert.Equal(ApiModels.FilterOperator.All, result.FilterTrace.Operator);
         Assert.True(result.FilterTrace.Passed);
         var node = Assert.Single(result.FilterTrace.Nodes);
-        Assert.Equal("Title", node.Field);
-        Assert.Equal("Contains", node.Op);
+        Assert.Equal(ApiModels.FilterField.Title, node.Field);
+        Assert.Equal(ApiModels.FilterOp.Contains, node.Op);
         Assert.Equal("Tagesschau", node.ExpectedValue);
         Assert.Equal("Tagesschau 20:00", node.ActualValue);
         Assert.True(node.Passed);
         Assert.False(node.Skipped);
         Assert.Null(node.Group);
         Assert.NotNull(result.IdentificationTrace);
-        Assert.Equal("SeasonAndEpisodeNumber", result.IdentificationTrace.Strategy);
+        Assert.Equal(ApiModels.IdentificationStrategy.SeasonAndEpisodeNumber, result.IdentificationTrace.Strategy);
         Assert.True(result.IdentificationTrace.Attempted);
         Assert.Null(result.IdentificationTrace.Detail);
     }
@@ -177,7 +177,7 @@ public sealed class ScoringMappingExtensionsTests
     }
 
     [Fact]
-    public void FilterGroupTrace_maps_operator_as_string_and_nodes()
+    public void FilterGroupTrace_maps_operator_and_nodes()
     {
         var node1 = new MsgHistory.FilterNodeTrace("Channel", "Eq", "ARD", "ARD", true, false, null);
         var node2 = new MsgHistory.FilterNodeTrace("Duration", "GreaterThan", "300", "600", true, false, null);
@@ -185,11 +185,11 @@ public sealed class ScoringMappingExtensionsTests
 
         var result = trace.ToApi();
 
-        Assert.Equal("Any", result.Operator);
+        Assert.Equal(ApiModels.FilterOperator.Any, result.Operator);
         Assert.True(result.Passed);
         Assert.Equal(2, result.Nodes.Length);
-        Assert.Equal("Channel", result.Nodes[0].Field);
-        Assert.Equal("Duration", result.Nodes[1].Field);
+        Assert.Equal(ApiModels.FilterField.Channel, result.Nodes[0].Field);
+        Assert.Equal(ApiModels.FilterField.Duration, result.Nodes[1].Field);
     }
 
     [Fact]

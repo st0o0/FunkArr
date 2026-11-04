@@ -179,6 +179,65 @@ Revisit once version hits 1.0+.
 - `/index/api` - Newznab indexer API for Prowlarr/Sonarr/Radarr (FunkArr.ArrApi, controller-based API)
 - `/download/api` - SABnzbd-compatible download client API (FunkArr.ArrApi, controller-based API)
 
+## API conventions (FunkArr.Api)
+
+### Endpoint files
+- One static class per feature area: `{Feature}ApiEndpoints.cs`.
+- One extension method `Map{Feature}Api(this WebApplication app)` per class.
+- All handlers are inline lambdas. No `private static` handler methods
+  (method group references prohibited). If a lambda grows too large, the
+  logic belongs in the domain layer, not in a helper method.
+- Constants (timeouts, JsonSerializerOptions) are `private static readonly`
+  fields on the class — that is the only non-lambda content.
+- Exception: `SystemApiEndpoints` setup checks are co-located with the
+  endpoint (self-contained health probes, no domain actor).
+
+### Endpoint lambda shape
+Every handler follows: (1) resolve actor(s) from `IActorRegistry`,
+(2) Ask with a message (`request.ToMessage()`/`request.ToCommand()` if
+mapping needed), (3) switch on response → `IResult`. No business logic,
+no multi-actor orchestration in the lambda body.
+
+### Route paths
+- Groups: `/api/{feature}` (plural for collections: `downloads`,
+  `rulesets`; singular where natural: `mediathek`, `feed`, `system`,
+  `setup`).
+- Sub-resources use consistent nesting: queue operations under `/queue/`,
+  history under `/history/`.
+- Actions on a resource: `POST /resource/{id}/action`.
+- Collection-level actions: `POST /resource/action`.
+- Root of a group uses `"/"`, not `""`.
+
+### Request and response models
+- Organized in `Models/{Feature}/` subfolders: Downloads, RuleSets,
+  Scoring, Feed, Mediathek, System, Setup, Shared. Namespace stays
+  `FunkArr.Api.Models` (subfolders are for physical organization only).
+- Shared types (`MediaType`, `OperationResult`, `ErrorResponse`) live
+  in `Models/Shared/`.
+- Enums live with the feature that owns them, not in a central `Enums.cs`.
+- A file contains either request records or response records, not both
+  (unless matched pair for a single endpoint).
+
+### Enums over strings
+- Request/response records use enum types for all known finite values.
+  Never `string` for a value from a known set.
+- `JsonStringEnumConverter` with camelCase naming is configured globally
+  — enums serialize as camelCase strings in API responses.
+- Query parameters that represent enums bind directly as the enum type.
+- Only exception: values passed through 1:1 to an external API (e.g.
+  MediathekViewWeb `SortBy`/`SortOrder`).
+- Response records never use `.ToString()` on enum values.
+- `DateTimeOffset` stays `DateTimeOffset`, never `.ToString("o")`.
+  `TimeOnly` stays `TimeOnly`, never `.ToString("HH:mm")`.
+
+### Mapping extensions
+- Live in `Extensions/{Feature}MappingExtensions.cs`.
+- `ToApi()` for domain → API model, `ToMessage()`/`ToCommand()` for
+  API → domain.
+- Enum mapping via exhaustive switch (per enum-conventions rules).
+- These are the only non-inline code the endpoint layer calls besides
+  `IActorRegistry.GetAsync` and `actor.Ask`.
+
 ## Akka conventions
 
 - **No `ContinueWith`**: Never use `Task.ContinueWith()` in actor code. Use
@@ -318,13 +377,24 @@ Do NOT use:
 
 - **Persistence enums have explicit `int` values.** Every member of every enum in
   `FunkArr.Persistence` is assigned a value (`Show = 0, Movie = 1`), starting at 0.
-  Values are a stored contract: never change, reuse, or reorder them. New members get
+  Values are a stored contract: never change, reuse, or reorder them (new enums start
+  with `Unknown = 0`, see below; existing ones are not renumbered). New members get
   a new, unused value (gaps are fine, e.g. `PersistedSearchSource.Feed = 4`).
 - **Enum-to-enum mapping uses exhaustive `switch` expressions** with
   `_ => throw new ArgumentOutOfRangeException(nameof(value), value, null)`. Never convert
   between enum types with numeric casts (`(Target)(int)source`). Applies to
   Messages <-> Persistence and Api <-> Messages. Nullable enums: `x?.ToPersistence()`.
 - A missing switch arm is a compile error (CS8509 under warnings-as-errors).
+- **Every new enum starts with an explicit `Unknown = 0` member**, in every project
+  (Api, ArrApi, Messages, Persistence). `default(T)` is then detectably "unset", and
+  unrecognized external values bind to `Unknown` instead of failing binding (no automatic
+  400). API handlers answer `Unknown` with the protocol's own error and reject it before
+  mapping; enum-to-enum mapping `switch` expressions throw for `Unknown` via the
+  `_ => throw` arm. Applies to enums added from now on; existing Persistence enums keep
+  their stored values (`Show = 0`) and are not renumbered.
+- **Wire names via `[JsonStringEnumMemberName]`, API layer only.** Use it on API-layer enum
+  members instead of hand-written string switches. Never put serialization attributes on
+  `FunkArr.Messages` or `FunkArr.Persistence` enums.
 
 ## Warnings
 

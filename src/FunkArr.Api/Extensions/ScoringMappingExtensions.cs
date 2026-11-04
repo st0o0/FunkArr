@@ -1,3 +1,4 @@
+using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 using ApiModels = FunkArr.Api.Models;
 
@@ -28,14 +29,18 @@ internal static class ScoringMappingExtensions
         new(msg.RuleId, msg.Priority, msg.Outcome.ToApi(),
             msg.FilterTrace?.ToApi(),
             msg.IdentificationTrace is not null
-                ? new ApiModels.IdentificationTrace(msg.IdentificationTrace.Strategy?.ToString(), msg.IdentificationTrace.Attempted, msg.IdentificationTrace.Detail?.ToString())
+                ? new ApiModels.IdentificationTrace(
+                    msg.IdentificationTrace.Strategy?.ToApi(),
+                    msg.IdentificationTrace.Attempted,
+                    msg.IdentificationTrace.Detail?.ToString())
                 : null);
 
     internal static ApiModels.FilterGroupTrace ToApi(this FilterGroupTrace msg) =>
-        new(msg.Operator.ToString(), msg.Passed,
+        new(msg.Operator.ToApi(), msg.Passed,
         [
             .. msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
-                n.Field, n.Op, n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,
+                ParseFilterField(n.Field), ParseFilterOp(n.Op),
+                n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,
                 n.Group?.ToApi()))
         ]);
 
@@ -46,4 +51,18 @@ internal static class ScoringMappingExtensions
         RuleOutcome.IdentificationFailed => ApiModels.RuleOutcome.IdentificationFailed,
         _ => ApiModels.RuleOutcome.FilterFailed
     };
+
+    internal static ApiModels.FilterOperator ToApi(this FilterGroupOp value) => value switch
+    {
+        FilterGroupOp.All => ApiModels.FilterOperator.All,
+        FilterGroupOp.Any => ApiModels.FilterOperator.Any,
+        FilterGroupOp.Not => ApiModels.FilterOperator.Not,
+        _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+    };
+
+    private static ApiModels.FilterField? ParseFilterField(string? value) =>
+        value is not null && Enum.TryParse<ApiModels.FilterField>(value, true, out var parsed) ? parsed : null;
+
+    private static ApiModels.FilterOp? ParseFilterOp(string? value) =>
+        value is not null && Enum.TryParse<ApiModels.FilterOp>(value, true, out var parsed) ? parsed : null;
 }

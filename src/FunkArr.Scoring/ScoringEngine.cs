@@ -90,8 +90,7 @@ public static class ScoringEngine
         return new ScoringResult(scored, itemTraces);
     }
 
-    private static FilterEvaluation EvaluateFiltersTraced(
-        FilterSpec? filters, ScoreCandidate candidate)
+    private static FilterEvaluation EvaluateFiltersTraced(FilterSpec? filters, ScoreCandidate candidate)
     {
         if (filters is null)
         {

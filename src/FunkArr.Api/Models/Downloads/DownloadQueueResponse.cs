@@ -1,11 +1,23 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace FunkArr.Api.Models;
 
 public enum QueueStatus
 {
     Processing,
     Queued
+}
+
+public enum QueuePhase
+{
+    VideoDownload,
+    Remuxing,
+    Moving
+}
+
+public enum QueuePriority
+{
+    Low = -1,
+    Normal = 0,
+    High = 1
 }
 
 public sealed record DownloadQueueResponse(
@@ -32,9 +44,3 @@ public sealed record DownloadQueueItem(
     long Speed,
     string Eta,
     QueuePriority Priority);
-
-public sealed record MoveRequest([property: Range(0, int.MaxValue)] int Position, QueuePriority? Priority = null);
-
-public sealed record PriorityRequest([property: Required] QueuePriority Priority);
-
-public sealed record SwapRequest(Guid Id1, Guid Id2);

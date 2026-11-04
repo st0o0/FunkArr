@@ -24,13 +24,13 @@ public static class FeedApiEndpoints
             .AddEndpointFilter<EndpointExceptionFilter>();
         group.WithRequestTimeout(TimeSpan.FromSeconds(30));
 
-        group.MapGet("", async (
-            int? limit, int? offset, string? type, string? channel, int? quality, string? q,
+        group.MapGet("/", async (
+            int? limit, int? offset, ApiModels.MediaType? type, string? channel, int? quality, string? q,
             IActorRegistry registry, CancellationToken ct) =>
         {
             var take = Math.Clamp(limit ?? _defaultLimit, 1, _maxLimit);
             var skip = Math.Max(0, offset ?? 0);
-            var mediaType = ParseMediaType(type);
+            var mediaType = type?.ToMessage();
             var feed = await registry.GetAsync<IFeedStoreManager>(ct);
             var ingest = await registry.GetAsync<IFeedCrawlManager>(ct);
 
@@ -42,7 +42,7 @@ public static class FeedApiEndpoints
 
             return (feedResponse, statusResponse) switch
             {
-                (FeedResult entries, FeedCrawlStatusResult status) => Results.Ok(ToApi(entries, status)),
+                (FeedResult entries, FeedCrawlStatusResult status) => Results.Ok(entries.ToApi(status)),
                 _ => Results.Problem(statusCode: 500, title: "Feed unavailable")
             };
         })
@@ -65,37 +65,4 @@ public static class FeedApiEndpoints
         return app;
     }
 
-    internal static ApiModels.FeedOverviewResponse ToApi(FeedResult entries, FeedCrawlStatusResult status) =>
-        new(
-            [
-                .. entries.Entries.Select(e => new ApiModels.FeedEntryOutput(
-                    e.StableId,
-                    e.FirstSeenAt,
-                    e.MediaType.ToApi(),
-                    e.Title,
-                    e.Channel,
-                    e.Topic,
-                    e.Quality,
-                    e.Season,
-                    e.Episode))
-            ],
-            entries.Total,
-            entries.FilteredTotal,
-            new ApiModels.FeedCrawlStatusOutput(
-                status.Enabled,
-                status.Running,
-                status.LastRunAt,
-                status.LastOutcome,
-                status.LastNewItems,
-                status.LastPublished,
-                status.LastUnmatched,
-                status.LastGap,
-                status.ConsecutiveFailures));
-
-    private static Messages.MediaType? ParseMediaType(string? type) => type?.ToLowerInvariant() switch
-    {
-        "show" => Messages.MediaType.Show,
-        "movie" => Messages.MediaType.Movie,
-        _ => null
-    };
 }

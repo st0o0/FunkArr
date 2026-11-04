@@ -8,6 +8,10 @@ public enum SourceType
     Unknown
 }
 
+public sealed record RuleSetListResponse(
+    string? CommunityVersion,
+    RuleSetListEntry[] Rulesets);
+
 public sealed record RuleSetListEntry(
     string RuleSetId,
     string Topic,

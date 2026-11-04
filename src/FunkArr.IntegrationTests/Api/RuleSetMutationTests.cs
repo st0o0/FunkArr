@@ -13,13 +13,13 @@ public sealed class RuleSetMutationTests(FunkArrFixture fixture)
 
     private static CreateRuleSetRequest ValidCreateRequest() =>
         new("test-ruleset", "Test Topic",
-            new MediaInput("Test Show", "show", TvdbId: 99999),
+            new MediaInput("Test Show", MediaType.Show, TvdbId: 99999),
             [new RuleInput("rule-1", Strategy: IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonRegex: @"S(\d+)", EpisodeRegex: @"E(\d+)")]);
 
     private static UpdateRuleSetRequest ValidUpdateRequest() =>
         new("Updated Topic",
-            new MediaInput("Updated Show", "show", TvdbId: 99999),
+            new MediaInput("Updated Show", MediaType.Show, TvdbId: 99999),
             [new RuleInput("rule-1", Strategy: IdentificationStrategy.SeasonAndEpisodeNumber,
                 SeasonRegex: @"S(\d+)", EpisodeRegex: @"E(\d+)")]);
 

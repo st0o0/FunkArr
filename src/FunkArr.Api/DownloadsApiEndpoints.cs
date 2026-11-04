@@ -96,7 +96,7 @@ public static class DownloadsApiEndpoints
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
             var result = await history.Ask<HistoryResult>(
-                new QueryHistory(req.Start ?? 0, req.Limit ?? 25, ParseMediaType(req.Category)), _askTimeout, ct);
+                new QueryHistory(req.Start ?? 0, req.Limit ?? 25, req.Category?.ToMessage()), _askTimeout, ct);
             return Results.Ok(result.ToApi());
         })
         .WithSummary("Get download history")
@@ -170,7 +170,7 @@ public static class DownloadsApiEndpoints
         .ProducesProblem(404)
         .ProducesProblem(504);
 
-        group.MapPost("/{id:guid}/retry", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
+        group.MapPost("/queue/{id:guid}/retry", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(id), _askTimeout, ct);
@@ -184,7 +184,7 @@ public static class DownloadsApiEndpoints
         .ProducesProblem(400)
         .ProducesProblem(504);
 
-        group.MapPost("/pause", async (IActorRegistry registry, CancellationToken ct) =>
+        group.MapPost("/queue/pause", async (IActorRegistry registry, CancellationToken ct) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), _askTimeout, ct);
@@ -195,7 +195,7 @@ public static class DownloadsApiEndpoints
         .Produces<ApiModels.OperationResult>()
         .ProducesProblem(504);
 
-        group.MapPost("/resume", async (IActorRegistry registry, CancellationToken ct) =>
+        group.MapPost("/queue/resume", async (IActorRegistry registry, CancellationToken ct) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), _askTimeout, ct);
@@ -279,8 +279,7 @@ public static class DownloadsApiEndpoints
         {
             var opts = options.CurrentValue;
             var schedule = opts.DownloadSchedule
-                .Select(s => new ApiModels.DownloadTimeSlotResponse(
-                    s.Start.ToString("HH:mm"), s.End.ToString("HH:mm")))
+                .Select(s => new ApiModels.DownloadTimeSlotResponse(s.Start, s.End))
                 .ToArray();
             return Results.Ok(new ApiModels.DownloadSettingsResponse(
                 opts.ConcurrentDownloads, schedule));
@@ -292,10 +291,4 @@ public static class DownloadsApiEndpoints
         return app;
     }
 
-    private static MediaType? ParseMediaType(string? value) => value switch
-    {
-        "movie" or "movies" => MediaType.Movie,
-        "tv" or "show" => MediaType.Show,
-        _ => null
-    };
 }

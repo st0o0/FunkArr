@@ -22,7 +22,9 @@ public static class SetupArrEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = ResolveSelfUrl(request, ctx);
+            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
+                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
+                : request.FunkArrUrl.TrimEnd('/');
             var payload = ProwlarrIndexerPayload.Create(selfUrl, options.CurrentValue.ApiKey);
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v1/indexer", payload));
@@ -37,7 +39,9 @@ public static class SetupArrEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = ResolveSelfUrl(request, ctx);
+            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
+                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
+                : request.FunkArrUrl.TrimEnd('/');
             var payload = SonarrRadarrIndexerPayload.Create(selfUrl, options.CurrentValue.ApiKey, [5030, 5040]);
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/indexer", payload));
@@ -52,7 +56,9 @@ public static class SetupArrEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = ResolveSelfUrl(request, ctx);
+            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
+                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
+                : request.FunkArrUrl.TrimEnd('/');
             var payload = SabnzbdDownloadClientPayload.Create(selfUrl, options.CurrentValue.ApiKey, "tv");
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/downloadclient", payload));
@@ -67,7 +73,9 @@ public static class SetupArrEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = ResolveSelfUrl(request, ctx);
+            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
+                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
+                : request.FunkArrUrl.TrimEnd('/');
             var payload = SonarrRadarrIndexerPayload.Create(selfUrl, options.CurrentValue.ApiKey, [2030, 2040]);
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/indexer", payload));
@@ -82,7 +90,9 @@ public static class SetupArrEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = ResolveSelfUrl(request, ctx);
+            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
+                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
+                : request.FunkArrUrl.TrimEnd('/');
             var payload = SabnzbdDownloadClientPayload.Create(selfUrl, options.CurrentValue.ApiKey, "movies");
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/downloadclient", payload));
@@ -94,10 +104,4 @@ public static class SetupArrEndpoints
         return app;
     }
 
-    private static string ResolveSelfUrl(CreateArrResourceRequest request, HttpContext ctx)
-    {
-        return string.IsNullOrWhiteSpace(request.FunkArrUrl)
-            ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
-            : request.FunkArrUrl.TrimEnd('/');
-    }
 }

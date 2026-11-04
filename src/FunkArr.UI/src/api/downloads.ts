@@ -90,7 +90,7 @@ export function deleteHistoryItem(id: string) {
 }
 
 export function retryDownload(id: string) {
-  return fetchAction(`/api/downloads/${id}/retry`, 'POST')
+  return fetchAction(`/api/downloads/queue/${id}/retry`, 'POST')
 }
 
 export interface HistoryStatsResponse {
@@ -124,11 +124,11 @@ export function forceStartDownload(id: string) {
 }
 
 export function pauseDownloads() {
-  return fetchAction('/api/downloads/pause', 'POST')
+  return fetchAction('/api/downloads/queue/pause', 'POST')
 }
 
 export function resumeDownloads() {
-  return fetchAction('/api/downloads/resume', 'POST')
+  return fetchAction('/api/downloads/queue/resume', 'POST')
 }
 
 export interface DownloadSettingsResponse {

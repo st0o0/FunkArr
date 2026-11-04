@@ -1,5 +1,26 @@
 namespace FunkArr.Api.Models;
 
+public enum EnrichmentMethod
+{
+    Title,
+    Airdate
+}
+
+public enum RuntimeMode
+{
+    Tiebreaker,
+    Filter
+}
+
+public enum IdentificationStrategy
+{
+    SeasonAndEpisodeNumber,
+    AbsoluteEpisodeNumber,
+    TitleExact,
+    TitleIncludes,
+    AirdateExtraction
+}
+
 public sealed record EnrichmentConfigOutput(
     bool Enabled,
     EnrichmentMethod[] Methods,

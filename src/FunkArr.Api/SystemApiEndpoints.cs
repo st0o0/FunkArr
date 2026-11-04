@@ -1,5 +1,6 @@
 using Akka.Actor;
 using Akka.Hosting;
+using FunkArr.Api.Extensions;
 using FunkArr.Api.HealthChecks;
 using FunkArr.Api.Models;
 using FunkArr.Api.Validation;
@@ -103,7 +104,7 @@ public static class SystemApiEndpoints
             return Results.Ok(new CacheStatsResponse(
                 result.TvdbEntries,
                 result.TmdbEntries,
-                result.OldestEntry?.ToString("o")));
+                result.OldestEntry));
         })
         .WithSummary("Get metadata cache stats")
         .WithDescription("Returns the number of cached TVDB and TMDB entries and the oldest cache entry timestamp.")
@@ -144,25 +145,13 @@ public static class SystemApiEndpoints
         .Produces<RoutesResponse>();
 
         group.MapGet("/variants", (IOptionsMonitor<VariantOptions> variants) =>
-            Results.Ok(ToVariantsResponse(variants.CurrentValue)))
+            Results.Ok(variants.CurrentValue.ToApi()))
         .WithSummary("Get broadcast variant policy")
         .WithDescription("Returns for each non-standard broadcast variant (audio description, sign language, plain language, original version) whether it is excluded from or allowed in search results.")
         .Produces<VariantsResponse>();
 
         return app;
     }
-
-    internal static VariantsResponse ToVariantsResponse(VariantOptions options) =>
-        new(
-        [
-            new VariantPolicyEntry(Models.MediathekVariant.AudioDescription, ToApi(options.AudioDescription)),
-            new VariantPolicyEntry(Models.MediathekVariant.SignLanguage, ToApi(options.SignLanguage)),
-            new VariantPolicyEntry(Models.MediathekVariant.PlainLanguage, ToApi(options.PlainLanguage)),
-            new VariantPolicyEntry(Models.MediathekVariant.OriginalVersion, ToApi(options.OriginalVersion))
-        ]);
-
-    private static Models.VariantPolicy ToApi(Core.VariantPolicy policy) =>
-        policy == Core.VariantPolicy.Allow ? Models.VariantPolicy.Allow : Models.VariantPolicy.Exclude;
 
     internal static StorageDirectory GetStorageDirectory(string path)
     {

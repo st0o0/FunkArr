@@ -3,11 +3,9 @@ using Akka.Hosting;
 using FunkArr.Api.Extensions;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
-using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
-using FunkArr.Messages.Scoring.History;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OutputCaching;
@@ -126,328 +124,141 @@ public static class RuleSetApiEndpoints
         .ProducesProblem(404)
         .ProducesProblem(504);
 
-        group.MapPost("/", HandleCreate)
-            .WithSummary("Create local ruleset")
-            .WithDescription("Creates a new local ruleset from the provided configuration. Returns 409 if a ruleset with the same ID already exists.")
-            .Produces<ApiModels.CreatedRuleSetResponse>(201)
-            .ProducesProblem(400)
-            .ProducesProblem(409)
-            .Produces<ApiModels.ValidationErrorResponse>(422);
-        group.MapPut("/{id}", HandleUpdate)
-            .WithSummary("Update ruleset")
-            .WithDescription("Replaces the configuration of an existing local ruleset.")
-            .Produces(200)
-            .ProducesProblem(404)
-            .Produces<ApiModels.ValidationErrorResponse>(422);
-        group.MapDelete("/{id}", HandleDelete)
-            .WithSummary("Delete local ruleset")
-            .WithDescription("Permanently removes a local ruleset. Community rulesets cannot be deleted.")
-            .Produces(200)
-            .ProducesProblem(404);
-        group.MapGet("/{id}/raw", HandleGetRaw)
-            .WithSummary("Get raw ruleset JSON")
-            .WithDescription("Returns the raw JSON definition of a ruleset as stored on disk.")
-            .Produces(200, contentType: "application/json")
-            .ProducesProblem(404);
+        group.MapPost("/", async (ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
+        {
+            var region = await registry.GetAsync<IRuleSetRegion>(ct);
+            var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), _queryTimeout, ct);
 
-        group.MapGet("/{id}/export", HandleExport)
-            .WithSummary("Export ruleset for community contribution")
-            .WithDescription("Downloads the ruleset as a JSON file suitable for contributing to the community repository.")
-            .Produces(200, contentType: "application/json")
-            .ProducesProblem(404)
-            .Produces<ApiModels.ValidationErrorResponse>(422);
+            await cache.EvictByTagAsync("rulesets", ct);
+            return result switch
+            {
+                CreateLocalRuleSetCompleted completed => Results.Created($"/api/rulesets/{completed.RuleSetId}", new ApiModels.CreatedRuleSetResponse(completed.RuleSetId)),
+                CreateLocalRuleSetFailed { Reason: CreateLocalRuleSetFailureReason.AlreadyExists } => Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists")),
+                CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
+                _ => ApiResults.UnexpectedResponse(result)
+            };
+        })
+        .WithSummary("Create local ruleset")
+        .WithDescription("Creates a new local ruleset from the provided configuration. Returns 409 if a ruleset with the same ID already exists.")
+        .Produces<ApiModels.CreatedRuleSetResponse>(201)
+        .ProducesProblem(400)
+        .ProducesProblem(409)
+        .Produces<ApiModels.ValidationErrorResponse>(422);
+
+        group.MapPut("/{id}", async (string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
+        {
+            var region = await registry.GetAsync<IRuleSetRegion>(ct);
+            var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), _queryTimeout, ct);
+
+            await cache.EvictByTagAsync("rulesets", ct);
+            return result switch
+            {
+                UpdateLocalRuleSetCompleted => Results.Ok(),
+                UpdateLocalRuleSetFailed { Reason: UpdateLocalRuleSetFailureReason.NotFound } => Results.NotFound(),
+                UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
+                _ => ApiResults.UnexpectedResponse(result)
+            };
+        })
+        .WithSummary("Update ruleset")
+        .WithDescription("Replaces the configuration of an existing local ruleset.")
+        .Produces(200)
+        .ProducesProblem(404)
+        .Produces<ApiModels.ValidationErrorResponse>(422);
+
+        group.MapDelete("/{id}", async (string id, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
+        {
+            var region = await registry.GetAsync<IRuleSetRegion>(ct);
+            var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), _queryTimeout, ct);
+
+            await cache.EvictByTagAsync("rulesets", ct);
+            return result switch
+            {
+                DeleteLocalRuleSetCompleted => Results.Ok(),
+                DeleteLocalRuleSetFailed => Results.NotFound(),
+                _ => ApiResults.UnexpectedResponse(result)
+            };
+        })
+        .WithSummary("Delete local ruleset")
+        .WithDescription("Permanently removes a local ruleset. Community rulesets cannot be deleted.")
+        .Produces(200)
+        .ProducesProblem(404);
+
+        group.MapGet("/{id}/raw", (string id, IDataFiles dataFiles, DataPaths dataPaths) =>
+        {
+            var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
+            var communityPath = Path.Join(dataPaths.CommunityRuleSets, $"{id}.json");
+
+            if (dataFiles.Exists(localPath))
+            {
+                return Results.Content(dataFiles.ReadText(localPath), "application/json");
+            }
+
+            if (dataFiles.Exists(communityPath))
+            {
+                return Results.Content(dataFiles.ReadText(communityPath), "application/json");
+            }
+
+            return Results.NotFound();
+        })
+        .WithSummary("Get raw ruleset JSON")
+        .WithDescription("Returns the raw JSON definition of a ruleset as stored on disk.")
+        .Produces(200, contentType: "application/json")
+        .ProducesProblem(404);
+
+        group.MapGet("/{id}/export", async (string id, IActorRegistry registry, HttpContext httpContext, CancellationToken ct) =>
+        {
+            var region = await registry.GetAsync<IRuleSetRegion>(ct);
+            var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), _queryTimeout, ct);
+
+            if (result is ExportRuleSetCompleted completed)
+            {
+                httpContext.Response.Headers.ContentDisposition = $"attachment; filename=\"{id}.json\"";
+                return Results.Content(completed.Json, "application/json");
+            }
+
+            return result switch
+            {
+                ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
+                ExportRuleSetFailed { Reason: ExportRuleSetFailureReason.NoLocalOverlay } =>
+                    Results.Problem(statusCode: 400, title: "No local overlay",
+                        detail: "Only locally modified rulesets can be exported. Edit this ruleset first to create a local overlay."),
+                ExportRuleSetFailed => Results.NotFound(),
+                _ => ApiResults.UnexpectedResponse(result)
+            };
+        })
+        .WithSummary("Export ruleset for community contribution")
+        .WithDescription("Downloads the ruleset as a JSON file suitable for contributing to the community repository.")
+        .Produces(200, contentType: "application/json")
+        .ProducesProblem(404)
+        .Produces<ApiModels.ValidationErrorResponse>(422);
 
         group.MapPost("/test", async (ApiModels.TestScoreRequest request, IActorRegistry registry, CancellationToken ct) =>
         {
             var (config, candidates) = request.ToMessage();
-
             var manager = await registry.GetAsync<IScoringManager>(ct);
-            var result = await manager.Ask<ScoreItemsResponse>(
-                new TestScoreItems(Guid.NewGuid(), config, candidates), _testTimeout, ct);
-
-            if (result is not ScoreCompleted completed)
+            var result = await manager.Ask<TestScoreWithEnrichmentResponse>(
+                new TestScoreWithEnrichment(
+                    Guid.NewGuid(), config, candidates,
+                    request.MediaType?.ToMessage(),
+                    request.TvdbId, request.TmdbId, request.ImdbId,
+                    request.Enrichment is not null && request.Enrichment.Enabled != false
+                        ? request.Enrichment.ToMessage() : null),
+                _testTimeout, ct);
+            return result switch
             {
-                return ApiResults.UnexpectedResponse(result);
-            }
-
-            var itemTraces = completed.ItemTraces;
-            if (request.Enrichment is not null && request.Enrichment.Enabled != false)
-            {
-                itemTraces = await RunTestEnrichment(itemTraces, request, registry, ct);
-            }
-
-            return Results.Ok(new ApiModels.TestScoreResponse(
-                [.. itemTraces.Select(t => t.ToApi())]));
+                TestScoreWithEnrichmentCompleted completed => Results.Ok(
+                    new ApiModels.TestScoreResponse([.. completed.ItemTraces.Select(t => t.ToApi())])),
+                TestScoreWithEnrichmentFailed failed => Results.Problem(failed.Cause.Message, statusCode: 502),
+                _ => ApiResults.UnexpectedResponse(result)
+            };
         })
         .WithSummary("Test ruleset scoring")
         .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration with optional enrichment. Returns per-item traces.")
         .Produces<ApiModels.TestScoreResponse>()
         .ProducesProblem(400)
+        .ProducesProblem(502)
         .ProducesProblem(504);
 
         return app;
-    }
-
-    private static async Task EvictRuleSetCache(IOutputCacheStore cache, CancellationToken ct) => await cache.EvictByTagAsync("rulesets", ct);
-
-    private static async Task<IResult> HandleCreate(ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
-    {
-        var region = await registry.GetAsync<IRuleSetRegion>(ct);
-        var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), _queryTimeout, ct);
-
-        await EvictRuleSetCache(cache, ct);
-        return result switch
-        {
-            CreateLocalRuleSetCompleted completed => Results.Created($"/api/rulesets/{completed.RuleSetId}", new ApiModels.CreatedRuleSetResponse(completed.RuleSetId)),
-            CreateLocalRuleSetFailed { Reason: CreateLocalRuleSetFailureReason.AlreadyExists } => Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists")),
-            CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
-            _ => ApiResults.UnexpectedResponse(result)
-        };
-    }
-
-    private static async Task<IResult> HandleUpdate(string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
-    {
-        var region = await registry.GetAsync<IRuleSetRegion>(ct);
-        var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), _queryTimeout, ct);
-
-        await EvictRuleSetCache(cache, ct);
-        return result switch
-        {
-            UpdateLocalRuleSetCompleted => Results.Ok(),
-            UpdateLocalRuleSetFailed { Reason: UpdateLocalRuleSetFailureReason.NotFound } => Results.NotFound(),
-            UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
-            _ => ApiResults.UnexpectedResponse(result)
-        };
-    }
-
-    private static IResult HandleGetRaw(string id, IDataFiles dataFiles, DataPaths dataPaths)
-    {
-        var localPath = Path.Join(dataPaths.LocalRuleSets, $"{id}.json");
-        var communityPath = Path.Join(dataPaths.CommunityRuleSets, $"{id}.json");
-
-        if (dataFiles.Exists(localPath))
-        {
-            var json = dataFiles.ReadText(localPath);
-            return Results.Content(json, "application/json");
-        }
-
-        if (dataFiles.Exists(communityPath))
-        {
-            var json = dataFiles.ReadText(communityPath);
-            return Results.Content(json, "application/json");
-        }
-
-        return Results.NotFound();
-    }
-
-    private static async Task<IResult> HandleDelete(string id, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct)
-    {
-        var region = await registry.GetAsync<IRuleSetRegion>(ct);
-        var result = await region.Ask<DeleteLocalRuleSetResponse>(new DeleteLocalRuleSet(id), _queryTimeout, ct);
-
-        await EvictRuleSetCache(cache, ct);
-        return result switch
-        {
-            DeleteLocalRuleSetCompleted => Results.Ok(),
-            DeleteLocalRuleSetFailed => Results.NotFound(),
-            _ => ApiResults.UnexpectedResponse(result)
-        };
-    }
-
-    private static async Task<IResult> HandleExport(string id, IActorRegistry registry, HttpContext httpContext, CancellationToken ct)
-    {
-        var region = await registry.GetAsync<IRuleSetRegion>(ct);
-        var result = await region.Ask<ExportRuleSetResponse>(new ExportRuleSet(id), _queryTimeout, ct);
-
-        return result switch
-        {
-            ExportRuleSetCompleted completed => ExportResult(id, completed.Json, httpContext),
-            ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
-            ExportRuleSetFailed { Reason: ExportRuleSetFailureReason.NoLocalOverlay } =>
-                Results.Problem(statusCode: 400, title: "No local overlay",
-                    detail: "Only locally modified rulesets can be exported. Edit this ruleset first to create a local overlay."),
-            ExportRuleSetFailed => Results.NotFound(),
-            _ => ApiResults.UnexpectedResponse(result)
-        };
-    }
-
-    private static IResult ExportResult(string id, string json, HttpContext httpContext)
-    {
-        httpContext.Response.Headers.ContentDisposition = $"attachment; filename=\"{id}.json\"";
-        return Results.Content(json, "application/json");
-    }
-
-    private static readonly TimeSpan _enrichmentTimeout = TimeSpan.FromSeconds(10);
-
-    private static async Task<ItemTrace[]> RunTestEnrichment(
-        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request, IActorRegistry registry, CancellationToken ct)
-    {
-        var enrichmentConfig = request.Enrichment!.ToMessage();
-        var isShow = string.Equals(request.MediaType, "show", StringComparison.OrdinalIgnoreCase);
-        var isMovie = string.Equals(request.MediaType, "movie", StringComparison.OrdinalIgnoreCase);
-
-        try
-        {
-            var enrichmentManager = await registry.GetAsync<IEnrichmentManager>(ct);
-
-            if (isShow && request.TvdbId is not null)
-            {
-                return await EnrichEpisodes(itemTraces, request, enrichmentConfig, enrichmentManager, ct);
-            }
-
-            if (isMovie && (request.TmdbId is not null || request.ImdbId is not null))
-            {
-                return await EnrichMovies(itemTraces, request, enrichmentConfig, enrichmentManager, ct);
-            }
-        }
-        catch
-        {
-            // enrichment timeout or failure: return scoring results without enrichment
-        }
-
-        return itemTraces;
-    }
-
-    private static async Task<ItemTrace[]> EnrichEpisodes(
-        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request,
-        EnrichmentConfig config, IActorRef enrichmentManager, CancellationToken ct)
-    {
-        var matchedIndices = new List<(int TraceIndex, EpisodeCandidate Candidate)>();
-
-        for (var i = 0; i < itemTraces.Length; i++)
-        {
-            var trace = itemTraces[i];
-            if (!trace.Matched)
-            {
-                continue;
-            }
-
-            var airedAt = trace.Candidate.Timestamp > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(trace.Candidate.Timestamp)
-                : (DateTimeOffset?)null;
-
-            matchedIndices.Add((i, new EpisodeCandidate(
-                matchedIndices.Count,
-                trace.Candidate.Title,
-                trace.Identification?.Title,
-                airedAt,
-                trace.Candidate.Duration,
-                trace.Identification?.Season,
-                trace.Identification?.Episode)));
-        }
-
-        if (matchedIndices.Count == 0)
-        {
-            return itemTraces;
-        }
-
-        var enrichRequest = new EnrichEpisodes(
-            request.TvdbId!.Value, Season: null,
-            [.. matchedIndices.Select(m => m.Candidate)], config);
-
-        var response = await enrichmentManager.Ask<EnrichEpisodesResponse>(enrichRequest, _enrichmentTimeout, ct);
-        if (response is not EnrichEpisodesCompleted completed)
-        {
-            return itemTraces;
-        }
-
-        var enrichedLookup = completed.Episodes.ToDictionary(e => e.Index);
-        var result = new ItemTrace[itemTraces.Length];
-        Array.Copy(itemTraces, result, itemTraces.Length);
-
-        foreach (var (traceIndex, candidate) in matchedIndices)
-        {
-            var trace = result[traceIndex];
-            if (enrichedLookup.TryGetValue(candidate.Index, out var enriched))
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        enriched.Method, enriched.Confidence, true,
-                        enriched.Season, enriched.Episode, enriched.EpisodeName)
-                };
-            }
-            else
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        MatchMethod.TitleMatch, 0f, false,
-                        Detail: "no matching episode found")
-                };
-            }
-        }
-
-        return result;
-    }
-
-    private static async Task<ItemTrace[]> EnrichMovies(
-        ItemTrace[] itemTraces, ApiModels.TestScoreRequest request,
-        EnrichmentConfig config, IActorRef enrichmentManager, CancellationToken ct)
-    {
-        var matchedIndices = new List<(int TraceIndex, MovieCandidate Candidate)>();
-
-        for (var i = 0; i < itemTraces.Length; i++)
-        {
-            var trace = itemTraces[i];
-            if (!trace.Matched)
-            {
-                continue;
-            }
-
-            var airedAt = trace.Candidate.Timestamp > 0
-                ? DateTimeOffset.FromUnixTimeSeconds(trace.Candidate.Timestamp)
-                : (DateTimeOffset?)null;
-
-            matchedIndices.Add((i, new MovieCandidate(
-                matchedIndices.Count,
-                trace.Candidate.Title,
-                airedAt,
-                trace.Candidate.Duration)));
-        }
-
-        if (matchedIndices.Count == 0)
-        {
-            return itemTraces;
-        }
-
-        var enrichRequest = new EnrichMovies(
-            request.ImdbId, request.TmdbId,
-            [.. matchedIndices.Select(m => m.Candidate)], config);
-
-        var response = await enrichmentManager.Ask<EnrichMoviesResponse>(enrichRequest, _enrichmentTimeout, ct);
-        if (response is not EnrichMoviesCompleted completed)
-        {
-            return itemTraces;
-        }
-
-        var enrichedLookup = completed.Movies.ToDictionary(m => m.Index);
-        var result = new ItemTrace[itemTraces.Length];
-        Array.Copy(itemTraces, result, itemTraces.Length);
-
-        foreach (var (traceIndex, candidate) in matchedIndices)
-        {
-            var trace = result[traceIndex];
-            if (enrichedLookup.TryGetValue(candidate.Index, out var enriched))
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        enriched.Method, enriched.Confidence, true,
-                        ResolvedTitle: enriched.Title, ResolvedYear: enriched.Year)
-                };
-            }
-            else
-            {
-                result[traceIndex] = trace with
-                {
-                    EnrichmentTrace = new EnrichmentTrace(
-                        MatchMethod.TitleMatch, 0f, false,
-                        Detail: "no matching movie found")
-                };
-            }
-        }
-
-        return result;
     }
 }

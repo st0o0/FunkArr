@@ -10,7 +10,7 @@ public sealed record TestScoreRequest(
     int? TvdbId = null,
     int? TmdbId = null,
     string? ImdbId = null,
-    string? MediaType = null);
+    MediaType? MediaType = null);
 
 public sealed record TestCandidate(
     string Title = "",

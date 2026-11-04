@@ -58,7 +58,7 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null, TestContext.Current.CancellationToken);
+        var task = _fixture.Client.PostAsync($"/api/downloads/queue/{id}/retry", null, TestContext.Current.CancellationToken);
 
         var managerProbe = _fixture.GetProbe<IDownloadManager>();
         var managerMsg = managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
@@ -81,7 +81,7 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
     {
         var id = Guid.NewGuid();
 
-        var task = _fixture.Client.PostAsync($"/api/downloads/{id}/retry", null, TestContext.Current.CancellationToken);
+        var task = _fixture.Client.PostAsync($"/api/downloads/queue/{id}/retry", null, TestContext.Current.CancellationToken);
 
         var managerProbe = _fixture.GetProbe<IDownloadManager>();
         managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);

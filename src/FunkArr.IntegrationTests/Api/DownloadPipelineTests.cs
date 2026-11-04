@@ -14,7 +14,7 @@ public sealed class DownloadPipelineTests(FunkArrFixture fixture)
     [Fact]
     public async Task Pause_ReturnsOperationResult()
     {
-        var task = _fixture.Client.PostAsync("/api/downloads/pause", null, TestContext.Current.CancellationToken);
+        var task = _fixture.Client.PostAsync("/api/downloads/queue/pause", null, TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
         probe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
@@ -32,7 +32,7 @@ public sealed class DownloadPipelineTests(FunkArrFixture fixture)
     [Fact]
     public async Task Resume_ReturnsOperationResult()
     {
-        var task = _fixture.Client.PostAsync("/api/downloads/resume", null, TestContext.Current.CancellationToken);
+        var task = _fixture.Client.PostAsync("/api/downloads/queue/resume", null, TestContext.Current.CancellationToken);
 
         var probe = _fixture.GetProbe<IDownloadManager>();
         probe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);

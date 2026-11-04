@@ -1,5 +1,6 @@
 using System.IO.Abstractions;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using FunkArr.Api.HealthChecks;
 using FunkArr.Core;
 using Microsoft.AspNetCore.HttpLogging;
@@ -33,6 +34,7 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
         services.ConfigureHttpJsonOptions(options =>
         {
             options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+            options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
         });
 
         services.AddSingleton<IFileSystem, FileSystem>();

@@ -1,5 +1,28 @@
 namespace FunkArr.Api.Models;
 
+public enum MatchMethod
+{
+    RegexExtracted,
+    TitleMatch,
+    AirdateMatch,
+    YearMatch
+}
+
+public enum RuleOutcome
+{
+    Matched,
+    FilterFailed,
+    IdentificationFailed
+}
+
+public enum SearchSource
+{
+    Sonarr,
+    Radarr,
+    Prowlarr,
+    Feed = 4
+}
+
 public sealed record ScoringDetail(
     Guid RequestId,
     SearchSource Source,
@@ -33,14 +56,21 @@ public sealed record RuleTrace(
     FilterGroupTrace? FilterTrace,
     IdentificationTrace? IdentificationTrace);
 
+public enum FilterOperator
+{
+    All,
+    Any,
+    Not
+}
+
 public sealed record FilterGroupTrace(
-    string Operator,
+    FilterOperator Operator,
     bool Passed,
     FilterNodeTrace[] Nodes);
 
 public sealed record FilterNodeTrace(
-    string? Field,
-    string? Op,
+    FilterField? Field,
+    FilterOp? Op,
     string? ExpectedValue,
     string? ActualValue,
     bool Passed,
@@ -48,7 +78,7 @@ public sealed record FilterNodeTrace(
     FilterGroupTrace? Group);
 
 public sealed record IdentificationTrace(
-    string? Strategy,
+    IdentificationStrategy? Strategy,
     bool Attempted,
     string? Detail);
 
