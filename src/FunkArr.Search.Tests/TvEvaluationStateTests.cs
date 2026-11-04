@@ -150,7 +150,7 @@ public sealed class TvEvaluationStateTests
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.ApplyRuleSet("tatort", "Tatort", null);
+        state.Apply("tatort", "Tatort", null);
 
         var result = state.TryGetRuleSetRequest(out _);
 
@@ -162,7 +162,7 @@ public sealed class TvEvaluationStateTests
     {
         var state = InitState();
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem("ARD", "Tatort", "Ep1")], 1));
-        state.ApplyRuleSet("tatort", null, null);
+        state.Apply("tatort", null, null);
 
         var result = state.TryGetScoringRequest(out var request);
 
@@ -177,7 +177,7 @@ public sealed class TvEvaluationStateTests
     public void TryGetScoringRequest_returns_false_when_sources_empty()
     {
         var state = InitState();
-        state.ApplyRuleSet("tatort", null, null);
+        state.Apply("tatort", null, null);
 
         var result = state.TryGetScoringRequest(out _);
 
@@ -262,7 +262,7 @@ public sealed class TvEvaluationStateTests
             MakeMediathekItem("ARD", "Show", "Low", url: "https://low.mp4"),
             MakeMediathekItem("ARD", "Show", "High", url: "https://high.mp4")
         ], 2));
-        state.ApplyRuleSet("show", "Show", null);
+        state.Apply("show", "Show", null);
         state.Apply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.5, true),
@@ -307,7 +307,7 @@ public sealed class TvEvaluationStateTests
             new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
             new YearMatchConfig(1));
 
-        state.ApplyRuleSet("tatort", "Tatort", config);
+        state.Apply("tatort", "Tatort", config);
 
         Assert.NotNull(state.EnrichmentConfig);
         Assert.Equal(0.5f, state.EnrichmentConfig.Title.Threshold);
@@ -322,7 +322,7 @@ public sealed class TvEvaluationStateTests
             false, [EnrichmentMethod.Title], new TitleMatchConfig(0.7f),
             new AirdateMatchConfig(7), new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
             new YearMatchConfig(1));
-        state.ApplyRuleSet("tatort", "Tatort", config);
+        state.Apply("tatort", "Tatort", config);
         state.Apply(new ScoreCompleted(Guid.Empty,
             [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null))], []));
 
@@ -336,7 +336,7 @@ public sealed class TvEvaluationStateTests
     {
         var state = InitState(tvdbId: 83214);
         state.Apply(new QueryMediathekCompleted([MakeMediathekItem()], 1));
-        state.ApplyRuleSet("tatort", "Tatort", null);
+        state.Apply("tatort", "Tatort", null);
         state.Apply(new ScoreCompleted(Guid.Empty,
             [new ScoredItem(0, 0.9, true, new MetadataSpec(null, null, null, "Roomservice"))], []));
 

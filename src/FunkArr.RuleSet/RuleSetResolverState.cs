@@ -107,7 +107,7 @@ public static class RuleSetResolverStateExtensions
         {
             var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, msg.TopicOrAlias);
             var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-            var enrichment = state.EnrichmentConfigByRuleSetId.TryGetValue(ruleSetId, out var ec) ? ec : null;
+            var enrichment = CollectionExtensions.GetValueOrDefault(state.EnrichmentConfigByRuleSetId, ruleSetId);
             return new RuleSetResolved(ruleSetId, topic, mediaName, enrichment);
         }
 
@@ -132,7 +132,7 @@ public static class RuleSetResolverStateExtensions
     private static bool TryResolveById(
         RuleSetResolverState state, string prefix, string? value, out RuleSetResolved resolved)
     {
-        resolved = default!;
+        resolved = null!;
         if (value is null)
         {
             return false;
@@ -146,7 +146,7 @@ public static class RuleSetResolverStateExtensions
 
         var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, "");
         var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-        var enrichment = state.EnrichmentConfigByRuleSetId.TryGetValue(ruleSetId, out var ec) ? ec : null;
+        var enrichment = CollectionExtensions.GetValueOrDefault(state.EnrichmentConfigByRuleSetId, ruleSetId);
         resolved = new RuleSetResolved(ruleSetId, topic, mediaName, enrichment);
         return true;
     }

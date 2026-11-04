@@ -20,7 +20,7 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
     private static readonly BackoffPolicy _retryBackoff =
         Backoff.Create(TimeSpan.FromMilliseconds(500), multiplier: 3.0, maxDelay: TimeSpan.FromMilliseconds(1500));
 
-    private const int MaxRetries = 2;
+    private const int _maxRetries = 2;
 
     private sealed record RetryMediathekQuery(int Attempt);
 
@@ -62,7 +62,7 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
     {
         Receive<RuleSetResolved>(resolved =>
         {
-            _state.ApplyRuleSet(resolved);
+            _state.Apply(resolved);
             QueryMediathek();
         });
 
@@ -88,7 +88,7 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 
         Receive<QueryMediathekQueueFull>(_ =>
         {
-            if (_state.Attempt < MaxRetries)
+            if (_state.Attempt < _maxRetries)
             {
                 var delay = _retryBackoff.DelayWithJitter(_state.Attempt);
                 _log.Info("TV search {SearchId} queue full, retry {Attempt} in {Delay}ms",

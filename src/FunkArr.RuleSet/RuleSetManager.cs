@@ -22,10 +22,6 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
 
     private sealed record FlushChanges;
 
-    private sealed record ListWithStatsComplete(ImmutableList<ScoringStatsQueryResult> Stats);
-
-    private sealed record ListWithStatsFailed;
-
     private static readonly TimeSpan _defaultDebounceWindow = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan _statsTimeout = TimeSpan.FromSeconds(3);
 

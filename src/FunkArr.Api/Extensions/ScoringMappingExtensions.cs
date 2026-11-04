@@ -26,7 +26,7 @@ internal static class ScoringMappingExtensions
 
     internal static ApiModels.RuleTrace ToApi(this RuleTrace msg) =>
         new(msg.RuleId, msg.Priority, msg.Outcome.ToApi(),
-            msg.FilterTrace is not null ? msg.FilterTrace.ToApi() : null,
+            msg.FilterTrace?.ToApi(),
             msg.IdentificationTrace is not null
                 ? new ApiModels.IdentificationTrace(msg.IdentificationTrace.Strategy?.ToString(), msg.IdentificationTrace.Attempted, msg.IdentificationTrace.Detail?.ToString())
                 : null);
@@ -36,7 +36,7 @@ internal static class ScoringMappingExtensions
         [
             .. msg.Nodes.Select(n => new ApiModels.FilterNodeTrace(
                 n.Field, n.Op, n.ExpectedValue, n.ActualValue, n.Passed, n.Skipped,
-                n.Group is not null ? n.Group.ToApi() : null))
+                n.Group?.ToApi()))
         ]);
 
     internal static ApiModels.RuleOutcome ToApi(this RuleOutcome msg) => msg switch

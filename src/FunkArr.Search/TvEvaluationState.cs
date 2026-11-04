@@ -20,7 +20,7 @@ public sealed class TvEvaluationState
 
     private ShowIdentity BaseIdentity => new(ImdbId, TvdbId, null, null);
 
-    public Guid SearchId { get; private set; }
+    public Guid SearchId { get; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
     public SearchSource Source { get; private set; }
     public SourceInfo[] Sources { get; private set; } = [];
@@ -55,13 +55,13 @@ public sealed class TvEvaluationState
 
         if (cmd.RuleSet is { } ruleSet)
         {
-            ApplyRuleSet(ruleSet.RuleSetId, ruleSet.MediaName, ruleSet.Enrichment);
+            Apply(ruleSet.RuleSetId, ruleSet.MediaName, ruleSet.Enrichment);
         }
     }
 
     public void Apply(QueryMediathekCompleted result) => Sources = [.. result.Items.Select(SourceInfo.From)];
 
-    public void ApplyRuleSet(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
+    public void Apply(string ruleSetId, string? mediaName, EnrichmentConfig? enrichmentConfig)
     {
         RuleSetId = ruleSetId;
         MediaName = mediaName;

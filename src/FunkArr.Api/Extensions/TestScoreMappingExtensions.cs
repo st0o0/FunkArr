@@ -7,14 +7,14 @@ internal static class TestScoreMappingExtensions
 {
     internal static (MsgScoring.MatchingConfig Config, MsgScoring.ScoreCandidate[] Candidates) ToMessage(this TestScoreRequest request)
     {
-        var rules = (request.Rules ?? [])
+        var rules = (request.Rules)
             .Select(r => r.ToMessage())
             .Where(r => r is not null)
             .Select(r => r!)
             .ToArray();
 
         var config = new MsgScoring.MatchingConfig("test", request.DefaultConfidence, rules);
-        var candidates = (request.Candidates ?? []).Select(c => c.ToMessage()).ToArray();
+        var candidates = (request.Candidates).Select(c => c.ToMessage()).ToArray();
 
         return (config, candidates);
     }
@@ -27,7 +27,7 @@ internal static class TestScoreMappingExtensions
             return null;
         }
 
-        var filters = rule.Filters is not null ? rule.Filters.ToMessage() : null;
+        var filters = rule.Filters?.ToMessage();
 
         return new MsgScoring.MatchingRule(rule.Id, rule.Priority, rule.Confidence, filters, identification);
     }

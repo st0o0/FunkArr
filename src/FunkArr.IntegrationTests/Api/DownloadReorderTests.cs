@@ -46,9 +46,8 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
-        Assert.NotNull(result);
-        Assert.False(result.Success);
+        var probe = _fixture.GetProbe<IDownloadManager>();
+        probe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
     }
 
     [Fact]
@@ -86,9 +85,8 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>();
-        Assert.NotNull(result);
-        Assert.False(result.Success);
+        var probe = _fixture.GetProbe<IDownloadManager>();
+        probe.ExpectNoMsg(TimeSpan.FromMilliseconds(300));
     }
 
     [Fact]

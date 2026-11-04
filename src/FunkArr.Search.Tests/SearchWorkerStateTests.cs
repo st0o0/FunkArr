@@ -69,7 +69,7 @@ public sealed class SearchWorkerStateTests
     public void Tv_queries_use_ruleset_topic_from_offset_zero()
     {
         var state = TvState(tvdbId: 83214, offset: 10);
-        state.ApplyRuleSet(new RuleSetResolved("tatort", "Tatort"));
+        state.Apply(new RuleSetResolved("tatort", "Tatort"));
 
         var query = state.GetMediathekQuery();
         Assert.Multiple(
@@ -91,7 +91,7 @@ public sealed class SearchWorkerStateTests
     {
         var state = TvState(tvdbId: 83214, imdbId: "tt123", season: 2026);
         var ruleSet = new RuleSetResolved("tatort", "Tatort");
-        state.ApplyRuleSet(ruleSet);
+        state.Apply(ruleSet);
         var item = Item("Roomservice");
         state.Apply(new QueryMediathekCompleted([item], 1));
         var evaluationId = Guid.NewGuid();

@@ -3,7 +3,6 @@ using Akka.Event;
 using FunkArr.Core;
 using FunkArr.Messages.Search;
 using Terp.Akka;
-using Terp.Diagnostics;
 
 namespace FunkArr.Search;
 

@@ -31,7 +31,7 @@ public sealed class VariantPolicyStateTests
     {
         var state = TvState();
         state.Apply(new QueryMediathekCompleted([Item(_standardTitle), Item(_adTitle), Item("Folge 2 (DGS)")], 3));
-        state.ApplyRuleSet("tatort", "Tatort", null);
+        state.Apply("tatort", "Tatort", null);
         state.Apply(new ScoreCompleted(Guid.Empty,
         [
             new ScoredItem(0, 0.9, true, new MetadataSpec("1", "1", null)),
@@ -64,7 +64,7 @@ public sealed class VariantPolicyStateTests
     {
         var state = TvState();
         state.Apply(new QueryMediathekCompleted([Item(_standardTitle), Item(_adTitle)], 2));
-        state.ApplyRuleSet("tatort", "Tatort", null);
+        state.Apply("tatort", "Tatort", null);
 
         Assert.True(state.TryGetScoringRequest(out var request));
         Assert.NotNull(request);
@@ -79,7 +79,7 @@ public sealed class VariantPolicyStateTests
     {
         var state = TvState(new VariantOptions { AudioDescription = VariantPolicy.Allow });
         state.Apply(new QueryMediathekCompleted([Item(_adTitle)], 1));
-        state.ApplyRuleSet("tatort", "Tatort", null);
+        state.Apply("tatort", "Tatort", null);
 
         Assert.True(state.TryGetScoringRequest(out var request));
         Assert.NotNull(request);

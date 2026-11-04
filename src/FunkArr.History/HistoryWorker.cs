@@ -13,8 +13,8 @@ namespace FunkArr.History;
 public sealed class HistoryWorker : ReceivePersistentActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly IOptionsMonitor<ScoringHistoryOptions> _optionsMonitor;
     private readonly IActorRef _statsCollector = Context.GetActor<IStatsCollector>();
+    private readonly IOptionsMonitor<ScoringHistoryOptions> _optionsMonitor;
     private HistoryState _state = HistoryState.Empty;
 
     public override string PersistenceId => $"history-{field}";

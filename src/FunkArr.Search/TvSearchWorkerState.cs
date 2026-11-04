@@ -53,7 +53,7 @@ public sealed class TvSearchWorkerState
         return request is not null;
     }
 
-    public void ApplyRuleSet(RuleSetResolved resolved) => RuleSet = resolved;
+    public void Apply(RuleSetResolved resolved) => RuleSet = resolved;
 
     public QueryMediathek GetMediathekQuery()
     {

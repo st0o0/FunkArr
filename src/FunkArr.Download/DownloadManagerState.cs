@@ -48,18 +48,22 @@ public static class DownloadManagerStateExtensions
         {
             [evt.DownloadId] = new(entry.Priority, entry.Category)
         };
-        return new(
-            Queued: [.. state.Queued.Where(e => e.Id != evt.DownloadId)],
-            Dispatched: dict);
+        return state with
+        {
+            Queued = [.. state.Queued.Where(e => e.Id != evt.DownloadId)],
+            Dispatched = dict
+        };
     }
 
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadDequeued evt)
     {
         var dict = new Dictionary<Guid, DispatchedEntry>(state.Dispatched);
         dict.Remove(evt.DownloadId);
-        return new(
-            Queued: [.. state.Queued.Where(e => e.Id != evt.DownloadId)],
-            Dispatched: dict);
+        return state with
+        {
+            Queued = [.. state.Queued.Where(e => e.Id != evt.DownloadId)],
+            Dispatched = dict
+        };
     }
 
     public static DownloadManagerState ResetDispatched(this DownloadManagerState state)
@@ -69,7 +73,7 @@ public static class DownloadManagerStateExtensions
         var merged = new List<QueueEntry>(resetEntries);
         merged.AddRange(state.Queued);
         merged.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-        return new(Queued: merged, Dispatched: new Dictionary<Guid, DispatchedEntry>());
+        return state with { Queued = merged, Dispatched = new Dictionary<Guid, DispatchedEntry>() };
     }
 
     public static DownloadManagerState Apply(this DownloadManagerState state, DownloadMoved evt)

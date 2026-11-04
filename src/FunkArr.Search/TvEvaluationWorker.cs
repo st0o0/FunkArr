@@ -59,7 +59,7 @@ public sealed class TvEvaluationWorker : ReceiveActor
     {
         Receive<RuleSetResolved>(resolved =>
         {
-            _state.ApplyRuleSet(resolved.RuleSetId, resolved.MediaName, resolved.Enrichment);
+            _state.Apply(resolved.RuleSetId, resolved.MediaName, resolved.Enrichment);
             ScoreOrReply();
         });
 
