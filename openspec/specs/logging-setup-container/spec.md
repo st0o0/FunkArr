@@ -9,7 +9,7 @@ Dedicated Terp setup that configures Serilog as the application's logging pipeli
 via `services.AddSerilog(...)`. It SHALL configure:
 - `ReadFrom.Configuration(configuration)` for level overrides from appsettings
 - `Enrich.WithMachineName()`, `Enrich.WithThreadId()`, `Enrich.FromLogContext()`
-- `Enrich.WithProperty("ApplicationVersion", ...)` using the entry assembly version
+- `Enrich.WithProperty("ApplicationVersion", ...)` using the shared application version const from `FunkArr.Core`
 - `WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")`
 
 #### Scenario: Serilog configured via container

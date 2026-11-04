@@ -1,4 +1,5 @@
 using FunkArr.Api;
+using FunkArr.Core;
 using Serilog;
 using Terp.Hosting;
 
@@ -18,8 +19,7 @@ public sealed class LoggingSetupContainer : ISetup<IServiceCollection>
                 .Enrich.WithMachineName()
                 .Enrich.WithThreadId()
                 .Enrich.FromLogContext()
-                .Enrich.WithProperty("ApplicationVersion",
-                    typeof(LoggingSetupContainer).Assembly.GetName().Version?.ToString() ?? "0.0.0")
+                .Enrich.WithProperty("ApplicationVersion", VersionInfo.Version)
                 .WriteTo.Console(
                     outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}")
                 .WriteTo.Sink(ringBuffer);
