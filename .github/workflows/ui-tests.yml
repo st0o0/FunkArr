@@ -31,6 +31,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm run build
+        name: Type check and build
+
       - run: pnpm test
 
       - run: npx playwright install --with-deps chromium
