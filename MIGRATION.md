@@ -458,3 +458,160 @@ After step 5 (and again after 6/7 if done):
 Rollback: each step is one local commit, so `git revert <commit>` per step in reverse order works; steps 1-2 and 4-5 are independent of 3 apart from the Servus package lines.
 To abort the whole migration before merging, drop the branch. Since versions are pinned via CPM, going back to Servus 0.35.0 / Servus.Akka 0.3.15 is only a revert of the
 step 1/5 package lines plus the code steps. Nothing is pushed until you do it yourself.
+
+---
+
+# Migration: options registration and validation with Terp
+
+Separate from the Servus migration above (that plan is already executed: FunkArr references `Terp` 0.2.0). Moves FunkArr's options onto one path: `AddOptionsWithValidateOnStart<T[, TValidator]>().Bind(...)` in the setup container and an `IValidateOptions<T>` class using `Terp.Options.ValidationFailures`. Reference: Terp `docs/terp/options.md` and `Migration.md`.
+
+## The rule
+
+- Options are validated by a validator class next to the options type. No inline `.Validate(...)` in a setup container.
+- Registration always through `AddOptionsWithValidateOnStart`, so no options type silently skips start validation.
+- `Bind(context.Configuration.GetSection(X.SectionName))` stays in the setup container (the setup already has `SetupContext`).
+
+## O0. Prerequisite
+
+Bump `Terp` and `Terp.Akka` together in `src/Directory.Packages.props` (both are pinned to `0.2.0`) to the first Terp release that contains `Terp.Options.ValidationFailures`.
+
+## O1. Registration per container
+
+| Container | Options | Today | After |
+| --- | --- | --- | --- |
+| `CoreSetupContainer` | `FunkArrOptions` | `AddOptions` + `Bind` + `ValidateOnStart` | `AddOptionsWithValidateOnStart<FunkArrOptions>().Bind(...)` |
+| `CoreSetupContainer` | `PostgresOptions` | `AddOptions` + `Bind`, **no** `ValidateOnStart` | `AddOptionsWithValidateOnStart<PostgresOptions>().Bind(...)`, if the omission was not intended |
+| `CoreSetupContainer` | `RoutingOptions` | `AddOptions` + `Bind` + `ValidateOnStart` + separate `AddSingleton<IValidateOptions<...>>` | `AddOptionsWithValidateOnStart<RoutingOptions, RoutingOptionsValidator>().Bind(...)` |
+| `DownloadSetupContainer` | `DownloadOptions` | same as Routing (separate `AddSingleton`) | `AddOptionsWithValidateOnStart<DownloadOptions, DownloadOptionsValidator>().Bind(...)` |
+| `FeedSetupContainer` | `FeedOptions` | 8 inline `.Validate(...)` + `ValidateOnStart` | see O2 |
+| `ScoringSetupContainer` | `ScoringOptions`, `VariantOptions`, `ScoringHistoryOptions` | `AddOptions` + `Bind` + `ValidateOnStart` | `AddOptionsWithValidateOnStart<T>().Bind(...)` each |
+| `RuleSetSetupContainer` | `RuleSetUpdaterOptions` | `AddOptions` + `Bind` + `ValidateOnStart` | `AddOptionsWithValidateOnStart<RuleSetUpdaterOptions>().Bind(...)` |
+| `EnrichmentSetupContainer` | `TvdbOptions`, `TmdbOptions` | `AddOptions` + `BindConfiguration`, **no** `ValidateOnStart` | `AddOptionsWithValidateOnStart<T>().Bind(context.Configuration.GetSection(...))` |
+
+Notes:
+
+- `EnrichmentSetupContainer` is the only container that uses `BindConfiguration` and ignores the context (`SetupContext _`). Rename the parameter to `context` and use `Bind(context.Configuration.GetSection(...))` like the others.
+- `PostgresOptions`, `TvdbOptions` and `TmdbOptions` have no validator. `ValidateOnStart` then only surfaces binding errors at start instead of at first use. Decide per type whether that is wanted; if a type needs required keys (API keys), that is a reason to add a validator.
+
+Before / after (`CoreSetupContainer`, routing):
+
+```csharp
+// before
+services
+    .AddOptions<RoutingOptions>()
+    .Bind(context.Configuration.GetSection(RoutingOptions.SectionName))
+    .ValidateOnStart();
+
+services.AddSingleton<IValidateOptions<RoutingOptions>, RoutingOptionsValidator>();
+
+// after
+services
+    .AddOptionsWithValidateOnStart<RoutingOptions, RoutingOptionsValidator>()
+    .Bind(context.Configuration.GetSection(RoutingOptions.SectionName));
+```
+
+`Bind` stays in the container, not in a generic helper. This keeps the configuration binding source generator able to see the concrete type if FunkArr ever publishes with Native AOT.
+
+## O2. Inline validation to a validator class
+
+`FeedSetupContainer` is the only place with inline `.Validate(...)`.
+
+```csharp
+// before
+services
+    .AddOptions<FeedOptions>()
+    .Bind(context.Configuration.GetSection(FeedOptions.SectionName))
+    .Validate(o => o.Interval > TimeSpan.Zero, "FunkArr:Feed:Interval must be positive")
+    .Validate(o => o.PageSize is > 0 and <= 1000, "FunkArr:Feed:PageSize must be between 1 and 1000")
+    // ... 6 more rules
+    .ValidateOnStart();
+
+// after
+services
+    .AddOptionsWithValidateOnStart<FeedOptions, FeedOptionsValidator>()
+    .Bind(context.Configuration.GetSection(FeedOptions.SectionName));
+```
+
+New file `src/FunkArr.Core/FeedOptionsValidator.cs`:
+
+```csharp
+using Microsoft.Extensions.Options;
+using Terp.Options;
+
+namespace FunkArr.Core;
+
+public sealed class FeedOptionsValidator : IValidateOptions<FeedOptions>
+{
+    public ValidateOptionsResult Validate(string? name, FeedOptions options)
+    {
+        var failures = new ValidationFailures(FeedOptions.SectionName);
+
+        failures.Require(options.Interval > TimeSpan.Zero, "Interval must be positive");
+        failures.Require(options.PageSize is > 0 and <= 1000, "PageSize must be between 1 and 1000");
+        failures.Require(options.MaxPages > 0, "MaxPages must be positive");
+        failures.Require(options.MaxCatchUp > TimeSpan.Zero, "MaxCatchUp must be positive");
+        failures.Require(options.MaxConcurrency > 0, "MaxConcurrency must be positive");
+        failures.Require(options.MinConfidence is >= 0 and <= 1, "MinConfidence must be between 0 and 1");
+        failures.Require(options.Retention > TimeSpan.Zero, "Retention must be positive");
+        failures.Require(options.InitialLookback > TimeSpan.Zero, "InitialLookback must be positive");
+
+        return failures.ToResult();
+    }
+}
+```
+
+Messages are identical to today (`FunkArr:Feed:Interval must be positive`), because `FeedOptions.SectionName` is `"FunkArr:Feed"` and the validator now adds that prefix. Add `FeedOptionsValidatorTests` in `FunkArr.Feed.Tests` modelled on `DownloadOptionsValidatorTests`.
+
+One difference: `.Validate(...)` registered one validator per rule. The class reports all failures in one result; the start-up exception lists them all either way.
+
+## O3. Existing validators
+
+`DownloadOptionsValidator` and `RoutingOptionsValidator` build a `List<string>` and end with the `Count > 0 ? Fail : Success` ternary. Their messages have **no** section prefix (`"Route definition has an empty Name."`, `"DownloadSchedule[{i}]: ..."`), and `DownloadOptionsValidatorTests` / `RoutingOptionsValidatorTests` assert on them. So use `new ValidationFailures()` **without** a section; the text stays the same.
+
+```csharp
+// DownloadOptionsValidator, before
+var failures = new List<string>();
+
+for (var i = 0; i < options.DownloadSchedule.Count; i++)
+{
+    var slot = options.DownloadSchedule[i];
+    if (slot.Start == slot.End)
+    {
+        failures.Add($"DownloadSchedule[{i}]: Start and End must differ (both are {slot.Start}).");
+    }
+}
+
+return failures.Count > 0
+    ? ValidateOptionsResult.Fail(failures)
+    : ValidateOptionsResult.Success;
+
+// after
+var failures = new ValidationFailures();
+
+for (var i = 0; i < options.DownloadSchedule.Count; i++)
+{
+    var slot = options.DownloadSchedule[i];
+    failures.Require(slot.Start != slot.End, $"DownloadSchedule[{i}]: Start and End must differ (both are {slot.Start}).");
+}
+
+return failures.ToResult();
+```
+
+`RoutingOptionsValidator` has `continue` branches and `else if` chains. Keep them and replace only the collector and the last statement:
+
+```csharp
+var failures = new ValidationFailures();
+// body unchanged: the failures.Add("...") calls stay as they are
+return failures.ToResult();
+```
+
+Only introduce a section prefix deliberately (for example `"FunkArr:Routing"`), and update both test files in the same commit if you do.
+
+## O4. Order of work
+
+1. Bump Terp.
+2. Registration changes (O1), one commit. Behavior changes only where `ValidateOnStart` is newly enabled (`PostgresOptions`, `TvdbOptions`, `TmdbOptions`), so run the integration tests (`FunkArrFixture` binds options).
+3. `FeedOptionsValidator` plus tests (O2).
+4. Convert `DownloadOptionsValidator` and `RoutingOptionsValidator` (O3).
+
+Suggested commits: `refactor(core): register options with AddOptionsWithValidateOnStart`, `refactor(feed): move feed options validation into FeedOptionsValidator`, `refactor(core): use ValidationFailures in options validators`.
