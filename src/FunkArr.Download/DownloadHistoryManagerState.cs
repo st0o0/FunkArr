@@ -84,6 +84,17 @@ public static class DownloadHistoryManagerStateExtensions
     public static bool Contains(this DownloadHistoryManagerState state, Guid downloadId) =>
         state.Index.Contains(downloadId);
 
+    public static HistoryItem? FindById(this DownloadHistoryManagerState state, Guid downloadId)
+    {
+        if (!state.Index.Contains(downloadId))
+        {
+            return null;
+        }
+
+        var record = state.Records.FirstOrDefault(r => r.DownloadId == downloadId);
+        return record is not null ? new HistoryItem(record.DownloadId, record.Completion) : null;
+    }
+
     public static PersistedDownloadHistoryManagerState GetPersistenceState(this DownloadHistoryManagerState state) =>
         new([
             .. state.Records.Select(r => new DownloadHistoryRecorded(

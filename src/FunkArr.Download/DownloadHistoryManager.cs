@@ -28,6 +28,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         Command<QueryHistory>(HandleQueryHistory);
         Command<QueryHistoryStats>(_ => Sender.Tell(_state.ToHistoryStats()));
         Command<QueryHistoryCategories>(_ => Sender.Tell(_state.ToHistoryCategories()));
+        Command<QuerySingleHistoryItem>(q => Sender.Tell(new SingleHistoryItemResult(_state.FindById(q.DownloadId))));
         Command<SaveSnapshotSuccess>(e =>
         {
             _log.Debug("Snapshot saved at sequence {SequenceNr}, cleaning journal", e.Metadata.SequenceNr);

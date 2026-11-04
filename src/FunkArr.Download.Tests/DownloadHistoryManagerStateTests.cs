@@ -282,6 +282,39 @@ public sealed class DownloadHistoryManagerStateTests
     }
 
     [Fact]
+    public void FindById_returns_item_when_exists()
+    {
+        var id = Guid.NewGuid();
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(MakeRecorded(id, "Found Me"));
+
+        var item = state.FindById(id);
+
+        Assert.NotNull(item);
+        Assert.Equal(id, item.DownloadId);
+        Assert.Equal("Found Me", item.Completion.Title);
+    }
+
+    [Fact]
+    public void FindById_returns_null_when_not_found()
+    {
+        var state = DownloadHistoryManagerState.Empty
+            .Apply(MakeRecorded(Guid.NewGuid(), "Other"));
+
+        var item = state.FindById(Guid.NewGuid());
+
+        Assert.Null(item);
+    }
+
+    [Fact]
+    public void FindById_returns_null_on_empty_state()
+    {
+        var item = DownloadHistoryManagerState.Empty.FindById(Guid.NewGuid());
+
+        Assert.Null(item);
+    }
+
+    [Fact]
     public void Roundtrip_persistence_preserves_state()
     {
         var state = DownloadHistoryManagerState.Empty

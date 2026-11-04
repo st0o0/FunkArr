@@ -68,6 +68,13 @@ export function getQueue(): Promise<QueueResponse> {
   return fetchJson('/api/downloads/queue')
 }
 
+export async function getHistoryItem(id: string): Promise<HistoryItem | null> {
+  const res = await fetch(`/api/downloads/history/${id}`)
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+  return res.json()
+}
+
 export function getHistory(start = 0, limit = 25, category?: string): Promise<HistoryResponse> {
   const params = new URLSearchParams({ start: String(start), limit: String(limit) })
   if (category) params.set('category', category)

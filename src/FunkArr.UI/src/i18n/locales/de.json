@@ -76,7 +76,21 @@
     "retryStarted": "Wiederholung gestartet",
     "failedToRetry": "Wiederholung fehlgeschlagen",
     "phaseDownloading": "Download",
-    "phaseRemuxing": "Remux"
+    "phaseRemuxing": "Remux",
+    "all": "Alle",
+    "queued": "Warteschlange",
+    "failed": "Fehlgeschlagen",
+    "position": "Pos",
+    "channel": "Sender",
+    "actions": "Aktionen",
+    "priority_column": "Priorität",
+    "allPriorities": "Alle Prioritäten",
+    "allChannels": "Alle Sender",
+    "noDownloads": "Keine Downloads",
+    "noDownloadsHint": "Downloads von Sonarr und Radarr werden hier angezeigt.",
+    "showing": "Zeige",
+    "downloadCompleted": "Download abgeschlossen",
+    "downloadFailed": "Download fehlgeschlagen"
   },
   "setup": {
     "title": "Einrichtung",

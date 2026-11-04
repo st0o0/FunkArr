@@ -9,11 +9,9 @@ const isPaused = ref(false)
 const isScheduleActive = ref(true)
 const nextWindow = ref<string | null>(null)
 const connected = ref(false)
-const isDragging = ref(false)
 
 let eventSource: EventSource | null = null
 let refCount = 0
-let bufferedData: QueueResponse | null = null
 
 function applyData(data: QueueResponse) {
   items.value = data.items
@@ -36,11 +34,7 @@ function connect() {
 
   eventSource.addEventListener('queue', (e: MessageEvent) => {
     const data: QueueResponse = JSON.parse(e.data)
-    if (isDragging.value) {
-      bufferedData = data
-    } else {
-      applyData(data)
-    }
+    applyData(data)
     connected.value = true
   })
 
@@ -59,13 +53,6 @@ function disconnect() {
     eventSource = null
     connected.value = false
     items.value = []
-  }
-}
-
-function flushBuffer() {
-  if (bufferedData) {
-    applyData(bufferedData)
-    bufferedData = null
   }
 }
 
@@ -92,8 +79,6 @@ export function useQueueStream() {
     isScheduleActive: readonly(isScheduleActive),
     nextWindow: readonly(nextWindow),
     connected: readonly(connected),
-    isDragging,
-    flushBuffer,
     release,
   }
 }

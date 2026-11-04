@@ -142,6 +142,20 @@ public static class DownloadsApiEndpoints
         .ProducesProblem(404)
         .ProducesProblem(504);
 
+        group.MapGet("/history/{id:guid}", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
+        {
+            var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
+            var result = await history.Ask<SingleHistoryItemResult>(new QuerySingleHistoryItem(id), _askTimeout, ct);
+            return result.Item is not null
+                ? Results.Ok(result.Item.ToApi())
+                : Results.NotFound();
+        })
+        .WithSummary("Get single history item")
+        .WithDescription("Returns a single completed or failed download by its ID. Returns 404 if not found.")
+        .Produces<ApiModels.DownloadHistoryItem>()
+        .ProducesProblem(404)
+        .ProducesProblem(504);
+
         group.MapDelete("/history/{id:guid}", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
             var history = await registry.GetAsync<IDownloadHistoryManager>(ct);

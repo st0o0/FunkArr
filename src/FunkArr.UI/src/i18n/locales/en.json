@@ -76,7 +76,21 @@
     "retryStarted": "Retry started",
     "failedToRetry": "Failed to retry download",
     "phaseDownloading": "Downloading",
-    "phaseRemuxing": "Remuxing"
+    "phaseRemuxing": "Remuxing",
+    "all": "All",
+    "queued": "Queued",
+    "failed": "Failed",
+    "position": "Pos",
+    "channel": "Channel",
+    "actions": "Actions",
+    "priority_column": "Priority",
+    "allPriorities": "All priorities",
+    "allChannels": "All channels",
+    "noDownloads": "No downloads",
+    "noDownloadsHint": "Downloads from Sonarr and Radarr will appear here.",
+    "showing": "Showing",
+    "downloadCompleted": "Download completed",
+    "downloadFailed": "Download failed"
   },
   "setup": {
     "title": "Setup Guide",
