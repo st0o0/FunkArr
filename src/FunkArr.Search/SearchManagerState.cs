@@ -1,15 +1,14 @@
-using System.Collections.Immutable;
 using Akka.Actor;
 using FunkArr.Messages;
 using FunkArr.Messages.Search;
 
 namespace FunkArr.Search;
 
-public sealed record SearchManagerState(
-    ImmutableDictionary<Guid, SearchManagerState.PendingSearch> Pending)
+public sealed class SearchManagerState
 {
-    public static readonly SearchManagerState Empty = new(
-        ImmutableDictionary<Guid, PendingSearch>.Empty);
+    public static readonly SearchManagerState Empty = new();
+
+    public Dictionary<Guid, PendingSearch> Pending { get; } = [];
 
     public sealed record PendingSearch(
         IActorRef OriginalSender,
@@ -23,21 +22,15 @@ public sealed record SearchManagerState(
     public sealed record UpdateSearch(Guid SearchId, PendingSearch Pending);
 
     public sealed record RemoveSearch(Guid SearchId);
-}
 
-public static class SearchManagerStateExtensions
-{
-    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.AddSearch msg)
-        => new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
+    public void Apply(AddSearch msg) => Pending[msg.SearchId] = msg.Pending;
 
-    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.UpdateSearch msg)
-        => new(Pending: state.Pending.SetItem(msg.SearchId, msg.Pending));
+    public void Apply(UpdateSearch msg) => Pending[msg.SearchId] = msg.Pending;
 
-    public static SearchManagerState Apply(this SearchManagerState state, SearchManagerState.RemoveSearch msg)
-        => new(Pending: state.Pending.Remove(msg.SearchId));
+    public void Apply(RemoveSearch msg) => Pending.Remove(msg.SearchId);
 
-    public static SearchManagerState.PendingSearch? TryGetPending(this SearchManagerState state, Guid searchId)
-        => state.Pending.GetValueOrDefault(searchId);
+    public PendingSearch? TryGetPending(Guid searchId)
+        => Pending.GetValueOrDefault(searchId);
 
     public static SearchCommandCompleted MergeResults(Guid searchId, SearchCommandCompleted tv,
         SearchCommandCompleted movie)

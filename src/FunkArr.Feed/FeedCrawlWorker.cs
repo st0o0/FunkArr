@@ -30,12 +30,12 @@ public sealed class FeedCrawlWorker : ReceiveActor
     private readonly TimeProvider _timeProvider;
     private readonly IActorRef _pageFetchPool;
     private readonly IActorRef _evalPool;
-    private FeedCrawlWorkerState _state;
+    private readonly FeedCrawlWorkerState _state;
 
     public FeedCrawlWorker(CrawlInput input, TimeProvider timeProvider)
     {
         _timeProvider = timeProvider;
-        _state = FeedCrawlWorkerState.Empty.ForInput(input);
+        _state = new FeedCrawlWorkerState(input);
 
         _pageFetchPool = Context.ActorOf(
             Props.Create<FeedPageActor>()
@@ -81,7 +81,7 @@ public sealed class FeedCrawlWorker : ReceiveActor
             return;
         }
 
-        _state = _state.ApplyProbe(probe.ListTimestamp);
+        _state.ListTimestamp = probe.ListTimestamp;
 
         _ruleSetResolver.Ask<RegisteredRuleSetsResult>(
                 new QueryRegisteredRuleSets(), _ruleSetTimeout)
@@ -118,7 +118,8 @@ public sealed class FeedCrawlWorker : ReceiveActor
                 ? new CrawlWindow(earliest, listTimestamp, Truncated: true)
                 : new CrawlWindow(cursor, listTimestamp);
 
-        _state = _state.ApplyRuleSets(lookup, window);
+        _state.Lookup = lookup;
+        _state.Window = window;
         _log.Debug("Feed crawl probed: listTimestamp={ListTimestamp}, window=[{Lower},{Upper}], truncated={Truncated}",
             listTimestamp, window.LowerBound, window.UpperBound, window.Truncated);
 
@@ -135,7 +136,7 @@ public sealed class FeedCrawlWorker : ReceiveActor
     {
         var input = _state.Input;
         var initialRequests = Math.Min(input.PagePrefetch, input.MaxPages);
-        _state = _state.StartHarvesting(initialRequests);
+        _state.StartHarvesting(initialRequests);
 
         for (var i = 0; i < initialRequests; i++)
         {
@@ -152,13 +153,13 @@ public sealed class FeedCrawlWorker : ReceiveActor
 
     private void HandlePageResult(PageResult page)
     {
-        _state = _state.ApplyPageResult(page);
+        _state.Apply(page);
 
         if (page.Error is null
             && !_state.ReachedEnd
             && _state.NextOffset / _state.Input.PageSize < _state.Input.MaxPages)
         {
-            _state = _state.FireNextPage();
+            _state.FireNextPage();
             _pageFetchPool.Tell(new FetchPage(
                 _state.NextOffset - _state.Input.PageSize, _state.Window!, _state.Input.PageSize));
         }
@@ -228,7 +229,7 @@ public sealed class FeedCrawlWorker : ReceiveActor
             return;
         }
 
-        _state = _state.StartEvaluating(groups.Count);
+        _state.StartEvaluating(groups.Count);
 
         foreach (var (ruleSetId, (target, items)) in groups)
         {
@@ -246,7 +247,7 @@ public sealed class FeedCrawlWorker : ReceiveActor
 
     private void HandleGroupResult(GroupResult result)
     {
-        _state = _state.ApplyGroupResult(result);
+        _state.Apply(result);
 
         if (_state.PendingGroups == 0)
         {

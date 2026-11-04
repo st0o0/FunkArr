@@ -16,10 +16,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<FeedOptions> _feedOptions;
     private readonly TimeProvider _timeProvider;
-    private FeedCrawlManagerState _state = FeedCrawlManagerState.Empty;
+    private FeedCrawlManagerState _state = new();
     private IActorRef? _worker;
-    private bool _running;
-    private bool _resultReceived;
 
     public override string PersistenceId => "feed-crawl";
 
@@ -37,13 +35,13 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
                 _state = FeedCrawlManagerState.FromPersistence(persisted);
             }
         });
-        Recover<FeedCursorAdvanced>(evt => _state = _state.Apply(evt));
-        Recover<FeedRunFailed>(evt => _state = _state.Apply(evt));
+        Recover<FeedCursorAdvanced>(evt => _state.Apply(evt));
+        Recover<FeedRunFailed>(evt => _state.Apply(evt));
         Recover<RecoveryCompleted>(_ => { });
 
         Command<StartFeedCrawl>(_ => StartCrawl());
         Command<QueryFeedCrawlStatus>(_ =>
-            Sender.Tell(_state.ToStatus(_feedOptions.CurrentValue.Enabled, _running)));
+            Sender.Tell(_state.ToStatus(_feedOptions.CurrentValue.Enabled, _state.Running)));
         Command<CrawlResult>(HandleResult);
         Command<Terminated>(HandleTerminated);
         Command<SaveSnapshotSuccess>(e =>
@@ -62,7 +60,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
     private void StartCrawl()
     {
-        if (_running)
+        if (_state.Running)
         {
             return;
         }
@@ -73,8 +71,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
             return;
         }
 
-        _running = true;
-        _resultReceived = false;
+        _state.Running = true;
+        _state.ResultReceived = false;
         _log.Debug("Feed crawl started at cursor {Cursor}", _state.Cursor);
 
         var input = new CrawlInput(
@@ -90,8 +88,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
     private void HandleResult(CrawlResult result)
     {
-        _resultReceived = true;
-        _running = false;
+        _state.ResultReceived = true;
+        _state.Running = false;
         RecordTelemetry(result);
         var now = _timeProvider.GetUtcNow();
 
@@ -102,7 +100,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
                 Persist(new FeedCursorAdvanced(result.ListTimestamp, now, result.NewItems, result.Published,
                     result.Unmatched, result.Gap), e =>
                 {
-                    _state = _state.Apply(e);
+                    _state.Apply(e);
                     _log.Info(
                         "Feed crawl completed: cursor {Cursor}, {NewItems} new entries, {Published} published, {Unmatched} without ruleset, gap {Gap}",
                         e.Cursor, e.NewItems, e.Published, e.Unmatched, e.Gap);
@@ -117,7 +115,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
                     Persist(new FeedCursorAdvanced(result.ListTimestamp, now, result.NewItems, result.Published,
                         result.Unmatched, Gap: true), e =>
                     {
-                        _state = _state.Apply(e);
+                        _state.Apply(e);
                         _log.Warning(
                             "Feed crawl failed ({Failures} in a row), advancing cursor with gap: {Reason}",
                             failures, result.Error);
@@ -128,7 +126,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
                 {
                     Persist(new FeedRunFailed(now, result.Error ?? "unknown error", failures), e =>
                     {
-                        _state = _state.Apply(e);
+                        _state.Apply(e);
                         _log.Warning("Feed crawl failed ({Failures} in a row): {Reason}", e.ConsecutiveFailures,
                             e.Reason);
                         MaybeSnapshot();
@@ -138,7 +136,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
                 break;
 
             default:
-                _state = _state.WithUnchangedRun(now);
+                _state.WithUnchangedRun(now);
                 break;
         }
 
@@ -153,13 +151,13 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
         _worker = null;
 
-        if (_resultReceived)
+        if (_state.ResultReceived)
         {
             return;
         }
 
         _log.Warning("Feed crawl worker terminated unexpectedly without reporting a result");
-        _running = false;
+        _state.Running = false;
     }
 
     private static void RecordTelemetry(CrawlResult result)

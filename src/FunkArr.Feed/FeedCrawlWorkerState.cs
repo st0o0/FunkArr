@@ -3,120 +3,91 @@ using FunkArr.Messages.Mediathek;
 
 namespace FunkArr.Feed;
 
-internal sealed record FeedCrawlWorkerState(
-    CrawlInput Input,
-    long ListTimestamp,
-    CrawlWindow? Window,
-    RuleSetLookup? Lookup,
-    List<MediathekItem> CollectedItems,
-    int PendingPages,
-    int NextOffset,
-    bool ReachedEnd,
-    string? PageError,
-    int TotalGroups,
-    int PendingGroups,
-    int FailedGroups,
-    List<FeedEntry> AcceptedEntries,
-    string? FirstGroupError)
+internal sealed class FeedCrawlWorkerState(CrawlInput input)
 {
-    internal static readonly FeedCrawlWorkerState Empty = new(
-        default!, 0, null, null,
-        [], 0, 0, false, null,
-        0, 0, 0, [], null);
-}
+    public CrawlInput Input { get; } = input;
+    public long ListTimestamp { get; set; }
+    public CrawlWindow? Window { get; set; }
+    public RuleSetLookup? Lookup { get; set; }
+    public List<MediathekItem> CollectedItems { get; } = [];
+    public int PendingPages { get; set; }
+    public int NextOffset { get; set; }
+    public bool ReachedEnd { get; set; }
+    public string? PageError { get; set; }
+    public int TotalGroups { get; set; }
+    public int PendingGroups { get; set; }
+    public int FailedGroups { get; set; }
+    public List<FeedEntry> AcceptedEntries { get; } = [];
+    public string? FirstGroupError { get; set; }
 
-internal static class FeedCrawlWorkerStateExtensions
-{
-    public static FeedCrawlWorkerState ForInput(this FeedCrawlWorkerState _, CrawlInput input) =>
-        new(input, 0, null, null, [], 0, 0, false, null, 0, 0, 0, [], null);
-
-    public static FeedCrawlWorkerState ApplyProbe(this FeedCrawlWorkerState state, long listTimestamp) =>
-        state with { ListTimestamp = listTimestamp };
-
-    public static FeedCrawlWorkerState ApplyRuleSets(
-        this FeedCrawlWorkerState state, RuleSetLookup lookup, CrawlWindow window) =>
-        state with { Lookup = lookup, Window = window };
-
-    public static FeedCrawlWorkerState StartHarvesting(
-        this FeedCrawlWorkerState state, int initialRequests) =>
-        state with
-        {
-            PendingPages = initialRequests,
-            NextOffset = initialRequests * state.Input.PageSize
-        };
-
-    public static FeedCrawlWorkerState ApplyPageResult(
-        this FeedCrawlWorkerState state, PageResult page)
+    public void StartHarvesting(int initialRequests)
     {
-        state.CollectedItems.AddRange(page.Items);
-
-        return state with
-        {
-            PendingPages = state.PendingPages - 1,
-            ReachedEnd = state.ReachedEnd || page.ReachedEnd,
-            PageError = state.PageError ?? page.Error
-        };
+        PendingPages = initialRequests;
+        NextOffset = initialRequests * Input.PageSize;
     }
 
-    public static FeedCrawlWorkerState FireNextPage(this FeedCrawlWorkerState state) =>
-        state with
-        {
-            PendingPages = state.PendingPages + 1,
-            NextOffset = state.NextOffset + state.Input.PageSize
-        };
-
-    public static FeedCrawlWorkerState StartEvaluating(
-        this FeedCrawlWorkerState state, int totalGroups) =>
-        state with { TotalGroups = totalGroups, PendingGroups = totalGroups };
-
-    public static FeedCrawlWorkerState ApplyGroupResult(
-        this FeedCrawlWorkerState state, GroupResult result)
+    public void Apply(PageResult page)
     {
-        state.AcceptedEntries.AddRange(result.Accepted);
-
-        return state with
-        {
-            PendingGroups = state.PendingGroups - 1,
-            FailedGroups = state.FailedGroups + (result.Error is not null ? 1 : 0),
-            FirstGroupError = state.FirstGroupError ?? result.Error
-        };
+        CollectedItems.AddRange(page.Items);
+        PendingPages--;
+        ReachedEnd = ReachedEnd || page.ReachedEnd;
+        PageError ??= page.Error;
     }
 
-    public static CrawlResult GetCrawlResult(
-        this FeedCrawlWorkerState state, TimeSpan duration)
+    public void FireNextPage()
     {
-        var collected = state.CollectedItems.Count;
-        var matched = state.TotalGroups;
+        PendingPages++;
+        NextOffset += Input.PageSize;
+    }
+
+    public void StartEvaluating(int totalGroups)
+    {
+        TotalGroups = totalGroups;
+        PendingGroups = totalGroups;
+    }
+
+    public void Apply(GroupResult result)
+    {
+        AcceptedEntries.AddRange(result.Accepted);
+        PendingGroups--;
+        FailedGroups += result.Error is not null ? 1 : 0;
+        FirstGroupError ??= result.Error;
+    }
+
+    public CrawlResult GetCrawlResult(TimeSpan duration)
+    {
+        var collected = CollectedItems.Count;
+        var matched = TotalGroups;
         var unmatched = collected - matched;
-        var published = state.AcceptedEntries.Count;
-        var truncated = state.Window?.Truncated ?? false;
+        var published = AcceptedEntries.Count;
+        var truncated = Window?.Truncated ?? false;
 
-        if (state.PageError is not null && collected == 0)
+        if (PageError is not null && collected == 0)
         {
-            return CrawlResult.ForFailed(state.ListTimestamp, 0, 0, 0,
-                truncated, duration, state.PageError);
+            return CrawlResult.ForFailed(ListTimestamp, 0, 0, 0,
+                truncated, duration, PageError);
         }
 
-        if (state.PageError is not null)
+        if (PageError is not null)
         {
-            return CrawlResult.ForCompletedPartial(state.ListTimestamp, collected, unmatched, published,
+            return CrawlResult.ForCompletedPartial(ListTimestamp, collected, unmatched, published,
                 duration);
         }
 
-        if (state.FailedGroups > 0)
+        if (FailedGroups > 0)
         {
-            return CrawlResult.ForFailed(state.ListTimestamp, collected, unmatched, published,
+            return CrawlResult.ForFailed(ListTimestamp, collected, unmatched, published,
                 truncated, duration,
-                $"{state.FailedGroups} of {state.TotalGroups} ruleset groups failed");
+                $"{FailedGroups} of {TotalGroups} ruleset groups failed");
         }
 
-        if (state.FirstGroupError is not null)
+        if (FirstGroupError is not null)
         {
-            return CrawlResult.ForFailed(state.ListTimestamp, collected, unmatched, published,
-                truncated, duration, state.FirstGroupError);
+            return CrawlResult.ForFailed(ListTimestamp, collected, unmatched, published,
+                truncated, duration, FirstGroupError);
         }
 
-        return CrawlResult.ForCompleted(state.ListTimestamp, collected, unmatched, published,
+        return CrawlResult.ForCompleted(ListTimestamp, collected, unmatched, published,
             truncated, duration);
     }
 }

@@ -22,7 +22,7 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
     private readonly IOptionsMonitor<FeedOptions> _options;
     private readonly IFeedCacheInvalidator _cacheInvalidator;
     private readonly TimeProvider _timeProvider;
-    private FeedStoreManagerState _state = FeedStoreManagerState.Empty;
+    private FeedStoreManagerState _state = new();
 
     public ITimerScheduler Timers { get; set; } = null!;
 
@@ -41,8 +41,8 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
                 _state = FeedStoreManagerState.FromPersistence(persisted);
             }
         });
-        Recover<FeedEntriesAdded>(evt => _state = _state.Apply(evt));
-        Recover<FeedEntriesExpired>(evt => _state = _state.Apply(evt));
+        Recover<FeedEntriesAdded>(evt => _state.Apply(evt));
+        Recover<FeedEntriesExpired>(evt => _state.Apply(evt));
         Recover<RecoveryCompleted>(_ =>
         {
             Telemetry.SetEntries(_state.Entries.Count);
@@ -79,7 +79,7 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
         var evt = new FeedEntriesAdded([.. fresh.Select(e => e.ToPersistence())]);
         Persist(evt, e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             Telemetry.SetEntries(_state.Entries.Count);
             InvalidateCache();
             MaybeSnapshot();
@@ -99,7 +99,7 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
 
         Persist(new FeedEntriesExpired(expired), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             Telemetry.SetEntries(_state.Entries.Count);
             InvalidateCache();
             _log.Info("Removed {Count} feed entries older than the retention period", e.StableIds.Length);

@@ -20,8 +20,8 @@ public sealed class ScoringManager : ReceiveActor
             .WithRouter(new SmallestMailboxPool(optionsMonitor.CurrentValue.PoolSize));
         _router = Context.ActorOf(routerProps, "scoring-pool");
 
-        Receive<MatchingConfig>(config => _state = _state.Apply(config));
-        Receive<RemoveMatchingConfig>(msg => _state = _state.Apply(msg));
+        Receive<MatchingConfig>(config => _state.Apply(config));
+        Receive<RemoveMatchingConfig>(msg => _state.Apply(msg));
         Receive<ScoreItems>(HandleScoreItems);
         Receive<TestScoreItems>(HandleTestScoreItems);
     }

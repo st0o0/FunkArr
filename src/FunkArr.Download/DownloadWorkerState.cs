@@ -5,68 +5,73 @@ using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download;
 
-public sealed record DownloadWorkerState(
-    DownloadMedia? Media,
-    WorkerStatus Status,
-    DownloadPhase Phase,
-    int Attempt,
-    string? FailMessage,
-    FailureKind? LastFailureKind,
-    DownloadProgress Progress)
+public sealed class DownloadWorkerState
 {
-    public static readonly DownloadWorkerState Empty = new(
-        null, WorkerStatus.Initialized,
-        DownloadPhase.Initialized, 0, null, null,
-        new DownloadProgress(0, 0, 0.0));
+    public DownloadMedia? Media { get; set; }
+    public WorkerStatus Status { get; set; } = WorkerStatus.Initialized;
+    public DownloadPhase Phase { get; set; } = DownloadPhase.Initialized;
+    public int Attempt { get; set; }
+    public string? FailMessage { get; set; }
+    public FailureKind? LastFailureKind { get; set; }
+    public DownloadProgress Progress { get; set; } = new(0, 0, 0.0);
+
+    public static DownloadWorkerState Empty => new();
 
     public bool IsInitialized => Media is not null;
-}
 
-public static class DownloadWorkerStateExtensions
-{
-    public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadInitialized evt) =>
-        new(evt.Media.ToDomain(), WorkerStatus.Initialized,
-            DownloadPhase.Initialized, 0, null, null,
-            new DownloadProgress(0, 0, 0.0));
+    public void Apply(DownloadInitialized evt)
+    {
+        Media = evt.Media.ToDomain();
+        Status = WorkerStatus.Initialized;
+        Phase = DownloadPhase.Initialized;
+        Attempt = 0;
+        FailMessage = null;
+        LastFailureKind = null;
+        Progress = new DownloadProgress(0, 0, 0.0);
+    }
 
-    public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadStarted _) =>
-        state with { Status = WorkerStatus.Downloading, Phase = DownloadPhase.VideoDownload };
+    public void Apply(DownloadStarted _)
+    {
+        Status = WorkerStatus.Downloading;
+        Phase = DownloadPhase.VideoDownload;
+    }
 
-    public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadSucceeded _) =>
-        state with { Status = WorkerStatus.Completed, Phase = DownloadPhase.Completed };
+    public void Apply(DownloadSucceeded _)
+    {
+        Status = WorkerStatus.Completed;
+        Phase = DownloadPhase.Completed;
+    }
 
-    public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadFaulted evt) =>
-        state with
-        {
-            Status = WorkerStatus.Failed,
-            Phase = DownloadPhase.Failed,
-            FailMessage = evt.Reason,
-            LastFailureKind = evt.FailureKind.ToDomain()
-        };
+    public void Apply(DownloadFaulted evt)
+    {
+        Status = WorkerStatus.Failed;
+        Phase = DownloadPhase.Failed;
+        FailMessage = evt.Reason;
+        LastFailureKind = evt.FailureKind.ToDomain();
+    }
 
-    public static DownloadWorkerState Apply(this DownloadWorkerState state, DownloadAttemptStarted evt) =>
-        state with
-        {
-            Attempt = evt.Attempt,
-            Status = WorkerStatus.Downloading,
-            Phase = DownloadPhase.VideoDownload,
-            FailMessage = null,
-            LastFailureKind = null,
-            Progress = new DownloadProgress(0, 0, 0.0)
-        };
+    public void Apply(DownloadAttemptStarted evt)
+    {
+        Attempt = evt.Attempt;
+        Status = WorkerStatus.Downloading;
+        Phase = DownloadPhase.VideoDownload;
+        FailMessage = null;
+        LastFailureKind = null;
+        Progress = new DownloadProgress(0, 0, 0.0);
+    }
 
-    public static RecordDownload ToRecordDownload(
-        this DownloadWorkerState state, Guid downloadId, TimeProvider timeProvider,
+    public RecordDownload ToRecordDownload(
+        Guid downloadId, TimeProvider timeProvider,
         int elapsedSeconds, DataPaths.ResolvedDownload? paths)
     {
         var completedAt = timeProvider.GetUtcNow().ToUnixTimeSeconds();
         var completion = new DownloadCompletion(
-            state.Media!.Title,
-            state.Media.Category,
-            state.Media.Size,
-            state.Status == WorkerStatus.Completed ? DownloadStatus.Completed : DownloadStatus.Failed,
+            Media!.Title,
+            Media.Category,
+            Media.Size,
+            Status == WorkerStatus.Completed ? DownloadStatus.Completed : DownloadStatus.Failed,
             paths?.RelativePath,
-            state.FailMessage,
+            FailMessage,
             elapsedSeconds,
             completedAt);
         return new RecordDownload(downloadId, completion);

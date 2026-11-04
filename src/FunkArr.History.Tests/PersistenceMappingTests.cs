@@ -330,7 +330,8 @@ public sealed class PersistenceMappingTests
         var origin = new ScoringOrigin(source, "test-query");
         var cmd = new RecordHistory(Guid.NewGuid(), "rs-1", origin, _baseTime, 5, 2, 1, []);
 
-        var (state, _) = HistoryState.Empty.ProcessCommand(cmd);
+        var state = HistoryState.Empty;
+        state.Apply(state.ProcessCommand(cmd));
 
         var persisted = state.GetPersistenceState();
         var restored = HistoryState.FromPersistence(persisted);
@@ -356,7 +357,8 @@ public sealed class PersistenceMappingTests
         var cmd = new RecordHistory(Guid.NewGuid(), "rs-1",
             new ScoringOrigin(SearchSource.Sonarr, "query"), _baseTime, 1, 1, 1, [trace]);
 
-        var (state, _) = HistoryState.Empty.ProcessCommand(cmd);
+        var state = HistoryState.Empty;
+        state.Apply(state.ProcessCommand(cmd));
         var restored = HistoryState.FromPersistence(state.GetPersistenceState());
 
         var entry = Assert.Single(restored.Snapshots);
@@ -411,7 +413,8 @@ public sealed class PersistenceMappingTests
         var cmd = new RecordHistory(Guid.NewGuid(), "rs-1",
             new ScoringOrigin(SearchSource.Radarr, "query"), _baseTime, 1, 0, 0, [trace]);
 
-        var (state, _) = HistoryState.Empty.ProcessCommand(cmd);
+        var state = HistoryState.Empty;
+        state.Apply(state.ProcessCommand(cmd));
         var restored = HistoryState.FromPersistence(state.GetPersistenceState());
 
         var entry = Assert.Single(restored.Snapshots);
@@ -439,7 +442,8 @@ public sealed class PersistenceMappingTests
         var cmd = new RecordHistory(Guid.NewGuid(), "rs-1",
             new ScoringOrigin(SearchSource.Sonarr, "query"), _baseTime, 1, 0, 0, [trace]);
 
-        var (state, _) = HistoryState.Empty.ProcessCommand(cmd);
+        var state = HistoryState.Empty;
+        state.Apply(state.ProcessCommand(cmd));
         var restored = HistoryState.FromPersistence(state.GetPersistenceState());
 
         var entry = Assert.Single(restored.Snapshots);
@@ -465,7 +469,8 @@ public sealed class PersistenceMappingTests
         var cmd = new RecordHistory(Guid.NewGuid(), "rs-1",
             new ScoringOrigin(SearchSource.Sonarr, "query"), _baseTime, 1, 1, 0, [trace]);
 
-        var (state, _) = HistoryState.Empty.ProcessCommand(cmd);
+        var state = HistoryState.Empty;
+        state.Apply(state.ProcessCommand(cmd));
         var restored = HistoryState.FromPersistence(state.GetPersistenceState());
 
         var restoredRule = Assert.Single(restored.Snapshots[0].ItemTraces[0].RuleTraces);
@@ -485,7 +490,8 @@ public sealed class PersistenceMappingTests
         var cmd = new RecordHistory(Guid.NewGuid(), "rs-1",
             new ScoringOrigin(SearchSource.Prowlarr, "query"), _baseTime, 1, 0, 0, [trace]);
 
-        var (state, _) = HistoryState.Empty.ProcessCommand(cmd);
+        var state = HistoryState.Empty;
+        state.Apply(state.ProcessCommand(cmd));
         var restored = HistoryState.FromPersistence(state.GetPersistenceState());
 
         var restoredTrace = Assert.Single(restored.Snapshots[0].ItemTraces);

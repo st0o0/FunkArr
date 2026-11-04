@@ -19,14 +19,14 @@ public sealed class FeedScheduler : ReceiveActor, IWithTimers
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _crawlManager = Context.GetActor<IFeedCrawlManager>();
     private readonly IOptionsMonitor<FeedOptions> _optionsMonitor;
-    private FeedSchedulerState _state = FeedSchedulerState.Empty;
+    private readonly FeedSchedulerState _state = new();
 
     public ITimerScheduler Timers { get; set; } = null!;
 
     public FeedScheduler(IOptionsMonitor<FeedOptions> options)
     {
         _optionsMonitor = options;
-        _state = _state.Apply(options.CurrentValue);
+        _state.Apply(options.CurrentValue);
 
         Receive<Tick>(_ => HandleTick());
         Receive<OptionsChanged>(_ => HandleOptionsChanged());
@@ -49,12 +49,12 @@ public sealed class FeedScheduler : ReceiveActor, IWithTimers
 
     private void HandleOptionsChanged()
     {
-        var previous = _state;
-        _state = _state.Apply(_optionsMonitor.CurrentValue);
+        var previousInterval = _state.Interval;
+        _state.Apply(_optionsMonitor.CurrentValue);
 
-        if (_state.Interval != previous.Interval)
+        if (_state.Interval != previousInterval)
         {
-            _log.Info("Feed crawl interval changed from {Old} to {New}", previous.Interval, _state.Interval);
+            _log.Info("Feed crawl interval changed from {Old} to {New}", previousInterval, _state.Interval);
             ScheduleNext(_state.Interval);
         }
     }

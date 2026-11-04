@@ -9,8 +9,8 @@ public sealed class RuleSetResolverStateSnapshotTests
     [Fact]
     public void GetSnapshot_ReturnsRegisteredRuleSetsResult()
     {
-        var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show));
+        var state = new RuleSetResolverState();
+        state.Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show));
 
         var snapshot = state.GetSnapshot();
 
@@ -22,12 +22,12 @@ public sealed class RuleSetResolverStateSnapshotTests
     [Fact]
     public void SnapshotRoundTrip_PreservesEntries()
     {
-        var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show))
-            .Apply(new RegisterRuleSet("heute", "heute show", []));
+        var state = new RuleSetResolverState();
+        state.Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"], new ExternalIds(12345, "tt1234", 67890), "Tatort", MediaType.Show));
+        state.Apply(new RegisterRuleSet("heute", "heute show", []));
 
         var snapshot = state.GetSnapshot();
-        var restored = RuleSetResolverStateExtensions.FromSnapshot(snapshot);
+        var restored = RuleSetResolverState.FromSnapshot(snapshot);
 
         var restoredSnapshot = restored.GetSnapshot();
         Assert.Equal(snapshot.Entries.Length, restoredSnapshot.Entries.Length);
@@ -36,10 +36,10 @@ public sealed class RuleSetResolverStateSnapshotTests
     [Fact]
     public void SnapshotRoundTrip_PreservesLookupIndex()
     {
-        var state = RuleSetResolverState.Empty
-            .Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"]));
+        var state = new RuleSetResolverState();
+        state.Apply(new RegisterRuleSet("tatort", "Tatort", ["tatort-krimi"]));
 
-        var restored = RuleSetResolverStateExtensions.FromSnapshot(state.GetSnapshot());
+        var restored = RuleSetResolverState.FromSnapshot(state.GetSnapshot());
 
         var resolved = restored.Resolve(new ResolveRuleSet("tatort-krimi"));
         Assert.IsType<RuleSetResolved>(resolved);

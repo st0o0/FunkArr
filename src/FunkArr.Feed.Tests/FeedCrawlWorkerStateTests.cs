@@ -18,7 +18,7 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void Empty_has_sensible_defaults()
     {
-        var state = FeedCrawlWorkerState.Empty;
+        var state = new FeedCrawlWorkerState(_input);
 
         Assert.Multiple(
             () => Assert.Equal(0, state.ListTimestamp),
@@ -39,7 +39,7 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void ForInput_sets_input_and_resets_to_empty()
     {
-        var state = FeedCrawlWorkerState.Empty.ForInput(_input);
+        var state = new FeedCrawlWorkerState(_input);
 
         Assert.Multiple(
             () => Assert.Equal(_input, state.Input),
@@ -50,9 +50,8 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void ApplyProbe_sets_list_timestamp()
     {
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000);
+        var state = new FeedCrawlWorkerState(_input);
+        state.ListTimestamp = 2_000_000;
 
         Assert.Equal(2_000_000, state.ListTimestamp);
     }
@@ -63,10 +62,10 @@ public sealed class FeedCrawlWorkerStateTests
         var lookup = RuleSetLookup.Empty;
         var window = new CrawlWindow(1_000_000, 2_000_000);
 
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000)
-            .ApplyRuleSets(lookup, window);
+        var state = new FeedCrawlWorkerState(_input);
+        state.ListTimestamp = 2_000_000;
+        state.Lookup = lookup;
+        state.Window = window;
 
         Assert.Multiple(
             () => Assert.Same(lookup, state.Lookup),
@@ -76,9 +75,8 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void StartHarvesting_sets_pending_pages_and_next_offset()
     {
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartHarvesting(3);
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartHarvesting(3);
 
         Assert.Multiple(
             () => Assert.Equal(3, state.PendingPages),
@@ -91,10 +89,9 @@ public sealed class FeedCrawlWorkerStateTests
         var items = new[] { TestData.Item(), TestData.Item(title: "Zweite") };
         var page = new PageResult(0, items, false, null);
 
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartHarvesting(2)
-            .ApplyPageResult(page);
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartHarvesting(2);
+        state.Apply(page);
 
         Assert.Multiple(
             () => Assert.Equal(2, state.CollectedItems.Count),
@@ -109,11 +106,10 @@ public sealed class FeedCrawlWorkerStateTests
         var endPage = new PageResult(0, [TestData.Item()], true, null);
         var normalPage = new PageResult(100, [TestData.Item(title: "Zweite")], false, null);
 
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartHarvesting(2)
-            .ApplyPageResult(endPage)
-            .ApplyPageResult(normalPage);
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartHarvesting(2);
+        state.Apply(endPage);
+        state.Apply(normalPage);
 
         Assert.True(state.ReachedEnd);
     }
@@ -124,11 +120,10 @@ public sealed class FeedCrawlWorkerStateTests
         var errorPage = new PageResult(0, [], true, "connection failed");
         var anotherError = new PageResult(100, [], true, "timeout");
 
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartHarvesting(2)
-            .ApplyPageResult(errorPage)
-            .ApplyPageResult(anotherError);
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartHarvesting(2);
+        state.Apply(errorPage);
+        state.Apply(anotherError);
 
         Assert.Equal("connection failed", state.PageError);
     }
@@ -136,10 +131,9 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void FireNextPage_increments_pending_and_offset()
     {
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartHarvesting(2)
-            .FireNextPage();
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartHarvesting(2);
+        state.FireNextPage();
 
         Assert.Multiple(
             () => Assert.Equal(3, state.PendingPages),
@@ -149,9 +143,8 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void StartEvaluating_sets_total_and_pending_groups()
     {
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartEvaluating(5);
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartEvaluating(5);
 
         Assert.Multiple(
             () => Assert.Equal(5, state.TotalGroups),
@@ -164,10 +157,9 @@ public sealed class FeedCrawlWorkerStateTests
         var entries = new[] { TestData.Entry("a", _t0), TestData.Entry("b", _t0) };
         var result = new GroupResult("rs-1", entries, null, null);
 
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartEvaluating(2)
-            .ApplyGroupResult(result);
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartEvaluating(2);
+        state.Apply(result);
 
         Assert.Multiple(
             () => Assert.Equal(2, state.AcceptedEntries.Count),
@@ -182,11 +174,10 @@ public sealed class FeedCrawlWorkerStateTests
         var ok = new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null);
         var failed = new GroupResult("rs-2", [], null, "eval timeout");
 
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .StartEvaluating(2)
-            .ApplyGroupResult(ok)
-            .ApplyGroupResult(failed);
+        var state = new FeedCrawlWorkerState(_input);
+        state.StartEvaluating(2);
+        state.Apply(ok);
+        state.Apply(failed);
 
         Assert.Multiple(
             () => Assert.Equal(0, state.PendingGroups),
@@ -198,14 +189,14 @@ public sealed class FeedCrawlWorkerStateTests
     public void GetCrawlResult_completed_when_no_errors()
     {
         var window = new CrawlWindow(1_000_000, 2_000_000);
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000)
-            .ApplyRuleSets(RuleSetLookup.Empty, window)
-            .StartHarvesting(1)
-            .ApplyPageResult(new PageResult(0, [TestData.Item()], true, null))
-            .StartEvaluating(1)
-            .ApplyGroupResult(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
+        var state = new FeedCrawlWorkerState(_input);
+        state.ListTimestamp = 2_000_000;
+        state.Lookup = RuleSetLookup.Empty;
+        state.Window = window;
+        state.StartHarvesting(1);
+        state.Apply(new PageResult(0, [TestData.Item()], true, null));
+        state.StartEvaluating(1);
+        state.Apply(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
 
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(5));
 
@@ -220,12 +211,12 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void GetCrawlResult_failed_on_page_error_with_zero_items()
     {
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000)
-            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
-            .StartHarvesting(1)
-            .ApplyPageResult(new PageResult(0, [], true, "network error"));
+        var state = new FeedCrawlWorkerState(_input);
+        state.ListTimestamp = 2_000_000;
+        state.Lookup = RuleSetLookup.Empty;
+        state.Window = new CrawlWindow(1_000_000, 2_000_000);
+        state.StartHarvesting(1);
+        state.Apply(new PageResult(0, [], true, "network error"));
 
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(1));
 
@@ -239,15 +230,15 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void GetCrawlResult_completed_partial_on_page_error_with_collected_items()
     {
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000)
-            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
-            .StartHarvesting(2)
-            .ApplyPageResult(new PageResult(0, [TestData.Item()], false, null))
-            .ApplyPageResult(new PageResult(100, [], true, "server error"))
-            .StartEvaluating(1)
-            .ApplyGroupResult(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
+        var state = new FeedCrawlWorkerState(_input);
+        state.ListTimestamp = 2_000_000;
+        state.Lookup = RuleSetLookup.Empty;
+        state.Window = new CrawlWindow(1_000_000, 2_000_000);
+        state.StartHarvesting(2);
+        state.Apply(new PageResult(0, [TestData.Item()], false, null));
+        state.Apply(new PageResult(100, [], true, "server error"));
+        state.StartEvaluating(1);
+        state.Apply(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
 
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(3));
 
@@ -265,25 +256,25 @@ public sealed class FeedCrawlWorkerStateTests
         var successPage = new PageResult(0, [TestData.Item()], false, null);
         var errorPage = new PageResult(100, [], true, "server error");
 
-        var stateErrorLast = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000)
-            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
-            .StartHarvesting(2)
-            .ApplyPageResult(successPage)
-            .ApplyPageResult(errorPage)
-            .StartEvaluating(1)
-            .ApplyGroupResult(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
+        var stateErrorLast = new FeedCrawlWorkerState(_input);
+        stateErrorLast.ListTimestamp = 2_000_000;
+        stateErrorLast.Lookup = RuleSetLookup.Empty;
+        stateErrorLast.Window = new CrawlWindow(1_000_000, 2_000_000);
+        stateErrorLast.StartHarvesting(2);
+        stateErrorLast.Apply(successPage);
+        stateErrorLast.Apply(errorPage);
+        stateErrorLast.StartEvaluating(1);
+        stateErrorLast.Apply(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
 
-        var stateErrorFirst = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000)
-            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
-            .StartHarvesting(2)
-            .ApplyPageResult(errorPage)
-            .ApplyPageResult(successPage)
-            .StartEvaluating(1)
-            .ApplyGroupResult(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
+        var stateErrorFirst = new FeedCrawlWorkerState(_input);
+        stateErrorFirst.ListTimestamp = 2_000_000;
+        stateErrorFirst.Lookup = RuleSetLookup.Empty;
+        stateErrorFirst.Window = new CrawlWindow(1_000_000, 2_000_000);
+        stateErrorFirst.StartHarvesting(2);
+        stateErrorFirst.Apply(errorPage);
+        stateErrorFirst.Apply(successPage);
+        stateErrorFirst.StartEvaluating(1);
+        stateErrorFirst.Apply(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
 
         var resultErrorLast = stateErrorLast.GetCrawlResult(TimeSpan.FromSeconds(1));
         var resultErrorFirst = stateErrorFirst.GetCrawlResult(TimeSpan.FromSeconds(1));
@@ -298,16 +289,16 @@ public sealed class FeedCrawlWorkerStateTests
     [Fact]
     public void GetCrawlResult_failed_on_group_failures()
     {
-        var state = FeedCrawlWorkerState.Empty
-            .ForInput(_input)
-            .ApplyProbe(2_000_000)
-            .ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000))
-            .StartHarvesting(1)
-            .ApplyPageResult(new PageResult(0, [TestData.Item()], true, null))
-            .StartEvaluating(3)
-            .ApplyGroupResult(new GroupResult("rs-1", [], null, "timeout"))
-            .ApplyGroupResult(new GroupResult("rs-2", [], null, "timeout"))
-            .ApplyGroupResult(new GroupResult("rs-3", [TestData.Entry("a", _t0)], null, null));
+        var state = new FeedCrawlWorkerState(_input);
+        state.ListTimestamp = 2_000_000;
+        state.Lookup = RuleSetLookup.Empty;
+        state.Window = new CrawlWindow(1_000_000, 2_000_000);
+        state.StartHarvesting(1);
+        state.Apply(new PageResult(0, [TestData.Item()], true, null));
+        state.StartEvaluating(3);
+        state.Apply(new GroupResult("rs-1", [], null, "timeout"));
+        state.Apply(new GroupResult("rs-2", [], null, "timeout"));
+        state.Apply(new GroupResult("rs-3", [TestData.Entry("a", _t0)], null, null));
 
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(2));
 

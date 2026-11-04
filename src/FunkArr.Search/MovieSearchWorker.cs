@@ -62,7 +62,7 @@ public sealed class MovieSearchWorker : ReceiveActor, IWithTimers
     {
         Receive<RuleSetResolved>(resolved =>
         {
-            _state.ApplyRuleSet(resolved);
+            _state.Apply(resolved);
             QueryMediathek();
         });
 

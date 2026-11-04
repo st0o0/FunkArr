@@ -13,9 +13,9 @@ public sealed class HistoryStateTests
     [Fact]
     public void PersistenceRoundTrip_PreservesSnapshots()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent())
-            .Apply(CreateEvent("a0000002"));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent());
+        state.Apply(CreateEvent("a0000002"));
 
         var persisted = state.GetPersistenceState();
         var restored = HistoryState.FromPersistence(persisted);
@@ -29,8 +29,8 @@ public sealed class HistoryStateTests
     [Fact]
     public void SnapshotRoundTrip_PreservesSnapshots()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent());
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent());
 
         var snapshot = state.GetSnapshot();
         var restored = HistoryState.FromPersistence(snapshot);
@@ -52,8 +52,8 @@ public sealed class HistoryStateTests
     [Fact]
     public void PersistenceRoundTrip_PreservesStats()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 10, matchedCount: 5, enrichedCount: 3));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 10, matchedCount: 5, enrichedCount: 3));
 
         var restored = HistoryState.FromPersistence(state.GetPersistenceState());
 
@@ -68,7 +68,8 @@ public sealed class HistoryStateTests
     {
         var evt = CreateEvent(candidateCount: 10, matchedCount: 3, enrichedCount: 1);
 
-        var state = HistoryState.Empty.Apply(evt);
+        var state = HistoryState.Empty;
+        state.Apply(evt);
 
         var snapshot = Assert.Single(state.Snapshots);
         Assert.Equal(evt.RequestId, snapshot.RequestId);
@@ -80,24 +81,26 @@ public sealed class HistoryStateTests
     [Fact]
     public void Apply_MultipleEvents_AccumulatesEntries()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent())
-            .Apply(CreateEvent("a0000002"))
-            .Apply(CreateEvent("a0000003"));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent());
+        state.Apply(CreateEvent("a0000002"));
+        state.Apply(CreateEvent("a0000003"));
 
         Assert.Equal(3, state.Snapshots.Count);
     }
 
     [Fact]
-    public void ProcessCommand_ReturnsNewStateAndEvent()
+    public void ProcessCommand_ReturnsEventAndApplyAddsEntry()
     {
         var requestId = Guid.NewGuid();
         var origin = new ScoringOrigin(SearchSource.Sonarr, "test-query");
         var cmd = new RecordHistory(requestId, "rs-1", origin, _baseTime, 10, 5, 3, []);
 
-        var (newState, evt) = HistoryState.Empty.ProcessCommand(cmd);
+        var state = HistoryState.Empty;
+        var evt = state.ProcessCommand(cmd);
+        state.Apply(evt);
 
-        var snapshot = Assert.Single(newState.Snapshots);
+        var snapshot = Assert.Single(state.Snapshots);
         Assert.Equal(requestId, snapshot.RequestId);
         Assert.Equal(requestId, evt.RequestId);
         Assert.Equal(PersistedSearchSource.Sonarr, evt.Source);
@@ -121,8 +124,8 @@ public sealed class HistoryStateTests
     [Fact]
     public void ComputeStats_SingleEntry_CalculatesRates()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 10, matchedCount: 4, enrichedCount: 2));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 10, matchedCount: 4, enrichedCount: 2));
 
         Assert.NotNull(state.Stats.LastRun);
         Assert.NotNull(state.Stats.MatchRate);
@@ -135,9 +138,9 @@ public sealed class HistoryStateTests
     [Fact]
     public void ComputeStats_ZeroCandidates_ExcludedFromMatchRate()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 0, matchedCount: 0, enrichedCount: 0))
-            .Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 5, enrichedCount: 3));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 0, matchedCount: 0, enrichedCount: 0));
+        state.Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 5, enrichedCount: 3));
 
         Assert.NotNull(state.Stats.MatchRate);
         Assert.Equal(0.5, state.Stats.MatchRate.Value, 0.001);
@@ -147,9 +150,9 @@ public sealed class HistoryStateTests
     [Fact]
     public void ComputeStats_ZeroMatched_ExcludedFromEnrichmentRate()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 10, matchedCount: 0, enrichedCount: 0))
-            .Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 4, enrichedCount: 2));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 10, matchedCount: 0, enrichedCount: 0));
+        state.Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 4, enrichedCount: 2));
 
         Assert.NotNull(state.Stats.EnrichmentRate);
         Assert.Equal(0.5, state.Stats.EnrichmentRate.Value, 0.001);
@@ -158,8 +161,8 @@ public sealed class HistoryStateTests
     [Fact]
     public void ComputeStats_AllZeroCandidates_MatchRateIsNull()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 0, matchedCount: 0, enrichedCount: 0));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 0, matchedCount: 0, enrichedCount: 0));
 
         Assert.Null(state.Stats.MatchRate);
     }
@@ -167,9 +170,9 @@ public sealed class HistoryStateTests
     [Fact]
     public void ComputeStats_MultipleEntries_AveragesCorrectly()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 10, matchedCount: 2, enrichedCount: 1))
-            .Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 8, enrichedCount: 4));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 10, matchedCount: 2, enrichedCount: 1));
+        state.Apply(CreateEvent("a0000002", candidateCount: 10, matchedCount: 8, enrichedCount: 4));
 
         var expectedMatchRate = (2.0 / 10 + 8.0 / 10) / 2;
         var expectedEnrichmentRate = (1.0 / 2 + 4.0 / 8) / 2;
@@ -181,71 +184,73 @@ public sealed class HistoryStateTests
     }
 
     [Fact]
-    public void Trim_UnderLimits_ReturnsSameState()
+    public void Trim_UnderLimits_KeepsAll()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow));
 
-        var trimmed = state.Trim(maxSnapshots: 100, maxAgeDays: 365);
+        state.Trim(maxSnapshots: 100, maxAgeDays: 365);
 
-        Assert.Same(state, trimmed);
+        Assert.Single(state.Snapshots);
     }
 
     [Fact]
     public void Trim_ExceedsMaxCount_KeepsNewest()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddMinutes(-3)))
-            .Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow.AddMinutes(-2)))
-            .Apply(CreateEvent("a0000003", timestamp: DateTimeOffset.UtcNow.AddMinutes(-1)));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddMinutes(-3)));
+        state.Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow.AddMinutes(-2)));
+        state.Apply(CreateEvent("a0000003", timestamp: DateTimeOffset.UtcNow.AddMinutes(-1)));
 
-        var trimmed = state.Trim(maxSnapshots: 2, maxAgeDays: 365);
+        state.Trim(maxSnapshots: 2, maxAgeDays: 365);
 
-        Assert.Equal(2, trimmed.Snapshots.Count);
-        Assert.Equal(ParseGuid("a0000002"), trimmed.Snapshots[0].RequestId);
-        Assert.Equal(ParseGuid("a0000003"), trimmed.Snapshots[1].RequestId);
+        Assert.Equal(2, state.Snapshots.Count);
+        Assert.Equal(ParseGuid("a0000002"), state.Snapshots[0].RequestId);
+        Assert.Equal(ParseGuid("a0000003"), state.Snapshots[1].RequestId);
     }
 
     [Fact]
     public void Trim_OldEntries_RemovedByAge()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddDays(-10)))
-            .Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddDays(-10)));
+        state.Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow));
 
-        var trimmed = state.Trim(maxSnapshots: 100, maxAgeDays: 5);
+        state.Trim(maxSnapshots: 100, maxAgeDays: 5);
 
-        var snapshot = Assert.Single(trimmed.Snapshots);
+        var snapshot = Assert.Single(state.Snapshots);
         Assert.Equal(ParseGuid("a0000002"), snapshot.RequestId);
     }
 
     [Fact]
-    public void Trim_EmptyState_ReturnsEmpty()
+    public void Trim_EmptyState_StaysEmpty()
     {
-        var trimmed = HistoryState.Empty.Trim(maxSnapshots: 10, maxAgeDays: 30);
+        var state = HistoryState.Empty;
 
-        Assert.Same(HistoryState.Empty, trimmed);
+        state.Trim(maxSnapshots: 10, maxAgeDays: 30);
+
+        Assert.Empty(state.Snapshots);
     }
 
     [Fact]
     public void Trim_AllExpired_ReturnsEmptyState()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddDays(-100)))
-            .Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow.AddDays(-50)));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(timestamp: DateTimeOffset.UtcNow.AddDays(-100)));
+        state.Apply(CreateEvent("a0000002", timestamp: DateTimeOffset.UtcNow.AddDays(-50)));
 
-        var trimmed = state.Trim(maxSnapshots: 100, maxAgeDays: 30);
+        state.Trim(maxSnapshots: 100, maxAgeDays: 30);
 
-        Assert.Empty(trimmed.Snapshots);
+        Assert.Empty(state.Snapshots);
     }
 
     [Fact]
     public void QueryHistory_ReturnsNewestFirst()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(timestamp: _baseTime))
-            .Apply(CreateEvent("a0000002", timestamp: _baseTime.AddHours(1)))
-            .Apply(CreateEvent("a0000003", timestamp: _baseTime.AddHours(2)));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(timestamp: _baseTime));
+        state.Apply(CreateEvent("a0000002", timestamp: _baseTime.AddHours(1)));
+        state.Apply(CreateEvent("a0000003", timestamp: _baseTime.AddHours(2)));
 
         var result = state.QueryHistory(new QueryScoringHistory("rs-1", 0, 10));
 
@@ -258,11 +263,11 @@ public sealed class HistoryStateTests
     [Fact]
     public void QueryHistory_RespectsOffsetAndLimit()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(timestamp: _baseTime))
-            .Apply(CreateEvent("a0000002", timestamp: _baseTime.AddHours(1)))
-            .Apply(CreateEvent("a0000003", timestamp: _baseTime.AddHours(2)))
-            .Apply(CreateEvent("a0000004", timestamp: _baseTime.AddHours(3)));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(timestamp: _baseTime));
+        state.Apply(CreateEvent("a0000002", timestamp: _baseTime.AddHours(1)));
+        state.Apply(CreateEvent("a0000003", timestamp: _baseTime.AddHours(2)));
+        state.Apply(CreateEvent("a0000004", timestamp: _baseTime.AddHours(3)));
 
         var result = state.QueryHistory(new QueryScoringHistory("rs-1", 1, 2));
 
@@ -274,8 +279,8 @@ public sealed class HistoryStateTests
     [Fact]
     public void QueryHistory_OffsetBeyondCount_ReturnsEmpty()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent());
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent());
 
         var result = state.QueryHistory(new QueryScoringHistory("rs-1", 100, 10));
 
@@ -285,10 +290,10 @@ public sealed class HistoryStateTests
     [Fact]
     public void QueryHistory_ReturnsTotalCount()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent())
-            .Apply(CreateEvent("a0000002"))
-            .Apply(CreateEvent("a0000003"));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent());
+        state.Apply(CreateEvent("a0000002"));
+        state.Apply(CreateEvent("a0000003"));
 
         var result = state.QueryHistory(new QueryScoringHistory("rs-1", 0, 1));
 
@@ -300,8 +305,8 @@ public sealed class HistoryStateTests
     public void QueryDetail_ExistingRequestId_ReturnsResult()
     {
         var requestId = ParseGuid("a0000001");
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 10, matchedCount: 5, enrichedCount: 3));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 10, matchedCount: 5, enrichedCount: 3));
 
         var response = state.QueryDetail(new QueryScoringDetail("rs-1", requestId));
 
@@ -323,8 +328,8 @@ public sealed class HistoryStateTests
     [Fact]
     public void QueryHistory_MapsScoringSnapshotSummaryFields()
     {
-        var state = HistoryState.Empty
-            .Apply(CreateEvent(candidateCount: 10, matchedCount: 5));
+        var state = HistoryState.Empty;
+        state.Apply(CreateEvent(candidateCount: 10, matchedCount: 5));
 
         var result = state.QueryHistory(new QueryScoringHistory("rs-1", 0, 10));
 

@@ -12,7 +12,8 @@ public sealed class ScoringManagerStateTests
                 new IdentificationSpec(IdentificationStrategy.AirdateExtraction))
         ]);
 
-        var state = ScoringManagerState.Empty.Apply(config);
+        var state = ScoringManagerState.Empty;
+        state.Apply(config);
 
         Assert.Single(state.Configs);
         var config2 = state.GetConfig("tatort");
@@ -26,9 +27,9 @@ public sealed class ScoringManagerStateTests
         var config1 = new MatchingConfig("tatort", 0.8f, []);
         var config2 = new MatchingConfig("heute-show", 0.9f, []);
 
-        var state = ScoringManagerState.Empty
-            .Apply(config1)
-            .Apply(config2);
+        var state = ScoringManagerState.Empty;
+        state.Apply(config1);
+        state.Apply(config2);
 
         Assert.Equal(2, state.Configs.Count);
         Assert.NotNull(state.GetConfig("tatort"));
@@ -40,9 +41,9 @@ public sealed class ScoringManagerStateTests
     {
         var config = new MatchingConfig("tatort", 0.8f, []);
 
-        var state = ScoringManagerState.Empty
-            .Apply(config)
-            .Apply(new RemoveMatchingConfig("tatort"));
+        var state = ScoringManagerState.Empty;
+        state.Apply(config);
+        state.Apply(new RemoveMatchingConfig("tatort"));
 
         Assert.Empty(state.Configs);
     }

@@ -154,7 +154,7 @@ public sealed class SearchWorkerStateTests
     {
         var state = MovieState(imdbId: "tt0082096", tmdbId: 387);
         var ruleSet = new RuleSetResolved("das-boot", "Das Boot");
-        state.ApplyRuleSet(ruleSet);
+        state.Apply(ruleSet);
         state.Apply(new QueryMediathekCompleted([Item("Das Boot")], 1));
 
         var evaluation = state.ToEvaluation(Guid.NewGuid());

@@ -3,28 +3,26 @@
 ## Purpose
 
 Defines the actor state pattern: state records in dedicated files, Empty factory, Apply extension methods, ProcessCommand for persistent actors, query methods on state, thin actors, immutable collections, Pathfinder snapshot pattern (GetSnapshot/FromSnapshot for queries, GetPersistenceState/FromPersistence for persistent actors), LastSequenceNr-based snapshot intervals, and persistence records in FunkArr.Persistence.
-
 ## Requirements
-
 ### Requirement: State records live in dedicated files
 
-Every actor with state SHALL have its state defined as a `sealed record` in a dedicated `<ActorName>State.cs` file in the same project and namespace as the actor. State records SHALL NOT be nested inside actor classes.
+Every actor with state SHALL have its state defined as a `sealed class` in a dedicated `<ActorName>State.cs` file in the same project and namespace as the actor. State classes SHALL NOT be nested inside actor classes.
 
 #### Scenario: HistoryWorker state file
 - **WHEN** the HistoryWorker actor is examined
-- **THEN** its state SHALL be defined in `HistoryState.cs` in `FunkArr.History`
+- **THEN** its state SHALL be defined as a `sealed class` in `HistoryState.cs` in `FunkArr.History`
 
 #### Scenario: Non-persistent actor state file
 - **WHEN** the RuleSetResolver actor is examined
-- **THEN** its state SHALL be defined in `RuleSetResolverState.cs` in `FunkArr.RuleSet`
+- **THEN** its state SHALL be defined as a `sealed class` in `RuleSetResolverState.cs` in `FunkArr.RuleSet`
 
 #### Scenario: No nested State records in actors
 - **WHEN** any actor class is examined
-- **THEN** it SHALL NOT contain a nested `record State` declaration
+- **THEN** it SHALL NOT contain a nested state type declaration
 
 ### Requirement: State records provide an Empty factory
 
-Each state record SHALL expose a `public static readonly` `Empty` field returning the initial (zero) state.
+Each state class SHALL expose a `public static readonly` `Empty` field returning a new default-initialized instance.
 
 #### Scenario: HistoryState.Empty
 - **WHEN** `HistoryState.Empty` is accessed
@@ -32,71 +30,71 @@ Each state record SHALL expose a `public static readonly` `Empty` field returnin
 
 #### Scenario: RuleSetResolverState.Empty
 - **WHEN** `RuleSetResolverState.Empty` is accessed
-- **THEN** it SHALL return a state with empty immutable dictionaries
+- **THEN** it SHALL return a state with empty dictionaries
 
 ### Requirement: State evolution via Apply extension methods
 
-State transitions SHALL be implemented as `Apply` extension methods on the state record. Each `Apply` method SHALL be a pure function: take current state and an input, return new state. It SHALL NOT mutate the input state. All stateful actors SHALL use `Apply()` naming - ad-hoc names like `Increment`/`Decrement`, `AddPending`/`RemovePending` SHALL NOT be used.
+State transitions SHALL be implemented as `Apply` instance methods on the state class. Each `Apply` method SHALL mutate the state in-place and return `void`. All Apply methods SHALL be named `Apply` (overloaded by parameter type) — prefixed names like `ApplyRuleSet`, `ApplyProbe`, `StartHarvesting` SHALL NOT be used. Ad-hoc names like `Increment`/`Decrement`, `AddPending`/`RemovePending` SHALL NOT be used.
 
 #### Scenario: Persistent actor Apply takes a persistence record
-- **WHEN** `HistoryState.Apply(HistoryRecorded)` is called
-- **THEN** it SHALL return a new `HistoryState` with the record applied, without modifying the original state
+- **WHEN** `historyState.Apply(historyRecorded)` is called
+- **THEN** it SHALL mutate the state instance to reflect the applied record
 
 #### Scenario: Non-persistent actor Apply takes a command
-- **WHEN** `RuleSetResolverState.Apply(RegisterRuleSet)` is called
-- **THEN** it SHALL return a new `RuleSetResolverState` with the registration applied, without modifying the original state
+- **WHEN** `resolverState.Apply(registerRuleSet)` is called
+- **THEN** it SHALL mutate the state instance to reflect the registration
 
 #### Scenario: No ad-hoc mutation names
 - **WHEN** any state class is examined
-- **THEN** all state transition methods SHALL be named `Apply`, not `Increment`, `Decrement`, `AddPending`, `RemovePending`, or other ad-hoc names
+- **THEN** all state transition methods SHALL be named `Apply`, not `Increment`, `Decrement`, `AddPending`, `RemovePending`, `ApplyXxx`, `StartXxx`, `FireXxx`, or other ad-hoc or prefixed variants
+
+#### Scenario: Actor uses void Apply pattern
+- **WHEN** an actor handles a command that modifies state
+- **THEN** the actor SHALL call `_state.Apply(msg)` (void, no reassignment needed)
 
 ### Requirement: ProcessCommand for persistent actors
 
-Persistent actors SHALL implement a `ProcessCommand` extension method on the state record. `ProcessCommand` SHALL validate the command against current state and return both the new state and the persistence record.
+Persistent actors SHALL implement a `ProcessCommand` instance method on the state class. `ProcessCommand` SHALL validate the command against current state and return the persistence record. The state SHALL NOT be mutated by ProcessCommand — mutation happens in the Apply call after persistence.
 
 #### Scenario: ProcessCommand produces persistence record
-- **WHEN** `HistoryState.ProcessCommand(RecordHistory)` is called with a valid command
-- **THEN** it SHALL return a tuple of `(HistoryState, HistoryRecorded)` containing the new state and the record to persist
+- **WHEN** `historyState.ProcessCommand(recordHistory)` is called with a valid command
+- **THEN** it SHALL return a `HistoryRecorded` persistence record without mutating the state
 
 ### Requirement: Query methods on state
 
-Read-only operations SHALL be implemented as extension methods on the state record. The actor SHALL delegate query handling to these methods.
+Read-only operations SHALL be implemented as instance methods on the state class. The actor SHALL delegate query handling to these methods.
 
 #### Scenario: QueryHistory on state
-- **WHEN** `HistoryState.QueryHistory(QueryScoringHistory)` is called
+- **WHEN** `historyState.QueryHistory(queryScoringHistory)` is called
 - **THEN** it SHALL return a `ScoringHistoryResult` computed from the current state
 
 #### Scenario: QueryDetail on state
-- **WHEN** `HistoryState.QueryDetail(QueryScoringDetail)` is called
-- **THEN** it SHALL return either a `ScoringDetailResult` or `ScoringDetailNotFound`
+- **WHEN** `historyState.QueryDetail(queryScoringDetail)` is called
+- **THEN** it SHALL return either a `ScoringDetailResult` or `ScoringDetailFailed`
 
 ### Requirement: Actors are thin plumbing
 
-Actor classes SHALL contain only: message routing (`Receive<T>`/`Command<T>`), persistence calls (`Persist`, `SaveSnapshot`), recovery setup (`Recover<T>`), lifecycle management (passivation, timeouts), and DI constructor parameters. All state logic, validation, and query computation SHALL be delegated to state extension methods.
+Actor classes SHALL contain only: message routing (`Receive<T>`/`Command<T>`), persistence calls (`Persist`, `SaveSnapshot`), recovery setup (`Recover<T>`), lifecycle management (passivation, timeouts), and DI constructor parameters. All state logic, validation, and query computation SHALL be delegated to state instance methods. All mutable domain state SHALL live in the state object — actors SHALL NOT keep mutable domain state as direct fields (dictionaries, flags, counters). Infrastructure references (actor refs, cancellation tokens, stopwatches) MAY remain on the actor.
 
 #### Scenario: Persistent actor command handling
 - **WHEN** a HistoryWorker receives a RecordHistory
-- **THEN** the actor SHALL call `_state.ProcessCommand(cmd)`, persist the returned record, and assign `_state` to the returned new state
+- **THEN** the actor SHALL call `_state.ProcessCommand(cmd)`, persist the returned record, and call `_state.Apply(record)` in the persist callback
 
 #### Scenario: Non-persistent actor command handling
 - **WHEN** a RuleSetResolver receives a RegisterRuleSet
-- **THEN** the actor SHALL call `_state = _state.Apply(msg)` and nothing else for state management
+- **THEN** the actor SHALL call `_state.Apply(msg)` and nothing else for state management
 
 #### Scenario: Actor query handling
 - **WHEN** an actor receives a query message
 - **THEN** the actor SHALL call the corresponding query method on state and `Sender.Tell()` the result
 
-### Requirement: Immutable collections for all state
-
-State records SHALL use immutable collection types (`ImmutableList<T>`, `ImmutableDictionary<TKey, TValue>`, `ImmutableHashSet<T>`) for all collection properties. Mutable collections inside state records SHALL NOT be used.
-
-#### Scenario: RuleSetResolver uses immutable dictionaries
-- **WHEN** the RuleSetResolverState record is examined
-- **THEN** its LookupIndex SHALL be `ImmutableDictionary<string, string>` and EntriesByRuleSetId SHALL be `ImmutableDictionary<string, ImmutableHashSet<string>>`
+#### Scenario: No leaked mutable state on actor
+- **WHEN** any actor class is examined
+- **THEN** it SHALL NOT have mutable domain-state fields (dictionaries, lists, counters, flags) outside of the `_state` object
 
 ### Requirement: State-as-snapshot replaced by Pathfinder snapshot pattern
 
-Persistent actors SHALL NOT pass their state record directly to `SaveSnapshot()`. Instead, each persistent actor's state SHALL implement `GetPersistenceState()` returning a separate `Persisted*State` record, and a static `FromPersistence(Persisted*State)` factory method to reconstruct state. The persisted record SHALL be a flat, immutable record in `FunkArr.Persistence` containing only the data fields needed for reconstruction - no behavior, no computed properties, no trimming logic.
+Persistent actors SHALL NOT pass their state class directly to `SaveSnapshot()`. Instead, each persistent actor's state SHALL implement `GetPersistenceState()` returning a separate `Persisted*State` record, and a static `FromPersistence(Persisted*State)` factory method to reconstruct state. The persisted record SHALL be a flat, immutable record in `FunkArr.Persistence` containing only the data fields needed for reconstruction - no behavior, no computed properties, no trimming logic.
 
 #### Scenario: Save snapshot via GetPersistenceState
 - **WHEN** the snapshot interval is reached in a persistent actor
@@ -116,7 +114,7 @@ Persistent actors SHALL NOT pass their state record directly to `SaveSnapshot()`
 
 ### Requirement: All stateful actors provide GetSnapshot and FromSnapshot
 
-Every actor with a state class SHALL have `GetSnapshot()` on its state returning a purpose-built response record, and a static `FromSnapshot()` factory method to reconstruct state from that response. The actor SHALL use `GetSnapshot()` when responding to queries - it SHALL NOT send its internal state record directly to callers.
+Every actor with a state class SHALL have `GetSnapshot()` on its state returning a purpose-built response record, and a static `FromSnapshot()` factory method to reconstruct state from that response. The actor SHALL use `GetSnapshot()` when responding to queries - it SHALL NOT send its internal state directly to callers.
 
 #### Scenario: GetSnapshot returns response record
 - **WHEN** an actor receives a query for its state
@@ -128,7 +126,7 @@ Every actor with a state class SHALL have `GetSnapshot()` on its state returning
 
 #### Scenario: Internal state never sent to callers
 - **WHEN** any actor's `Receive<T>` handlers are examined
-- **THEN** no handler SHALL call `Sender.Tell(_state)` or `Sender.Tell(_state.SomeInternalCollection)` - only snapshot/response records SHALL be sent
+- **THEN** no handler SHALL call `Sender.Tell(_state)` - only snapshot/response records SHALL be sent
 
 ### Requirement: Replay-only actors skip persistence layer
 
@@ -170,3 +168,16 @@ Persistence records and state snapshots SHALL use Akka's default serializer. No 
 #### Scenario: No custom serializer registered
 - **WHEN** the Akka actor system configuration is examined
 - **THEN** it SHALL NOT contain a `WithCustomSerializer` registration for persistence types
+
+### Requirement: Mutable collections for state
+
+State classes SHALL use mutable collection types (`List<T>`, `Dictionary<TKey, TValue>`, `HashSet<T>`) for all collection properties. Akka's single-threaded mailbox guarantees safe mutation. Immutable collection types (`ImmutableList<T>`, `ImmutableDictionary<TKey, TValue>`) SHALL NOT be used in state classes.
+
+#### Scenario: RuleSetResolver uses mutable dictionaries
+- **WHEN** the RuleSetResolverState class is examined
+- **THEN** its LookupIndex SHALL be `Dictionary<string, string>` and EntriesByRuleSetId SHALL be `Dictionary<string, HashSet<string>>`
+
+#### Scenario: FeedCrawlWorkerState uses mutable lists
+- **WHEN** FeedCrawlWorkerState is examined
+- **THEN** its CollectedItems SHALL be `List<MediathekItem>` and AcceptedEntries SHALL be `List<FeedEntry>`
+

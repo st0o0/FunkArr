@@ -5,12 +5,12 @@ namespace FunkArr.RuleSet;
 
 public sealed class RuleSetResolver : ReceiveActor
 {
-    private RuleSetResolverState _state = RuleSetResolverState.Empty;
+    private readonly RuleSetResolverState _state = new();
 
     public RuleSetResolver()
     {
-        Receive<RegisterRuleSet>(msg => _state = _state.Apply(msg));
-        Receive<DeregisterRuleSet>(msg => _state = _state.Apply(msg));
+        Receive<RegisterRuleSet>(msg => _state.Apply(msg));
+        Receive<DeregisterRuleSet>(msg => _state.Apply(msg));
         Receive<ResolveRuleSet>(msg => Sender.Tell(_state.Resolve(msg)));
         Receive<QueryRegisteredRuleSets>(_ => Sender.Tell(_state.QueryAll()));
     }

@@ -303,18 +303,25 @@ no multi-actor orchestration in the lambda body.
 - **Actor naming**: `*Manager` (Cluster Singleton), `*Worker` (Sharded Entity
   or Local Entity Region), `*Actor` (everything else - pools, plain actors).
 - **Actor state pattern** (Pathfinder pattern): State in its own `<Actor>State.cs`
-  file (not nested). Extension methods `Apply(event)` / `ProcessCommand(cmd)` on
-  the state record. Actors are thin plumbing (message routing, persistence,
-  lifecycle only). State never sent to callers directly - use `GetSnapshot()` ->
-  response record, `FromSnapshot()` -> reconstruct. For persistent actors:
-  `GetPersistenceState()` -> `Persisted*State` record in
-  `FunkArr.Persistence/Events/`, `FromPersistence()` -> reconstruct.
+  file as a `sealed class` (not nested, not a record). Void instance methods
+  `Apply(event)` / `ProcessCommand(cmd)` mutate state in-place. Mutable
+  collections (`List<T>`, `Dictionary<K,V>`, `HashSet<T>`) — Akka's
+  single-threaded mailbox guarantees safe mutation. `Empty` is a property
+  (`public static XState Empty => new();`), never a shared static field.
+  Actors are thin plumbing (message routing, persistence, lifecycle only).
+  All mutable domain state lives in the state object — no leaked fields on
+  actors (dictionaries, flags, counters). Infrastructure refs (actor refs,
+  CTS, stopwatches) may stay on the actor. State never sent to callers
+  directly - use `GetSnapshot()` -> response record, `FromSnapshot()` ->
+  reconstruct. For persistent actors: `GetPersistenceState()` ->
+  `Persisted*State` record in `FunkArr.Persistence/Events/`,
+  `FromPersistence()` -> reconstruct.
   `SaveSnapshot(_state.GetPersistenceState())`, not `SaveSnapshot(_state)`.
   No Event/Dto suffix on record names, no custom serializer.
 - **Persist / DeferAsync / SaveSnapshot**: Three distinct tools, each with one job:
   - `Persist(evt, callback)` - writes event to journal, stashes incoming commands
     until callback runs. State update goes in the callback:
-    `Persist(evt, e => { _state = _state.Apply(e); })`.
+    `Persist(evt, e => { _state.Apply(e); })`.
   - `DeferAsync(evt, callback)` - runs callback **after all preceding Persist
     handlers complete**. Does NOT persist anything. The `evt` parameter is not
     persisted and not replayed on recovery - it is only passed to the callback
@@ -347,7 +354,7 @@ no multi-actor orchestration in the lambda body.
         var evt = new PersistedCreated(cmd.Id, ...);
         Persist(evt, e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             if (LastSequenceNr % SnapshotInterval == 0)
                 SaveSnapshot(_state.GetPersistenceState());
         });
@@ -365,7 +372,7 @@ no multi-actor orchestration in the lambda body.
         var evt = new PersistedPaused(...);
         Persist(evt, e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             Sender.Tell(new PauseCompleted());
         });
     }

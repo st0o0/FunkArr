@@ -1,14 +1,10 @@
-using System.Collections.Immutable;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Persistence.Events.Feed;
 
 namespace FunkArr.Feed;
 
-public sealed record FeedStoreManagerState(
-    ImmutableDictionary<string, FeedEntry> Entries,
-    ImmutableSortedSet<FeedEntry> Newest,
-    ImmutableDictionary<MediaType, ImmutableSortedSet<FeedEntry>> NewestByType)
+public sealed class FeedStoreManagerState
 {
     public static readonly IComparer<FeedEntry> NewestFirst = Comparer<FeedEntry>.Create((a, b) =>
     {
@@ -16,78 +12,79 @@ public sealed record FeedStoreManagerState(
         return byFirstSeen != 0 ? byFirstSeen : StringComparer.Ordinal.Compare(a.StableId, b.StableId);
     });
 
-    public static readonly FeedStoreManagerState Empty = new(
-        ImmutableDictionary.Create<string, FeedEntry>(StringComparer.Ordinal),
-        ImmutableSortedSet.Create(NewestFirst),
-        ImmutableDictionary<MediaType, ImmutableSortedSet<FeedEntry>>.Empty);
+    public Dictionary<string, FeedEntry> Entries { get; } = new(StringComparer.Ordinal);
+    public SortedSet<FeedEntry> Newest { get; } = new(NewestFirst);
+    public Dictionary<MediaType, SortedSet<FeedEntry>> NewestByType { get; } = [];
 
-    public static FeedStoreManagerState FromPersistence(PersistedFeedStoreState persisted) =>
-        Empty.Apply(new FeedEntriesAdded(persisted.Entries));
-}
+    public static FeedStoreManagerState Empty => new();
 
-public static class FeedStoreManagerStateExtensions
-{
-    public static FeedEntry[] NewEntries(this FeedStoreManagerState state, IEnumerable<FeedEntry> candidates) =>
+    public static FeedStoreManagerState FromPersistence(PersistedFeedStoreState persisted)
+    {
+        var state = new FeedStoreManagerState();
+        state.Apply(new FeedEntriesAdded(persisted.Entries));
+        return state;
+    }
+
+    public FeedEntry[] NewEntries(IEnumerable<FeedEntry> candidates) =>
     [
         .. candidates
-            .Where(c => !state.Entries.ContainsKey(c.StableId))
+            .Where(c => !Entries.ContainsKey(c.StableId))
             .GroupBy(c => c.StableId, StringComparer.Ordinal)
             .Select(g => g.OrderBy(c => c.FirstSeenAt).First())
     ];
 
-    public static FeedStoreManagerState Apply(this FeedStoreManagerState state, FeedEntriesAdded evt)
+    public void Apply(FeedEntriesAdded evt)
     {
-        var entries = state.Entries.ToBuilder();
-        var newest = state.Newest.ToBuilder();
-        var byType = new Dictionary<MediaType, ImmutableSortedSet<FeedEntry>.Builder>();
-
         foreach (var persisted in evt.Entries)
         {
-            if (entries.ContainsKey(persisted.StableId))
+            if (Entries.ContainsKey(persisted.StableId))
             {
                 continue;
             }
 
             var entry = persisted.ToDomain();
-            entries[entry.StableId] = entry;
-            newest.Add(entry);
-            TypeBuilder(state, byType, entry.MediaType).Add(entry);
-        }
+            Entries[entry.StableId] = entry;
+            Newest.Add(entry);
 
-        return new FeedStoreManagerState(entries.ToImmutable(), newest.ToImmutable(), Merge(state, byType));
+            if (!NewestByType.TryGetValue(entry.MediaType, out var byType))
+            {
+                byType = new SortedSet<FeedEntry>(NewestFirst);
+                NewestByType[entry.MediaType] = byType;
+            }
+
+            byType.Add(entry);
+        }
     }
 
-    public static FeedStoreManagerState Apply(this FeedStoreManagerState state, FeedEntriesExpired evt)
+    public void Apply(FeedEntriesExpired evt)
     {
-        var entries = state.Entries.ToBuilder();
-        var newest = state.Newest.ToBuilder();
-        var byType = new Dictionary<MediaType, ImmutableSortedSet<FeedEntry>.Builder>();
-
         foreach (var stableId in evt.StableIds)
         {
-            if (!entries.Remove(stableId, out var entry))
+            if (!Entries.Remove(stableId, out var entry))
             {
                 continue;
             }
 
-            newest.Remove(entry);
-            TypeBuilder(state, byType, entry.MediaType).Remove(entry);
-        }
+            Newest.Remove(entry);
 
-        return new FeedStoreManagerState(entries.ToImmutable(), newest.ToImmutable(), Merge(state, byType));
+            if (NewestByType.TryGetValue(entry.MediaType, out var byType))
+            {
+                byType.Remove(entry);
+            }
+        }
     }
 
-    public static string[] ExpiredIds(this FeedStoreManagerState state, DateTimeOffset now, TimeSpan retention)
+    public string[] ExpiredIds(DateTimeOffset now, TimeSpan retention)
     {
         var threshold = now - retention;
-        return [.. state.Newest.Reverse().TakeWhile(e => e.FirstSeenAt < threshold).Select(e => e.StableId)];
+        return [.. Newest.Reverse().TakeWhile(e => e.FirstSeenAt < threshold).Select(e => e.StableId)];
     }
 
-    public static FeedResult Query(this FeedStoreManagerState state, QueryFeed query)
+    public FeedResult Query(QueryFeed query)
     {
         IEnumerable<FeedEntry> source = query.MediaType is { } mediaType
-            ? state.ForType(mediaType)
-            : state.Newest;
+            ? NewestByType.TryGetValue(mediaType, out var byType) ? byType : []
+            : Newest;
 
         if (query.Channel is { } channel)
             source = source.Where(e => e.Channel.Contains(channel, StringComparison.OrdinalIgnoreCase));
@@ -106,31 +103,9 @@ public static class FeedStoreManagerStateExtensions
             .Take(Math.Max(0, query.Limit))
             .ToArray();
 
-        return new FeedResult(page, state.Newest.Count, filtered.Length);
+        return new FeedResult(page, Newest.Count, filtered.Length);
     }
 
-    public static PersistedFeedStoreState GetPersistenceState(this FeedStoreManagerState state) =>
-        new([.. state.Newest.Select(e => e.ToPersistence())]);
-
-    private static ImmutableSortedSet<FeedEntry> ForType(this FeedStoreManagerState state, MediaType mediaType) =>
-        state.NewestByType.TryGetValue(mediaType, out var entries) ? entries : FeedStoreManagerState.Empty.Newest;
-
-    private static ImmutableSortedSet<FeedEntry>.Builder TypeBuilder(
-        FeedStoreManagerState state,
-        Dictionary<MediaType, ImmutableSortedSet<FeedEntry>.Builder> builders,
-        MediaType mediaType)
-    {
-        if (!builders.TryGetValue(mediaType, out var builder))
-        {
-            builder = state.ForType(mediaType).ToBuilder();
-            builders[mediaType] = builder;
-        }
-
-        return builder;
-    }
-
-    private static ImmutableDictionary<MediaType, ImmutableSortedSet<FeedEntry>> Merge(
-        FeedStoreManagerState state,
-        Dictionary<MediaType, ImmutableSortedSet<FeedEntry>.Builder> builders) =>
-        builders.Aggregate(state.NewestByType, (byType, b) => byType.SetItem(b.Key, b.Value.ToImmutable()));
+    public PersistedFeedStoreState GetPersistenceState() =>
+        new([.. Newest.Select(e => e.ToPersistence())]);
 }

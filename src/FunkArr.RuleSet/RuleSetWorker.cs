@@ -23,8 +23,7 @@ public sealed class RuleSetWorker : ReceiveActor
     private readonly string _nttId;
     private readonly RuleSetStore _store;
     private readonly IRuleSetValidator _validator;
-    private DiskRuleSet? _merged;
-    private RuleSetPaths _paths = new(null, null, null, null);
+    private readonly RuleSetWorkerState _state = new();
 
     public RuleSetWorker(string nttId, RuleSetStore store, IRuleSetValidator validator)
     {
@@ -43,22 +42,22 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleLoad(LoadRuleSet msg)
     {
-        _merged = _store.LoadMerged(_nttId);
-        _paths = _store.CheckPaths(_nttId);
+        _state.Merged = _store.LoadMerged(_nttId);
+        _state.Paths = _store.CheckPaths(_nttId);
 
-        if (_merged is null)
+        if (_state.Merged is null)
         {
             _log.Warning("RuleSet '{RuleSetId}': no valid JSON found", _nttId);
             return;
         }
 
-        var identity = _merged.ToIdentity();
+        var identity = _state.Merged.ToIdentity();
         if (identity is null)
         {
             return;
         }
 
-        var config = _merged.ToMatchingConfig(_nttId);
+        var config = _state.Merged.ToMatchingConfig(_nttId);
         if (config is not null)
         {
             var scoringManager = Context.GetActor<IScoringManager>();
@@ -71,7 +70,7 @@ public sealed class RuleSetWorker : ReceiveActor
             identity.Value.Ids,
             identity.Value.MediaName, identity.Value.MediaType, identity.Value.Enrichment));
 
-        var sourceType = (_paths.CommunityPath, _paths.LocalPath) switch
+        var sourceType = (_state.Paths.CommunityPath, _state.Paths.LocalPath) switch
         {
             (not null, not null) => "merged",
             (not null, null) => "community",
@@ -86,7 +85,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleRemove(RemoveRuleSet msg)
     {
-        _merged = null;
+        _state.Merged = null;
 
         var scoringManager = Context.GetActor<IScoringManager>();
         scoringManager.Tell(new RemoveMatchingConfig(_nttId));
@@ -101,26 +100,26 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleQueryDetail(QueryRuleSetDetail msg)
     {
-        if (_merged is null)
+        if (_state.Merged is null)
         {
-            _merged = _store.LoadMerged(_nttId);
-            _paths = _store.CheckPaths(_nttId);
+            _state.Merged = _store.LoadMerged(_nttId);
+            _state.Paths = _store.CheckPaths(_nttId);
         }
 
-        if (_merged is null)
+        if (_state.Merged is null)
         {
             Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(_nttId)));
             return;
         }
 
-        var identity = _merged.ToIdentity();
+        var identity = _state.Merged.ToIdentity();
         if (identity is null)
         {
             Sender.Tell(new RuleSetDetailFailed(new RuleSetNotFoundException(_nttId)));
             return;
         }
 
-        var config = _merged.ToMatchingConfig(_nttId);
+        var config = _state.Merged.ToMatchingConfig(_nttId);
 
         Sender.Tell(new RuleSetDetailResult(
             _nttId,
@@ -128,10 +127,10 @@ public sealed class RuleSetWorker : ReceiveActor
                 identity.Value.Topic, identity.Value.Aliases,
                 identity.Value.Ids),
             new RuleSetDetailResult.RuleSetSource(
-                _paths.CommunityPath, _paths.LocalPath,
-                _paths.CommunityModified, _paths.LocalModified),
+                _state.Paths.CommunityPath, _state.Paths.LocalPath,
+                _state.Paths.CommunityModified, _state.Paths.LocalModified),
             config?.DefaultConfidence ?? 0f,
-            _merged.ToDetailRules(),
+            _state.Merged.ToDetailRules(),
             identity.Value.Enrichment));
     }
 
@@ -195,7 +194,7 @@ public sealed class RuleSetWorker : ReceiveActor
         }
         else
         {
-            _merged = null;
+            _state.Merged = null;
             var scoringManager = Context.GetActor<IScoringManager>();
             scoringManager.Tell(new RemoveMatchingConfig(_nttId));
 

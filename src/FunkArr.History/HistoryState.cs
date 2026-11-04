@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using FunkArr.Messages.History;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
@@ -6,13 +5,13 @@ using FunkArr.Persistence.Events.ScoringHistory;
 
 namespace FunkArr.History;
 
-public sealed record HistoryState(
-    ImmutableList<HistoryState.HistoryEntry> Snapshots,
-    ScoringStatsResult Stats)
+public sealed class HistoryState
 {
-    public static readonly HistoryState Empty = new(
-        ImmutableList<HistoryEntry>.Empty,
-        new ScoringStatsResult(null, null));
+    public List<HistoryEntry> Snapshots { get; } = [];
+
+    public ScoringStatsResult Stats { get; private set; } = new(null, null);
+
+    public static HistoryState Empty => new();
 
     public sealed record HistoryEntry(
         Guid RequestId,
@@ -25,7 +24,8 @@ public sealed record HistoryState(
 
     public static HistoryState FromPersistence(PersistedHistoryState persisted)
     {
-        var snapshots = persisted.Entries
+        var state = new HistoryState();
+        state.Snapshots.AddRange(persisted.Entries
             .Select(e => new HistoryEntry(
                 e.RequestId,
                 new ScoringOrigin(e.Source.ToDomain(), e.Query),
@@ -33,13 +33,13 @@ public sealed record HistoryState(
                 e.CandidateCount,
                 e.MatchedCount,
                 e.EnrichedCount,
-                [.. e.ItemTraces.Select(t => t.ToDomain())]))
-            .ToImmutableList();
+                [.. e.ItemTraces.Select(t => t.ToDomain())])));
+        state.Stats = ComputeStats(state.Snapshots);
 
-        return new HistoryState(snapshots, ComputeStats(snapshots));
+        return state;
     }
 
-    internal static ScoringStatsResult ComputeStats(ImmutableList<HistoryEntry> snapshots)
+    internal static ScoringStatsResult ComputeStats(IReadOnlyList<HistoryEntry> snapshots)
     {
         if (snapshots.Count == 0)
         {
@@ -60,14 +60,9 @@ public sealed record HistoryState(
 
         return new ScoringStatsResult(lastRun, matchRate, enrichmentRate, snapshots.Count);
     }
-}
 
-public static class HistoryStateExtensions
-{
-    public static (HistoryState State, ScoringHistoryRecorded Event) ProcessCommand(
-        this HistoryState state, RecordHistory cmd)
-    {
-        var evt = new ScoringHistoryRecorded(
+    public ScoringHistoryRecorded ProcessCommand(RecordHistory cmd) =>
+        new(
             cmd.RequestId,
             cmd.Origin.Source.ToPersistence(),
             cmd.Origin.Query,
@@ -77,52 +72,43 @@ public static class HistoryStateExtensions
             cmd.EnrichedCount,
             [.. cmd.ItemTraces.Select(t => t.ToPersistence())]);
 
-        return (state.Apply(evt), evt);
-    }
-
-    public static HistoryState Apply(this HistoryState state, ScoringHistoryRecorded evt)
+    public void Apply(ScoringHistoryRecorded evt)
     {
-        var snapshot = new HistoryState.HistoryEntry(
+        Snapshots.Add(new HistoryEntry(
             evt.RequestId,
             new ScoringOrigin(evt.Source.ToDomain(), evt.Query),
             evt.Timestamp,
             evt.CandidateCount,
             evt.MatchedCount,
             evt.EnrichedCount,
-            [.. evt.ItemTraces.Select(t => t.ToDomain())]);
-
-        var snapshots = state.Snapshots.Add(snapshot);
-        var stats = HistoryState.ComputeStats(snapshots);
-
-        return new HistoryState(snapshots, stats);
+            [.. evt.ItemTraces.Select(t => t.ToDomain())]));
+        Stats = ComputeStats(Snapshots);
     }
 
-    public static HistoryState Trim(this HistoryState state, int maxSnapshots, int maxAgeDays)
+    public void Trim(int maxSnapshots, int maxAgeDays)
     {
         var cutoff = DateTimeOffset.UtcNow.AddDays(-maxAgeDays);
-        var trimmed = state.Snapshots
-            .Where(s => s.Timestamp >= cutoff)
-            .ToImmutableList();
+        var trimmed = Snapshots.Where(s => s.Timestamp >= cutoff).ToList();
 
         if (trimmed.Count > maxSnapshots)
         {
-            trimmed = [.. trimmed.Skip(trimmed.Count - maxSnapshots)];
+            trimmed = trimmed.Skip(trimmed.Count - maxSnapshots).ToList();
         }
 
-        if (trimmed.Count == state.Snapshots.Count)
+        if (trimmed.Count == Snapshots.Count)
         {
-            return state;
+            return;
         }
 
-        return new HistoryState(trimmed, HistoryState.ComputeStats(trimmed));
+        Snapshots.Clear();
+        Snapshots.AddRange(trimmed);
+        Stats = ComputeStats(Snapshots);
     }
 
-    public static ScoringHistoryResult QueryHistory(
-        this HistoryState state, QueryScoringHistory query)
+    public ScoringHistoryResult QueryHistory(QueryScoringHistory query)
     {
-        var total = state.Snapshots.Count;
-        var page = state.Snapshots
-            .Reverse()
+        var total = Snapshots.Count;
+        var page = Enumerable.Reverse(Snapshots)
             .Skip(query.Offset)
             .Take(query.Limit)
             .Select(s => new ScoringSnapshotSummary(
@@ -137,9 +123,9 @@ public static class HistoryStateExtensions
         return new ScoringHistoryResult(query.HistoryId, total, page);
     }
 
-    public static ScoringDetailResponse QueryDetail(this HistoryState state, QueryScoringDetail query)
+    public ScoringDetailResponse QueryDetail(QueryScoringDetail query)
     {
-        var snapshot = state.Snapshots.FirstOrDefault(s => s.RequestId == query.RequestId);
+        var snapshot = Snapshots.FirstOrDefault(s => s.RequestId == query.RequestId);
         if (snapshot is null)
         {
             return new ScoringDetailFailed(new KeyNotFoundException($"Scoring detail {query.RequestId} not found"));
@@ -153,12 +139,11 @@ public static class HistoryStateExtensions
             snapshot.ItemTraces);
     }
 
-    public static PersistedHistoryState GetSnapshot(this HistoryState state) =>
-        state.GetPersistenceState();
+    public PersistedHistoryState GetSnapshot() => GetPersistenceState();
 
-    public static PersistedHistoryState GetPersistenceState(this HistoryState state) =>
+    public PersistedHistoryState GetPersistenceState() =>
         new([
-            .. state.Snapshots
+            .. Snapshots
                 .Select(s => new ScoringHistoryRecorded(
                     s.RequestId,
                     s.Origin.Source.ToPersistence(),

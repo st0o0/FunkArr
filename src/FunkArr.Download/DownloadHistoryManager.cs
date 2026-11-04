@@ -45,12 +45,12 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
         {
             if (offer.Snapshot is PersistedDownloadHistoryManagerState persisted)
             {
-                _state = DownloadHistoryManagerStateExtensions.FromPersistence(persisted);
+                _state = DownloadHistoryManagerState.FromPersistence(persisted);
             }
         });
-        Recover<DownloadHistoryRecorded>(evt => _state = _state.Apply(evt));
-        Recover<HistoryRemoved>(evt => _state = _state.Apply(evt));
-        Recover<HistoryTrimmed>(evt => _state = _state.Apply(evt));
+        Recover<DownloadHistoryRecorded>(evt => _state.Apply(evt));
+        Recover<HistoryRemoved>(evt => _state.Apply(evt));
+        Recover<HistoryTrimmed>(evt => _state.Apply(evt));
     }
 
     private void HandleRecord(RecordDownload cmd)
@@ -65,14 +65,13 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
         Persist(evt, e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
 
             var maxRecords = _optionsMonitor.CurrentValue.MaxHistoryRecords;
-            var (trimmed, trimCount) = _state.TrimIfNeeded(maxRecords);
+            var trimCount = _state.TrimIfNeeded(maxRecords);
             if (trimCount > 0)
             {
-                var trimEvt = new HistoryTrimmed(trimCount);
-                Persist(trimEvt, t => _state = _state.Apply(t));
+                Persist(new HistoryTrimmed(trimCount), _ => { });
             }
 
             MaybeSnapshot();
@@ -103,7 +102,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
         Persist(new HistoryRemoved(cmd.DownloadId), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             Sender.Tell(new DeleteDownloadResult(true, null));
         });

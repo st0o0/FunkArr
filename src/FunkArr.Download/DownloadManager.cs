@@ -22,14 +22,13 @@ public sealed class DownloadManager : ReceivePersistentActor
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadRegion = Context.GetActor<IDownloadRegion>();
     private readonly IMaterializer _materializer = Context.Materializer();
-    private int _maxConcurrent;
     private DownloadManagerState _state = DownloadManagerState.Empty;
 
     public override string PersistenceId => "download-manager";
 
     public DownloadManager(IOptionsMonitor<DownloadOptions> options)
     {
-        _maxConcurrent = options.CurrentValue.ConcurrentDownloads;
+        _state.MaxConcurrent = options.CurrentValue.ConcurrentDownloads;
 
         Command<AddDownload>(HandleAdd);
         Command<SlotFree>(HandleSlotFree);
@@ -52,17 +51,17 @@ public sealed class DownloadManager : ReceivePersistentActor
                 _state = DownloadManagerState.FromPersistence(persisted);
             }
         });
-        Recover<DownloadEnqueued>(evt => _state = _state.Apply(evt));
-        Recover<DownloadDispatched>(evt => _state = _state.Apply(evt));
-        Recover<DownloadDequeued>(evt => _state = _state.Apply(evt));
-        Recover<DownloadMoved>(evt => _state = _state.Apply(evt));
-        Recover<DownloadSwapped>(evt => _state = _state.Apply(evt));
-        Recover<DownloadPriorityChanged>(evt => _state = _state.Apply(evt));
-        Recover<DownloadsPaused>(evt => _state = _state.Apply(evt));
-        Recover<DownloadsResumed>(evt => _state = _state.Apply(evt));
+        Recover<DownloadEnqueued>(evt => _state.Apply(evt));
+        Recover<DownloadDispatched>(evt => _state.Apply(evt));
+        Recover<DownloadDequeued>(evt => _state.Apply(evt));
+        Recover<DownloadMoved>(evt => _state.Apply(evt));
+        Recover<DownloadSwapped>(evt => _state.Apply(evt));
+        Recover<DownloadPriorityChanged>(evt => _state.Apply(evt));
+        Recover<DownloadsPaused>(evt => _state.Apply(evt));
+        Recover<DownloadsResumed>(evt => _state.Apply(evt));
         Recover<RecoveryCompleted>(_ =>
         {
-            _state = _state.ResetDispatched();
+            _state.ResetDispatched();
             UpdateGauges();
             DispatchNext();
         });
@@ -83,7 +82,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         options.OnChange(opts => self.Tell(new ConcurrencyChanged(opts.ConcurrentDownloads)));
         Command<ConcurrencyChanged>(msg =>
         {
-            _maxConcurrent = msg.Limit;
+            _state.MaxConcurrent = msg.Limit;
             DispatchNext();
         });
     }
@@ -95,7 +94,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         _log.Info("Enqueuing download {DownloadId}: {Title} (channel: {Channel})", downloadId, cmd.Media.Title, cmd.Media.Channel);
         Persist(new DownloadEnqueued(downloadId, cmd.Priority.ToPersistence(), cmd.Media.Category.ToPersistence()), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
 
             _downloadRegion.Tell(new InitDownload(downloadId, cmd.Media));
@@ -118,7 +117,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         _log.Info("Download {DownloadId} slot freed", msg.DownloadId);
         Persist(new DownloadDequeued(msg.DownloadId), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             _log.Debug("Queue depth: {Queued} queued, {Dispatched} dispatched", _state.Queued.Count, _state.Dispatched.Count);
             UpdateGauges();
@@ -132,12 +131,12 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         if (pageIds.Length == 0)
         {
-            Sender.Tell(new QueueResult([], _maxConcurrent, totalItems,
+            Sender.Tell(new QueueResult([], _state.MaxConcurrent, totalItems,
                 _state.Paused, _state.ScheduleEnabled, _state.NextWindow));
             return;
         }
 
-        var maxConcurrent = _maxConcurrent;
+        var maxConcurrent = _state.MaxConcurrent;
         var state = _state;
 
         Source.From(pageIds)
@@ -173,7 +172,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         Persist(new DownloadDequeued(cmd.DownloadId), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
         });
         DeferAsync("notify", _ =>
@@ -195,7 +194,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         Persist(new DownloadEnqueued(cmd.DownloadId, DownloadPriority.Normal.ToPersistence()), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             _downloadRegion.Tell(new ResetDownload(cmd.DownloadId));
             Context.GetActor<IDownloadHistoryManager>().Tell(new RemoveHistoryEntry(cmd.DownloadId), ActorRefs.NoSender);
@@ -214,7 +213,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         Persist(new DownloadsPaused(), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             Telemetry.Paused.Record(true ? 1 : 0);
             _log.Info("Downloads paused by user");
@@ -232,7 +231,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         Persist(new DownloadsResumed(), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             Telemetry.Paused.Record(false ? 1 : 0);
             _log.Info("Downloads resumed by user");
@@ -257,7 +256,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         Persist(new DownloadDispatched(cmd.DownloadId), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             _log.Info("Force-starting download {DownloadId}", cmd.DownloadId);
         });
@@ -281,10 +280,10 @@ public sealed class DownloadManager : ReceivePersistentActor
             var prioEvt = new DownloadPriorityChanged(cmd.DownloadId, newPriority.ToPersistence());
             Persist(prioEvt, e =>
             {
-                _state = _state.Apply(e);
+                _state.Apply(e);
                 Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), m =>
                 {
-                    _state = _state.Apply(m);
+                    _state.Apply(m);
                     MaybeSnapshot();
                     _log.Info("Moved download {DownloadId} to position {Position} with priority {Priority}", cmd.DownloadId, cmd.Position, newPriority);
                 });
@@ -295,7 +294,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             Persist(new DownloadMoved(cmd.DownloadId, cmd.Position), e =>
             {
-                _state = _state.Apply(e);
+                _state.Apply(e);
                 MaybeSnapshot();
                 _log.Info("Moved download {DownloadId} to position {Position}", cmd.DownloadId, cmd.Position);
                 Sender.Tell(new MoveDownloadCompleted());
@@ -322,7 +321,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         Persist(new DownloadSwapped(cmd.DownloadId1, cmd.DownloadId2), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             _log.Info("Swapped downloads {Id1} and {Id2}", cmd.DownloadId1, cmd.DownloadId2);
             Sender.Tell(new SwapDownloadsCompleted());
@@ -346,7 +345,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         Persist(new DownloadPriorityChanged(cmd.DownloadId, cmd.Priority.ToPersistence()), e =>
         {
-            _state = _state.Apply(e);
+            _state.Apply(e);
             MaybeSnapshot();
             _log.Info("Changed download {DownloadId} priority to {Priority}", cmd.DownloadId, cmd.Priority);
             Sender.Tell(new SetDownloadPriorityCompleted());
@@ -356,14 +355,16 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void HandleScheduleEnabled(ScheduleEnabled _)
     {
-        _state = _state with { ScheduleEnabled = true, NextWindow = null };
+        _state.ScheduleEnabled = true;
+        _state.NextWindow = null;
         _log.Info("Download schedule enabled");
         DispatchNext();
     }
 
     private void HandleScheduleDisabled(ScheduleDisabled msg)
     {
-        _state = _state with { ScheduleEnabled = false, NextWindow = msg.NextWindow };
+        _state.ScheduleEnabled = false;
+        _state.NextWindow = msg.NextWindow;
         _log.Info("Download schedule disabled, next window: {NextWindow}", msg.NextWindow);
     }
 
@@ -376,7 +377,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
         var toDispatch = new List<Guid>();
 
-        while (_state.Dispatched.Count + toDispatch.Count < _maxConcurrent)
+        while (_state.Dispatched.Count + toDispatch.Count < _state.MaxConcurrent)
         {
             var dispatching = toDispatch.ToHashSet();
             var next = _state.Queued.FirstOrDefault(e => !dispatching.Contains(e.Id));
@@ -395,7 +396,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         }
 
         var events = toDispatch.Select(id => new DownloadDispatched(id)).ToArray();
-        PersistAll(events, evt => _state = _state.Apply(evt));
+        PersistAll(events, evt => _state.Apply((DownloadDispatched)evt));
         UpdateGauges();
 
         foreach (var downloadId in toDispatch)

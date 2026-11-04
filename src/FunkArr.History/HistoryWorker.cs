@@ -34,17 +34,18 @@ public sealed class HistoryWorker : ReceivePersistentActor
 
         Recover<ScoringHistoryRecorded>(evt =>
         {
-            _state = _state.Apply(evt);
+            _state.Apply(evt);
         });
 
         Command<RecordHistory>(cmd =>
         {
-            var (newState, evt) = _state.ProcessCommand(cmd);
+            var evt = _state.ProcessCommand(cmd);
             Persist(evt, _ =>
             {
                 var opts = _optionsMonitor.CurrentValue;
-                var beforeCount = newState.Snapshots.Count;
-                _state = newState.Trim(opts.MaxSnapshots, opts.MaxAgeDays);
+                _state.Apply(evt);
+                var beforeCount = _state.Snapshots.Count;
+                _state.Trim(opts.MaxSnapshots, opts.MaxAgeDays);
                 var trimCount = beforeCount - _state.Snapshots.Count;
 
                 if (trimCount > 0)
@@ -93,6 +94,6 @@ public sealed class HistoryWorker : ReceivePersistentActor
     protected override void OnReplaySuccess()
     {
         var opts = _optionsMonitor.CurrentValue;
-        _state = _state.Trim(opts.MaxSnapshots, opts.MaxAgeDays);
+        _state.Trim(opts.MaxSnapshots, opts.MaxAgeDays);
     }
 }

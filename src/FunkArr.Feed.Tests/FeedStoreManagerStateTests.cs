@@ -8,8 +8,12 @@ public sealed class FeedStoreManagerStateTests
 {
     private static readonly DateTimeOffset _t0 = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
 
-    private static FeedStoreManagerState With(params FeedEntry[] entries) =>
-        FeedStoreManagerState.Empty.Apply(new FeedEntriesAdded([.. entries.Select(e => e.ToPersistence())]));
+    private static FeedStoreManagerState With(params FeedEntry[] entries)
+    {
+        var state = new FeedStoreManagerState();
+        state.Apply(new FeedEntriesAdded([.. entries.Select(e => e.ToPersistence())]));
+        return state;
+    }
 
     [Fact]
     public void NewEntries_skips_known_ids_and_keeps_earliest_duplicate()
@@ -34,7 +38,7 @@ public sealed class FeedStoreManagerStateTests
     {
         var state = With(TestData.Entry("a", _t0));
 
-        state = state.Apply(new FeedEntriesAdded([TestData.Entry("a", _t0.AddDays(1)).ToPersistence()]));
+        state.Apply(new FeedEntriesAdded([TestData.Entry("a", _t0.AddDays(1)).ToPersistence()]));
 
         var entry = Assert.Single(state.Entries.Values);
         Assert.Equal(_t0, entry.FirstSeenAt);
@@ -76,7 +80,8 @@ public sealed class FeedStoreManagerStateTests
         var expired = state.ExpiredIds(_t0, TimeSpan.FromDays(14));
 
         Assert.Equal("old", Assert.Single(expired));
-        Assert.Equal("fresh", Assert.Single(state.Apply(new FeedEntriesExpired(expired)).Entries.Keys));
+        state.Apply(new FeedEntriesExpired(expired));
+        Assert.Equal("fresh", Assert.Single(state.Entries.Keys));
     }
 
     [Fact]
@@ -88,7 +93,7 @@ public sealed class FeedStoreManagerStateTests
             TestData.Entry("a", _t0),
             TestData.Entry("movie", _t0.AddHours(1), MediaType.Movie));
 
-        state = state.Apply(new FeedEntriesExpired(state.ExpiredIds(_t0, TimeSpan.FromDays(14))));
+        state.Apply(new FeedEntriesExpired(state.ExpiredIds(_t0, TimeSpan.FromDays(14))));
 
         var shows = state.Query(new QueryFeed(MediaType.Show, 0, 10));
         var all = state.Query(new QueryFeed(null, 0, 10));
@@ -122,10 +127,11 @@ public sealed class FeedStoreManagerStateTests
             TestData.Entry("ard", _t0),
             TestData.Entry("zdf", _t0.AddHours(1)));
 
+        var ardEntry = state.Entries["ard"];
         var zdfEntry = state.Entries["zdf"] with { Channel = "ZDF" };
-        state = FeedStoreManagerState.Empty
-            .Apply(new FeedEntriesAdded([state.Entries["ard"].ToPersistence()]));
-        state = state.Apply(new FeedEntriesAdded([zdfEntry.ToPersistence()]));
+        state = new FeedStoreManagerState();
+        state.Apply(new FeedEntriesAdded([ardEntry.ToPersistence()]));
+        state.Apply(new FeedEntriesAdded([zdfEntry.ToPersistence()]));
 
         var result = state.Query(new QueryFeed(null, 0, 10, Channel: "ZDF"));
 

@@ -9,7 +9,8 @@ public sealed class FeedCrawlManagerStateTests
     [Fact]
     public void Completed_run_advances_cursor()
     {
-        var state = FeedCrawlManagerState.Empty.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, false));
+        var state = new FeedCrawlManagerState();
+        state.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, false));
 
         Assert.Multiple(
             () => Assert.Equal(500, state.Cursor),
@@ -21,7 +22,8 @@ public sealed class FeedCrawlManagerStateTests
     [Fact]
     public void Completed_with_gap()
     {
-        var state = FeedCrawlManagerState.Empty.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, true));
+        var state = new FeedCrawlManagerState();
+        state.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, true));
 
         Assert.Equal("completed_with_gap", state.LastOutcome);
     }
@@ -29,10 +31,10 @@ public sealed class FeedCrawlManagerStateTests
     [Fact]
     public void Completed_partial_advances_cursor_with_gap()
     {
-        var state = FeedCrawlManagerState.Empty
-            .Apply(new FeedRunFailed(_now, "error", 1))
-            .Apply(new FeedRunFailed(_now, "error", 2))
-            .Apply(new FeedCursorAdvanced(500, _now, 100, 10, 90, true));
+        var state = new FeedCrawlManagerState();
+        state.Apply(new FeedRunFailed(_now, "error", 1));
+        state.Apply(new FeedRunFailed(_now, "error", 2));
+        state.Apply(new FeedCursorAdvanced(500, _now, 100, 10, 90, true));
 
         Assert.Multiple(
             () => Assert.Equal(500, state.Cursor),
@@ -45,8 +47,8 @@ public sealed class FeedCrawlManagerStateTests
     [Fact]
     public void Failed_run_keeps_cursor_and_counts_failures()
     {
-        var state = (FeedCrawlManagerState.Empty with { Cursor = 100 })
-            .Apply(new FeedRunFailed(_now, "boom", 1));
+        var state = new FeedCrawlManagerState { Cursor = 100 };
+        state.Apply(new FeedRunFailed(_now, "boom", 1));
 
         Assert.Multiple(
             () => Assert.Equal(100, state.Cursor),
@@ -57,7 +59,8 @@ public sealed class FeedCrawlManagerStateTests
     [Fact]
     public void Unchanged_run_updates_timestamp_only()
     {
-        var state = FeedCrawlManagerState.Empty.WithUnchangedRun(_now);
+        var state = new FeedCrawlManagerState();
+        state.WithUnchangedRun(_now);
 
         Assert.Multiple(
             () => Assert.Equal(_now, state.LastRunAt),
@@ -68,7 +71,8 @@ public sealed class FeedCrawlManagerStateTests
     [Fact]
     public void Status_reflects_state()
     {
-        var state = FeedCrawlManagerState.Empty.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, true));
+        var state = new FeedCrawlManagerState();
+        state.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, true));
 
         var status = state.ToStatus(enabled: true, running: false);
 

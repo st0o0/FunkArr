@@ -11,7 +11,7 @@ namespace FunkArr.Search;
 public sealed class MediathekViewWebManager : ReceiveActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
-    private readonly Dictionary<Guid, IActorRef> _pending = [];
+    private readonly MediathekViewWebManagerState _state = new();
 
     private sealed record StreamRequest(string Json, Guid RequestId);
 
@@ -51,7 +51,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
         Receive<QueryMediathek>(query =>
         {
             var requestId = Guid.NewGuid();
-            _pending[requestId] = Sender;
+            _state.Pending[requestId] = Sender;
             sourceRef.OfferAsync(new StreamRequest(MediathekQueryBuilder.FromMessage(query).Build(), requestId))
                 .PipeTo(Self,
                     success: result => new OfferOutcome(requestId, result, null),
@@ -65,7 +65,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
                 return;
             }
 
-            if (!_pending.Remove(msg.RequestId, out var sender))
+            if (!_state.Pending.Remove(msg.RequestId, out var sender))
             {
                 return;
             }
@@ -82,7 +82,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
 
         Receive<StreamSuccess>(msg =>
         {
-            if (_pending.Remove(msg.RequestId, out var sender))
+            if (_state.Pending.Remove(msg.RequestId, out var sender))
             {
                 sender.Tell(new QueryMediathekCompleted(msg.Result.Items, msg.Result.Total, msg.Result.ListTimestamp));
             }
@@ -92,7 +92,7 @@ public sealed class MediathekViewWebManager : ReceiveActor
         {
             Telemetry.MediathekErrors.Up();
             _log.Warning(msg.Cause, "MediathekViewWeb query {RequestId} failed", msg.RequestId);
-            if (_pending.Remove(msg.RequestId, out var sender))
+            if (_state.Pending.Remove(msg.RequestId, out var sender))
             {
                 sender.Tell(new QueryMediathekError(msg.Cause));
             }
@@ -100,6 +100,6 @@ public sealed class MediathekViewWebManager : ReceiveActor
 
         Receive<StreamComplete>(_ =>
             throw new InvalidOperationException(
-                $"MediathekViewWeb stream completed unexpectedly, {_pending.Count} requests orphaned"));
+                $"MediathekViewWeb stream completed unexpectedly, {_state.Pending.Count} requests orphaned"));
     }
 }

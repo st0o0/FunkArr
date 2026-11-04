@@ -3,24 +3,26 @@ using FunkArr.Messages.History;
 
 namespace FunkArr.History;
 
-public sealed record StatsCollectorState(
-    ImmutableDictionary<string, ScoringStatsResult> Stats)
+public sealed class StatsCollectorState
 {
-    public static readonly StatsCollectorState Empty = new(
-        ImmutableDictionary<string, ScoringStatsResult>.Empty.WithComparers(StringComparer.Ordinal));
+    public Dictionary<string, ScoringStatsResult> Stats { get; } = new(StringComparer.Ordinal);
 
-    public static StatsCollectorState FromSnapshot(AllStatsResult snapshot) =>
-        new(snapshot.Entries.WithComparers(StringComparer.Ordinal));
-}
+    public static StatsCollectorState Empty => new();
 
-public static class StatsCollectorStateExtensions
-{
-    public static StatsCollectorState Apply(this StatsCollectorState state, UpdateStats msg) =>
-        new(state.Stats.SetItem(msg.RuleSetId, msg.Stats));
+    public static StatsCollectorState FromSnapshot(AllStatsResult snapshot)
+    {
+        var state = new StatsCollectorState();
+        foreach (var (key, value) in snapshot.Entries)
+        {
+            state.Stats[key] = value;
+        }
 
-    public static StatsCollectorState Apply(this StatsCollectorState state, RemoveStats msg) =>
-        new(state.Stats.Remove(msg.RuleSetId));
+        return state;
+    }
 
-    public static AllStatsResult GetSnapshot(this StatsCollectorState state) =>
-        new(state.Stats);
+    public void Apply(UpdateStats msg) => Stats[msg.RuleSetId] = msg.Stats;
+
+    public void Apply(RemoveStats msg) => Stats.Remove(msg.RuleSetId);
+
+    public AllStatsResult GetSnapshot() => new(Stats.ToImmutableDictionary());
 }

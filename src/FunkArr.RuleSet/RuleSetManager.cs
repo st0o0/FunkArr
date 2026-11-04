@@ -32,9 +32,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
     private readonly IDataFiles _dataFiles;
     private readonly DataPaths _dataPaths;
     private readonly TimeSpan _debounceWindow;
-    private RuleSetManagerState _state = RuleSetManagerState.Empty;
-    private ImmutableDictionary<string, WorkerSummary> _summaries =
-        ImmutableDictionary<string, WorkerSummary>.Empty.WithComparers(StringComparer.Ordinal);
+    private readonly RuleSetManagerState _state = new();
     private IFileSystemWatcher? _communityWatcher;
     private IFileSystemWatcher? _localWatcher;
 
@@ -67,7 +65,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
             _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
         }
 
-        _state = _state with { KnownRuleSets = current };
+        _state.KnownRuleSets = new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal);
         _log.Info("Initial scan: discovered {Count} rulesets", current.Count);
         Telemetry.Scans.Up();
 
@@ -83,20 +81,20 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
             _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
         }
 
-        _state = _state with { KnownRuleSets = current };
+        _state.KnownRuleSets = new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal);
         Telemetry.Scans.Up();
         _log.Info("Re-scan: discovered {Count} rulesets", current.Count);
     }
 
     private void HandleFileChanged(FileChanged msg)
     {
-        _state = _state with { PendingIds = _state.PendingIds.Add(msg.RuleSetId) };
+        _state.AddPendingId(msg.RuleSetId);
         ScheduleFlushIfNeeded();
     }
 
     private void HandleFullRescanRequested()
     {
-        _state = _state with { FullRescanRequested = true };
+        _state.FullRescanRequested = true;
         ScheduleFlushIfNeeded();
     }
 
@@ -152,7 +150,8 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
             }
         }
 
-        _state = new RuleSetManagerState(KnownRuleSets: current, FullRescanRequested: false, PendingIds: _state.PendingIds.Clear());
+        _state.KnownRuleSets = new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal);
+        _state.ClearPending();
 
         Telemetry.Scans.Up();
 
@@ -179,29 +178,25 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
                 if (hasFiles)
                 {
                     _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
-                    knownRuleSets = knownRuleSets.SetItem(id, current);
+                    knownRuleSets[id] = current;
                     added++;
                 }
             }
             else if (!hasFiles)
             {
                 _ruleSetRegion.Tell(new RuleSetWorker.RemoveRuleSet(id));
-                knownRuleSets = knownRuleSets.Remove(id);
+                knownRuleSets.Remove(id);
                 removed++;
             }
             else if (known != current)
             {
                 _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, current.CommunityPath, current.LocalPath));
-                knownRuleSets = knownRuleSets.SetItem(id, current);
+                knownRuleSets[id] = current;
                 updated++;
             }
         }
 
-        _state = _state with
-        {
-            KnownRuleSets = knownRuleSets,
-            PendingIds = _state.PendingIds.Clear()
-        };
+        _state.ClearPending();
 
         if (added > 0 || updated > 0 || removed > 0)
         {
@@ -216,34 +211,33 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
 
     private void HandleQuerySummaries()
     {
-        var entries = _summaries.Select(kv =>
+        var entries = _state.Summaries.Select(kv =>
             new RuleSetSummaryEntry(kv.Key, kv.Value.RuleCount, kv.Value.SourceType)).ToArray();
         Sender.Tell(new RuleSetSummaryResult(entries));
     }
 
     private void HandleWorkerReady(WorkerReady msg)
     {
-        _summaries = _summaries.SetItem(msg.RuleSetId, new WorkerSummary(msg.RuleCount, msg.SourceType));
-        Telemetry.Active.Record(_summaries.Count);
+        _state.Summaries[msg.RuleSetId] = new WorkerSummary(msg.RuleCount, msg.SourceType);
+        Telemetry.Active.Record(_state.Summaries.Count);
     }
 
     private void HandleWorkerRemoved(WorkerRemoved msg)
     {
-        _summaries = _summaries.Remove(msg.RuleSetId);
-        _state = _state with { KnownRuleSets = _state.KnownRuleSets.Remove(msg.RuleSetId) };
-        Telemetry.Active.Record(_summaries.Count);
+        _state.Apply(msg);
+        Telemetry.Active.Record(_state.Summaries.Count);
     }
 
     private void HandleQueryListWithStats()
     {
-        if (_summaries.IsEmpty)
+        if (_state.Summaries.Count == 0)
         {
             Sender.Tell(new RuleSetListWithStatsResult([]));
             return;
         }
 
         var historyRegion = Context.GetActor<IHistoryRegion>();
-        var summaries = _summaries;
+        var summaries = new Dictionary<string, WorkerSummary>(_state.Summaries, StringComparer.Ordinal);
 
         Source.From(summaries.Keys)
             .Select(id => new QueryScoringStats(id))
@@ -256,7 +250,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
     }
 
     private static RuleSetListWithStatsResult BuildListWithStatsResult(
-        ImmutableDictionary<string, WorkerSummary> summaries,
+        Dictionary<string, WorkerSummary> summaries,
         IImmutableList<ScoringStatsQueryResult> stats)
     {
         var statsMap = stats.ToDictionary(s => s.RuleSetId, s => s.Stats);

@@ -2,13 +2,16 @@ using FunkArr.Core;
 
 namespace FunkArr.Feed;
 
-public sealed record FeedSchedulerState(bool Enabled, TimeSpan Interval)
+public sealed class FeedSchedulerState
 {
-    public static readonly FeedSchedulerState Empty = new(true, TimeSpan.FromMinutes(15));
-}
+    public bool Enabled { get; set; } = true;
+    public TimeSpan Interval { get; set; } = TimeSpan.FromMinutes(15);
 
-public static class FeedSchedulerStateExtensions
-{
-    public static FeedSchedulerState Apply(this FeedSchedulerState state, FeedOptions options) =>
-        state with { Enabled = options.Enabled, Interval = options.Interval };
+    public static FeedSchedulerState Empty => new();
+
+    public void Apply(FeedOptions options)
+    {
+        Enabled = options.Enabled;
+        Interval = options.Interval;
+    }
 }

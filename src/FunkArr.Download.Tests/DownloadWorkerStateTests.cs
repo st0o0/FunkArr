@@ -21,13 +21,14 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Empty_is_not_initialized()
     {
-        Assert.False(DownloadWorkerState.Empty.IsInitialized);
+        Assert.False(new DownloadWorkerState().IsInitialized);
     }
 
     [Fact]
     public void Apply_Initialized_sets_metadata()
     {
-        var state = DownloadWorkerState.Empty.Apply(MakeInitialized());
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
 
         Assert.True(state.IsInitialized);
         Assert.NotNull(state.Media);
@@ -44,9 +45,9 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_Started_sets_downloading()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadStarted(_testId));
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadStarted(_testId));
 
         Assert.Equal(WorkerStatus.Downloading, state.Status);
     }
@@ -54,10 +55,10 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_Succeeded_sets_completed()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadStarted(_testId))
-            .Apply(new DownloadSucceeded(_testId, 120, 1234567890));
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadStarted(_testId));
+        state.Apply(new DownloadSucceeded(_testId, 120, 1234567890));
 
         Assert.Equal(WorkerStatus.Completed, state.Status);
     }
@@ -65,10 +66,10 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_Faulted_sets_failed_with_message()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadStarted(_testId))
-            .Apply(new DownloadFaulted(_testId, "Connection refused"));
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadStarted(_testId));
+        state.Apply(new DownloadFaulted(_testId, "Connection refused"));
 
         Assert.Equal(WorkerStatus.Failed, state.Status);
         Assert.Equal("Connection refused", state.FailMessage);
@@ -77,11 +78,11 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Re_initialize_resets_to_initialized()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadStarted(_testId))
-            .Apply(new DownloadFaulted(_testId, "Error"))
-            .Apply(MakeInitialized());
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadStarted(_testId));
+        state.Apply(new DownloadFaulted(_testId, "Error"));
+        state.Apply(MakeInitialized());
 
         Assert.Equal(WorkerStatus.Initialized, state.Status);
         Assert.Null(state.FailMessage);
@@ -90,7 +91,7 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Empty_has_zero_progress()
     {
-        var state = DownloadWorkerState.Empty;
+        var state = new DownloadWorkerState();
 
         Assert.Equal(0L, state.Progress.BytesDownloaded);
         Assert.Equal(0L, state.Progress.CurrentTimeUs);
@@ -100,12 +101,10 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Initialize_resets_progress()
     {
-        var state = DownloadWorkerState.Empty with
-        {
-            Progress = new DownloadProgress(500_000, 1_000_000, 1.5)
-        };
+        var state = new DownloadWorkerState();
+        state.Progress = new DownloadProgress(500_000, 1_000_000, 1.5);
 
-        state = state.Apply(MakeInitialized());
+        state.Apply(MakeInitialized());
 
         Assert.Equal(0L, state.Progress.BytesDownloaded);
         Assert.Equal(0L, state.Progress.CurrentTimeUs);
@@ -115,7 +114,8 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_Initialized_sets_phase_initialized()
     {
-        var state = DownloadWorkerState.Empty.Apply(MakeInitialized());
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
         Assert.Equal(DownloadPhase.Initialized, state.Phase);
         Assert.Equal(0, state.Attempt);
     }
@@ -123,9 +123,9 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_AttemptStarted_sets_attempt_and_phase()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadAttemptStarted(_testId, 1));
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadAttemptStarted(_testId, 1));
 
         Assert.Equal(1, state.Attempt);
         Assert.Equal(WorkerStatus.Downloading, state.Status);
@@ -135,11 +135,11 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_AttemptStarted_resets_progress()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadAttemptStarted(_testId, 1));
-        state = state with { Progress = new DownloadProgress(500_000, 1_000_000, 1.5) };
-        state = state.Apply(new DownloadAttemptStarted(_testId, 2));
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadAttemptStarted(_testId, 1));
+        state.Progress = new DownloadProgress(500_000, 1_000_000, 1.5);
+        state.Apply(new DownloadAttemptStarted(_testId, 2));
 
         Assert.Equal(2, state.Attempt);
         Assert.Equal(0L, state.Progress.BytesDownloaded);
@@ -150,10 +150,10 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_Faulted_sets_failure_kind()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadAttemptStarted(_testId, 1))
-            .Apply(new DownloadFaulted(_testId, "Server returned 503", PersistedFailureKind.Transient));
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadAttemptStarted(_testId, 1));
+        state.Apply(new DownloadFaulted(_testId, "Server returned 503", PersistedFailureKind.Transient));
 
         Assert.Equal(WorkerStatus.Failed, state.Status);
         Assert.Equal(FailureKind.Transient, state.LastFailureKind);
@@ -162,9 +162,9 @@ public sealed class DownloadWorkerStateTests
     [Fact]
     public void Apply_Faulted_defaults_to_permanent()
     {
-        var state = DownloadWorkerState.Empty
-            .Apply(MakeInitialized())
-            .Apply(new DownloadFaulted(_testId, "Old event without kind"));
+        var state = new DownloadWorkerState();
+        state.Apply(MakeInitialized());
+        state.Apply(new DownloadFaulted(_testId, "Old event without kind"));
 
         Assert.Equal(FailureKind.Permanent, state.LastFailureKind);
     }

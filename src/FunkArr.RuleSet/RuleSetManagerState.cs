@@ -1,16 +1,27 @@
-using System.Collections.Immutable;
+using FunkArr.Messages.RuleSet;
 
 namespace FunkArr.RuleSet;
 
-public sealed record RuleSetManagerState(
-    ImmutableDictionary<string, RuleSetPaths> KnownRuleSets,
-    ImmutableHashSet<string> PendingIds,
-    bool FullRescanRequested)
+public sealed class RuleSetManagerState
 {
-    public static readonly RuleSetManagerState Empty = new(
-        ImmutableDictionary<string, RuleSetPaths>.Empty.WithComparers(StringComparer.Ordinal),
-        ImmutableHashSet<string>.Empty.WithComparer(StringComparer.Ordinal),
-        false);
+    public Dictionary<string, RuleSetPaths> KnownRuleSets { get; set; } = new(StringComparer.Ordinal);
+    public HashSet<string> PendingIds { get; } = new(StringComparer.Ordinal);
+    public bool FullRescanRequested { get; set; }
+    internal Dictionary<string, WorkerSummary> Summaries { get; } = new(StringComparer.Ordinal);
+
+    public void Apply(WorkerRemoved msg)
+    {
+        KnownRuleSets.Remove(msg.RuleSetId);
+        Summaries.Remove(msg.RuleSetId);
+    }
+
+    public void AddPendingId(string ruleSetId) => PendingIds.Add(ruleSetId);
+
+    public void ClearPending()
+    {
+        PendingIds.Clear();
+        FullRescanRequested = false;
+    }
 }
 
 public sealed record RuleSetPaths(

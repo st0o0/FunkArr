@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.RuleSet;
@@ -6,122 +5,114 @@ using FunkArr.Messages.Shared;
 
 namespace FunkArr.RuleSet;
 
-public sealed record RuleSetResolverState(
-    ImmutableDictionary<string, string> LookupIndex,
-    ImmutableDictionary<string, ImmutableHashSet<string>> EntriesByRuleSetId,
-    ImmutableDictionary<string, string> IdIndex,
-    ImmutableDictionary<string, string> TopicByRuleSetId,
-    ImmutableDictionary<string, string> MediaNameByRuleSetId,
-    ImmutableDictionary<string, MediaType> MediaTypeByRuleSetId,
-    ImmutableDictionary<string, EnrichmentConfig> EnrichmentConfigByRuleSetId)
+public sealed class RuleSetResolverState
 {
-    public static readonly RuleSetResolverState Empty = new(
-        ImmutableDictionary.Create<string, string>(StringComparer.OrdinalIgnoreCase),
-        ImmutableDictionary<string, ImmutableHashSet<string>>.Empty,
-        ImmutableDictionary<string, string>.Empty,
-        ImmutableDictionary<string, string>.Empty,
-        ImmutableDictionary<string, string>.Empty,
-        ImmutableDictionary<string, MediaType>.Empty,
-        ImmutableDictionary<string, EnrichmentConfig>.Empty);
-}
+    public Dictionary<string, string> LookupIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, HashSet<string>> EntriesByRuleSetId { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, string> IdIndex { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, string> TopicByRuleSetId { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, string> MediaNameByRuleSetId { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, MediaType> MediaTypeByRuleSetId { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, EnrichmentConfig> EnrichmentConfigByRuleSetId { get; } = new(StringComparer.Ordinal);
 
-public static class RuleSetResolverStateExtensions
-{
-    public static RuleSetResolverState Apply(this RuleSetResolverState state, DeregisterRuleSet msg)
+    public void Apply(DeregisterRuleSet msg)
     {
-        if (!state.EntriesByRuleSetId.TryGetValue(msg.RuleSetId, out var keys))
+        if (!EntriesByRuleSetId.TryGetValue(msg.RuleSetId, out var keys))
         {
-            return state;
+            return;
         }
 
-        var lookupIndex = state.LookupIndex;
         foreach (var key in keys)
         {
-            lookupIndex = lookupIndex.Remove(key);
+            LookupIndex.Remove(key);
         }
 
-        var idIndex = RemoveIdEntries(state.IdIndex, msg.RuleSetId);
+        RemoveIdEntries(msg.RuleSetId);
 
-        return new RuleSetResolverState(
-            lookupIndex,
-            state.EntriesByRuleSetId.Remove(msg.RuleSetId),
-            idIndex,
-            state.TopicByRuleSetId.Remove(msg.RuleSetId),
-            state.MediaNameByRuleSetId.Remove(msg.RuleSetId),
-            state.MediaTypeByRuleSetId.Remove(msg.RuleSetId),
-            state.EnrichmentConfigByRuleSetId.Remove(msg.RuleSetId));
+        EntriesByRuleSetId.Remove(msg.RuleSetId);
+        TopicByRuleSetId.Remove(msg.RuleSetId);
+        MediaNameByRuleSetId.Remove(msg.RuleSetId);
+        MediaTypeByRuleSetId.Remove(msg.RuleSetId);
+        EnrichmentConfigByRuleSetId.Remove(msg.RuleSetId);
     }
 
-    public static RuleSetResolverState Apply(this RuleSetResolverState state, RegisterRuleSet msg)
+    public void Apply(RegisterRuleSet msg)
     {
-        var lookupIndex = state.LookupIndex;
-
-        if (state.EntriesByRuleSetId.TryGetValue(msg.RuleSetId, out var previousKeys))
+        if (EntriesByRuleSetId.TryGetValue(msg.RuleSetId, out var previousKeys))
         {
             foreach (var key in previousKeys)
             {
-                lookupIndex = lookupIndex.Remove(key);
+                LookupIndex.Remove(key);
             }
         }
 
-        var keys = ImmutableHashSet.Create(StringComparer.OrdinalIgnoreCase, msg.Topic);
-        lookupIndex = lookupIndex.SetItem(msg.Topic, msg.RuleSetId);
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { msg.Topic };
+        LookupIndex[msg.Topic] = msg.RuleSetId;
 
         foreach (var alias in msg.Aliases)
         {
-            lookupIndex = lookupIndex.SetItem(alias, msg.RuleSetId);
-            keys = keys.Add(alias);
+            LookupIndex[alias] = msg.RuleSetId;
+            keys.Add(alias);
         }
 
-        var idIndex = RemoveIdEntries(state.IdIndex, msg.RuleSetId);
-        idIndex = AddIdEntry(idIndex, "tvdb", msg.Ids?.TvdbId?.ToString(), msg.RuleSetId);
-        idIndex = AddIdEntry(idIndex, "imdb", msg.Ids?.ImdbId, msg.RuleSetId);
-        idIndex = AddIdEntry(idIndex, "tmdb", msg.Ids?.TmdbId?.ToString(), msg.RuleSetId);
+        RemoveIdEntries(msg.RuleSetId);
+        AddIdEntry("tvdb", msg.Ids?.TvdbId?.ToString(), msg.RuleSetId);
+        AddIdEntry("imdb", msg.Ids?.ImdbId, msg.RuleSetId);
+        AddIdEntry("tmdb", msg.Ids?.TmdbId?.ToString(), msg.RuleSetId);
 
-        var mediaNameIndex = msg.MediaName is not null
-            ? state.MediaNameByRuleSetId.SetItem(msg.RuleSetId, msg.MediaName)
-            : state.MediaNameByRuleSetId.Remove(msg.RuleSetId);
+        if (msg.MediaName is not null)
+        {
+            MediaNameByRuleSetId[msg.RuleSetId] = msg.MediaName;
+        }
+        else
+        {
+            MediaNameByRuleSetId.Remove(msg.RuleSetId);
+        }
 
-        var mediaTypeIndex = msg.MediaType is not null
-            ? state.MediaTypeByRuleSetId.SetItem(msg.RuleSetId, msg.MediaType.Value)
-            : state.MediaTypeByRuleSetId.Remove(msg.RuleSetId);
+        if (msg.MediaType is not null)
+        {
+            MediaTypeByRuleSetId[msg.RuleSetId] = msg.MediaType.Value;
+        }
+        else
+        {
+            MediaTypeByRuleSetId.Remove(msg.RuleSetId);
+        }
 
-        var enrichmentIndex = msg.Enrichment is not null
-            ? state.EnrichmentConfigByRuleSetId.SetItem(msg.RuleSetId, msg.Enrichment)
-            : state.EnrichmentConfigByRuleSetId.Remove(msg.RuleSetId);
+        if (msg.Enrichment is not null)
+        {
+            EnrichmentConfigByRuleSetId[msg.RuleSetId] = msg.Enrichment;
+        }
+        else
+        {
+            EnrichmentConfigByRuleSetId.Remove(msg.RuleSetId);
+        }
 
-        return new RuleSetResolverState(
-            lookupIndex,
-            state.EntriesByRuleSetId.SetItem(msg.RuleSetId, keys),
-            idIndex,
-            state.TopicByRuleSetId.SetItem(msg.RuleSetId, msg.Topic),
-            mediaNameIndex,
-            mediaTypeIndex,
-            enrichmentIndex);
+        EntriesByRuleSetId[msg.RuleSetId] = keys;
+        TopicByRuleSetId[msg.RuleSetId] = msg.Topic;
     }
 
-    public static ResolveRuleSetResponse Resolve(this RuleSetResolverState state, ResolveRuleSet msg)
+    public ResolveRuleSetResponse Resolve(ResolveRuleSet msg)
     {
         if (msg.TopicOrAlias is not null &&
-            state.LookupIndex.TryGetValue(msg.TopicOrAlias, out var ruleSetId))
+            LookupIndex.TryGetValue(msg.TopicOrAlias, out var ruleSetId))
         {
-            var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, msg.TopicOrAlias);
-            var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-            var enrichment = CollectionExtensions.GetValueOrDefault(state.EnrichmentConfigByRuleSetId, ruleSetId);
+            var topic = TopicByRuleSetId.GetValueOrDefault(ruleSetId, msg.TopicOrAlias);
+            var mediaName = MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
+            var enrichment = EnrichmentConfigByRuleSetId.GetValueOrDefault(ruleSetId);
             return new RuleSetResolved(ruleSetId, topic, mediaName, enrichment);
         }
 
-        if (TryResolveById(state, "tvdb", msg.Ids?.TvdbId?.ToString(), out var byTvdb))
+        if (TryResolveById("tvdb", msg.Ids?.TvdbId?.ToString(), out var byTvdb))
         {
             return byTvdb;
         }
 
-        if (TryResolveById(state, "imdb", msg.Ids?.ImdbId, out var byImdb))
+        if (TryResolveById("imdb", msg.Ids?.ImdbId, out var byImdb))
         {
             return byImdb;
         }
 
-        if (TryResolveById(state, "tmdb", msg.Ids?.TmdbId?.ToString(), out var byTmdb))
+        if (TryResolveById("tmdb", msg.Ids?.TmdbId?.ToString(), out var byTmdb))
         {
             return byTmdb;
         }
@@ -129,8 +120,7 @@ public static class RuleSetResolverStateExtensions
         return new RuleSetFailed(new RuleSetNotFoundException(msg.TopicOrAlias ?? ""));
     }
 
-    private static bool TryResolveById(
-        RuleSetResolverState state, string prefix, string? value, out RuleSetResolved resolved)
+    private bool TryResolveById(string prefix, string? value, out RuleSetResolved resolved)
     {
         resolved = null!;
         if (value is null)
@@ -139,43 +129,43 @@ public static class RuleSetResolverStateExtensions
         }
 
         var key = $"{prefix}:{value}";
-        if (!state.IdIndex.TryGetValue(key, out var ruleSetId))
+        if (!IdIndex.TryGetValue(key, out var ruleSetId))
         {
             return false;
         }
 
-        var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, "");
-        var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-        var enrichment = CollectionExtensions.GetValueOrDefault(state.EnrichmentConfigByRuleSetId, ruleSetId);
+        var topic = TopicByRuleSetId.GetValueOrDefault(ruleSetId, "");
+        var mediaName = MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
+        var enrichment = EnrichmentConfigByRuleSetId.GetValueOrDefault(ruleSetId);
         resolved = new RuleSetResolved(ruleSetId, topic, mediaName, enrichment);
         return true;
     }
 
-    private static ImmutableDictionary<string, string> RemoveIdEntries(
-        ImmutableDictionary<string, string> idIndex, string ruleSetId)
+    private void RemoveIdEntries(string ruleSetId)
     {
-        var toRemove = idIndex.Where(kv => kv.Value == ruleSetId).Select(kv => kv.Key).ToList();
+        var toRemove = IdIndex.Where(kv => kv.Value == ruleSetId).Select(kv => kv.Key).ToList();
         foreach (var key in toRemove)
         {
-            idIndex = idIndex.Remove(key);
+            IdIndex.Remove(key);
         }
-
-        return idIndex;
     }
 
-    private static ImmutableDictionary<string, string> AddIdEntry(ImmutableDictionary<string, string> idIndex,
-        string prefix, string? value, string ruleSetId)
-        => value is not null ? idIndex.SetItem($"{prefix}:{value}", ruleSetId) : idIndex;
+    private void AddIdEntry(string prefix, string? value, string ruleSetId)
+    {
+        if (value is not null)
+        {
+            IdIndex[$"{prefix}:{value}"] = ruleSetId;
+        }
+    }
 
-    public static RegisteredRuleSetsResult GetSnapshot(this RuleSetResolverState state) =>
-        state.QueryAll();
+    public RegisteredRuleSetsResult GetSnapshot() => QueryAll();
 
     public static RuleSetResolverState FromSnapshot(RegisteredRuleSetsResult snapshot)
     {
-        var state = RuleSetResolverState.Empty;
+        var state = new RuleSetResolverState();
         foreach (var entry in snapshot.Entries)
         {
-            state = state.Apply(new RegisterRuleSet(
+            state.Apply(new RegisterRuleSet(
                 entry.RuleSetId, entry.Topic, entry.Aliases,
                 entry.Ids,
                 entry.MediaName, entry.MediaType));
@@ -184,20 +174,20 @@ public static class RuleSetResolverStateExtensions
         return state;
     }
 
-    public static RegisteredRuleSetsResult QueryAll(this RuleSetResolverState state)
+    public RegisteredRuleSetsResult QueryAll()
     {
         var entries = new List<RegisteredRuleSetEntry>();
 
-        foreach (var (ruleSetId, keys) in state.EntriesByRuleSetId)
+        foreach (var (ruleSetId, keys) in EntriesByRuleSetId)
         {
-            var topic = state.TopicByRuleSetId.GetValueOrDefault(ruleSetId, "");
+            var topic = TopicByRuleSetId.GetValueOrDefault(ruleSetId, "");
             var aliases = keys.Where(k => !string.Equals(k, topic, StringComparison.OrdinalIgnoreCase)).ToArray();
 
             int? tvdbId = null;
             string? imdbId = null;
             int? tmdbId = null;
 
-            foreach (var (key, id) in state.IdIndex)
+            foreach (var (key, id) in IdIndex)
             {
                 if (id != ruleSetId)
                 {
@@ -218,8 +208,8 @@ public static class RuleSetResolverStateExtensions
                 }
             }
 
-            var mediaName = state.MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
-            MediaType? mediaType = state.MediaTypeByRuleSetId.TryGetValue(ruleSetId, out var mt) ? mt : null;
+            var mediaName = MediaNameByRuleSetId.GetValueOrDefault(ruleSetId);
+            MediaType? mediaType = MediaTypeByRuleSetId.TryGetValue(ruleSetId, out var mt) ? mt : null;
             entries.Add(new RegisteredRuleSetEntry(ruleSetId, topic, aliases, new ExternalIds(tvdbId, imdbId, tmdbId), mediaName, mediaType));
         }
 

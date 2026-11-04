@@ -17,8 +17,8 @@ public sealed class StatsCollectorStateTests
     public void Apply_UpdateStats_AddsEntry()
     {
         var stats = MakeStats();
-        var state = StatsCollectorState.Empty
-            .Apply(new UpdateStats("rs-1", stats));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new UpdateStats("rs-1", stats));
 
         Assert.Single(state.Stats);
         Assert.Equal(stats, state.Stats["rs-1"]);
@@ -30,9 +30,9 @@ public sealed class StatsCollectorStateTests
         var first = MakeStats(matchRate: 0.3);
         var second = MakeStats(matchRate: 0.7);
 
-        var state = StatsCollectorState.Empty
-            .Apply(new UpdateStats("rs-1", first))
-            .Apply(new UpdateStats("rs-1", second));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new UpdateStats("rs-1", first));
+        state.Apply(new UpdateStats("rs-1", second));
 
         Assert.Single(state.Stats);
         Assert.Equal(0.7, state.Stats["rs-1"].MatchRate);
@@ -41,9 +41,9 @@ public sealed class StatsCollectorStateTests
     [Fact]
     public void Apply_UpdateStats_MultipleRuleSets()
     {
-        var state = StatsCollectorState.Empty
-            .Apply(new UpdateStats("rs-1", MakeStats()))
-            .Apply(new UpdateStats("rs-2", MakeStats()));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new UpdateStats("rs-1", MakeStats()));
+        state.Apply(new UpdateStats("rs-2", MakeStats()));
 
         Assert.Equal(2, state.Stats.Count);
     }
@@ -51,9 +51,9 @@ public sealed class StatsCollectorStateTests
     [Fact]
     public void Apply_RemoveStats_RemovesEntry()
     {
-        var state = StatsCollectorState.Empty
-            .Apply(new UpdateStats("rs-1", MakeStats()))
-            .Apply(new RemoveStats("rs-1"));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new UpdateStats("rs-1", MakeStats()));
+        state.Apply(new RemoveStats("rs-1"));
 
         Assert.Empty(state.Stats);
     }
@@ -61,8 +61,8 @@ public sealed class StatsCollectorStateTests
     [Fact]
     public void Apply_RemoveStats_NonExistent_NoOp()
     {
-        var state = StatsCollectorState.Empty
-            .Apply(new RemoveStats("rs-nonexistent"));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new RemoveStats("rs-nonexistent"));
 
         Assert.Empty(state.Stats);
     }
@@ -70,9 +70,9 @@ public sealed class StatsCollectorStateTests
     [Fact]
     public void GetSnapshot_ReturnsAllEntries()
     {
-        var state = StatsCollectorState.Empty
-            .Apply(new UpdateStats("rs-1", MakeStats()))
-            .Apply(new UpdateStats("rs-2", MakeStats()));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new UpdateStats("rs-1", MakeStats()));
+        state.Apply(new UpdateStats("rs-2", MakeStats()));
 
         var snapshot = state.GetSnapshot();
 
@@ -85,8 +85,8 @@ public sealed class StatsCollectorStateTests
     public void FromSnapshot_RestoresState()
     {
         var stats = MakeStats(matchRate: 0.42, totalRuns: 7);
-        var state = StatsCollectorState.Empty
-            .Apply(new UpdateStats("rs-1", stats));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new UpdateStats("rs-1", stats));
 
         var snapshot = state.GetSnapshot();
         var restored = StatsCollectorState.FromSnapshot(snapshot);
@@ -99,9 +99,9 @@ public sealed class StatsCollectorStateTests
     [Fact]
     public void SnapshotRoundTrip_PreservesEntries()
     {
-        var state = StatsCollectorState.Empty
-            .Apply(new UpdateStats("rs-1", MakeStats(matchRate: 0.1)))
-            .Apply(new UpdateStats("rs-2", MakeStats(matchRate: 0.9)));
+        var state = StatsCollectorState.Empty;
+        state.Apply(new UpdateStats("rs-1", MakeStats(matchRate: 0.1)));
+        state.Apply(new UpdateStats("rs-2", MakeStats(matchRate: 0.9)));
 
         var restored = StatsCollectorState.FromSnapshot(state.GetSnapshot());
         var reSnapshot = restored.GetSnapshot();
