@@ -12,12 +12,9 @@ public sealed class DownloadSetupContainer : ISetup<IServiceCollection>, ISetup<
 {
     public void Setup(IServiceCollection services, SetupContext context)
     {
-        services.AddSingleton<IValidateOptions<DownloadOptions>, DownloadOptionsValidator>();
-
         services
-            .AddOptions<DownloadOptions>()
-            .Bind(context.Configuration.GetSection(DownloadOptions.SectionName))
-            .ValidateOnStart();
+            .AddOptionsWithValidateOnStart<DownloadOptions, DownloadOptionsValidator>()
+            .Bind(context.Configuration.GetSection(DownloadOptions.SectionName));
 
         services.AddDownloadServices(context.Configuration);
 

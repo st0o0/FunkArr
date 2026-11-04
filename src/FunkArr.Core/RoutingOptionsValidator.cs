@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Terp.Options;
 
 namespace FunkArr.Core;
 
@@ -6,7 +7,7 @@ public sealed class RoutingOptionsValidator : IValidateOptions<RoutingOptions>
 {
     public ValidateOptionsResult Validate(string? name, RoutingOptions options)
     {
-        var failures = new List<string>();
+        var failures = new ValidationFailures();
         var definedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var def in options.Definitions)
@@ -57,8 +58,6 @@ public sealed class RoutingOptionsValidator : IValidateOptions<RoutingOptions>
             }
         }
 
-        return failures.Count > 0
-            ? ValidateOptionsResult.Fail(failures)
-            : ValidateOptionsResult.Success;
+        return failures.ToResult();
     }
 }

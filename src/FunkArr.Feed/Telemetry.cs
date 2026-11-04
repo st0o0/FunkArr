@@ -30,12 +30,6 @@ internal static class Telemetry
     internal static readonly Histogram<double> CrawlDuration = _meter.CreateHistogram<double>(
         "funkarr.feed.crawl_duration_seconds", unit: "s", description: "Feed ingest run duration");
 
-    private static int _entries;
-
-    static Telemetry()
-    {
-        _meter.CreateObservableGauge("funkarr.feed.entries", () => _entries, description: "Releases currently in the feed");
-    }
-
-    internal static void SetEntries(int count) => _entries = count;
+    internal static readonly Gauge<int> Entries = _meter.CreateGauge<int>(
+        "funkarr.feed.entries", description: "Releases currently in the feed");
 }

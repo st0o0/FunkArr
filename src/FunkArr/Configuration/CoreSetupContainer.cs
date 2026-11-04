@@ -15,20 +15,16 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
     public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptions<FunkArrOptions>()
-            .Bind(context.Configuration.GetSection(FunkArrOptions.SectionName))
-            .ValidateOnStart();
+            .AddOptionsWithValidateOnStart<FunkArrOptions>()
+            .Bind(context.Configuration.GetSection(FunkArrOptions.SectionName));
 
         services
-            .AddOptions<PostgresOptions>()
+            .AddOptionsWithValidateOnStart<PostgresOptions>()
             .Bind(context.Configuration.GetSection(PostgresOptions.SectionName));
 
         services
-            .AddOptions<RoutingOptions>()
-            .Bind(context.Configuration.GetSection(RoutingOptions.SectionName))
-            .ValidateOnStart();
-
-        services.AddSingleton<IValidateOptions<RoutingOptions>, RoutingOptionsValidator>();
+            .AddOptionsWithValidateOnStart<RoutingOptions, RoutingOptionsValidator>()
+            .Bind(context.Configuration.GetSection(RoutingOptions.SectionName));
         services.AddSingleton<IRouteResolver, RouteResolver>();
 
         services.ConfigureHttpJsonOptions(options =>

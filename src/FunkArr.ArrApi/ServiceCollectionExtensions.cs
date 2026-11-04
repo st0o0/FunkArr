@@ -12,9 +12,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddArrApiServices(this IServiceCollection services, IConfiguration configuration)
     {
         services
-            .AddOptions<ArrApiOptions>()
-            .Bind(configuration.GetSection(ArrApiOptions.SectionName))
-            .ValidateOnStart();
+            .AddOptionsWithValidateOnStart<ArrApiOptions>()
+            .Bind(configuration.GetSection(ArrApiOptions.SectionName));
 
         services.AddSingleton<SearchResultCache>(sp =>
         {

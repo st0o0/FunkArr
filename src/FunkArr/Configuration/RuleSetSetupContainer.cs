@@ -10,9 +10,8 @@ public sealed class RuleSetSetupContainer : ISetup<IServiceCollection>, ISetup<W
     public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptions<RuleSetUpdaterOptions>()
-            .Bind(context.Configuration.GetSection(RuleSetUpdaterOptions.SectionName))
-            .ValidateOnStart();
+            .AddOptionsWithValidateOnStart<RuleSetUpdaterOptions>()
+            .Bind(context.Configuration.GetSection(RuleSetUpdaterOptions.SectionName));
 
         services.AddSingleton<IRuleSetValidator, RuleSetValidator>();
         services.AddSingleton<RuleSetStore>();

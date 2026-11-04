@@ -7,15 +7,15 @@ namespace FunkArr.Configuration;
 
 public sealed class EnrichmentSetupContainer : ISetup<IServiceCollection>
 {
-    public void Setup(IServiceCollection services, SetupContext _)
+    public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptions<TvdbOptions>()
-            .BindConfiguration(TvdbOptions.SectionName);
+            .AddOptionsWithValidateOnStart<TvdbOptions>()
+            .Bind(context.Configuration.GetSection(TvdbOptions.SectionName));
 
         services
-            .AddOptions<TmdbOptions>()
-            .BindConfiguration(TmdbOptions.SectionName);
+            .AddOptionsWithValidateOnStart<TmdbOptions>()
+            .Bind(context.Configuration.GetSection(TmdbOptions.SectionName));
 
         services.AddHttpClient<TvdbClient>(client =>
         {

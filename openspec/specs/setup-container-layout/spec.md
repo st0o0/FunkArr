@@ -16,7 +16,7 @@ Each domain SHALL own a single SetupContainer that registers its DI services, op
 
 #### Scenario: Domain container registers its options
 - **WHEN** a domain needs configuration options (e.g. ScoringOptions)
-- **THEN** those options SHALL be bound in the domain's own SetupContainer
+- **THEN** those options SHALL be registered via `AddOptionsWithValidateOnStart<T>()` or `AddOptionsWithValidateOnStart<T, TValidator>()` in the domain's own SetupContainer
 - **AND** NOT in another domain's container
 
 #### Scenario: Domain container maps its endpoints
@@ -25,12 +25,14 @@ Each domain SHALL own a single SetupContainer that registers its DI services, op
 - **AND** NOT in ApplicationSetupContainer or another domain's container
 
 ### Requirement: CoreSetupContainer owns cross-cutting infrastructure
-CoreSetupContainer SHALL register infrastructure shared across domains: FunkArrOptions, PostgresOptions, DataPaths, IDataFiles, IFileSystem, RoutingOptions, IRouteResolver, JSON serializer config, and directory health checks.
+CoreSetupContainer SHALL register infrastructure shared across domains: FunkArrOptions, PostgresOptions, DataPaths, IDataFiles, IFileSystem, RoutingOptions, IRouteResolver, JSON serializer config, and directory health checks. Options SHALL be registered via `AddOptionsWithValidateOnStart<T>()` or `AddOptionsWithValidateOnStart<T, TValidator>()`.
 
 #### Scenario: Core registrations
 - **WHEN** CoreSetupContainer is invoked
-- **THEN** it SHALL register FunkArrOptions, PostgresOptions, DataPaths, IDataFiles, IFileSystem, RoutingOptions with validators, IRouteResolver, and directory health checks
-- **AND** it SHALL NOT register any domain-specific services or actors
+- **THEN** it SHALL register `FunkArrOptions` via `AddOptionsWithValidateOnStart<FunkArrOptions>().Bind(...)`
+- **AND** `PostgresOptions` via `AddOptionsWithValidateOnStart<PostgresOptions>().Bind(...)`
+- **AND** `RoutingOptions` via `AddOptionsWithValidateOnStart<RoutingOptions, RoutingOptionsValidator>().Bind(...)`
+- **AND** it SHALL NOT contain a separate `AddSingleton<IValidateOptions<RoutingOptions>>` call
 
 ### Requirement: AkkaSetupContainer owns only actor system infrastructure
 AkkaSetupContainer SHALL configure the actor system name, persistence provider, remoting, and clustering. It SHALL NOT register any domain-specific actors.

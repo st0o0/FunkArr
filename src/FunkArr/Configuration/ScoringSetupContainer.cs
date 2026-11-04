@@ -8,18 +8,15 @@ public sealed class ScoringSetupContainer : ISetup<IServiceCollection>
     public void Setup(IServiceCollection services, SetupContext context)
     {
         services
-            .AddOptions<ScoringOptions>()
-            .Bind(context.Configuration.GetSection(ScoringOptions.SectionName))
-            .ValidateOnStart();
+            .AddOptionsWithValidateOnStart<ScoringOptions>()
+            .Bind(context.Configuration.GetSection(ScoringOptions.SectionName));
 
         services
-            .AddOptions<VariantOptions>()
-            .Bind(context.Configuration.GetSection(VariantOptions.SectionName))
-            .ValidateOnStart();
+            .AddOptionsWithValidateOnStart<VariantOptions>()
+            .Bind(context.Configuration.GetSection(VariantOptions.SectionName));
 
         services
-            .AddOptions<ScoringHistoryOptions>()
-            .Bind(context.Configuration.GetSection(ScoringHistoryOptions.SectionName))
-            .ValidateOnStart();
+            .AddOptionsWithValidateOnStart<ScoringHistoryOptions>()
+            .Bind(context.Configuration.GetSection(ScoringHistoryOptions.SectionName));
     }
 }

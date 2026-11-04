@@ -58,7 +58,7 @@ The system SHALL define a `DownloadTimeSlot` class with `Start` (TimeOnly, requi
 - **THEN** it SHALL represent a download window from 23:00 to 02:00 (over midnight)
 
 ### Requirement: DownloadOptions validation
-The system SHALL validate `DownloadOptions` on startup using `IValidateOptions<DownloadOptions>`. Validation SHALL reject `DownloadTimeSlot` entries where `Start == End`.
+The system SHALL validate `DownloadOptions` on startup using `IValidateOptions<DownloadOptions>` registered via `AddOptionsWithValidateOnStart<DownloadOptions, DownloadOptionsValidator>()`. The validator SHALL use `Terp.Options.ValidationFailures` to collect failures. Validation SHALL reject `DownloadTimeSlot` entries where `Start == End`.
 
 #### Scenario: Valid configuration
 - **WHEN** `DownloadSchedule` contains slots with `Start != End`
@@ -66,5 +66,6 @@ The system SHALL validate `DownloadOptions` on startup using `IValidateOptions<D
 
 #### Scenario: Zero-length time slot
 - **WHEN** a `DownloadTimeSlot` has `Start == End`
-- **THEN** validation SHALL fail with message indicating which slot is invalid
+- **THEN** validation SHALL fail with message `"DownloadSchedule[{i}]: Start and End must differ (both are {slot.Start})."`
+- **AND** the message text SHALL be identical to the current output
 
