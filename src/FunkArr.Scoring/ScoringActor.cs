@@ -12,7 +12,7 @@ public sealed class ScoringActor : ReceiveActor
 
     private void Handle(ExecuteScoring msg)
     {
-        var (scored, itemTraces) = ScoringEngine.Score(msg.Config, msg.Items);
-        Sender.Tell(new ScoreCompleted(msg.RequestId, scored, itemTraces));
+        var result = ScoringEngine.Score(msg.Config, msg.Items);
+        Sender.Tell(new ScoreCompleted(msg.RequestId, result.Scored, result.Traces));
     }
 }

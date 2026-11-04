@@ -7,6 +7,7 @@ using FunkArr.Api;
 using FunkArr.Api.Infrastructure;
 using FunkArr.ArrApi;
 using FunkArr.Core;
+using FunkArr.Messages;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.TestHost;
@@ -150,6 +151,7 @@ public sealed class FunkArrFixture : IAsyncLifetime
         Register<IDownloadScheduler>();
         Register<IFeedStoreManager>();
         Register<IFeedCrawlManager>();
+        Register<ITestScoringRegion>();
 
         return probes;
 

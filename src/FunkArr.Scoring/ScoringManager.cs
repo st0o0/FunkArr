@@ -12,7 +12,7 @@ public sealed class ScoringManager : ReceiveActor
 {
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _router;
-    private ScoringManagerState _state = ScoringManagerState.Empty;
+    private readonly ScoringManagerState _state = ScoringManagerState.Empty;
 
     public ScoringManager(IOptionsMonitor<ScoringOptions> optionsMonitor)
     {
