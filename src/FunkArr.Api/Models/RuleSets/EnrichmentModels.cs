@@ -1,4 +1,6 @@
-namespace FunkArr.Api.Models;
+using FunkArr.Api.Models.Scoring;
+
+namespace FunkArr.Api.Models.RuleSets;
 
 public enum EnrichmentMethod
 {

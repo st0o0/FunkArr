@@ -1,8 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.Setup;
 
-namespace FunkArr.Api;
+namespace FunkArr.Api.Infrastructure;
 
 public sealed class ArrSetupClient(HttpClient httpClient)
 {

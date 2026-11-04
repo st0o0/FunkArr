@@ -2,12 +2,9 @@ using Akka.Actor;
 using Akka.Event;
 using Akka.Routing;
 using FunkArr.Core;
-using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
-using FunkArr.Messages.Search;
-using FunkArr.Messages.Shared;
 using Terp.Akka;
 
 namespace FunkArr.Feed;

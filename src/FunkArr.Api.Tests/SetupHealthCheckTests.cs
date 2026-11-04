@@ -1,5 +1,5 @@
 using System.IO.Abstractions;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.System;
 using FunkArr.Core;
 using Microsoft.Extensions.Logging.Abstractions;
 

@@ -1,4 +1,4 @@
-using FunkArr.Api;
+using FunkArr.Api.Infrastructure;
 using FunkArr.ArrApi;
 using Terp.Hosting;
 
@@ -16,6 +16,6 @@ public sealed class ArrApiSetupContainer : ISetup<IServiceCollection>
         });
 
         services.AddControllers()
-            .AddApplicationPart(typeof(ArrApi.AssemblyMarker).Assembly);
+            .AddApplicationPart(typeof(AssemblyMarker).Assembly);
     }
 }

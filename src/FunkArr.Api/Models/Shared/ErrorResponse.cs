@@ -1,4 +1,4 @@
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Shared;
 
 public sealed record ErrorResponse(string Error);
 

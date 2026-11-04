@@ -1,4 +1,7 @@
-namespace FunkArr.Api.Models;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Shared;
+
+namespace FunkArr.Api.Models.Scoring;
 
 public enum MatchMethod
 {

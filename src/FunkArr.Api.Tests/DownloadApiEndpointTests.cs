@@ -1,5 +1,5 @@
 using FunkArr.Api.Extensions;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.Downloads;
 using FunkArr.Messages.Download;
 using FunkArr.Messages.Shared;
 using MediaType = FunkArr.Messages.MediaType;

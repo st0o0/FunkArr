@@ -120,7 +120,7 @@ public sealed class StatsCollectorTests : TestKit
         ]));
 
         var historyQuery = _historyRegionProbe.ExpectMsg<QueryScoringStats>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal("rs-1", historyQuery.RuleSetId);
+        Assert.Equal("rs-1", historyQuery.HistoryId);
 
         _historyRegionProbe.Reply(new ScoringStatsQueryResult("rs-1", new ScoringStatsResult(DateTimeOffset.UtcNow, 0.6, 0.4, 8)));
 

@@ -1,12 +1,14 @@
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
+using FunkArr.Api.Infrastructure;
+using FunkArr.Api.Models.Mediathek;
+using FunkArr.Api.Models.Shared;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
 using FunkArr.Messages.Mediathek;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
 
@@ -20,12 +22,12 @@ public static class MediathekApiEndpoints
             .AddEndpointFilter<EndpointExceptionFilter>();
         group.WithRequestTimeout(TimeSpan.FromSeconds(60));
 
-        group.MapGet("/search", async ([AsParameters] ApiModels.MediathekSearchRequest req, IActorRegistry registry,
+        group.MapGet("/search", async ([AsParameters] MediathekSearchRequest req, IActorRegistry registry,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(req.Q) && string.IsNullOrWhiteSpace(req.Channel) && string.IsNullOrWhiteSpace(req.Topic))
             {
-                return Results.BadRequest(new ApiModels.ErrorResponse("At least one of q, channel, or topic is required"));
+                return Results.BadRequest(new ErrorResponse("At least one of q, channel, or topic is required"));
             }
 
             var actualLimit = req.Limit ?? 20;
@@ -62,7 +64,7 @@ public static class MediathekApiEndpoints
             return result switch
             {
                 QueryMediathekCompleted completed => Results.Ok(
-                    new ApiModels.MediathekSearchResponse(
+                    new MediathekSearchResponse(
                         [.. completed.Items.Select(i => i.ToApi())],
                         completed.Total)),
                 QueryMediathekQueueFull => Results.Problem(
@@ -74,7 +76,7 @@ public static class MediathekApiEndpoints
         })
         .WithSummary("Search Mediathek")
         .WithDescription("Searches MediathekViewWeb for media items by title, channel, or topic.")
-        .Produces<ApiModels.MediathekSearchResponse>()
+        .Produces<MediathekSearchResponse>()
         .ProducesProblem(400)
         .ProducesProblem(502)
         .ProducesProblem(504);

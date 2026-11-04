@@ -1,4 +1,4 @@
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Mediathek;
 
 public sealed record MediathekSearchResponse(
     MediathekSearchResult[] Items,

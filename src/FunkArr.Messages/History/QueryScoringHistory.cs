@@ -1,9 +1,9 @@
 namespace FunkArr.Messages.History;
 
 public sealed record QueryScoringHistory(
-    string RuleSetId,
+    string HistoryId,
     int Offset,
-    int Limit) : IWithRuleSetId;
+    int Limit) : IWithHistoryId;
 
 public abstract record ScoringHistoryResponse;
 

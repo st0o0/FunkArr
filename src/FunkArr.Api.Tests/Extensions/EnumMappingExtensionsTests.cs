@@ -1,5 +1,8 @@
 using FunkArr.Api.Extensions;
-using ApiModels = FunkArr.Api.Models;
+using FunkArr.Api.Models.Downloads;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Scoring;
+using FunkArr.Api.Models.Shared;
 using Msg = FunkArr.Messages;
 using MsgDownload = FunkArr.Messages.Download;
 using MsgEnrichment = FunkArr.Messages.Enrichment;
@@ -11,55 +14,55 @@ public sealed class EnumMappingExtensionsTests
 {
     [Fact]
     public void MediaType_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<Msg.MediaType, ApiModels.MediaType>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<Msg.MediaType, MediaType>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void SearchSource_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<Msg.SearchSource, ApiModels.SearchSource>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<Msg.SearchSource, SearchSource>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void MediathekVariant_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<Msg.MediathekVariant, ApiModels.MediathekVariant>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<Msg.MediathekVariant, MediathekVariant>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void FilterOp_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgScoring.FilterOp, ApiModels.FilterOp>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgScoring.FilterOp, FilterOp>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void FilterField_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgScoring.FilterField, ApiModels.FilterField>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgScoring.FilterField, FilterField>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void IdentificationStrategy_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgScoring.IdentificationStrategy, ApiModels.IdentificationStrategy>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgScoring.IdentificationStrategy, IdentificationStrategy>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void TitlePartType_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgScoring.TitlePartType, ApiModels.TitlePartType>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgScoring.TitlePartType, TitlePartType>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void EnrichmentMethod_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgEnrichment.EnrichmentMethod, ApiModels.EnrichmentMethod>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgEnrichment.EnrichmentMethod, EnrichmentMethod>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void RuntimeMode_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgEnrichment.RuntimeMode, ApiModels.RuntimeMode>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgEnrichment.RuntimeMode, RuntimeMode>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void MatchMethod_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgEnrichment.MatchMethod, ApiModels.MatchMethod>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgEnrichment.MatchMethod, MatchMethod>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void QueuePriority_RoundtripsEveryMemberByName() =>
-        AssertRoundtrip<MsgDownload.DownloadPriority, ApiModels.QueuePriority>(v => v.ToApi(), v => v.ToMessage());
+        AssertRoundtrip<MsgDownload.DownloadPriority, QueuePriority>(v => v.ToApi(), v => v.ToMessage());
 
     [Fact]
     public void UndefinedApiValue_Throws()
     {
-        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => ((ApiModels.QueuePriority)5).ToMessage());
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => ((QueuePriority)5).ToMessage());
 
         Assert.Equal("value", ex.ParamName);
-        Assert.Equal((ApiModels.QueuePriority)5, ex.ActualValue);
+        Assert.Equal((QueuePriority)5, ex.ActualValue);
     }
 
     [Fact]

@@ -3,8 +3,8 @@ using FunkArr.Messages.Scoring.History;
 namespace FunkArr.Messages.History;
 
 public sealed record QueryScoringDetail(
-    string RuleSetId,
-    Guid RequestId) : IWithRuleSetId;
+    string HistoryId,
+    Guid RequestId) : IWithHistoryId;
 
 public abstract record ScoringDetailResponse;
 

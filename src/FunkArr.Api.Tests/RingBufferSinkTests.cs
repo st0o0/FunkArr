@@ -1,3 +1,4 @@
+using FunkArr.Api.Infrastructure;
 using Serilog.Events;
 using Serilog.Parsing;
 

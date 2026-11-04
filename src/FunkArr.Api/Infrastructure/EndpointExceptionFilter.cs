@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace FunkArr.Api;
+namespace FunkArr.Api.Infrastructure;
 
 internal sealed class EndpointExceptionFilter(ILogger<EndpointExceptionFilter> logger) : IEndpointFilter
 {

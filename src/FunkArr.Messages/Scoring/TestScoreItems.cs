@@ -1,6 +1,6 @@
 namespace FunkArr.Messages.Scoring;
 
 public sealed record TestScoreItems(
-    Guid RequestId,
+    Guid TestScoringId,
     MatchingConfig Config,
     ScoreCandidate[] Candidates);

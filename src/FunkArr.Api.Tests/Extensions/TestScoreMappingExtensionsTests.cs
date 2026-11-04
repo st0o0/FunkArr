@@ -1,5 +1,6 @@
 using FunkArr.Api.Extensions;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Scoring;
 using MsgScoring = FunkArr.Messages.Scoring;
 
 namespace FunkArr.Api.Tests.Extensions;

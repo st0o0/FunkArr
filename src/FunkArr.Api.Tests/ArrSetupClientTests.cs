@@ -1,4 +1,5 @@
 using System.Net;
+using FunkArr.Api.Infrastructure;
 
 namespace FunkArr.Api.Tests;
 

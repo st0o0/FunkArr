@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Shared;
 
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Scoring;
 
 public sealed record TestScoreRequest(
     [property: Range(0.0, 1.0)] float DefaultConfidence,

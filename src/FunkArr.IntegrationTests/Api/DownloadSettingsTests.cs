@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.Downloads;
 
 namespace FunkArr.IntegrationTests.Api;
 

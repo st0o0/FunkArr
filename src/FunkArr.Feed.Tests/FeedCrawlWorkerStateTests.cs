@@ -1,6 +1,3 @@
-using FunkArr.Messages;
-using FunkArr.Messages.Feed;
-
 namespace FunkArr.Feed.Tests;
 
 public sealed class FeedCrawlWorkerStateTests

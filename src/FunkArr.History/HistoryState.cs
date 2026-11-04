@@ -134,7 +134,7 @@ public static class HistoryStateExtensions
                 s.MatchedCount))
             .ToArray();
 
-        return new ScoringHistoryResult(query.RuleSetId, total, page);
+        return new ScoringHistoryResult(query.HistoryId, total, page);
     }
 
     public static ScoringDetailResponse QueryDetail(this HistoryState state, QueryScoringDetail query)

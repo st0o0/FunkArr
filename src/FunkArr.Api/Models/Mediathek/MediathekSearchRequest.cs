@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Mediathek;
 
 public sealed record MediathekSearchRequest(
     [FromQuery] string? Q,

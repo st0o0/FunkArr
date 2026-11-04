@@ -1,8 +1,13 @@
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
+using FunkArr.Api.Infrastructure;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Scoring;
+using FunkArr.Api.Models.Shared;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
+using FunkArr.Messages;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
@@ -10,7 +15,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Extensions.DependencyInjection;
-using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
 
@@ -49,7 +53,7 @@ public static class RuleSetApiEndpoints
                 summaryMap.TryGetValue(e.RuleSetId, out var summary);
                 allStats.TryGetValue(e.RuleSetId, out var stat);
 
-                return new ApiModels.RuleSetListEntry(
+                return new RuleSetListEntry(
                     e.RuleSetId, e.Topic, e.Aliases,
                     e.Ids.TvdbId, e.Ids.ImdbId, e.Ids.TmdbId,
                     e.MediaName, e.MediaType?.ToApi(),
@@ -64,12 +68,12 @@ public static class RuleSetApiEndpoints
                 ? dataFiles.ReadText(dataPaths.RuleSetVersion).Trim()
                 : null;
 
-            return Results.Ok(new ApiModels.RuleSetListResponse(communityVersion, result));
+            return Results.Ok(new RuleSetListResponse(communityVersion, result));
         })
         .CacheOutput("RuleSetList")
         .WithSummary("List all rulesets")
         .WithDescription("Returns all registered rulesets with community version and rule counts, source type, and scoring stats.")
-        .Produces<ApiModels.RuleSetListResponse>()
+        .Produces<RuleSetListResponse>()
         .ProducesProblem(504);
 
         group.MapGet("/{id}", async (string id, IActorRegistry registry, CancellationToken ct) =>
@@ -86,7 +90,7 @@ public static class RuleSetApiEndpoints
         })
         .WithSummary("Get ruleset details")
         .WithDescription("Returns full ruleset configuration including identity, source info, and all matching rules.")
-        .Produces<ApiModels.RuleSetDetail>()
+        .Produces<RuleSetDetail>()
         .ProducesProblem(404)
         .ProducesProblem(504);
 
@@ -99,7 +103,7 @@ public static class RuleSetApiEndpoints
         })
         .WithSummary("Get scoring history")
         .WithDescription("Returns paginated scoring history for a ruleset.")
-        .Produces<ApiModels.ScoringHistory>()
+        .Produces<ScoringHistory>()
         .ProducesProblem(504);
 
         group.MapGet("/{id}/history/{requestId:guid}", async (string id, Guid requestId, IActorRegistry registry, CancellationToken ct) =>
@@ -116,11 +120,11 @@ public static class RuleSetApiEndpoints
         })
         .WithSummary("Get scoring detail")
         .WithDescription("Returns detailed scoring trace for a specific scoring request, including per-item and per-rule traces.")
-        .Produces<ApiModels.ScoringDetail>()
+        .Produces<ScoringDetail>()
         .ProducesProblem(404)
         .ProducesProblem(504);
 
-        group.MapPost("/", async (ApiModels.CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
+        group.MapPost("/", async (CreateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
         {
             var region = await registry.GetAsync<IRuleSetRegion>(ct);
             var result = await region.Ask<CreateLocalRuleSetResponse>(request.ToCommand(), ct);
@@ -128,20 +132,20 @@ public static class RuleSetApiEndpoints
             await cache.EvictByTagAsync("rulesets", ct);
             return result switch
             {
-                CreateLocalRuleSetCompleted completed => Results.Created($"/api/rulesets/{completed.RuleSetId}", new ApiModels.CreatedRuleSetResponse(completed.RuleSetId)),
-                CreateLocalRuleSetFailed { Reason: CreateLocalRuleSetFailureReason.AlreadyExists } => Results.Conflict(new ApiModels.ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists")),
-                CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
+                CreateLocalRuleSetCompleted completed => Results.Created($"/api/rulesets/{completed.RuleSetId}", new CreatedRuleSetResponse(completed.RuleSetId)),
+                CreateLocalRuleSetFailed { Reason: CreateLocalRuleSetFailureReason.AlreadyExists } => Results.Conflict(new ErrorResponse($"Local ruleset '{request.RuleSetId}' already exists")),
+                CreateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ValidationErrorResponse(failed.Errors.ToApiErrors())),
                 _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Create local ruleset")
         .WithDescription("Creates a new local ruleset from the provided configuration. Returns 409 if a ruleset with the same ID already exists.")
-        .Produces<ApiModels.CreatedRuleSetResponse>(201)
+        .Produces<CreatedRuleSetResponse>(201)
         .ProducesProblem(400)
         .ProducesProblem(409)
-        .Produces<ApiModels.ValidationErrorResponse>(422);
+        .Produces<ValidationErrorResponse>(422);
 
-        group.MapPut("/{id}", async (string id, ApiModels.UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
+        group.MapPut("/{id}", async (string id, UpdateRuleSetRequest request, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
         {
             var region = await registry.GetAsync<IRuleSetRegion>(ct);
             var result = await region.Ask<UpdateLocalRuleSetResponse>(request.ToCommand(id), ct);
@@ -151,7 +155,7 @@ public static class RuleSetApiEndpoints
             {
                 UpdateLocalRuleSetCompleted => Results.Ok(),
                 UpdateLocalRuleSetFailed { Reason: UpdateLocalRuleSetFailureReason.NotFound } => Results.NotFound(),
-                UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
+                UpdateLocalRuleSetValidationFailed failed => Results.UnprocessableEntity(new ValidationErrorResponse(failed.Errors.ToApiErrors())),
                 _ => ApiResults.UnexpectedResponse(result)
             };
         })
@@ -159,7 +163,7 @@ public static class RuleSetApiEndpoints
         .WithDescription("Replaces the configuration of an existing local ruleset.")
         .Produces(200)
         .ProducesProblem(404)
-        .Produces<ApiModels.ValidationErrorResponse>(422);
+        .Produces<ValidationErrorResponse>(422);
 
         group.MapDelete("/{id}", async (string id, IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
         {
@@ -214,7 +218,7 @@ public static class RuleSetApiEndpoints
 
             return result switch
             {
-                ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new ApiModels.ValidationErrorResponse(failed.Errors.ToApiErrors())),
+                ExportRuleSetValidationFailed failed => Results.UnprocessableEntity(new ValidationErrorResponse(failed.Errors.ToApiErrors())),
                 ExportRuleSetFailed { Reason: ExportRuleSetFailureReason.NoLocalOverlay } =>
                     Results.Problem(statusCode: 400, title: "No local overlay",
                         detail: "Only locally modified rulesets can be exported. Edit this ruleset first to create a local overlay."),
@@ -226,13 +230,13 @@ public static class RuleSetApiEndpoints
         .WithDescription("Downloads the ruleset as a JSON file suitable for contributing to the community repository.")
         .Produces(200, contentType: "application/json")
         .ProducesProblem(404)
-        .Produces<ApiModels.ValidationErrorResponse>(422);
+        .Produces<ValidationErrorResponse>(422);
 
-        group.MapPost("/test", async (ApiModels.TestScoreRequest request, IActorRegistry registry, CancellationToken ct) =>
+        group.MapPost("/test", async (TestScoreRequest request, IActorRegistry registry, CancellationToken ct) =>
         {
             var (config, candidates) = request.ToMessage();
-            var manager = await registry.GetAsync<IScoringManager>(ct);
-            var result = await manager.Ask<TestScoreWithEnrichmentResponse>(
+            var region = await registry.GetAsync<ITestScoringRegion>(ct);
+            var result = await region.Ask<TestScoreWithEnrichmentResponse>(
                 new TestScoreWithEnrichment(
                     Guid.NewGuid(), config, candidates,
                     request.MediaType?.ToMessage(),
@@ -243,14 +247,14 @@ public static class RuleSetApiEndpoints
             return result switch
             {
                 TestScoreWithEnrichmentCompleted completed => Results.Ok(
-                    new ApiModels.TestScoreResponse([.. completed.ItemTraces.Select(t => t.ToApi())])),
+                    new TestScoreResponse([.. completed.ItemTraces.Select(t => t.ToApi())])),
                 TestScoreWithEnrichmentFailed failed => Results.Problem(failed.Cause.Message, statusCode: 502),
                 _ => ApiResults.UnexpectedResponse(result)
             };
         })
         .WithSummary("Test ruleset scoring")
         .WithDescription("Runs scoring against provided candidates using an ad-hoc ruleset configuration with optional enrichment. Returns per-item traces.")
-        .Produces<ApiModels.TestScoreResponse>()
+        .Produces<TestScoreResponse>()
         .ProducesProblem(400)
         .ProducesProblem(502)
         .ProducesProblem(504);

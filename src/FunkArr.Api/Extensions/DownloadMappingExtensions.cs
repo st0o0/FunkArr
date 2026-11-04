@@ -1,25 +1,25 @@
+using FunkArr.Api.Models.Downloads;
 using FunkArr.Messages.Download;
 using static FunkArr.Messages.Download.DownloadPhaseExtensions;
-using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api.Extensions;
 
 internal static class DownloadMappingExtensions
 {
-    internal static ApiModels.DownloadQueueResponse ToApi(this QueueResult result)
+    internal static DownloadQueueResponse ToApi(this QueueResult result)
     {
         var items = result.Items.Select(i => i.ToApi()).ToArray();
         var activeCount = result.Items.Count(i => i.Status == DownloadStatus.Processing);
         var queuedCount = result.Items.Count(i => i.Status == DownloadStatus.Queued);
-        return new ApiModels.DownloadQueueResponse(items, result.TotalSlots, activeCount, queuedCount,
+        return new DownloadQueueResponse(items, result.TotalSlots, activeCount, queuedCount,
             result.IsPaused, result.IsScheduleActive, result.NextWindow);
     }
 
-    internal static ApiModels.DownloadQueueItem ToApi(this QueueItem item)
+    internal static DownloadQueueItem ToApi(this QueueItem item)
     {
         var status = item.Status == DownloadStatus.Processing
-            ? ApiModels.QueueStatus.Processing
-            : ApiModels.QueueStatus.Queued;
+            ? QueueStatus.Processing
+            : QueueStatus.Queued;
 
         var phase = item.Phase is DownloadPhase.Initialized or DownloadPhase.Completed or DownloadPhase.Failed
             ? DerivePhase(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs)
@@ -37,7 +37,7 @@ internal static class DownloadMappingExtensions
             eta = $"{(int)ts.TotalHours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
         }
 
-        return new ApiModels.DownloadQueueItem(
+        return new DownloadQueueItem(
             item.DownloadId.ToString(),
             item.Title,
             status,
@@ -54,24 +54,24 @@ internal static class DownloadMappingExtensions
             item.Priority.ToApi());
     }
 
-    internal static ApiModels.DownloadHistoryResponse ToApi(this HistoryResult result) =>
+    internal static DownloadHistoryResponse ToApi(this HistoryResult result) =>
         new([.. result.Items.Select(i => i.ToApi())], result.TotalItems);
 
-    internal static ApiModels.DownloadHistoryItem ToApi(this HistoryItem item) =>
+    internal static DownloadHistoryItem ToApi(this HistoryItem item) =>
         new(item.DownloadId.ToString(),
             item.Completion.Title,
             item.Completion.Category.ToApi(),
             item.Completion.Size,
             item.Completion.DownloadTimeSeconds,
             item.Completion.Status == DownloadStatus.Completed ? item.Completion.RelativePath : null,
-            item.Completion.Status == DownloadStatus.Completed ? ApiModels.HistoryStatus.Completed : ApiModels.HistoryStatus.Failed,
+            item.Completion.Status == DownloadStatus.Completed ? HistoryStatus.Completed : HistoryStatus.Failed,
             item.Completion.Status == DownloadStatus.Failed ? item.Completion.FailMessage : null,
             DateTimeOffset.FromUnixTimeSeconds(item.Completion.CompletedAt));
 
-    private static ApiModels.QueuePhase MapPhase(DownloadPhase phase) => phase switch
+    private static QueuePhase MapPhase(DownloadPhase phase) => phase switch
     {
-        DownloadPhase.Remuxing => ApiModels.QueuePhase.Remuxing,
-        DownloadPhase.Moving => ApiModels.QueuePhase.Moving,
-        _ => ApiModels.QueuePhase.VideoDownload
+        DownloadPhase.Remuxing => QueuePhase.Remuxing,
+        DownloadPhase.Moving => QueuePhase.Moving,
+        _ => QueuePhase.VideoDownload
     };
 }

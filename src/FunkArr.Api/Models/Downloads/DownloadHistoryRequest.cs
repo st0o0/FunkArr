@@ -1,7 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using FunkArr.Api.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Downloads;
 
 public sealed record DownloadHistoryRequest(
     [FromQuery][property: Range(0, int.MaxValue)] int? Start,

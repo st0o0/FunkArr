@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace FunkArr.Api;
+namespace FunkArr.Api.Infrastructure;
 
 internal static class ApiResults
 {

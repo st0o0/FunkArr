@@ -1,14 +1,14 @@
 namespace FunkArr.Messages.Scoring;
 
 public sealed record TestScoreWithEnrichment(
-    Guid RequestId,
+    Guid TestScoringId,
     MatchingConfig Config,
     ScoreCandidate[] Candidates,
     MediaType? MediaType = null,
     int? TvdbId = null,
     int? TmdbId = null,
     string? ImdbId = null,
-    Enrichment.EnrichmentConfig? EnrichmentConfig = null);
+    Enrichment.EnrichmentConfig? EnrichmentConfig = null) : IWithTestScoringId;
 
 public abstract record TestScoreWithEnrichmentResponse;
 

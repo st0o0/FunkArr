@@ -1,11 +1,14 @@
 using FunkArr.Api.Extensions;
+using FunkArr.Api.Models.RuleSets;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Shared;
-using ApiModels = FunkArr.Api.Models;
+using EnrichmentMethod = FunkArr.Messages.Enrichment.EnrichmentMethod;
 using MsgScoring = FunkArr.Messages.Scoring;
+using RuleSetDetailRule = FunkArr.Messages.RuleSet.RuleSetDetailRule;
+using RuntimeMode = FunkArr.Messages.Enrichment.RuntimeMode;
 
 namespace FunkArr.Api.Tests.Extensions;
 
@@ -78,7 +81,7 @@ public sealed class RuleSetMappingExtensionsTests
         Assert.Equal("rule-1", mappedRule.Id);
         Assert.Equal(10, mappedRule.Priority);
         Assert.Equal(0.95f, mappedRule.Confidence);
-        Assert.Equal(ApiModels.IdentificationStrategy.SeasonAndEpisodeNumber, mappedRule.Strategy);
+        Assert.Equal(IdentificationStrategy.SeasonAndEpisodeNumber, mappedRule.Strategy);
         Assert.Equal(@"S(\d+)", mappedRule.SeasonRegex);
         Assert.Equal(@"E(\d+)", mappedRule.EpisodeRegex);
         Assert.Equal(1, mappedRule.CaptureGroup);
@@ -86,13 +89,13 @@ public sealed class RuleSetMappingExtensionsTests
         Assert.NotNull(mappedRule.Filters);
         Assert.NotNull(mappedRule.Filters.All);
         var condition = Assert.Single(mappedRule.Filters.All);
-        Assert.Equal(ApiModels.FilterField.Channel, condition.Field);
-        Assert.Equal(ApiModels.FilterOp.Eq, condition.Op);
+        Assert.Equal(FilterField.Channel, condition.Field);
+        Assert.Equal(FilterOp.Eq, condition.Op);
         Assert.Equal("ARD", condition.Value);
 
         Assert.NotNull(mappedRule.TitleRules);
         var titleRule = Assert.Single(mappedRule.TitleRules);
-        Assert.Equal(ApiModels.TitlePartType.Static, titleRule.Type);
+        Assert.Equal(TitlePartType.Static, titleRule.Type);
         Assert.Equal("Tagesschau", titleRule.Value);
     }
 
@@ -119,20 +122,20 @@ public sealed class RuleSetMappingExtensionsTests
         Assert.NotNull(result);
         Assert.NotNull(result.All);
         var a = Assert.Single(result.All);
-        Assert.Equal(ApiModels.FilterField.Title, a.Field);
-        Assert.Equal(ApiModels.FilterOp.Contains, a.Op);
+        Assert.Equal(FilterField.Title, a.Field);
+        Assert.Equal(FilterOp.Contains, a.Op);
         Assert.Equal("Tatort", a.Value);
 
         Assert.NotNull(result.Any);
         var b = Assert.Single(result.Any);
-        Assert.Equal(ApiModels.FilterField.Channel, b.Field);
-        Assert.Equal(ApiModels.FilterOp.Eq, b.Op);
+        Assert.Equal(FilterField.Channel, b.Field);
+        Assert.Equal(FilterOp.Eq, b.Op);
         Assert.Equal("ARD", b.Value);
 
         Assert.NotNull(result.Not);
         var c = Assert.Single(result.Not);
-        Assert.Equal(ApiModels.FilterField.Description, c.Field);
-        Assert.Equal(ApiModels.FilterOp.Regex, c.Op);
+        Assert.Equal(FilterField.Description, c.Field);
+        Assert.Equal(FilterOp.Regex, c.Op);
         Assert.Equal("Wiederholung", c.Value);
     }
 
@@ -148,8 +151,8 @@ public sealed class RuleSetMappingExtensionsTests
 
         var result = input.ToApi();
 
-        Assert.Equal(ApiModels.TitlePartType.Regex, result.Type);
-        Assert.Equal(ApiModels.FilterField.Title, result.Field);
+        Assert.Equal(TitlePartType.Regex, result.Type);
+        Assert.Equal(FilterField.Title, result.Field);
         Assert.Equal(@"(\d+)", result.Pattern);
         Assert.Equal(1, result.CaptureGroup);
         Assert.Equal("fallback", result.Value);
@@ -170,13 +173,13 @@ public sealed class RuleSetMappingExtensionsTests
 
         Assert.True(result.Enabled);
         Assert.Equal(2, result.Methods.Length);
-        Assert.Equal(ApiModels.EnrichmentMethod.Title, result.Methods[0]);
-        Assert.Equal(ApiModels.EnrichmentMethod.Airdate, result.Methods[1]);
+        Assert.Equal(Models.RuleSets.EnrichmentMethod.Title, result.Methods[0]);
+        Assert.Equal(Models.RuleSets.EnrichmentMethod.Airdate, result.Methods[1]);
         Assert.Equal(0.85f, result.Title.Threshold);
         Assert.Equal(5, result.Airdate.Tolerance);
         Assert.Equal(0.4f, result.Airdate.MinTitleAffinity);
         Assert.Equal(0.25f, result.Runtime.Tolerance);
-        Assert.Equal(ApiModels.RuntimeMode.Filter, result.Runtime.Mode);
+        Assert.Equal(Models.RuleSets.RuntimeMode.Filter, result.Runtime.Mode);
         Assert.Equal(2, result.Year.Tolerance);
     }
 
@@ -194,7 +197,7 @@ public sealed class RuleSetMappingExtensionsTests
         Assert.Equal(1, result.TotalCount);
         var s = Assert.Single(result.Snapshots);
         Assert.Equal(requestId, s.RequestId);
-        Assert.Equal(ApiModels.SearchSource.Sonarr, s.Source);
+        Assert.Equal(Models.Scoring.SearchSource.Sonarr, s.Source);
         Assert.Equal("tagesschau", s.Query);
         Assert.Equal(timestamp, s.Timestamp);
         Assert.Equal(25, s.CandidateCount);
@@ -213,7 +216,7 @@ public sealed class RuleSetMappingExtensionsTests
         var result = msg.ToApi();
 
         Assert.Equal(requestId, result.RequestId);
-        Assert.Equal(ApiModels.SearchSource.Radarr, result.Source);
+        Assert.Equal(Models.Scoring.SearchSource.Radarr, result.Source);
         Assert.Equal("tatort", result.Query);
         Assert.Equal(timestamp, result.Timestamp);
         var item = Assert.Single(result.ItemTraces);
@@ -222,10 +225,10 @@ public sealed class RuleSetMappingExtensionsTests
     }
 
     [Theory]
-    [InlineData("community", ApiModels.SourceType.Community)]
-    [InlineData("local", ApiModels.SourceType.Local)]
-    [InlineData("merged", ApiModels.SourceType.Merged)]
-    public void SourceType_maps_known_strings(string input, ApiModels.SourceType expected)
+    [InlineData("community", SourceType.Community)]
+    [InlineData("local", SourceType.Local)]
+    [InlineData("merged", SourceType.Merged)]
+    public void SourceType_maps_known_strings(string input, SourceType expected)
     {
         var result = input.ToApi();
 
@@ -240,7 +243,7 @@ public sealed class RuleSetMappingExtensionsTests
     {
         var result = input.ToApi();
 
-        Assert.Equal(ApiModels.SourceType.Unknown, result);
+        Assert.Equal(SourceType.Unknown, result);
     }
 
     private static EnrichmentConfig CreateEnrichmentConfig() =>

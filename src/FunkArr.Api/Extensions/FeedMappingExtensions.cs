@@ -1,14 +1,14 @@
+using FunkArr.Api.Models.Feed;
 using FunkArr.Messages.Feed;
-using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api.Extensions;
 
 internal static class FeedMappingExtensions
 {
-    internal static ApiModels.FeedOverviewResponse ToApi(this FeedResult entries, FeedCrawlStatusResult status) =>
+    internal static FeedOverviewResponse ToApi(this FeedResult entries, FeedCrawlStatusResult status) =>
         new(
             [
-                .. entries.Entries.Select(e => new ApiModels.FeedEntryOutput(
+                .. entries.Entries.Select(e => new FeedEntryOutput(
                     e.StableId,
                     e.FirstSeenAt,
                     e.MediaType.ToApi(),
@@ -21,7 +21,7 @@ internal static class FeedMappingExtensions
             ],
             entries.Total,
             entries.FilteredTotal,
-            new ApiModels.FeedCrawlStatusOutput(
+            new FeedCrawlStatusOutput(
                 status.Enabled,
                 status.Running,
                 status.LastRunAt,

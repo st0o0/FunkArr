@@ -1,4 +1,6 @@
-namespace FunkArr.Api.Models;
+using FunkArr.Api.Models.Shared;
+
+namespace FunkArr.Api.Models.RuleSets;
 
 public sealed record MediaInput(
     string Name,

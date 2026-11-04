@@ -49,7 +49,7 @@ public sealed class ApplicationSetupContainer : ISetup<WebApplication>
 
         app.MapPrometheusScrapingEndpoint("/metrics");
 
-        app.Map("/api/{**rest}", () => Results.NotFound()).ExcludeFromDescription();
+        app.Map($"/api/{{**rest}}", (string rest) => Results.NotFound(rest)).ExcludeFromDescription();
         app.MapFallbackToFile("index.html");
     }
 }

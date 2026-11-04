@@ -1,4 +1,4 @@
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Downloads;
 
 public sealed record HistoryStatsResponse(
     int TotalCompleted,

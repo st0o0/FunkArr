@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
-using FunkArr.Api.Models;
-using FunkArr.Core;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Scoring;
+using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
+using IdentificationStrategy = FunkArr.Api.Models.RuleSets.IdentificationStrategy;
 using MsgHistory = FunkArr.Messages.Scoring.History;
 
 namespace FunkArr.IntegrationTests.Api;
@@ -20,7 +22,7 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
             Rules:
             [
                 new RuleInput("rule-1",
-                    Strategy: FunkArr.Api.Models.IdentificationStrategy.SeasonAndEpisodeNumber,
+                    Strategy: IdentificationStrategy.SeasonAndEpisodeNumber,
                     SeasonRegex: @"S(\d+)",
                     EpisodeRegex: @"E(\d+)")
             ],
@@ -35,11 +37,9 @@ public sealed class RuleSetScoringTests(FunkArrFixture fixture)
 
         var task = _fixture.Client.PostAsJsonAsync("/api/rulesets/test", request, cancellationToken: TestContext.Current.CancellationToken);
 
-        var probe = _fixture.GetProbe<IScoringManager>();
-        var msg = probe.ExpectMsg<TestScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
-        probe.Reply(new ScoreCompleted(
-            msg.RequestId,
-            [],
+        var probe = _fixture.GetProbe<ITestScoringRegion>();
+        var msg = probe.ExpectMsg<TestScoreWithEnrichment>(cancellationToken: TestContext.Current.CancellationToken);
+        probe.Reply(new TestScoreWithEnrichmentCompleted(
             [
                 new MsgHistory.ItemTrace(
                     new Messages.Scoring.ScoreCandidate("Tatort S01E05 Der letzte Fall", "Tatort", "ARD", 5400, 0, null, 0),

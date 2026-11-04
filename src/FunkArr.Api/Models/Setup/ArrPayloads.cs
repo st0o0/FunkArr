@@ -1,4 +1,4 @@
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Setup;
 
 internal sealed record ArrField(string Name, object Value);
 

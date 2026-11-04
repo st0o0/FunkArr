@@ -1,6 +1,6 @@
 namespace FunkArr.Messages.History;
 
-public sealed record QueryScoringStats(string RuleSetId) : IWithRuleSetId;
+public sealed record QueryScoringStats(string HistoryId) : IWithHistoryId;
 
 public sealed record ScoringStatsResult(
     DateTimeOffset? LastRun,

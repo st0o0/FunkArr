@@ -1,5 +1,5 @@
 using FunkArr.Api.Extensions;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.Downloads;
 using FunkArr.Messages.Download;
 using FunkArr.Messages.Shared;
 using MediaType = FunkArr.Messages.MediaType;
@@ -135,7 +135,7 @@ public sealed class DownloadMappingExtensionsTests
 
         var result = item.ToApi();
 
-        Assert.Equal(Models.MediaType.Movie, result.Category);
+        Assert.Equal(Models.Shared.MediaType.Movie, result.Category);
         Assert.Equal(QueuePriority.Low, result.Priority);
     }
 }

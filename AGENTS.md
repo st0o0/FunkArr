@@ -248,19 +248,60 @@ no multi-actor orchestration in the lambda body.
   `failure: ex => new XxxFailed(ex)`.
 - **No `EventStream`**: Never use `EventStream.Publish`/`Subscribe`.
   Use explicit actor references (Tell/Ask via registry or constructor injection).
-- **Passivation via ShardOptions only**: Use
+- **Passivation via ShardOptions only** (cluster sharding): Use
   `ShardOptions { PassivateIdleEntityAfter = ... }` in `AkkaSetupContainer`.
   Never use `Context.SetReceiveTimeout` + manual `Passivate` in sharded entity
   actors.
-- **MessageExtractor via interface**: All sharded messages implement `IWith*Id`
-  (e.g. `IWithDownloadId`, `IWithSearchId`, `IWithRuleSetId`). One
-  `ShardMessageExtractor` in Core handles all shard regions. Never match
-  concrete message types in extractors.
+- **Passivation via Passivate message** (local entity regions): Entity actors
+  signal completion with `Context.Parent.Tell(new Passivate(PoisonPill.Instance))`.
+  `EntityRegionOptions.PassivationTimeout` acts as safety net for stuck entities.
+  Same protocol as cluster sharding — entities migrate without code changes.
+- **Entity ID interfaces** — three layers, bottom-up:
+  - `Terp.IWithId` — `Guid Id`. Use when the entity ID is a Guid.
+  - `Terp.Akka.IWithEntityId` — `string EntityId`. Routing key for both
+    `EntityIdExtractor` (local) and `ShardMessageExtractor` (cluster).
+  - `IWith*Id` (FunkArr) — domain-specific typed property (`Guid DownloadId`,
+    `string RuleSetId`). The primary access point in code. Each `IWith*Id`
+    inherits `IWithEntityId` (and `IWithId` when the ID is a Guid) with
+    default interface implementations:
+    ```csharp
+    public interface IWithDownloadId : IWithId, IWithEntityId
+    {
+        Guid DownloadId { get; }
+        Guid IWithId.Id => DownloadId;
+        string IWithEntityId.EntityId => DownloadId.ToString();
+    }
+    public interface IWithRuleSetId : IWithEntityId
+    {
+        string RuleSetId { get; }
+        string IWithEntityId.EntityId => RuleSetId;
+    }
+    ```
+  - `Id` and `EntityId` are explicit interface implementations — invisible on
+    the message, only accessible via cast (which only extractors do).
+  - Message records are unchanged: `record InitDownload(Guid DownloadId, ...) : IWithDownloadId;`
+- **One `IWith*Id` per region** — each interface is a routing address, not a
+  data type. Two regions with different purposes always get separate interfaces,
+  even when the ID value is the same (e.g. `IWithRuleSetId` for RuleSetWorker,
+  `IWithHistoryId` for HistoryWorker — both carry a ruleset ID string, but are
+  separate routing contracts).
+  **Exception: domain-internal correlation.** Within a single domain, one
+  `IWith*Id` may span multiple regions when the ID is a correlation ID for a
+  multi-actor flow (e.g. `IWithSearchId` correlates TvSearchWorker,
+  MovieSearchWorker, TvEvaluationWorker, MovieEvaluationWorker — all Search
+  domain). The caller (e.g. SearchManager) knows which region to address; the
+  shared interface expresses that these actors participate in the same operation.
+  Cross-domain sharing is never allowed.
+- **Local entity regions** (`WithEntityRegion<TKey>` from Terp.Akka): Use for
+  request-scoped or short-lived entities that don't need cluster distribution.
+  Same entity pattern as shard regions (ID-based routing, passivation, message
+  extractor) but local to the node. Use `EntityIdExtractor` (works with
+  `IWithEntityId`). Entity actors self-passivate after completing their work.
 - **Actor DI**: `resolver.Props<T>()` for actors needing DI deps.
   `Context.GetActor<T>()` for resolving other actors at runtime. Never pass
   `IActorRef` as constructor params.
-- **Actor naming**: `*Manager` (Cluster Singleton), `*Worker` (Sharded Entity),
-  `*Actor` (everything else - pools, plain actors).
+- **Actor naming**: `*Manager` (Cluster Singleton), `*Worker` (Sharded Entity
+  or Local Entity Region), `*Actor` (everything else - pools, plain actors).
 - **Actor state pattern** (Pathfinder pattern): State in its own `<Actor>State.cs`
   file (not nested). Extension methods `Apply(event)` / `ProcessCommand(cmd)` on
   the state record. Actors are thin plumbing (message routing, persistence,

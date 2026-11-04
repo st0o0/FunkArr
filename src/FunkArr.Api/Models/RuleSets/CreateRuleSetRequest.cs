@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.RuleSets;
 
 public sealed record CreateRuleSetRequest(
     [property: Required, RegularExpression("^[a-z0-9]+(-[a-z0-9]+)*$",

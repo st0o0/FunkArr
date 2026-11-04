@@ -7,12 +7,14 @@ using FunkArr.Download;
 using FunkArr.Enrichment;
 using FunkArr.Feed;
 using FunkArr.History;
+using FunkArr.Messages;
 using FunkArr.RuleSet;
 using FunkArr.Scoring;
 using FunkArr.Search;
 using LinqToDB;
 using Microsoft.Extensions.Options;
 using Terp.Akka;
+using Terp.Akka.Entities;
 using Terp.Akka.Hosting;
 
 namespace FunkArr.Configuration;
@@ -121,6 +123,8 @@ public sealed class AkkaSetupContainer : ActorSystemSetup
         builder
             .WithSingleton<IScoringManager>("scoring-manager",
                 (_, _, resolver) => resolver.Props<ScoringManager>())
+            .WithEntityRegion<ITestScoringRegion>(
+                resolver => resolver.Props<TestScoringWorker>())
             .WithSingleton<IStatsCollector>("stats-collector",
                 (_, _, resolver) => resolver.Props<StatsCollector>())
             .WithShardRegion<IHistoryRegion>("history",

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.Setup;
 
 public sealed record CreateArrResourceRequest(
     [property: Required] string Url,

@@ -1,6 +1,5 @@
 using Akka.Actor;
 using Akka.TestKit.Xunit;
-using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Scoring.History;
 

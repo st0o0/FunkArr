@@ -1,4 +1,6 @@
-namespace FunkArr.Api.Models;
+using FunkArr.Api.Models.Shared;
+
+namespace FunkArr.Api.Models.System;
 
 public sealed record VariantsResponse(VariantPolicyEntry[] Variants);
 

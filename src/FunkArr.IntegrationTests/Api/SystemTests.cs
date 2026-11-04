@@ -1,9 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using FunkArr.Api;
-using FunkArr.Api.Models;
+using FunkArr.Api.Infrastructure;
+using FunkArr.Api.Models.Shared;
+using FunkArr.Api.Models.System;
 using FunkArr.Core;
 using FunkArr.Messages.Enrichment;
+using VariantPolicy = FunkArr.Api.Models.Shared.VariantPolicy;
 
 namespace FunkArr.IntegrationTests.Api;
 
@@ -101,6 +103,6 @@ public sealed class SystemTests(FunkArrFixture fixture)
             MediathekVariant.OriginalVersion
         };
         Assert.Equal(expected, result.Variants.Select(v => v.Variant).ToArray());
-        Assert.All(result.Variants, v => Assert.Equal(FunkArr.Api.Models.VariantPolicy.Exclude, v.Policy));
+        Assert.All(result.Variants, v => Assert.Equal(VariantPolicy.Exclude, v.Policy));
     }
 }

@@ -237,10 +237,10 @@ public sealed class RuleSetManagerTests : TestKit
         for (var i = 0; i < 2; i++)
         {
             var statsQuery = historyProbe.ExpectMsg<QueryScoringStats>(cancellationToken: TestContext.Current.CancellationToken);
-            var stats = statsQuery.RuleSetId == "show-a"
+            var stats = statsQuery.HistoryId == "show-a"
                 ? new ScoringStatsResult(lastRun, 0.85)
                 : new ScoringStatsResult(null, null);
-            historyProbe.Reply(new ScoringStatsQueryResult(statsQuery.RuleSetId, stats));
+            historyProbe.Reply(new ScoringStatsQueryResult(statsQuery.HistoryId, stats));
         }
 
         var result = ExpectMsg<RuleSetListWithStatsResult>(cancellationToken: TestContext.Current.CancellationToken);

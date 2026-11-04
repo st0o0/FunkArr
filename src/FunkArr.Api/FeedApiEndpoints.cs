@@ -1,12 +1,14 @@
 using Akka.Actor;
 using Akka.Hosting;
 using FunkArr.Api.Extensions;
+using FunkArr.Api.Infrastructure;
+using FunkArr.Api.Models.Feed;
+using FunkArr.Api.Models.Shared;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
 using FunkArr.Messages.Feed;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api;
 
@@ -23,7 +25,7 @@ public static class FeedApiEndpoints
         group.WithRequestTimeout(TimeSpan.FromSeconds(30));
 
         group.MapGet("/", async (
-            int? limit, int? offset, ApiModels.MediaType? type, string? channel, int? quality, string? q,
+            int? limit, int? offset, MediaType? type, string? channel, int? quality, string? q,
             IActorRegistry registry, CancellationToken ct) =>
         {
             var take = Math.Clamp(limit ?? _defaultLimit, 1, _maxLimit);
@@ -46,7 +48,7 @@ public static class FeedApiEndpoints
         })
         .WithSummary("Get RSS feed overview")
         .WithDescription("Returns the newest releases published to the RSS feed and the status of the last feed ingest run.")
-        .Produces<ApiModels.FeedOverviewResponse>()
+        .Produces<FeedOverviewResponse>()
         .ProducesProblem(500)
         .ProducesProblem(504);
 

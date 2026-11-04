@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Terp.Diagnostics;
 
 namespace FunkArr.Download;
 

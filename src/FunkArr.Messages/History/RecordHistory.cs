@@ -5,10 +5,10 @@ namespace FunkArr.Messages.History;
 
 public sealed record RecordHistory(
     Guid RequestId,
-    string RuleSetId,
+    string HistoryId,
     ScoringOrigin Origin,
     DateTimeOffset Timestamp,
     int CandidateCount,
     int MatchedCount,
     int EnrichedCount,
-    ItemTrace[] ItemTraces) : IWithRuleSetId;
+    ItemTrace[] ItemTraces) : IWithHistoryId;

@@ -1,7 +1,7 @@
 using System.Collections.Immutable;
 using System.Net;
 using System.Net.Http.Json;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.RuleSets;
 using FunkArr.Core;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;

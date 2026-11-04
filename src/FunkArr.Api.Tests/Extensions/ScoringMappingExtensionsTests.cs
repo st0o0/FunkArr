@@ -1,6 +1,8 @@
 using FunkArr.Api.Extensions;
-using FunkArr.Messages.Enrichment;
-using ApiModels = FunkArr.Api.Models;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Scoring;
+using FunkArr.Api.Models.Shared;
+using MatchMethod = FunkArr.Messages.Enrichment.MatchMethod;
 using MsgHistory = FunkArr.Messages.Scoring.History;
 using MsgScoring = FunkArr.Messages.Scoring;
 
@@ -34,7 +36,7 @@ public sealed class ScoringMappingExtensionsTests
 
         var result = trace.ToApi();
 
-        Assert.Equal(ApiModels.MediathekVariant.AudioDescription, result.ExcludedVariant);
+        Assert.Equal(MediathekVariant.AudioDescription, result.ExcludedVariant);
     }
 
     [Fact]
@@ -53,7 +55,7 @@ public sealed class ScoringMappingExtensionsTests
     {
         Assert.Equal(
             Enum.GetNames<FunkArr.Messages.MediathekVariant>(),
-            Enum.GetNames<ApiModels.MediathekVariant>());
+            Enum.GetNames<MediathekVariant>());
     }
 
     [Fact]
@@ -109,7 +111,7 @@ public sealed class ScoringMappingExtensionsTests
         var result = trace.ToApi();
 
         Assert.NotNull(result.EnrichmentTrace);
-        Assert.Equal(ApiModels.MatchMethod.TitleMatch, result.EnrichmentTrace.Method);
+        Assert.Equal(Models.Scoring.MatchMethod.TitleMatch, result.EnrichmentTrace.Method);
         Assert.Equal(0.85f, result.EnrichmentTrace.Confidence);
         Assert.True(result.EnrichmentTrace.Enriched);
         Assert.Equal("1", result.EnrichmentTrace.ResolvedSeason);
@@ -144,20 +146,20 @@ public sealed class ScoringMappingExtensionsTests
 
         Assert.Equal("rule-1", result.RuleId);
         Assert.Equal(10, result.Priority);
-        Assert.Equal(ApiModels.RuleOutcome.Matched, result.Outcome);
+        Assert.Equal(RuleOutcome.Matched, result.Outcome);
         Assert.NotNull(result.FilterTrace);
-        Assert.Equal(ApiModels.FilterOperator.All, result.FilterTrace.Operator);
+        Assert.Equal(FilterOperator.All, result.FilterTrace.Operator);
         Assert.True(result.FilterTrace.Passed);
         var node = Assert.Single(result.FilterTrace.Nodes);
-        Assert.Equal(ApiModels.FilterField.Title, node.Field);
-        Assert.Equal(ApiModels.FilterOp.Contains, node.Op);
+        Assert.Equal(FilterField.Title, node.Field);
+        Assert.Equal(FilterOp.Contains, node.Op);
         Assert.Equal("Tagesschau", node.ExpectedValue);
         Assert.Equal("Tagesschau 20:00", node.ActualValue);
         Assert.True(node.Passed);
         Assert.False(node.Skipped);
         Assert.Null(node.Group);
         Assert.NotNull(result.IdentificationTrace);
-        Assert.Equal(ApiModels.IdentificationStrategy.SeasonAndEpisodeNumber, result.IdentificationTrace.Strategy);
+        Assert.Equal(IdentificationStrategy.SeasonAndEpisodeNumber, result.IdentificationTrace.Strategy);
         Assert.True(result.IdentificationTrace.Attempted);
         Assert.Null(result.IdentificationTrace.Detail);
     }
@@ -171,7 +173,7 @@ public sealed class ScoringMappingExtensionsTests
 
         Assert.Equal("rule-2", result.RuleId);
         Assert.Equal(5, result.Priority);
-        Assert.Equal(ApiModels.RuleOutcome.FilterFailed, result.Outcome);
+        Assert.Equal(RuleOutcome.FilterFailed, result.Outcome);
         Assert.Null(result.FilterTrace);
         Assert.Null(result.IdentificationTrace);
     }
@@ -185,11 +187,11 @@ public sealed class ScoringMappingExtensionsTests
 
         var result = trace.ToApi();
 
-        Assert.Equal(ApiModels.FilterOperator.Any, result.Operator);
+        Assert.Equal(FilterOperator.Any, result.Operator);
         Assert.True(result.Passed);
         Assert.Equal(2, result.Nodes.Length);
-        Assert.Equal(ApiModels.FilterField.Channel, result.Nodes[0].Field);
-        Assert.Equal(ApiModels.FilterField.Duration, result.Nodes[1].Field);
+        Assert.Equal(FilterField.Channel, result.Nodes[0].Field);
+        Assert.Equal(FilterField.Duration, result.Nodes[1].Field);
     }
 
     [Fact]
@@ -197,7 +199,7 @@ public sealed class ScoringMappingExtensionsTests
     {
         var result = MsgHistory.RuleOutcome.Matched.ToApi();
 
-        Assert.Equal(ApiModels.RuleOutcome.Matched, result);
+        Assert.Equal(RuleOutcome.Matched, result);
     }
 
     [Fact]
@@ -205,7 +207,7 @@ public sealed class ScoringMappingExtensionsTests
     {
         var result = MsgHistory.RuleOutcome.FilterFailed.ToApi();
 
-        Assert.Equal(ApiModels.RuleOutcome.FilterFailed, result);
+        Assert.Equal(RuleOutcome.FilterFailed, result);
     }
 
     [Fact]
@@ -213,6 +215,6 @@ public sealed class ScoringMappingExtensionsTests
     {
         var result = MsgHistory.RuleOutcome.IdentificationFailed.ToApi();
 
-        Assert.Equal(ApiModels.RuleOutcome.IdentificationFailed, result);
+        Assert.Equal(RuleOutcome.IdentificationFailed, result);
     }
 }

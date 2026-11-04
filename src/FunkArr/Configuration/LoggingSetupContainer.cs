@@ -1,4 +1,4 @@
-using FunkArr.Api;
+using FunkArr.Api.Infrastructure;
 using FunkArr.Core;
 using Serilog;
 using Terp.Hosting;

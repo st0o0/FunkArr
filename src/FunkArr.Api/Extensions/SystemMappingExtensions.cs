@@ -1,19 +1,21 @@
+using FunkArr.Api.Models.Shared;
+using FunkArr.Api.Models.System;
 using FunkArr.Core;
-using ApiModels = FunkArr.Api.Models;
+using VariantPolicy = FunkArr.Core.VariantPolicy;
 
 namespace FunkArr.Api.Extensions;
 
 internal static class SystemMappingExtensions
 {
-    internal static ApiModels.VariantsResponse ToApi(this VariantOptions options) =>
+    internal static VariantsResponse ToApi(this VariantOptions options) =>
         new(
         [
-            new ApiModels.VariantPolicyEntry(ApiModels.MediathekVariant.AudioDescription, options.AudioDescription.ToApi()),
-            new ApiModels.VariantPolicyEntry(ApiModels.MediathekVariant.SignLanguage, options.SignLanguage.ToApi()),
-            new ApiModels.VariantPolicyEntry(ApiModels.MediathekVariant.PlainLanguage, options.PlainLanguage.ToApi()),
-            new ApiModels.VariantPolicyEntry(ApiModels.MediathekVariant.OriginalVersion, options.OriginalVersion.ToApi())
+            new VariantPolicyEntry(MediathekVariant.AudioDescription, options.AudioDescription.ToApi()),
+            new VariantPolicyEntry(MediathekVariant.SignLanguage, options.SignLanguage.ToApi()),
+            new VariantPolicyEntry(MediathekVariant.PlainLanguage, options.PlainLanguage.ToApi()),
+            new VariantPolicyEntry(MediathekVariant.OriginalVersion, options.OriginalVersion.ToApi())
         ]);
 
-    internal static ApiModels.VariantPolicy ToApi(this VariantPolicy policy) =>
-        policy == VariantPolicy.Allow ? ApiModels.VariantPolicy.Allow : ApiModels.VariantPolicy.Exclude;
+    internal static Models.Shared.VariantPolicy ToApi(this VariantPolicy policy) =>
+        policy == VariantPolicy.Allow ? Models.Shared.VariantPolicy.Allow : Models.Shared.VariantPolicy.Exclude;
 }

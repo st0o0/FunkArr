@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using FunkArr.Api.Models;
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Shared;
 using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
 

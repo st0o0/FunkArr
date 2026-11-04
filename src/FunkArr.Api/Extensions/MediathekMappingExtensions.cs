@@ -1,11 +1,11 @@
+using FunkArr.Api.Models.Mediathek;
 using FunkArr.Messages.Mediathek;
-using ApiModels = FunkArr.Api.Models;
 
 namespace FunkArr.Api.Extensions;
 
 internal static class MediathekMappingExtensions
 {
-    internal static ApiModels.MediathekSearchResult ToApi(this MediathekItem item) =>
+    internal static MediathekSearchResult ToApi(this MediathekItem item) =>
         new(item.Title,
             item.Topic,
             item.Channel,

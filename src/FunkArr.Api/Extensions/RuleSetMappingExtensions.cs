@@ -1,25 +1,31 @@
+using FunkArr.Api.Models.RuleSets;
+using FunkArr.Api.Models.Scoring;
+using FunkArr.Api.Models.Shared;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.History;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Shared;
-using ApiModels = FunkArr.Api.Models;
+using EnrichmentMethod = FunkArr.Api.Models.RuleSets.EnrichmentMethod;
 using MsgScoring = FunkArr.Messages.Scoring;
+using RuleSetDetailRule = FunkArr.Api.Models.RuleSets.RuleSetDetailRule;
+using RuntimeMode = FunkArr.Messages.Enrichment.RuntimeMode;
+using ScoringSnapshotSummary = FunkArr.Api.Models.Scoring.ScoringSnapshotSummary;
 
 namespace FunkArr.Api.Extensions;
 
 internal static class RuleSetMappingExtensions
 {
-    internal static ApiModels.RuleSetDetail ToApi(this RuleSetDetailResult msg) =>
+    internal static RuleSetDetail ToApi(this RuleSetDetailResult msg) =>
         new(msg.RuleSetId,
-            new ApiModels.RuleSetDetail.RuleSetIdentity(
+            new RuleSetDetail.RuleSetIdentity(
                 msg.Identity.Topic, msg.Identity.Aliases,
                 msg.Identity.Ids.TvdbId, msg.Identity.Ids.ImdbId, msg.Identity.Ids.TmdbId),
-            new ApiModels.RuleSetDetail.RuleSetSource(
+            new RuleSetDetail.RuleSetSource(
                 msg.Source.CommunityPath, msg.Source.LocalPath,
                 msg.Source.CommunityModified, msg.Source.LocalModified),
             msg.DefaultConfidence,
             [
-                .. msg.Rules.Select(r => new ApiModels.RuleSetDetailRule(
+                .. msg.Rules.Select(r => new RuleSetDetailRule(
                     r.Id, r.Priority, r.Confidence,
                     r.Strategy.ToApi(),
                     r.SeasonRegex, r.EpisodeRegex, r.CaptureGroup,
@@ -27,37 +33,37 @@ internal static class RuleSetMappingExtensions
             ],
             msg.Enrichment.ToApi());
 
-    internal static ApiModels.FilterGroupOutput? ToApi(this MsgScoring.FilterGroupOutput? output) =>
+    internal static FilterGroupOutput? ToApi(this MsgScoring.FilterGroupOutput? output) =>
         output is null
             ? null
-            : new ApiModels.FilterGroupOutput(
-                output.All?.Select(c => new ApiModels.FilterConditionOutput(
+            : new FilterGroupOutput(
+                output.All?.Select(c => new FilterConditionOutput(
                     c.Field.ToApi(), c.Op.ToApi(), c.Value)).ToArray(),
-                output.Any?.Select(c => new ApiModels.FilterConditionOutput(
+                output.Any?.Select(c => new FilterConditionOutput(
                     c.Field.ToApi(), c.Op.ToApi(), c.Value)).ToArray(),
-                output.Not?.Select(c => new ApiModels.FilterConditionOutput(
+                output.Not?.Select(c => new FilterConditionOutput(
                     c.Field.ToApi(), c.Op.ToApi(), c.Value)).ToArray());
 
-    internal static ApiModels.TitleRuleOutput ToApi(this MsgScoring.TitleRuleOutput output) =>
+    internal static TitleRuleOutput ToApi(this MsgScoring.TitleRuleOutput output) =>
         new(output.Type.ToApi(),
             output.Field?.ToApi(),
             output.Pattern, output.CaptureGroup, output.Value);
 
-    internal static ApiModels.EnrichmentConfigOutput ToApi(this EnrichmentConfig config) =>
+    internal static EnrichmentConfigOutput ToApi(this EnrichmentConfig config) =>
         new(config.Enabled,
             [.. config.Methods.Select(m => m.ToApi())],
-            new ApiModels.TitleMatchConfigOutput(config.Title.Threshold),
-            new ApiModels.AirdateMatchConfigOutput(config.Airdate.Tolerance, config.Airdate.MinTitleAffinity),
-            new ApiModels.RuntimeMatchConfigOutput(config.Runtime.Tolerance, config.Runtime.Mode.ToApi()),
-            new ApiModels.YearMatchConfigOutput(config.Year.Tolerance));
+            new TitleMatchConfigOutput(config.Title.Threshold),
+            new AirdateMatchConfigOutput(config.Airdate.Tolerance, config.Airdate.MinTitleAffinity),
+            new RuntimeMatchConfigOutput(config.Runtime.Tolerance, config.Runtime.Mode.ToApi()),
+            new YearMatchConfigOutput(config.Year.Tolerance));
 
-    internal static CreateLocalRuleSet ToCommand(this ApiModels.CreateRuleSetRequest request) =>
+    internal static CreateLocalRuleSet ToCommand(this CreateRuleSetRequest request) =>
         new(request.RuleSetId, ToBody(request, request.Enrichment));
 
-    internal static UpdateLocalRuleSet ToCommand(this ApiModels.UpdateRuleSetRequest request, string id) =>
+    internal static UpdateLocalRuleSet ToCommand(this UpdateRuleSetRequest request, string id) =>
         new(id, ToBody(request, request.Enrichment));
 
-    private static RuleSetBody ToBody(ApiModels.IRuleSetBody request, ApiModels.EnrichmentConfigInput? enrichment) =>
+    private static RuleSetBody ToBody(IRuleSetBody request, EnrichmentConfigInput? enrichment) =>
         new(request.Topic,
             request.Aliases,
             new RuleSetMediaInput(
@@ -81,20 +87,20 @@ internal static class RuleSetMappingExtensions
             request.Standalone, request.Disable,
             enrichment?.ToMessage());
 
-    private static RuleSetFilterGroupInput MapFilters(ApiModels.FilterGroupInput input) =>
+    private static RuleSetFilterGroupInput MapFilters(FilterGroupInput input) =>
         new(input.All?.Select(MapCondition).ToArray(),
             input.Any?.Select(MapCondition).ToArray(),
             input.Not?.Select(MapCondition).ToArray());
 
-    private static RuleSetFilterConditionInput MapCondition(ApiModels.FilterNodeInput c) =>
-        new((c.Field ?? ApiModels.FilterField.Title).ToMessage(),
-            (c.Op ?? ApiModels.FilterOp.Eq).ToMessage(),
+    private static RuleSetFilterConditionInput MapCondition(FilterNodeInput c) =>
+        new((c.Field ?? FilterField.Title).ToMessage(),
+            (c.Op ?? FilterOp.Eq).ToMessage(),
             c.Value ?? "");
 
-    internal static EnrichmentConfig ToMessage(this ApiModels.EnrichmentConfigInput input) =>
+    internal static EnrichmentConfig ToMessage(this EnrichmentConfigInput input) =>
         new(input.Enabled ?? true,
             [
-                .. (input.Methods ?? [ApiModels.EnrichmentMethod.Title, ApiModels.EnrichmentMethod.Airdate])
+                .. (input.Methods ?? [EnrichmentMethod.Title, EnrichmentMethod.Airdate])
                 .Select(m => m.ToMessage())
             ],
             new TitleMatchConfig(input.Title?.Threshold ?? 0.7f),
@@ -104,27 +110,27 @@ internal static class RuleSetMappingExtensions
                 input.Runtime?.Mode?.ToMessage() ?? RuntimeMode.Tiebreaker),
             new YearMatchConfig(input.Year?.Tolerance ?? 1));
 
-    internal static ApiModels.ScoringHistory ToApi(this ScoringHistoryResult msg) =>
+    internal static ScoringHistory ToApi(this ScoringHistoryResult msg) =>
         new(msg.RuleSetId, msg.TotalCount,
         [
-            .. msg.Snapshots.Select(s => new ApiModels.ScoringSnapshotSummary(
+            .. msg.Snapshots.Select(s => new ScoringSnapshotSummary(
                 s.RequestId, s.Source.ToApi(), s.Query, s.Timestamp,
                 s.CandidateCount, s.MatchedCount))
         ]);
 
-    internal static ApiModels.ScoringDetail ToApi(this ScoringDetailResult msg) =>
+    internal static ScoringDetail ToApi(this ScoringDetailResult msg) =>
         new(msg.RequestId, msg.Source.ToApi(), msg.Query, msg.Timestamp,
             [.. msg.ItemTraces.Select(t => t.ToApi())]);
 
-    internal static ApiModels.SourceType ToApi(this string? sourceType) => sourceType switch
+    internal static SourceType ToApi(this string? sourceType) => sourceType switch
     {
-        "community" => ApiModels.SourceType.Community,
-        "local" => ApiModels.SourceType.Local,
-        "merged" => ApiModels.SourceType.Merged,
-        _ => ApiModels.SourceType.Unknown
+        "community" => SourceType.Community,
+        "local" => SourceType.Local,
+        "merged" => SourceType.Merged,
+        _ => SourceType.Unknown
     };
 
-    internal static IReadOnlyList<ApiModels.ValidationErrorEntry> ToApiErrors(
+    internal static IReadOnlyList<ValidationErrorEntry> ToApiErrors(
         this IReadOnlyList<RuleSetValidationError> errors) =>
-        [.. errors.Select(e => new ApiModels.ValidationErrorEntry(e.Field, e.Message))];
+        [.. errors.Select(e => new ValidationErrorEntry(e.Field, e.Message))];
 }

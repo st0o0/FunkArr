@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FunkArr.Api.Models;
+namespace FunkArr.Api.Models.RuleSets;
 
 public sealed record UpdateRuleSetRequest(
     [property: Required] string Topic,

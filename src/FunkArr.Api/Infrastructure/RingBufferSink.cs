@@ -4,20 +4,14 @@ using System.Threading.Channels;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace FunkArr.Api;
+namespace FunkArr.Api.Infrastructure;
 
-public sealed class RingBufferSink : ILogEventSink
+public sealed class RingBufferSink(int capacity = 500) : ILogEventSink
 {
     private const int _subscriberCapacity = 256;
 
     private readonly ConcurrentQueue<LogEntry> _buffer = new();
     private readonly ConcurrentDictionary<Guid, Channel<LogEntry>> _subscribers = new();
-    private readonly int _capacity;
-
-    public RingBufferSink(int capacity = 500)
-    {
-        _capacity = capacity;
-    }
 
     public int SubscriberCount => _subscribers.Count;
 
@@ -27,11 +21,11 @@ public sealed class RingBufferSink : ILogEventSink
             logEvent.Timestamp,
             logEvent.Level.ToString(),
             logEvent.RenderMessage(),
-            logEvent.Properties.GetValueOrDefault("SourceContext")?.ToString()?.Trim('"'),
+            logEvent.Properties.GetValueOrDefault("SourceContext")?.ToString().Trim('"'),
             logEvent.Exception?.Message);
 
         _buffer.Enqueue(entry);
-        while (_buffer.Count > _capacity)
+        while (_buffer.Count > capacity)
         {
             _buffer.TryDequeue(out _);
         }

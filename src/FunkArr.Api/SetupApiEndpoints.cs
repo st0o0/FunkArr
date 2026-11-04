@@ -1,4 +1,5 @@
-using FunkArr.Api.Models;
+using FunkArr.Api.Infrastructure;
+using FunkArr.Api.Models.Setup;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
 using Microsoft.AspNetCore.Builder;
