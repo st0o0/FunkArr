@@ -1,5 +1,5 @@
 import type { QueueItem, HistoryItem } from '../api/downloads'
-import { QueueStatus, QueuePriority, HistoryStatus } from '../api/enums'
+import { QueueStatus, QueuePhase, QueuePriority, HistoryStatus } from '../api/enums'
 import { formatSize } from './format'
 
 export type RowType = 'active' | 'queued' | 'completed' | 'failed'
@@ -22,7 +22,11 @@ export interface TableRow {
   isQueue: boolean
 }
 
-const phaseNames = ['Downloading', 'Remuxing', 'Moving'] as const
+const phaseNames: Record<number, string> = {
+  [QueuePhase.VideoDownload]: 'Downloading',
+  [QueuePhase.Remuxing]: 'Remuxing',
+  [QueuePhase.Moving]: 'Moving',
+}
 
 export function priorityLabel(p: number, t: (key: string) => string): string {
   if (p === QueuePriority.High) return t('queue.priorityHigh')

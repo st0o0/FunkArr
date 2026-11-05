@@ -221,8 +221,8 @@ no multi-actor orchestration in the lambda body.
 ### Enums over strings
 - Request/response records use enum types for all known finite values.
   Never `string` for a value from a known set.
-- `JsonStringEnumConverter` with camelCase naming is configured globally
-  — enums serialize as camelCase strings in API responses.
+- API enums serialize as integers (no global `JsonStringEnumConverter`).
+  Per-type string converters remain on SABnzbd enums and disk-model enums.
 - Query parameters that represent enums bind directly as the enum type.
 - Only exception: values passed through 1:1 to an external API (e.g.
   MediathekViewWeb `SortBy`/`SortOrder`).
@@ -448,9 +448,8 @@ Do NOT use:
   mapping; enum-to-enum mapping `switch` expressions throw for `Unknown` via the
   `_ => throw` arm. Applies to enums added from now on; existing Persistence enums keep
   their stored values (`Show = 0`) and are not renumbered.
-- **Wire names via `[JsonStringEnumMemberName]`, API layer only.** Use it on API-layer enum
-  members instead of hand-written string switches. Never put serialization attributes on
-  `FunkArr.Messages` or `FunkArr.Persistence` enums.
+- **No `[JsonStringEnumMemberName]` on API enums.** API enums serialize as integers.
+  Never put serialization attributes on `FunkArr.Messages` or `FunkArr.Persistence` enums.
 
 ## Warnings
 

@@ -1,9 +1,9 @@
-export const QueueStatus = { Processing: 0, Queued: 1 } as const
-export const QueuePhase = { VideoDownload: 0, Remuxing: 1, Moving: 2 } as const
+export const QueueStatus = { Unknown: 0, Processing: 1, Queued: 2 } as const
+export const QueuePhase = { Unknown: 0, VideoDownload: 1, Remuxing: 2, Moving: 3 } as const
 export const QueuePriority = { Low: -1, Normal: 0, High: 1 } as const
-export const HistoryStatus = { Completed: 0, Failed: 1 } as const
-export const SourceType = { Community: 0, Local: 1, Merged: 2 } as const
-export const MediaType = { Show: 0, Movie: 1 } as const
-export const CheckStatus = { Ok: 0, Warn: 1, Fail: 2 } as const
-export const MediathekVariant = { Standard: 0, AudioDescription: 1, SignLanguage: 2, PlainLanguage: 3, OriginalVersion: 4 } as const
-export const VariantPolicy = { Exclude: 0, Allow: 1 } as const
+export const HistoryStatus = { Unknown: 0, Completed: 1, Failed: 2 } as const
+export const SourceType = { Unknown: 0, Community: 1, Local: 2, Merged: 3 } as const
+export const MediaType = { Unknown: 0, Show: 1, Movie: 2 } as const
+export const CheckStatus = { Unknown: 0, Ok: 1, Warn: 2, Fail: 3 } as const
+export const MediathekVariant = { Unknown: 0, Standard: 1, AudioDescription: 2, SignLanguage: 3, PlainLanguage: 4, OriginalVersion: 5 } as const
+export const VariantPolicy = { Unknown: 0, Exclude: 1, Allow: 2 } as const

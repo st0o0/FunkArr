@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { matchCandidate, tryMatch, type BuilderRule } from '../composables/useRulesetMatcher'
 import type { MediathekCandidate } from '../api/rulesets'
-import { Strategy } from '../api/enumMaps'
+import { Strategy, TitlePartType, FilterField } from '../api/enumMaps'
 
 function makeCandidate(overrides: Partial<MediathekCandidate> = {}): MediathekCandidate {
   return {
@@ -92,7 +92,7 @@ describe('tryMatch', () => {
     const candidate = makeCandidate({ title: 'Exact Title Match' })
     const rule = makeRule({
       strategy: Strategy.TitleExact,
-      titleRules: [{ type: 0, field: 0, pattern: '', captureGroup: null, value: 'Exact Title Match' }],
+      titleRules: [{ type: TitlePartType.Static, field: FilterField.Title, pattern: '', captureGroup: null, value: 'Exact Title Match' }],
     })
     const result = tryMatch(candidate, rule)
     expect(result).not.toBeNull()
@@ -102,7 +102,7 @@ describe('tryMatch', () => {
     const candidate = makeCandidate({ title: 'This Contains the Keyword here' })
     const rule = makeRule({
       strategy: Strategy.TitleIncludes,
-      titleRules: [{ type: 0, field: 0, pattern: '', captureGroup: null, value: 'Keyword' }],
+      titleRules: [{ type: TitlePartType.Static, field: FilterField.Title, pattern: '', captureGroup: null, value: 'Keyword' }],
     })
     const result = tryMatch(candidate, rule)
     expect(result).not.toBeNull()

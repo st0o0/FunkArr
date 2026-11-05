@@ -7,52 +7,52 @@ import {
 
 describe('enum name lookups', () => {
   test('searchSourceName', () => {
-    expect(searchSourceName(0)).toBe('Sonarr')
-    expect(searchSourceName(1)).toBe('Radarr')
+    expect(searchSourceName(1)).toBe('Sonarr')
+    expect(searchSourceName(2)).toBe('Radarr')
     expect(searchSourceName(4)).toBe('Feed')
   })
 
   test('strategyName', () => {
-    expect(strategyName(0)).toBe('seasonAndEpisodeNumber')
-    expect(strategyName(3)).toBe('itemTitleIncludes')
+    expect(strategyName(1)).toBe('seasonAndEpisodeNumber')
+    expect(strategyName(4)).toBe('itemTitleIncludes')
   })
 
   test('titlePartTypeName', () => {
-    expect(titlePartTypeName(0)).toBe('static')
-    expect(titlePartTypeName(1)).toBe('regex')
+    expect(titlePartTypeName(1)).toBe('static')
+    expect(titlePartTypeName(2)).toBe('regex')
   })
 
   test('filterFieldName', () => {
-    expect(filterFieldName(0)).toBe('title')
-    expect(filterFieldName(2)).toBe('channel')
+    expect(filterFieldName(1)).toBe('title')
+    expect(filterFieldName(3)).toBe('channel')
   })
 
   test('filterOpName', () => {
-    expect(filterOpName(0)).toBe('eq')
-    expect(filterOpName(5)).toBe('regex')
+    expect(filterOpName(1)).toBe('eq')
+    expect(filterOpName(6)).toBe('regex')
   })
 
   test('enrichmentMethodName', () => {
-    expect(enrichmentMethodName(0)).toBe('title')
-    expect(enrichmentMethodName(1)).toBe('airdate')
+    expect(enrichmentMethodName(1)).toBe('title')
+    expect(enrichmentMethodName(2)).toBe('airdate')
   })
 
   test('runtimeModeName', () => {
-    expect(runtimeModeName(0)).toBe('tiebreaker')
+    expect(runtimeModeName(1)).toBe('tiebreaker')
   })
 
   test('ruleOutcomeName', () => {
-    expect(ruleOutcomeName(0)).toBe('matched')
-    expect(ruleOutcomeName(2)).toBe('identificationFailed')
+    expect(ruleOutcomeName(1)).toBe('matched')
+    expect(ruleOutcomeName(3)).toBe('identificationFailed')
   })
 
   test('matchMethodName', () => {
-    expect(matchMethodName(0)).toBe('RegexExtracted')
+    expect(matchMethodName(1)).toBe('RegexExtracted')
   })
 
   test('mediathekVariantName', () => {
-    expect(mediathekVariantName(0)).toBe('standard')
-    expect(mediathekVariantName(4)).toBe('originalVersion')
+    expect(mediathekVariantName(1)).toBe('standard')
+    expect(mediathekVariantName(5)).toBe('originalVersion')
   })
 
   test('unknown value returns stringified number', () => {

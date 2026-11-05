@@ -109,7 +109,7 @@
             </td>
             <td class="px-4 py-2 text-text-secondary text-xs">{{ entry.channel }}</td>
             <td class="px-4 py-2 text-text-muted text-xs tabular-nums">{{ entry.quality }}p</td>
-            <td class="px-4 py-2 text-text-secondary text-xs">{{ entry.mediaType === 0 ? $t('feed.typeShow') : $t('feed.typeMovie') }}</td>
+            <td class="px-4 py-2 text-text-secondary text-xs">{{ entry.mediaType === 1 ? $t('feed.typeShow') : entry.mediaType === 2 ? $t('feed.typeMovie') : '?' }}</td>
           </tr>
         </tbody>
       </table>

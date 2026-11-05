@@ -360,19 +360,20 @@ Invoke-RestMethod "http://localhost:8989/api/v3/series?apikey=$apiKey" -Method P
 
 ---
 
-## 3. Activity - Queue (Queue tab)
+## 3. Activity - Queue
 
 **Route**: `/activity`
 
-The Queue tab is the default tab and shows both active downloads and queued items.
+Unified view with filter chips: All, Active, Queued, Completed, Failed. Each chip shows
+a count badge. The "All" filter is the default.
 
-- [ ] **3.1** Tab buttons visible: Queue, History - Queue is default
-- [ ] **3.2** Empty state: "No active downloads" message when idle
+- [ ] **3.1** Filter chips visible: All, Active, Queued, Completed, Failed — All is default, each shows a count
+- [ ] **3.2** Empty state: "No downloads" message when idle
 - [ ] **3.3** During download: shows title, episode, quality badge (1080p), channel tag, size tag, duration tag, SUB badge (if subtitles)
 - [ ] **3.4** Progress bar with %, download speed (KB/s), ETA
 - [ ] **3.5** Global speed indicator in page header
 - [ ] **3.6** Cancel button (X) on active download → toast "Download abgebrochen"
-- [ ] **3.7** Queue group cards expand/collapse on header click
+- [ ] **3.7** Click "Active" filter chip → shows only active (downloading) items
 
 ---
 
@@ -385,11 +386,11 @@ The Queue tab is the default tab and shows both active downloads and queued item
 
 ---
 
-## 5. Activity - History (History tab)
+## 5. Activity - History
 
-**Route**: `/activity` → click History tab
+**Route**: `/activity` → click Completed or Failed filter chip
 
-- [ ] **5.1** Click History tab → switches view
+- [ ] **5.1** Click "Completed" filter chip → shows only completed downloads; click "Failed" → shows only failed
 - [ ] **5.2** Table with columns: Titel, Qualität (badge), Größe, Dauer, Status, Abgeschlossen
 - [ ] **5.3** Category filter dropdown ("Alle Kategorien") → filters by download category
 - [ ] **5.4** Search field filters history entries
@@ -623,7 +624,10 @@ The Queue tab is the default tab and shows both active downloads and queued item
 ### Radarr
 - [ ] **16.14** URL placeholder `http://radarr:7878` (must type value)
 - [ ] **16.15** Type API key into password field
-- [ ] **16.16** Click "Indexer erstellen" → creates Newznab indexer in Radarr
+- [ ] **16.16** Click "Indexer erstellen" → creates Newznab indexer in Radarr. **Note**: Radarr's
+  test query (`t=movie` with no criteria) may fail when no movie entries exist in the feed —
+  the validation item is only returned when the feed is completely empty. If this happens,
+  create the indexer via the Radarr API directly.
 - [ ] **16.17** Click "Download-Client erstellen" → creates SABnzbd client
 - [ ] **16.18** Success / duplicate error for both
 
@@ -729,12 +733,11 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **22.1** `GET /api/system/version` → version info
 - [ ] **22.2** `GET /api/system/setup` → health check results
 - [ ] **22.3** `GET /api/system/storage` → disk usage
-- [ ] **22.4** `GET /api/system/cache` → enrichment cache stats (TVDB/TMDB counts + oldest entry)
-- [ ] **22.5** `GET /api/system/routes` → network route configuration (Direct default + Austria proxy)
-- [ ] **22.6** `GET /api/system/variants` → variant policies (4 entries, default all Exclude)
-- [ ] **22.7** `GET /api/system/logs` → recent log entries from ring buffer
-- [ ] **22.8** `GET /api/system/logs/stream` → SSE connection opens, log entries stream in real-time
-- [ ] **22.9** `GET /openapi/v1.json` → valid OpenAPI spec document with all /api endpoints (includes /api/feed routes)
+- [ ] **22.4** `GET /api/system/routes` → network route configuration (Direct default + Austria proxy)
+- [ ] **22.5** `GET /api/system/variants` → variant policies (4 entries, default all Exclude)
+- [ ] **22.6** `GET /api/system/logs` → recent log entries from ring buffer
+- [ ] **22.7** `GET /api/system/logs/stream` → SSE connection opens, log entries stream in real-time
+- [ ] **22.8** `GET /openapi/v1.json` → valid OpenAPI spec document with all /api endpoints (includes /api/feed routes)
 
 ---
 
@@ -755,13 +758,12 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 
 **Route**: `/settings`
 
-- [ ] **24.1** Page loads with all sections: Download-Einstellungen, Broadcast Variants, Metadaten-Cache, Netzwerkrouten, System
+- [ ] **24.1** Page loads with all sections: Download-Einstellungen, Broadcast Variants, Netzwerkrouten, System, Logs
 - [ ] **24.2** Download settings: shows concurrent download limit and schedule config
-- [ ] **24.3** Cache stats: TVDB and TMDB entry counts displayed
-- [ ] **24.4** Network routes: configured routes listed (Direct, Austria proxy)
-- [ ] **24.5** System info: version, storage usage
-- [ ] **24.6** Log viewer: recent log entries visible
-- [ ] **24.7** Log viewer: new log entries appear in real-time (SSE stream)
+- [ ] **24.3** Network routes: configured routes listed (Direct, Austria proxy)
+- [ ] **24.4** System info: version, storage usage
+- [ ] **24.5** Log viewer: recent log entries visible
+- [ ] **24.6** Log viewer: new log entries appear in real-time (SSE stream)
 
 ---
 
@@ -807,8 +809,8 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **28.1** `GET /api/downloads/history/stats` → completed/failed counts, bytes, avg time, success rate
 - [ ] **28.2** `GET /api/downloads/history/categories` → distinct category list
 - [ ] **28.3** `GET /api/downloads/settings` → concurrency limit, schedule config
-- [ ] **28.4** `POST /api/downloads/pause` → pauses pipeline (200)
-- [ ] **28.5** `POST /api/downloads/resume` → resumes pipeline (200)
+- [ ] **28.4** `POST /api/downloads/queue/pause` → pauses pipeline (200)
+- [ ] **28.5** `POST /api/downloads/queue/resume` → resumes pipeline (200)
 - [ ] **28.6** `POST /api/downloads/queue/{id}/force-start` → bypasses limit
 - [ ] **28.7** `POST /api/downloads/queue/{id}/move` → repositions item
 - [ ] **28.8** `POST /api/downloads/queue/{id}/priority` → changes priority
