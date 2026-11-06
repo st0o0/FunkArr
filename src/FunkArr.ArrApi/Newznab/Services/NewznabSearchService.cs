@@ -242,9 +242,9 @@ public sealed class NewznabSearchService(
             var feed = await registry.GetAsync<IFeedStoreManager>(ct);
             var response = await feed.Ask<FeedResponse>(new QueryFeed(FeedMediaType(req), offset, limit), ct);
             feedAnswered = response is FeedResult;
-            if (response is FeedResult { Total: > 0 } result)
+            if (response is FeedResult { FilteredTotal: > 0 } result)
             {
-                return new SearchServiceResult.Success(ToFeedRss(result.Entries, result.Total, offset, baseUrl, apiKey));
+                return new SearchServiceResult.Success(ToFeedRss(result.Entries, result.FilteredTotal, offset, baseUrl, apiKey));
             }
         }
         catch (Exception ex)
