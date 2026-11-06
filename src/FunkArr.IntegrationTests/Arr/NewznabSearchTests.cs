@@ -133,6 +133,102 @@ public sealed class NewznabSearchTests(FunkArrFixture fixture)
         Assert.Equal("application/x-nzb", contentType.MediaType);
     }
 
+    [Theory]
+    [MemberData(nameof(FeedProbeMatrix))]
+    public async Task Feed_probe_answers_with_entries_of_requested_media_type_or_validation_item(
+        FeedState state, string function, string? cat, MediaType? expectedMediaType, int limit)
+    {
+        var feedProbe = fixture.GetProbe<IFeedStoreManager>();
+        var catQuery = cat is null ? "" : $"&cat={cat}";
+
+        var task = fixture.Client.GetAsync(
+            $"/index/api?t={function}{catQuery}&extended=1&offset=0&limit={limit}&apikey=test-key",
+            TestContext.Current.CancellationToken);
+
+        var query = feedProbe.ExpectMsg<QueryFeed>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(expectedMediaType, query.MediaType);
+
+        var store = StoreFor(state);
+        var matching = store.Where(e => query.MediaType is null || e.MediaType == query.MediaType).ToArray();
+        feedProbe.Reply(new FeedResult(matching, store.Length, matching.Length));
+
+        var response = await task;
+        var doc = XDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var channel = doc.Root?.Element("channel");
+        Assert.NotNull(channel);
+        var items = channel.Elements("item").ToList();
+        var total = channel.Element(_newznab + "response")?.Attribute("total")?.Value;
+
+        if (matching.Length == 0)
+        {
+            var validation = Assert.Single(items);
+            var isMovie = expectedMediaType == MediaType.Movie;
+            Assert.Multiple(
+                () => Assert.Equal(
+                    isMovie ? "FunkArr.Validation.2024.GERMAN.1080p.WEB.h264-FunkArr" : "FunkArr.Validation.S01E01.GERMAN.1080p.WEB.h264-FunkArr",
+                    validation.Element("title")?.Value),
+                () => Assert.Equal(isMovie ? "2040" : "5040", CategoryAttribute(validation)),
+                () => Assert.Equal("1", total));
+            return;
+        }
+
+        Assert.Multiple(
+            () => Assert.Equal(matching.Length.ToString(), total),
+            () => Assert.Equal(
+                matching.Select(e => e.Title).ToArray(),
+                items.Select(i => i.Element("title")?.Value ?? "").ToArray()));
+    }
+
+    public enum FeedState
+    {
+        Empty,
+        TvOnly,
+        MoviesOnly,
+        Both
+    }
+
+    public static TheoryData<FeedState, string, string?, MediaType?, int> FeedProbeMatrix()
+    {
+        var probes = new (string Function, string? Cat, MediaType? Expected)[]
+        {
+            ("tvsearch", "5030,5040", MediaType.Show),
+            ("movie", "2030,2040", MediaType.Movie),
+            ("search", "5030,5040", MediaType.Show),
+            ("search", "2030,2040", MediaType.Movie),
+            ("search", null, null)
+        };
+
+        var data = new TheoryData<FeedState, string, string?, MediaType?, int>();
+        var limit = 200;
+        foreach (var state in Enum.GetValues<FeedState>())
+        {
+            foreach (var (function, cat, expected) in probes)
+            {
+                data.Add(state, function, cat, expected, limit++);
+            }
+        }
+
+        return data;
+    }
+
+    private static FeedEntry[] StoreFor(FeedState state) => state switch
+    {
+        FeedState.Empty => [],
+        FeedState.TvOnly => Entries(MediaType.Show, 3),
+        FeedState.MoviesOnly => Entries(MediaType.Movie, 2),
+        FeedState.Both => [.. Entries(MediaType.Show, 3), .. Entries(MediaType.Movie, 2)],
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, null)
+    };
+
+    private static FeedEntry[] Entries(MediaType mediaType, int count) =>
+    [
+        .. Enumerable.Range(0, count).Select(i => new FeedEntry(
+            $"{mediaType}-{i}", new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero), mediaType,
+            $"Probe.{mediaType}.{i}.S2026E{i:D2}.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Probe",
+            "https://example.com/video.mp4", 5400, 500_000_000, 720, null, 0.9, null,
+            null, "2026", $"{i:D2}"))
+    ];
+
     private async Task<HttpResponseMessage> WithEmptyFeed(string url, MediaType expectedMediaType)
     {
         var feedProbe = fixture.GetProbe<IFeedStoreManager>();
