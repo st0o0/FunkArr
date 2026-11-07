@@ -700,7 +700,8 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **20.4** General search: `GET /index/api?t=search&q=tatort&apikey=<key>`
 - [ ] **20.5** Movie search by IMDB: `GET /index/api?t=movie&imdbid=<id>&apikey=<key>`
 - [ ] **20.6** Movie search by TMDB: `GET /index/api?t=movie&tmdbid=<id>&apikey=<key>`
-- [ ] **20.7** Invalid API key → 403 error XML
+- [ ] **20.7** Invalid API key → HTTP 200 with XML `<error code="100" description="Invalid API Key"/>` (not 403)
+- [ ] **20.8** Missing API key → HTTP 200 with same XML error structure
 
 ---
 
@@ -708,12 +709,13 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 
 ### Protocol
 - [ ] **21.1** `GET /download/api?mode=version&apikey=<key>` → version string
-- [ ] **21.2** `GET /download/api?mode=get_config&apikey=<key>` → config JSON
+- [ ] **21.2** `GET /download/api?mode=get_config&apikey=<key>` → config JSON with `misc.history_retention_option: "all"`, `misc.history_retention_number: 0`, `misc.tv_categories` and `misc.movie_categories` populated from configured categories, `mb`/`mbleft` fields use decimal format (e.g. `"100.0"` not `"100"`)
 - [ ] **21.3** `GET /download/api?mode=fullstatus&apikey=<key>` → status with speed, disk space
-- [ ] **21.4** Invalid/missing API key → error response
+- [ ] **21.4** Invalid API key → HTTP 200 with `{"status":false,"error":"API Key Required"}` (not 403)
+- [ ] **21.4a** Missing API key → same HTTP 200 error response
 
 ### Queue Operations
-- [ ] **21.5** `GET /download/api?mode=queue&apikey=<key>` → queue listing
+- [ ] **21.5** `GET /download/api?mode=queue&apikey=<key>` → queue listing, verify `mb`/`mbleft` have decimal format (e.g. `"100.0"`)
 - [ ] **21.6** `POST /download/api` with `mode=addfile` + NZB multipart → adds to queue
 - [ ] **21.7** `GET /download/api?mode=queue&name=delete&value=<id>&apikey=<key>` → removes item
 - [ ] **21.8** `GET /download/api?mode=queue&name=priority&value=<id>&value2=1&apikey=<key>` → changes priority
@@ -961,8 +963,13 @@ doesn't already have. Feed crawl completed with entries published.
 - [ ] **36.2** `GET /api/rulesets/nonexistent-id` → 404, not 500
 - [ ] **36.3** `POST /api/rulesets` with invalid JSON → 400 with validation details
 - [ ] **36.4** `DELETE /api/rulesets/{community-id}` → error (community protected)
-- [ ] **36.5** Newznab `GET /index/api?t=invalid&apikey=<key>` → proper error response
+- [ ] **36.5** Newznab `GET /index/api?t=invalid&apikey=<key>` → HTTP 200 with XML `<error code="202" description="No such function"/>`
+- [ ] **36.5a** SABnzbd `GET /download/api?mode=bogus&apikey=<key>` → HTTP 200 with `{"status":false,"error":"Invalid mode"}`
 - [ ] **36.6** `GET /api/feed?limit=999` → clamped to max 500, no error
+
+### URL Scheme Validation (SSRF prevention)
+- [ ] **36.6a** Newznab `t=get` with crafted NZB payload containing `file:///etc/passwd` as URL → `t=get` returns error (payload rejected at decode)
+- [ ] **36.6b** SABnzbd `addfile` with NZB containing `<meta type="X-FunkArr-Url">file:///etc/shadow</meta>` → addfile responds with error (URL empty after validation), item not queued
 
 ### Legacy Redirects
 - [ ] **36.7** Navigate to `/queue` → redirects to `/activity`
