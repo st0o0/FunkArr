@@ -1,5 +1,71 @@
 # Changelog
 
+## [0.3.5](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.4...funkarr-v0.3.5) (2026-11-07)
+
+
+### Features
+
+* add Playwright UI tests with API mocking for all 12 views ([86b0b2c](https://github.com/st0o0/FunkArr/commit/86b0b2c5ade993af1ee0768c7557344ecc954686))
+* add validators for all remaining options types ([efbb09d](https://github.com/st0o0/FunkArr/commit/efbb09d0b06cba1ac0c9f216bce91c7510b38d79))
+* add Vitest unit tests, extract view logic into pure utilities ([6472489](https://github.com/st0o0/FunkArr/commit/6472489a904ec19c7771394d7d7fbf92ee994d79))
+* feed page redesign with stat cards, filters, and pagination ([a76b2d4](https://github.com/st0o0/FunkArr/commit/a76b2d46e1fb10e041854af3c19d2ca1bd6f5d3b))
+* **feed:** RSS feed domain with crawl pipeline for Sonarr and Radarr ([10fb6a7](https://github.com/st0o0/FunkArr/commit/10fb6a7298dd794e27fca5c4a961ce78e24a5425))
+* migrate from Servus to Terp ([72ed262](https://github.com/st0o0/FunkArr/commit/72ed262e11a37664c2c32e535f7add2fd32a45a3))
+* redesign Activity page as unified table with live Detail page transitions ([f7ecae5](https://github.com/st0o0/FunkArr/commit/f7ecae5398f28b386952d2f1f3632dcf76d8e38a))
+* redesign dashboard with 2-column layout, pipeline controls, feed status, inline retry ([68d1b6f](https://github.com/st0o0/FunkArr/commit/68d1b6fd86d2f9948abe1b4929afbb2d98f25bca))
+* **scoring:** detect broadcast variants and apply exclusion policy ([6c94812](https://github.com/st0o0/FunkArr/commit/6c94812791b365b0dc38944a268eac94ae7d2cce))
+* **search:** dedicated evaluation workers for TV and movie pipelines ([94c51a2](https://github.com/st0o0/FunkArr/commit/94c51a20331f3f242da75024f1d001f97c76171e))
+* **search:** include pre-released Mediathek entries via future queries ([f2025e0](https://github.com/st0o0/FunkArr/commit/f2025e08b8b7e172f2dc94747c40ee33db61380c))
+* unify app version via generated VersionInfo in Core, archive unify-app-version ([94301be](https://github.com/st0o0/FunkArr/commit/94301be4888f74fb359b7f0915ef9fd3c03906df))
+* use enum types for Phase and Priority in download API, add phase stepper to detail page ([cbeeea6](https://github.com/st0o0/FunkArr/commit/cbeeea68f9f22e9148d7619fad012e5ffb62c939))
+
+
+### Bug Fixes
+
+* apply DownloadOptions changes through the DownloadManager mailbox ([8beadeb](https://github.com/st0o0/FunkArr/commit/8beadebeca07bff8bf5d48efc09683f73374dfd5))
+* **arrapi:** return validation entry for RSS sync without search criteria ([90aae78](https://github.com/st0o0/FunkArr/commit/90aae78dc0457f58a2d4875d2d82b03ee9d2c8ce))
+* catch AskTimeoutException in EndpointExceptionFilter ([46cca48](https://github.com/st0o0/FunkArr/commit/46cca487fd2ef8c07e6ccdb91811f115684ef544))
+* CI triggers only on PR + manual, fix pnpm version detection ([09f550e](https://github.com/st0o0/FunkArr/commit/09f550e36d64d4f45df5757828454ee1a4b850c5))
+* Enum convention ([25fe715](https://github.com/st0o0/FunkArr/commit/25fe715446908f35d631192fe025692cdcc72124))
+* feed crawl resilience - evaluate collected items despite page failures ([f4df1dd](https://github.com/st0o0/FunkArr/commit/f4df1dd559e2d162fb120a2575b2983a6bcc1109))
+* localize relative dates, translate feed status, fix history table overlap ([afc878e](https://github.com/st0o0/FunkArr/commit/afc878ea92900507fb78e431950b1b4edbf83cd3))
+* map Ask timeouts to 504, fan out log stream per subscriber, remove history only after accepted retry ([38d558d](https://github.com/st0o0/FunkArr/commit/38d558dcd9b06d841610a33f41401a20e2ff8f2d))
+* register ITestScoringRegion probe in integration test fixture ([536902d](https://github.com/st0o0/FunkArr/commit/536902d912867b6596961351a60854b686be7ead))
+* singular/plural in formatRelativeDate (1 hour ago, not 1 hours ago) ([3590254](https://github.com/st0o0/FunkArr/commit/3590254ddc57124a71141b3a47631955300d8d7e))
+* strip Unicode punctuation from release names (middle dot, pipe, dashes, quotes) ([e7f33f9](https://github.com/st0o0/FunkArr/commit/e7f33f9f2a86a01862b30211693ae9fb4fdea480))
+* update schachnovelle tmdbId, improve E2E test plan timing ([a18fd58](https://github.com/st0o0/FunkArr/commit/a18fd5869f737af5bd5280b2ca3a0213a7e8b131))
+
+
+### Documentation
+
+* add options registration and validation migration plan ([2e2b4df](https://github.com/st0o0/FunkArr/commit/2e2b4df34b5acdc1f00f2ff02b64f697d5b8aa06))
+* align parallel-scoring spec with ScoringActor/ExecuteScoring (no HistoryRef/Origin) ([e69a378](https://github.com/st0o0/FunkArr/commit/e69a3783ccd0705619b44582045a4a668d8179a0))
+* archive arrapi-structure-and-types and sync specs ([4208062](https://github.com/st0o0/FunkArr/commit/420806240a4dee9e929701313f8a18c4da050a66))
+* update E2E test plan, architecture tests, and openspec artifacts ([f5a72b0](https://github.com/st0o0/FunkArr/commit/f5a72b0df16473b1ec20cb83b47e4c5bbb50e0df))
+
+
+### Refactoring
+
+* API conventions cleanup - inline lambdas, enums over strings, model subfolders, route consistency, archive api-conventions-cleanup ([ad7f3f8](https://github.com/st0o0/FunkArr/commit/ad7f3f88cfd2e3363f1b92c0b5b5af6fc9c3118f))
+* convert actor states from records to mutable classes ([865511c](https://github.com/st0o0/FunkArr/commit/865511c354859aa93d671d8533f1d32634f0f589))
+* enforce enum conventions — explicit ints and Unknown = 0 ([d4cefb8](https://github.com/st0o0/FunkArr/commit/d4cefb8fab37ecce71472648073a0434329c2575))
+* entity ID hierarchy with IWithEntityId, extract TestScoringWorker to local entity region ([1cdea89](https://github.com/st0o0/FunkArr/commit/1cdea8981f357f35498f8d2142044f5a9b13518d))
+* explicit persistence enum values, switch-only enum mapping, fix xUnit1051/CS8604 and enable TreatWarningsAsErrors ([24948ae](https://github.com/st0o0/FunkArr/commit/24948ae193d97c2c7ebda975ffbe8d633474177a))
+* extract TestScoringWorkerState with encapsulated methods ([55a0d1c](https://github.com/st0o0/FunkArr/commit/55a0d1c8b072a7347149df99418c583cfc2eebda))
+* migrate options registration to AddOptionsWithValidateOnStart and ValidationFailures ([1826ffa](https://github.com/st0o0/FunkArr/commit/1826ffa9f15fdd963e84917550f33ca2415952ba))
+* move API infrastructure files to subdirectory, rename SetupArrEndpoints to SetupApiEndpoints, archive api-structure-cleanup ([63707ce](https://github.com/st0o0/FunkArr/commit/63707cedd2033fb03918023e9b95f30ba2aed517))
+* move ArrApi files into Requests/Models/Services folders with matching namespaces ([85d544e](https://github.com/st0o0/FunkArr/commit/85d544eba4f6e6d179ae0d1facbf7a62860bfe58))
+* move options and validators to FunkArr.Core/Configuration ([127e5c9](https://github.com/st0o0/FunkArr/commit/127e5c9f58584f7d7419905db4a8114f74729e99))
+* organize domain projects and tests into subfolders with matching namespaces ([68e47ca](https://github.com/st0o0/FunkArr/commit/68e47ca7247afcc104484c1fdaf01c47e551bea9))
+* remove explicit Ask timeouts from API layer, rely on CancellationToken and WithRequestTimeout ([81e4578](https://github.com/st0o0/FunkArr/commit/81e45783aafc749a9e5fb307ad44a030e8d0b895))
+* rename ApplyRuleSet to Apply, use record with-expressions, tighten reorder tests and minor cleanups ([32543c7](https://github.com/st0o0/FunkArr/commit/32543c7fff350e25f65d5a8896dc06ff1644ce10))
+* replace IDistributedCache with IMemoryCache, remove feed cache invalidator and dead cache stats ([f216c90](https://github.com/st0o0/FunkArr/commit/f216c906e2fb45ab528fc423c1c205ba2128d5aa))
+* replace tab-separated NZB id with typed NzbPayload (JSON in Base64) ([5a60cc2](https://github.com/st0o0/FunkArr/commit/5a60cc2051f38a43123a2e16aad1db1264315a48))
+* scoring result records, uniform ScoreCompleted reply, remove SearchSource.Test ([9f41ac1](https://github.com/st0o0/FunkArr/commit/9f41ac14b428771ece941563a7f7a805fd176b94))
+* slim Playwright to smoke tests only, remove MSW and detailed view tests ([236c836](https://github.com/st0o0/FunkArr/commit/236c8363b090f887c09dde0e1c55a0c8d3ab473c))
+* small cleanups - extensions, PersistenceId convention, type relocation, Options validators ([14e7f22](https://github.com/st0o0/FunkArr/commit/14e7f22d03871f14c251cb0495713df71a05137e))
+* typed SABnzbd responses with SabnzbdResult&lt;T&gt; and slot status/priority enums ([3ecbc94](https://github.com/st0o0/FunkArr/commit/3ecbc94b35ec9b7821e5eb00704819e93e23d318))
+
 ## [0.3.4](https://github.com/st0o0/FunkArr/compare/funkarr-v0.3.3...funkarr-v0.3.4) (2026-10-29)
 
 
