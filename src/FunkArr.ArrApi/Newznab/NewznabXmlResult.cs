@@ -41,11 +41,7 @@ internal sealed class NewznabXmlResult(object value) : IActionResult
         {
             Content = Serialize(error),
             ContentType = MediaTypeNames.Application.Xml,
-            StatusCode = error.Code switch
-            {
-                100 => 403,
-                _ => 400
-            }
+            StatusCode = 200
         };
 
     internal static NewznabXmlResult Empty(int offset) =>

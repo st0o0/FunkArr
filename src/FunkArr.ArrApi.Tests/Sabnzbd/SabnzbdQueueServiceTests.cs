@@ -225,6 +225,40 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
         SabnzbdResultAssert.Ok(result);
     }
 
+    [Fact]
+    public void GetConfig_includes_history_retention_option_fields()
+    {
+        var (service, _, _) = CreateService();
+
+        var ok = SabnzbdResultAssert.Ok(service.GetConfig());
+        var config = Assert.IsType<SabnzbdModels.SabnzbdConfigResponse>(ok.Data);
+
+        Assert.Equal("all", config.Config.Misc.HistoryRetentionOption);
+        Assert.Equal(0, config.Config.Misc.HistoryRetentionNumber);
+        Assert.Equal("all", config.Config.Misc.HistoryRetention);
+    }
+
+    [Fact]
+    public void GetConfig_populates_category_classification_arrays()
+    {
+        var downloadOptions = new DownloadOptions
+        {
+            Categories =
+            [
+                new DownloadCategory { Name = "tv", Dir = "shows" },
+                new DownloadCategory { Name = "movies", Dir = "films" }
+            ]
+        };
+        var (service, _, _) = CreateService(downloadOptions);
+
+        var ok = SabnzbdResultAssert.Ok(service.GetConfig());
+        var config = Assert.IsType<SabnzbdModels.SabnzbdConfigResponse>(ok.Data);
+
+        Assert.Equal(["tv"], config.Config.Misc.TvCategories);
+        Assert.Equal(["movies"], config.Config.Misc.MovieCategories);
+        Assert.Empty(config.Config.Misc.DateCategories);
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _system.Terminate();

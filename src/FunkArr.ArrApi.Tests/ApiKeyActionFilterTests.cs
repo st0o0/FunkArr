@@ -29,7 +29,7 @@ public sealed class ApiKeyActionFilterTests
         Assert.False(called);
         Assert.NotNull(context.Result);
         Assert.IsType<ContentResult>(context.Result);
-        Assert.Equal(403, ((ContentResult)context.Result).StatusCode);
+        Assert.Equal(200, ((ContentResult)context.Result).StatusCode);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class ApiKeyActionFilterTests
         Assert.False(called);
         Assert.NotNull(context.Result);
         Assert.IsType<ContentResult>(context.Result);
-        Assert.Equal(403, ((ContentResult)context.Result).StatusCode);
+        Assert.Equal(200, ((ContentResult)context.Result).StatusCode);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class ApiKeyActionFilterTests
         Assert.False(called);
         Assert.NotNull(context.Result);
         var jsonResult = Assert.IsType<JsonResult>(context.Result);
-        Assert.Equal(403, jsonResult.StatusCode);
+        Assert.Null(jsonResult.StatusCode);
     }
 
     [Fact]

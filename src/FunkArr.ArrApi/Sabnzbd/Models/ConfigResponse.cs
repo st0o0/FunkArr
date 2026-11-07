@@ -17,6 +17,8 @@ public sealed record SabnzbdMiscConfig(
     [property: JsonPropertyName("enable_date_sorting")] bool EnableDateSorting,
     [property: JsonPropertyName("pre_check")] bool PreCheck,
     [property: JsonPropertyName("history_retention")] string HistoryRetention,
+    [property: JsonPropertyName("history_retention_option")] string HistoryRetentionOption,
+    [property: JsonPropertyName("history_retention_number")] int HistoryRetentionNumber,
     [property: JsonPropertyName("tv_categories")] IReadOnlyList<string> TvCategories,
     [property: JsonPropertyName("movie_categories")] IReadOnlyList<string> MovieCategories,
     [property: JsonPropertyName("date_categories")] IReadOnlyList<string> DateCategories);

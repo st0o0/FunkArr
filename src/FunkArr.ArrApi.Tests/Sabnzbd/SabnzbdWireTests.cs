@@ -113,7 +113,8 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
         AssertWire(200,
             "{\"config\":{\"misc\":{\"complete_dir\":" + completeDir + ",\"enable_tv_sorting\":false," +
             "\"enable_movie_sorting\":false,\"enable_date_sorting\":false,\"pre_check\":false," +
-            "\"history_retention\":\"all\",\"tv_categories\":[],\"movie_categories\":[],\"date_categories\":[]}," +
+            "\"history_retention\":\"all\",\"history_retention_option\":\"all\",\"history_retention_number\":0," +
+            "\"tv_categories\":[\"sonarr\",\"radarr\"],\"movie_categories\":[],\"date_categories\":[]}," +
             "\"categories\":[{\"name\":\"sonarr\",\"order\":0,\"dir\":\"tv\",\"newzbin\":\"\",\"priority\":0}," +
             "{\"name\":\"radarr\",\"order\":1,\"dir\":\"radarr\",\"newzbin\":\"\",\"priority\":0}],\"sorters\":[]}}",
             result);
@@ -130,7 +131,8 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
         AssertWire(200,
             "{\"config\":{\"misc\":{\"complete_dir\":" + completeDir + ",\"enable_tv_sorting\":false," +
             "\"enable_movie_sorting\":false,\"enable_date_sorting\":false,\"pre_check\":false," +
-            "\"history_retention\":\"all\",\"tv_categories\":[],\"movie_categories\":[],\"date_categories\":[]}," +
+            "\"history_retention\":\"all\",\"history_retention_option\":\"all\",\"history_retention_number\":0," +
+            "\"tv_categories\":[],\"movie_categories\":[],\"date_categories\":[]}," +
             "\"categories\":[],\"sorters\":[]}}",
             result);
     }
@@ -191,10 +193,10 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
             "{\"queue\":{\"paused\":false,\"speedlimit\":\"\",\"noofslots_total\":2,\"diskspace1\":\"0\"," +
             "\"diskspace2\":\"0\",\"speed\":\"0\",\"slots\":[" +
             "{\"nzo_id\":\"11111111-1111-1111-1111-111111111111\",\"status\":\"Downloading\",\"index\":0," +
-            "\"timeleft\":\"00:29:55\",\"mb\":\"100\",\"filename\":\"Tatort\",\"cat\":\"tv\",\"mbleft\":\"50\"," +
+            "\"timeleft\":\"00:29:55\",\"mb\":\"100.0\",\"filename\":\"Tatort\",\"cat\":\"tv\",\"mbleft\":\"50.0\"," +
             "\"percentage\":\"50\",\"priority\":\"Normal\",\"speed\":\"5242880\"}," +
             "{\"nzo_id\":\"22222222-2222-2222-2222-222222222222\",\"status\":\"Queued\",\"index\":1," +
-            "\"timeleft\":\"00:00:00\",\"mb\":\"10\",\"filename\":\"Film\",\"cat\":\"movie\",\"mbleft\":\"10\"," +
+            "\"timeleft\":\"00:00:00\",\"mb\":\"10.0\",\"filename\":\"Film\",\"cat\":\"movie\",\"mbleft\":\"10.0\"," +
             "\"percentage\":\"0\",\"priority\":\"High\",\"speed\":\"0\"}]}}",
             result);
     }
@@ -206,7 +208,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandleGet(Get("queue", name: "bogus"), TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"Invalid queue command\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid queue command\"}", result);
     }
 
     [Fact]
@@ -219,7 +221,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
         manager.Reply(new QueueFailed(new InvalidOperationException("boom")));
         var result = await task;
 
-        AssertWire(502, "{\"status\":false,\"error\":\"Queue query failed\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Queue query failed\"}", result);
     }
 
     [Fact]
@@ -300,7 +302,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandleGet(Get("queue", name: "delete", value: "not-a-guid"), TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"Item not found\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Item not found\"}", result);
     }
 
     [Fact]
@@ -336,7 +338,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandleGet(Get("retry"), TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"Missing value parameter\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Missing value parameter\"}", result);
     }
 
     [Fact]
@@ -388,7 +390,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandleGet(Get("bogus"), TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
     }
 
     [Fact]
@@ -398,7 +400,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandleGet(Get(null), TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
     }
 
     [Fact]
@@ -408,7 +410,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandlePost(new DownloadPostRequest("version", null, null), null, TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
     }
 
     [Fact]
@@ -438,7 +440,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandlePost(new DownloadPostRequest("addfile", null, null), null, TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"No NZB file uploaded\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"No NZB file uploaded\"}", result);
     }
 
     [Fact]
@@ -450,7 +452,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
 
         var result = await controller.HandlePost(new DownloadPostRequest("addfile", null, null), file, TestContext.Current.CancellationToken);
 
-        AssertWire(400, "{\"status\":false,\"error\":\"Invalid NZB file: not valid XML\"}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid NZB file: not valid XML\"}", result);
     }
 
     [Fact]
@@ -472,9 +474,9 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
         var json = Assert.IsType<JsonResult>(context.Result);
         Assert.NotNull(json.Value);
         Assert.Multiple(
-            () => Assert.Equal(403, json.StatusCode),
+            () => Assert.Null(json.StatusCode),
             () => Assert.Equal(
-                "{\"status\":false,\"error\":\"API Key Incorrect\"}",
+                "{\"status\":false,\"error\":\"API Key Required\"}",
                 JsonSerializer.Serialize(json.Value, json.Value.GetType(), _mvcJson)));
     }
 

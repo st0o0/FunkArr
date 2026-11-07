@@ -37,5 +37,5 @@ public sealed class NewznabApiKeyFilter(IOptions<FunkArrOptions> options) : ApiK
 public sealed class SabnzbdApiKeyFilter(IOptions<FunkArrOptions> options) : ApiKeyActionFilter(options)
 {
     protected override IActionResult CreateErrorResult()
-        => new JsonResult(new SabnzbdErrorResponse(false, "API Key Incorrect")) { StatusCode = 403 };
+        => new JsonResult(new SabnzbdErrorResponse(false, "API Key Required"));
 }

@@ -32,17 +32,17 @@ public sealed class SabnzbdController(
             "queue" when req.Name is "switch" && !string.IsNullOrEmpty(req.Value) && !string.IsNullOrEmpty(req.Value2) =>
                 MapResult(await downloads.Swap(req.Value, req.Value2, cancellationToken)),
             "queue" when req.Name is not null =>
-                BadRequest(new SabnzbdErrorResponse(false, "Invalid queue command")),
+                Ok(new SabnzbdErrorResponse(false, "Invalid queue command")),
             "queue" => MapResult(await queue.GetQueue(req.Start ?? 0, req.Limit ?? 0, req.Category, cancellationToken)),
             "history" when req.Name is "delete" && !string.IsNullOrEmpty(req.Value) =>
                 MapResult(await downloads.DeleteFromHistory(req.Value, cancellationToken)),
             "history" => MapResult(await queue.GetHistory(req.Start ?? 0, req.Limit ?? 0, req.Category, cancellationToken)),
             "retry" when string.IsNullOrEmpty(req.Value) =>
-                BadRequest(new SabnzbdErrorResponse(false, "Missing value parameter")),
+                Ok(new SabnzbdErrorResponse(false, "Missing value parameter")),
             "retry" => MapResult(await downloads.Retry(req.Value, cancellationToken)),
             "pause" => MapResult(await queue.PauseQueue(cancellationToken)),
             "resume" => MapResult(await queue.ResumeQueue(cancellationToken)),
-            _ => BadRequest(new SabnzbdErrorResponse(false, "Invalid mode"))
+            _ => Ok(new SabnzbdErrorResponse(false, "Invalid mode"))
         };
     }
 
@@ -52,7 +52,7 @@ public sealed class SabnzbdController(
     {
         if ((req.Mode ?? "") != "addfile")
         {
-            return BadRequest(new SabnzbdErrorResponse(false, "Invalid mode"));
+            return Ok(new SabnzbdErrorResponse(false, "Invalid mode"));
         }
 
         return MapResult(await downloads.AddFile(name, req.Cat, req.Priority, cancellationToken));
@@ -61,7 +61,7 @@ public sealed class SabnzbdController(
     private ObjectResult MapResult<T>(SabnzbdResult<T> result) => result switch
     {
         SabnzbdResult<T>.Ok ok => Ok(ok.Data),
-        SabnzbdResult<T>.Error err => new ObjectResult(new SabnzbdErrorResponse(false, err.Message)) { StatusCode = err.StatusCode },
-        _ => StatusCode(500, new SabnzbdErrorResponse(false, "Unexpected result"))
+        SabnzbdResult<T>.Error err => Ok(new SabnzbdErrorResponse(false, err.Message)),
+        _ => Ok(new SabnzbdErrorResponse(false, "Unexpected result"))
     };
 }

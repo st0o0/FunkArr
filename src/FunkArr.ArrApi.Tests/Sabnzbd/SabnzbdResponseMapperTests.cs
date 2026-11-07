@@ -22,8 +22,8 @@ public sealed class SabnzbdResponseMapperTests
         Assert.Equal("Test Download", slot.Filename);
         Assert.Equal("tv", slot.Cat);
         Assert.Equal(0, slot.Index);
-        Assert.Equal("1000", slot.Mb);
-        Assert.Equal("500", slot.Mbleft);
+        Assert.Equal("1000.0", slot.Mb);
+        Assert.Equal("500.0", slot.Mbleft);
     }
 
     [Fact]
@@ -219,6 +219,20 @@ public sealed class SabnzbdResponseMapperTests
         Assert.Multiple(
             () => Assert.Equal("status", ex.ParamName),
             () => Assert.Equal(status, ex.ActualValue));
+    }
+
+    [Fact]
+    public void BuildQueueSlot_mb_uses_invariant_culture_with_decimal()
+    {
+        var item = new QueueItem(
+            Guid.NewGuid(), "Test", DownloadStatus.Processing,
+            "ARD", false, 1_572_864, new DownloadProgress(524_288, 5_000_000, 1.0),
+            60, MediaType.Show, DownloadPriority.Normal, DownloadPhase.VideoDownload, 1);
+
+        var slot = SabnzbdResponseMapper.BuildQueueSlot(item, 0);
+
+        Assert.Equal("1.5", slot.Mb);
+        Assert.Equal("1.0", slot.Mbleft);
     }
 
     private static QueueItem QueueItemWith(DownloadStatus status, DownloadPriority priority) =>

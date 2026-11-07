@@ -1,3 +1,4 @@
+using System.Globalization;
 using FunkArr.ArrApi.Sabnzbd.Models;
 using FunkArr.Messages;
 using FunkArr.Messages.Download;
@@ -12,10 +13,10 @@ internal static class SabnzbdResponseMapper
         Status: MapQueueStatus(item.Status),
         Index: index,
         Timeleft: FormatTimeLeft(item),
-        Mb: (item.TotalBytes / 1_048_576.0).ToString("F0"),
+        Mb: (item.TotalBytes / 1_048_576.0).ToString("F1", CultureInfo.InvariantCulture),
         Filename: item.Title,
         Cat: MapMediaTypeToCategory(item.Category),
-        Mbleft: ((item.TotalBytes - item.Progress.BytesDownloaded) / 1_048_576.0).ToString("F0"),
+        Mbleft: ((item.TotalBytes - item.Progress.BytesDownloaded) / 1_048_576.0).ToString("F1", CultureInfo.InvariantCulture),
         Percentage: DerivePhase(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs)
             .CalculatePercentage(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs, item.TotalDuration)
             .ToString(),

@@ -144,6 +144,16 @@ public sealed class SabnzbdQueueService(
                 Priority: 0))
             .ToArray();
 
+        var tvCategories = downloadOptions.Value.Categories
+            .Where(c => c.Name is not ("movie" or "movies"))
+            .Select(c => c.Name)
+            .ToArray();
+
+        var movieCategories = downloadOptions.Value.Categories
+            .Where(c => c.Name is "movie" or "movies")
+            .Select(c => c.Name)
+            .ToArray();
+
         return new SabnzbdConfigResponse(new SabnzbdConfig(
             Misc: new SabnzbdMiscConfig(
                 CompleteDir: dataPaths.Complete.Replace('\\', '/'),
@@ -152,8 +162,10 @@ public sealed class SabnzbdQueueService(
                 EnableDateSorting: false,
                 PreCheck: false,
                 HistoryRetention: "all",
-                TvCategories: [],
-                MovieCategories: [],
+                HistoryRetentionOption: "all",
+                HistoryRetentionNumber: 0,
+                TvCategories: tvCategories,
+                MovieCategories: movieCategories,
                 DateCategories: []),
             Categories: categories,
             Sorters: []));
