@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/st0o0/FunkArr/compare/rulesets-v0.3.1...rulesets-v0.3.2) (2026-11-07)
+
+
+### Ruleset Fixes
+
+* update schachnovelle tmdbId, improve E2E test plan timing ([a18fd58](https://github.com/st0o0/FunkArr/commit/a18fd5869f737af5bd5280b2ca3a0213a7e8b131))
+
 ## [0.3.1](https://github.com/st0o0/FunkArr/compare/rulesets-v0.3.0...rulesets-v0.3.1) (2026-10-05)
 
 
