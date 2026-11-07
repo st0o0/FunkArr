@@ -27,7 +27,16 @@ public sealed record NzbPayload(
         try
         {
             var payload = JsonSerializer.Deserialize<NzbPayload>(Convert.FromBase64String(id), _json);
-            return payload is { Title: not null, Url.Length: > 0, Channel: not null } ? payload : null;
+            if (payload is not { Title: not null, Url.Length: > 0, Channel: not null })
+                return null;
+
+            if (!UrlValidation.HasAllowedScheme(payload.Url))
+                return null;
+
+            return payload with
+            {
+                SubtitleUrl = UrlValidation.HasAllowedScheme(payload.SubtitleUrl) ? payload.SubtitleUrl : null
+            };
         }
         catch (Exception ex) when (ex is FormatException or JsonException)
         {

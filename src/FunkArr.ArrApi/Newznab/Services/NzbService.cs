@@ -68,10 +68,13 @@ public static class NzbService
         _ = int.TryParse(Meta(FunkArrHeaders.Duration), out var duration);
         _ = long.TryParse(Meta(FunkArrHeaders.Size), out var size);
 
+        var url = Meta(FunkArrHeaders.Url) ?? "";
+        var subtitleUrl = Meta(FunkArrHeaders.SubtitleUrl);
+
         return new NzbPayload(
             Title: Meta(_titleMeta) ?? "Unknown",
-            Url: Meta(FunkArrHeaders.Url) ?? "",
-            SubtitleUrl: Meta(FunkArrHeaders.SubtitleUrl),
+            Url: UrlValidation.HasAllowedScheme(url) ? url : "",
+            SubtitleUrl: UrlValidation.HasAllowedScheme(subtitleUrl) ? subtitleUrl : null,
             Channel: Meta(FunkArrHeaders.Channel) ?? "",
             Duration: duration,
             Size: size,

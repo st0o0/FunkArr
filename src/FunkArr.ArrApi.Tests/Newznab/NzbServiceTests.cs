@@ -145,4 +145,52 @@ public sealed class NzbServiceTests
         Assert.NotNull(parsed);
         Assert.Equal("", parsed.Url);
     }
+
+    [Fact]
+    public void ParseNzb_clears_non_http_url_meta()
+    {
+        var nzbXml = NewznabXmlResult.Serialize(new Nzb
+        {
+            Head = new NzbHead
+            {
+                Metas =
+                [
+                    new NzbMeta { Type = "title", Value = "Test Title" },
+                    new NzbMeta { Type = FunkArrHeaders.Url, Value = "file:///etc/shadow" },
+                    new NzbMeta { Type = FunkArrHeaders.Channel, Value = "ARD" }
+                ]
+            }
+        });
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(nzbXml));
+        var parsed = NzbService.ParseNzb(stream);
+
+        Assert.NotNull(parsed);
+        Assert.Equal("", parsed.Url);
+    }
+
+    [Fact]
+    public void ParseNzb_clears_non_http_subtitle_url_meta()
+    {
+        var nzbXml = NewznabXmlResult.Serialize(new Nzb
+        {
+            Head = new NzbHead
+            {
+                Metas =
+                [
+                    new NzbMeta { Type = "title", Value = "Test Title" },
+                    new NzbMeta { Type = FunkArrHeaders.Url, Value = "https://example.com/v.mp4" },
+                    new NzbMeta { Type = FunkArrHeaders.SubtitleUrl, Value = "ftp://internal/sub.vtt" },
+                    new NzbMeta { Type = FunkArrHeaders.Channel, Value = "ARD" }
+                ]
+            }
+        });
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(nzbXml));
+        var parsed = NzbService.ParseNzb(stream);
+
+        Assert.NotNull(parsed);
+        Assert.Equal("https://example.com/v.mp4", parsed.Url);
+        Assert.Null(parsed.SubtitleUrl);
+    }
 }

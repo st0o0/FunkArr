@@ -71,4 +71,29 @@ public sealed class NzbPayloadTests
 
         Assert.Null(NzbPayload.Decode(id));
     }
+
+    [Theory]
+    [InlineData("file:///etc/passwd")]
+    [InlineData("ftp://internal/file")]
+    [InlineData("gopher://example.com/resource")]
+    public void Decode_returns_null_for_non_http_url(string maliciousUrl)
+    {
+        var json = $"{{\"title\":\"t\",\"url\":\"{maliciousUrl}\",\"channel\":\"c\",\"duration\":1,\"size\":1,\"category\":\"show\"}}";
+        var id = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+
+        Assert.Null(NzbPayload.Decode(id));
+    }
+
+    [Fact]
+    public void Decode_clears_non_http_subtitle_url_but_preserves_payload()
+    {
+        var json = "{\"title\":\"t\",\"url\":\"https://e.com/v\",\"subtitleUrl\":\"file:///etc/shadow\",\"channel\":\"c\",\"duration\":1,\"size\":1,\"category\":\"show\"}";
+        var id = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+
+        var decoded = NzbPayload.Decode(id);
+
+        Assert.NotNull(decoded);
+        Assert.Equal("https://e.com/v", decoded.Url);
+        Assert.Null(decoded.SubtitleUrl);
+    }
 }
