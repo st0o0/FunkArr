@@ -29,7 +29,10 @@ public sealed record SceneRelease(
         var mi = item.Identity as MovieIdentity;
         var year = mi?.Year?.ToString()
                    ?? item.Source.AiredAt?.Year.ToString();
-        return new SceneRelease(display.MediaName, year, display.EpisodeTitle, item);
+        var episodeTitle = string.Equals(display.EpisodeTitle, display.MediaName, StringComparison.OrdinalIgnoreCase)
+            ? ""
+            : display.EpisodeTitle;
+        return new SceneRelease(display.MediaName, year, episodeTitle, item);
     }
 
     public string FormatTitle(int quality)

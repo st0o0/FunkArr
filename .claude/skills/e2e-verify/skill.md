@@ -234,7 +234,7 @@ Before ANY phase that mutates queue state (C, D, E, F), run this guard:
 # Ensure pipeline is paused
 $q = Invoke-RestMethod "http://localhost:6969/download/api?mode=queue&apikey=funkarr-dev-api-key-01"
 if (-not $q.queue.paused) {
-    Invoke-RestMethod "http://localhost:6969/api/downloads/pause" -Method Post | Out-Null
+    Invoke-RestMethod "http://localhost:6969/api/downloads/queue/pause" -Method Post | Out-Null
     Start-Sleep -Seconds 1
 }
 # Verify queue items are still Queued (not Downloading)
@@ -268,7 +268,7 @@ If items have moved to Downloading or history, re-upload fresh NZBs before proce
 
 Run state guard first, then:
 
-1. Pause pipeline: POST /api/downloads/pause (28.4)
+1. Pause pipeline: POST /api/downloads/queue/pause (28.4)
 2. Upload 4 NZB files (need 4: swap needs 2 with same priority, plus delete 1, plus
    force-start 1). Use this XML template for each (change N to 1, 2, 3, 4):
 
@@ -322,7 +322,7 @@ dispatches the item, so it must be last):
 ### Phase F: Resume + concurrency test
 | # | Test | Method |
 |---|------|--------|
-| 28.5 | Resume | POST /api/downloads/resume -> 200 |
+| 28.5 | Resume | POST /api/downloads/queue/resume -> 200 |
 | 29.11 | Concurrency | After resume, GET /download/api?mode=queue&apikey=<key> -> at most 2 items with status "Downloading", rest "Queued" or waiting |
 
 ### Phase G: History operations

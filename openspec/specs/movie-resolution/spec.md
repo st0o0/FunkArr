@@ -7,15 +7,15 @@ Enriches movie candidates against TMDB metadata to produce EnrichedMovie records
 ## Requirements
 
 ### Requirement: MovieResolver resolves candidates against TMDB data
-The MovieResolver SHALL be a sealed class that takes TmdbMovie data, alternative titles, MovieCandidate[], and `EnrichmentConfig`, and returns EnrichedMovie[]. It SHALL attempt to validate each candidate against the TMDB movie using title similarity and year matching. The Method field SHALL use the MatchMethod enum. If `EnrichmentConfig.Enabled` is false, the resolver SHALL return an empty array.
+The MovieResolver SHALL be a sealed class that takes TmdbMovie data, alternative titles, MovieCandidate[], and `EnrichmentConfig`, and returns EnrichedMovie[]. It SHALL attempt to validate each candidate against the TMDB movie using title similarity only. Year validation SHALL NOT be performed — the broadcast date from Mediathek is unrelated to the TMDB production year for re-broadcast movies. The Method field SHALL use the MatchMethod enum. If `EnrichmentConfig.Enabled` is false, the resolver SHALL return an empty array.
 
 #### Scenario: Title match with high confidence
-- **WHEN** a MovieCandidate title closely matches the TMDB title with similarity >= EnrichmentConfig.Title.Threshold (default 0.5) and the year validates
-- **THEN** the EnrichedMovie SHALL have Method=MatchMethod.TitleMatch and Confidence equal to the similarity score
+- **WHEN** a MovieCandidate title closely matches the TMDB title with similarity >= EnrichmentConfig.Title.Threshold (default 0.5)
+- **THEN** the EnrichedMovie SHALL have Method=MatchMethod.TitleMatch and Confidence equal to the similarity score, regardless of the gap between AiredAt year and TMDB release year
 
-#### Scenario: Year match with weak title
-- **WHEN** a MovieCandidate has similarity >= 0.3 but below the title threshold, and the year matches exactly
-- **THEN** the EnrichedMovie SHALL have Method=MatchMethod.YearMatch and Confidence = similarity * 0.8
+#### Scenario: Re-broadcast movie with large year gap
+- **WHEN** a MovieCandidate has AiredAt year 2026 and TMDB release year is 2021, and title similarity exceeds threshold
+- **THEN** the EnrichedMovie SHALL be returned with Year=2021 (the TMDB production year)
 
 #### Scenario: Custom title threshold
 - **WHEN** EnrichmentConfig.Title.Threshold is 0.4
@@ -43,25 +43,6 @@ When enriching a movie candidate, the MovieResolver SHALL compute Levenshtein si
 #### Scenario: Title does not match
 - **WHEN** candidate title is "Tatort: Oelfeld" and TMDB title is "Der letzte Tango in Paris"
 - **THEN** the title validation SHALL fail and the candidate SHALL be unenriched
-
-### Requirement: MovieResolver validates year
-When enriching a movie candidate with an AiredAt timestamp, the MovieResolver SHALL compare the year from the candidate against the TMDB release year. A tolerance of +/- `EnrichmentConfig.Year.Tolerance` years (default 1) SHALL be applied.
-
-#### Scenario: Year matches
-- **WHEN** candidate AiredAt year is 2024 and TMDB release year is 2024
-- **THEN** the year validation SHALL pass
-
-#### Scenario: Year within tolerance
-- **WHEN** candidate AiredAt year is 2025 and TMDB release year is 2024 and Year.Tolerance is 1
-- **THEN** the year validation SHALL pass
-
-#### Scenario: Custom year tolerance
-- **WHEN** EnrichmentConfig.Year.Tolerance is 3 and candidate year is 2026 and TMDB year is 2024
-- **THEN** the year validation SHALL pass (|2026-2024| = 2 <= 3)
-
-#### Scenario: Year mismatch
-- **WHEN** candidate AiredAt year is 2026 and TMDB release year is 1981 and Year.Tolerance is 1
-- **THEN** the year validation SHALL fail
 
 ### Requirement: MovieResolved contains enriched metadata
 Each EnrichedMovie record SHALL contain the validated Title, Year, ImdbId, TmdbId, Confidence, and Method. This metadata SHALL be used to build enriched release titles for Radarr.

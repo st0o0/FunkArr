@@ -30,7 +30,7 @@ sets up each scenario deterministically before the tests that need it.
 | **Services configured** | Setup wizard or API configures Prowlarr/Sonarr/Radarr | 17.x, 26.x |
 | **Local ruleset** | `POST /api/rulesets` with local-only ruleset | 6.9-6.11, 7.9-7.12, 10.x, 11.x |
 | **Merged ruleset** | Edit Tatort via UI editor, save -> creates local overlay | 7.8, 7.10-7.11, 10.1-10.2, 11.x |
-| **Paused pipeline** | `POST /api/downloads/pause` before triggering searches | 3.x, 4.x, 25.x, 28.x |
+| **Paused pipeline** | `POST /api/downloads/queue/pause` before triggering searches | 3.x, 4.x, 25.x, 28.x |
 | **Queued downloads** | Pause pipeline, trigger 3+ episode searches -> items queue | 3.7, 4.2-4.4, 25.3-25.6, 28.6-28.9 |
 | **Active download** | Resume pipeline -> downloads become active | 3.3-3.6, 18.1 |
 | **Failed download** | Upload NZB with invalid URL via SABnzbd addfile | 5.6-5.8, 18.4-18.5, 21.14 |
@@ -47,7 +47,7 @@ starting immediately.
 $apiKey = "funkarr-dev-api-key-01"
 
 # Pause pipeline
-Invoke-RestMethod "http://localhost:6969/api/downloads/pause" -Method Post
+Invoke-RestMethod "http://localhost:6969/api/downloads/queue/pause" -Method Post
 
 # Trigger 3 episode searches (items queue since pipeline is paused)
 @(1403, 1404, 1405) | ForEach-Object {
@@ -59,7 +59,7 @@ Invoke-RestMethod "http://localhost:6969/api/downloads/pause" -Method Post
 
 # Now test queue operations (4.x, 25.x, 28.x) while items are queued
 # Then resume to test active downloads (3.4-3.7):
-# Invoke-RestMethod "http://localhost:6969/api/downloads/resume" -Method Post
+# Invoke-RestMethod "http://localhost:6969/api/downloads/queue/resume" -Method Post
 ```
 
 ### Setup Recipe: Failed download via NZB upload
@@ -801,7 +801,7 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **27.2** Channel filter: `?q=Tatort&channel=ARD&limit=5` → filtered items
 - [ ] **27.3** Topic filter: `?topic=Tagesschau&limit=5` → topic-specific items
 - [ ] **27.4** Pagination: `?q=Tatort&offset=0&limit=5` then `offset=5&limit=5` → different result sets
-- [ ] **27.5** Duration filter: `?q=Tatort&minDuration=600&limit=5` → items with duration >= 600
+- [ ] **27.5** Duration filter: `?q=Tatort&durationMin=600&limit=5` → items with duration >= 600
 - [ ] **27.6** Sort parameter: `?q=Tatort&sortBy=timestamp` → results (verify 200 OK, only `timestamp` is valid)
 
 ---
@@ -1013,12 +1013,12 @@ the state required by subsequent steps.
 19. **RSS sync with feed**: Newznab empty-query now returns feed entries (section 32.1-32.5)
 20. **RSS output caching**: Verify cached responses and cache invalidation (section 32.12-32.13)
 21. **Evaluation workers**: Feed-sourced scoring entries appear with `source: "feed"` (section 34.2-34.4)
-22. **Pause pipeline**: `POST /api/downloads/pause` - prevent downloads from starting
+22. **Pause pipeline**: `POST /api/downloads/queue/pause` - prevent downloads from starting
 23. **Trigger 3+ Sonarr searches**: Different episodes while paused - items queue (section 17.1-17.6)
 24. **Pre-released entries**: Scoring history shows both aired and pre-released candidates (section 33)
 25. **Upload failed NZB**: Add NZB with invalid URL via SABnzbd addfile - queues bad download
 26. **Queue tests**: Queue tab shows queued items, queue operations (sections 4, 25.3-25.6, 28.6-28.9)
-27. **Resume pipeline**: `POST /api/downloads/resume` - downloads start
+27. **Resume pipeline**: `POST /api/downloads/queue/resume` - downloads start
 28. **Active download tests**: Queue tab during download, cancel one, global speed (sections 3.3-3.6, 18.1)
 29. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
 30. **Search → Import verification**: Fix shared volume permissions, trigger Sonarr `ProcessMonitoredDownloads`, verify `downloadFolderImported` in Sonarr history, episode files exist (section 17.5-17.9)

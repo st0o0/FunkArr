@@ -139,6 +139,16 @@ public sealed class SceneReleaseTests
     }
 
     [Fact]
+    public void FormatTitle_MovieTitleDeduplicatedWhenEpisodeTitleMatchesMediaName()
+    {
+        var item = MakeItem(year: 2021, display: new ReleaseDisplay("Schachnovelle", "Schachnovelle"));
+
+        var release = SceneRelease.ForMovie(item, null);
+
+        Assert.Equal("Schachnovelle.2021.GERMAN.1080p.WEB.h264-FunkArr", release.FormatTitle(1080));
+    }
+
+    [Fact]
     public void FormatTitle_TvWithSeasonAndEpisode()
     {
         var item = MakeItem(season: "01", episode: "05",

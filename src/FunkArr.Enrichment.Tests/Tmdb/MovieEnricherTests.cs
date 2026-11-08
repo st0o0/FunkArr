@@ -52,15 +52,16 @@ public sealed class MovieEnricherTests
     }
 
     [Fact]
-    public void Year_mismatch_rejects_match()
+    public void Rebroadcast_with_large_year_gap_matches_on_title()
     {
-        var wrongYear = new DateTimeOffset(2025, 6, 15, 0, 0, 0, TimeSpan.Zero);
-        var candidates = new[] { new MovieCandidate(0, "Fight Club", wrongYear, 8340) };
+        var broadcastYear = new DateTimeOffset(2026, 3, 15, 0, 0, 0, TimeSpan.Zero);
+        var candidates = new[] { new MovieCandidate(0, "Fight Club", broadcastYear, 8340) };
 
-        var movie = _fightClub with { ReleaseDate = "2020-01-01" };
-        var results = MovieEnricher.Resolve(movie, [], candidates);
+        var results = MovieEnricher.Resolve(_fightClub, [], candidates);
 
-        Assert.Empty(results);
+        var item = Assert.Single(results);
+        Assert.Equal(1999, item.Year);
+        Assert.Equal(MatchMethod.TitleMatch, item.Method);
     }
 
     [Fact]
@@ -74,32 +75,7 @@ public sealed class MovieEnricherTests
     }
 
     [Fact]
-    public void Year_only_match_low_title_similarity()
-    {
-        var sameYear = new DateTimeOffset(1999, 11, 1, 0, 0, 0, TimeSpan.Zero);
-        var candidates = new[] { new MovieCandidate(0, "Fightclub - Der Untergrund", sameYear, 8340) };
-
-        var results = MovieEnricher.Resolve(_fightClub, [], candidates);
-
-        var item = Assert.Single(results);
-        Assert.Equal(MatchMethod.YearMatch, item.Method);
-        Assert.True(item.Confidence < 0.8f);
-    }
-
-    [Fact]
-    public void Year_tolerance_allows_one_year_off()
-    {
-        var closeYear = new DateTimeOffset(2000, 3, 1, 0, 0, 0, TimeSpan.Zero);
-        var candidates = new[] { new MovieCandidate(0, "Fight Club", closeYear, 8340) };
-
-        var results = MovieEnricher.Resolve(_fightClub, [], candidates);
-
-        var item = Assert.Single(results);
-        Assert.Equal(1999, item.Year);
-    }
-
-    [Fact]
-    public void Null_release_date_skips_year_validation()
+    public void Null_release_date_sets_year_zero()
     {
         var movie = _fightClub with { ReleaseDate = null };
         var candidates = new[] { new MovieCandidate(0, "Fight Club", null, 8340) };
@@ -151,28 +127,13 @@ public sealed class MovieEnricherTests
         Assert.Single(customResults);
     }
 
-    [Fact]
-    public void Custom_year_tolerance_widens_window()
-    {
-        var farYear = new DateTimeOffset(2003, 6, 15, 0, 0, 0, TimeSpan.Zero);
-        var candidates = new[] { new MovieCandidate(0, "Fight Club", farYear, 8340) };
-
-        var defaultResults = MovieEnricher.Resolve(_fightClub, [], candidates);
-        var config = MakeConfig(yearTolerance: 5);
-        var customResults = MovieEnricher.Resolve(_fightClub, [], candidates, config);
-
-        Assert.Empty(defaultResults);
-        Assert.Single(customResults);
-    }
-
     private static EnrichmentConfig MakeConfig(
         bool enabled = true,
-        float titleThreshold = 0.5f,
-        int yearTolerance = 1) =>
+        float titleThreshold = 0.5f) =>
         new(enabled,
             [EnrichmentMethod.Title, EnrichmentMethod.Airdate],
             new TitleMatchConfig(titleThreshold),
             new AirdateMatchConfig(7),
             new RuntimeMatchConfig(0.35f, RuntimeMode.Tiebreaker),
-            new YearMatchConfig(yearTolerance));
+            new YearMatchConfig(1));
 }
