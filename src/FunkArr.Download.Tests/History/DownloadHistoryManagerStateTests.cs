@@ -4,13 +4,19 @@ using FunkArr.Messages.Download;
 using FunkArr.Persistence;
 using FunkArr.Persistence.Events.Download;
 using FunkArr.Persistence.Events.Shared;
+using Microsoft.Extensions.Time.Testing;
 
 namespace FunkArr.Download.Tests.History;
 
 public sealed class DownloadHistoryManagerStateTests
 {
+    private static readonly FakeTimeProvider _timeProvider = new(new DateTimeOffset(2026, 11, 8, 12, 0, 0, TimeSpan.Zero));
+
     private static DownloadHistoryRecorded MakeRecorded(Guid id, string title = "Test", PersistedDownloadStatus status = PersistedDownloadStatus.Completed) =>
         new(id, new PersistedDownloadCompletion(title, PersistedMediaType.Show, 1_000_000, status, "/downloads/test.mkv", null, 120, 1234567890));
+
+    private static DownloadHistoryRecorded MakeRecordedAt(Guid id, long completedAt, string title = "Test") =>
+        new(id, new PersistedDownloadCompletion(title, PersistedMediaType.Show, 1_000_000, PersistedDownloadStatus.Completed, "/downloads/test.mkv", null, 120, completedAt));
 
     [Fact]
     public void Apply_DownloadHistoryRecorded_adds_record()
@@ -247,7 +253,7 @@ public sealed class DownloadHistoryManagerStateTests
             state.Apply(MakeRecorded(Guid.NewGuid(), $"Record {i}"));
         }
 
-        var count = state.TrimIfNeeded(3);
+        var count = state.TrimIfNeeded(3, _timeProvider);
 
         Assert.Equal(2, count);
         Assert.Equal(3, state.Records.Count);
@@ -261,7 +267,7 @@ public sealed class DownloadHistoryManagerStateTests
         state.Apply(MakeRecorded(Guid.NewGuid(), "A"));
         state.Apply(MakeRecorded(Guid.NewGuid(), "B"));
 
-        var count = state.TrimIfNeeded(5);
+        var count = state.TrimIfNeeded(5, _timeProvider);
 
         Assert.Equal(0, count);
         Assert.Equal(2, state.Records.Count);
@@ -275,7 +281,7 @@ public sealed class DownloadHistoryManagerStateTests
         state.Apply(new DownloadHistoryRecorded(Guid.NewGuid(), new PersistedDownloadCompletion("B", PersistedMediaType.Show, 2_000, PersistedDownloadStatus.Completed, null, null, 200, 2)));
         state.Apply(new DownloadHistoryRecorded(Guid.NewGuid(), new PersistedDownloadCompletion("C", PersistedMediaType.Show, 3_000, PersistedDownloadStatus.Completed, null, null, 300, 3)));
 
-        state.TrimIfNeeded(1);
+        state.TrimIfNeeded(1, _timeProvider);
 
         Assert.Equal(1, state.Stats.TotalCompleted);
         Assert.Equal(3_000L, state.Stats.TotalBytes);
@@ -292,7 +298,7 @@ public sealed class DownloadHistoryManagerStateTests
         state.Apply(MakeRecorded(id2, "B"));
         state.Apply(MakeRecorded(id3, "C"));
 
-        state.TrimIfNeeded(1);
+        state.TrimIfNeeded(1, _timeProvider);
 
         Assert.False(state.Contains(id1));
         Assert.False(state.Contains(id2));
@@ -361,5 +367,73 @@ public sealed class DownloadHistoryManagerStateTests
         Assert.Equal(state.Stats.TotalCompleted, restored.Stats.TotalCompleted);
         Assert.Equal(state.Stats.TotalFailed, restored.Stats.TotalFailed);
         Assert.Equal(state.Stats.TotalBytes, restored.Stats.TotalBytes);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_protects_recent_records()
+    {
+        var tp = new FakeTimeProvider(new DateTimeOffset(2026, 11, 8, 12, 0, 0, TimeSpan.Zero));
+        var now = tp.GetUtcNow().ToUnixTimeSeconds();
+        var state = new DownloadHistoryManagerState();
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 3600, "Old"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 60, "Recent1"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 30, "Recent2"));
+
+        var count = state.TrimIfNeeded(1, tp);
+
+        Assert.Equal(1, count);
+        Assert.Equal(2, state.Records.Count);
+        Assert.Equal("Recent1", state.Records[0].Completion.Title);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_no_trim_when_all_recent()
+    {
+        var tp = new FakeTimeProvider(new DateTimeOffset(2026, 11, 8, 12, 0, 0, TimeSpan.Zero));
+        var now = tp.GetUtcNow().ToUnixTimeSeconds();
+        var state = new DownloadHistoryManagerState();
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 60, "A"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 30, "B"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 10, "C"));
+
+        var count = state.TrimIfNeeded(1, tp);
+
+        Assert.Equal(0, count);
+        Assert.Equal(3, state.Records.Count);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_trims_all_old_records_normally()
+    {
+        var tp = new FakeTimeProvider(new DateTimeOffset(2026, 11, 8, 12, 0, 0, TimeSpan.Zero));
+        var now = tp.GetUtcNow().ToUnixTimeSeconds();
+        var state = new DownloadHistoryManagerState();
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 7200, "Old1"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 3600, "Old2"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), now - 2400, "Old3"));
+
+        var count = state.TrimIfNeeded(1, tp);
+
+        Assert.Equal(2, count);
+        var record = Assert.Single(state.Records);
+        Assert.Equal("Old3", record.Completion.Title);
+    }
+
+    [Fact]
+    public void TrimIfNeeded_boundary_at_30_minutes()
+    {
+        var tp = new FakeTimeProvider(new DateTimeOffset(2026, 11, 8, 12, 0, 0, TimeSpan.Zero));
+        var now = tp.GetUtcNow().ToUnixTimeSeconds();
+        var exactCutoff = now - 1800;
+        var state = new DownloadHistoryManagerState();
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), exactCutoff - 1, "JustOld"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), exactCutoff, "AtBoundary"));
+        state.Apply(MakeRecordedAt(Guid.NewGuid(), exactCutoff + 1, "JustRecent"));
+
+        var count = state.TrimIfNeeded(1, tp);
+
+        Assert.Equal(1, count);
+        Assert.Equal(2, state.Records.Count);
+        Assert.Equal("AtBoundary", state.Records[0].Completion.Title);
     }
 }

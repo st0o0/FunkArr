@@ -61,14 +61,22 @@ public sealed class DownloadHistoryManagerState
         }
     }
 
-    public int TrimIfNeeded(int maxRecords)
+    public int TrimIfNeeded(int maxRecords, TimeProvider timeProvider)
     {
         if (maxRecords <= 0 || Records.Count <= maxRecords)
         {
             return 0;
         }
 
-        var trimCount = Records.Count - maxRecords;
+        var cutoff = timeProvider.GetUtcNow().AddMinutes(-30).ToUnixTimeSeconds();
+        var eligible = Records.TakeWhile(r => r.Completion.CompletedAt < cutoff).Count();
+        var trimCount = Math.Min(Records.Count - maxRecords, eligible);
+
+        if (trimCount <= 0)
+        {
+            return 0;
+        }
+
         Apply(new HistoryTrimmed(trimCount));
         return trimCount;
     }

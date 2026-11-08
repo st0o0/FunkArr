@@ -156,8 +156,92 @@ public sealed class NewznabSearchServiceTests
         string? tmdbId = null) =>
         new(t, q, cat, Offset: null, Limit: null, Id: null, season, ep, tvdbId, imdbId, tmdbId);
 
-    private static SearchResultItem CreateItem(string title, string? season = null, string? episode = null) =>
-        new(title, "channel", "topic", "", 0, 0, 0, null, 0,
+    [Fact]
+    public void FilterBySeasonEpisode_daily_show_matches_by_airdate()
+    {
+        var items = new[]
+        {
+            CreateItem("Tagesschau", airedAt: new DateTimeOffset(2026, 11, 8, 20, 0, 0, TimeSpan.Zero)),
+            CreateItem("Other", airedAt: new DateTimeOffset(2026, 11, 9, 20, 0, 0, TimeSpan.Zero))
+        };
+
+        var result = NewznabSearchService.FilterBySeasonEpisode(
+            items, new SearchCommand.TvParams(Season: 2026, Episode: 1108, TvdbId: null, ImdbId: null));
+
+        var item = Assert.Single(result);
+        Assert.Equal("Tagesschau", item.Title);
+    }
+
+    [Fact]
+    public void FilterBySeasonEpisode_daily_show_excludes_non_matching_airdate()
+    {
+        var items = new[]
+        {
+            CreateItem("Tagesschau", airedAt: new DateTimeOffset(2026, 11, 9, 20, 0, 0, TimeSpan.Zero))
+        };
+
+        var result = NewznabSearchService.FilterBySeasonEpisode(
+            items, new SearchCommand.TvParams(Season: 2026, Episode: 1108, TvdbId: null, ImdbId: null));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void FilterBySeasonEpisode_daily_show_excludes_null_aired_at()
+    {
+        var items = new[] { CreateItem("No Date") };
+
+        var result = NewznabSearchService.FilterBySeasonEpisode(
+            items, new SearchCommand.TvParams(Season: 2026, Episode: 1108, TvdbId: null, ImdbId: null));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void FilterBySeasonEpisode_daily_show_invalid_mmdd_returns_empty()
+    {
+        var items = new[]
+        {
+            CreateItem("Tagesschau", airedAt: new DateTimeOffset(2026, 11, 8, 20, 0, 0, TimeSpan.Zero))
+        };
+
+        var result = NewznabSearchService.FilterBySeasonEpisode(
+            items, new SearchCommand.TvParams(Season: 2026, Episode: 1332, TvdbId: null, ImdbId: null));
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void FilterBySeasonEpisode_regular_season_episode_unchanged()
+    {
+        var items = new[]
+        {
+            CreateItem("Tatort S01E03", season: "1", episode: "3"),
+            CreateItem("Tatort S01E05", season: "1", episode: "5")
+        };
+
+        var result = NewznabSearchService.FilterBySeasonEpisode(
+            items, new SearchCommand.TvParams(Season: 1, Episode: 3, TvdbId: null, ImdbId: null));
+
+        var item = Assert.Single(result);
+        Assert.Equal("Tatort S01E03", item.Title);
+    }
+
+    [Theory]
+    [InlineData(2026, 1108, true)]
+    [InlineData(2024, 229, true)]
+    [InlineData(2023, 229, false)]
+    [InlineData(2026, 1332, false)]
+    [InlineData(2026, 0, false)]
+    public void TryParseMmdd_validates_date(int year, int mmdd, bool expected)
+    {
+        Assert.Equal(expected, NewznabSearchService.TryParseMmdd(year, mmdd, out _));
+    }
+
+    private static SearchResultItem CreateItem(
+        string title, string? season = null, string? episode = null,
+        DateTimeOffset? airedAt = null) =>
+        new(title, "channel", "topic", "", 0, 0, 0, airedAt, 0,
             Metadata: season is not null || episode is not null
                 ? new MatchMetadata(null, season, episode, null, null)
                 : null);

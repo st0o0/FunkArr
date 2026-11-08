@@ -91,6 +91,12 @@ public sealed class NewznabSearchService(
         if (hasEpisode)
         {
             var episode = tvParams.Episode!.Value;
+
+            if (season >= 1900 && TryParseMmdd(season, episode, out var dailyDate))
+            {
+                return [.. items.Where(i => i.AiredAt?.Date == dailyDate)];
+            }
+
             return
             [
                 .. items.Where(i =>
@@ -100,6 +106,13 @@ public sealed class NewznabSearchService(
         }
 
         return [.. items.Where(i => int.TryParse(i.Metadata?.Season, out var s) && s == season)];
+    }
+
+    internal static bool TryParseMmdd(int year, int mmdd, out DateTime date)
+    {
+        var month = mmdd / 100;
+        var day = mmdd % 100;
+        return DateTime.TryParse($"{year}-{month:D2}-{day:D2}", out date);
     }
 
     private static (SearchCommand? Cmd, NewznabCategory Category) BuildCommand(IndexerRequest req) =>

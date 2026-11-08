@@ -15,13 +15,15 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
+    private readonly TimeProvider _timeProvider;
     private DownloadHistoryManagerState _state = DownloadHistoryManagerState.Empty;
 
     public override string PersistenceId => "download-history";
 
-    public DownloadHistoryManager(IOptionsMonitor<DownloadOptions> optionsMonitor)
+    public DownloadHistoryManager(IOptionsMonitor<DownloadOptions> optionsMonitor, TimeProvider timeProvider)
     {
         _optionsMonitor = optionsMonitor;
+        _timeProvider = timeProvider;
 
         Command<RecordDownload>(HandleRecord);
         Command<RemoveHistoryEntry>(HandleRemove);
@@ -68,7 +70,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
             _state.Apply(e);
 
             var maxRecords = _optionsMonitor.CurrentValue.MaxHistoryRecords;
-            var trimCount = _state.TrimIfNeeded(maxRecords);
+            var trimCount = _state.TrimIfNeeded(maxRecords, _timeProvider);
             if (trimCount > 0)
             {
                 Persist(new HistoryTrimmed(trimCount), _ => { });
