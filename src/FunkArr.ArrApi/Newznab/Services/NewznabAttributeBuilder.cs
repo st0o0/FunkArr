@@ -6,7 +6,8 @@ namespace FunkArr.ArrApi.Newznab.Services;
 
 public sealed class NewznabAttributeBuilder
 {
-    public List<NewznabAttribute> BuildAttributes(SearchResultItem item, NewznabCategory category)
+    public List<NewznabAttribute> BuildAttributes(
+        SearchResultItem item, NewznabCategory category, DateTimeOffset? firstSeenAt = null)
     {
         var attrs = new List<NewznabAttribute>
         {
@@ -37,6 +38,18 @@ public sealed class NewznabAttributeBuilder
         if (item.Metadata?.Ids?.TmdbId is not null)
         {
             attrs.Add(new NewznabAttribute { Name = "tmdbid", Value = item.Metadata.Ids.TmdbId.Value.ToString() });
+        }
+
+        attrs.Add(new NewznabAttribute { Name = "language", Value = "German" });
+
+        if (!string.IsNullOrEmpty(item.SubtitleUrl))
+        {
+            attrs.Add(new NewznabAttribute { Name = "subs", Value = "German" });
+        }
+
+        if (firstSeenAt is not null)
+        {
+            attrs.Add(new NewznabAttribute { Name = "usenetdate", Value = firstSeenAt.Value.ToString("R") });
         }
 
         return attrs;

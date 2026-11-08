@@ -40,7 +40,13 @@ public sealed class NewznabXmlTests
 
         var search = searching.Element("search")!;
         Assert.Equal("yes", search.Attribute("available")!.Value);
-        Assert.Equal("q", search.Attribute("supportedParams")!.Value);
+        var searchParams = search.Attribute("supportedParams")!.Value;
+        Assert.Multiple(
+            () => Assert.Contains("q", searchParams),
+            () => Assert.Contains("title", searchParams),
+            () => Assert.Contains("maxage", searchParams),
+            () => Assert.Contains("minsize", searchParams),
+            () => Assert.Contains("maxsize", searchParams));
 
         var tvSearch = searching.Element("tv-search")!;
         Assert.Equal("yes", tvSearch.Attribute("available")!.Value);
@@ -48,12 +54,22 @@ public sealed class NewznabXmlTests
         Assert.Multiple(
             () => Assert.Contains("tvdbid", tvParams),
             () => Assert.Contains("imdbid", tvParams),
-            () => Assert.Contains("tmdbid", tvParams));
+            () => Assert.Contains("tmdbid", tvParams),
+            () => Assert.Contains("title", tvParams),
+            () => Assert.Contains("maxage", tvParams),
+            () => Assert.Contains("minsize", tvParams),
+            () => Assert.Contains("maxsize", tvParams));
 
         var movieSearch = searching.Element("movie-search")!;
         Assert.Equal("yes", movieSearch.Attribute("available")!.Value);
-        Assert.Contains("imdbid", movieSearch.Attribute("supportedParams")!.Value);
-        Assert.Contains("tmdbid", movieSearch.Attribute("supportedParams")!.Value);
+        var movieParams = movieSearch.Attribute("supportedParams")!.Value;
+        Assert.Multiple(
+            () => Assert.Contains("imdbid", movieParams),
+            () => Assert.Contains("tmdbid", movieParams),
+            () => Assert.Contains("title", movieParams),
+            () => Assert.Contains("maxage", movieParams),
+            () => Assert.Contains("minsize", movieParams),
+            () => Assert.Contains("maxsize", movieParams));
 
         var audioSearch = searching.Element("audio-search")!;
         Assert.Equal("no", audioSearch.Attribute("available")!.Value);

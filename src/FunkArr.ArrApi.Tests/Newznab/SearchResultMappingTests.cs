@@ -274,4 +274,52 @@ public sealed class SearchResultMappingTests
         Assert.Empty(rss.Channel.Items);
         Assert.Equal(0, rss.Channel.Response.Total);
     }
+
+    [Fact]
+    public void BuildAttributes_always_emits_language_german()
+    {
+        var item = new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9);
+        var attrs = _attributeBuilder.BuildAttributes(item, NewznabCategory.Tv);
+
+        Assert.Contains(attrs, a => a is { Name: "language", Value: "German" });
+    }
+
+    [Fact]
+    public void BuildAttributes_emits_subs_when_subtitle_present()
+    {
+        var item = new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9,
+            "https://example.com/subs.vtt");
+        var attrs = _attributeBuilder.BuildAttributes(item, NewznabCategory.Tv);
+
+        Assert.Contains(attrs, a => a is { Name: "subs", Value: "German" });
+    }
+
+    [Fact]
+    public void BuildAttributes_omits_subs_when_no_subtitle()
+    {
+        var item = new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9);
+        var attrs = _attributeBuilder.BuildAttributes(item, NewznabCategory.Tv);
+
+        Assert.DoesNotContain(attrs, a => a.Name == "subs");
+    }
+
+    [Fact]
+    public void BuildAttributes_emits_usenetdate_when_firstSeenAt_provided()
+    {
+        var item = new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9);
+        var firstSeen = new DateTimeOffset(2026, 11, 8, 10, 0, 0, TimeSpan.Zero);
+        var attrs = _attributeBuilder.BuildAttributes(item, NewznabCategory.Tv, firstSeen);
+
+        var usenetdate = Assert.Single(attrs, a => a.Name == "usenetdate");
+        Assert.Equal("Sun, 08 Nov 2026 10:00:00 GMT", usenetdate.Value);
+    }
+
+    [Fact]
+    public void BuildAttributes_omits_usenetdate_when_null()
+    {
+        var item = new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9);
+        var attrs = _attributeBuilder.BuildAttributes(item, NewznabCategory.Tv);
+
+        Assert.DoesNotContain(attrs, a => a.Name == "usenetdate");
+    }
 }

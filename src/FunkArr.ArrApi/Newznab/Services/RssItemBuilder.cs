@@ -59,7 +59,7 @@ public sealed class RssItemBuilder(NewznabAttributeBuilder attributeBuilder)
             Category = category.DisplayName(item.Quality),
             Description = $"{item.Channel} - {item.Topic}",
             Enclosure = new Enclosure { Url = getNzbUrl, Length = item.Size },
-            Attributes = attributeBuilder.BuildAttributes(item, category)
+            Attributes = attributeBuilder.BuildAttributes(item, category, pubDate)
         };
     }
 }

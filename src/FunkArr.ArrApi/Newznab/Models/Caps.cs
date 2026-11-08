@@ -48,13 +48,13 @@ public sealed class Registration
 public sealed class Searching
 {
     [XmlElement("search")]
-    public SearchType Search { get; init; } = new() { Available = "yes", SupportedParams = "q" };
+    public SearchType Search { get; init; } = new() { Available = "yes", SupportedParams = "q,title,maxage,minsize,maxsize" };
 
     [XmlElement("tv-search")]
-    public SearchType TvSearch { get; init; } = new() { Available = "yes", SupportedParams = "q,season,ep,tvdbid,imdbid,tmdbid" };
+    public SearchType TvSearch { get; init; } = new() { Available = "yes", SupportedParams = "q,season,ep,tvdbid,imdbid,tmdbid,title,maxage,minsize,maxsize" };
 
     [XmlElement("movie-search")]
-    public SearchType MovieSearch { get; init; } = new() { Available = "yes", SupportedParams = "q,imdbid,tmdbid" };
+    public SearchType MovieSearch { get; init; } = new() { Available = "yes", SupportedParams = "q,imdbid,tmdbid,title,maxage,minsize,maxsize" };
 
     [XmlElement("audio-search")]
     public SearchType AudioSearch { get; init; } = new() { Available = "no", SupportedParams = "" };

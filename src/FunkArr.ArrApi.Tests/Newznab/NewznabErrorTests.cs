@@ -46,4 +46,30 @@ public sealed class NewznabErrorTests
         Assert.Equal("202", doc.Root!.Attribute("code")!.Value);
         Assert.Equal("No such function", doc.Root!.Attribute("description")!.Value);
     }
+
+    [Theory]
+    [InlineData(101, "Account suspended")]
+    [InlineData(102, "Insufficient privileges")]
+    [InlineData(103, "Registration denied")]
+    [InlineData(104, "Registrations closed")]
+    [InlineData(203, "Function not available")]
+    public void Extended_error_codes_produce_valid_xml(int expectedCode, string expectedDescription)
+    {
+        var error = expectedCode switch
+        {
+            101 => NewznabError.AccountSuspended,
+            102 => NewznabError.InsufficientPrivileges,
+            103 => NewznabError.RegistrationDenied,
+            104 => NewznabError.RegistrationsClosed,
+            203 => NewznabError.FunctionNotAvailable,
+            _ => throw new ArgumentOutOfRangeException(nameof(expectedCode))
+        };
+
+        var xml = NewznabXmlResult.Serialize(error);
+        var doc = XDocument.Parse(xml);
+
+        Assert.Multiple(
+            () => Assert.Equal(expectedCode.ToString(), doc.Root!.Attribute("code")!.Value),
+            () => Assert.Equal(expectedDescription, doc.Root!.Attribute("description")!.Value));
+    }
 }

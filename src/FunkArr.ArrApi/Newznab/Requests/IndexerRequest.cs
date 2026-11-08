@@ -13,4 +13,8 @@ public sealed record IndexerRequest(
     [FromQuery(Name = "ep")] string? Ep,
     [FromQuery(Name = "tvdbid")] string? TvdbId,
     [FromQuery(Name = "imdbid")] string? ImdbId,
-    [FromQuery(Name = "tmdbid")] string? TmdbId);
+    [FromQuery(Name = "tmdbid")] string? TmdbId,
+    [FromQuery(Name = "title")] string? Title = null,
+    [FromQuery(Name = "maxage")] int? MaxAge = null,
+    [FromQuery(Name = "minsize")] long? MinSize = null,
+    [FromQuery(Name = "maxsize")] long? MaxSize = null);
