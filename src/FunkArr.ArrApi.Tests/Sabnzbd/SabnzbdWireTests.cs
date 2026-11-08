@@ -196,7 +196,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
             "\"timeleft\":\"00:29:55\",\"mb\":\"100.0\",\"filename\":\"Tatort\",\"cat\":\"tv\",\"mbleft\":\"50.0\"," +
             "\"percentage\":\"50\",\"priority\":\"Normal\",\"speed\":\"5242880\"}," +
             "{\"nzo_id\":\"22222222-2222-2222-2222-222222222222\",\"status\":\"Queued\",\"index\":1," +
-            "\"timeleft\":\"00:00:00\",\"mb\":\"10.0\",\"filename\":\"Film\",\"cat\":\"movie\",\"mbleft\":\"10.0\"," +
+            "\"timeleft\":\"00:00:00\",\"mb\":\"10.0\",\"filename\":\"Film\",\"cat\":\"movies\",\"mbleft\":\"10.0\"," +
             "\"percentage\":\"0\",\"priority\":\"High\",\"speed\":\"0\"}]}}",
             result);
     }
@@ -251,7 +251,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
             "\"category\":\"tv\",\"bytes\":1500000000,\"download_time\":120,\"storage\":" + storage + "," +
             "\"status\":\"Completed\",\"fail_message\":\"\",\"completed_on\":1700000000}," +
             "{\"nzo_id\":\"22222222-2222-2222-2222-222222222222\",\"name\":\"Film\",\"nzb_name\":\"Film.nzb\"," +
-            "\"category\":\"movie\",\"bytes\":0,\"download_time\":0,\"storage\":null," +
+            "\"category\":\"movies\",\"bytes\":0,\"download_time\":0,\"storage\":null," +
             "\"status\":\"Failed\",\"fail_message\":\"connection lost\",\"completed_on\":1700000100}]}}",
             result);
     }
