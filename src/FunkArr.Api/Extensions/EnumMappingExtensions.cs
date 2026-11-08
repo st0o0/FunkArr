@@ -210,6 +210,7 @@ internal static class EnumMappingExtensions
     public static QueuePriority ToApi(this MsgDownload.DownloadPriority value) =>
         value switch
         {
+            MsgDownload.DownloadPriority.Paused => QueuePriority.Paused,
             MsgDownload.DownloadPriority.Low => QueuePriority.Low,
             MsgDownload.DownloadPriority.Normal => QueuePriority.Normal,
             MsgDownload.DownloadPriority.High => QueuePriority.High,
@@ -219,6 +220,7 @@ internal static class EnumMappingExtensions
     public static MsgDownload.DownloadPriority ToMessage(this QueuePriority value) =>
         value switch
         {
+            QueuePriority.Paused => MsgDownload.DownloadPriority.Paused,
             QueuePriority.Low => MsgDownload.DownloadPriority.Low,
             QueuePriority.Normal => MsgDownload.DownloadPriority.Normal,
             QueuePriority.High => MsgDownload.DownloadPriority.High,

@@ -172,8 +172,9 @@ public sealed class SabnzbdDownloadService(
                     : new SabnzbdError(forceResult.Error ?? "Force start failed");
             }
 
-            var priority = Math.Clamp(priorityInt, -1, 1) switch
+            var priority = priorityInt switch
             {
+                -2 => DownloadPriority.Paused,
                 -1 => DownloadPriority.Low,
                 0 => DownloadPriority.Normal,
                 _ => DownloadPriority.High

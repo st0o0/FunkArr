@@ -179,6 +179,21 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SetPriority_PausePriority_SetsPaused()
+    {
+        var (service, managerProbe, _) = CreateService();
+        var id = Guid.NewGuid();
+
+        var task = service.SetPriority(id.ToString(), "-2", CancellationToken.None);
+        var msg = managerProbe.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(DownloadPriority.Paused, msg.Priority);
+        managerProbe.Reply(new SetDownloadPriorityCompleted());
+        var result = await task;
+
+        SabnzbdResultAssert.Ok(result);
+    }
+
+    [Fact]
     public async Task SetPriority_InvalidGuid_ReturnsError()
     {
         var (service, _, _) = CreateService();

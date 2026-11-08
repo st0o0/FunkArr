@@ -7,7 +7,8 @@ public enum SabnzbdQueueStatus
 {
     Unknown = 0,
     [JsonStringEnumMemberName("Downloading")] Downloading = 1,
-    [JsonStringEnumMemberName("Queued")] Queued = 2
+    [JsonStringEnumMemberName("Queued")] Queued = 2,
+    [JsonStringEnumMemberName("Paused")] Paused = 3
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<SabnzbdHistoryStatus>))]

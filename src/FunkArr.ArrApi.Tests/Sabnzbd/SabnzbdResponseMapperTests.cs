@@ -160,6 +160,7 @@ public sealed class SabnzbdResponseMapperTests
     [Fact]
     public void MapSabnzbdPriority_maps_correctly()
     {
+        Assert.Equal(DownloadPriority.Paused, SabnzbdResponseMapper.MapSabnzbdPriority("-2"));
         Assert.Equal(DownloadPriority.Low, SabnzbdResponseMapper.MapSabnzbdPriority("-1"));
         Assert.Equal(DownloadPriority.Normal, SabnzbdResponseMapper.MapSabnzbdPriority("0"));
         Assert.Equal(DownloadPriority.High, SabnzbdResponseMapper.MapSabnzbdPriority("1"));
@@ -169,6 +170,7 @@ public sealed class SabnzbdResponseMapperTests
     }
 
     [Theory]
+    [InlineData(DownloadPriority.Paused, SabnzbdPriority.Low)]
     [InlineData(DownloadPriority.Low, SabnzbdPriority.Low)]
     [InlineData(DownloadPriority.Normal, SabnzbdPriority.Normal)]
     [InlineData(DownloadPriority.High, SabnzbdPriority.High)]
@@ -177,6 +179,18 @@ public sealed class SabnzbdResponseMapperTests
         var slot = SabnzbdResponseMapper.BuildQueueSlot(QueueItemWith(DownloadStatus.Queued, priority), 0);
 
         Assert.Equal(expected, slot.Priority);
+    }
+
+    [Fact]
+    public void BuildQueueSlot_paused_item_reports_paused_status()
+    {
+        var item = QueueItemWith(DownloadStatus.Queued, DownloadPriority.Paused);
+
+        var slot = SabnzbdResponseMapper.BuildQueueSlot(item, 0);
+
+        Assert.Multiple(
+            () => Assert.Equal(SabnzbdQueueStatus.Paused, slot.Status),
+            () => Assert.Equal(SabnzbdPriority.Low, slot.Priority));
     }
 
     [Fact]

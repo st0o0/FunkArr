@@ -45,6 +45,7 @@ internal static class PersistenceMapping
     public static PersistedDownloadPriority ToPersistence(this DownloadPriority priority) =>
         priority switch
         {
+            DownloadPriority.Paused => PersistedDownloadPriority.Paused,
             DownloadPriority.Low => PersistedDownloadPriority.Low,
             DownloadPriority.Normal => PersistedDownloadPriority.Normal,
             DownloadPriority.High => PersistedDownloadPriority.High,
@@ -54,6 +55,7 @@ internal static class PersistenceMapping
     public static DownloadPriority ToDomain(this PersistedDownloadPriority priority) =>
         priority switch
         {
+            PersistedDownloadPriority.Paused => DownloadPriority.Paused,
             PersistedDownloadPriority.Low => DownloadPriority.Low,
             PersistedDownloadPriority.Normal => DownloadPriority.Normal,
             PersistedDownloadPriority.High => DownloadPriority.High,

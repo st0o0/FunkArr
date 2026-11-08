@@ -10,7 +10,7 @@ internal static class SabnzbdResponseMapper
 {
     internal static QueueSlot BuildQueueSlot(QueueItem item, int index) => new(
         NzoId: item.DownloadId.ToString(),
-        Status: MapQueueStatus(item.Status),
+        Status: item.Priority == DownloadPriority.Paused ? SabnzbdQueueStatus.Paused : MapQueueStatus(item.Status),
         Index: index,
         Timeleft: FormatTimeLeft(item),
         Mb: (item.TotalBytes / 1_048_576.0).ToString("F1", CultureInfo.InvariantCulture),
@@ -96,6 +96,7 @@ internal static class SabnzbdResponseMapper
 
         return intVal switch
         {
+            -2 => DownloadPriority.Paused,
             -1 => DownloadPriority.Low,
             1 => DownloadPriority.High,
             2 => DownloadPriority.High,
@@ -119,6 +120,7 @@ internal static class SabnzbdResponseMapper
 
     private static SabnzbdPriority MapPriority(DownloadPriority priority) => priority switch
     {
+        DownloadPriority.Paused => SabnzbdPriority.Low,
         DownloadPriority.Low => SabnzbdPriority.Low,
         DownloadPriority.Normal => SabnzbdPriority.Normal,
         DownloadPriority.High => SabnzbdPriority.High,
