@@ -54,30 +54,38 @@ public sealed class SabnzbdVersionTests(FunkArrFixture fixture)
     }
 
     [Fact]
-    public async Task Missing_api_key_returns_403()
+    public async Task Missing_api_key_returns_200_with_error()
     {
         var response = await fixture.Client.GetAsync("/download/api?mode=version", TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Wrong_api_key_returns_403()
-    {
-        var response = await fixture.Client.GetAsync("/download/api?mode=version&apikey=wrong-key", TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Invalid_mode_returns_400_with_error()
-    {
-        var response = await fixture.Client.GetAsync("/download/api?mode=invalid&apikey=test-key", TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.False(json.GetProperty("status").GetBoolean());
-        Assert.True(json.TryGetProperty("error", out _));
+        Assert.Equal("API Key Required", json.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Wrong_api_key_returns_200_with_error()
+    {
+        var response = await fixture.Client.GetAsync("/download/api?mode=version&apikey=wrong-key", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.False(json.GetProperty("status").GetBoolean());
+        Assert.Equal("API Key Required", json.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Invalid_mode_returns_200_with_error()
+    {
+        var response = await fixture.Client.GetAsync("/download/api?mode=invalid&apikey=test-key", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.False(json.GetProperty("status").GetBoolean());
+        Assert.Equal("Invalid mode", json.GetProperty("error").GetString());
     }
 }
