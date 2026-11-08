@@ -6,5 +6,7 @@ public sealed class FunkArrOptions
 
     public string ApiKey { get; set; } = "funkarr-default-api-key";
 
+    public string BaseUrl { get; set; } = "";
+
     public string DataPath { get; set; } = "data";
 }

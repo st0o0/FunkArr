@@ -8,6 +8,7 @@ export interface CheckResult {
 }
 
 export interface SetupConnectionInfo {
+  baseUrl: string
   indexerApiPath: string
   downloadApiPath: string
   defaultPort: number

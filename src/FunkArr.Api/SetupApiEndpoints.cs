@@ -23,10 +23,10 @@ public static class SetupApiEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
-                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
-                : request.FunkArrUrl.TrimEnd('/');
-            var payload = ProwlarrIndexerPayload.Create(selfUrl, options.CurrentValue.ApiKey);
+            var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
+            if (error is not null) return Results.Ok(error);
+
+            var payload = ProwlarrIndexerPayload.Create(selfUri!, options.CurrentValue.ApiKey);
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v1/indexer", payload));
         })
@@ -40,10 +40,10 @@ public static class SetupApiEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
-                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
-                : request.FunkArrUrl.TrimEnd('/');
-            var payload = SonarrRadarrIndexerPayload.Create(selfUrl, options.CurrentValue.ApiKey, [5030, 5040]);
+            var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
+            if (error is not null) return Results.Ok(error);
+
+            var payload = SonarrRadarrIndexerPayload.Create(selfUri!, options.CurrentValue.ApiKey, [5030, 5040]);
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/indexer", payload));
         })
@@ -57,10 +57,10 @@ public static class SetupApiEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
-                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
-                : request.FunkArrUrl.TrimEnd('/');
-            var payload = SabnzbdDownloadClientPayload.Create(selfUrl, options.CurrentValue.ApiKey, "tv");
+            var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
+            if (error is not null) return Results.Ok(error);
+
+            var payload = SabnzbdDownloadClientPayload.Create(selfUri!, options.CurrentValue.ApiKey, "tv");
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/downloadclient", payload));
         })
@@ -74,10 +74,10 @@ public static class SetupApiEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
-                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
-                : request.FunkArrUrl.TrimEnd('/');
-            var payload = SonarrRadarrIndexerPayload.Create(selfUrl, options.CurrentValue.ApiKey, [2030, 2040]);
+            var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
+            if (error is not null) return Results.Ok(error);
+
+            var payload = SonarrRadarrIndexerPayload.Create(selfUri!, options.CurrentValue.ApiKey, [2030, 2040]);
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/indexer", payload));
         })
@@ -91,10 +91,10 @@ public static class SetupApiEndpoints
             ArrSetupClient client,
             HttpContext ctx) =>
         {
-            var selfUrl = string.IsNullOrWhiteSpace(request.FunkArrUrl)
-                ? $"{ctx.Request.Scheme}://{ctx.Request.Host}"
-                : request.FunkArrUrl.TrimEnd('/');
-            var payload = SabnzbdDownloadClientPayload.Create(selfUrl, options.CurrentValue.ApiKey, "movies");
+            var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
+            if (error is not null) return Results.Ok(error);
+
+            var payload = SabnzbdDownloadClientPayload.Create(selfUri!, options.CurrentValue.ApiKey, "movies");
             return Results.Ok(await client.PostResourceAsync(
                 new ArrConnection(request.Url, request.ApiKey), "/api/v3/downloadclient", payload));
         })
@@ -105,4 +105,22 @@ public static class SetupApiEndpoints
         return app;
     }
 
+    internal static (Uri? SelfUri, ArrResourceResponse? Error) ResolveSelfUrl(
+        CreateArrResourceRequest request, FunkArrOptions options, HttpContext ctx)
+    {
+        var raw = !string.IsNullOrWhiteSpace(request.FunkArrUrl)
+            ? request.FunkArrUrl.TrimEnd('/')
+            : !string.IsNullOrWhiteSpace(options.BaseUrl)
+                ? options.BaseUrl.TrimEnd('/')
+                : $"{ctx.Request.Scheme}://{ctx.Request.Host}";
+
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri) ||
+            uri.Scheme is not ("http" or "https"))
+        {
+            return (null, new ArrResourceResponse(false,
+                Error: "Invalid FunkArr URL -- must start with http:// or https://"));
+        }
+
+        return (uri, null);
+    }
 }

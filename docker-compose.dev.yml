@@ -13,6 +13,7 @@ services:
       - Serilog__MinimumLevel__Default=Debug
       - Serilog__MinimumLevel__Override__Akka=Information
       - FunkArr__ApiKey=funkarr-dev-api-key-01
+      - FunkArr__BaseUrl=http://funkarr:6969
       - FunkArr__Tvdb__ApiKey=${TVDB_API_KEY:-}
       - FunkArr__Tmdb__ApiKey=${TMDB_API_KEY:-}
       - FunkArr__Download__Path=/shared/downloads

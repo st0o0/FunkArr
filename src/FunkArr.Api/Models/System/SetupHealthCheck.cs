@@ -26,6 +26,7 @@ public sealed record CheckResult(
 }
 
 public sealed record SetupConnectionInfo(
+    string BaseUrl,
     string IndexerApiPath,
     string DownloadApiPath,
     int DefaultPort);

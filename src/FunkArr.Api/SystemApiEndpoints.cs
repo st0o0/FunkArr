@@ -32,6 +32,8 @@ public static class SystemApiEndpoints
 
         group.MapGet("/setup", async (
             IOptionsMonitor<FunkArrOptions> options,
+            IOptionsMonitor<TvdbOptions> tvdbOptions,
+            IOptionsMonitor<TmdbOptions> tmdbOptions,
             DataPaths dataPaths,
             IDataFiles dataFiles,
             IHttpClientFactory httpClientFactory,
@@ -60,11 +62,14 @@ public static class SystemApiEndpoints
                 ["incompleteDirectory"] = incompleteCheck,
                 ["indexerApi"] = await indexerTask,
                 ["downloadApi"] = await downloadApiTask,
-                ["ffmpeg"] = await ffmpegTask
+                ["ffmpeg"] = await ffmpegTask,
+                ["tvdbApiKey"] = CheckEnrichmentKey(tvdbOptions.CurrentValue.ApiKey, "Set FunkArr__Tvdb__ApiKey for TV series metadata enrichment"),
+                ["tmdbApiKey"] = CheckEnrichmentKey(tmdbOptions.CurrentValue.ApiKey, "Set FunkArr__Tmdb__ApiKey for movie metadata enrichment")
             };
 
             var port = ctx.Request.Host.Port ?? (ctx.Request.Scheme == "https" ? 443 : 80);
             var connectionInfo = new SetupConnectionInfo(
+                BaseUrl: opts.BaseUrl,
                 IndexerApiPath: "/index/api",
                 DownloadApiPath: "/download/api",
                 DefaultPort: port);
@@ -200,6 +205,11 @@ public static class SystemApiEndpoints
             return CheckResult.Fail($"Self-test failed: {ex.Message}");
         }
     }
+
+    internal static CheckResult CheckEnrichmentKey(string apiKey, string hint) =>
+        string.IsNullOrWhiteSpace(apiKey)
+            ? CheckResult.Warn(hint)
+            : CheckResult.Ok();
 
     internal static async Task<CheckResult> CheckFfmpegAsync()
     {

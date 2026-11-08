@@ -138,7 +138,8 @@
     "createFailed": "Fehler: {error}",
     "funkArrUrl": "FunkArr-URL (optional)",
     "funkArrUrlPlaceholder": "http://funkarr:6969",
-    "funkArrUrlHint": "Wie der Dienst FunkArr erreicht. Leer lassen, wenn gleiches Netzwerk wie der Browser."
+    "funkArrUrlHint": "Wie der Dienst FunkArr erreicht. Leer lassen, wenn gleiches Netzwerk wie der Browser.",
+    "prowlarrSyncsIndexer": "Prowlarr synchronisiert den Indexer automatisch mit Sonarr/Radarr. Hier wird nur der Download-Client benötigt."
   },
   "rulesets": {
     "title": "Regelwerke",
@@ -351,7 +352,9 @@
     "incompleteDirectory": "Temporärverzeichnis",
     "indexerApi": "Indexer-API",
     "downloadApi": "Download-API",
-    "ffmpeg": "FFmpeg"
+    "ffmpeg": "FFmpeg",
+    "tvdbApiKey": "TVDB-API-Schlüssel",
+    "tmdbApiKey": "TMDB-API-Schlüssel"
   },
   "downloads": {
     "activeDownloads": "Aktive Downloads",

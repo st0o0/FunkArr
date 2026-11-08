@@ -111,6 +111,32 @@ public sealed class SetupHealthCheckTests
     }
 
     [Fact]
+    public void EnrichmentKey_check_returns_ok_for_configured_key()
+    {
+        var result = SystemApiEndpoints.CheckEnrichmentKey("my-tvdb-key", "hint");
+
+        Assert.Equal(CheckStatus.Ok, result.Status);
+    }
+
+    [Fact]
+    public void EnrichmentKey_check_returns_warn_for_empty_key()
+    {
+        var result = SystemApiEndpoints.CheckEnrichmentKey("", "Set FunkArr__Tvdb__ApiKey for TV series metadata enrichment");
+
+        Assert.Equal(CheckStatus.Warn, result.Status);
+        Assert.Contains("FunkArr__Tvdb__ApiKey", result.Message);
+    }
+
+    [Fact]
+    public void EnrichmentKey_check_returns_warn_for_whitespace_key()
+    {
+        var result = SystemApiEndpoints.CheckEnrichmentKey("   ", "Set FunkArr__Tmdb__ApiKey for movie metadata enrichment");
+
+        Assert.Equal(CheckStatus.Warn, result.Status);
+        Assert.Contains("FunkArr__Tmdb__ApiKey", result.Message);
+    }
+
+    [Fact]
     public void Storage_directory_returns_result_for_any_path()
     {
         const string invalidPath = "\0invalid-path";

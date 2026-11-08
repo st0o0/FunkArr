@@ -143,8 +143,13 @@
         </div>
       </div>
 
+      <div v-if="isProwlarrSelected && currentServiceKey !== 'prowlarr'" class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-text-body mb-4">
+        {{ $t('setup.prowlarrSyncsIndexer') }}
+      </div>
+
       <div class="flex flex-wrap gap-2 mb-4">
         <button
+          v-if="showIndexerButton"
           @click="handleCreate(currentServiceKey, 'indexer')"
           :disabled="!canCreate(currentServiceKey) || createState[currentServiceKey]?.indexer?.status === 'loading'"
           class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md font-medium transition-colors"
@@ -291,6 +296,8 @@ const healthLabelKeys: Record<string, string> = {
   indexerApi: 'health.indexerApi',
   downloadApi: 'health.downloadApi',
   ffmpeg: 'health.ffmpeg',
+  tvdbApiKey: 'health.tvdbApiKey',
+  tmdbApiKey: 'health.tmdbApiKey',
 }
 
 function getCheckLabel(name: string): string {
@@ -336,8 +343,26 @@ interface ServiceConfig {
 
 const apiKey = computed(() => health.value?.checks.apiKey?.value ?? '<your-api-key>')
 const defaultPort = computed(() => health.value?.setupConnectionInfo?.defaultPort ?? 6969)
-const actualHost = computed(() => window.location.hostname || 'localhost')
-const actualPort = computed(() => window.location.port || defaultPort.value.toString())
+const configuredBaseUrl = computed(() => health.value?.setupConnectionInfo?.baseUrl ?? '')
+
+const actualHost = computed(() => {
+  const base = configuredBaseUrl.value
+  if (base) {
+    try { return new URL(base).hostname } catch { /* fall through */ }
+  }
+  return window.location.hostname || 'localhost'
+})
+
+const actualPort = computed(() => {
+  const base = configuredBaseUrl.value
+  if (base) {
+    try {
+      const url = new URL(base)
+      return url.port || (url.protocol === 'https:' ? '443' : '80')
+    } catch { /* fall through */ }
+  }
+  return window.location.port || defaultPort.value.toString()
+})
 
 function prowlarrConfig(): ServiceConfig {
   return {
@@ -420,6 +445,13 @@ const currentServiceKey = computed(() => {
 })
 
 const isLastStep = computed(() => currentStep.value === stepLabels.value.length - 1)
+const isProwlarrSelected = computed(() => selectedServices.value.includes('prowlarr'))
+
+const showIndexerButton = computed(() => {
+  const key = currentServiceKey.value
+  if (key === 'prowlarr') return true
+  return !isProwlarrSelected.value
+})
 
 const hasFailures = computed(() => {
   if (!health.value) return true
@@ -458,19 +490,22 @@ function canCreate(service: string): boolean {
 
 type ResourceType = 'indexer' | 'downloadClient'
 
-const createFns: Record<string, Record<ResourceType, (req: CreateArrResourceRequest) => Promise<{ success: boolean; error?: string }>>> = {
-  prowlarr: { indexer: createProwlarrIndexer, downloadClient: createProwlarrIndexer },
+const createFns: Record<string, Partial<Record<ResourceType, (req: CreateArrResourceRequest) => Promise<{ success: boolean; error?: string }>>>> = {
+  prowlarr: { indexer: createProwlarrIndexer },
   sonarr: { indexer: createSonarrIndexer, downloadClient: createSonarrDownloadClient },
   radarr: { indexer: createRadarrIndexer, downloadClient: createRadarrDownloadClient },
 }
 
 async function handleCreate(service: string, resource: ResourceType) {
+  const fn = createFns[service]?.[resource]
+  if (!fn) return
+
   const input = serviceInputs[service]
   const state = createState[service][resource]
   state.status = 'loading'
   state.error = undefined
 
-  const result = await createFns[service][resource]({
+  const result = await fn({
     url: input.url,
     apiKey: input.apiKey,
     funkArrUrl: input.funkArrUrl || undefined,
@@ -503,6 +538,14 @@ async function runHealthCheck() {
   error.value = null
   try {
     health.value = await getSetupHealth()
+    const base = health.value?.setupConnectionInfo?.baseUrl
+    if (base) {
+      for (const key of Object.keys(serviceInputs)) {
+        if (!serviceInputs[key].funkArrUrl) {
+          serviceInputs[key].funkArrUrl = base
+        }
+      }
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to run health check'
   } finally {

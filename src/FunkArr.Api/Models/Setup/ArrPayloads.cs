@@ -14,23 +14,27 @@ internal sealed record ProwlarrIndexerPayload(
     int AppProfileId,
     ArrField[] Fields)
 {
-    public static ProwlarrIndexerPayload Create(string funkArrUrl, string apiKey) => new(
-        Name: "FunkArr",
-        Implementation: "Newznab",
-        ImplementationName: "Newznab",
-        ConfigContract: "NewznabSettings",
-        Protocol: "usenet",
-        Enable: true,
-        Redirect: true,
-        Priority: 25,
-        AppProfileId: 1,
-        Fields:
-        [
-            new("baseUrl", $"{funkArrUrl}/index"),
-            new("apiPath", "/api"),
-            new("apiKey", apiKey),
-            new("categories", new[] { 5000, 2000 })
-        ]);
+    public static ProwlarrIndexerPayload Create(Uri selfUri, string apiKey)
+    {
+        var baseUrl = selfUri.ToString().TrimEnd('/');
+        return new(
+            Name: "FunkArr",
+            Implementation: "Newznab",
+            ImplementationName: "Newznab",
+            ConfigContract: "NewznabSettings",
+            Protocol: "usenet",
+            Enable: true,
+            Redirect: true,
+            Priority: 25,
+            AppProfileId: 1,
+            Fields:
+            [
+                new("baseUrl", $"{baseUrl}/index"),
+                new("apiPath", "/api"),
+                new("apiKey", apiKey),
+                new("categories", new[] { 5000, 2000 })
+            ]);
+    }
 }
 
 internal sealed record SonarrRadarrIndexerPayload(
@@ -45,23 +49,27 @@ internal sealed record SonarrRadarrIndexerPayload(
     int Priority,
     ArrField[] Fields)
 {
-    public static SonarrRadarrIndexerPayload Create(string funkArrUrl, string apiKey, int[] categories) => new(
-        Name: "FunkArr",
-        Implementation: "Newznab",
-        ImplementationName: "Newznab",
-        ConfigContract: "NewznabSettings",
-        Protocol: "usenet",
-        EnableRss: true,
-        EnableAutomaticSearch: true,
-        EnableInteractiveSearch: true,
-        Priority: 25,
-        Fields:
-        [
-            new("baseUrl", $"{funkArrUrl}/index"),
-            new("apiPath", "/api"),
-            new("apiKey", apiKey),
-            new("categories", categories)
-        ]);
+    public static SonarrRadarrIndexerPayload Create(Uri selfUri, string apiKey, int[] categories)
+    {
+        var baseUrl = selfUri.ToString().TrimEnd('/');
+        return new(
+            Name: "FunkArr",
+            Implementation: "Newznab",
+            ImplementationName: "Newznab",
+            ConfigContract: "NewznabSettings",
+            Protocol: "usenet",
+            EnableRss: true,
+            EnableAutomaticSearch: true,
+            EnableInteractiveSearch: true,
+            Priority: 25,
+            Fields:
+            [
+                new("baseUrl", $"{baseUrl}/index"),
+                new("apiPath", "/api"),
+                new("apiKey", apiKey),
+                new("categories", categories)
+            ]);
+    }
 }
 
 internal sealed record SabnzbdDownloadClientPayload(
@@ -74,25 +82,22 @@ internal sealed record SabnzbdDownloadClientPayload(
     int Priority,
     ArrField[] Fields)
 {
-    public static SabnzbdDownloadClientPayload Create(string funkArrUrl, string apiKey, string category)
-    {
-        var uri = new Uri(funkArrUrl);
-        return new(
-            Name: "FunkArr",
-            Implementation: "Sabnzbd",
-            ImplementationName: "SABnzbd",
-            ConfigContract: "SabnzbdSettings",
-            Protocol: "usenet",
-            Enable: true,
-            Priority: 1,
-            Fields:
-            [
-                new("host", uri.Host),
-                new("port", uri.Port),
-                new("urlBase", "/download"),
-                new("apiKey", apiKey),
-                new("tvCategory", category),
-                new("movieCategory", category)
-            ]);
-    }
+    public static SabnzbdDownloadClientPayload Create(Uri selfUri, string apiKey, string category) => new(
+        Name: "FunkArr",
+        Implementation: "Sabnzbd",
+        ImplementationName: "SABnzbd",
+        ConfigContract: "SabnzbdSettings",
+        Protocol: "usenet",
+        Enable: true,
+        Priority: 1,
+        Fields:
+        [
+            new("host", selfUri.Host),
+            new("port", selfUri.Port),
+            new("useSsl", selfUri.Scheme == "https"),
+            new("urlBase", "/download"),
+            new("apiKey", apiKey),
+            new("tvCategory", category),
+            new("movieCategory", category)
+        ]);
 }

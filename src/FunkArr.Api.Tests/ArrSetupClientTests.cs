@@ -121,10 +121,43 @@ public sealed class ArrSetupClientTests
         Assert.Contains("Connection failed", result.Error);
     }
 
+    [Theory]
+    [InlineData("http://host:8989/sonarr", "/api/v3/indexer", "http://host:8989/sonarr/api/v3/indexer")]
+    [InlineData("http://host:8989/sonarr/", "/api/v3/indexer", "http://host:8989/sonarr/api/v3/indexer")]
+    [InlineData("http://host:8989", "/api/v3/indexer", "http://host:8989/api/v3/indexer")]
+    [InlineData("http://host:8989/", "/api/v1/indexer", "http://host:8989/api/v1/indexer")]
+    public async Task PostResourceAsync_PreservesSubPathInBaseUrl(string baseUrl, string apiPath, string expectedUrl)
+    {
+        Uri? capturedUri = null;
+        using var handler = new CapturingHandler(
+            req => { capturedUri = req.RequestUri; },
+            () => new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = new StringContent("""{"id":1,"name":"FunkArr"}""", System.Text.Encoding.UTF8, "application/json")
+            });
+        var client = CreateClient(handler);
+        var connection = new ArrConnection(baseUrl, "test-key");
+
+        await client.PostResourceAsync(connection, apiPath, new { Name = "test" });
+
+        Assert.NotNull(capturedUri);
+        Assert.Equal(expectedUrl, capturedUri.ToString());
+    }
+
     private sealed class StubHandler(Func<HttpResponseMessage> responseFactory) : DelegatingHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
             => Task.FromResult(responseFactory());
+    }
+
+    private sealed class CapturingHandler(Action<HttpRequestMessage> capture, Func<HttpResponseMessage> responseFactory) : DelegatingHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            capture(request);
+            return Task.FromResult(responseFactory());
+        }
     }
 }

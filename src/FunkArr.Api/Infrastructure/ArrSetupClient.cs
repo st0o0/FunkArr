@@ -22,7 +22,7 @@ public sealed class ArrSetupClient(HttpClient httpClient)
 
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(baseUri, apiPath));
+            using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(baseUri.ToString().TrimEnd('/') + apiPath));
             request.Headers.Add("X-Api-Key", connection.ApiKey);
             request.Content = JsonContent.Create(payload, options: _jsonOptions);
 
