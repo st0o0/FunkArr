@@ -3,7 +3,6 @@ using FunkArr.ArrApi.Newznab.Requests;
 using FunkArr.ArrApi.Newznab.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
-using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
@@ -11,7 +10,6 @@ namespace FunkArr.ArrApi.Newznab;
 
 [ApiController]
 [Route("/index/api")]
-[HttpLogging(HttpLoggingFields.All)]
 [RequestTimeout(milliseconds: 45_000)]
 [ServiceFilter(typeof(NewznabApiKeyFilter))]
 public sealed class NewznabController(NewznabSearchService search, TimeProvider timeProvider) : ControllerBase

@@ -14,6 +14,8 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(ArrApiOptions.SectionName));
 
         services.AddOutputCache(NewznabFeedCache.AddPolicy);
+        services.AddScoped<NewznabAttributeBuilder>();
+        services.AddScoped<RssItemBuilder>();
         services.AddScoped<NewznabSearchService>();
         services.AddScoped<SabnzbdQueueService>();
         services.AddScoped<SabnzbdDownloadService>();

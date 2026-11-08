@@ -5,6 +5,7 @@ using FunkArr.Core;
 using FunkArr.Core.Configuration;
 using FunkArr.Core.Data;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Terp.Hosting;
@@ -43,6 +44,13 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
         });
         services.AddSingleton<IDataFiles, DataFiles>();
 
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.KnownProxies.Clear();
+            options.KnownIPNetworks.Clear();
+        });
+
         services.AddRequestTimeouts();
 
         services.AddHttpLogging(options =>
@@ -57,6 +65,7 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
                 HttpLoggingFields.ResponseBody;
             options.CombineLogs = true;
         });
+        services.AddHttpLoggingInterceptor<ApiKeyLoggingInterceptor>();
 
         services.AddMemoryCache(options =>
         {

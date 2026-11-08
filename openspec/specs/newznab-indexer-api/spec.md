@@ -19,7 +19,7 @@ The system SHALL respond to `GET /index/api?t=caps` with a Newznab capabilities 
 
 #### Scenario: Search types declared
 - **WHEN** the caps XML is returned
-- **THEN** `<searching>` SHALL declare `<search available="yes" supportedParams="q"/>`, `<tv-search available="yes" supportedParams="q,season,ep,tvdbid"/>`, `<movie-search available="yes" supportedParams="q,imdbid,tmdbid"/>`, `<audio-search available="no" supportedParams=""/>`, and `<book-search available="no" supportedParams=""/>`
+- **THEN** `<searching>` SHALL declare `<search available="yes" supportedParams="q"/>`, `<tv-search available="yes" supportedParams="q,season,ep,tvdbid,imdbid,tmdbid"/>`, `<movie-search available="yes" supportedParams="q,imdbid,tmdbid"/>`, `<audio-search available="no" supportedParams=""/>`, and `<book-search available="no" supportedParams=""/>`
 
 #### Scenario: Categories declared
 - **WHEN** the caps XML is returned

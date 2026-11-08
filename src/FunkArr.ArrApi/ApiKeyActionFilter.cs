@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using FunkArr.ArrApi.Newznab;
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.ArrApi.Sabnzbd.Models;
@@ -15,7 +17,7 @@ public abstract class ApiKeyActionFilter(IOptions<FunkArrOptions> options) : IAs
         var expectedApiKey = options.Value.ApiKey;
         var apiKey = context.HttpContext.Request.Query["apikey"].FirstOrDefault();
 
-        if (string.IsNullOrEmpty(apiKey) || !string.Equals(apiKey, expectedApiKey, StringComparison.Ordinal))
+        if (string.IsNullOrEmpty(apiKey) || !FixedTimeEquals(apiKey, expectedApiKey))
         {
             context.Result = CreateErrorResult();
             return;
@@ -24,6 +26,11 @@ public abstract class ApiKeyActionFilter(IOptions<FunkArrOptions> options) : IAs
         context.HttpContext.Items["ApiKey"] = apiKey;
         await next();
     }
+
+    private static bool FixedTimeEquals(string a, string b) =>
+        CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(a),
+            Encoding.UTF8.GetBytes(b));
 
     protected abstract IActionResult CreateErrorResult();
 }

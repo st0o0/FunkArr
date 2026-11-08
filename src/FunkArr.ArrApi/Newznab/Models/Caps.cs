@@ -51,7 +51,7 @@ public sealed class Searching
     public SearchType Search { get; init; } = new() { Available = "yes", SupportedParams = "q" };
 
     [XmlElement("tv-search")]
-    public SearchType TvSearch { get; init; } = new() { Available = "yes", SupportedParams = "q,season,ep,tvdbid" };
+    public SearchType TvSearch { get; init; } = new() { Available = "yes", SupportedParams = "q,season,ep,tvdbid,imdbid,tmdbid" };
 
     [XmlElement("movie-search")]
     public SearchType MovieSearch { get; init; } = new() { Available = "yes", SupportedParams = "q,imdbid,tmdbid" };

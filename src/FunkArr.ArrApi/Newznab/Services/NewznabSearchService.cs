@@ -17,6 +17,7 @@ public sealed class NewznabSearchService(
     IActorRegistry registry,
     IMemoryCache cache,
     IOptions<ArrApiOptions> arrApiOptions,
+    RssItemBuilder rssItemBuilder,
     TimeProvider timeProvider,
     ILogger<NewznabSearchService> logger)
 {
@@ -55,7 +56,7 @@ public sealed class NewznabSearchService(
 
             var filtered = FilterBySeasonEpisode(allItems, cmd.Params as SearchCommand.TvParams);
             var paged = filtered.Skip(offset).Take(limit).ToArray();
-            var rss = ToRss(paged, filtered.Length, offset, baseUrl, apiKey, category);
+            var rss = rssItemBuilder.ToRss(paged, filtered.Length, offset, baseUrl, apiKey, category);
             return new SearchServiceResult.Success(rss);
         }
         catch (OperationCanceledException ex)
@@ -99,97 +100,6 @@ public sealed class NewznabSearchService(
         }
 
         return [.. items.Where(i => int.TryParse(i.Metadata?.Season, out var s) && s == season)];
-    }
-
-    internal static Rss ToRss(
-        SearchResultItem[] items, int total, int offset,
-        string baseUrl, string apiKey, NewznabCategory category) =>
-        CreateRss([.. items.Select(item => ToItem(item, category, baseUrl, apiKey))], total, offset);
-
-    internal static Rss ToFeedRss(FeedEntry[] entries, int total, int offset, string baseUrl, string apiKey) =>
-        CreateRss(
-        [
-            .. entries.Select(entry => ToItem(
-                new SearchResultItem(entry.Title, entry.Channel, entry.Topic, entry.Url,
-                    entry.Duration, entry.Size, entry.Quality, entry.AiredAt, entry.Score,
-                    entry.SubtitleUrl, new MatchMetadata(entry.Ids, entry.Season, entry.Episode, null, null)),
-                entry.MediaType == MediaType.Movie ? NewznabCategory.Movie : NewznabCategory.Tv,
-                baseUrl,
-                apiKey,
-                entry.StableId,
-                entry.FirstSeenAt))
-        ], total, offset);
-
-    private static Rss CreateRss(List<Item> items, int total, int offset) =>
-        new()
-        {
-            Channel = new Channel
-            {
-                Response = new NewznabResponse { Offset = offset, Total = total },
-                Items = items
-            }
-        };
-
-    private static Item ToItem(
-        SearchResultItem item, NewznabCategory category, string baseUrl, string apiKey,
-        string? guid = null, DateTimeOffset? pubDate = null)
-    {
-        var nzbId = new NzbPayload(
-            item.Title,
-            item.Url,
-            string.IsNullOrEmpty(item.SubtitleUrl) ? null : item.SubtitleUrl,
-            item.Channel,
-            item.Duration,
-            item.Size,
-            category == NewznabCategory.Movie ? MediaType.Movie : MediaType.Show).Encode();
-        var getNzbUrl = $"{baseUrl}/index/api?t=get&id={Uri.EscapeDataString(nzbId)}&apikey={Uri.EscapeDataString(apiKey)}";
-        return new Item
-        {
-            Title = item.Title,
-            Guid = new ItemGuid { Value = guid ?? nzbId, IsPermaLink = false },
-            Link = getNzbUrl,
-            PubDate = (pubDate ?? item.AiredAt ?? DateTimeOffset.UtcNow).ToString("R"),
-            Category = category.DisplayName(item.Quality),
-            Description = $"{item.Channel} - {item.Topic}",
-            Enclosure = new Enclosure { Url = getNzbUrl, Length = item.Size },
-            Attributes = BuildAttributes(item, category)
-        };
-    }
-
-    internal static List<NewznabAttribute> BuildAttributes(SearchResultItem item, NewznabCategory category)
-    {
-        var attrs = new List<NewznabAttribute>
-        {
-            new() { Name = "size", Value = item.Size.ToString() },
-            new() { Name = "category", Value = category.CategoryId(item.Quality) }
-        };
-
-        if (item.Metadata?.Season is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "season", Value = item.Metadata.Season });
-        }
-
-        if (item.Metadata?.Episode is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "episode", Value = item.Metadata.Episode });
-        }
-
-        if (item.Metadata?.Ids?.TvdbId is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "tvdbid", Value = item.Metadata.Ids.TvdbId.Value.ToString() });
-        }
-
-        if (item.Metadata?.Ids?.ImdbId is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "imdb", Value = item.Metadata.Ids.ImdbId });
-        }
-
-        if (item.Metadata?.Ids?.TmdbId is not null)
-        {
-            attrs.Add(new NewznabAttribute { Name = "tmdbid", Value = item.Metadata.Ids.TmdbId.Value.ToString() });
-        }
-
-        return attrs;
     }
 
     private static (SearchCommand? Cmd, NewznabCategory Category) BuildCommand(IndexerRequest req) =>
@@ -244,7 +154,7 @@ public sealed class NewznabSearchService(
             feedAnswered = response is FeedResult;
             if (response is FeedResult { FilteredTotal: > 0 } result)
             {
-                return new SearchServiceResult.Success(ToFeedRss(result.Entries, result.FilteredTotal, offset, baseUrl, apiKey));
+                return new SearchServiceResult.Success(rssItemBuilder.ToFeedRss(result.Entries, result.FilteredTotal, offset, baseUrl, apiKey));
             }
         }
         catch (Exception ex)

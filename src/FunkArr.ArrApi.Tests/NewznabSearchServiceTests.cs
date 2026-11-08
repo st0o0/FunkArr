@@ -9,6 +9,8 @@ namespace FunkArr.ArrApi.Tests;
 
 public sealed class NewznabSearchServiceTests
 {
+    private static readonly RssItemBuilder _rssItemBuilder = new(new NewznabAttributeBuilder());
+
     [Fact]
     public void CapLimit_returns_null_for_null()
     {
@@ -116,7 +118,7 @@ public sealed class NewznabSearchServiceTests
             new DateTimeOffset(2026, 10, 25, 20, 15, 0, TimeSpan.Zero), 0.9, null,
             null, "2026", "18");
 
-        var rss = NewznabSearchService.ToFeedRss([entry], 7, 0, "http://localhost:6969", "key");
+        var rss = _rssItemBuilder.ToFeedRss([entry], 7, 0, "http://localhost:6969", "key");
 
         var item = Assert.Single(rss.Channel.Items);
         Assert.Multiple(
@@ -134,7 +136,7 @@ public sealed class NewznabSearchServiceTests
         var item = new SearchResultItem("Title", "ARD", "Tatort", "https://example.com/v.mp4",
             5400, 1_000_000, 720, AiredAt: null, Score: 0.9);
 
-        var rss = NewznabSearchService.ToRss([item], 1, 0, "http://localhost:6969", "key", NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss([item], 1, 0, "http://localhost:6969", "key", NewznabCategory.Tv);
 
         var rssItem = Assert.Single(rss.Channel.Items);
         Assert.NotEmpty(rssItem.PubDate);

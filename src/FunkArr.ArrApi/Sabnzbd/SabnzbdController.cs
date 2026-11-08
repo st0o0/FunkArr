@@ -3,14 +3,12 @@ using FunkArr.ArrApi.Sabnzbd.Requests;
 using FunkArr.ArrApi.Sabnzbd.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Timeouts;
-using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FunkArr.ArrApi.Sabnzbd;
 
 [ApiController]
 [Route("/download/api")]
-[HttpLogging(HttpLoggingFields.All)]
 [RequestTimeout(milliseconds: 15_000)]
 [ServiceFilter(typeof(SabnzbdApiKeyFilter))]
 public sealed class SabnzbdController(

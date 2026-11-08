@@ -68,9 +68,10 @@ public sealed class NewznabFeedProbeTests : TestKit
     private async Task<(QueryFeed Query, SearchServiceResult Result)> Search(IndexerRequest req, FeedResult reply)
     {
         using var cache = new MemoryCache(new MemoryCacheOptions());
+        var rssItemBuilder = new RssItemBuilder(new NewznabAttributeBuilder());
         var service = new NewznabSearchService(
             ActorRegistry.For(Sys), cache, Options.Create(new ArrApiOptions()),
-            TimeProvider.System, NullLogger<NewznabSearchService>.Instance);
+            rssItemBuilder, TimeProvider.System, NullLogger<NewznabSearchService>.Instance);
 
         var task = service.Search(req, "http://localhost:6969", "key", TestContext.Current.CancellationToken);
 

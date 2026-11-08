@@ -25,6 +25,7 @@ public sealed class ApplicationSetupContainer : ISetup<WebApplication>
                 new KeyValuePair<ScalarTarget, ScalarClient>(ScalarTarget.CSharp, ScalarClient.HttpClient);
         });
 
+        app.UseForwardedHeaders();
         app.UseStatusCodePages();
         app.UseHttpLogging();
         app.UseRequestTimeouts();

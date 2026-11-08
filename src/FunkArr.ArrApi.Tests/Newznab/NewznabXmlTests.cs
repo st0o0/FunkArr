@@ -44,7 +44,11 @@ public sealed class NewznabXmlTests
 
         var tvSearch = searching.Element("tv-search")!;
         Assert.Equal("yes", tvSearch.Attribute("available")!.Value);
-        Assert.Contains("tvdbid", tvSearch.Attribute("supportedParams")!.Value);
+        var tvParams = tvSearch.Attribute("supportedParams")!.Value;
+        Assert.Multiple(
+            () => Assert.Contains("tvdbid", tvParams),
+            () => Assert.Contains("imdbid", tvParams),
+            () => Assert.Contains("tmdbid", tvParams));
 
         var movieSearch = searching.Element("movie-search")!;
         Assert.Equal("yes", movieSearch.Attribute("available")!.Value);

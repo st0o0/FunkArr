@@ -695,6 +695,7 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 ## 20. Newznab API
 
 - [ ] **20.1** Caps: `GET /index/api?t=caps&apikey=<key>` → XML with server, limits, categories
+- [ ] **20.1a** Caps tv-search declares `supportedParams="q,season,ep,tvdbid,imdbid,tmdbid"` (all six params)
 - [ ] **20.2** TV search: `GET /index/api?t=tvsearch&tvdbid=83214&season=2026&ep=18&apikey=<key>` → Newznab RSS with items, season/episode attributes
 - [ ] **20.3** Pagination: offset=0 and offset=100 return different items, correct total
 - [ ] **20.4** General search: `GET /index/api?t=search&q=tatort&apikey=<key>`
@@ -975,6 +976,11 @@ doesn't already have. Feed crawl completed with entries published.
 - [ ] **36.7** Navigate to `/queue` → redirects to `/activity`
 - [ ] **36.8** Navigate to `/history` → redirects to `/activity`
 - [ ] **36.9** Navigate to `/search` → redirects to `/rulesets`
+
+### API Key Log Redaction
+- [ ] **36.10a** Make a Newznab request with apikey → `docker logs funkarr` does NOT contain the raw API key value in any log line from `Microsoft.AspNetCore.HttpLogging`
+- [ ] **36.10b** Make a SABnzbd request with apikey → same check: no raw API key in HttpLogging output
+- [ ] **36.10c** Non-apikey query params (t, q, mode, tvdbid) ARE still logged with their values
 
 ### Resilience
 - [ ] **36.10** Queue SSE: disconnect network briefly → stream reconnects, state recovers
