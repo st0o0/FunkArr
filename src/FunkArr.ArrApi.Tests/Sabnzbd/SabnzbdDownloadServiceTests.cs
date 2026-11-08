@@ -106,19 +106,36 @@ public sealed class SabnzbdDownloadServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Retry_ValidGuid_ReturnsOk()
+    public async Task Retry_Success_RemovesHistoryEntry()
     {
         var (service, managerProbe, historyProbe) = CreateService();
         var id = Guid.NewGuid();
 
         var task = service.Retry(id.ToString(), CancellationToken.None);
-        historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
         var retryMsg = managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, retryMsg.DownloadId);
         managerProbe.Reply(new RetryDownloadResult(true, null));
         var result = await task;
 
         SabnzbdResultAssert.Ok(result);
+        var removeMsg = historyProbe.ExpectMsg<RemoveHistoryEntry>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(id, removeMsg.DownloadId);
+    }
+
+    [Fact]
+    public async Task Retry_Failure_PreservesHistoryEntry()
+    {
+        var (service, managerProbe, historyProbe) = CreateService();
+        var id = Guid.NewGuid();
+
+        var task = service.Retry(id.ToString(), CancellationToken.None);
+        managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
+        managerProbe.Reply(new RetryDownloadResult(false, "Not found"));
+        var result = await task;
+
+        var error = SabnzbdResultAssert.Error(result);
+        Assert.Equal("Not found", error.Message);
+        historyProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
     }
 
     [Fact]

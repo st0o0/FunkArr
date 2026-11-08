@@ -83,7 +83,7 @@ internal static class SabnzbdResponseMapper
 
     internal static string MapMediaTypeToCategory(MediaType mediaType) => mediaType switch
     {
-        MediaType.Movie => "movie",
+        MediaType.Movie => "movies",
         _ => "tv"
     };
 

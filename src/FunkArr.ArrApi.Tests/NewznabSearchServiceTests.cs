@@ -1,3 +1,4 @@
+using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.ArrApi.Newznab.Requests;
 using FunkArr.ArrApi.Newznab.Services;
 using FunkArr.Messages;
@@ -125,6 +126,21 @@ public sealed class NewznabSearchServiceTests
             () => Assert.StartsWith("http://localhost:6969/index/api?t=get&id=", item.Link),
             () => Assert.Equal("5040", Assert.Single(item.Attributes, a => a.Name == "category").Value),
             () => Assert.Equal(7, rss.Channel.Response.Total));
+    }
+
+    [Fact]
+    public void ToRss_null_aired_at_gets_valid_pub_date()
+    {
+        var item = new SearchResultItem("Title", "ARD", "Tatort", "https://example.com/v.mp4",
+            5400, 1_000_000, 720, AiredAt: null, Score: 0.9);
+
+        var rss = NewznabSearchService.ToRss([item], 1, 0, "http://localhost:6969", "key", NewznabCategory.Tv);
+
+        var rssItem = Assert.Single(rss.Channel.Items);
+        Assert.NotEmpty(rssItem.PubDate);
+        Assert.True(DateTimeOffset.TryParseExact(rssItem.PubDate, "R",
+            System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None,
+            out _));
     }
 
     private static IndexerRequest CreateRequest(

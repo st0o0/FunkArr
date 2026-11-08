@@ -148,7 +148,7 @@ public sealed class NewznabSearchService(
             Title = item.Title,
             Guid = new ItemGuid { Value = guid ?? nzbId, IsPermaLink = false },
             Link = getNzbUrl,
-            PubDate = (pubDate ?? item.AiredAt)?.ToString("R") ?? "",
+            PubDate = (pubDate ?? item.AiredAt ?? DateTimeOffset.UtcNow).ToString("R"),
             Category = category.DisplayName(item.Quality),
             Description = $"{item.Channel} - {item.Topic}",
             Enclosure = new Enclosure { Url = getNzbUrl, Length = item.Size },

@@ -62,7 +62,7 @@ public sealed class DownloadHistoryManagerStateTests
     }
 
     [Fact]
-    public void ToHistoryResult_maps_all_records()
+    public void ToHistoryResult_maps_all_records_newest_first()
     {
         var id1 = Guid.NewGuid();
         var id2 = Guid.NewGuid();
@@ -73,11 +73,11 @@ public sealed class DownloadHistoryManagerStateTests
         var result = state.ToHistoryResult(new QueryHistory());
 
         Assert.Equal(2, result.Items.Length);
-        Assert.Equal("Completed Video", result.Items[0].Completion.Title);
-        Assert.Equal(DownloadStatus.Completed, result.Items[0].Completion.Status);
-        Assert.Equal("Failed Video", result.Items[1].Completion.Title);
-        Assert.Equal(DownloadStatus.Failed, result.Items[1].Completion.Status);
-        Assert.Equal("Connection refused", result.Items[1].Completion.FailMessage);
+        Assert.Equal("Failed Video", result.Items[0].Completion.Title);
+        Assert.Equal(DownloadStatus.Failed, result.Items[0].Completion.Status);
+        Assert.Equal("Connection refused", result.Items[0].Completion.FailMessage);
+        Assert.Equal("Completed Video", result.Items[1].Completion.Title);
+        Assert.Equal(DownloadStatus.Completed, result.Items[1].Completion.Status);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class DownloadHistoryManagerStateTests
     }
 
     [Fact]
-    public void ToHistoryResult_applies_start_and_limit()
+    public void ToHistoryResult_applies_start_and_limit_newest_first()
     {
         var state = new DownloadHistoryManagerState();
         state.Apply(MakeRecorded(Guid.NewGuid(), "A"));
@@ -121,9 +121,43 @@ public sealed class DownloadHistoryManagerStateTests
         var result = state.ToHistoryResult(new QueryHistory(Start: 1, Limit: 2));
 
         Assert.Equal(2, result.Items.Length);
-        Assert.Equal("B", result.Items[0].Completion.Title);
-        Assert.Equal("C", result.Items[1].Completion.Title);
+        Assert.Equal("C", result.Items[0].Completion.Title);
+        Assert.Equal("B", result.Items[1].Completion.Title);
         Assert.Equal(4, result.TotalItems);
+    }
+
+    [Fact]
+    public void ToHistoryResult_returns_newest_five_of_twenty()
+    {
+        var state = new DownloadHistoryManagerState();
+        for (var i = 0; i < 20; i++)
+        {
+            state.Apply(MakeRecorded(Guid.NewGuid(), $"Record {i}"));
+        }
+
+        var result = state.ToHistoryResult(new QueryHistory(Limit: 5));
+
+        Assert.Equal(5, result.Items.Length);
+        Assert.Equal(20, result.TotalItems);
+        Assert.Equal("Record 19", result.Items[0].Completion.Title);
+        Assert.Equal("Record 15", result.Items[4].Completion.Title);
+    }
+
+    [Fact]
+    public void ToHistoryResult_offset_skips_newest()
+    {
+        var state = new DownloadHistoryManagerState();
+        for (var i = 0; i < 20; i++)
+        {
+            state.Apply(MakeRecorded(Guid.NewGuid(), $"Record {i}"));
+        }
+
+        var result = state.ToHistoryResult(new QueryHistory(Start: 5, Limit: 5));
+
+        Assert.Equal(5, result.Items.Length);
+        Assert.Equal(20, result.TotalItems);
+        Assert.Equal("Record 14", result.Items[0].Completion.Title);
+        Assert.Equal("Record 10", result.Items[4].Completion.Title);
     }
 
     [Fact]

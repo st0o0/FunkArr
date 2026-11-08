@@ -131,8 +131,12 @@ public sealed class SabnzbdDownloadService(
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var history = await registry.GetAsync<IDownloadHistoryManager>(ct);
 
-            history.Tell(new RemoveHistoryEntry(downloadId));
             var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(downloadId), ct);
+            if (result.Success)
+            {
+                history.Tell(new RemoveHistoryEntry(downloadId));
+            }
+
             return result.Success
                 ? new SabnzbdStatusResponse(true)
                 : new SabnzbdError(result.Error ?? "Retry failed");

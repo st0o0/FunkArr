@@ -142,7 +142,7 @@ public sealed class DownloadHistoryManagerState
         var materialized = filtered.ToArray();
         var totalItems = materialized.Length;
 
-        var paged = materialized.Skip(query.Start);
+        var paged = materialized.Reverse().Skip(query.Start);
         if (query.Limit > 0)
         {
             paged = paged.Take(query.Limit);

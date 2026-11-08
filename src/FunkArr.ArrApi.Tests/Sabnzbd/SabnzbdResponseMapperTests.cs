@@ -38,7 +38,7 @@ public sealed class SabnzbdResponseMapperTests
 
         Assert.Equal(SabnzbdQueueStatus.Queued, slot.Status);
         Assert.Equal(3, slot.Index);
-        Assert.Equal("movie", slot.Cat);
+        Assert.Equal("movies", slot.Cat);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class SabnzbdResponseMapperTests
     [Fact]
     public void MapMediaTypeToCategory_maps_correctly()
     {
-        Assert.Equal("movie", SabnzbdResponseMapper.MapMediaTypeToCategory(MediaType.Movie));
+        Assert.Equal("movies", SabnzbdResponseMapper.MapMediaTypeToCategory(MediaType.Movie));
         Assert.Equal("tv", SabnzbdResponseMapper.MapMediaTypeToCategory(MediaType.Show));
     }
 
