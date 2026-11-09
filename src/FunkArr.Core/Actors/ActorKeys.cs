@@ -36,8 +36,6 @@ public interface IDownloadHistoryManager;
 
 public interface IEnrichmentManager;
 
-public interface IFeedScheduler;
-
 public interface IFeedCrawlManager;
 
 public interface IFeedStoreManager;

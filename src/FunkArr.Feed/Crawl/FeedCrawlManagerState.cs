@@ -1,3 +1,4 @@
+using FunkArr.Core.Configuration;
 using FunkArr.Messages.Feed;
 using FunkArr.Persistence.Events.Feed;
 
@@ -6,6 +7,9 @@ namespace FunkArr.Feed.Crawl;
 public sealed class FeedCrawlManagerState
 {
     internal const int MaxConsecutiveFailures = 3;
+
+    public bool Enabled { get; private set; } = true;
+    public TimeSpan Interval { get; private set; } = TimeSpan.FromMinutes(15);
 
     public long Cursor { get; private set; }
     public DateTimeOffset? LastRunAt { get; private set; }
@@ -64,6 +68,12 @@ public sealed class FeedCrawlManagerState
     public FeedCrawlStatusResult ToStatus(bool enabled, bool running) =>
         new(enabled, running, Cursor, LastRunAt, LastOutcome, LastError, LastNewItems,
             LastPublished, LastUnmatched, LastGap, ConsecutiveFailures);
+
+    public void Apply(FeedOptions options)
+    {
+        Enabled = options.Enabled;
+        Interval = options.Interval;
+    }
 
     public PersistedFeedCrawlState GetPersistenceState() =>
         new(Cursor, LastRunAt, LastOutcome.ToPersistence(), LastError, LastNewItems,

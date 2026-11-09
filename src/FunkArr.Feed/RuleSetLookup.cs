@@ -1,12 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using FunkArr.Messages;
-using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Shared;
 
 namespace FunkArr.Feed;
-
-internal sealed record RuleSetGroup(string RuleSetId, MediaType MediaType, ExternalIds Ids, MediathekItem[] Items);
 
 internal sealed record RuleSetTarget(string RuleSetId, MediaType MediaType, ExternalIds Ids);
 

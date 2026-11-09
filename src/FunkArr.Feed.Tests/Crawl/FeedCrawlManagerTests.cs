@@ -139,7 +139,7 @@ public sealed class FeedCrawlManagerTests : TestKit
     }
 
     [Fact]
-    public void Failed_group_fails_the_crawl_and_keeps_the_cursor()
+    public void Failed_eval_completes_crawl_with_zero_published()
     {
         var (manager, p) = Create();
         var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp);
@@ -154,10 +154,10 @@ public sealed class FeedCrawlManagerTests : TestKit
 
         var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
         Assert.Multiple(
-            () => Assert.Equal(CrawlOutcome.Failed, status.LastOutcome),
-            () => Assert.Contains("ruleset groups failed", status.LastError!),
-            () => Assert.Equal(0, status.Cursor),
-            () => Assert.Equal(1, status.ConsecutiveFailures));
+            () => Assert.Equal(CrawlOutcome.Completed, status.LastOutcome),
+            () => Assert.Equal(ListTimestamp, status.Cursor),
+            () => Assert.Equal(0, status.LastPublished),
+            () => Assert.False(status.Running));
         p.Store.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
     }
 
@@ -170,20 +170,19 @@ public sealed class FeedCrawlManagerTests : TestKit
         AnswerProbe(p);
         AnswerRuleSets(p);
 
-        var query1 = p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
-        p.Mediathek.LastSender.Tell(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
-
-        if (p.Mediathek.ReceiveOne(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken) is QueryMediathek)
+        for (var i = 0; i < 2; i++)
         {
-            p.Mediathek.LastSender.Tell(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
+            if (p.Mediathek.ReceiveOne(_stageTimeout, TestContext.Current.CancellationToken) is QueryMediathek)
+            {
+                p.Mediathek.LastSender.Tell(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
+            }
         }
 
         var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
         Assert.Multiple(
             () => Assert.Equal(CrawlOutcome.Failed, status.LastOutcome),
-            () => Assert.Equal("MediathekViewWeb query failed: HTTP 500", status.LastError),
-            () => Assert.Equal(0, status.Cursor),
-            () => Assert.Equal(2, query1.Size));
+            () => Assert.Contains("HTTP 500", status.LastError!),
+            () => Assert.Equal(0, status.Cursor));
     }
 
     [Fact]

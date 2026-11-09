@@ -11,7 +11,6 @@ using FunkArr.Download.Scheduler;
 using FunkArr.Download.Worker;
 using FunkArr.Enrichment;
 using FunkArr.Feed.Crawl;
-using FunkArr.Feed.Scheduler;
 using FunkArr.Feed.Store;
 using FunkArr.History;
 using FunkArr.RuleSet.Manager;
@@ -172,8 +171,6 @@ public sealed class AkkaSetupContainer : ActorSystemSetup
             .WithSingleton<IFeedStoreManager>("feed-store-manager",
                 (_, _, resolver) => resolver.Props<FeedStoreManager>())
             .WithSingleton<IFeedCrawlManager>("feed-crawl-manager",
-                (_, _, resolver) => resolver.Props<FeedCrawlManager>())
-            .WithSingleton<IFeedScheduler>("feed-scheduler",
-                (_, _, resolver) => resolver.Props<FeedScheduler>());
+                (_, _, resolver) => resolver.Props<FeedCrawlManager>());
     }
 }
