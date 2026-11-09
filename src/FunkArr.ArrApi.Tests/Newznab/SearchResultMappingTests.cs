@@ -9,8 +9,8 @@ namespace FunkArr.ArrApi.Tests.Newznab;
 
 public sealed class SearchResultMappingTests
 {
-    private const string _baseUrl = "http://localhost:6969";
-    private const string _apiKey = "test-key";
+    private const string BaseUrl = "http://localhost:6969";
+    private const string ApiKey = "test-key";
     private static readonly NewznabAttributeBuilder _attributeBuilder = new();
     private static readonly RssItemBuilder _rssItemBuilder = new(_attributeBuilder);
 
@@ -25,7 +25,7 @@ public sealed class SearchResultMappingTests
                 new DateTimeOffset(2024, 6, 25, 20, 15, 0, TimeSpan.Zero), 0.95)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
 
         Assert.Equal(1, rss.Channel.Response.Total);
         var item = Assert.Single(rss.Channel.Items);
@@ -45,7 +45,7 @@ public sealed class SearchResultMappingTests
             new SearchResultItem("Test", "ZDF", "Topic", "url", 3600, 500000, 480, null, 0.5)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
 
         var item = Assert.Single(rss.Channel.Items);
         Assert.Equal("TV > SD", item.Category);
@@ -60,7 +60,7 @@ public sealed class SearchResultMappingTests
             new SearchResultItem("Title", "CH", "Topic", "https://example.com/v.mp4", 100, 0, 720, null, 1.0)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var decoded = NzbPayload.Decode(item.Guid.Value);
 
@@ -77,7 +77,7 @@ public sealed class SearchResultMappingTests
                 "https://example.com/f.vtt")
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Movie);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Movie);
         var item = Assert.Single(rss.Channel.Items);
         var decoded = NzbPayload.Decode(item.Guid.Value);
 
@@ -94,7 +94,7 @@ public sealed class SearchResultMappingTests
             new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
         var xml = NewznabXmlResult.Serialize(rss);
 
         Assert.Contains("<title>Test</title>", xml);
@@ -111,7 +111,7 @@ public sealed class SearchResultMappingTests
                 Metadata: new MatchMetadata(new ExternalIds(83214, null, null), null, null, null, null))
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var attrs = item.Attributes;
 
@@ -127,7 +127,7 @@ public sealed class SearchResultMappingTests
                 Metadata: new MatchMetadata(new ExternalIds(null, "tt0806910", null), null, null, null, null))
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var attrs = item.Attributes;
 
@@ -144,7 +144,7 @@ public sealed class SearchResultMappingTests
                 Metadata: new MatchMetadata(new ExternalIds(null, null, 2116), null, null, null, null))
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var attrs = item.Attributes;
 
@@ -159,7 +159,7 @@ public sealed class SearchResultMappingTests
             new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var attrs = item.Attributes;
 
@@ -176,7 +176,7 @@ public sealed class SearchResultMappingTests
             new SearchResultItem("Film", "ARD", "Film", "url", 5400, 1200000000, 720, null, 0.9)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Movie);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Movie);
 
         var item = Assert.Single(rss.Channel.Items);
         Assert.Equal("Movies > HD", item.Category);
@@ -191,7 +191,7 @@ public sealed class SearchResultMappingTests
             new SearchResultItem("Film", "ZDF", "Film", "url", 3600, 500000, 480, null, 0.5)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Movie);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Movie);
 
         var item = Assert.Single(rss.Channel.Items);
         Assert.Equal("Movies > SD", item.Category);
@@ -226,7 +226,7 @@ public sealed class SearchResultMappingTests
                 100, 0, 720, null, 1.0)
         };
 
-        var rss = _rssItemBuilder.ToRss(items, 1, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(items, 1, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
         var item = Assert.Single(rss.Channel.Items);
         var decoded = NzbPayload.Decode(item.Guid.Value);
 
@@ -257,7 +257,7 @@ public sealed class SearchResultMappingTests
             .ToArray();
 
         var paged = allItems.Skip(2).Take(3).ToArray();
-        var rss = _rssItemBuilder.ToRss(paged, allItems.Length, 2, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss(paged, allItems.Length, 2, BaseUrl, ApiKey, NewznabCategory.Tv);
 
         Assert.Equal(3, rss.Channel.Items.Count);
         Assert.Equal("Item-2", rss.Channel.Items[0].Title);
@@ -269,7 +269,7 @@ public sealed class SearchResultMappingTests
     [Fact]
     public void ToRss_empty_items_returns_empty_channel()
     {
-        var rss = _rssItemBuilder.ToRss([], 0, 0, _baseUrl, _apiKey, NewznabCategory.Tv);
+        var rss = _rssItemBuilder.ToRss([], 0, 0, BaseUrl, ApiKey, NewznabCategory.Tv);
 
         Assert.Empty(rss.Channel.Items);
         Assert.Equal(0, rss.Channel.Response.Total);

@@ -17,7 +17,7 @@ namespace FunkArr.Feed.Tests.Crawl;
 
 public sealed class FeedCrawlManagerTests : TestKit
 {
-    private const long _listTimestamp = 1_761_900_000;
+    private const long ListTimestamp = 1_761_900_000;
     private static readonly TimeSpan _stageTimeout = TimeSpan.FromSeconds(5);
 
     private static readonly RegisteredRuleSetEntry _tatort =
@@ -46,7 +46,7 @@ public sealed class FeedCrawlManagerTests : TestKit
         return (Sys.ActorOf(Props.Create(() => new FeedCrawlManager(options, TimeProvider.System))), probes);
     }
 
-    private static void AnswerProbe(Probes p, long listTimestamp = _listTimestamp)
+    private static void AnswerProbe(Probes p, long listTimestamp = ListTimestamp)
     {
         var probe = p.Mediathek.ExpectMsg<QueryMediathek>();
         Assert.Multiple(
@@ -107,14 +107,14 @@ public sealed class FeedCrawlManagerTests : TestKit
     public void Crawl_publishes_matched_entries_and_advances_the_cursor()
     {
         var (manager, p) = Create();
-        var tatort = TestData.Item("Herz aus Eis", "Tatort", _listTimestamp, url: "https://example.com/tatort.mp4");
-        var unknown = TestData.Item("Irgendwas", "Unbekannt", _listTimestamp - 10);
-        var old = TestData.Item("Alt", "Tatort", _listTimestamp - 400_000);
+        var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp, url: "https://example.com/tatort.mp4");
+        var unknown = TestData.Item("Irgendwas", "Unbekannt", ListTimestamp - 10);
+        var old = TestData.Item("Alt", "Tatort", ListTimestamp - 400_000);
 
         manager.Tell(new StartFeedCrawl());
         AnswerProbe(p);
         AnswerRuleSets(p);
-        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort, unknown] : [old], 3, _listTimestamp));
+        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort, unknown] : [old], 3, ListTimestamp));
 
         var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
@@ -124,13 +124,13 @@ public sealed class FeedCrawlManagerTests : TestKit
         p.Tv.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
 
         var publish = p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(_listTimestamp), Assert.Single(publish.Entries).FirstSeenAt);
+        Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(ListTimestamp), Assert.Single(publish.Entries).FirstSeenAt);
         p.Store.Reply(new PublishFeedEntriesCompleted(1));
 
         var status = AwaitStatus(manager, s => s.LastOutcome is not null);
         Assert.Multiple(
             () => Assert.Equal("completed", status.LastOutcome),
-            () => Assert.Equal(_listTimestamp, status.Cursor),
+            () => Assert.Equal(ListTimestamp, status.Cursor),
             () => Assert.Equal(2, status.LastNewItems),
             () => Assert.Equal(1, status.LastPublished),
             () => Assert.Equal(1, status.LastUnmatched),
@@ -142,13 +142,13 @@ public sealed class FeedCrawlManagerTests : TestKit
     public void Failed_group_fails_the_crawl_and_keeps_the_cursor()
     {
         var (manager, p) = Create();
-        var tatort = TestData.Item("Herz aus Eis", "Tatort", _listTimestamp);
-        var old = TestData.Item("Alt", "Tatort", _listTimestamp - 400_000);
+        var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp);
+        var old = TestData.Item("Alt", "Tatort", ListTimestamp - 400_000);
 
         manager.Tell(new StartFeedCrawl());
         AnswerProbe(p);
         AnswerRuleSets(p);
-        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort] : [old], 2, _listTimestamp));
+        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort] : [old], 2, ListTimestamp));
         var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         p.Tv.Reply(new EvaluateSeriesFailed(evaluation.SearchId, new InvalidOperationException("boom")));
 

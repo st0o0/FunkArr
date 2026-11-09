@@ -15,7 +15,7 @@ namespace FunkArr.Api;
 
 public static class SystemApiEndpoints
 {
-    private const string _defaultApiKey = "funkarr-default-api-key";
+    private const string DefaultApiKey = "funkarr-default-api-key";
     private static readonly TimeSpan _httpTimeout = TimeSpan.FromSeconds(3);
     private static readonly System.Text.Json.JsonSerializerOptions _sseJsonOptions = new()
     {
@@ -161,7 +161,7 @@ public static class SystemApiEndpoints
     internal static CheckResult CheckApiKey(FunkArrOptions options)
     {
         var key = options.ApiKey;
-        var isDefault = string.Equals(key, _defaultApiKey, StringComparison.Ordinal);
+        var isDefault = string.Equals(key, DefaultApiKey, StringComparison.Ordinal);
         var masked = key.Length > 3
             ? new string('*', key.Length - 3) + key[^3..]
             : key;

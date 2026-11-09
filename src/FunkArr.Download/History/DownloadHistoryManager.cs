@@ -11,7 +11,7 @@ namespace FunkArr.Download.History;
 
 public sealed class DownloadHistoryManager : ReceivePersistentActor
 {
-    private const int _snapshotInterval = 25;
+    private const int SnapshotInterval = 25;
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<DownloadOptions> _optionsMonitor;
@@ -115,7 +115,7 @@ public sealed class DownloadHistoryManager : ReceivePersistentActor
 
     private void MaybeSnapshot()
     {
-        if (LastSequenceNr % _snapshotInterval == 0)
+        if (LastSequenceNr % SnapshotInterval == 0)
         {
             SaveSnapshot(_state.GetPersistenceState());
         }

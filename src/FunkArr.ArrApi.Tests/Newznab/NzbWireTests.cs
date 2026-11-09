@@ -20,7 +20,7 @@ public sealed class NzbWireTests
         var success = Assert.IsType<NzbGetResult.Success>(result);
         Assert.Multiple(
             () => Assert.Equal("funkarr-2026-01-02_03-04-05.nzb", success.FileName),
-            () => Assert.Equal(_expectedFullXml, Encoding.UTF8.GetString(success.Content)));
+            () => Assert.Equal(ExpectedFullXml, Encoding.UTF8.GetString(success.Content)));
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class NzbWireTests
             () => Assert.Contains("<meta type=\"X-FunkArr-Category\">movie</meta>", xml));
     }
 
-    private const string _expectedFullXml =
+    private const string ExpectedFullXml =
         "<?xml version=\"1.0\" encoding=\"utf-8\"?><nzb xmlns:newznab=\"http://www.newznab.com/DTD/2010/feeds/attributes/\" " +
         "xmlns=\"http://www.newzbin.com/DTD/2003/nzb\"><head><meta type=\"title\">Tatort</meta>" +
         "<meta type=\"X-FunkArr-Url\">https://example.com/video.mp4</meta><meta type=\"X-FunkArr-Channel\">ARD</meta>" +

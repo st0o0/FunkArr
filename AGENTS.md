@@ -428,6 +428,10 @@ Do NOT use:
 - Always pass `CancellationToken` through async call chains.
 - `TimeProvider` everywhere, never `DateTime.Now` or `DateTime.UtcNow` directly.
 - `dotnet format` enforced - run after editing `.cs` files. CI rejects violations.
+- **Never modify `.editorconfig`** to silence naming or style warnings. The
+  editorconfig defines the project's rules — fix the code to match, not the
+  other way around. `const` fields use PascalCase (all accessibilities),
+  private instance fields use `_camelCase`.
 
 ## Enum conventions
 

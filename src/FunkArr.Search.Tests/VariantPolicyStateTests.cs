@@ -11,8 +11,8 @@ namespace FunkArr.Search.Tests;
 
 public sealed class VariantPolicyStateTests
 {
-    private const string _standardTitle = "Herz aus Eis";
-    private const string _adTitle = "Herz aus Eis (Audiodeskription)";
+    private const string StandardTitle = "Herz aus Eis";
+    private const string AdTitle = "Herz aus Eis (Audiodeskription)";
 
     private static readonly IActorRef _noSender = ActorRefs.Nobody;
 
@@ -20,7 +20,7 @@ public sealed class VariantPolicyStateTests
     public void Tv_unscored_results_exclude_variant_by_default()
     {
         var state = TvState();
-        state.Apply(new QueryMediathekCompleted([Item(_standardTitle), Item(_adTitle)], 2));
+        state.Apply(new QueryMediathekCompleted([Item(StandardTitle), Item(AdTitle)], 2));
 
         var result = state.ToCompleted();
 
@@ -32,7 +32,7 @@ public sealed class VariantPolicyStateTests
     public void Tv_scored_results_exclude_matched_and_unmatched_variants()
     {
         var state = TvState();
-        state.Apply(new QueryMediathekCompleted([Item(_standardTitle), Item(_adTitle), Item("Folge 2 (DGS)")], 3));
+        state.Apply(new QueryMediathekCompleted([Item(StandardTitle), Item(AdTitle), Item("Folge 2 (DGS)")], 3));
         state.Apply("tatort", "Tatort", null);
         state.Apply(new ScoreCompleted(Guid.Empty,
         [
@@ -53,7 +53,7 @@ public sealed class VariantPolicyStateTests
     public void Tv_allowed_variant_is_returned_with_tag()
     {
         var state = TvState(new VariantOptions { AudioDescription = VariantPolicy.Allow });
-        state.Apply(new QueryMediathekCompleted([Item(_adTitle)], 1));
+        state.Apply(new QueryMediathekCompleted([Item(AdTitle)], 1));
 
         var result = state.ToCompleted();
 
@@ -65,7 +65,7 @@ public sealed class VariantPolicyStateTests
     public void Tv_scoring_request_marks_excluded_candidates()
     {
         var state = TvState();
-        state.Apply(new QueryMediathekCompleted([Item(_standardTitle), Item(_adTitle)], 2));
+        state.Apply(new QueryMediathekCompleted([Item(StandardTitle), Item(AdTitle)], 2));
         state.Apply("tatort", "Tatort", null);
 
         Assert.True(state.TryGetScoringRequest(out var request));
@@ -80,7 +80,7 @@ public sealed class VariantPolicyStateTests
     public void Tv_scoring_request_does_not_mark_allowed_variants()
     {
         var state = TvState(new VariantOptions { AudioDescription = VariantPolicy.Allow });
-        state.Apply(new QueryMediathekCompleted([Item(_adTitle)], 1));
+        state.Apply(new QueryMediathekCompleted([Item(AdTitle)], 1));
         state.Apply("tatort", "Tatort", null);
 
         Assert.True(state.TryGetScoringRequest(out var request));

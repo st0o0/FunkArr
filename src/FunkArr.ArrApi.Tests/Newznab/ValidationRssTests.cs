@@ -5,15 +5,15 @@ namespace FunkArr.ArrApi.Tests.Newznab;
 
 public sealed class ValidationRssTests
 {
-    private const string _baseUrl = "http://localhost:6969";
-    private const string _apiKey = "test-key";
+    private const string BaseUrl = "http://localhost:6969";
+    private const string ApiKey = "test-key";
 
     private static readonly DateTimeOffset _now = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public void Create_tv_returns_single_validation_item()
     {
-        var rss = ValidationRss.Create(NewznabCategory.Tv, 0, _now, _baseUrl, _apiKey);
+        var rss = ValidationRss.Create(NewznabCategory.Tv, 0, _now, BaseUrl, ApiKey);
 
         var item = Assert.Single(rss.Channel.Items);
         Assert.Multiple(
@@ -35,7 +35,7 @@ public sealed class ValidationRssTests
     [Fact]
     public void Create_movie_returns_single_validation_item()
     {
-        var rss = ValidationRss.Create(NewznabCategory.Movie, 0, _now, _baseUrl, _apiKey);
+        var rss = ValidationRss.Create(NewznabCategory.Movie, 0, _now, BaseUrl, ApiKey);
 
         var item = Assert.Single(rss.Channel.Items);
         Assert.Multiple(
@@ -49,8 +49,8 @@ public sealed class ValidationRssTests
     [Fact]
     public void Create_guid_is_stable_across_requests()
     {
-        var first = ValidationRss.Create(NewznabCategory.Tv, 0, _now, _baseUrl, _apiKey);
-        var second = ValidationRss.Create(NewznabCategory.Tv, 0, _now.AddHours(1), _baseUrl, _apiKey);
+        var first = ValidationRss.Create(NewznabCategory.Tv, 0, _now, BaseUrl, ApiKey);
+        var second = ValidationRss.Create(NewznabCategory.Tv, 0, _now.AddHours(1), BaseUrl, ApiKey);
 
         Assert.Equal(
             Assert.Single(first.Channel.Items).Guid.Value,
@@ -62,7 +62,7 @@ public sealed class ValidationRssTests
     [InlineData(100)]
     public void Create_with_offset_beyond_item_returns_no_items(int offset)
     {
-        var rss = ValidationRss.Create(NewznabCategory.Tv, offset, _now, _baseUrl, _apiKey);
+        var rss = ValidationRss.Create(NewznabCategory.Tv, offset, _now, BaseUrl, ApiKey);
 
         Assert.Multiple(
             () => Assert.Empty(rss.Channel.Items),
@@ -73,7 +73,7 @@ public sealed class ValidationRssTests
     [Fact]
     public void Create_with_negative_offset_is_treated_as_zero()
     {
-        var rss = ValidationRss.Create(NewznabCategory.Tv, -5, _now, _baseUrl, _apiKey);
+        var rss = ValidationRss.Create(NewznabCategory.Tv, -5, _now, BaseUrl, ApiKey);
 
         Assert.Multiple(
             () => Assert.Single(rss.Channel.Items),
@@ -83,7 +83,7 @@ public sealed class ValidationRssTests
     [Fact]
     public void Create_escapes_api_key_in_link()
     {
-        var rss = ValidationRss.Create(NewznabCategory.Tv, 0, _now, _baseUrl, "a b&c");
+        var rss = ValidationRss.Create(NewznabCategory.Tv, 0, _now, BaseUrl, "a b&c");
 
         var item = Assert.Single(rss.Channel.Items);
         Assert.Equal("http://localhost:6969/index/api?t=get&id=funkarr-validation-tv&apikey=a%20b%26c", item.Link);

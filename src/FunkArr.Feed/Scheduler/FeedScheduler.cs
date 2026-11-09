@@ -10,7 +10,7 @@ namespace FunkArr.Feed.Scheduler;
 
 public sealed class FeedScheduler : ReceiveActor, IWithTimers
 {
-    private const string _timerKey = "crawl";
+    private const string TimerKey = "crawl";
 
     private static readonly TimeSpan _startupDelay = TimeSpan.FromSeconds(30);
 
@@ -61,5 +61,5 @@ public sealed class FeedScheduler : ReceiveActor, IWithTimers
     }
 
     private void ScheduleNext(TimeSpan delay) =>
-        Timers.StartSingleTimer(_timerKey, new Tick(), delay);
+        Timers.StartSingleTimer(TimerKey, new Tick(), delay);
 }

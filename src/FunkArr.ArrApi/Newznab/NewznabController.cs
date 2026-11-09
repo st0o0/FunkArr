@@ -14,7 +14,7 @@ namespace FunkArr.ArrApi.Newznab;
 [ServiceFilter(typeof(NewznabApiKeyFilter))]
 public sealed class NewznabController(NewznabSearchService search, TimeProvider timeProvider) : ControllerBase
 {
-    private const string _applicationNzb = "application/x-nzb";
+    private const string ApplicationNzb = "application/x-nzb";
 
     [HttpGet]
     [OutputCache(PolicyName = NewznabFeedCache.PolicyName)]
@@ -47,7 +47,7 @@ public sealed class NewznabController(NewznabSearchService search, TimeProvider 
 
     private static IActionResult MapNzbResult(NzbGetResult result) => result switch
     {
-        NzbGetResult.Success ok => new FileContentResult(ok.Content, _applicationNzb) { FileDownloadName = ok.FileName },
+        NzbGetResult.Success ok => new FileContentResult(ok.Content, ApplicationNzb) { FileDownloadName = ok.FileName },
         NzbGetResult.Error err => NewznabXmlResult.Error(err.ErrorDetail),
         _ => NewznabXmlResult.Error(NewznabError.UnknownError("Unexpected result"))
     };

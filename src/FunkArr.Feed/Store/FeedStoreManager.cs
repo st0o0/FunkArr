@@ -10,8 +10,8 @@ namespace FunkArr.Feed.Store;
 
 public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
 {
-    private const int _snapshotInterval = 50;
-    private const string _trimTimerKey = "trim";
+    private const int SnapshotInterval = 50;
+    private const string TrimTimerKey = "trim";
     private static readonly TimeSpan _trimInterval = TimeSpan.FromHours(1);
 
     private sealed record TrimFeed;
@@ -42,7 +42,7 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
         Recover<RecoveryCompleted>(_ =>
         {
             Telemetry.Entries.Record(_state.Entries.Count);
-            Timers.StartPeriodicTimer(_trimTimerKey, new TrimFeed(), _trimInterval);
+            Timers.StartPeriodicTimer(TrimTimerKey, new TrimFeed(), _trimInterval);
         });
 
         Command<PublishFeedEntries>(HandleAdd);
@@ -100,7 +100,7 @@ public sealed class FeedStoreManager : ReceivePersistentActor, IWithTimers
 
     private void MaybeSnapshot()
     {
-        if (LastSequenceNr % _snapshotInterval == 0)
+        if (LastSequenceNr % SnapshotInterval == 0)
         {
             SaveSnapshot(_state.GetPersistenceState());
         }

@@ -7,19 +7,19 @@ internal static class VariantDetector
 {
     private sealed record Value(MediathekVariant Variant, Regex Pattern);
 
-    private const RegexOptions _options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+    private const RegexOptions Options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
     private static readonly TimeSpan _timeout = TimeSpan.FromMilliseconds(100);
 
     private static readonly Value[] _patterns =
     [
         new(MediathekVariant.AudioDescription,
-            new Regex(@"\baudio-?deskription\b|\bhörfassung\b|\(\s*AD\s*\)|\bmit\s+AD\b", _options, _timeout)),
+            new Regex(@"\baudio-?deskription\b|\bhörfassung\b|\(\s*AD\s*\)|\bmit\s+AD\b", Options, _timeout)),
         new(MediathekVariant.SignLanguage,
-            new Regex(@"\bgebärdensprache\b|\bDGS\b", _options, _timeout)),
+            new Regex(@"\bgebärdensprache\b|\bDGS\b", Options, _timeout)),
         new(MediathekVariant.PlainLanguage,
-            new Regex(@"\b(klare|leichte|einfache)r?\s+sprache\b", _options, _timeout)),
+            new Regex(@"\b(klare|leichte|einfache)r?\s+sprache\b", Options, _timeout)),
         new(MediathekVariant.OriginalVersion,
-            new Regex(@"\boriginal(version|fassung)\b|\boriginal\s+mit\s+untertiteln?\b|\bOV\b|\bOmU\b", _options,
+            new Regex(@"\boriginal(version|fassung)\b|\boriginal\s+mit\s+untertiteln?\b|\bOV\b|\bOmU\b", Options,
                 _timeout))
     ];
 

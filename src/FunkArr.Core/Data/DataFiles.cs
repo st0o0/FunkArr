@@ -5,12 +5,12 @@ namespace FunkArr.Core.Data;
 
 public sealed class DataFiles(IFileSystem fs, ILogger<DataFiles> log) : IDataFiles
 {
-    private const UnixFileMode _dirMode =
+    private const UnixFileMode DirMode =
         UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
         | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute
         | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
 
-    private const UnixFileMode _fileMode =
+    private const UnixFileMode FileMode =
         UnixFileMode.UserRead | UnixFileMode.UserWrite
         | UnixFileMode.GroupRead | UnixFileMode.GroupWrite
         | UnixFileMode.OtherRead | UnixFileMode.OtherWrite;
@@ -147,7 +147,7 @@ public sealed class DataFiles(IFileSystem fs, ILogger<DataFiles> log) : IDataFil
     {
         if (OperatingSystem.IsLinux())
         {
-            fs.DirectoryInfo.New(path).UnixFileMode = _dirMode;
+            fs.DirectoryInfo.New(path).UnixFileMode = DirMode;
         }
     }
 
@@ -155,7 +155,7 @@ public sealed class DataFiles(IFileSystem fs, ILogger<DataFiles> log) : IDataFil
     {
         if (OperatingSystem.IsLinux())
         {
-            fs.FileInfo.New(path).UnixFileMode = _fileMode;
+            fs.FileInfo.New(path).UnixFileMode = FileMode;
         }
     }
 }

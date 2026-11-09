@@ -17,7 +17,7 @@ namespace FunkArr.Download.Worker;
 
 public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 {
-    private const string _retryTimerKey = "retry";
+    private const string RetryTimerKey = "retry";
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
@@ -115,7 +115,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             return;
         }
 
-        Timers.Cancel(_retryTimerKey);
+        Timers.Cancel(RetryTimerKey);
         Persist(new DownloadInitialized(_downloadId, _state.Media!.ToPersistence()), e => _state.Apply(e));
     }
 
@@ -206,7 +206,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
                 var delay = _backoff.DelayWithJitter(Math.Max(0, _state.Attempt - 1));
                 _log.Info("Download {DownloadId} scheduling retry {Attempt} in {Delay}s", _downloadId,
                     _state.Attempt + 1, delay.TotalSeconds);
-                Timers.StartSingleTimer(_retryTimerKey, new RetryAttempt(), delay);
+                Timers.StartSingleTimer(RetryTimerKey, new RetryAttempt(), delay);
             }
             else
             {
@@ -262,7 +262,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 
     private void CancelRunning()
     {
-        Timers.Cancel(_retryTimerKey);
+        Timers.Cancel(RetryTimerKey);
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;

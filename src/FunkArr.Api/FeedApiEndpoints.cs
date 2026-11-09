@@ -14,8 +14,8 @@ namespace FunkArr.Api;
 
 public static class FeedApiEndpoints
 {
-    private const int _defaultLimit = 100;
-    private const int _maxLimit = 500;
+    private const int DefaultLimit = 100;
+    private const int MaxLimit = 500;
     public static WebApplication MapFeedApi(this WebApplication app)
     {
         var group = app.MapGroup("/api/feed")
@@ -28,7 +28,7 @@ public static class FeedApiEndpoints
             int? limit, int? offset, MediaType? type, string? channel, int? quality, string? q,
             IActorRegistry registry, CancellationToken ct) =>
         {
-            var take = Math.Clamp(limit ?? _defaultLimit, 1, _maxLimit);
+            var take = Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit);
             var skip = Math.Max(0, offset ?? 0);
             var mediaType = type?.ToMessage();
             var feed = await registry.GetAsync<IFeedStoreManager>(ct);

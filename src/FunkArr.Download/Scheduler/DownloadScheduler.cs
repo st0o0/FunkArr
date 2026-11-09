@@ -10,7 +10,7 @@ namespace FunkArr.Download.Scheduler;
 
 public sealed class DownloadScheduler : ReceiveActor, IWithTimers
 {
-    private const string _timerKey = "schedule";
+    private const string TimerKey = "schedule";
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IActorRef _downloadManager = Context.GetActor<IDownloadManager>();
@@ -36,7 +36,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
 
     private void EvaluateSchedule()
     {
-        Timers.Cancel(_timerKey);
+        Timers.Cancel(TimerKey);
 
         var schedule = _optionsMonitor.CurrentValue.DownloadSchedule;
 
@@ -57,7 +57,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
             _downloadManager.Tell(new ScheduleEnabled());
 
             var delayToEnd = DelayUntilWindowEnd(now, schedule);
-            Timers.StartSingleTimer(_timerKey, new Evaluate(), delayToEnd);
+            Timers.StartSingleTimer(TimerKey, new Evaluate(), delayToEnd);
         }
         else
         {
@@ -67,7 +67,7 @@ public sealed class DownloadScheduler : ReceiveActor, IWithTimers
             Telemetry.ScheduleEnabled.Record(0);
             _downloadManager.Tell(new ScheduleDisabled(nextWindow));
 
-            Timers.StartSingleTimer(_timerKey, new Evaluate(), delay);
+            Timers.StartSingleTimer(TimerKey, new Evaluate(), delay);
         }
     }
 

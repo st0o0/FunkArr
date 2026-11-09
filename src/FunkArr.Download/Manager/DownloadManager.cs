@@ -17,7 +17,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 {
     private sealed record ConcurrencyChanged(int Limit);
 
-    private const int _snapshotInterval = 25;
+    private const int SnapshotInterval = 25;
     private static readonly TimeSpan _fanOutTimeout = TimeSpan.FromSeconds(2);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
@@ -422,7 +422,7 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void MaybeSnapshot()
     {
-        if (LastSequenceNr % _snapshotInterval == 0)
+        if (LastSequenceNr % SnapshotInterval == 0)
         {
             SaveSnapshot(_state.GetPersistenceState());
         }

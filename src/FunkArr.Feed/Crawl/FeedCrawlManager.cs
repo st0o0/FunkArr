@@ -11,7 +11,7 @@ namespace FunkArr.Feed.Crawl;
 
 public sealed class FeedCrawlManager : ReceivePersistentActor
 {
-    private const int _snapshotInterval = 20;
+    private const int SnapshotInterval = 20;
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
     private readonly IOptionsMonitor<FeedOptions> _feedOptions;
@@ -194,7 +194,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
     private void MaybeSnapshot()
     {
-        if (LastSequenceNr % _snapshotInterval == 0)
+        if (LastSequenceNr % SnapshotInterval == 0)
         {
             SaveSnapshot(_state.GetPersistenceState());
         }

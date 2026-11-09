@@ -10,8 +10,8 @@ namespace FunkArr.Search.Workers;
 
 public sealed class TvSearchWorkerState
 {
-    private const int _defaultSize = 50;
-    private const int _durationMin = 300;
+    private const int DefaultSize = 50;
+    private const int DurationMin = 300;
 
     public Guid SearchId { get; }
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
@@ -66,8 +66,8 @@ public sealed class TvSearchWorkerState
             SortOrder: "desc",
             Future: false,
             Offset: RuleSet is null ? Offset ?? 0 : 0,
-            Size: Limit ?? _defaultSize,
-            DurationMin: _durationMin,
+            Size: Limit ?? DefaultSize,
+            DurationMin: DurationMin,
             DurationMax: null);
     }
 

@@ -9,7 +9,7 @@ namespace FunkArr.ArrApi.Newznab.Services;
 
 public static class NzbService
 {
-    private const string _titleMeta = "title";
+    private const string TitleMeta = "title";
 
     private static readonly XmlSerializer _nzbSerializer = new(typeof(Nzb));
     private static readonly XmlReaderSettings _xmlSettings = new() { DtdProcessing = DtdProcessing.Ignore };
@@ -44,7 +44,7 @@ public static class NzbService
     {
         var metas = new List<NzbMeta>
         {
-            new() { Type = _titleMeta, Value = payload.Title },
+            new() { Type = TitleMeta, Value = payload.Title },
             new() { Type = FunkArrHeaders.Url, Value = payload.Url },
             new() { Type = FunkArrHeaders.Channel, Value = payload.Channel },
             new() { Type = FunkArrHeaders.Duration, Value = payload.Duration.ToString() },
@@ -72,7 +72,7 @@ public static class NzbService
         var subtitleUrl = Meta(FunkArrHeaders.SubtitleUrl);
 
         return new NzbPayload(
-            Title: Meta(_titleMeta) ?? "Unknown",
+            Title: Meta(TitleMeta) ?? "Unknown",
             Url: UrlValidation.HasAllowedScheme(url) ? url : "",
             SubtitleUrl: UrlValidation.HasAllowedScheme(subtitleUrl) ? subtitleUrl : null,
             Channel: Meta(FunkArrHeaders.Channel) ?? "",

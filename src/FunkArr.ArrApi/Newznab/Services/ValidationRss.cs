@@ -10,7 +10,7 @@ internal static class ValidationRss
     internal const string MovieGuid = "funkarr-validation-movie";
     internal const long Size = 1_000_000_000;
 
-    private const int _hdQuality = 1080;
+    private const int HdQuality = 1080;
 
     internal static Rss Create(NewznabCategory category, int offset, DateTimeOffset now, string baseUrl, string apiKey)
     {
@@ -39,13 +39,13 @@ internal static class ValidationRss
             Guid = new ItemGuid { Value = guid, IsPermaLink = false },
             Link = link,
             PubDate = now.ToString("R"),
-            Category = category.DisplayName(_hdQuality),
+            Category = category.DisplayName(HdQuality),
             Description = "FunkArr validation entry for indexer tests and RSS sync",
             Enclosure = new Enclosure { Url = link, Length = Size },
             Attributes =
             [
                 new NewznabAttribute { Name = "size", Value = Size.ToString() },
-                new NewznabAttribute { Name = "category", Value = category.CategoryId(_hdQuality) }
+                new NewznabAttribute { Name = "category", Value = category.CategoryId(HdQuality) }
             ]
         };
     }

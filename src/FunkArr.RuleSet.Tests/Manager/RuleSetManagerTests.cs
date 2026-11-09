@@ -37,7 +37,7 @@ public sealed class RuleSetManagerTests : TestKit
         _store = new RuleSetStore(_dataFiles, _dataPaths);
     }
 
-    private const string _sampleJson = """
+    private const string SampleJson = """
                                        {
                                          "topic": "Test Show",
                                          "aliases": [],
@@ -64,8 +64,8 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IScoringManager>(scoringProbe);
 
-        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
-        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), SampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), SampleJson);
 
         Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
 
@@ -91,8 +91,8 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IScoringManager>(scoringProbe);
 
-        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
-        File.WriteAllText(Path.Combine(_dataPaths.LocalRuleSets, "show-a.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), SampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.LocalRuleSets, "show-a.json"), SampleJson);
 
         Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
 
@@ -122,7 +122,7 @@ public sealed class RuleSetManagerTests : TestKit
         AwaitCondition(() => _dataFiles.Watchers.Count >= 2, TestContext.Current.CancellationToken);
 
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "new-show.json");
-        File.WriteAllText(filePath, _sampleJson);
+        File.WriteAllText(filePath, SampleJson);
         _dataFiles.Watchers[0].SimulateCreated(filePath);
 
         var msg = shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
@@ -144,7 +144,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IScoringManager>(scoringProbe);
 
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "temp-show.json");
-        File.WriteAllText(filePath, _sampleJson);
+        File.WriteAllText(filePath, SampleJson);
 
         Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths, TimeSpan.FromMilliseconds(50))));
 
@@ -172,7 +172,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IRuleSetResolver>(resolverProbe);
         registry.Register<IScoringManager>(scoringProbe);
 
-        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "test-show.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "test-show.json"), SampleJson);
 
         var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
@@ -197,7 +197,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IScoringManager>(scoringProbe);
 
         var filePath = Path.Combine(_dataPaths.CommunityRuleSets, "deleted-show.json");
-        File.WriteAllText(filePath, _sampleJson);
+        File.WriteAllText(filePath, SampleJson);
 
         var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
@@ -225,8 +225,8 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IScoringManager>(scoringProbe);
         registry.Register<IHistoryRegion>(historyProbe);
 
-        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
-        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), SampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-b.json"), SampleJson);
 
         var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(cancellationToken: TestContext.Current.CancellationToken);
@@ -274,7 +274,7 @@ public sealed class RuleSetManagerTests : TestKit
         registry.Register<IScoringManager>(scoringProbe);
         registry.Register<IHistoryRegion>(historyProbe);
 
-        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), _sampleJson);
+        File.WriteAllText(Path.Combine(_dataPaths.CommunityRuleSets, "show-a.json"), SampleJson);
 
         var manager = Sys.ActorOf(Props.Create(() => new RuleSetManager(_store, _dataFiles, _dataPaths)));
         shardProbe.ExpectMsg<RuleSetWorker.LoadRuleSet>(cancellationToken: TestContext.Current.CancellationToken);

@@ -8,7 +8,7 @@ namespace FunkArr.Api.Infrastructure;
 
 public sealed class RingBufferSink(int capacity = 500) : ILogEventSink
 {
-    private const int _subscriberCapacity = 256;
+    private const int SubscriberCapacity = 256;
 
     private readonly ConcurrentQueue<LogEntry> _buffer = new();
     private readonly ConcurrentDictionary<Guid, Channel<LogEntry>> _subscribers = new();
@@ -41,7 +41,7 @@ public sealed class RingBufferSink(int capacity = 500) : ILogEventSink
     public IAsyncEnumerable<LogEntry> Subscribe(CancellationToken ct)
     {
         var id = Guid.NewGuid();
-        var channel = Channel.CreateBounded<LogEntry>(new BoundedChannelOptions(_subscriberCapacity)
+        var channel = Channel.CreateBounded<LogEntry>(new BoundedChannelOptions(SubscriberCapacity)
         {
             FullMode = BoundedChannelFullMode.DropOldest,
             SingleReader = true
