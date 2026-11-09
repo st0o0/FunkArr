@@ -60,9 +60,7 @@ public sealed class CoreSetupContainer : ISetup<IServiceCollection>
                 HttpLoggingFields.RequestPath |
                 HttpLoggingFields.RequestQuery |
                 HttpLoggingFields.ResponseStatusCode |
-                HttpLoggingFields.Duration |
-                HttpLoggingFields.RequestBody |
-                HttpLoggingFields.ResponseBody;
+                HttpLoggingFields.Duration;
             options.CombineLogs = true;
         });
         services.AddHttpLoggingInterceptor<ApiKeyLoggingInterceptor>();
