@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using FFmpeg.Rx;
+using FFmpeg.Rx.Builder;
 using FFmpeg.Rx.Codecs;
 using FFmpeg.Rx.Models;
 using FunkArr.Messages.Download;
@@ -38,66 +39,43 @@ internal sealed class FfmpegProcess : IFfmpegProcess
 
     internal static IFfmpegSession BuildSession(FfmpegInput input)
     {
-        var spec = BuildPipeline(input);
-        return FfmpegSession.Create(spec);
-    }
-
-    internal static PipelineConfig BuildPipeline(FfmpegInput input)
-    {
-        var inputs = BuildInputs(input);
-        var output = BuildOutput(input);
-        return new PipelineConfig(inputs, [output], ["-progress pipe:1"]);
-    }
-
-    internal static InputConfig[] BuildInputs(FfmpegInput input)
-    {
-        var customArgs = new List<string> { $"-user_agent \"{UserAgent}\"" };
-        if (input.ProxyUrl is not null)
-        {
-            customArgs.Add($"-http_proxy {input.ProxyUrl}");
-        }
-
-        var urlInput = new UrlInputConfig(new Uri(input.VideoUrl))
-        {
-            Options = new InputOptionConfig(CustomArgs: customArgs)
-        };
+        var builder = FFmpeg.Rx.Ffmpeg
+            .Input(new Uri(input.VideoUrl), opts =>
+            {
+                opts.UserAgent(UserAgent);
+                if (input.ProxyUrl is not null)
+                {
+                    opts.HttpProxy(input.ProxyUrl);
+                }
+            })
+            .WithProgressReporting();
 
         if (input.SubtitlePath is not null)
         {
-            return [urlInput, new FileInputConfig(input.SubtitlePath)];
+            builder = builder.Input(input.SubtitlePath);
         }
 
-        return [urlInput];
-    }
-
-    internal static OutputConfig BuildOutput(FfmpegInput input)
-    {
-        var streams = new List<StreamConfig>
+        return builder.Output(input.OutputPath, output =>
         {
-            new(0, 0, StreamType.Video, new StreamCopy()),
-            new(0, 0, StreamType.Audio, new StreamCopy())
-        };
+            output
+                .Stream(0, 0, StreamType.Video, s => s.Copy())
+                .Stream(0, 0, StreamType.Audio, s =>
+                {
+                    s.Copy();
+                    if (input.IsHls)
+                    {
+                        s.BitstreamFilter("aac_adtstoasc=no_validation=1");
+                    }
+                });
 
-        var customArgs = new List<string>();
-
-        if (input.IsHls)
-        {
-            customArgs.Add("-bsf:a aac_adtstoasc=no_validation=1");
-        }
-
-        if (input.SubtitlePath is not null)
-        {
-            streams.Add(new StreamConfig(
-                1, null, StreamType.Subtitle,
-                new SubtitleEncode(SubtitleCodec.Srt),
-                [new("language", input.SubtitleLanguage ?? "deu")],
-                "0"));
-        }
-
-        return new OutputConfig(
-            new FileDestination(input.OutputPath),
-            streams,
-            CustomArgs: customArgs.Count > 0 ? customArgs : null);
+            if (input.SubtitlePath is not null)
+            {
+                output.Stream(1, StreamType.Subtitle, s => s
+                    .Encode(SubtitleCodec.Srt)
+                    .Metadata("language", input.SubtitleLanguage ?? "deu")
+                    .Disposition("0"));
+            }
+        });
     }
 
     private static FfmpegResult MapResult(FFmpeg.Rx.Models.FfmpegResult result, TimeSpan elapsed)
