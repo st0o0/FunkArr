@@ -27,7 +27,7 @@ sets up each scenario deterministically before the tests that need it.
 | **Clean slate** | Fresh volumes, no data | 0.x, 14.x (health), initial dashboard, 30.x (feed empty) |
 | **Sonarr ready** | Tatort added (tvdbId 83214), root folder `/shared/tv` | 17.x |
 | **Radarr ready** | Movie added (e.g. Schachnovelle tmdbId 1740919), root folder `/shared/movies` | 26.x |
-| **Services configured** | Setup wizard or API configures Prowlarr/Sonarr/Radarr | 17.x, 26.x |
+| **Services configured** | Setup wizard configures Prowlarr; FunkArr setup API creates indexers directly in Sonarr/Radarr (Prowlarr does not auto-sync without user-configured application mappings) | 17.x, 26.x |
 | **Local ruleset** | `POST /api/rulesets` with local-only ruleset | 6.9-6.11, 7.9-7.12, 10.x, 11.x |
 | **Merged ruleset** | Edit Tatort via UI editor, save -> creates local overlay | 7.8, 7.10-7.11, 10.1-10.2, 11.x |
 | **Paused pipeline** | `POST /api/downloads/queue/pause` before triggering searches | 3.x, 4.x, 25.x, 28.x |
@@ -223,6 +223,12 @@ Docker networking: Prowlarr/Sonarr/Radarr must reach FunkArr at `http://funkarr:
 internal DNS). The "Indexer erstellen" / "Download-Client erstellen" buttons make a test
 connection - this only works when all containers are on the same Docker network. From `localhost`
 (the browser), use the FunkArr setup API (`POST /api/setup/{service}/{resource}`) as a fallback.
+
+**Prowlarr indexer sync**: The setup wizard creates the FunkArr indexer in Prowlarr, but does
+NOT configure Prowlarr application mappings (`/api/v1/applications`). Without those mappings,
+Prowlarr does not sync the indexer to Sonarr/Radarr. This is expected — configuring Prowlarr
+apps is the user's responsibility. For E2E testing, create indexers directly in Sonarr/Radarr
+via `POST /api/setup/sonarr/indexer` and `POST /api/setup/radarr/indexer` after the wizard.
 
 ### API Ruleset Roundtrip Pitfalls
 
@@ -1010,6 +1016,7 @@ the state required by subsequent steps.
 0. **⏱ Empty-feed validation (API-only, <30s after port 6969 responds)**: Auto-crawl fires at ~43-60s after startup — these API checks MUST complete before then. No browser navigation, only API calls: Newznab validation fallback items (section 32.6-32.11), feed API empty state with `ingest.lastRunAt = null` (sections 30.3 API, 30.4 API, 31.1, 31.5)
 1. **Startup**: Docker compose up, wait for health (sections 14, 22)
 2. **Setup wizard**: Full walkthrough - health check, select services, configure Prowlarr/Sonarr/Radarr, copy buttons, manual expand, finish (sections 14-16)
+2a. **Create indexers in Sonarr/Radarr**: Prowlarr does not auto-sync without application mappings. Create indexers directly: `POST /api/setup/sonarr/indexer` and `POST /api/setup/radarr/indexer` with `{"url":"http://sonarr:8989","apiKey":"<key>","funkarrUrl":"http://funkarr:6969"}` (and radarr:7878 respectively). Verify indexer appears in each service.
 3. **Dashboard (clean)**: Verify stat cards, links, version on clean slate (section 1.1-1.4, 1.9)
 4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links incl. Feed (section 2)
 5. **Settings page**: All sections visible, download config, routes, **broadcast variants**, log viewer (sections 24, 29.1-29.4)

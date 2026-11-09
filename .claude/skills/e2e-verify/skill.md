@@ -100,6 +100,22 @@ Invoke-RestMethod "http://localhost:9696/api/v1/system/status?apikey=funkarr-dev
 Then run the Sonarr and Radarr setup recipes from `E2E-TEST-PLAN.md` section 0
 ("Re-add Tatort to Sonarr after reset" and "Setup Recipe: Radarr movie search").
 
+After the setup wizard (Phase 1), create indexers directly in Sonarr and Radarr
+via FunkArr's setup API — Prowlarr does not auto-sync indexers without user-configured
+application mappings:
+
+```powershell
+# Create indexer in Sonarr
+Invoke-RestMethod "http://localhost:6969/api/setup/sonarr/indexer" -Method Post `
+    -ContentType "application/json" `
+    -Body '{"url":"http://sonarr:8989","apiKey":"funkarr-dev-api-key-01","funkarrUrl":"http://funkarr:6969"}'
+
+# Create indexer in Radarr
+Invoke-RestMethod "http://localhost:6969/api/setup/radarr/indexer" -Method Post `
+    -ContentType "application/json" `
+    -Body '{"url":"http://radarr:7878","apiKey":"funkarr-dev-api-key-01","funkarrUrl":"http://funkarr:6969"}'
+```
+
 All containers must be running: funkarr (6969), sonarr (8989), radarr (7878),
 prowlarr (9696). Only proceed to Phase 1 when all services respond.
 
