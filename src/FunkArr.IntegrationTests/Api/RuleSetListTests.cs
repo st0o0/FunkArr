@@ -71,7 +71,7 @@ public sealed class RuleSetListTests(FunkArrFixture fixture)
 
         var statsProbe = fixture.GetProbe<IStatsCollector>();
         statsProbe.ExpectMsg<QueryAllStats>(cancellationToken: TestContext.Current.CancellationToken);
-        statsProbe.Reply(new AllStatsResult(ImmutableDictionary<string, ScoringStatsResult>.Empty));
+        statsProbe.Reply(new AllStatsResult([]));
 
         var response = await task;
 

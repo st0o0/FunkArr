@@ -24,7 +24,10 @@ public static class SetupApiEndpoints
             HttpContext ctx) =>
         {
             var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
-            if (error is not null) return Results.Ok(error);
+            if (error is not null)
+            {
+                return Results.Ok(error);
+            }
 
             var payload = ProwlarrIndexerPayload.Create(selfUri!, options.CurrentValue.ApiKey);
             return Results.Ok(await client.PostResourceAsync(
@@ -41,7 +44,10 @@ public static class SetupApiEndpoints
             HttpContext ctx) =>
         {
             var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
-            if (error is not null) return Results.Ok(error);
+            if (error is not null)
+            {
+                return Results.Ok(error);
+            }
 
             var payload = SonarrRadarrIndexerPayload.Create(selfUri!, options.CurrentValue.ApiKey, [5030, 5040]);
             return Results.Ok(await client.PostResourceAsync(
@@ -58,7 +64,10 @@ public static class SetupApiEndpoints
             HttpContext ctx) =>
         {
             var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
-            if (error is not null) return Results.Ok(error);
+            if (error is not null)
+            {
+                return Results.Ok(error);
+            }
 
             var payload = SabnzbdDownloadClientPayload.Create(selfUri!, options.CurrentValue.ApiKey, "tv");
             return Results.Ok(await client.PostResourceAsync(
@@ -75,7 +84,10 @@ public static class SetupApiEndpoints
             HttpContext ctx) =>
         {
             var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
-            if (error is not null) return Results.Ok(error);
+            if (error is not null)
+            {
+                return Results.Ok(error);
+            }
 
             var payload = SonarrRadarrIndexerPayload.Create(selfUri!, options.CurrentValue.ApiKey, [2030, 2040]);
             return Results.Ok(await client.PostResourceAsync(
@@ -92,7 +104,10 @@ public static class SetupApiEndpoints
             HttpContext ctx) =>
         {
             var (selfUri, error) = ResolveSelfUrl(request, options.CurrentValue, ctx);
-            if (error is not null) return Results.Ok(error);
+            if (error is not null)
+            {
+                return Results.Ok(error);
+            }
 
             var payload = SabnzbdDownloadClientPayload.Create(selfUri!, options.CurrentValue.ApiKey, "movies");
             return Results.Ok(await client.PostResourceAsync(

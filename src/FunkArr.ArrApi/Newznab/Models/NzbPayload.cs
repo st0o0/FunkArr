@@ -28,10 +28,14 @@ public sealed record NzbPayload(
         {
             var payload = JsonSerializer.Deserialize<NzbPayload>(Convert.FromBase64String(id), _json);
             if (payload is not { Title: not null, Url.Length: > 0, Channel: not null })
+            {
                 return null;
+            }
 
             if (!UrlValidation.HasAllowedScheme(payload.Url))
+            {
                 return null;
+            }
 
             return payload with
             {
