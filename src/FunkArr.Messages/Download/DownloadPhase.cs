@@ -2,12 +2,13 @@ namespace FunkArr.Messages.Download;
 
 public enum DownloadPhase
 {
-    Initialized = 0,
-    VideoDownload = 1,
-    Remuxing = 2,
-    Moving = 3,
-    Completed = 4,
-    Failed = 5
+    Unknown = 0,
+    Initialized = 1,
+    VideoDownload = 2,
+    Remuxing = 3,
+    Moving = 4,
+    Completed = 5,
+    Failed = 6
 }
 
 public static class DownloadPhaseExtensions

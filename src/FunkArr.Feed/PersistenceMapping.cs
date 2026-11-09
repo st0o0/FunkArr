@@ -11,7 +11,7 @@ public static class PersistenceMapping
     public static PersistedFeedEntry ToPersistence(this FeedEntry entry) =>
         new(entry.StableId,
             entry.FirstSeenAt,
-            entry.MediaType == MediaType.Movie ? PersistedMediaType.Movie : PersistedMediaType.Show,
+            entry.MediaType.ToPersistence(),
             entry.Title,
             entry.Channel,
             entry.Topic,
@@ -28,10 +28,26 @@ public static class PersistenceMapping
             entry.Season,
             entry.Episode);
 
+    public static PersistedMediaType ToPersistence(this MediaType type) =>
+        type switch
+        {
+            MediaType.Show => PersistedMediaType.Show,
+            MediaType.Movie => PersistedMediaType.Movie,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+
+    public static MediaType ToDomain(this PersistedMediaType type) =>
+        type switch
+        {
+            PersistedMediaType.Show => MediaType.Show,
+            PersistedMediaType.Movie => MediaType.Movie,
+            _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+        };
+
     public static FeedEntry ToDomain(this PersistedFeedEntry entry) =>
         new(entry.StableId,
             entry.FirstSeenAt,
-            entry.MediaType == PersistedMediaType.Movie ? MediaType.Movie : MediaType.Show,
+            entry.MediaType.ToDomain(),
             entry.Title,
             entry.Channel,
             entry.Topic,

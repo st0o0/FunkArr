@@ -2,9 +2,10 @@ namespace FunkArr.Persistence.Events.ScoringHistory;
 
 public enum PersistedIdentificationStrategy
 {
-    SeasonAndEpisodeNumber = 0,
-    AbsoluteEpisodeNumber = 1,
-    TitleExact = 2,
-    TitleIncludes = 3,
-    AirdateExtraction = 4
+    Unknown = 0,
+    SeasonAndEpisodeNumber = 1,
+    AbsoluteEpisodeNumber = 2,
+    TitleExact = 3,
+    TitleIncludes = 4,
+    AirdateExtraction = 5
 }

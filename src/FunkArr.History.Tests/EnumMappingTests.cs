@@ -52,74 +52,83 @@ public sealed class EnumMappingTests
     }
 
     [Theory]
-    [InlineData(PersistedMediaType.Show, 0)]
-    [InlineData(PersistedMediaType.Movie, 1)]
+    [InlineData(PersistedMediaType.Unknown, 0)]
+    [InlineData(PersistedMediaType.Show, 1)]
+    [InlineData(PersistedMediaType.Movie, 2)]
     public void PersistedMediaType_HasFrozenValues(PersistedMediaType member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedFailureKind.Transient, 0)]
-    [InlineData(PersistedFailureKind.Permanent, 1)]
+    [InlineData(PersistedFailureKind.Unknown, 0)]
+    [InlineData(PersistedFailureKind.Transient, 1)]
+    [InlineData(PersistedFailureKind.Permanent, 2)]
     public void PersistedFailureKind_HasFrozenValues(PersistedFailureKind member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedMatchMethod.RegexExtracted, 0)]
-    [InlineData(PersistedMatchMethod.TitleMatch, 1)]
-    [InlineData(PersistedMatchMethod.AirdateMatch, 2)]
-    [InlineData(PersistedMatchMethod.YearMatch, 3)]
+    [InlineData(PersistedMatchMethod.Unknown, 0)]
+    [InlineData(PersistedMatchMethod.RegexExtracted, 1)]
+    [InlineData(PersistedMatchMethod.TitleMatch, 2)]
+    [InlineData(PersistedMatchMethod.AirdateMatch, 3)]
+    [InlineData(PersistedMatchMethod.YearMatch, 4)]
     public void PersistedMatchMethod_HasFrozenValues(PersistedMatchMethod member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedMediathekVariant.Standard, 0)]
-    [InlineData(PersistedMediathekVariant.AudioDescription, 1)]
-    [InlineData(PersistedMediathekVariant.SignLanguage, 2)]
-    [InlineData(PersistedMediathekVariant.PlainLanguage, 3)]
-    [InlineData(PersistedMediathekVariant.OriginalVersion, 4)]
+    [InlineData(PersistedMediathekVariant.Unknown, 0)]
+    [InlineData(PersistedMediathekVariant.Standard, 1)]
+    [InlineData(PersistedMediathekVariant.AudioDescription, 2)]
+    [InlineData(PersistedMediathekVariant.SignLanguage, 3)]
+    [InlineData(PersistedMediathekVariant.PlainLanguage, 4)]
+    [InlineData(PersistedMediathekVariant.OriginalVersion, 5)]
     public void PersistedMediathekVariant_HasFrozenValues(PersistedMediathekVariant member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedRuleOutcome.Matched, 0)]
-    [InlineData(PersistedRuleOutcome.FilterFailed, 1)]
-    [InlineData(PersistedRuleOutcome.IdentificationFailed, 2)]
+    [InlineData(PersistedRuleOutcome.Unknown, 0)]
+    [InlineData(PersistedRuleOutcome.Matched, 1)]
+    [InlineData(PersistedRuleOutcome.FilterFailed, 2)]
+    [InlineData(PersistedRuleOutcome.IdentificationFailed, 3)]
     public void PersistedRuleOutcome_HasFrozenValues(PersistedRuleOutcome member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedFilterGroupOp.All, 0)]
-    [InlineData(PersistedFilterGroupOp.Any, 1)]
-    [InlineData(PersistedFilterGroupOp.Not, 2)]
+    [InlineData(PersistedFilterGroupOp.Unknown, 0)]
+    [InlineData(PersistedFilterGroupOp.All, 1)]
+    [InlineData(PersistedFilterGroupOp.Any, 2)]
+    [InlineData(PersistedFilterGroupOp.Not, 3)]
     public void PersistedFilterGroupOp_HasFrozenValues(PersistedFilterGroupOp member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedIdentificationStrategy.SeasonAndEpisodeNumber, 0)]
-    [InlineData(PersistedIdentificationStrategy.AbsoluteEpisodeNumber, 1)]
-    [InlineData(PersistedIdentificationStrategy.TitleExact, 2)]
-    [InlineData(PersistedIdentificationStrategy.TitleIncludes, 3)]
-    [InlineData(PersistedIdentificationStrategy.AirdateExtraction, 4)]
+    [InlineData(PersistedIdentificationStrategy.Unknown, 0)]
+    [InlineData(PersistedIdentificationStrategy.SeasonAndEpisodeNumber, 1)]
+    [InlineData(PersistedIdentificationStrategy.AbsoluteEpisodeNumber, 2)]
+    [InlineData(PersistedIdentificationStrategy.TitleExact, 3)]
+    [InlineData(PersistedIdentificationStrategy.TitleIncludes, 4)]
+    [InlineData(PersistedIdentificationStrategy.AirdateExtraction, 5)]
     public void PersistedIdentificationStrategy_HasFrozenValues(PersistedIdentificationStrategy member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedIdentificationFailureReason.UnknownStrategy, 0)]
-    [InlineData(PersistedIdentificationFailureReason.SeasonPatternNotMatched, 1)]
-    [InlineData(PersistedIdentificationFailureReason.NoEpisodePatternConfigured, 2)]
-    [InlineData(PersistedIdentificationFailureReason.EpisodePatternNotMatched, 3)]
-    [InlineData(PersistedIdentificationFailureReason.NoTitlePartsConfigured, 4)]
-    [InlineData(PersistedIdentificationFailureReason.TitlePartRegexNotMatched, 5)]
-    [InlineData(PersistedIdentificationFailureReason.TitleDoesNotMatch, 6)]
-    [InlineData(PersistedIdentificationFailureReason.NoDateFoundInTitle, 7)]
+    [InlineData(PersistedIdentificationFailureReason.Unknown, 0)]
+    [InlineData(PersistedIdentificationFailureReason.UnknownStrategy, 1)]
+    [InlineData(PersistedIdentificationFailureReason.SeasonPatternNotMatched, 2)]
+    [InlineData(PersistedIdentificationFailureReason.NoEpisodePatternConfigured, 3)]
+    [InlineData(PersistedIdentificationFailureReason.EpisodePatternNotMatched, 4)]
+    [InlineData(PersistedIdentificationFailureReason.NoTitlePartsConfigured, 5)]
+    [InlineData(PersistedIdentificationFailureReason.TitlePartRegexNotMatched, 6)]
+    [InlineData(PersistedIdentificationFailureReason.TitleDoesNotMatch, 7)]
+    [InlineData(PersistedIdentificationFailureReason.NoDateFoundInTitle, 8)]
     public void PersistedIdentificationFailureReason_HasFrozenValues(PersistedIdentificationFailureReason member, int expected) =>
         Assert.Equal(expected, (int)member);
 
     [Theory]
-    [InlineData(PersistedSearchSource.Sonarr, 0)]
-    [InlineData(PersistedSearchSource.Radarr, 1)]
-    [InlineData(PersistedSearchSource.Prowlarr, 2)]
-    [InlineData(PersistedSearchSource.Feed, 4)]
+    [InlineData(PersistedSearchSource.Unknown, 0)]
+    [InlineData(PersistedSearchSource.Sonarr, 1)]
+    [InlineData(PersistedSearchSource.Radarr, 2)]
+    [InlineData(PersistedSearchSource.Prowlarr, 3)]
+    [InlineData(PersistedSearchSource.Feed, 5)]
     public void PersistedSearchSource_HasFrozenValues(PersistedSearchSource member, int expected) =>
         Assert.Equal(expected, (int)member);
 
@@ -128,7 +137,7 @@ public sealed class EnumMappingTests
         where TPersisted : struct, Enum
     {
         var domainValues = Enum.GetValues<TDomain>().Where(v => v.ToString() != "Unknown").ToArray();
-        var persistedValues = Enum.GetValues<TPersisted>();
+        var persistedValues = Enum.GetValues<TPersisted>().Where(v => v.ToString() != "Unknown").ToArray();
         Assert.Equal(domainValues.Length, persistedValues.Length);
 
         foreach (var domain in domainValues)

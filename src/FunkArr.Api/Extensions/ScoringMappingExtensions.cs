@@ -58,7 +58,7 @@ internal static class ScoringMappingExtensions
         RuleOutcome.Matched => Models.Scoring.RuleOutcome.Matched,
         RuleOutcome.FilterFailed => Models.Scoring.RuleOutcome.FilterFailed,
         RuleOutcome.IdentificationFailed => Models.Scoring.RuleOutcome.IdentificationFailed,
-        _ => Models.Scoring.RuleOutcome.FilterFailed
+        _ => throw new ArgumentOutOfRangeException(nameof(msg), msg, null)
     };
 
     internal static FilterOperator ToApi(this FilterGroupOp value) => value switch

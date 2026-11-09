@@ -243,7 +243,7 @@ public sealed class PersistenceMappingTests
     {
         Assert.Equal(
             Enum.GetNames<SearchSource>().Where(n => n != "Unknown"),
-            Enum.GetNames<PersistedSearchSource>());
+            Enum.GetNames<PersistedSearchSource>().Where(n => n != "Unknown"));
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public sealed class PersistenceMappingTests
     {
         Assert.Equal(
             Enum.GetNames<MediathekVariant>().Where(n => n != "Unknown"),
-            Enum.GetNames<PersistedMediathekVariant>());
+            Enum.GetNames<PersistedMediathekVariant>().Where(n => n != "Unknown"));
     }
 
     [Theory]

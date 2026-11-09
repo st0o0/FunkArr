@@ -55,7 +55,7 @@ public abstract record CreateLocalRuleSetResponse;
 public sealed record CreateLocalRuleSetCompleted(string RuleSetId) : CreateLocalRuleSetResponse;
 public sealed record CreateLocalRuleSetFailed(CreateLocalRuleSetFailureReason Reason) : CreateLocalRuleSetResponse;
 
-public enum CreateLocalRuleSetFailureReason { AlreadyExists = 0 }
+public enum CreateLocalRuleSetFailureReason { Unknown = 0, AlreadyExists = 1 }
 
 public sealed record CreateLocalRuleSetValidationFailed(
     IReadOnlyList<RuleSetValidationError> Errors) : CreateLocalRuleSetResponse;
@@ -66,7 +66,7 @@ public abstract record UpdateLocalRuleSetResponse;
 public sealed record UpdateLocalRuleSetCompleted : UpdateLocalRuleSetResponse;
 public sealed record UpdateLocalRuleSetFailed(UpdateLocalRuleSetFailureReason Reason) : UpdateLocalRuleSetResponse;
 
-public enum UpdateLocalRuleSetFailureReason { NotFound = 0 }
+public enum UpdateLocalRuleSetFailureReason { Unknown = 0, NotFound = 1 }
 
 public sealed record UpdateLocalRuleSetValidationFailed(
     IReadOnlyList<RuleSetValidationError> Errors) : UpdateLocalRuleSetResponse;
@@ -77,7 +77,7 @@ public abstract record DeleteLocalRuleSetResponse;
 public sealed record DeleteLocalRuleSetCompleted : DeleteLocalRuleSetResponse;
 public sealed record DeleteLocalRuleSetFailed(DeleteLocalRuleSetFailureReason Reason) : DeleteLocalRuleSetResponse;
 
-public enum DeleteLocalRuleSetFailureReason { NotFound = 0 }
+public enum DeleteLocalRuleSetFailureReason { Unknown = 0, NotFound = 1 }
 
 public sealed record ExportRuleSet(string RuleSetId) : IWithRuleSetId;
 
@@ -85,7 +85,7 @@ public abstract record ExportRuleSetResponse;
 public sealed record ExportRuleSetCompleted(string Json) : ExportRuleSetResponse;
 public sealed record ExportRuleSetFailed(ExportRuleSetFailureReason Reason) : ExportRuleSetResponse;
 
-public enum ExportRuleSetFailureReason { NotFound = 0, NoLocalOverlay = 1 }
+public enum ExportRuleSetFailureReason { Unknown = 0, NotFound = 1, NoLocalOverlay = 2 }
 
 public sealed record ExportRuleSetValidationFailed(
     IReadOnlyList<RuleSetValidationError> Errors) : ExportRuleSetResponse;

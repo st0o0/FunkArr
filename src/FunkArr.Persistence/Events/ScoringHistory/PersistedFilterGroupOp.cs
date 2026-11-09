@@ -2,7 +2,8 @@ namespace FunkArr.Persistence.Events.ScoringHistory;
 
 public enum PersistedFilterGroupOp
 {
-    All = 0,
-    Any = 1,
-    Not = 2
+    Unknown = 0,
+    All = 1,
+    Any = 2,
+    Not = 3
 }
