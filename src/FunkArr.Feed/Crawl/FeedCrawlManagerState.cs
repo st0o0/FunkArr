@@ -9,7 +9,8 @@ public sealed class FeedCrawlManagerState
 
     public long Cursor { get; set; }
     public DateTimeOffset? LastRunAt { get; set; }
-    public string? LastOutcome { get; set; }
+    public CrawlOutcome LastOutcome { get; set; }
+    public string? LastError { get; set; }
     public int LastNewItems { get; set; }
     public int LastPublished { get; set; }
     public int LastUnmatched { get; set; }
@@ -25,7 +26,8 @@ public sealed class FeedCrawlManagerState
         {
             Cursor = persisted.Cursor,
             LastRunAt = persisted.LastRunAt,
-            LastOutcome = persisted.LastOutcome,
+            LastOutcome = persisted.LastOutcome.ToDomain(),
+            LastError = persisted.LastError,
             LastNewItems = persisted.LastNewItems,
             LastPublished = persisted.LastPublished,
             LastUnmatched = persisted.LastUnmatched,
@@ -37,7 +39,8 @@ public sealed class FeedCrawlManagerState
     {
         Cursor = evt.Cursor;
         LastRunAt = evt.CompletedAt;
-        LastOutcome = evt.Gap ? "completed_with_gap" : "completed";
+        LastOutcome = evt.Gap ? CrawlOutcome.CompletedWithGap : CrawlOutcome.Completed;
+        LastError = null;
         LastNewItems = evt.NewItems;
         LastPublished = evt.Published;
         LastUnmatched = evt.Unmatched;
@@ -48,21 +51,23 @@ public sealed class FeedCrawlManagerState
     public void Apply(FeedRunFailed evt)
     {
         LastRunAt = evt.FailedAt;
-        LastOutcome = $"failed: {evt.Reason}";
+        LastOutcome = CrawlOutcome.Failed;
+        LastError = evt.Reason;
         ConsecutiveFailures = evt.ConsecutiveFailures;
     }
 
     public void WithUnchangedRun(DateTimeOffset at)
     {
         LastRunAt = at;
-        LastOutcome = "unchanged";
+        LastOutcome = CrawlOutcome.Unchanged;
+        LastError = null;
     }
 
     public FeedCrawlStatusResult ToStatus(bool enabled, bool running) =>
-        new(enabled, running, Cursor, LastRunAt, LastOutcome, LastNewItems,
+        new(enabled, running, Cursor, LastRunAt, LastOutcome, LastError, LastNewItems,
             LastPublished, LastUnmatched, LastGap, ConsecutiveFailures);
 
     public PersistedFeedCrawlState GetPersistenceState() =>
-        new(Cursor, LastRunAt, LastOutcome, LastNewItems, LastPublished,
-            LastUnmatched, LastGap, ConsecutiveFailures);
+        new(Cursor, LastRunAt, LastOutcome.ToPersistence(), LastError, LastNewItems,
+            LastPublished, LastUnmatched, LastGap, ConsecutiveFailures);
 }

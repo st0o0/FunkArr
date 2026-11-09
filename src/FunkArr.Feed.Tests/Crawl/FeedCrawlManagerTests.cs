@@ -95,9 +95,9 @@ public sealed class FeedCrawlManagerTests : TestKit
         manager.Tell(new StartFeedCrawl());
         AnswerProbe(p, listTimestamp: 0);
 
-        var status = AwaitStatus(manager, s => s.LastOutcome is not null);
+        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
         Assert.Multiple(
-            () => Assert.Equal("unchanged", status.LastOutcome),
+            () => Assert.Equal(CrawlOutcome.Unchanged, status.LastOutcome),
             () => Assert.False(status.Running),
             () => Assert.Equal(0, status.Cursor));
         p.Resolver.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
@@ -127,9 +127,9 @@ public sealed class FeedCrawlManagerTests : TestKit
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(ListTimestamp), Assert.Single(publish.Entries).FirstSeenAt);
         p.Store.Reply(new PublishFeedEntriesCompleted(1));
 
-        var status = AwaitStatus(manager, s => s.LastOutcome is not null);
+        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
         Assert.Multiple(
-            () => Assert.Equal("completed", status.LastOutcome),
+            () => Assert.Equal(CrawlOutcome.Completed, status.LastOutcome),
             () => Assert.Equal(ListTimestamp, status.Cursor),
             () => Assert.Equal(2, status.LastNewItems),
             () => Assert.Equal(1, status.LastPublished),
@@ -152,10 +152,10 @@ public sealed class FeedCrawlManagerTests : TestKit
         var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         p.Tv.Reply(new EvaluateSeriesFailed(evaluation.SearchId, new InvalidOperationException("boom")));
 
-        var status = AwaitStatus(manager, s => s.LastOutcome is not null);
+        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
         Assert.Multiple(
-            () => Assert.StartsWith("failed: 1 of ", status.LastOutcome),
-            () => Assert.Contains("ruleset groups failed", status.LastOutcome!),
+            () => Assert.Equal(CrawlOutcome.Failed, status.LastOutcome),
+            () => Assert.Contains("ruleset groups failed", status.LastError!),
             () => Assert.Equal(0, status.Cursor),
             () => Assert.Equal(1, status.ConsecutiveFailures));
         p.Store.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
@@ -178,9 +178,10 @@ public sealed class FeedCrawlManagerTests : TestKit
             p.Mediathek.LastSender.Tell(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
         }
 
-        var status = AwaitStatus(manager, s => s.LastOutcome is not null);
+        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
         Assert.Multiple(
-            () => Assert.Equal("failed: MediathekViewWeb query failed: HTTP 500", status.LastOutcome),
+            () => Assert.Equal(CrawlOutcome.Failed, status.LastOutcome),
+            () => Assert.Equal("MediathekViewWeb query failed: HTTP 500", status.LastError),
             () => Assert.Equal(0, status.Cursor),
             () => Assert.Equal(2, query1.Size));
     }

@@ -5,6 +5,16 @@ namespace FunkArr.Api.Extensions;
 
 internal static class FeedMappingExtensions
 {
+    internal static Models.Feed.CrawlOutcome ToApi(this Messages.Feed.CrawlOutcome value) =>
+        value switch
+        {
+            Messages.Feed.CrawlOutcome.Completed => Models.Feed.CrawlOutcome.Completed,
+            Messages.Feed.CrawlOutcome.CompletedWithGap => Models.Feed.CrawlOutcome.CompletedWithGap,
+            Messages.Feed.CrawlOutcome.Unchanged => Models.Feed.CrawlOutcome.Unchanged,
+            Messages.Feed.CrawlOutcome.Failed => Models.Feed.CrawlOutcome.Failed,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
     internal static FeedOverviewResponse ToApi(this FeedResult entries, FeedCrawlStatusResult status) =>
         new(
             [
@@ -25,7 +35,8 @@ internal static class FeedMappingExtensions
                 status.Enabled,
                 status.Running,
                 status.LastRunAt,
-                status.LastOutcome,
+                status.LastOutcome.ToApi(),
+                status.LastError,
                 status.LastNewItems,
                 status.LastPublished,
                 status.LastUnmatched,

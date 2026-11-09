@@ -1,4 +1,5 @@
 using FunkArr.Messages;
+using FunkArr.Messages.Feed;
 
 namespace FunkArr.Feed.Tests;
 
@@ -22,10 +23,10 @@ public sealed class FeedGateTests
     }
 
     [Theory]
-    [InlineData(0.5, "2026", "18", FeedGate.LowConfidence)]
-    [InlineData(0.9, null, "18", FeedGate.MissingEpisode)]
-    [InlineData(0.9, "2026", null, FeedGate.MissingEpisode)]
-    public void Rejects_unsafe_tv_releases(double score, string? season, string? episode, string reason)
+    [InlineData(0.5, "2026", "18", RejectionReason.LowConfidence)]
+    [InlineData(0.9, null, "18", RejectionReason.MissingEpisode)]
+    [InlineData(0.9, "2026", null, RejectionReason.MissingEpisode)]
+    public void Rejects_unsafe_tv_releases(double score, string? season, string? episode, RejectionReason reason)
     {
         var source = TestData.Item(url: Url);
 
@@ -57,7 +58,7 @@ public sealed class FeedGateTests
         var result = FeedGate.Evaluate([TestData.Result("https://example.com/other.mp4")], [TestData.Item(url: Url)],
             MediaType.Show, 0.7);
 
-        Assert.Equal(1, result.RejectedByReason[FeedGate.UnknownSource]);
+        Assert.Equal(1, result.RejectedByReason[RejectionReason.UnknownSource]);
     }
 
     [Fact]

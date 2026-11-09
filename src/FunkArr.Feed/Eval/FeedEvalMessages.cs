@@ -15,5 +15,5 @@ internal sealed record EvalGroup(
 internal sealed record GroupResult(
     string RuleSetId,
     FeedEntry[] Accepted,
-    IReadOnlyDictionary<string, int>? RejectedByReason,
+    IReadOnlyDictionary<RejectionReason, int>? RejectedByReason,
     string? Error);

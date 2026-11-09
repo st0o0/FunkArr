@@ -7,15 +7,10 @@ using FunkArr.Messages.Search;
 
 namespace FunkArr.Feed;
 
-internal sealed record GateResult(FeedEntry[] Accepted, IReadOnlyDictionary<string, int> RejectedByReason);
+internal sealed record GateResult(FeedEntry[] Accepted, IReadOnlyDictionary<RejectionReason, int> RejectedByReason);
 
 internal static class FeedGate
 {
-    internal const string LowConfidence = "low_confidence";
-    internal const string MissingEpisode = "missing_episode";
-    internal const string MissingId = "missing_id";
-    internal const string UnknownSource = "unknown_source";
-    internal const string MissingTimestamp = "missing_timestamp";
 
     internal static string StableIdFor(string channel, string url)
     {
@@ -42,14 +37,14 @@ internal static class FeedGate
         }
 
         var accepted = new List<FeedEntry>();
-        var rejected = new Dictionary<string, int>(StringComparer.Ordinal);
+        var rejected = new Dictionary<RejectionReason, int>();
 
         foreach (var result in results)
         {
             var reason = Reject(result, mediaType, minConfidence, sourceByUrl, out var source);
             if (reason is not null)
             {
-                rejected[reason] = rejected.GetValueOrDefault(reason) + 1;
+                rejected[reason.Value] = rejected.GetValueOrDefault(reason.Value) + 1;
                 continue;
             }
 
@@ -75,7 +70,7 @@ internal static class FeedGate
         return new GateResult([.. accepted], rejected);
     }
 
-    private static string? Reject(
+    private static RejectionReason? Reject(
         SearchResultItem result,
         MediaType mediaType,
         double minConfidence,
@@ -84,23 +79,23 @@ internal static class FeedGate
     {
         if (!sourceByUrl.TryGetValue(result.Url, out source))
         {
-            return UnknownSource;
+            return RejectionReason.UnknownSource;
         }
 
         if (source.FilmlisteTimestamp <= 0)
         {
-            return MissingTimestamp;
+            return RejectionReason.MissingTimestamp;
         }
 
         if (result.Score < minConfidence)
         {
-            return LowConfidence;
+            return RejectionReason.LowConfidence;
         }
 
         return mediaType switch
         {
-            MediaType.Movie when result.Metadata?.Ids is not { TmdbId: not null } and not { ImdbId: not null } => MissingId,
-            MediaType.Show when result.Metadata?.Season is null || result.Metadata.Episode is null => MissingEpisode,
+            MediaType.Movie when result.Metadata?.Ids is not { TmdbId: not null } and not { ImdbId: not null } => RejectionReason.MissingId,
+            MediaType.Show when result.Metadata?.Season is null || result.Metadata.Episode is null => RejectionReason.MissingEpisode,
             _ => null
         };
     }

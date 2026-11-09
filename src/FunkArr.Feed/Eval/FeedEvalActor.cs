@@ -67,7 +67,7 @@ public sealed class FeedEvalActor : ReceiveActor
 
         foreach (var (reason, count) in gate.RejectedByReason)
         {
-            Telemetry.Rejected.Add(count, new KeyValuePair<string, object?>("reason", reason));
+            Telemetry.Rejected.Add(count, new KeyValuePair<string, object?>("reason", reason.ToString()));
         }
 
         _replyTo.Tell(new GroupResult(result.Group.RuleSetId, gate.Accepted, gate.RejectedByReason, null));

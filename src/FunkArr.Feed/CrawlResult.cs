@@ -1,13 +1,6 @@
-namespace FunkArr.Feed;
+using FunkArr.Messages.Feed;
 
-public enum CrawlStatus
-{
-    Unknown = 0,
-    Completed = 1,
-    CompletedPartial = 2,
-    Unchanged = 3,
-    Failed = 4
-}
+namespace FunkArr.Feed;
 
 public sealed record CrawlInput(
     long Cursor,
@@ -23,7 +16,7 @@ public sealed record CrawlInput(
 public sealed record CrawlWindow(long LowerBound, long UpperBound, bool Truncated = false);
 
 public sealed record CrawlResult(
-    CrawlStatus Status,
+    CrawlOutcome Status,
     long ListTimestamp,
     int NewItems,
     int Published,
@@ -34,16 +27,16 @@ public sealed record CrawlResult(
 {
     internal static CrawlResult ForCompleted(long ts, int items, int unmatched, int published,
         bool gap, TimeSpan duration) =>
-        new(CrawlStatus.Completed, ts, items, published, unmatched, gap, duration, null);
+        new(CrawlOutcome.Completed, ts, items, published, unmatched, gap, duration, null);
 
     internal static CrawlResult ForCompletedPartial(long ts, int items, int unmatched, int published,
         TimeSpan duration) =>
-        new(CrawlStatus.CompletedPartial, ts, items, published, unmatched, Gap: true, duration, null);
+        new(CrawlOutcome.CompletedWithGap, ts, items, published, unmatched, Gap: true, duration, null);
 
     internal static CrawlResult ForFailed(long ts, int items, int unmatched, int published,
         bool gap, TimeSpan duration, string error) =>
-        new(CrawlStatus.Failed, ts, items, published, unmatched, gap, duration, error);
+        new(CrawlOutcome.Failed, ts, items, published, unmatched, gap, duration, error);
 
     internal static CrawlResult ForUnchanged(long ts, TimeSpan duration) =>
-        new(CrawlStatus.Unchanged, ts, 0, 0, 0, false, duration, null);
+        new(CrawlOutcome.Unchanged, ts, 0, 0, 0, false, duration, null);
 }

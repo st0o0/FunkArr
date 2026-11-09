@@ -1,4 +1,5 @@
 using FunkArr.Feed.Crawl;
+using FunkArr.Messages.Feed;
 using FunkArr.Persistence.Events.Feed;
 
 namespace FunkArr.Feed.Tests.Crawl;
@@ -16,7 +17,7 @@ public sealed class FeedCrawlManagerStateTests
         Assert.Multiple(
             () => Assert.Equal(500, state.Cursor),
             () => Assert.Equal(4, state.LastPublished),
-            () => Assert.Equal("completed", state.LastOutcome),
+            () => Assert.Equal(CrawlOutcome.Completed, state.LastOutcome),
             () => Assert.Equal(0, state.ConsecutiveFailures));
     }
 
@@ -26,7 +27,7 @@ public sealed class FeedCrawlManagerStateTests
         var state = new FeedCrawlManagerState();
         state.Apply(new FeedCursorAdvanced(500, _now, 10, 4, 2, true));
 
-        Assert.Equal("completed_with_gap", state.LastOutcome);
+        Assert.Equal(CrawlOutcome.CompletedWithGap, state.LastOutcome);
     }
 
     [Fact]
@@ -40,7 +41,7 @@ public sealed class FeedCrawlManagerStateTests
         Assert.Multiple(
             () => Assert.Equal(500, state.Cursor),
             () => Assert.Equal(10, state.LastPublished),
-            () => Assert.Equal("completed_with_gap", state.LastOutcome),
+            () => Assert.Equal(CrawlOutcome.CompletedWithGap, state.LastOutcome),
             () => Assert.Equal(0, state.ConsecutiveFailures),
             () => Assert.True(state.LastGap));
     }
@@ -54,7 +55,8 @@ public sealed class FeedCrawlManagerStateTests
         Assert.Multiple(
             () => Assert.Equal(100, state.Cursor),
             () => Assert.Equal(1, state.ConsecutiveFailures),
-            () => Assert.Equal("failed: boom", state.LastOutcome));
+            () => Assert.Equal(CrawlOutcome.Failed, state.LastOutcome),
+            () => Assert.Equal("boom", state.LastError));
     }
 
     [Fact]
@@ -65,7 +67,7 @@ public sealed class FeedCrawlManagerStateTests
 
         Assert.Multiple(
             () => Assert.Equal(_now, state.LastRunAt),
-            () => Assert.Equal("unchanged", state.LastOutcome),
+            () => Assert.Equal(CrawlOutcome.Unchanged, state.LastOutcome),
             () => Assert.Equal(0, state.Cursor));
     }
 
@@ -79,7 +81,7 @@ public sealed class FeedCrawlManagerStateTests
 
         Assert.Multiple(
             () => Assert.Equal(500, status.Cursor),
-            () => Assert.Equal("completed_with_gap", status.LastOutcome),
+            () => Assert.Equal(CrawlOutcome.CompletedWithGap, status.LastOutcome),
             () => Assert.True(status.LastGap),
             () => Assert.Equal(2, status.LastUnmatched));
     }

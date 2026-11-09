@@ -95,8 +95,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
         switch (result.Status)
         {
-            case CrawlStatus.Completed:
-            case CrawlStatus.CompletedPartial:
+            case CrawlOutcome.Completed:
+            case CrawlOutcome.CompletedWithGap:
                 Persist(new FeedCursorAdvanced(result.ListTimestamp, now, result.NewItems, result.Published,
                     result.Unmatched, result.Gap), e =>
                 {
@@ -108,7 +108,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
                 });
                 break;
 
-            case CrawlStatus.Failed:
+            case CrawlOutcome.Failed:
                 var failures = _state.ConsecutiveFailures + 1;
                 if (failures >= FeedCrawlManagerState.MaxConsecutiveFailures && result.ListTimestamp > _state.Cursor)
                 {
@@ -166,7 +166,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
         Telemetry.Crawls.Up(outcomeTag);
         Telemetry.CrawlDuration.Record(result.Duration.TotalSeconds, outcomeTag);
 
-        if (result.Status == CrawlStatus.Unchanged)
+        if (result.Status == CrawlOutcome.Unchanged)
         {
             Telemetry.ProbesUnchanged.Up();
         }

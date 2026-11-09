@@ -26,7 +26,7 @@ public sealed class FeedTests(FunkArrFixture fixture)
         Assert.Equal(10, query.Limit);
         feedProbe.Reply(new FeedResult([entry], 1, 1));
         ingestProbe.ExpectMsg<QueryFeedCrawlStatus>(cancellationToken: TestContext.Current.CancellationToken);
-        ingestProbe.Reply(new FeedCrawlStatusResult(true, false, 1_761_800_000, lastRun, "completed", 12, 1, 3, false, 0));
+        ingestProbe.Reply(new FeedCrawlStatusResult(true, false, 1_761_800_000, lastRun, Messages.Feed.CrawlOutcome.Completed, null, 12, 1, 3, false, 0));
 
         var response = await task;
 
@@ -38,7 +38,7 @@ public sealed class FeedTests(FunkArrFixture fixture)
             () => Assert.Equal(1, result.Total),
             () => Assert.Equal("0123456789abcdef0123456789abcdef", output.StableId),
             () => Assert.Equal("18", output.Episode),
-            () => Assert.Equal("completed", result.Ingest.LastOutcome),
+            () => Assert.Equal(FunkArr.Api.Models.Feed.CrawlOutcome.Completed, result.Ingest.LastOutcome),
             () => Assert.Equal(3, result.Ingest.LastUnmatched),
             () => Assert.Equal(12, result.Ingest.LastNewItems));
     }

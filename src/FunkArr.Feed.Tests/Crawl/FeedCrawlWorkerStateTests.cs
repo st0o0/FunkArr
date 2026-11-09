@@ -1,6 +1,7 @@
 using FunkArr.Feed.Crawl;
 using FunkArr.Feed.Eval;
 using FunkArr.Feed.Page;
+using FunkArr.Messages.Feed;
 
 namespace FunkArr.Feed.Tests.Crawl;
 
@@ -205,7 +206,7 @@ public sealed class FeedCrawlWorkerStateTests
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(5));
 
         Assert.Multiple(
-            () => Assert.Equal(CrawlStatus.Completed, result.Status),
+            () => Assert.Equal(CrawlOutcome.Completed, result.Status),
             () => Assert.Equal(2_000_000, result.ListTimestamp),
             () => Assert.Equal(1, result.NewItems),
             () => Assert.Equal(1, result.Published),
@@ -225,7 +226,7 @@ public sealed class FeedCrawlWorkerStateTests
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(1));
 
         Assert.Multiple(
-            () => Assert.Equal(CrawlStatus.Failed, result.Status),
+            () => Assert.Equal(CrawlOutcome.Failed, result.Status),
             () => Assert.Equal("network error", result.Error),
             () => Assert.Equal(0, result.NewItems),
             () => Assert.Equal(0, result.Unmatched));
@@ -247,7 +248,7 @@ public sealed class FeedCrawlWorkerStateTests
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(3));
 
         Assert.Multiple(
-            () => Assert.Equal(CrawlStatus.CompletedPartial, result.Status),
+            () => Assert.Equal(CrawlOutcome.CompletedWithGap, result.Status),
             () => Assert.True(result.Gap),
             () => Assert.Equal(1, result.NewItems),
             () => Assert.Equal(1, result.Published),
@@ -284,8 +285,8 @@ public sealed class FeedCrawlWorkerStateTests
         var resultErrorFirst = stateErrorFirst.GetCrawlResult(TimeSpan.FromSeconds(1));
 
         Assert.Multiple(
-            () => Assert.Equal(CrawlStatus.CompletedPartial, resultErrorLast.Status),
-            () => Assert.Equal(CrawlStatus.CompletedPartial, resultErrorFirst.Status),
+            () => Assert.Equal(CrawlOutcome.CompletedWithGap, resultErrorLast.Status),
+            () => Assert.Equal(CrawlOutcome.CompletedWithGap, resultErrorFirst.Status),
             () => Assert.Equal(resultErrorLast.Published, resultErrorFirst.Published),
             () => Assert.Equal(resultErrorLast.NewItems, resultErrorFirst.NewItems));
     }
@@ -307,7 +308,7 @@ public sealed class FeedCrawlWorkerStateTests
         var result = state.GetCrawlResult(TimeSpan.FromSeconds(2));
 
         Assert.Multiple(
-            () => Assert.Equal(CrawlStatus.Failed, result.Status),
+            () => Assert.Equal(CrawlOutcome.Failed, result.Status),
             () => Assert.Equal("2 of 3 ruleset groups failed", result.Error));
     }
 }

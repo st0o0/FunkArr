@@ -44,6 +44,26 @@ public static class PersistenceMapping
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
 
+    public static PersistedCrawlOutcome ToPersistence(this CrawlOutcome value) =>
+        value switch
+        {
+            CrawlOutcome.Completed => PersistedCrawlOutcome.Completed,
+            CrawlOutcome.CompletedWithGap => PersistedCrawlOutcome.CompletedWithGap,
+            CrawlOutcome.Unchanged => PersistedCrawlOutcome.Unchanged,
+            CrawlOutcome.Failed => PersistedCrawlOutcome.Failed,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
+    public static CrawlOutcome ToDomain(this PersistedCrawlOutcome value) =>
+        value switch
+        {
+            PersistedCrawlOutcome.Completed => CrawlOutcome.Completed,
+            PersistedCrawlOutcome.CompletedWithGap => CrawlOutcome.CompletedWithGap,
+            PersistedCrawlOutcome.Unchanged => CrawlOutcome.Unchanged,
+            PersistedCrawlOutcome.Failed => CrawlOutcome.Failed,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
+
     public static FeedEntry ToDomain(this PersistedFeedEntry entry) =>
         new(entry.StableId,
             entry.FirstSeenAt,
