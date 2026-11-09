@@ -1,322 +1,201 @@
+using FFmpeg.Rx;
+using FFmpeg.Rx.Codecs;
+using FFmpeg.Rx.Models;
 using FunkArr.Download.Ffmpeg;
-using FunkArr.Messages.Download;
 
 namespace FunkArr.Download.Tests.Ffmpeg;
 
 public sealed class RemuxerTests
 {
     [Fact]
-    public void ParseProgressLine_complete_block_invokes_callback()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("out_time_us=11360000", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("total_size=11010048", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("speed=1.5x", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress=continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(11_010_048L, result.TotalSize);
-        Assert.Equal(11_360_000L, result.OutTimeUs);
-        Assert.Equal(1.5, result.Speed);
-    }
-
-    [Fact]
-    public void ParseProgressLine_clears_block_after_emit()
-    {
-        var block = new Dictionary<string, string>();
-
-        FfmpegProcess.ParseProgressLine("total_size=100", block, _ => { });
-        FfmpegProcess.ParseProgressLine("progress=continue", block, _ => { });
-
-        Assert.Empty(block);
-    }
-
-    [Fact]
-    public void ParseProgressLine_speed_na_yields_zero()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("out_time_us=0", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("total_size=0", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("speed=N/A", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress=continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(0.0, result.Speed);
-    }
-
-    [Fact]
-    public void ParseProgressLine_ignores_malformed_lines()
-    {
-        var block = new Dictionary<string, string>();
-
-        FfmpegProcess.ParseProgressLine("no-equals-sign", block, _ => Assert.Fail("Should not invoke"));
-        FfmpegProcess.ParseProgressLine("", block, _ => Assert.Fail("Should not invoke"));
-
-        Assert.Empty(block);
-    }
-
-    [Fact]
-    public void ParseProgressLine_multiple_blocks_emit_independently()
-    {
-        var block = new Dictionary<string, string>();
-        var updates = new List<ProgressUpdate>();
-
-        FeedBlock(block, updates, "total_size=1000", "out_time_us=500000", "speed=1.0x", "progress=continue");
-        FeedBlock(block, updates, "total_size=2000", "out_time_us=1000000", "speed=1.2x", "progress=continue");
-        FeedBlock(block, updates, "total_size=3000", "out_time_us=1500000", "speed=0.9x", "progress=end");
-
-        Assert.Equal(3, updates.Count);
-        Assert.Equal(1000L, updates[0].TotalSize);
-        Assert.Equal(2000L, updates[1].TotalSize);
-        Assert.Equal(3000L, updates[2].TotalSize);
-    }
-
-    [Fact]
-    public void ParseProgressLine_progress_end_emits_final_update()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("total_size=999999", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("out_time_us=43200000000", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("speed=2.5x", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress=end", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(999_999L, result.TotalSize);
-        Assert.Equal(43_200_000_000L, result.OutTimeUs);
-        Assert.Equal(2.5, result.Speed);
-    }
-
-    [Fact]
-    public void ParseProgressLine_missing_fields_default_to_zero()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("progress=continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(0L, result.TotalSize);
-        Assert.Equal(0L, result.OutTimeUs);
-        Assert.Equal(0.0, result.Speed);
-    }
-
-    [Fact]
-    public void ParseProgressLine_partial_fields_zero_filled()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("total_size=5000", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress=continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(5000L, result.TotalSize);
-        Assert.Equal(0L, result.OutTimeUs);
-        Assert.Equal(0.0, result.Speed);
-    }
-
-    [Fact]
-    public void ParseProgressLine_non_progress_key_does_not_emit()
-    {
-        var block = new Dictionary<string, string>();
-
-        FfmpegProcess.ParseProgressLine("total_size=100", block, _ => Assert.Fail("Should not invoke"));
-        FfmpegProcess.ParseProgressLine("out_time_us=200", block, _ => Assert.Fail("Should not invoke"));
-        FfmpegProcess.ParseProgressLine("speed=1.0x", block, _ => Assert.Fail("Should not invoke"));
-
-        Assert.Equal(3, block.Count);
-    }
-
-    [Fact]
-    public void ParseProgressLine_handles_whitespace_around_equals()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("total_size =  4096  ", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress = continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(4096L, result.TotalSize);
-    }
-
-    [Fact]
-    public void ParseProgressLine_speed_without_x_suffix()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("speed=3.14", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress=continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(3.14, result.Speed);
-    }
-
-    [Fact]
-    public void ParseProgressLine_negative_total_size_parsed()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("total_size=-1", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress=continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(-1L, result.TotalSize);
-    }
-
-    [Fact]
-    public void ParseProgressLine_non_numeric_total_size_yields_zero()
-    {
-        var block = new Dictionary<string, string>();
-        ProgressUpdate? result = null;
-
-        FfmpegProcess.ParseProgressLine("total_size=abc", block, p => result = p);
-        FfmpegProcess.ParseProgressLine("progress=continue", block, p => result = p);
-
-        Assert.NotNull(result);
-        Assert.Equal(0L, result.TotalSize);
-    }
-
-    [Fact]
-    public void ParseProgressLine_realistic_ffmpeg_output()
-    {
-        var block = new Dictionary<string, string>();
-        var updates = new List<ProgressUpdate>();
-
-        var lines = new[]
-        {
-            "bitrate= 4893.5kbits/s",
-            "total_size=5890048",
-            "out_time_us=9630000",
-            "out_time_ms=9630000",
-            "out_time=00:00:09.630000",
-            "dup_frames=0",
-            "drop_frames=0",
-            "speed=1.93x",
-            "progress=continue",
-            "bitrate= 4901.2kbits/s",
-            "total_size=11780096",
-            "out_time_us=19230000",
-            "out_time_ms=19230000",
-            "out_time=00:00:19.230000",
-            "dup_frames=0",
-            "drop_frames=0",
-            "speed=1.95x",
-            "progress=continue"
-        };
-
-        foreach (var line in lines)
-        {
-            FfmpegProcess.ParseProgressLine(line, block, p => updates.Add(p));
-        }
-
-        Assert.Equal(2, updates.Count);
-
-        Assert.Equal(5_890_048L, updates[0].TotalSize);
-        Assert.Equal(9_630_000L, updates[0].OutTimeUs);
-        Assert.Equal(1.93, updates[0].Speed);
-
-        Assert.Equal(11_780_096L, updates[1].TotalSize);
-        Assert.Equal(19_230_000L, updates[1].OutTimeUs);
-        Assert.Equal(1.95, updates[1].Speed);
-    }
-
-    [Fact]
-    public void BuildArguments_direct_mp4_maps_video_and_audio()
+    public void BuildPipeline_direct_mp4_maps_video_and_audio_copy()
     {
         var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", null, null, false);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
 
-        Assert.Contains("-map 0:v:0", args);
-        Assert.Contains("-map 0:a:0", args);
-        Assert.Contains("-c:v copy", args);
-        Assert.Contains("-c:a copy", args);
-        Assert.Contains("-progress pipe:1", args);
-        Assert.DoesNotContain("-bsf:a", args);
-        Assert.DoesNotContain("-c:s srt", args);
+        Assert.NotNull(output.Streams);
+        Assert.Equal(2, output.Streams.Count);
+
+        Assert.Multiple(
+            () => Assert.Equal(0, output.Streams[0].InputIndex),
+            () => Assert.Equal(0, output.Streams[0].StreamIndex),
+            () => Assert.Equal(StreamType.Video, output.Streams[0].Type),
+            () => Assert.IsType<StreamCopy>(output.Streams[0].Codec));
+
+        Assert.Multiple(
+            () => Assert.Equal(0, output.Streams[1].InputIndex),
+            () => Assert.Equal(0, output.Streams[1].StreamIndex),
+            () => Assert.Equal(StreamType.Audio, output.Streams[1].Type),
+            () => Assert.IsType<StreamCopy>(output.Streams[1].Codec));
     }
 
     [Fact]
-    public void BuildArguments_hls_includes_bsf_tolerance()
+    public void BuildPipeline_direct_mp4_no_bsf()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", null, null, false);
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
+
+        Assert.True(
+            output.CustomArgs is null ||
+            !output.CustomArgs.Any(a => a.Contains("-bsf:a", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public void BuildPipeline_direct_mp4_no_subtitle_streams()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", null, null, false);
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
+
+        Assert.NotNull(output.Streams);
+        Assert.DoesNotContain(output.Streams, s => s.Type == StreamType.Subtitle);
+    }
+
+    [Fact]
+    public void BuildPipeline_hls_includes_bsf_tolerance()
     {
         var input = new FfmpegInput("https://example.com/stream.m3u8", null, "/tmp/out.mkv", null, null, true);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
 
-        Assert.Contains("-map 0:v:0", args);
-        Assert.Contains("-map 0:a:0", args);
-        Assert.Contains("-c:v copy", args);
-        Assert.Contains("-c:a copy", args);
-        Assert.Contains("-bsf:a aac_adtstoasc=no_validation=1", args);
+        Assert.NotNull(output.CustomArgs);
+        Assert.Contains("-bsf:a aac_adtstoasc=no_validation=1", output.CustomArgs);
     }
 
     [Fact]
-    public void BuildArguments_with_subtitle_includes_srt_args()
+    public void BuildPipeline_with_subtitle_includes_subtitle_stream()
     {
         var input = new FfmpegInput("https://example.com/video.mp4", "/tmp/subtitle.srt", "/tmp/out.mkv", null, null, false);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
 
-        Assert.Contains("-c:s srt", args);
-        Assert.Contains("-disposition:s:0 0", args);
-        Assert.Contains("-metadata:s:s:0 language=deu", args);
+        Assert.NotNull(output.Streams);
+        Assert.Equal(3, output.Streams.Count);
+
+        var subStream = output.Streams[2];
+        Assert.Multiple(
+            () => Assert.Equal(1, subStream.InputIndex),
+            () => Assert.Null(subStream.StreamIndex),
+            () => Assert.Equal(StreamType.Subtitle, subStream.Type),
+            () =>
+            {
+                var codec = Assert.IsType<SubtitleEncode>(subStream.Codec);
+                Assert.Equal("srt", codec.Codec.Name);
+            },
+            () => Assert.Equal("0", subStream.Disposition));
     }
 
     [Fact]
-    public void BuildArguments_with_subtitle_language_uses_parameter()
+    public void BuildPipeline_with_subtitle_default_language_deu()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", "/tmp/subtitle.srt", "/tmp/out.mkv", null, null, false);
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
+
+        Assert.NotNull(output.Streams);
+        var subStream = output.Streams[2];
+        Assert.NotNull(subStream.Metadata);
+        var langEntry = Assert.Single(subStream.Metadata);
+        Assert.Equal("language", langEntry.Key);
+        Assert.Equal("deu", langEntry.Value);
+    }
+
+    [Fact]
+    public void BuildPipeline_with_subtitle_custom_language()
     {
         var input = new FfmpegInput("https://example.com/video.mp4", "/tmp/subtitle.srt", "/tmp/out.mkv", null, "eng", false);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
 
-        Assert.Contains("-metadata:s:s:0 language=eng", args);
-        Assert.DoesNotContain("language=deu", args);
+        Assert.NotNull(output.Streams);
+        var subStream = output.Streams[2];
+        Assert.NotNull(subStream.Metadata);
+        var langEntry = Assert.Single(subStream.Metadata);
+        Assert.Equal("eng", langEntry.Value);
     }
 
     [Fact]
-    public void BuildArguments_with_null_subtitle_language_defaults_to_deu()
-    {
-        var input = new FfmpegInput("https://example.com/video.mp4", "/tmp/subtitle.srt", "/tmp/out.mkv", null, null, false);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
-
-        Assert.Contains("-metadata:s:s:0 language=deu", args);
-    }
-
-    [Fact]
-    public void BuildArguments_hls_with_subtitle_includes_both_bsf_and_srt()
+    public void BuildPipeline_hls_with_subtitle_includes_both_bsf_and_subtitle()
     {
         var input = new FfmpegInput("https://example.com/stream.m3u8", "/tmp/subtitle.srt", "/tmp/out.mkv", null, "deu", true);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+        var output = pipeline.Output;
 
-        Assert.Contains("-bsf:a aac_adtstoasc=no_validation=1", args);
-        Assert.Contains("-c:s srt", args);
-        Assert.Contains("-disposition:s:0 0", args);
+        Assert.NotNull(output.CustomArgs);
+        Assert.Contains("-bsf:a aac_adtstoasc=no_validation=1", output.CustomArgs);
+
+        Assert.NotNull(output.Streams);
+        Assert.Contains(output.Streams, s => s.Type == StreamType.Subtitle);
     }
 
     [Fact]
-    public void BuildArguments_with_proxy_includes_http_proxy_before_input()
-    {
-        var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", "http://proxy-at:8888", null, false);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
-
-        Assert.Contains("-http_proxy http://proxy-at:8888", args);
-        var proxyIndex = args.IndexOf("-http_proxy", StringComparison.Ordinal);
-        var inputIndex = args.IndexOf("-i \"https://example.com/video.mp4\"", StringComparison.Ordinal);
-        Assert.True(proxyIndex < inputIndex, "proxy argument must appear before -i");
-    }
-
-    [Fact]
-    public void BuildArguments_without_proxy_omits_http_proxy()
+    public void BuildInputs_includes_user_agent()
     {
         var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", null, null, false);
-        var args = FfmpegProcess.BuildArguments(input).Arguments;
+        var inputs = FfmpegProcess.BuildInputs(input);
 
-        Assert.DoesNotContain("-http_proxy", args);
+        var urlInput = Assert.IsType<UrlInputConfig>(Assert.Single(inputs));
+        Assert.NotNull(urlInput.Options);
+        Assert.NotNull(urlInput.Options.CustomArgs);
+        Assert.Contains(urlInput.Options.CustomArgs, a => a.Contains("-user_agent", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BuildInputs_with_proxy_includes_http_proxy()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", "http://proxy:8888", null, false);
+        var inputs = FfmpegProcess.BuildInputs(input);
+
+        var urlInput = Assert.IsType<UrlInputConfig>(inputs[0]);
+        Assert.NotNull(urlInput.Options);
+        Assert.NotNull(urlInput.Options.CustomArgs);
+        Assert.Contains(urlInput.Options.CustomArgs, a => a.Contains("-http_proxy http://proxy:8888", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BuildInputs_without_proxy_omits_http_proxy()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", null, null, false);
+        var inputs = FfmpegProcess.BuildInputs(input);
+
+        var urlInput = Assert.IsType<UrlInputConfig>(Assert.Single(inputs));
+        Assert.NotNull(urlInput.Options);
+        Assert.NotNull(urlInput.Options.CustomArgs);
+        Assert.DoesNotContain(urlInput.Options.CustomArgs, a => a.Contains("-http_proxy", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BuildInputs_with_subtitle_adds_file_input()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", "/tmp/subtitle.srt", "/tmp/out.mkv", null, null, false);
+        var inputs = FfmpegProcess.BuildInputs(input);
+
+        Assert.Equal(2, inputs.Length);
+        Assert.IsType<UrlInputConfig>(inputs[0]);
+        var fileInput = Assert.IsType<FileInputConfig>(inputs[1]);
+        Assert.Equal("/tmp/subtitle.srt", fileInput.Path);
+    }
+
+    [Fact]
+    public void BuildPipeline_includes_progress_global_option()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", null, null, false);
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+
+        Assert.NotNull(pipeline.GlobalOptions);
+        Assert.Contains("-progress pipe:1", pipeline.GlobalOptions);
+    }
+
+    [Fact]
+    public void BuildPipeline_output_destination_is_file()
+    {
+        var input = new FfmpegInput("https://example.com/video.mp4", null, "/tmp/out.mkv", null, null, false);
+        var pipeline = FfmpegProcess.BuildPipeline(input);
+
+        var dest = Assert.IsType<FileDestination>(pipeline.Output.Destination);
+        Assert.Equal("/tmp/out.mkv", dest.Path);
     }
 
     [Fact]
@@ -382,86 +261,5 @@ public sealed class RemuxerTests
         Assert.Equal("/tmp/out.mkv", options.OutputPath);
         Assert.Equal("https://example.com/subs.ttml", options.SubtitleUrl);
         Assert.Equal("ORF", options.Channel);
-    }
-
-    [Fact]
-    public void ExtractError_http_403()
-    {
-        var stderr = "ffmpeg version 6.1.1\nlibavutil 58.29\n[https] HTTP error 403 Forbidden\nError opening input file https://example.com/video.mp4\nError opening input files: Server returned 403 Forbidden (access denied)";
-        var result = FfmpegProcess.ExtractError(stderr);
-        Assert.Equal("Error opening input files: Server returned 403 Forbidden (access denied)", result);
-    }
-
-    [Fact]
-    public void ExtractError_null_returns_empty()
-    {
-        Assert.Equal("", FfmpegProcess.ExtractError(null));
-        Assert.Equal("", FfmpegProcess.ExtractError(""));
-        Assert.Equal("", FfmpegProcess.ExtractError("   "));
-    }
-
-    [Fact]
-    public void ExtractError_unknown_pattern_returns_last_line()
-    {
-        var stderr = "ffmpeg version 6.1.1\nSome unknown error happened";
-        Assert.Equal("Some unknown error happened", FfmpegProcess.ExtractError(stderr));
-    }
-
-    [Fact]
-    public void ExtractError_server_returned()
-    {
-        var stderr = "ffmpeg version 6.1.1\nlots of build info\nServer returned 404 Not Found";
-        Assert.Equal("Server returned 404 Not Found", FfmpegProcess.ExtractError(stderr));
-    }
-
-    [Fact]
-    public void ClassifyFailure_503_is_transient()
-    {
-        Assert.Equal(FailureKind.Transient, FfmpegProcess.ClassifyFailure("Server returned 503"));
-    }
-
-    [Fact]
-    public void ClassifyFailure_timeout_is_transient()
-    {
-        Assert.Equal(FailureKind.Transient, FfmpegProcess.ClassifyFailure("Connection timed out"));
-    }
-
-    [Fact]
-    public void ClassifyFailure_connection_reset_is_transient()
-    {
-        Assert.Equal(FailureKind.Transient, FfmpegProcess.ClassifyFailure("Connection reset by peer"));
-    }
-
-    [Fact]
-    public void ClassifyFailure_404_is_permanent()
-    {
-        Assert.Equal(FailureKind.Permanent, FfmpegProcess.ClassifyFailure("Server returned 404 Not Found"));
-    }
-
-    [Fact]
-    public void ClassifyFailure_null_is_permanent()
-    {
-        Assert.Equal(FailureKind.Permanent, FfmpegProcess.ClassifyFailure(null));
-    }
-
-    [Fact]
-    public void ClassifyFailure_empty_is_permanent()
-    {
-        Assert.Equal(FailureKind.Permanent, FfmpegProcess.ClassifyFailure(""));
-    }
-
-    [Fact]
-    public void ClassifyFailure_unknown_error_is_permanent()
-    {
-        Assert.Equal(FailureKind.Permanent, FfmpegProcess.ClassifyFailure("Some unknown error"));
-    }
-
-    private static void FeedBlock(
-        Dictionary<string, string> block, List<ProgressUpdate> updates, params string[] lines)
-    {
-        foreach (var line in lines)
-        {
-            FfmpegProcess.ParseProgressLine(line, block, p => updates.Add(p));
-        }
     }
 }

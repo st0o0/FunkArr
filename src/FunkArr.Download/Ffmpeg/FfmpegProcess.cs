@@ -1,41 +1,33 @@
 using System.Diagnostics;
-using System.Globalization;
-using FFMpegCore;
-using FFMpegCore.Enums;
-using FFMpegCore.Exceptions;
+using FFmpeg.Rx;
+using FFmpeg.Rx.Codecs;
+using FFmpeg.Rx.Models;
 using FunkArr.Messages.Download;
+using R3;
 
 namespace FunkArr.Download.Ffmpeg;
 
 internal sealed class FfmpegProcess : IFfmpegProcess
 {
-    private const string _userAgent = "Mozilla/5.0";
+    private const string UserAgent = "Mozilla/5.0";
 
     public async Task<FfmpegResult> ExecuteAsync(
         FfmpegInput input, Action<ProgressUpdate> onProgress, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
-        var progressBlock = new Dictionary<string, string>();
 
-        var processor = BuildArguments(input)
-            .NotifyOnOutput(line => ParseProgressLine(line, progressBlock, onProgress))
-            .CancellableThrough(ct);
+        await using var session = BuildSession(input);
+
+        using var subscription = session.Progress.Subscribe(p =>
+            onProgress(new ProgressUpdate(p.BytesWritten, p.TimeUs, p.Speed)));
 
         try
         {
-            await processor.ProcessAsynchronously(throwOnError: true);
+            var result = await session.RunAsync(ct);
             sw.Stop();
             Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds,
-                new KeyValuePair<string, object?>("status", "completed"));
-            return new FfmpegResult(true, 0, null, (int)sw.Elapsed.TotalSeconds);
-        }
-        catch (FFMpegException ex)
-        {
-            sw.Stop();
-            Telemetry.DownloadDuration.Record(sw.Elapsed.TotalSeconds,
-                new KeyValuePair<string, object?>("status", "failed"));
-            var error = ExtractError(ex.FFMpegErrorOutput);
-            return new FfmpegResult(false, 1, error, (int)sw.Elapsed.TotalSeconds, ClassifyFailure(error));
+                new KeyValuePair<string, object?>("status", result.Success ? "completed" : "failed"));
+            return MapResult(result, sw.Elapsed);
         }
         catch (OperationCanceledException)
         {
@@ -44,145 +36,83 @@ internal sealed class FfmpegProcess : IFfmpegProcess
         }
     }
 
-    internal static FFMpegArgumentProcessor BuildArguments(FfmpegInput input)
+    internal static IFfmpegSession BuildSession(FfmpegInput input)
     {
-        var arguments = FFMpegArguments.FromUrlInput(new Uri(input.VideoUrl), InputOptions);
+        var spec = BuildPipeline(input);
+        return FfmpegSession.Create(spec);
+    }
+
+    internal static PipelineConfig BuildPipeline(FfmpegInput input)
+    {
+        var inputs = BuildInputs(input);
+        var output = BuildOutput(input);
+        return new PipelineConfig(inputs, [output], ["-progress pipe:1"]);
+    }
+
+    internal static InputConfig[] BuildInputs(FfmpegInput input)
+    {
+        var customArgs = new List<string> { $"-user_agent \"{UserAgent}\"" };
+        if (input.ProxyUrl is not null)
+        {
+            customArgs.Add($"-http_proxy {input.ProxyUrl}");
+        }
+
+        var urlInput = new UrlInputConfig(new Uri(input.VideoUrl))
+        {
+            Options = new InputOptionConfig(CustomArgs: customArgs)
+        };
 
         if (input.SubtitlePath is not null)
         {
-            arguments = arguments.AddFileInput(input.SubtitlePath);
+            return [urlInput, new FileInputConfig(input.SubtitlePath)];
         }
 
-        return arguments.OutputToFile(input.OutputPath, overwrite: true, outputOptions =>
-        {
-            outputOptions
-                .SelectStream(0, 0, Channel.Video)
-                .SelectStream(0, 0, Channel.Audio)
-                .CopyChannel(Channel.Video)
-                .CopyChannel(Channel.Audio);
-
-            if (input.IsHls)
-            {
-                outputOptions.WithCustomArgument("-bsf:a aac_adtstoasc=no_validation=1");
-            }
-
-            if (input.SubtitlePath is not null)
-            {
-                outputOptions
-                    .WithCustomArgument("-c:s srt")
-                    .WithCustomArgument("-disposition:s:0 0")
-                    .WithCustomArgument($"-metadata:s:s:0 language={input.SubtitleLanguage ?? "deu"}");
-            }
-
-            outputOptions.WithCustomArgument("-progress pipe:1");
-        });
-
-        void InputOptions(FFMpegArgumentOptions opts)
-        {
-            opts.WithCustomArgument($"-user_agent \"{_userAgent}\"");
-            if (input.ProxyUrl is not null)
-            {
-                opts.WithCustomArgument($"-http_proxy {input.ProxyUrl}");
-            }
-        }
+        return [urlInput];
     }
 
-    internal static void ParseProgressLine(
-        string line, Dictionary<string, string> block, Action<ProgressUpdate> onProgress)
+    internal static OutputConfig BuildOutput(FfmpegInput input)
     {
-        var eqIndex = line.IndexOf('=');
-        if (eqIndex <= 0)
+        var streams = new List<StreamConfig>
         {
-            return;
+            new(0, 0, StreamType.Video, new StreamCopy()),
+            new(0, 0, StreamType.Audio, new StreamCopy())
+        };
+
+        var customArgs = new List<string>();
+
+        if (input.IsHls)
+        {
+            customArgs.Add("-bsf:a aac_adtstoasc=no_validation=1");
         }
 
-        var key = line[..eqIndex].Trim();
-        var value = line[(eqIndex + 1)..].Trim();
-        block[key] = value;
-
-        if (key != "progress")
+        if (input.SubtitlePath is not null)
         {
-            return;
+            streams.Add(new StreamConfig(
+                1, null, StreamType.Subtitle,
+                new SubtitleEncode(SubtitleCodec.Srt),
+                [new("language", input.SubtitleLanguage ?? "deu")],
+                "0"));
         }
 
-        if (block.Count > 0)
-        {
-            var totalSize = GetLong(block, "total_size");
-            var outTimeUs = GetLong(block, "out_time_us");
-            var speed = ParseSpeed(block.GetValueOrDefault("speed"));
-            onProgress(new ProgressUpdate(totalSize, outTimeUs, speed));
-        }
-
-        block.Clear();
+        return new OutputConfig(
+            new FileDestination(input.OutputPath),
+            streams,
+            CustomArgs: customArgs.Count > 0 ? customArgs : null);
     }
 
-    private static long GetLong(Dictionary<string, string> block, string key) =>
-        block.TryGetValue(key, out var value) && long.TryParse(value, CultureInfo.InvariantCulture, out var result)
-            ? result
-            : 0;
-
-    private static double ParseSpeed(string? value)
+    private static FfmpegResult MapResult(FFmpeg.Rx.Models.FfmpegResult result, TimeSpan elapsed)
     {
-        if (value is null or "N/A")
+        var failureKind = result.FailureKind switch
         {
-            return 0.0;
-        }
+            FFmpeg.Rx.FailureKind.Transient => Messages.Download.FailureKind.Transient,
+            _ => Messages.Download.FailureKind.Permanent
+        };
 
-        var trimmed = value.TrimEnd('x');
-        return double.TryParse(trimmed, CultureInfo.InvariantCulture, out var result) ? result : 0.0;
-    }
-
-    internal static FailureKind ClassifyFailure(string? error)
-    {
-        if (string.IsNullOrWhiteSpace(error))
-        {
-            return FailureKind.Permanent;
-        }
-
-        if (error.Contains("503", StringComparison.OrdinalIgnoreCase) ||
-            error.Contains("502", StringComparison.OrdinalIgnoreCase) ||
-            error.Contains("timed out", StringComparison.OrdinalIgnoreCase) ||
-            error.Contains("Connection reset", StringComparison.OrdinalIgnoreCase) ||
-            error.Contains("Connection refused", StringComparison.OrdinalIgnoreCase) ||
-            error.Contains("Network is unreachable", StringComparison.OrdinalIgnoreCase) ||
-            error.Contains("Temporary failure", StringComparison.OrdinalIgnoreCase))
-        {
-            return FailureKind.Transient;
-        }
-
-        return FailureKind.Permanent;
-    }
-
-    internal static string ExtractError(string? stderr)
-    {
-        if (string.IsNullOrWhiteSpace(stderr))
-        {
-            return "";
-        }
-
-        var lines = stderr.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-
-        for (var i = lines.Length - 1; i >= 0; i--)
-        {
-            var line = lines[i].Trim();
-            if (line.Contains("HTTP error", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("Error opening input", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("Server returned", StringComparison.OrdinalIgnoreCase) ||
-                line.Contains("Invalid data found", StringComparison.OrdinalIgnoreCase))
-            {
-                return line;
-            }
-        }
-
-        for (var i = lines.Length - 1; i >= 0; i--)
-        {
-            var line = lines[i].Trim();
-            if (line.Length > 0)
-            {
-                return line;
-            }
-        }
-
-        return "";
+        return new FfmpegResult(
+            result.Success,
+            result.ExitCode,
+            result.Error,
+            (int)elapsed.TotalSeconds,
+            failureKind);
     }
 }
