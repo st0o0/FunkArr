@@ -27,6 +27,8 @@ public static class MovieEnricher
         return [.. results];
     }
 
+    private const float PrefixMatchConfidence = 0.95f;
+
     private static EnrichedMovie? ResolveCandidate(
         MovieCandidate candidate, TmdbMovie movie, string[] altTitles, int? movieYear, EnrichmentConfig? config)
     {
@@ -56,6 +58,19 @@ public static class MovieEnricher
             }
         }
 
+        var stripped = StripSuffix(candidate.Title);
+        if (stripped != candidate.Title)
+        {
+            foreach (var title in allTitles)
+            {
+                if (LevenshteinDistance.Similarity(stripped, title) >= 0.95f)
+                {
+                    bestSimilarity = Math.Max(bestSimilarity, PrefixMatchConfidence);
+                    break;
+                }
+            }
+        }
+
         if (bestSimilarity >= titleThreshold)
         {
             return new EnrichedMovie(
@@ -69,6 +84,25 @@ public static class MovieEnricher
         }
 
         return null;
+    }
+
+    internal static string StripSuffix(string title)
+    {
+        var span = title.AsSpan().Trim();
+
+        if (span.EndsWith(")") && span.LastIndexOf('(') is var paren and >= 1
+            && span[paren - 1] == ' ')
+        {
+            span = span[..(paren - 1)].TrimEnd();
+        }
+
+        var dashIdx = span.IndexOf(" - ");
+        if (dashIdx > 0)
+        {
+            span = span[..dashIdx].TrimEnd();
+        }
+
+        return span.ToString();
     }
 
     private static int? ParseYear(string? releaseDate)

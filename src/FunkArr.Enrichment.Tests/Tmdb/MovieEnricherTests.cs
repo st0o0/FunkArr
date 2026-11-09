@@ -127,6 +127,68 @@ public sealed class MovieEnricherTests
         Assert.Single(customResults);
     }
 
+    [Fact]
+    public void Suffix_spielfilm_country_year_matches_via_prefix()
+    {
+        var movie = new TmdbMovie(
+            Id: 1740919, Title: "Schachnovelle", OriginalTitle: "Schachnovelle",
+            ReleaseDate: "2021-08-19", Runtime: 112, ImdbId: "tt9781494");
+        var candidates = new[]
+        {
+            new MovieCandidate(0, "Schachnovelle - Spielfilm, Deutschland/Österreich 2020", null, 6084)
+        };
+
+        var results = MovieEnricher.Resolve(movie, [], candidates);
+
+        var item = Assert.Single(results);
+        Assert.Equal(0.95f, item.Confidence);
+        Assert.Equal(2021, item.Year);
+    }
+
+    [Fact]
+    public void Suffix_parenthesized_genre_matches_via_prefix()
+    {
+        var candidates = new[] { new MovieCandidate(0, "Fight Club (Spielfilm)", null, 8340) };
+
+        var results = MovieEnricher.Resolve(_fightClub, [], candidates);
+
+        var item = Assert.Single(results);
+        Assert.Equal(0.95f, item.Confidence);
+        Assert.Equal(1999, item.Year);
+    }
+
+    [Fact]
+    public void Title_without_suffix_still_uses_levenshtein()
+    {
+        var candidates = new[] { new MovieCandidate(0, "Fight Club", null, 8340) };
+
+        var results = MovieEnricher.Resolve(_fightClub, [], candidates);
+
+        var item = Assert.Single(results);
+        Assert.True(item.Confidence > 0.95f);
+    }
+
+    [Fact]
+    public void Suffix_only_title_does_not_match_unrelated_movie()
+    {
+        var candidates = new[] { new MovieCandidate(0, "Spielfilm", null, 5400) };
+
+        var results = MovieEnricher.Resolve(_fightClub, [], candidates);
+
+        Assert.Empty(results);
+    }
+
+    [Theory]
+    [InlineData("Schachnovelle - Spielfilm, Deutschland/Österreich 2020", "Schachnovelle")]
+    [InlineData("Domino - Spielfilm USA 2023", "Domino")]
+    [InlineData("Emily (Spielfilm)", "Emily")]
+    [InlineData("Code 3", "Code 3")]
+    [InlineData("Title - Part 2 - Spielfilm", "Title")]
+    public void StripSuffix_removes_genre_suffix(string input, string expected)
+    {
+        Assert.Equal(expected, MovieEnricher.StripSuffix(input));
+    }
+
     private static EnrichmentConfig MakeConfig(
         bool enabled = true,
         float titleThreshold = 0.5f) =>
