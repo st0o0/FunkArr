@@ -4,6 +4,7 @@ using Akka.Routing;
 using FunkArr.Core.Configuration;
 using FunkArr.Messages.Scoring;
 using Microsoft.Extensions.Options;
+using Terp.Akka;
 using Terp.Diagnostics;
 
 namespace FunkArr.Scoring;
@@ -16,10 +17,8 @@ public sealed class ScoringManager : ReceiveActor
 
     public ScoringManager(IOptionsMonitor<ScoringOptions> optionsMonitor)
     {
-        _router = Context.ActorOf(
-            Props.Create<ScoringActor>()
-                .WithRouter(new SmallestMailboxPool(optionsMonitor.CurrentValue.PoolSize)),
-            "scoring-pool");
+        _router = Context.ResolveChildActor<ScoringActor>("scoring-pool",
+            props => props.WithRouter(new SmallestMailboxPool(optionsMonitor.CurrentValue.PoolSize)));
 
         Receive<MatchingConfig>(config => _state.Apply(config));
         Receive<RemoveMatchingConfig>(msg => _state.Apply(msg));

@@ -36,7 +36,7 @@ FeedEntry SHALL NOT reference `SearchResultItem`, `MatchMetadata`, or any other 
 - **THEN** FeedGate SHALL construct a FeedEntry with Title, Channel, Topic, Url, Duration, Size, Quality, AiredAt, Score=0.85, SubtitleUrl, Ids, Season, and Episode populated from the result and source item, and FirstSeenAt from the filmlisteTimestamp
 
 ### Requirement: PersistenceMapping aligns with flat FeedEntry
-Since FeedEntry and PersistedFeedEntry now have the same flat shape, `ToPersistence()` and `ToDomain()` SHALL map fields directly without traversing a nested SearchResultItem. The mapping SHALL be a straightforward field-to-field copy. The PersistenceMapping class SHALL be `public static` to match its `public static` extension methods — not `internal static` with `public` methods.
+Since FeedEntry and PersistedFeedEntry now have the same flat shape, `ToPersistence()` and `ToDomain()` SHALL map fields directly without traversing a nested SearchResultItem. The mapping SHALL be a straightforward field-to-field copy. The PersistenceMapping class SHALL be `public static` to match its `public static` extension methods — not `internal static` with `public` methods. The `MediaType` conversion SHALL use an exhaustive switch expression instead of a ternary conditional.
 
 #### Scenario: ToPersistence round-trip
 - **WHEN** a FeedEntry is converted to PersistedFeedEntry and back
@@ -49,6 +49,16 @@ Since FeedEntry and PersistedFeedEntry now have the same flat shape, `ToPersiste
 #### Scenario: Consistent visibility
 - **WHEN** inspecting the PersistenceMapping class
 - **THEN** the class SHALL be `public static` and its extension methods SHALL be `public static`
+
+#### Scenario: MediaType uses exhaustive switch
+- **WHEN** `ToPersistence()` converts `MediaType` to `PersistedMediaType`
+- **THEN** it SHALL use a switch expression with one arm per non-Unknown member
+- **AND** `Unknown` SHALL fall through to `_ => throw new ArgumentOutOfRangeException(...)`
+
+#### Scenario: MediaType reverse mapping uses exhaustive switch
+- **WHEN** `ToDomain()` converts `PersistedMediaType` to `MediaType`
+- **THEN** it SHALL use a switch expression with one arm per non-Unknown member
+- **AND** `PersistedMediaType.Unknown` SHALL fall through to `_ => throw new ArgumentOutOfRangeException(...)`
 
 ### Requirement: API consumers adapt to flat field access
 FunkArr.Api feed endpoints and FunkArr.ArrApi Newznab feed rendering SHALL access FeedEntry fields directly (e.g., `entry.Title`, `entry.Channel`) instead of through the nested `entry.Item` path.
