@@ -2,7 +2,7 @@
   "Entries": [
     {
       "RequestId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-      "Source": 0,
+      "Source": 1,
       "Query": "Tatort",
       "Timestamp": "2024-11-15T12:00:00+00:00",
       "CandidateCount": 10,
@@ -31,9 +31,9 @@
             {
               "RuleId": "rule-1",
               "Priority": 1,
-              "Outcome": 0,
+              "Outcome": 1,
               "FilterTrace": {
-                "Operator": 0,
+                "Operator": 1,
                 "Passed": true,
                 "Nodes": [
                   {
@@ -48,14 +48,14 @@
                 ]
               },
               "IdentificationTrace": {
-                "Strategy": 0,
+                "Strategy": 1,
                 "Attempted": true,
                 "Detail": null
               }
             }
           ],
           "EnrichmentTrace": {
-            "Method": 1,
+            "Method": 2,
             "Confidence": 0.9,
             "Enriched": true,
             "ResolvedSeason": "1",
@@ -71,7 +71,7 @@
     },
     {
       "RequestId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-      "Source": 1,
+      "Source": 2,
       "Query": "Film",
       "Timestamp": "2024-11-15T13:00:00+00:00",
       "CandidateCount": 5,

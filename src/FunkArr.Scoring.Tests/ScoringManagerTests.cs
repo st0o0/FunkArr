@@ -1,17 +1,32 @@
 using Akka.Actor;
+using Akka.DependencyInjection;
 using Akka.TestKit.Xunit;
 using FunkArr.Core.Configuration;
 using FunkArr.Messages;
 using FunkArr.Messages.Scoring;
 using FunkArr.Tests.Shared;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Scoring.Tests;
 
-public sealed class ScoringManagerTests : TestKit
+public sealed class ScoringManagerTests() : TestKit(CreateConfig())
 {
-    private static IOptionsMonitor<ScoringOptions> ScoringOpts(int poolSize = 1) =>
-        new TestOptionsMonitor<ScoringOptions>(new ScoringOptions { PoolSize = poolSize });
+    private static Akka.Actor.Setup.ActorSystemSetup CreateConfig()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IOptionsMonitor<ScoringOptions>>(
+            new TestOptionsMonitor<ScoringOptions>(new ScoringOptions { PoolSize = 1 }));
+        var provider = services.BuildServiceProvider();
+
+        return Akka.Actor.Setup.ActorSystemSetup.Create(DependencyResolverSetup.Create(provider));
+    }
+
+    private IActorRef CreateManager()
+    {
+        var resolver = DependencyResolver.For(Sys);
+        return Sys.ActorOf(resolver.Props<ScoringManager>());
+    }
 
     private static MatchingConfig CreateAirdateConfig(string ruleSetId = "test", float confidence = 0.9f) =>
         new(ruleSetId, confidence, [
@@ -22,7 +37,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Scores_items_with_loaded_config()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
 
         manager.Tell(CreateAirdateConfig());
 
@@ -38,7 +53,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Returns_zeros_for_unknown_ruleset_id()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
 
         var candidates = new[]
         {
@@ -60,7 +75,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Config_update_replaces_previous()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
 
         manager.Tell(CreateAirdateConfig("test", 0.5f));
         manager.Tell(CreateAirdateConfig("test", 0.99f));
@@ -77,7 +92,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Multiple_configs_stored_independently()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
 
         manager.Tell(CreateAirdateConfig("show-a", 0.8f));
         manager.Tell(CreateAirdateConfig("show-b", 0.6f));
@@ -98,7 +113,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Unknown_ruleset_returns_request_id()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
         var requestId = Guid.NewGuid();
 
         var candidates = new[] { new ScoreCandidate("Test", "Test", "ARD", 5400, 720, null, 0) };
@@ -111,7 +126,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Remove_config_returns_zeros_for_removed_ruleset()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
 
         manager.Tell(CreateAirdateConfig());
         manager.Tell(new RemoveMatchingConfig("test"));
@@ -128,7 +143,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Remove_unknown_config_does_not_error()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
 
         manager.Tell(new RemoveMatchingConfig("nonexistent"));
 
@@ -143,7 +158,7 @@ public sealed class ScoringManagerTests : TestKit
     [Fact]
     public void Remove_config_does_not_affect_other_rulesets()
     {
-        var manager = Sys.ActorOf(Props.Create(() => new ScoringManager(ScoringOpts())));
+        var manager = CreateManager();
 
         manager.Tell(CreateAirdateConfig("show-a", 0.8f));
         manager.Tell(CreateAirdateConfig("show-b", 0.6f));

@@ -1,5 +1,5 @@
-{
+﻿{
   "DownloadId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "Reason": "Connection timed out",
-  "FailureKind": 1
+  "FailureKind": 2
 }
