@@ -153,8 +153,78 @@ public sealed class NewznabSearchServiceTests
         string? ep = null,
         string? tvdbId = null,
         string? imdbId = null,
-        string? tmdbId = null) =>
-        new(t, q, cat, Offset: null, Limit: null, Id: null, season, ep, tvdbId, imdbId, tmdbId);
+        string? tmdbId = null,
+        string? title = null) =>
+        new(t, q, cat, Offset: null, Limit: null, Id: null, season, ep, tvdbId, imdbId, tmdbId, title);
+
+    [Fact]
+    public void MapTitleToQuery_copies_title_when_q_empty()
+    {
+        var req = CreateRequest("tvsearch", title: "Tatort");
+        var mapped = NewznabSearchService.MapTitleToQuery(req);
+
+        Assert.Equal("Tatort", mapped.Q);
+        Assert.False(NewznabSearchService.IsWithoutSearchCriteria(mapped));
+    }
+
+    [Fact]
+    public void MapTitleToQuery_preserves_q_when_both_set()
+    {
+        var req = CreateRequest("tvsearch", q: "Tatort", title: "Other");
+        var mapped = NewznabSearchService.MapTitleToQuery(req);
+
+        Assert.Equal("Tatort", mapped.Q);
+    }
+
+    [Fact]
+    public void MapTitleToQuery_works_for_movie_search()
+    {
+        var req = CreateRequest("movie", title: "Schachnovelle");
+        var mapped = NewznabSearchService.MapTitleToQuery(req);
+
+        Assert.Equal("Schachnovelle", mapped.Q);
+        Assert.False(NewznabSearchService.IsWithoutSearchCriteria(mapped));
+    }
+
+    [Fact]
+    public void FilterFeedByQuery_filters_by_topic()
+    {
+        var entries = new[]
+        {
+            CreateFeedEntry("Tatort.S2026E18", "Tatort"),
+            CreateFeedEntry("Tagesschau", "Tagesschau"),
+            CreateFeedEntry("Tatort.S2026E19", "Tatort")
+        };
+
+        var result = NewznabSearchService.FilterFeedByQuery(entries, "Tatort");
+
+        Assert.Equal(2, result.Length);
+        Assert.All(result, e => Assert.Equal("Tatort", e.Topic));
+    }
+
+    [Fact]
+    public void FilterFeedByQuery_returns_all_when_query_null()
+    {
+        var entries = new[]
+        {
+            CreateFeedEntry("Tatort.S2026E18", "Tatort"),
+            CreateFeedEntry("Tagesschau", "Tagesschau")
+        };
+
+        var result = NewznabSearchService.FilterFeedByQuery(entries, null);
+
+        Assert.Equal(2, result.Length);
+    }
+
+    [Fact]
+    public void MapTitleToQuery_no_title_leaves_q_null()
+    {
+        var req = CreateRequest("tvsearch");
+        var mapped = NewznabSearchService.MapTitleToQuery(req);
+
+        Assert.Null(mapped.Q);
+        Assert.True(NewznabSearchService.IsWithoutSearchCriteria(mapped));
+    }
 
     [Fact]
     public void FilterBySeasonEpisode_daily_show_matches_by_airdate()
@@ -245,4 +315,8 @@ public sealed class NewznabSearchServiceTests
             Metadata: season is not null || episode is not null
                 ? new MatchMetadata(null, season, episode, null, null)
                 : null);
+
+    private static FunkArr.Messages.Feed.FeedEntry CreateFeedEntry(string title, string topic) =>
+        new("stable-" + title, DateTimeOffset.UtcNow, MediaType.Show, title, "ARD", topic,
+            "https://example.com/v.mp4", 5400, 1_000_000, 720, null, 0.9, null, null, null, null);
 }

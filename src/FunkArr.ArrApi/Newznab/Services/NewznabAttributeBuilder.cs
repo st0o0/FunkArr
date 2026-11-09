@@ -15,9 +15,10 @@ public sealed class NewznabAttributeBuilder
             new() { Name = "category", Value = category.CategoryId(item.Quality) }
         };
 
-        if (item.Metadata?.Season is not null)
+        var season = item.Metadata?.Season ?? item.AiredAt?.Year.ToString();
+        if (season is not null)
         {
-            attrs.Add(new NewznabAttribute { Name = "season", Value = item.Metadata.Season });
+            attrs.Add(new NewznabAttribute { Name = "season", Value = season });
         }
 
         if (item.Metadata?.Episode is not null)

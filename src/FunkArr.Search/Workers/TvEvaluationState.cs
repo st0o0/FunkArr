@@ -130,15 +130,37 @@ public sealed class TvEvaluationState
                     display = display with { EpisodeTitle = ep.EpisodeName };
                 }
 
+                var resolvedSeason = RemapSeasonToAirYear(ep.Season, item.Source.AiredAt);
+
                 var showId = (ShowIdentity)item.Identity;
                 return item with
                 {
-                    Identity = showId with { Season = ep.Season, Episode = ep.Episode },
+                    Identity = showId with { Season = resolvedSeason, Episode = ep.Episode },
                     Match = new MatchInfo(ep.Confidence, ep.Method),
                     Display = display
                 };
             })
         ];
+    }
+
+    internal string RemapSeasonToAirYear(string enrichedSeason, DateTimeOffset? airedAt)
+    {
+        if (Season is null || airedAt is null)
+        {
+            return enrichedSeason;
+        }
+
+        if (int.TryParse(enrichedSeason, out var s) && s == Season.Value)
+        {
+            return enrichedSeason;
+        }
+
+        if (airedAt.Value.Year == Season.Value)
+        {
+            return Season.Value.ToString();
+        }
+
+        return enrichedSeason;
     }
 
     public bool TryGetRuleSetRequest([NotNullWhen(true)] out ResolveRuleSet? request)

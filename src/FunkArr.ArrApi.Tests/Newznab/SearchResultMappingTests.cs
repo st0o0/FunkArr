@@ -322,4 +322,24 @@ public sealed class SearchResultMappingTests
 
         Assert.DoesNotContain(attrs, a => a.Name == "usenetdate");
     }
+
+    [Fact]
+    public void BuildAttributes_emits_season_from_aired_at_when_metadata_season_null()
+    {
+        var airedAt = new DateTimeOffset(2026, 11, 8, 20, 0, 0, TimeSpan.Zero);
+        var item = new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, airedAt, 0.9);
+        var attrs = _attributeBuilder.BuildAttributes(item, NewznabCategory.Tv);
+
+        var season = Assert.Single(attrs, a => a.Name == "season");
+        Assert.Equal("2026", season.Value);
+    }
+
+    [Fact]
+    public void BuildAttributes_omits_season_when_no_metadata_and_no_aired_at()
+    {
+        var item = new SearchResultItem("Test", "ARD", "Tatort", "url", 5400, 100, 720, null, 0.9);
+        var attrs = _attributeBuilder.BuildAttributes(item, NewznabCategory.Tv);
+
+        Assert.DoesNotContain(attrs, a => a.Name == "season");
+    }
 }

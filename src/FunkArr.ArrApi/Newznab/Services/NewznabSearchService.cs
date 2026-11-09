@@ -26,6 +26,8 @@ public sealed class NewznabSearchService(
 
     internal async Task<SearchServiceResult> Search(IndexerRequest req, string baseUrl, string apiKey, CancellationToken ct)
     {
+        req = MapTitleToQuery(req);
+
         if (IsWithoutSearchCriteria(req))
         {
             return await FeedOrValidation(req, baseUrl, apiKey, ct);
@@ -167,7 +169,12 @@ public sealed class NewznabSearchService(
             feedAnswered = response is FeedResult;
             if (response is FeedResult { FilteredTotal: > 0 } result)
             {
-                return new SearchServiceResult.Success(rssItemBuilder.ToFeedRss(result.Entries, result.FilteredTotal, offset, baseUrl, apiKey));
+                var entries = FilterFeedByQuery(result.Entries, req.Q);
+                var total = string.IsNullOrWhiteSpace(req.Q) ? result.FilteredTotal : entries.Length;
+                if (total > 0)
+                {
+                    return new SearchServiceResult.Success(rssItemBuilder.ToFeedRss(entries, total, offset, baseUrl, apiKey));
+                }
             }
         }
         catch (Exception ex)
@@ -205,6 +212,17 @@ public sealed class NewznabSearchService(
             .Select(ParseInt)
             .OfType<int>()
     ];
+
+    internal static FunkArr.Messages.Feed.FeedEntry[] FilterFeedByQuery(
+        FunkArr.Messages.Feed.FeedEntry[] entries, string? query) =>
+        string.IsNullOrWhiteSpace(query)
+            ? entries
+            : [.. entries.Where(e => e.Topic.Contains(query, StringComparison.OrdinalIgnoreCase))];
+
+    internal static IndexerRequest MapTitleToQuery(IndexerRequest req) =>
+        string.IsNullOrWhiteSpace(req.Q) && !string.IsNullOrWhiteSpace(req.Title)
+            ? req with { Q = req.Title }
+            : req;
 
     internal static bool IsWithoutSearchCriteria(IndexerRequest req) =>
         req.T is "tvsearch" or "movie" or "search"

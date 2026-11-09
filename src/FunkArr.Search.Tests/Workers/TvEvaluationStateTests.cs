@@ -350,11 +350,54 @@ public sealed class TvEvaluationStateTests
         Assert.Equal("Roomservice", candidate.ConstructedTitle);
     }
 
-    private static TvEvaluationState InitState(int? tvdbId = null, string? imdbId = null)
+    [Fact]
+    public void RemapSeasonToAirYear_remaps_when_tvdb_season_mismatches_but_aired_year_matches()
+    {
+        var state = InitState(tvdbId: 83214, season: 2026);
+        var airedAt = new DateTimeOffset(2026, 11, 8, 20, 0, 0, TimeSpan.Zero);
+
+        var result = state.RemapSeasonToAirYear("1", airedAt);
+
+        Assert.Equal("2026", result);
+    }
+
+    [Fact]
+    public void RemapSeasonToAirYear_keeps_season_when_it_already_matches()
+    {
+        var state = InitState(tvdbId: 83214, season: 2026);
+        var airedAt = new DateTimeOffset(2026, 11, 8, 20, 0, 0, TimeSpan.Zero);
+
+        var result = state.RemapSeasonToAirYear("2026", airedAt);
+
+        Assert.Equal("2026", result);
+    }
+
+    [Fact]
+    public void RemapSeasonToAirYear_keeps_season_when_no_requested_season()
+    {
+        var state = InitState(tvdbId: 83214);
+
+        var result = state.RemapSeasonToAirYear("1", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        Assert.Equal("1", result);
+    }
+
+    [Fact]
+    public void RemapSeasonToAirYear_keeps_season_when_aired_year_differs()
+    {
+        var state = InitState(tvdbId: 83214, season: 2026);
+        var airedAt = new DateTimeOffset(2025, 12, 31, 20, 0, 0, TimeSpan.Zero);
+
+        var result = state.RemapSeasonToAirYear("1", airedAt);
+
+        Assert.Equal("1", result);
+    }
+
+    private static TvEvaluationState InitState(int? tvdbId = null, string? imdbId = null, int? season = null)
     {
         var id = Guid.NewGuid();
         var state = TvEvaluationState.From(id.ToString());
-        state.Init(new EvaluateSeries(id, SearchSource.Sonarr, [], tvdbId, imdbId), _noSender);
+        state.Init(new EvaluateSeries(id, SearchSource.Sonarr, [], tvdbId, imdbId, season), _noSender);
         return state;
     }
 
