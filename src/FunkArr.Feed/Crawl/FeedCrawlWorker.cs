@@ -83,7 +83,7 @@ public sealed class FeedCrawlWorker : ReceiveActor
             return;
         }
 
-        _state.ListTimestamp = probe.ListTimestamp;
+        _state.ApplyProbe(probe.ListTimestamp);
 
         _ruleSetResolver.Ask<RegisteredRuleSetsResult>(
                 new QueryRegisteredRuleSets(), _ruleSetTimeout)
@@ -120,8 +120,7 @@ public sealed class FeedCrawlWorker : ReceiveActor
                 ? new CrawlWindow(earliest, listTimestamp, Truncated: true)
                 : new CrawlWindow(cursor, listTimestamp);
 
-        _state.Lookup = lookup;
-        _state.Window = window;
+        _state.ApplyRuleSets(lookup, window);
         _log.Debug("Feed crawl probed: listTimestamp={ListTimestamp}, window=[{Lower},{Upper}], truncated={Truncated}",
             listTimestamp, window.LowerBound, window.UpperBound, window.Truncated);
 

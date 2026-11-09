@@ -18,6 +18,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
     private readonly TimeProvider _timeProvider;
     private FeedCrawlManagerState _state = new();
     private IActorRef? _worker;
+    private bool _running;
+    private bool _resultReceived;
 
     public override string PersistenceId => "feed-crawl";
 
@@ -41,7 +43,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
         Command<StartFeedCrawl>(_ => StartCrawl());
         Command<QueryFeedCrawlStatus>(_ =>
-            Sender.Tell(_state.ToStatus(_feedOptions.CurrentValue.Enabled, _state.Running)));
+            Sender.Tell(_state.ToStatus(_feedOptions.CurrentValue.Enabled, _running)));
         Command<CrawlResult>(HandleResult);
         Command<Terminated>(HandleTerminated);
         Command<SaveSnapshotSuccess>(e =>
@@ -60,7 +62,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
     private void StartCrawl()
     {
-        if (_state.Running)
+        if (_running)
         {
             return;
         }
@@ -71,8 +73,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
             return;
         }
 
-        _state.Running = true;
-        _state.ResultReceived = false;
+        _running = true;
+        _resultReceived = false;
         _log.Debug("Feed crawl started at cursor {Cursor}", _state.Cursor);
 
         var input = new CrawlInput(
@@ -88,8 +90,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
     private void HandleResult(CrawlResult result)
     {
-        _state.ResultReceived = true;
-        _state.Running = false;
+        _resultReceived = true;
+        _running = false;
         RecordTelemetry(result);
         var now = _timeProvider.GetUtcNow();
 
@@ -151,13 +153,13 @@ public sealed class FeedCrawlManager : ReceivePersistentActor
 
         _worker = null;
 
-        if (_state.ResultReceived)
+        if (_resultReceived)
         {
             return;
         }
 
         _log.Warning("Feed crawl worker terminated unexpectedly without reporting a result");
-        _state.Running = false;
+        _running = false;
     }
 
     private static void RecordTelemetry(CrawlResult result)

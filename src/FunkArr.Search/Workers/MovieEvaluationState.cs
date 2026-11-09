@@ -24,13 +24,13 @@ public sealed class MovieEvaluationState
     public IActorRef ReplyTo { get; private set; } = ActorRefs.Nobody;
     public SearchSource Source { get; private set; }
     public SourceInfo[] Sources { get; private set; } = [];
-    public string? RuleSetId { get; set; }
+    public string? RuleSetId { get; private set; }
     public string? ImdbId { get; private set; }
     public int? TmdbId { get; private set; }
-    public string? MediaName { get; set; }
+    public string? MediaName { get; private set; }
     public EnrichmentConfig? EnrichmentConfig { get; private set; }
     public EnrichedItem[] Items { get; private set; } = [];
-    public ItemTrace[] ItemTraces { get; set; } = [];
+    public ItemTrace[] ItemTraces { get; private set; } = [];
 
     private readonly VariantOptions _variants;
 

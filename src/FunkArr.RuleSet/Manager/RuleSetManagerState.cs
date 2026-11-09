@@ -4,15 +4,25 @@ namespace FunkArr.RuleSet.Manager;
 
 public sealed class RuleSetManagerState
 {
-    public Dictionary<string, RuleSetPaths> KnownRuleSets { get; set; } = new(StringComparer.Ordinal);
+    public Dictionary<string, RuleSetPaths> KnownRuleSets { get; private set; } = new(StringComparer.Ordinal);
     public HashSet<string> PendingIds { get; } = new(StringComparer.Ordinal);
-    public bool FullRescanRequested { get; set; }
+    public bool FullRescanRequested { get; private set; }
     internal Dictionary<string, WorkerSummary> Summaries { get; } = new(StringComparer.Ordinal);
 
     public void Apply(WorkerRemoved msg)
     {
         KnownRuleSets.Remove(msg.RuleSetId);
         Summaries.Remove(msg.RuleSetId);
+    }
+
+    public void ApplyKnownRuleSets(Dictionary<string, RuleSetPaths> ruleSets)
+    {
+        KnownRuleSets = ruleSets;
+    }
+
+    public void RequestFullRescan()
+    {
+        FullRescanRequested = true;
     }
 
     public void AddPendingId(string ruleSetId) => PendingIds.Add(ruleSetId);

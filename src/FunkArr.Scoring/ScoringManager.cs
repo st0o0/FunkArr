@@ -16,9 +16,10 @@ public sealed class ScoringManager : ReceiveActor
 
     public ScoringManager(IOptionsMonitor<ScoringOptions> optionsMonitor)
     {
-        var routerProps = Props.Create<ScoringActor>()
-            .WithRouter(new SmallestMailboxPool(optionsMonitor.CurrentValue.PoolSize));
-        _router = Context.ActorOf(routerProps, "scoring-pool");
+        _router = Context.ActorOf(
+            Props.Create<ScoringActor>()
+                .WithRouter(new SmallestMailboxPool(optionsMonitor.CurrentValue.PoolSize)),
+            "scoring-pool");
 
         Receive<MatchingConfig>(config => _state.Apply(config));
         Receive<RemoveMatchingConfig>(msg => _state.Apply(msg));

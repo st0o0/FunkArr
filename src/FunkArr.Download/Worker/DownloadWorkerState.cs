@@ -7,13 +7,13 @@ namespace FunkArr.Download.Worker;
 
 public sealed class DownloadWorkerState
 {
-    public DownloadMedia? Media { get; set; }
-    public WorkerStatus Status { get; set; } = WorkerStatus.Initialized;
-    public DownloadPhase Phase { get; set; } = DownloadPhase.Initialized;
-    public int Attempt { get; set; }
-    public string? FailMessage { get; set; }
-    public FailureKind? LastFailureKind { get; set; }
-    public DownloadProgress Progress { get; set; } = new(0, 0, 0.0);
+    public DownloadMedia? Media { get; private set; }
+    public WorkerStatus Status { get; private set; } = WorkerStatus.Initialized;
+    public DownloadPhase Phase { get; private set; } = DownloadPhase.Initialized;
+    public int Attempt { get; private set; }
+    public string? FailMessage { get; private set; }
+    public FailureKind? LastFailureKind { get; private set; }
+    public DownloadProgress Progress { get; private set; } = new(0, 0, 0.0);
 
     public static DownloadWorkerState Empty => new();
 
@@ -58,6 +58,27 @@ public sealed class DownloadWorkerState
         FailMessage = null;
         LastFailureKind = null;
         Progress = new DownloadProgress(0, 0, 0.0);
+    }
+
+    public void ApplyProgress(DownloadProgress progress, DownloadPhase phase, long totalSize)
+    {
+        Progress = progress;
+        Phase = phase;
+        if (Media is not null)
+        {
+            Media = Media with { Size = Math.Max(Media.Size, totalSize) };
+        }
+    }
+
+    public void ApplyPhase(DownloadPhase phase)
+    {
+        Phase = phase;
+    }
+
+    public void ResetAfterRecovery()
+    {
+        Status = WorkerStatus.Initialized;
+        Phase = DownloadPhase.Initialized;
     }
 
     public RecordDownload ToRecordDownload(

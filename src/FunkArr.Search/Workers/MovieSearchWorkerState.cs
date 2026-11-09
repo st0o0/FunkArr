@@ -21,7 +21,7 @@ public sealed class MovieSearchWorkerState
     public int? TmdbId { get; private set; }
     public int? Limit { get; private set; }
     public int? Offset { get; private set; }
-    public int Attempt { get; set; }
+    public int Attempt { get; private set; }
     public RuleSetResolved? RuleSet { get; private set; }
     public MediathekItem[] Items { get; private set; } = [];
 
@@ -50,6 +50,10 @@ public sealed class MovieSearchWorkerState
             : null;
         return request is not null;
     }
+
+    public void SetAttempt(int attempt) => Attempt = attempt;
+
+    public void ResetAttempt() => Attempt = 0;
 
     public void Apply(RuleSetResolved resolved) => RuleSet = resolved;
 

@@ -22,7 +22,7 @@ public sealed class TvSearchWorkerState
     public int? Season { get; private set; }
     public int? Limit { get; private set; }
     public int? Offset { get; private set; }
-    public int Attempt { get; set; }
+    public int Attempt { get; private set; }
     public RuleSetResolved? RuleSet { get; private set; }
     public MediathekItem[] Items { get; private set; } = [];
 
@@ -52,6 +52,10 @@ public sealed class TvSearchWorkerState
             : null;
         return request is not null;
     }
+
+    public void SetAttempt(int attempt) => Attempt = attempt;
+
+    public void ResetAttempt() => Attempt = 0;
 
     public void Apply(RuleSetResolved resolved) => RuleSet = resolved;
 

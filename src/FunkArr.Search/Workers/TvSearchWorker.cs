@@ -106,7 +106,7 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 
         Receive<RetryMediathekQuery>(msg =>
         {
-            _state.Attempt = msg.Attempt;
+            _state.SetAttempt(msg.Attempt);
             AskMediathek();
         });
 
@@ -130,7 +130,7 @@ public sealed class TvSearchWorker : ReceiveActor, IWithTimers
 
     private void QueryMediathek()
     {
-        _state.Attempt = 0;
+        _state.ResetAttempt();
         AskMediathek();
         Become(Querying);
     }

@@ -43,8 +43,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleLoad(LoadRuleSet msg)
     {
-        _state.Merged = _store.LoadMerged(_nttId);
-        _state.Paths = _store.CheckPaths(_nttId);
+        _state.Apply(_store.LoadMerged(_nttId), _store.CheckPaths(_nttId));
 
         if (_state.Merged is null)
         {
@@ -86,7 +85,7 @@ public sealed class RuleSetWorker : ReceiveActor
 
     private void HandleRemove(RemoveRuleSet msg)
     {
-        _state.Merged = null;
+        _state.Clear();
 
         var scoringManager = Context.GetActor<IScoringManager>();
         scoringManager.Tell(new RemoveMatchingConfig(_nttId));
@@ -103,8 +102,7 @@ public sealed class RuleSetWorker : ReceiveActor
     {
         if (_state.Merged is null)
         {
-            _state.Merged = _store.LoadMerged(_nttId);
-            _state.Paths = _store.CheckPaths(_nttId);
+            _state.Apply(_store.LoadMerged(_nttId), _store.CheckPaths(_nttId));
         }
 
         if (_state.Merged is null)
@@ -195,7 +193,7 @@ public sealed class RuleSetWorker : ReceiveActor
         }
         else
         {
-            _state.Merged = null;
+            _state.Clear();
             var scoringManager = Context.GetActor<IScoringManager>();
             scoringManager.Tell(new RemoveMatchingConfig(_nttId));
 

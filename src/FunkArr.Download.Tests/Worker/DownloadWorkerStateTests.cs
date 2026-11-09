@@ -103,7 +103,7 @@ public sealed class DownloadWorkerStateTests
     public void Initialize_resets_progress()
     {
         var state = new DownloadWorkerState();
-        state.Progress = new DownloadProgress(500_000, 1_000_000, 1.5);
+        state.ApplyProgress(new DownloadProgress(500_000, 1_000_000, 1.5), DownloadPhase.VideoDownload, 500_000);
 
         state.Apply(MakeInitialized());
 
@@ -139,7 +139,7 @@ public sealed class DownloadWorkerStateTests
         var state = new DownloadWorkerState();
         state.Apply(MakeInitialized());
         state.Apply(new DownloadAttemptStarted(_testId, 1));
-        state.Progress = new DownloadProgress(500_000, 1_000_000, 1.5);
+        state.ApplyProgress(new DownloadProgress(500_000, 1_000_000, 1.5), DownloadPhase.VideoDownload, 500_000);
         state.Apply(new DownloadAttemptStarted(_testId, 2));
 
         Assert.Equal(2, state.Attempt);

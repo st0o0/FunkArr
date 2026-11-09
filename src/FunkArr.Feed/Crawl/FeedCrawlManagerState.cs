@@ -7,17 +7,15 @@ public sealed class FeedCrawlManagerState
 {
     internal const int MaxConsecutiveFailures = 3;
 
-    public long Cursor { get; set; }
-    public DateTimeOffset? LastRunAt { get; set; }
-    public CrawlOutcome LastOutcome { get; set; }
-    public string? LastError { get; set; }
-    public int LastNewItems { get; set; }
-    public int LastPublished { get; set; }
-    public int LastUnmatched { get; set; }
-    public bool LastGap { get; set; }
-    public int ConsecutiveFailures { get; set; }
-    public bool Running { get; set; }
-    public bool ResultReceived { get; set; }
+    public long Cursor { get; private set; }
+    public DateTimeOffset? LastRunAt { get; private set; }
+    public CrawlOutcome LastOutcome { get; private set; }
+    public string? LastError { get; private set; }
+    public int LastNewItems { get; private set; }
+    public int LastPublished { get; private set; }
+    public int LastUnmatched { get; private set; }
+    public bool LastGap { get; private set; }
+    public int ConsecutiveFailures { get; private set; }
 
     public static FeedCrawlManagerState Empty => new();
 

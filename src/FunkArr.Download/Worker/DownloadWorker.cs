@@ -150,9 +150,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 
         var phase = DownloadPhaseExtensions.DerivePhase(msg.TotalSize, _state.Media!.Size, msg.OutTimeUs);
 
-        _state.Progress = new DownloadProgress(msg.TotalSize, msg.OutTimeUs, msg.Speed);
-        _state.Media = _state.Media with { Size = Math.Max(_state.Media.Size, msg.TotalSize) };
-        _state.Phase = phase;
+        _state.ApplyProgress(new DownloadProgress(msg.TotalSize, msg.OutTimeUs, msg.Speed), phase, msg.TotalSize);
     }
 
     private void HandleFfmpegResult(FfmpegResult msg)
@@ -166,7 +164,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 
         if (msg.Success)
         {
-            _state.Phase = DownloadPhase.Moving;
+            _state.ApplyPhase(DownloadPhase.Moving);
 
             try
             {
@@ -272,8 +270,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
     {
         if (_state.Phase.IsTransient())
         {
-            _state.Status = WorkerStatus.Initialized;
-            _state.Phase = DownloadPhase.Initialized;
+            _state.ResetAfterRecovery();
         }
     }
 

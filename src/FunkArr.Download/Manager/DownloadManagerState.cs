@@ -8,10 +8,10 @@ public sealed class DownloadManagerState
 {
     public List<QueueEntry> Queued { get; private set; } = [];
     public Dictionary<Guid, DispatchedEntry> Dispatched { get; private set; } = [];
-    public bool Paused { get; set; }
-    public bool ScheduleEnabled { get; set; } = true;
-    public DateTimeOffset? NextWindow { get; set; }
-    public int MaxConcurrent { get; set; }
+    public bool Paused { get; private set; }
+    public bool ScheduleEnabled { get; private set; } = true;
+    public DateTimeOffset? NextWindow { get; private set; }
+    public int MaxConcurrent { get; private set; }
 
     public static DownloadManagerState Empty => new();
 
@@ -113,6 +113,20 @@ public sealed class DownloadManagerState
     public void Apply(DownloadsPaused _) => Paused = true;
 
     public void Apply(DownloadsResumed _) => Paused = false;
+
+    public void ApplyMaxConcurrent(int limit) => MaxConcurrent = limit;
+
+    public void ApplyScheduleEnabled()
+    {
+        ScheduleEnabled = true;
+        NextWindow = null;
+    }
+
+    public void ApplyScheduleDisabled(DateTimeOffset? nextWindow)
+    {
+        ScheduleEnabled = false;
+        NextWindow = nextWindow;
+    }
 
     public bool Contains(Guid downloadId)
         => Queued.Any(e => e.Id == downloadId) || Dispatched.ContainsKey(downloadId);

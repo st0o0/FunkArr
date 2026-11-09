@@ -8,19 +8,30 @@ namespace FunkArr.Feed.Crawl;
 internal sealed class FeedCrawlWorkerState(CrawlInput input)
 {
     public CrawlInput Input { get; } = input;
-    public long ListTimestamp { get; set; }
-    public CrawlWindow? Window { get; set; }
-    public RuleSetLookup? Lookup { get; set; }
+    public long ListTimestamp { get; private set; }
+    public CrawlWindow? Window { get; private set; }
+    public RuleSetLookup? Lookup { get; private set; }
     public List<MediathekItem> CollectedItems { get; } = [];
-    public int PendingPages { get; set; }
-    public int NextOffset { get; set; }
-    public bool ReachedEnd { get; set; }
-    public string? PageError { get; set; }
-    public int TotalGroups { get; set; }
-    public int PendingGroups { get; set; }
-    public int FailedGroups { get; set; }
+    public int PendingPages { get; private set; }
+    public int NextOffset { get; private set; }
+    public bool ReachedEnd { get; private set; }
+    public string? PageError { get; private set; }
+    public int TotalGroups { get; private set; }
+    public int PendingGroups { get; private set; }
+    public int FailedGroups { get; private set; }
     public List<FeedEntry> AcceptedEntries { get; } = [];
-    public string? FirstGroupError { get; set; }
+    public string? FirstGroupError { get; private set; }
+
+    public void ApplyProbe(long listTimestamp)
+    {
+        ListTimestamp = listTimestamp;
+    }
+
+    public void ApplyRuleSets(RuleSetLookup lookup, CrawlWindow window)
+    {
+        Lookup = lookup;
+        Window = window;
+    }
 
     public void StartHarvesting(int initialRequests)
     {

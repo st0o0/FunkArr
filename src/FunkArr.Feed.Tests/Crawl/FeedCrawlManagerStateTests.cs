@@ -49,7 +49,8 @@ public sealed class FeedCrawlManagerStateTests
     [Fact]
     public void Failed_run_keeps_cursor_and_counts_failures()
     {
-        var state = new FeedCrawlManagerState { Cursor = 100 };
+        var state = FeedCrawlManagerState.FromPersistence(
+            new PersistedFeedCrawlState(100, null, PersistedCrawlOutcome.Completed, null, 0, 0, 0, false, 0));
         state.Apply(new FeedRunFailed(_now, "boom", 1));
 
         Assert.Multiple(

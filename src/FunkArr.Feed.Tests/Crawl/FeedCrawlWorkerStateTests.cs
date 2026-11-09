@@ -56,7 +56,7 @@ public sealed class FeedCrawlWorkerStateTests
     public void ApplyProbe_sets_list_timestamp()
     {
         var state = new FeedCrawlWorkerState(_input);
-        state.ListTimestamp = 2_000_000;
+        state.ApplyProbe(2_000_000);
 
         Assert.Equal(2_000_000, state.ListTimestamp);
     }
@@ -68,9 +68,8 @@ public sealed class FeedCrawlWorkerStateTests
         var window = new CrawlWindow(1_000_000, 2_000_000);
 
         var state = new FeedCrawlWorkerState(_input);
-        state.ListTimestamp = 2_000_000;
-        state.Lookup = lookup;
-        state.Window = window;
+        state.ApplyProbe(2_000_000);
+        state.ApplyRuleSets(lookup, window);
 
         Assert.Multiple(
             () => Assert.Same(lookup, state.Lookup),
@@ -195,9 +194,8 @@ public sealed class FeedCrawlWorkerStateTests
     {
         var window = new CrawlWindow(1_000_000, 2_000_000);
         var state = new FeedCrawlWorkerState(_input);
-        state.ListTimestamp = 2_000_000;
-        state.Lookup = RuleSetLookup.Empty;
-        state.Window = window;
+        state.ApplyProbe(2_000_000);
+        state.ApplyRuleSets(RuleSetLookup.Empty, window);
         state.StartHarvesting(1);
         state.Apply(new PageResult(0, [TestData.Item()], true, null));
         state.StartEvaluating(1);
@@ -217,9 +215,8 @@ public sealed class FeedCrawlWorkerStateTests
     public void GetCrawlResult_failed_on_page_error_with_zero_items()
     {
         var state = new FeedCrawlWorkerState(_input);
-        state.ListTimestamp = 2_000_000;
-        state.Lookup = RuleSetLookup.Empty;
-        state.Window = new CrawlWindow(1_000_000, 2_000_000);
+        state.ApplyProbe(2_000_000);
+        state.ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000));
         state.StartHarvesting(1);
         state.Apply(new PageResult(0, [], true, "network error"));
 
@@ -236,9 +233,8 @@ public sealed class FeedCrawlWorkerStateTests
     public void GetCrawlResult_completed_partial_on_page_error_with_collected_items()
     {
         var state = new FeedCrawlWorkerState(_input);
-        state.ListTimestamp = 2_000_000;
-        state.Lookup = RuleSetLookup.Empty;
-        state.Window = new CrawlWindow(1_000_000, 2_000_000);
+        state.ApplyProbe(2_000_000);
+        state.ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000));
         state.StartHarvesting(2);
         state.Apply(new PageResult(0, [TestData.Item()], false, null));
         state.Apply(new PageResult(100, [], true, "server error"));
@@ -262,9 +258,8 @@ public sealed class FeedCrawlWorkerStateTests
         var errorPage = new PageResult(100, [], true, "server error");
 
         var stateErrorLast = new FeedCrawlWorkerState(_input);
-        stateErrorLast.ListTimestamp = 2_000_000;
-        stateErrorLast.Lookup = RuleSetLookup.Empty;
-        stateErrorLast.Window = new CrawlWindow(1_000_000, 2_000_000);
+        stateErrorLast.ApplyProbe(2_000_000);
+        stateErrorLast.ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000));
         stateErrorLast.StartHarvesting(2);
         stateErrorLast.Apply(successPage);
         stateErrorLast.Apply(errorPage);
@@ -272,9 +267,8 @@ public sealed class FeedCrawlWorkerStateTests
         stateErrorLast.Apply(new GroupResult("rs-1", [TestData.Entry("a", _t0)], null, null));
 
         var stateErrorFirst = new FeedCrawlWorkerState(_input);
-        stateErrorFirst.ListTimestamp = 2_000_000;
-        stateErrorFirst.Lookup = RuleSetLookup.Empty;
-        stateErrorFirst.Window = new CrawlWindow(1_000_000, 2_000_000);
+        stateErrorFirst.ApplyProbe(2_000_000);
+        stateErrorFirst.ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000));
         stateErrorFirst.StartHarvesting(2);
         stateErrorFirst.Apply(errorPage);
         stateErrorFirst.Apply(successPage);
@@ -295,9 +289,8 @@ public sealed class FeedCrawlWorkerStateTests
     public void GetCrawlResult_failed_on_group_failures()
     {
         var state = new FeedCrawlWorkerState(_input);
-        state.ListTimestamp = 2_000_000;
-        state.Lookup = RuleSetLookup.Empty;
-        state.Window = new CrawlWindow(1_000_000, 2_000_000);
+        state.ApplyProbe(2_000_000);
+        state.ApplyRuleSets(RuleSetLookup.Empty, new CrawlWindow(1_000_000, 2_000_000));
         state.StartHarvesting(1);
         state.Apply(new PageResult(0, [TestData.Item()], true, null));
         state.StartEvaluating(3);
