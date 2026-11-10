@@ -20,7 +20,6 @@ public enum QueuePhase
 public enum QueuePriority
 {
     Unknown = 0,
-    Paused = 1,
     Low = 2,
     Normal = 3,
     High = 4

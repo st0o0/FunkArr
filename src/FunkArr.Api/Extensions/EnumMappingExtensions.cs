@@ -14,6 +14,7 @@ internal static class EnumMappingExtensions
     public static MediaType ToApi(this Msg.MediaType value) =>
         value switch
         {
+            Msg.MediaType.Unknown => MediaType.Unknown,
             Msg.MediaType.Show => MediaType.Show,
             Msg.MediaType.Movie => MediaType.Movie,
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
@@ -30,6 +31,7 @@ internal static class EnumMappingExtensions
     public static SearchSource ToApi(this Msg.SearchSource value) =>
         value switch
         {
+            Msg.SearchSource.Unknown => SearchSource.Unknown,
             Msg.SearchSource.Sonarr => SearchSource.Sonarr,
             Msg.SearchSource.Radarr => SearchSource.Radarr,
             Msg.SearchSource.Prowlarr => SearchSource.Prowlarr,
@@ -50,6 +52,7 @@ internal static class EnumMappingExtensions
     public static MediathekVariant ToApi(this Msg.MediathekVariant value) =>
         value switch
         {
+            Msg.MediathekVariant.Unknown => MediathekVariant.Unknown,
             Msg.MediathekVariant.Standard => MediathekVariant.Standard,
             Msg.MediathekVariant.AudioDescription => MediathekVariant.AudioDescription,
             Msg.MediathekVariant.SignLanguage => MediathekVariant.SignLanguage,
@@ -72,6 +75,7 @@ internal static class EnumMappingExtensions
     public static FilterOp ToApi(this MsgScoring.FilterOp value) =>
         value switch
         {
+            MsgScoring.FilterOp.Unknown => FilterOp.Unknown,
             MsgScoring.FilterOp.Eq => FilterOp.Eq,
             MsgScoring.FilterOp.Contains => FilterOp.Contains,
             MsgScoring.FilterOp.NotContains => FilterOp.NotContains,
@@ -96,6 +100,7 @@ internal static class EnumMappingExtensions
     public static FilterField ToApi(this MsgScoring.FilterField value) =>
         value switch
         {
+            MsgScoring.FilterField.Unknown => FilterField.Unknown,
             MsgScoring.FilterField.Title => FilterField.Title,
             MsgScoring.FilterField.Topic => FilterField.Topic,
             MsgScoring.FilterField.Channel => FilterField.Channel,
@@ -120,6 +125,7 @@ internal static class EnumMappingExtensions
     public static IdentificationStrategy ToApi(this MsgScoring.IdentificationStrategy value) =>
         value switch
         {
+            MsgScoring.IdentificationStrategy.Unknown => IdentificationStrategy.Unknown,
             MsgScoring.IdentificationStrategy.SeasonAndEpisodeNumber => IdentificationStrategy.SeasonAndEpisodeNumber,
             MsgScoring.IdentificationStrategy.AbsoluteEpisodeNumber => IdentificationStrategy.AbsoluteEpisodeNumber,
             MsgScoring.IdentificationStrategy.TitleExact => IdentificationStrategy.TitleExact,
@@ -142,6 +148,7 @@ internal static class EnumMappingExtensions
     public static TitlePartType ToApi(this MsgScoring.TitlePartType value) =>
         value switch
         {
+            MsgScoring.TitlePartType.Unknown => TitlePartType.Unknown,
             MsgScoring.TitlePartType.Static => TitlePartType.Static,
             MsgScoring.TitlePartType.Regex => TitlePartType.Regex,
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
@@ -158,6 +165,7 @@ internal static class EnumMappingExtensions
     public static EnrichmentMethod ToApi(this MsgEnrichment.EnrichmentMethod value) =>
         value switch
         {
+            MsgEnrichment.EnrichmentMethod.Unknown => EnrichmentMethod.Unknown,
             MsgEnrichment.EnrichmentMethod.Title => EnrichmentMethod.Title,
             MsgEnrichment.EnrichmentMethod.Airdate => EnrichmentMethod.Airdate,
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
@@ -174,6 +182,7 @@ internal static class EnumMappingExtensions
     public static RuntimeMode ToApi(this MsgEnrichment.RuntimeMode value) =>
         value switch
         {
+            MsgEnrichment.RuntimeMode.Unknown => RuntimeMode.Unknown,
             MsgEnrichment.RuntimeMode.Tiebreaker => RuntimeMode.Tiebreaker,
             MsgEnrichment.RuntimeMode.Filter => RuntimeMode.Filter,
             _ => throw new ArgumentOutOfRangeException(nameof(value), value, null)
@@ -190,6 +199,7 @@ internal static class EnumMappingExtensions
     public static MatchMethod ToApi(this MsgEnrichment.MatchMethod value) =>
         value switch
         {
+            MsgEnrichment.MatchMethod.Unknown => MatchMethod.Unknown,
             MsgEnrichment.MatchMethod.RegexExtracted => MatchMethod.RegexExtracted,
             MsgEnrichment.MatchMethod.TitleMatch => MatchMethod.TitleMatch,
             MsgEnrichment.MatchMethod.AirdateMatch => MatchMethod.AirdateMatch,
@@ -210,7 +220,7 @@ internal static class EnumMappingExtensions
     public static QueuePriority ToApi(this MsgDownload.DownloadPriority value) =>
         value switch
         {
-            MsgDownload.DownloadPriority.Paused => QueuePriority.Paused,
+            MsgDownload.DownloadPriority.Unknown => QueuePriority.Unknown,
             MsgDownload.DownloadPriority.Low => QueuePriority.Low,
             MsgDownload.DownloadPriority.Normal => QueuePriority.Normal,
             MsgDownload.DownloadPriority.High => QueuePriority.High,
@@ -220,7 +230,6 @@ internal static class EnumMappingExtensions
     public static MsgDownload.DownloadPriority ToMessage(this QueuePriority value) =>
         value switch
         {
-            QueuePriority.Paused => MsgDownload.DownloadPriority.Paused,
             QueuePriority.Low => MsgDownload.DownloadPriority.Low,
             QueuePriority.Normal => MsgDownload.DownloadPriority.Normal,
             QueuePriority.High => MsgDownload.DownloadPriority.High,

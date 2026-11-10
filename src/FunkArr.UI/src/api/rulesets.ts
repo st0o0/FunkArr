@@ -186,7 +186,7 @@ export interface RuleSetWriteRequest {
   aliases?: string[]
   media?: {
     name: string
-    type: string
+    type: number
     tvdbId?: number
     imdbId?: string
     tmdbId?: number
@@ -238,7 +238,7 @@ export interface TestScoringRequest {
   tvdbId?: number
   tmdbId?: number
   imdbId?: string
-  mediaType?: string
+  mediaType?: number
 }
 
 export interface TestCandidate {
@@ -309,10 +309,20 @@ export class ValidationFailedError extends Error {
 
 async function throwIfNotOk(res: Response): Promise<void> {
   if (res.ok) return
-  if (res.status === 422) {
-    const body = await res.json()
-    if (body.errors) {
-      throw new ValidationFailedError(body.errors)
+  const contentType = res.headers.get('content-type') ?? ''
+  if (contentType.includes('json')) {
+    try {
+      const body = await res.json()
+      if (res.status === 422 && body.errors) {
+        throw new ValidationFailedError(body.errors)
+      }
+      if (body.detail) {
+        throw new Error(body.detail)
+      }
+    } catch (e) {
+      if (e instanceof ValidationFailedError || (e instanceof Error && e.message !== `${res.status} ${res.statusText}`)) {
+        throw e
+      }
     }
   }
   throw new Error(`${res.status} ${res.statusText}`)
@@ -351,7 +361,7 @@ export interface TestEnrichmentParams {
   tvdbId?: number
   tmdbId?: number
   imdbId?: string
-  mediaType?: string
+  mediaType?: number
 }
 
 export async function testRuleSet(

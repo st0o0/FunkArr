@@ -10,7 +10,7 @@ internal static class SabnzbdResponseMapper
 {
     internal static QueueSlot BuildQueueSlot(QueueItem item, int index) => new(
         NzoId: item.DownloadId.ToString(),
-        Status: item.Priority == DownloadPriority.Paused ? SabnzbdQueueStatus.Paused : MapQueueStatus(item.Status),
+        Status: MapQueueStatus(item.Status),
         Index: index,
         Timeleft: FormatTimeLeft(item),
         Mb: (item.TotalBytes / 1_048_576.0).ToString("F1", CultureInfo.InvariantCulture),
@@ -20,7 +20,7 @@ internal static class SabnzbdResponseMapper
         Percentage: DerivePhase(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs)
             .CalculatePercentage(item.Progress.BytesDownloaded, item.TotalBytes, item.Progress.CurrentTimeUs, item.TotalDuration)
             .ToString(),
-        Priority: MapPriority(item.Priority),
+        Priority: SabnzbdPriority.Normal,
         Speed: FormatSpeed(item));
 
     internal static HistorySlot BuildHistorySlot(HistoryItem item, string completePath) => new(
@@ -87,23 +87,6 @@ internal static class SabnzbdResponseMapper
         _ => "tv"
     };
 
-    internal static DownloadPriority MapSabnzbdPriority(string? value)
-    {
-        if (!int.TryParse(value, out var intVal))
-        {
-            return DownloadPriority.Normal;
-        }
-
-        return intVal switch
-        {
-            -2 => DownloadPriority.Paused,
-            -1 => DownloadPriority.Low,
-            1 => DownloadPriority.High,
-            2 => DownloadPriority.High,
-            _ => DownloadPriority.Normal
-        };
-    }
-
     private static SabnzbdQueueStatus MapQueueStatus(DownloadStatus status) => status switch
     {
         DownloadStatus.Processing => SabnzbdQueueStatus.Downloading,
@@ -118,12 +101,4 @@ internal static class SabnzbdResponseMapper
         _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
     };
 
-    private static SabnzbdPriority MapPriority(DownloadPriority priority) => priority switch
-    {
-        DownloadPriority.Paused => SabnzbdPriority.Low,
-        DownloadPriority.Low => SabnzbdPriority.Low,
-        DownloadPriority.Normal => SabnzbdPriority.Normal,
-        DownloadPriority.High => SabnzbdPriority.High,
-        _ => throw new ArgumentOutOfRangeException(nameof(priority), priority, null)
-    };
 }

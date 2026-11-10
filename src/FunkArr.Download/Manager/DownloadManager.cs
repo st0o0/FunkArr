@@ -386,7 +386,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         {
             var dispatching = toDispatch.ToHashSet();
             var next = _state.Queued.FirstOrDefault(e =>
-                !dispatching.Contains(e.Id) && e.Priority != DownloadPriority.Paused);
+                !dispatching.Contains(e.Id));
 
             if (next == default)
             {

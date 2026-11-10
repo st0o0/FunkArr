@@ -99,40 +99,6 @@ public sealed class SabnzbdQueueService(
         }
     }
 
-    internal async Task<SabnzbdResult<SabnzbdStatusResponse>> PauseQueue(CancellationToken ct)
-    {
-        try
-        {
-            var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<PauseDownloadsResult>(new PauseDownloads(), ct);
-            return result.Success
-                ? new SabnzbdStatusResponse(true)
-                : new SabnzbdError("Pause failed");
-        }
-        catch (OperationCanceledException ex)
-        {
-            logger.LogWarning(ex, "Timeout pausing queue");
-            return new SabnzbdError("Request timed out", 504);
-        }
-    }
-
-    internal async Task<SabnzbdResult<SabnzbdStatusResponse>> ResumeQueue(CancellationToken ct)
-    {
-        try
-        {
-            var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<ResumeDownloadsResult>(new ResumeDownloads(), ct);
-            return result.Success
-                ? new SabnzbdStatusResponse(true)
-                : new SabnzbdError("Resume failed");
-        }
-        catch (OperationCanceledException ex)
-        {
-            logger.LogWarning(ex, "Timeout resuming queue");
-            return new SabnzbdError("Request timed out", 504);
-        }
-    }
-
     internal SabnzbdResult<SabnzbdConfigResponse> GetConfig()
     {
         var categories = downloadOptions.Value.Categories

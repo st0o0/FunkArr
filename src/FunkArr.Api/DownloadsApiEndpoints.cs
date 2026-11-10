@@ -207,42 +207,6 @@ public static class DownloadsApiEndpoints
         .Produces<OperationResult>()
         .ProducesProblem(504);
 
-        group.MapPost("/queue/{id:guid}/pause", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
-        {
-            var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<SetDownloadPriorityResponse>(
-                new SetDownloadPriority(id, DownloadPriority.Paused), ct);
-            return result switch
-            {
-                SetDownloadPriorityCompleted => Results.Ok(new OperationResult(true)),
-                SetDownloadPriorityFailed f => Results.NotFound(new OperationResult(false, f.Reason)),
-                _ => ApiResults.UnexpectedResponse(result)
-            };
-        })
-        .WithSummary("Pause a queued download")
-        .WithDescription("Sets the download's priority to Paused, preventing it from being dispatched. Already-running downloads continue.")
-        .Produces<OperationResult>()
-        .ProducesProblem(404)
-        .ProducesProblem(504);
-
-        group.MapPost("/queue/{id:guid}/resume", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
-        {
-            var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<SetDownloadPriorityResponse>(
-                new SetDownloadPriority(id, DownloadPriority.Normal), ct);
-            return result switch
-            {
-                SetDownloadPriorityCompleted => Results.Ok(new OperationResult(true)),
-                SetDownloadPriorityFailed f => Results.NotFound(new OperationResult(false, f.Reason)),
-                _ => ApiResults.UnexpectedResponse(result)
-            };
-        })
-        .WithSummary("Resume a paused download")
-        .WithDescription("Sets the download's priority back to Normal, making it eligible for dispatch again.")
-        .Produces<OperationResult>()
-        .ProducesProblem(404)
-        .ProducesProblem(504);
-
         group.MapPost("/queue/{id:guid}/force-start", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
@@ -278,6 +242,11 @@ public static class DownloadsApiEndpoints
 
         group.MapPost("/queue/{id:guid}/priority", async (Guid id, PriorityRequest body, IActorRegistry registry, CancellationToken ct) =>
         {
+            if (body.Priority is not (QueuePriority.Low or QueuePriority.Normal or QueuePriority.High))
+            {
+                return Results.Problem("Priority must be Low (2), Normal (3), or High (4)", statusCode: 400);
+            }
+
             var priority = body.Priority.ToMessage();
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(id, priority), ct);

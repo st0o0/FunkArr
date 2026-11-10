@@ -46,14 +46,13 @@ public sealed class SabnzbdDownloadService(
         }
 
         var category = cat is null ? payload.Category : SabnzbdResponseMapper.ParseMediaType(cat);
-        var downloadPriority = SabnzbdResponseMapper.MapSabnzbdPriority(priority);
 
         try
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
             var media = new DownloadMedia(
                 payload.Title, payload.Url, payload.SubtitleUrl, payload.Channel, payload.Duration, payload.Size, category);
-            var addCmd = new AddDownload(media, downloadPriority);
+            var addCmd = new AddDownload(media, DownloadPriority.Normal);
             var addResult = await manager.Ask<DownloadAdded>(addCmd, ct);
 
             if (priority == "2")
@@ -148,68 +147,4 @@ public sealed class SabnzbdDownloadService(
         }
     }
 
-    internal async Task<SabnzbdResult<SabnzbdStatusResponse>> SetPriority(string? nzoId, string? priorityValue, CancellationToken ct)
-    {
-        if (!Guid.TryParse(nzoId, out var downloadId))
-        {
-            return new SabnzbdError("Invalid nzo_id");
-        }
-
-        if (!int.TryParse(priorityValue, out var priorityInt))
-        {
-            return new SabnzbdError("Invalid priority value");
-        }
-
-        try
-        {
-            var manager = await registry.GetAsync<IDownloadManager>(ct);
-
-            if (priorityInt == 2)
-            {
-                var forceResult = await manager.Ask<ForceStartDownloadResult>(new ForceStartDownload(downloadId), ct);
-                return forceResult.Success
-                    ? new SabnzbdStatusResponse(true)
-                    : new SabnzbdError(forceResult.Error ?? "Force start failed");
-            }
-
-            var priority = priorityInt switch
-            {
-                -2 => DownloadPriority.Paused,
-                -1 => DownloadPriority.Low,
-                0 => DownloadPriority.Normal,
-                _ => DownloadPriority.High
-            };
-            var result = await manager.Ask<SetDownloadPriorityResponse>(new SetDownloadPriority(downloadId, priority), ct);
-            return result is SetDownloadPriorityCompleted
-                ? new SabnzbdStatusResponse(true)
-                : new SabnzbdError((result as SetDownloadPriorityFailed)?.Reason ?? "Priority change failed");
-        }
-        catch (OperationCanceledException ex)
-        {
-            logger.LogWarning(ex, "Timeout setting priority for {DownloadId}", downloadId);
-            return new SabnzbdError("Request timed out", 504);
-        }
-    }
-
-    internal async Task<SabnzbdResult<SabnzbdStatusResponse>> Swap(string? nzoId1, string? nzoId2, CancellationToken ct)
-    {
-        if (!Guid.TryParse(nzoId1, out var id1) || !Guid.TryParse(nzoId2, out var id2))
-        {
-            return new SabnzbdError("Invalid nzo_id");
-        }
-
-        try
-        {
-            var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<SwapDownloadsResponse>(new SwapDownloads(id1, id2), ct);
-            return result is SwapDownloadsCompleted
-                ? new SabnzbdStatusResponse(true)
-                : new SabnzbdError((result as SwapDownloadsFailed)?.Reason ?? "Swap failed");
-        }
-        catch (OperationCanceledException ex)
-        {
-            logger.LogWarning(ex, "Timeout swapping downloads {Id1} and {Id2}", id1, id2);
-            return new SabnzbdError("Request timed out", 504);
-        }
-    }
 }

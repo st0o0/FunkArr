@@ -25,10 +25,6 @@ public sealed class SabnzbdController(
             "fullstatus" => MapResult(await queue.GetFullStatus(cancellationToken)),
             "queue" when req.Name == "delete" && !string.IsNullOrEmpty(req.Value) =>
                 MapResult(await downloads.DeleteFromQueue(req.Value, cancellationToken)),
-            "queue" when req.Name is "priority" && !string.IsNullOrEmpty(req.Value) =>
-                MapResult(await downloads.SetPriority(req.Value, req.Value2, cancellationToken)),
-            "queue" when req.Name is "switch" && !string.IsNullOrEmpty(req.Value) && !string.IsNullOrEmpty(req.Value2) =>
-                MapResult(await downloads.Swap(req.Value, req.Value2, cancellationToken)),
             "queue" when req.Name is not null =>
                 Ok(new SabnzbdErrorResponse(false, "Invalid queue command")),
             "queue" => MapResult(await queue.GetQueue(req.Start ?? 0, req.Limit ?? 0, req.Category, cancellationToken)),
@@ -38,8 +34,6 @@ public sealed class SabnzbdController(
             "retry" when string.IsNullOrEmpty(req.Value) =>
                 Ok(new SabnzbdErrorResponse(false, "Missing value parameter")),
             "retry" => MapResult(await downloads.Retry(req.Value, cancellationToken)),
-            "pause" => MapResult(await queue.PauseQueue(cancellationToken)),
-            "resume" => MapResult(await queue.ResumeQueue(cancellationToken)),
             _ => Ok(new SabnzbdErrorResponse(false, "Invalid mode"))
         };
     }
