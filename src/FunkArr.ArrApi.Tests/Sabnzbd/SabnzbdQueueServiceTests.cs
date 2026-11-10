@@ -148,60 +148,6 @@ public sealed class SabnzbdQueueServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task PauseQueue_Success_ReturnsOk()
-    {
-        var (service, managerProbe, _) = CreateService();
-
-        var task = service.PauseQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        managerProbe.Reply(new PauseDownloadsResult(true));
-        var result = await task;
-
-        SabnzbdResultAssert.Ok(result);
-    }
-
-    [Fact]
-    public async Task PauseQueue_Failure_ReturnsError()
-    {
-        var (service, managerProbe, _) = CreateService();
-
-        var task = service.PauseQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        managerProbe.Reply(new PauseDownloadsResult(false));
-        var result = await task;
-
-        var error = SabnzbdResultAssert.Error(result);
-        Assert.Equal("Pause failed", error.Message);
-    }
-
-    [Fact]
-    public async Task ResumeQueue_Success_ReturnsOk()
-    {
-        var (service, managerProbe, _) = CreateService();
-
-        var task = service.ResumeQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        managerProbe.Reply(new ResumeDownloadsResult(true));
-        var result = await task;
-
-        SabnzbdResultAssert.Ok(result);
-    }
-
-    [Fact]
-    public async Task ResumeQueue_Failure_ReturnsError()
-    {
-        var (service, managerProbe, _) = CreateService();
-
-        var task = service.ResumeQueue(CancellationToken.None);
-        managerProbe.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        managerProbe.Reply(new ResumeDownloadsResult(false));
-        var result = await task;
-
-        var error = SabnzbdResultAssert.Error(result);
-        Assert.Equal("Resume failed", error.Message);
-    }
-
-    [Fact]
     public void GetConfig_ReturnsConfigWithCategories()
     {
         var downloadOptions = new DownloadOptions

@@ -121,48 +121,6 @@ public sealed class DownloadManagerPauseTests : TestKit
     }
 
     [Fact]
-    public void DispatchNext_skips_paused_items()
-    {
-        var manager = CreateManager(concurrentDownloads: 1);
-
-        manager.Tell(new AddDownload(
-            new DownloadMedia("Paused", "https://example.com/p.mp4", null, "ARD", 3600, 1000, MediaType.Show),
-            DownloadPriority.Paused));
-        ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
-        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
-
-        manager.Tell(new AddDownload(
-            new DownloadMedia("Normal", "https://example.com/n.mp4", null, "ZDF", 3600, 1000, MediaType.Show)));
-        var normalAdded = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
-        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
-
-        var startMsg = _regionProbe.ExpectMsg<StartDownload>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(normalAdded.DownloadId, startMsg.DownloadId);
-    }
-
-    [Fact]
-    public void SetPriority_to_paused_prevents_dispatch()
-    {
-        var manager = CreateManager(concurrentDownloads: 1);
-
-        manager.Tell(new PauseDownloads());
-        ExpectMsg<PauseDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
-
-        manager.Tell(new AddDownload(
-            new DownloadMedia("Test", "https://example.com/v.mp4", null, "ARD", 3600, 1000, MediaType.Show)));
-        var added = ExpectMsg<DownloadAdded>(cancellationToken: TestContext.Current.CancellationToken);
-        _regionProbe.ExpectMsg<InitDownload>(cancellationToken: TestContext.Current.CancellationToken);
-
-        manager.Tell(new SetDownloadPriority(added.DownloadId, DownloadPriority.Paused));
-        ExpectMsg<SetDownloadPriorityCompleted>(cancellationToken: TestContext.Current.CancellationToken);
-
-        manager.Tell(new ResumeDownloads());
-        ExpectMsg<ResumeDownloadsResult>(cancellationToken: TestContext.Current.CancellationToken);
-
-        _regionProbe.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
     public void ForceStart_rejects_unknown_id()
     {
         var manager = CreateManager();

@@ -61,8 +61,8 @@ public sealed class EnumMappingExtensionsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => MediaType.Unknown.ToMessage());
 
     [Fact]
-    public void UnknownMessageValue_Throws() =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => Msg.MediaType.Unknown.ToApi());
+    public void UnknownMessageValue_MapsToApiUnknown() =>
+        Assert.Equal(MediaType.Unknown, Msg.MediaType.Unknown.ToApi());
 
     [Fact]
     public void UndefinedApiValue_Throws()

@@ -197,7 +197,7 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
             "\"percentage\":\"50\",\"priority\":\"Normal\",\"speed\":\"5242880\"}," +
             "{\"nzo_id\":\"22222222-2222-2222-2222-222222222222\",\"status\":\"Queued\",\"index\":1," +
             "\"timeleft\":\"00:00:00\",\"mb\":\"10.0\",\"filename\":\"Film\",\"cat\":\"movies\",\"mbleft\":\"10.0\"," +
-            "\"percentage\":\"0\",\"priority\":\"High\",\"speed\":\"0\"}]}}",
+            "\"percentage\":\"0\",\"priority\":\"Normal\",\"speed\":\"0\"}]}}",
             result);
     }
 
@@ -257,29 +257,23 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Pause_returns_status_true()
+    public async Task Pause_mode_returns_invalid_mode()
     {
-        var (controller, manager, _) = CreateController();
+        var (controller, _, _) = CreateController();
 
-        var task = controller.HandleGet(Get("pause"), TestContext.Current.CancellationToken);
-        manager.ExpectMsg<PauseDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        manager.Reply(new PauseDownloadsResult(true));
-        var result = await task;
+        var result = await controller.HandleGet(Get("pause"), TestContext.Current.CancellationToken);
 
-        AssertWire(200, "{\"status\":true}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
     }
 
     [Fact]
-    public async Task Resume_returns_status_true()
+    public async Task Resume_mode_returns_invalid_mode()
     {
-        var (controller, manager, _) = CreateController();
+        var (controller, _, _) = CreateController();
 
-        var task = controller.HandleGet(Get("resume"), TestContext.Current.CancellationToken);
-        manager.ExpectMsg<ResumeDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        manager.Reply(new ResumeDownloadsResult(true));
-        var result = await task;
+        var result = await controller.HandleGet(Get("resume"), TestContext.Current.CancellationToken);
 
-        AssertWire(200, "{\"status\":true}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid mode\"}", result);
     }
 
     [Fact]
@@ -342,45 +336,25 @@ public sealed class SabnzbdWireTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Queue_priority_returns_status_true()
+    public async Task Queue_priority_returns_invalid_command()
     {
-        var (controller, manager, _) = CreateController();
+        var (controller, _, _) = CreateController();
 
-        var task = controller.HandleGet(Get("queue", name: "priority", value: _firstId.ToString(), value2: "1"), TestContext.Current.CancellationToken);
-        var message = manager.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
-        manager.Reply(new SetDownloadPriorityCompleted());
-        var result = await task;
+        var result = await controller.HandleGet(Get("queue", name: "priority", value: _firstId.ToString(), value2: "1"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(DownloadPriority.High, message.Priority);
-        AssertWire(200, "{\"status\":true}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid queue command\"}", result);
     }
 
     [Fact]
-    public async Task Queue_priority_force_returns_status_true()
+    public async Task Queue_switch_returns_invalid_command()
     {
-        var (controller, manager, _) = CreateController();
+        var (controller, _, _) = CreateController();
 
-        var task = controller.HandleGet(Get("queue", name: "priority", value: _firstId.ToString(), value2: "2"), TestContext.Current.CancellationToken);
-        manager.ExpectMsg<ForceStartDownload>(cancellationToken: TestContext.Current.CancellationToken);
-        manager.Reply(new ForceStartDownloadResult(true, null));
-        var result = await task;
-
-        AssertWire(200, "{\"status\":true}", result);
-    }
-
-    [Fact]
-    public async Task Queue_switch_returns_status_true()
-    {
-        var (controller, manager, _) = CreateController();
-
-        var task = controller.HandleGet(
+        var result = await controller.HandleGet(
             Get("queue", name: "switch", value: _firstId.ToString(), value2: _secondId.ToString()),
             TestContext.Current.CancellationToken);
-        manager.ExpectMsg<SwapDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        manager.Reply(new SwapDownloadsCompleted());
-        var result = await task;
 
-        AssertWire(200, "{\"status\":true}", result);
+        AssertWire(200, "{\"status\":false,\"error\":\"Invalid queue command\"}", result);
     }
 
     [Fact]

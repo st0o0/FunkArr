@@ -146,28 +146,6 @@ public sealed class DownloadApiEndpointTests
     }
 
     [Fact]
-    public void Queue_response_maps_paused_item_priority()
-    {
-        var item = new QueueItem(
-            DownloadId: Guid.NewGuid(),
-            Title: "Paused Show",
-            Status: DownloadStatus.Queued,
-            Channel: "ARD",
-            HasSubtitles: false,
-            TotalBytes: 100_000_000,
-            Progress: new DownloadProgress(0, 0, 0),
-            TotalDuration: 0,
-            Category: MediaType.Show,
-            Priority: DownloadPriority.Paused,
-            Phase: DownloadPhase.Initialized,
-            Attempt: 0);
-
-        var result = item.ToApi();
-
-        Assert.Equal(QueuePriority.Paused, result.Priority);
-    }
-
-    [Fact]
     public void History_completed_at_is_datetimeoffset()
     {
         var item = new HistoryItem(

@@ -158,51 +158,11 @@ public sealed class SabnzbdResponseMapperTests
     }
 
     [Fact]
-    public void MapSabnzbdPriority_maps_correctly()
+    public void BuildQueueSlot_always_emits_normal_priority()
     {
-        Assert.Equal(DownloadPriority.Paused, SabnzbdResponseMapper.MapSabnzbdPriority("-2"));
-        Assert.Equal(DownloadPriority.Low, SabnzbdResponseMapper.MapSabnzbdPriority("-1"));
-        Assert.Equal(DownloadPriority.Normal, SabnzbdResponseMapper.MapSabnzbdPriority("0"));
-        Assert.Equal(DownloadPriority.High, SabnzbdResponseMapper.MapSabnzbdPriority("1"));
-        Assert.Equal(DownloadPriority.High, SabnzbdResponseMapper.MapSabnzbdPriority("2"));
-        Assert.Equal(DownloadPriority.Normal, SabnzbdResponseMapper.MapSabnzbdPriority(null));
-        Assert.Equal(DownloadPriority.Normal, SabnzbdResponseMapper.MapSabnzbdPriority("abc"));
-    }
+        var slot = SabnzbdResponseMapper.BuildQueueSlot(QueueItemWith(DownloadStatus.Queued, DownloadPriority.High), 0);
 
-    [Theory]
-    [InlineData(DownloadPriority.Paused, SabnzbdPriority.Low)]
-    [InlineData(DownloadPriority.Low, SabnzbdPriority.Low)]
-    [InlineData(DownloadPriority.Normal, SabnzbdPriority.Normal)]
-    [InlineData(DownloadPriority.High, SabnzbdPriority.High)]
-    public void BuildQueueSlot_maps_priority(DownloadPriority priority, SabnzbdPriority expected)
-    {
-        var slot = SabnzbdResponseMapper.BuildQueueSlot(QueueItemWith(DownloadStatus.Queued, priority), 0);
-
-        Assert.Equal(expected, slot.Priority);
-    }
-
-    [Fact]
-    public void BuildQueueSlot_paused_item_reports_paused_status()
-    {
-        var item = QueueItemWith(DownloadStatus.Queued, DownloadPriority.Paused);
-
-        var slot = SabnzbdResponseMapper.BuildQueueSlot(item, 0);
-
-        Assert.Multiple(
-            () => Assert.Equal(SabnzbdQueueStatus.Paused, slot.Status),
-            () => Assert.Equal(SabnzbdPriority.Low, slot.Priority));
-    }
-
-    [Fact]
-    public void BuildQueueSlot_throws_for_unexpected_priority()
-    {
-        var item = QueueItemWith(DownloadStatus.Queued, (DownloadPriority)99);
-
-        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => SabnzbdResponseMapper.BuildQueueSlot(item, 0));
-
-        Assert.Multiple(
-            () => Assert.Equal("priority", ex.ParamName),
-            () => Assert.Equal((DownloadPriority)99, ex.ActualValue));
+        Assert.Equal(SabnzbdPriority.Normal, slot.Priority);
     }
 
     [Theory]
