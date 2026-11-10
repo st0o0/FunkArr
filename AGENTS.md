@@ -312,16 +312,20 @@ no multi-actor orchestration in the lambda body.
   ```
 - **Actor state pattern** (Pathfinder pattern): State in its own `<Actor>State.cs`
   file as a `sealed class` (not nested, not a record). Void instance methods
-  `Apply(event)` mutate state in-place. Mutable
-  collections (`List<T>`, `Dictionary<K,V>`, `HashSet<T>`) — Akka's
-  single-threaded mailbox guarantees safe mutation. `Empty` is a property
-  (`public static XState Empty => new();`), never a shared static field.
-  Actors are thin plumbing (message routing, persistence, lifecycle only).
-  All mutable domain state lives in the state object — no leaked fields on
-  actors (dictionaries, flags, counters). Infrastructure refs (actor refs,
-  CTS, stopwatches) may stay on the actor. State never sent to callers
-  directly - use `GetSnapshot()` -> response record, `FromSnapshot()` ->
-  reconstruct. For persistent actors: `GetPersistenceState()` ->
+  `Apply(event)` mutate state in-place — all public mutation methods must be
+  named `Apply` (overloaded by parameter type), never `ApplyFoo`/`ApplyBar`.
+  When the actor needs to pass primitives or multiple values, introduce a small
+  wrapper record next to the state class (same file, namespace level) and use
+  `Apply(WrapperRecord)`. Private helper methods inside an Apply dispatcher
+  may use any name. Mutable collections (`List<T>`, `Dictionary<K,V>`,
+  `HashSet<T>`) — Akka's single-threaded mailbox guarantees safe mutation.
+  `Empty` is a property (`public static XState Empty => new();`), never a
+  shared static field. Actors are thin plumbing (message routing, persistence,
+  lifecycle only). All mutable domain state lives in the state object — no
+  leaked fields on actors (dictionaries, flags, counters). Infrastructure refs
+  (actor refs, CTS, stopwatches) may stay on the actor. State never sent to
+  callers directly - use `GetSnapshot()` -> response record, `FromSnapshot()`
+  -> reconstruct. For persistent actors: `GetPersistenceState()` ->
   `Persisted*State` record in `FunkArr.Persistence/Events/`,
   `FromPersistence()` -> reconstruct.
   `SaveSnapshot(_state.GetPersistenceState())`, not `SaveSnapshot(_state)`.

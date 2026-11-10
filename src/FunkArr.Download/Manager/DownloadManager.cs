@@ -86,7 +86,7 @@ public sealed class DownloadManager : ReceivePersistentActor
         options.OnChange(opts => self.Tell(new ConcurrencyChanged(opts.ConcurrentDownloads)));
         Command<ConcurrencyChanged>(msg =>
         {
-            _state.ApplyMaxConcurrent(msg.Limit);
+            _state.Apply(new ConcurrencyLimit(msg.Limit));
             DispatchNext();
         });
     }
@@ -362,14 +362,14 @@ public sealed class DownloadManager : ReceivePersistentActor
 
     private void HandleScheduleEnabled(ScheduleEnabled _)
     {
-        _state.ApplyScheduleEnabled();
+        _state.Apply(new ScheduleChange(true, null));
         _log.Info("Download schedule enabled");
         DispatchNext();
     }
 
     private void HandleScheduleDisabled(ScheduleDisabled msg)
     {
-        _state.ApplyScheduleDisabled(msg.NextWindow);
+        _state.Apply(new ScheduleChange(false, msg.NextWindow));
         _log.Info("Download schedule disabled, next window: {NextWindow}", msg.NextWindow);
     }
 

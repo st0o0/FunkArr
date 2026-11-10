@@ -122,7 +122,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
                 group.Items.Add(item);
             }
 
-            _state.ApplyFilterResult(seen.Count, seen.Count - groups.Values.Sum(g => g.Items.Count), reachedEnd, groups.Count);
+            _state.Apply(new FilterResult(seen.Count, seen.Count - groups.Values.Sum(g => g.Items.Count), reachedEnd, groups.Count));
 
             if (groups.Count == 0)
             {
@@ -191,7 +191,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
                 Telemetry.Rejected.Add(count, new KeyValuePair<string, object?>("reason", reason.ToString()));
             }
 
-            _state.ApplyGateResult(gate);
+            _state.Apply(gate);
 
             if (_state.IsComplete)
             {
@@ -202,7 +202,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
         Receive<EvalFailed>(result =>
         {
             _log.Warning("Evaluation failed for ruleset {RuleSetId}: {Reason}", result.RuleSetId, result.Reason);
-            _state.ApplyEvalFailed();
+            _state.Apply(new EvalFailure());
 
             if (_state.IsComplete)
             {

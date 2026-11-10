@@ -5,6 +5,10 @@ using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download.Worker;
 
+public sealed record WorkerProgress(DownloadProgress Progress, DownloadPhase Phase, long TotalSize);
+
+public sealed record PhaseChange(DownloadPhase Phase);
+
 public sealed class DownloadWorkerState
 {
     public DownloadMedia? Media { get; private set; }
@@ -60,19 +64,19 @@ public sealed class DownloadWorkerState
         Progress = new DownloadProgress(0, 0, 0.0);
     }
 
-    public void ApplyProgress(DownloadProgress progress, DownloadPhase phase, long totalSize)
+    public void Apply(WorkerProgress update)
     {
-        Progress = progress;
-        Phase = phase;
+        Progress = update.Progress;
+        Phase = update.Phase;
         if (Media is not null)
         {
-            Media = Media with { Size = Math.Max(Media.Size, totalSize) };
+            Media = Media with { Size = Math.Max(Media.Size, update.TotalSize) };
         }
     }
 
-    public void ApplyPhase(DownloadPhase phase)
+    public void Apply(PhaseChange change)
     {
-        Phase = phase;
+        Phase = change.Phase;
     }
 
     public void ResetAfterRecovery()

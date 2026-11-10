@@ -4,6 +4,10 @@ using FunkArr.Persistence.Events.Download;
 
 namespace FunkArr.Download.Manager;
 
+public sealed record ConcurrencyLimit(int Limit);
+
+public sealed record ScheduleChange(bool Enabled, DateTimeOffset? NextWindow);
+
 public sealed class DownloadManagerState
 {
     public List<QueueEntry> Queued { get; private set; } = [];
@@ -114,18 +118,12 @@ public sealed class DownloadManagerState
 
     public void Apply(DownloadsResumed _) => Paused = false;
 
-    public void ApplyMaxConcurrent(int limit) => MaxConcurrent = limit;
+    public void Apply(ConcurrencyLimit limit) => MaxConcurrent = limit.Limit;
 
-    public void ApplyScheduleEnabled()
+    public void Apply(ScheduleChange change)
     {
-        ScheduleEnabled = true;
-        NextWindow = null;
-    }
-
-    public void ApplyScheduleDisabled(DateTimeOffset? nextWindow)
-    {
-        ScheduleEnabled = false;
-        NextWindow = nextWindow;
+        ScheduleEnabled = change.Enabled;
+        NextWindow = change.Enabled ? null : change.NextWindow;
     }
 
     public bool Contains(Guid downloadId)

@@ -67,7 +67,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
             _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
         }
 
-        _state.ApplyKnownRuleSets(new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal));
+        _state.Apply(new KnownRuleSetsUpdate(new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal)));
         _log.Info("Initial scan: discovered {Count} rulesets", current.Count);
         Telemetry.Scans.Up();
 
@@ -83,7 +83,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
             _ruleSetRegion.Tell(new RuleSetWorker.LoadRuleSet(id, paths.CommunityPath, paths.LocalPath));
         }
 
-        _state.ApplyKnownRuleSets(new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal));
+        _state.Apply(new KnownRuleSetsUpdate(new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal)));
         Telemetry.Scans.Up();
         _log.Info("Re-scan: discovered {Count} rulesets", current.Count);
     }
@@ -152,7 +152,7 @@ public sealed class RuleSetManager : ReceiveActor, IWithTimers
             }
         }
 
-        _state.ApplyKnownRuleSets(new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal));
+        _state.Apply(new KnownRuleSetsUpdate(new Dictionary<string, RuleSetPaths>(current, StringComparer.Ordinal)));
         _state.ClearPending();
 
         Telemetry.Scans.Up();

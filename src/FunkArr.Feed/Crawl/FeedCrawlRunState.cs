@@ -25,7 +25,7 @@ internal sealed class FeedCrawlRunState
         Lookup = lookup;
     }
 
-    public void ApplyAll(IReadOnlyList<ProcessPageResponse> results)
+    public void Apply(IReadOnlyList<ProcessPageResponse> results)
     {
         foreach (var result in results)
         {

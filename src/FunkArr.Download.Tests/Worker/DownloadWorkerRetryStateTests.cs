@@ -66,7 +66,7 @@ public sealed class DownloadWorkerRetryStateTests
     public void Re_initialize_after_failure_resets_progress()
     {
         var state = FailedState();
-        state.ApplyProgress(new DownloadProgress(500_000, 1_800_000_000, 2.5), DownloadPhase.VideoDownload, 500_000);
+        state.Apply(new WorkerProgress(new DownloadProgress(500_000, 1_800_000_000, 2.5), DownloadPhase.VideoDownload, 500_000));
 
         state.Apply(MakeInitialized());
 

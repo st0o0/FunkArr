@@ -2,6 +2,10 @@ using FunkArr.Messages.Feed;
 
 namespace FunkArr.Feed.Crawl;
 
+internal sealed record FilterResult(int NewItems, int Unmatched, bool ReachedEnd, int GroupCount);
+
+internal sealed record EvalFailure;
+
 internal sealed class FeedCrawlPageActorState
 {
     public static FeedCrawlPageActorState Empty => new();
@@ -15,15 +19,15 @@ internal sealed class FeedCrawlPageActorState
 
     public bool IsComplete => _pendingGroups == 0;
 
-    public void ApplyFilterResult(int newItems, int unmatched, bool reachedEnd, int groupCount)
+    public void Apply(FilterResult result)
     {
-        _totalNewItems = newItems;
-        _totalUnmatched = unmatched;
-        _reachedEnd = reachedEnd;
-        _pendingGroups = groupCount;
+        _totalNewItems = result.NewItems;
+        _totalUnmatched = result.Unmatched;
+        _reachedEnd = result.ReachedEnd;
+        _pendingGroups = result.GroupCount;
     }
 
-    public void ApplyGateResult(GateResult gate)
+    public void Apply(GateResult gate)
     {
         _accepted.AddRange(gate.Accepted);
         foreach (var (reason, count) in gate.RejectedByReason)
@@ -34,7 +38,7 @@ internal sealed class FeedCrawlPageActorState
         _pendingGroups--;
     }
 
-    public void ApplyEvalFailed() => _pendingGroups--;
+    public void Apply(EvalFailure _) => _pendingGroups--;
 
     public ProcessPageCompleted GetResult() =>
         new([.. _accepted], _totalNewItems, _totalUnmatched, _reachedEnd, _rejectedByReason);

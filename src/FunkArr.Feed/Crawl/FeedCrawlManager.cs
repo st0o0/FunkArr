@@ -305,7 +305,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         Command<CrawlPagesCompleted>(msg =>
         {
             var run = _runState!;
-            run.ApplyAll(msg.Results);
+            run.Apply(msg.Results);
 
             if (run.AcceptedEntries.Count == 0)
             {

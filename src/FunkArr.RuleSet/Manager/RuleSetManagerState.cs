@@ -2,6 +2,8 @@ using FunkArr.Messages.RuleSet;
 
 namespace FunkArr.RuleSet.Manager;
 
+public sealed record KnownRuleSetsUpdate(Dictionary<string, RuleSetPaths> RuleSets);
+
 public sealed class RuleSetManagerState
 {
     public Dictionary<string, RuleSetPaths> KnownRuleSets { get; private set; } = new(StringComparer.Ordinal);
@@ -15,9 +17,9 @@ public sealed class RuleSetManagerState
         Summaries.Remove(msg.RuleSetId);
     }
 
-    public void ApplyKnownRuleSets(Dictionary<string, RuleSetPaths> ruleSets)
+    public void Apply(KnownRuleSetsUpdate update)
     {
-        KnownRuleSets = ruleSets;
+        KnownRuleSets = update.RuleSets;
     }
 
     public void RequestFullRescan()
