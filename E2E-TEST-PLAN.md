@@ -104,24 +104,20 @@ Start-Sleep -Seconds 30
 ```powershell
 $apiKey = "funkarr-dev-api-key-01"
 
-# Add Schachnovelle (2021 German film)
-# Note: Radarr looks up movies via TMDB. Use Radarr's lookup to find the correct tmdbId
-# since TMDB IDs can change over time.
-$lookup = Invoke-RestMethod "http://localhost:7878/api/v3/movie/lookup?term=schachnovelle&apikey=$apiKey"
-$movie = $lookup | Where-Object { $_.year -eq 2021 } | Select-Object -First 1
-$body = $movie | ConvertTo-Json -Depth 5
-# Set required fields
-$movieObj = $movie | Select-Object *
-$movieObj.qualityProfileId = 1
-$movieObj.rootFolderPath = "/shared/movies"
-$movieObj.monitored = $true
-$movieObj.addOptions = @{ searchForMovie = $false }
+# Add Schachnovelle via TMDB ID lookup (must match the community ruleset's tmdbId=1740919,
+# imdbId=tt9781494). A title search may return a different TMDB entry with the same name.
+$lookup = Invoke-RestMethod "http://localhost:7878/api/v3/movie/lookup/tmdb?tmdbId=1740919&apikey=$apiKey"
+$movie = $lookup | ConvertTo-Json -Depth 10 | ConvertFrom-Json
+$movie | Add-Member -NotePropertyName qualityProfileId -NotePropertyValue 1 -Force
+$movie | Add-Member -NotePropertyName rootFolderPath -NotePropertyValue "/shared/movies" -Force
+$movie | Add-Member -NotePropertyName monitored -NotePropertyValue $true -Force
+$movie | Add-Member -NotePropertyName addOptions -NotePropertyValue @{searchForMovie=$false} -Force
 Invoke-RestMethod "http://localhost:7878/api/v3/movie?apikey=$apiKey" -Method Post `
-    -ContentType "application/json" -Body ($movieObj | ConvertTo-Json -Depth 5)
+    -ContentType "application/json" -Body ($movie | ConvertTo-Json -Depth 10)
 
 # Get movie ID
 $movies = Invoke-RestMethod "http://localhost:7878/api/v3/movie?apikey=$apiKey"
-$movieId = ($movies | Where-Object { $_.title -match "Schachnovelle" }).id
+$movieId = ($movies | Where-Object { $_.tmdbId -eq 1740919 }).id
 
 # Trigger movie search
 $searchBody = "{`"name`":`"MoviesSearch`",`"movieIds`":[$movieId]}"
@@ -255,8 +251,8 @@ these traps:
    returns the on-disk JSON format, or make minimal changes (e.g. only add an alias) rather
    than replacing the entire ruleset.
 
-3. **Enum values**: The API uses **numeric** enum values (strategy: 3 = TitleIncludes,
-   titleRule type: 0 = Static, field: 0 = Title). The on-disk format uses **string** enum
+3. **Enum values**: The API uses **numeric** enum values (strategy: 4 = TitleIncludes,
+   titleRule type: 1 = Static, field: 1 = Title; Unknown=0 is rejected). The on-disk format uses **string** enum
    values (strategy: "itemTitleIncludes", type: "static", field: "title"). Don't mix them.
 
 4. **Rule ID pattern**: Rule IDs must match `^[a-z][a-z0-9-]{2,}$` (lowercase, 3+ chars,
@@ -320,8 +316,9 @@ $apiKey = "funkarr-dev-api-key-01"
 # Register root folder first (required on fresh volumes)
 Invoke-RestMethod "http://localhost:8989/api/v3/rootfolder?apikey=$apiKey" -Method Post -ContentType "application/json" -Body '{"path":"/shared/tv"}'
 
-# Create /shared/tv dir if needed (funkarr container has write access)
-docker exec funkarr mkdir -p /shared/tv
+# Create /shared/tv and /shared/movies dirs, writable by all containers
+docker exec funkarr mkdir -p /shared/tv /shared/movies
+docker exec -u root funkarr chmod 777 /shared/tv /shared/movies
 
 # Add Tatort (for manual search tests)
 $body = '{"title":"Tatort","tvdbId":83214,"qualityProfileId":1,"rootFolderPath":"/shared/tv","monitored":true,"seasonFolder":false,"addOptions":{"searchForMissingEpisodes":false}}'
@@ -652,12 +649,13 @@ The test is only complete when Sonarr has imported the file — `downloadFolderI
 in the Sonarr history. A download that stays in `importBlocked` is a failure (usually
 a permissions issue on the shared volume).
 
-**Permission fix** (run once before import tests): The FunkArr container writes
-downloads as its own user (uid 1654). Sonarr runs as `nobody`. Fix shared volume
-permissions so Sonarr can read the completed downloads:
-```powershell
-docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777 /shared/downloads/complete/"
-```
+**Permissions**: FunkArr's `DataFiles` sets 666 (files) and 777 (directories) on every
+completed download automatically. No chmod on `/shared/downloads/complete/` is needed —
+but Sonarr must be able to write to the import targets (`/shared/tv`, `/shared/movies`).
+These are created with 777 in the Sonarr setup recipe above. **The critical requirement
+is waiting for all downloads to complete** before triggering `ProcessMonitoredDownloads` —
+running it while downloads are still in progress causes "Access denied" on files that
+haven't been moved to `complete/` yet.
 
 - [ ] **17.1** Trigger season search via Sonarr API (season search finds more matches than single-episode):
   ```
@@ -667,8 +665,8 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **17.2** FunkArr receives Newznab tvsearch request (check FunkArr logs for `tvsearch` query)
 - [ ] **17.3** Sonarr reports "Season search completed. N reports downloaded." with N > 0
 - [ ] **17.4** FunkArr download queue shows grabbed items (`GET /download/api?mode=queue`)
-- [ ] **17.5** Wait for downloads to complete: poll Sonarr queue until `totalRecords=0` or `status=completed`
-- [ ] **17.6** Fix permissions if needed (see above), trigger `ProcessMonitoredDownloads` command
+- [ ] **17.5** Wait for **all** downloads to complete: poll FunkArr history until the expected items appear as Completed/Failed (not Sonarr queue — FunkArr controls the download lifecycle)
+- [ ] **17.6** Trigger `ProcessMonitoredDownloads` command (no chmod needed — `DataFiles` sets permissions)
 - [ ] **17.7** Sonarr history shows `downloadFolderImported` events for the searched episodes
 - [ ] **17.8** Sonarr episode files exist: `GET /api/v3/episodefile?seriesId=<id>` returns files with correct season/quality
 - [ ] **17.9** MKV files on disk at `/shared/tv/<series>/<season>/`
@@ -702,7 +700,7 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 
 - [ ] **20.1** Caps: `GET /index/api?t=caps&apikey=<key>` → XML with server, limits, categories
 - [ ] **20.1a** Caps tv-search declares `supportedParams="q,season,ep,tvdbid,imdbid,tmdbid"` (all six params)
-- [ ] **20.2** TV search: `GET /index/api?t=tvsearch&tvdbid=83214&season=2026&ep=18&apikey=<key>` → Newznab RSS with items, season/episode attributes
+- [ ] **20.2** TV search: `GET /index/api?t=tvsearch&tvdbid=83214&season=2026&apikey=<key>` → Newznab RSS with items, season/episode attributes (season-only search; specific episode may not be in Mediathek)
 - [ ] **20.3** Pagination: offset=0 and offset=100 return different items, correct total
 - [ ] **20.4** General search: `GET /index/api?t=search&q=tatort&apikey=<key>`
 - [ ] **20.5** Movie search by IMDB: `GET /index/api?t=movie&imdbid=<id>&apikey=<key>`
@@ -725,10 +723,10 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **21.5** `GET /download/api?mode=queue&apikey=<key>` → queue listing, verify `mb`/`mbleft` have decimal format (e.g. `"100.0"`)
 - [ ] **21.6** `POST /download/api` with `mode=addfile` + NZB multipart → adds to queue
 - [ ] **21.7** `GET /download/api?mode=queue&name=delete&value=<id>&apikey=<key>` → removes item
-- [ ] **21.8** `GET /download/api?mode=queue&name=priority&value=<id>&value2=1&apikey=<key>` → changes priority
-- [ ] **21.9** `GET /download/api?mode=queue&name=switch&value=<id1>&value2=<id2>&apikey=<key>` → swaps items
-- [ ] **21.10** `GET /download/api?mode=pause&apikey=<key>` → pauses queue
-- [ ] **21.11** `GET /download/api?mode=resume&apikey=<key>` → resumes queue
+- [ ] **21.8** `GET /download/api?mode=queue&name=priority&value=<id>&value2=1&apikey=<key>` → `{"status":false,"error":"Invalid queue command"}` (removed — use internal API)
+- [ ] **21.9** `GET /download/api?mode=queue&name=switch&value=<id1>&value2=<id2>&apikey=<key>` → `{"status":false,"error":"Invalid queue command"}` (removed — use internal API)
+- [ ] **21.10** `GET /download/api?mode=pause&apikey=<key>` → `{"status":false,"error":"Invalid mode"}` (removed — use internal API)
+- [ ] **21.11** `GET /download/api?mode=resume&apikey=<key>` → `{"status":false,"error":"Invalid mode"}` (removed — use internal API)
 
 ### History
 - [ ] **21.12** `GET /download/api?mode=history&apikey=<key>` → history listing
@@ -781,7 +779,7 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **25.1** Pause button → pauses all downloads, toast confirmation
 - [ ] **25.2** Resume button → resumes paused pipeline, toast confirmation
 - [ ] **25.3** Force-start on queued item → bypasses concurrency limit, starts immediately
-- [ ] **25.4** Set priority on queue item via `{"priority": 1}` (integer enum: 0=Normal, 1=High, 2=Low) → item moves to correct priority section
+- [ ] **25.4** Set priority on queue item via `{"priority": 4}` (integer enum: 2=Low, 3=Normal, 4=High; 0 and 1 rejected) → item moves to correct priority section
 - [ ] **25.5** Move download to different position in queue
 - [ ] **25.6** Swap two downloads' positions
 - [ ] **25.7** Download detail page (`/activity/{id}`) loads with full download info
@@ -825,7 +823,7 @@ docker compose -f docker-compose.dev.yml exec -u root sonarr sh -c "chmod -R 777
 - [ ] **28.5** `POST /api/downloads/queue/resume` → resumes pipeline (200)
 - [ ] **28.6** `POST /api/downloads/queue/{id}/force-start` → bypasses limit
 - [ ] **28.7** `POST /api/downloads/queue/{id}/move` → repositions item
-- [ ] **28.8** `POST /api/downloads/queue/{id}/priority` with body `{"priority": 1}` (integer enum: 0=Normal, 1=High, 2=Low) → 200
+- [ ] **28.8** `POST /api/downloads/queue/{id}/priority` with body `{"priority": 4}` (integer enum: 2=Low, 3=Normal, 4=High; 0 and 1 rejected with 400) → 200
 - [ ] **28.9** `POST /api/downloads/queue/swap` → swaps two items
 
 ---
@@ -967,7 +965,7 @@ doesn't already have. Feed crawl completed with entries published.
 - [ ] **35.4** Sonarr reports "RSS Sync Completed. Reports found: N, Reports grabbed: M" with M > 0
 - [ ] **35.5** FunkArr download queue shows grabbed items: `GET /download/api?mode=queue&apikey=<key>` → slots present
 - [ ] **35.6** Wait for downloads to complete: poll FunkArr SABnzbd queue until slots empty or all completed
-- [ ] **35.7** Fix permissions on completed downloads (see section 17 note), trigger Sonarr `ProcessMonitoredDownloads`
+- [ ] **35.7** Trigger Sonarr `ProcessMonitoredDownloads` (no chmod needed — `DataFiles` sets permissions)
 - [ ] **35.8** Sonarr history shows `downloadFolderImported` events for RSS-grabbed episodes
 - [ ] **35.9** Sonarr episode list: `GET /api/v3/episodefile?seriesId=<id>` → files with quality, size, path
 - [ ] **35.10** MKV files on disk at `/shared/tv/<series>/<season>/` with correct naming
@@ -1049,8 +1047,8 @@ the state required by subsequent steps.
 26. **Resume pipeline**: `POST /api/downloads/queue/resume` - downloads start
 27. **Active download tests**: Queue tab during download, cancel one, global speed (sections 3.3-3.6, 18.1)
 28. **Wait for completions + failure**: Downloads finish, failed NZB produces failed entry
-29. **Search → Import verification**: Fix shared volume permissions, trigger Sonarr `ProcessMonitoredDownloads`, verify `downloadFolderImported` in Sonarr history, episode files exist (section 17.5-17.9)
-30. **Feed → Import verification**: Trigger RSS sync in Sonarr — "In aller Freundschaft" (never manually searched) provides fresh episodes for RSS grabs. Wait for downloads, fix permissions, verify `downloadFolderImported` in Sonarr history (section 35.1-35.10)
+29. **Search → Import verification**: Wait for all downloads to complete (poll FunkArr history), then trigger Sonarr `ProcessMonitoredDownloads`, verify `downloadFolderImported` in Sonarr history, episode files exist (section 17.5-17.9). No chmod needed — `DataFiles` sets 666/777 on completed downloads.
+30. **Feed → Import verification**: Trigger RSS sync in Sonarr — "In aller Freundschaft" (never manually searched) provides fresh episodes for RSS grabs. Wait for all downloads to complete, trigger `ProcessMonitoredDownloads`, verify `downloadFolderImported` in Sonarr history (section 35.1-35.10)
 31. **Generate history pagination data**: Upload 20 NZBs with bad URLs (10x show, 10x movie) via SABnzbd addfile, poll until history has >= 26 entries
 32. **History tests**: History tab, completed + failed status, retry, delete, category filter, pagination (sections 5, 18.3-18.5)
 33. **Dashboard (post-search)**: Download status bar, Anzeigen link, recent activity (section 1.5-1.8)

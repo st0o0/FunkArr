@@ -182,7 +182,7 @@ API Key: funkarr-dev-api-key-01
 | # | Test | Method |
 |---|------|--------|
 | 20.1 | Caps | GET /index/api?t=caps&apikey=<key> -> XML response with <server>, <limits>, <categories> |
-| 20.2 | TV search | GET /index/api?t=tvsearch&tvdbid=83214&season=2026&ep=18&apikey=<key> -> RSS XML with <item> elements, newznab:attr for season/episode |
+| 20.2 | TV search | GET /index/api?t=tvsearch&tvdbid=83214&season=2026&apikey=<key> -> RSS XML with <item> elements, newznab:attr for season/episode (season-only search; specific episode may not be in Mediathek) |
 | 20.3 | Pagination | GET with offset=0 then offset=100 -> different items or offset acknowledged |
 | 20.4 | General search | GET /index/api?t=search&q=tatort&apikey=<key> -> RSS with items |
 | 20.5 | Movie search IMDB | GET /index/api?t=movie&imdbid=tt9781494&apikey=<key> -> RSS |
@@ -313,14 +313,16 @@ Upload each: curl -s -X POST "http://localhost:6969/download/api?apikey=funkarr-
 
 3. Verify queue: GET queue, confirm 4 items with status "Queued".
 
-### Phase D: SABnzbd queue operations (with items in queue)
+### Phase D: SABnzbd queue delete (with items in queue)
 
-Run state guard. Then run all 3 operations in ONE PowerShell call:
+Run state guard. Priority and swap modes were removed from SABnzbd API — test they return errors:
 
 | # | Test | Method |
 |---|------|--------|
-| 21.8 | Priority | GET /download/api?mode=queue&name=priority&value=<id3>&value2=1&apikey=<key> -> priority changed. THEN reset it back: ?mode=queue&name=priority&value=<id3>&value2=0 (so all items have same priority for swap) |
-| 21.9 | Swap | GET /download/api?mode=queue&name=switch&value=<id1>&value2=<id2>&apikey=<key> -> swapped (both must have same priority — use items that were NOT priority-changed) |
+| 21.8 | Priority removed | GET /download/api?mode=queue&name=priority&value=<id3>&value2=1&apikey=<key> -> {"status":false,"error":"Invalid queue command"} |
+| 21.9 | Swap removed | GET /download/api?mode=queue&name=switch&value=<id1>&value2=<id2>&apikey=<key> -> {"status":false,"error":"Invalid queue command"} |
+| 21.10 | Pause removed | GET /download/api?mode=pause&apikey=<key> -> {"status":false,"error":"Invalid mode"} |
+| 21.11 | Resume removed | GET /download/api?mode=resume&apikey=<key> -> {"status":false,"error":"Invalid mode"} |
 | 21.7 | Delete | GET /download/api?mode=queue&name=delete&value=<id4>&apikey=<key> -> removed (delete the 4th item, keep 3 for Phase E) |
 
 ### Phase E: Internal queue operations (with 3 remaining items)
@@ -331,7 +333,7 @@ dispatches the item, so it must be last):
 | # | Test | Method |
 |---|------|--------|
 | 28.7 | Move | POST /api/downloads/queue/<id1>/move with {"position":0} -> 200 |
-| 28.8 | Priority | POST /api/downloads/queue/<id2>/priority with {"priority":"High"} -> 200. THEN reset: POST with {"priority":"Normal"} |
+| 28.8 | Priority | POST /api/downloads/queue/<id2>/priority with {"priority":4} -> 200 (enum: 2=Low, 3=Normal, 4=High; 0 and 1 rejected with 400). THEN reset: POST with {"priority":3} |
 | 28.9 | Swap | POST /api/downloads/queue/swap with {"id1":"<id1>","id2":"<id3>"} -> 200 (both must have same priority — verify with GET queue first) |
 | 28.6 | Force-start | POST /api/downloads/queue/<id1>/force-start -> 200 (run LAST — dispatches the item) |
 
@@ -346,12 +348,6 @@ dispatches the item, so it must be last):
 |---|------|--------|
 | 21.14 | Retry | GET /download/api?mode=retry&value=<FAILED_ID>&apikey=<key> -> success |
 | 21.13 | Delete history | GET /download/api?mode=history&name=delete&value=<any_id>&apikey=<key> -> removed |
-
-### Phase H: Pause/Resume via SABnzbd
-| # | Test | Method |
-|---|------|--------|
-| 21.10 | Pause | GET /download/api?mode=pause&apikey=<key> -> paused |
-| 21.11 | Resume | GET /download/api?mode=resume&apikey=<key> -> resumed |
 
 ## Output format
 
@@ -374,10 +370,11 @@ Base URL: http://localhost:6969
 Community ruleset ID (protected, cannot delete): <COMMUNITY_ID>  (substitute actual)
 
 IMPORTANT: The API uses NUMERIC enum values, not strings. When creating/updating rulesets:
-- strategy: 3 = TitleIncludes
-- titleRules type: 0 = Static, 1 = Regex
-- titleRules field: 0 = Title, 1 = Topic
+- strategy: 4 = TitleIncludes (0=Unknown, 1=SeasonAndEpisodeNumber, 2=AbsoluteEpisodeNumber, 3=TitleExact, 4=TitleIncludes, 5=AirdateExtraction)
+- titleRules type: 1 = Static (0=Unknown/rejected, 1=Static, 2=Regex)
+- titleRules field: 1 = Title (0=Unknown/rejected, 1=Title, 2=Topic)
 - Rule IDs must match ^[a-z][a-z0-9-]{2,}$ (lowercase, 3+ chars, kebab-case)
+- Unknown=0 is REJECTED by the API for all enum fields. Always use values >= 1.
 
 ## Test sequence
 
@@ -387,19 +384,19 @@ IMPORTANT: The API uses NUMERIC enum values, not strings. When creating/updating
 | 23.1 | List all | GET /api/rulesets -> JSON with rulesets array, each has ruleSetId, topic, sourceType |
 | 23.2 | Get detail | GET /api/rulesets/tatort -> JSON with ruleSetId, identity.topic, enrichment, rules |
 | 23.6 | Raw JSON | GET /api/rulesets/tatort/raw -> raw JSON ruleset file content |
-| 23.7 | Export | GET /api/rulesets/tatort/export -> export data JSON |
+| 23.7 | Export | SKIP in this agent — export requires a local overlay which only exists during Step 13 (tested by the main agent before overlay deletion). GET /api/rulesets/tatort/export -> 400 "No local overlay" is expected here. |
 
 ### Phase B: Create + Update + Delete lifecycle
 | # | Test | Method |
 |---|------|--------|
-| 23.3 | Create | POST /api/rulesets with JSON body: {"ruleSetId":"e2e-api-test","topic":"API Test Ruleset","media":{"name":"API Test","type":"show"},"rules":[{"id":"rule-api","strategy":3,"priority":1,"confidence":0.8,"titleRules":[{"type":0,"field":0,"value":"test"}]}]} -> 201 with {"ruleSetId":"e2e-api-test"} |
-| 23.4 | Update | PUT /api/rulesets/e2e-api-test with body: {"topic":"API Test Updated","media":{"name":"API Test Updated","type":"show"},"rules":[{"id":"rule-api","strategy":3,"priority":1,"confidence":0.8,"titleRules":[{"type":0,"field":0,"value":"test updated"}]}]} -> 200 |
+| 23.3 | Create | POST /api/rulesets with JSON body: {"ruleSetId":"e2e-api-test","topic":"API Test Ruleset","media":{"name":"API Test","type":1},"rules":[{"id":"rule-api","strategy":4,"priority":1,"confidence":0.8,"titleRules":[{"type":1,"field":1,"value":"test"}]}]} -> 201 with {"ruleSetId":"e2e-api-test"} |
+| 23.4 | Update | PUT /api/rulesets/e2e-api-test with body: {"topic":"API Test Updated","media":{"name":"API Test Updated","type":1},"rules":[{"id":"rule-api","strategy":4,"priority":1,"confidence":0.8,"titleRules":[{"type":1,"field":1,"value":"test updated"}]}]} -> 200 |
 | 23.5 | Delete | DELETE /api/rulesets/e2e-api-test -> 200 |
 
 ### Phase C: Test endpoint
 | # | Test | Method |
 |---|------|--------|
-| 23.8 | Test scoring | POST /api/rulesets/test with {"defaultConfidence":0.8,"rules":[{"id":"rule-test","strategy":3,"priority":1,"confidence":0.8,"titleRules":[{"type":0,"field":0,"value":"Tatort"}]}],"candidates":[{"title":"Tatort - Mord am See","topic":"Tatort","channel":"ARD","duration":5400}]} -> JSON with itemTraces array |
+| 23.8 | Test scoring | POST /api/rulesets/test with {"defaultConfidence":0.8,"rules":[{"id":"rule-test","strategy":4,"priority":1,"confidence":0.8,"titleRules":[{"type":1,"field":1,"value":"Tatort"}]}],"candidates":[{"title":"Tatort - Mord am See","topic":"Tatort","channel":"ARD","duration":5400}]} -> JSON with itemTraces array |
 
 ### Phase D: Error handling
 | # | Test | Method |
