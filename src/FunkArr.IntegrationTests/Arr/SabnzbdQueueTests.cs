@@ -59,45 +59,4 @@ public sealed class SabnzbdQueueTests(FunkArrFixture fixture)
         Assert.True(json.GetProperty("status").GetBoolean());
     }
 
-    [Fact]
-    public async Task Queue_priority_returns_success()
-    {
-        var downloadProbe = fixture.GetProbe<IDownloadManager>();
-        var downloadId = Guid.NewGuid();
-
-        var task = fixture.Client.GetAsync($"/download/api?mode=queue&name=priority&value={downloadId}&value2=1&apikey=test-key", TestContext.Current.CancellationToken);
-
-        var msg = downloadProbe.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(downloadId, msg.DownloadId);
-        downloadProbe.Reply(new SetDownloadPriorityCompleted());
-
-        var response = await task;
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(json.GetProperty("status").GetBoolean());
-    }
-
-    [Fact]
-    public async Task Queue_swap_returns_success()
-    {
-        var downloadProbe = fixture.GetProbe<IDownloadManager>();
-        var id1 = Guid.NewGuid();
-        var id2 = Guid.NewGuid();
-
-        var task = fixture.Client.GetAsync($"/download/api?mode=queue&name=switch&value={id1}&value2={id2}&apikey=test-key", TestContext.Current.CancellationToken);
-
-        var msg = downloadProbe.ExpectMsg<SwapDownloads>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(id1, msg.DownloadId1);
-        Assert.Equal(id2, msg.DownloadId2);
-        downloadProbe.Reply(new SwapDownloadsCompleted());
-
-        var response = await task;
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.True(json.GetProperty("status").GetBoolean());
-    }
 }

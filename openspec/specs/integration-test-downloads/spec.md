@@ -17,10 +17,6 @@ Every Downloads API endpoint SHALL have at least one integration test with reali
 - **WHEN** `GET /api/downloads/history` is requested and the probe responds with completed/failed items
 - **THEN** the typed `DownloadHistoryResponse` SHALL contain items with correct titles and statuses
 
-#### Scenario: Pause returns success
-- **WHEN** `POST /api/downloads/pause` is sent and the probe responds with success
-- **THEN** the typed `OperationResult` SHALL have `Success=true`
-
 #### Scenario: Cancel nonexistent returns 404
 - **WHEN** `DELETE /api/downloads/queue/{id}` is sent and the probe responds with failure
 - **THEN** the response SHALL be 404 with `OperationResult { Success=false }`

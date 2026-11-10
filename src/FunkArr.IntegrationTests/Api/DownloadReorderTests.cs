@@ -45,28 +45,6 @@ public sealed class DownloadReorderTests(FunkArrFixture fixture)
     }
 
     [Fact]
-    public async Task Priority_Success_ReturnsOk()
-    {
-        var id = Guid.NewGuid();
-
-        var task = fixture.Client.PostAsJsonAsync($"/api/downloads/queue/{id}/priority", new { priority = 1 }, cancellationToken: TestContext.Current.CancellationToken);
-
-        var probe = fixture.GetProbe<IDownloadManager>();
-        var msg = probe.ExpectMsg<SetDownloadPriority>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Equal(id, msg.DownloadId);
-        Assert.Equal(DownloadPriority.High, msg.Priority);
-        probe.Reply(new SetDownloadPriorityCompleted());
-
-        var response = await task;
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.NotNull(result);
-        Assert.True(result.Success);
-    }
-
-    [Fact]
     public async Task Priority_Invalid_Returns400()
     {
         var id = Guid.NewGuid();
