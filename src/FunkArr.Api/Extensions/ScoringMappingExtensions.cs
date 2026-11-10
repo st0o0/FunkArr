@@ -55,6 +55,7 @@ internal static class ScoringMappingExtensions
 
     internal static Models.Scoring.RuleOutcome ToApi(this RuleOutcome msg) => msg switch
     {
+        RuleOutcome.Unknown => Models.Scoring.RuleOutcome.Unknown,
         RuleOutcome.Matched => Models.Scoring.RuleOutcome.Matched,
         RuleOutcome.FilterFailed => Models.Scoring.RuleOutcome.FilterFailed,
         RuleOutcome.IdentificationFailed => Models.Scoring.RuleOutcome.IdentificationFailed,
@@ -63,6 +64,7 @@ internal static class ScoringMappingExtensions
 
     internal static FilterOperator ToApi(this FilterGroupOp value) => value switch
     {
+        FilterGroupOp.Unknown => FilterOperator.Unknown,
         FilterGroupOp.All => FilterOperator.All,
         FilterGroupOp.Any => FilterOperator.Any,
         FilterGroupOp.Not => FilterOperator.Not,

@@ -8,6 +8,7 @@ internal static class FeedMappingExtensions
     internal static Models.Feed.CrawlOutcome ToApi(this Messages.Feed.CrawlOutcome value) =>
         value switch
         {
+            Messages.Feed.CrawlOutcome.Unknown => Models.Feed.CrawlOutcome.Unknown,
             Messages.Feed.CrawlOutcome.Completed => Models.Feed.CrawlOutcome.Completed,
             Messages.Feed.CrawlOutcome.CompletedWithGap => Models.Feed.CrawlOutcome.CompletedWithGap,
             Messages.Feed.CrawlOutcome.Unchanged => Models.Feed.CrawlOutcome.Unchanged,

@@ -259,7 +259,7 @@ const props = defineProps<{
     tvdbId?: number | null
     tmdbId?: number | null
     imdbId?: string
-    mediaType?: string
+    mediaType?: number
   }
 }>()
 

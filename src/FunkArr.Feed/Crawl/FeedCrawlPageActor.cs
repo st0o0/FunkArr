@@ -9,8 +9,10 @@ using Terp.Akka;
 
 namespace FunkArr.Feed.Crawl;
 
-public sealed class FeedCrawlPageActor : ReceiveActor
+public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
 {
+    public IStash Stash { get; set; } = null!;
+
     private static readonly TimeSpan _mediathekTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan _evaluationTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan _maxLead = TimeSpan.FromDays(90);
@@ -21,11 +23,11 @@ public sealed class FeedCrawlPageActor : ReceiveActor
     private sealed record EvalFailed(string RuleSetId, string Reason);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
+    private readonly IActorRef _manager = Context.GetActor<IFeedCrawlManager>();
     private readonly IActorRef _mediathek = Context.GetActor<IMediathekManager>();
     private readonly IActorRef _tvEvaluation = Context.GetActor<ITvEvaluationRegion>();
     private readonly IActorRef _movieEvaluation = Context.GetActor<IMovieEvaluationRegion>();
 
-    private IActorRef _replyTo = ActorRefs.Nobody;
     private int _pendingGroups;
     private int _totalNewItems;
     private int _totalUnmatched;
@@ -45,7 +47,6 @@ public sealed class FeedCrawlPageActor : ReceiveActor
 
     private void HandleProcessPage(ProcessPage msg)
     {
-        _replyTo = Sender;
         _pendingGroups = 0;
         _totalNewItems = 0;
         _totalUnmatched = 0;
@@ -73,6 +74,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor
     {
         Receive<FetchCompleted>(HandleFetchCompleted);
         Receive<FetchFailed>(HandleFetchFailed);
+        Receive<ProcessPage>(_ => Stash.Stash());
     }
 
     private void HandleFetchCompleted(FetchCompleted msg)
@@ -188,14 +190,16 @@ public sealed class FeedCrawlPageActor : ReceiveActor
 
     private void HandleFetchFailed(FetchFailed msg)
     {
-        _replyTo.Tell(new PageProcessed([], 0, 0, true, null, msg.Reason));
+        _manager.Tell(new PageProcessed([], 0, 0, true, null, msg.Reason));
         Become(Ready);
+        Stash.UnstashAll();
     }
 
     private void Evaluating()
     {
         Receive<EvalCompleted>(HandleEvalCompleted);
         Receive<EvalFailed>(HandleEvalFailed);
+        Receive<ProcessPage>(_ => Stash.Stash());
     }
 
     private void HandleEvalCompleted(EvalCompleted result)
@@ -233,7 +237,8 @@ public sealed class FeedCrawlPageActor : ReceiveActor
             ? (IReadOnlyDictionary<RejectionReason, int>)_rejectedByReason
             : null;
 
-        _replyTo.Tell(new PageProcessed([.. _accepted], _totalNewItems, _totalUnmatched, _reachedEnd, rejected, null));
+        _manager.Tell(new PageProcessed([.. _accepted], _totalNewItems, _totalUnmatched, _reachedEnd, rejected, null));
         Become(Ready);
+        Stash.UnstashAll();
     }
 }

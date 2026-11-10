@@ -68,11 +68,11 @@
               <div>
                 <label class="block text-xs text-text-body mb-1 font-medium">{{ $t('builder.mediaType') }}</label>
                 <select
-                  v-model="form.mediaType"
+                  v-model.number="form.mediaType"
                   class="w-full bg-surface-elevated border border-border-default rounded-md px-3 py-1.5 text-sm text-text-body focus:outline-none focus:border-border-focus"
                 >
-                  <option value="show">{{ $t('builder.show') }}</option>
-                  <option value="movie">{{ $t('builder.movie') }}</option>
+                  <option :value="1">{{ $t('builder.show') }}</option>
+                  <option :value="2">{{ $t('builder.movie') }}</option>
                 </select>
               </div>
               <div>
@@ -480,7 +480,7 @@ const form = reactive({
   ruleSetId: '',
   topic: '',
   aliases: [] as string[],
-  mediaType: 'show',
+  mediaType: 1,
   mediaName: '',
   tvdbId: null as number | null,
   imdbId: '',
@@ -524,8 +524,8 @@ const ruleSetIdError = computed(() => {
 
 const enrichmentHint = computed(() => {
   if (!form.enrichment.enabled) return ''
-  if (form.mediaType === 'show' && !form.tvdbId) return t('builder.enrichmentHintShow')
-  if (form.mediaType === 'movie' && !form.tmdbId && !form.imdbId) return t('builder.enrichmentHintMovie')
+  if (form.mediaType === 1 && !form.tvdbId) return t('builder.enrichmentHintShow')
+  if (form.mediaType === 2 && !form.tmdbId && !form.imdbId) return t('builder.enrichmentHintMovie')
   return ''
 })
 
@@ -700,7 +700,7 @@ onMounted(async () => {
     form.ruleSetId = editId
     form.topic = detail.identity.topic || ''
     form.aliases = detail.identity.aliases ? [...detail.identity.aliases] : []
-    form.mediaType = 'show'
+    form.mediaType = 1
     form.mediaName = detail.identity.topic || ''
     mediaNameEdited.value = false
     isCommunitySource.value = detail.source.communityPath != null

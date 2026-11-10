@@ -30,7 +30,7 @@ public sealed class FeedCrawlManagerTests : TestKit
         Akka.TestKit.TestProbe Movie,
         Akka.TestKit.TestProbe Store);
 
-    private (IActorRef Manager, Probes Probes) Create()
+    private (IActorRef Manager, Probes Probes) Create(FeedOptions? feedOptions = null)
     {
         var probes = new Probes(CreateTestProbe(), CreateTestProbe(), CreateTestProbe(), CreateTestProbe(), CreateTestProbe());
         var registry = ActorRegistry.For(Sys);
@@ -41,9 +41,11 @@ public sealed class FeedCrawlManagerTests : TestKit
         registry.Register<IFeedStoreManager>(probes.Store);
 
         var options = Substitute.For<IOptionsMonitor<FeedOptions>>();
-        options.CurrentValue.Returns(new FeedOptions { PageSize = 2, MaxPages = 2, MaxConcurrency = 2 });
+        options.CurrentValue.Returns(feedOptions ?? new FeedOptions { PageSize = 2, MaxPages = 2, MaxConcurrency = 2 });
 
-        return (Sys.ActorOf(Props.Create(() => new FeedCrawlManager(options, TimeProvider.System))), probes);
+        var manager = Sys.ActorOf(Props.Create(() => new FeedCrawlManager(options, TimeProvider.System)));
+        registry.Register<IFeedCrawlManager>(manager);
+        return (manager, probes);
     }
 
     private static void AnswerProbe(Probes p, long listTimestamp = ListTimestamp)
@@ -197,5 +199,30 @@ public sealed class FeedCrawlManagerTests : TestKit
         p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
         manager.Tell(new QueryFeedCrawlStatus());
         Assert.True(ExpectMsg<FeedCrawlStatusResult>(cancellationToken: TestContext.Current.CancellationToken).Running);
+    }
+
+    [Fact]
+    public void Stashed_page_is_processed_after_current_page_completes()
+    {
+        var (manager, p) = Create();
+        var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp, url: "https://example.com/tatort1.mp4");
+        var old = TestData.Item("Alt", "Tatort", ListTimestamp - 400_000);
+
+        manager.Tell(new StartFeedCrawl());
+        AnswerProbe(p);
+        AnswerRuleSets(p);
+        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort, old] : [old], 2, ListTimestamp));
+
+        var eval1 = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
+        p.Tv.Reply(new EvaluateSeriesCompleted(eval1.SearchId, [TestData.Result("https://example.com/tatort1.mp4")], 1));
+
+        var publish = p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Single(publish.Entries);
+        p.Store.Reply(new PublishFeedEntriesCompleted(1));
+
+        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
+        Assert.Multiple(
+            () => Assert.Equal(CrawlOutcome.Completed, status.LastOutcome),
+            () => Assert.False(status.Running));
     }
 }
