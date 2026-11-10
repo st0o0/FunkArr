@@ -9,8 +9,6 @@ internal sealed class FeedCrawlRunState
     public long ListTimestamp { get; }
     public CrawlWindow Window { get; }
     public RuleSetLookup Lookup { get; }
-    public int PendingPages { get; private set; }
-    public int NextOffset { get; private set; }
     public bool ReachedEnd { get; private set; }
     public bool HasPageError { get; private set; }
     public string? FirstPageError { get; private set; }
@@ -18,7 +16,6 @@ internal sealed class FeedCrawlRunState
     public int TotalUnmatched { get; private set; }
     public List<FeedEntry> AcceptedEntries { get; } = [];
     public Dictionary<RejectionReason, int> RejectedByReason { get; } = [];
-    public int PagesFired { get; private set; }
 
     public FeedCrawlRunState(CrawlInput input, long listTimestamp, CrawlWindow window, RuleSetLookup lookup)
     {
@@ -28,27 +25,16 @@ internal sealed class FeedCrawlRunState
         Lookup = lookup;
     }
 
-    public bool HasMorePages => !ReachedEnd && PagesFired < Input.MaxPages;
-
-    public void StartCrawling(int initialRequests)
+    public void ApplyAll(IReadOnlyList<PageProcessed> results)
     {
-        PendingPages = initialRequests;
-        PagesFired = initialRequests;
-        NextOffset = initialRequests * Input.PageSize;
-    }
-
-    public ProcessPage NextPageRequest()
-    {
-        PendingPages++;
-        PagesFired++;
-        var offset = NextOffset;
-        NextOffset += Input.PageSize;
-        return new ProcessPage(offset, Window, Input.PageSize, Lookup, Input.MinConfidence);
+        foreach (var result in results)
+        {
+            Apply(result);
+        }
     }
 
     public void Apply(PageProcessed result)
     {
-        PendingPages--;
         ReachedEnd = ReachedEnd || result.ReachedEnd;
 
         if (result.Error is not null)

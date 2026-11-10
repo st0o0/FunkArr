@@ -202,7 +202,7 @@ public sealed class FeedCrawlManagerTests : TestKit
     }
 
     [Fact]
-    public void Stashed_page_is_processed_after_current_page_completes()
+    public void Multiple_pages_are_processed_and_published()
     {
         var (manager, p) = Create();
         var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp, url: "https://example.com/tatort1.mp4");

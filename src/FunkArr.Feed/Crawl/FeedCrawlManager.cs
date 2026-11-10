@@ -1,7 +1,9 @@
+using System.Collections.Immutable;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Persistence;
-using Akka.Routing;
+using Akka.Streams;
+using Akka.Streams.Dsl;
 using FunkArr.Core.Actors;
 using FunkArr.Core.Configuration;
 using FunkArr.Messages.Feed;
@@ -23,6 +25,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
     private static readonly TimeSpan _mediathekTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan _ruleSetTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _publishTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _pageTimeout = TimeSpan.FromSeconds(120);
 
     private sealed record Tick;
     private sealed record OptionsChanged;
@@ -30,6 +33,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
     private sealed record ProbeFailed(string Reason);
     private sealed record RuleSetsLoaded(RegisteredRuleSetsResult Result);
     private sealed record RuleSetsFailed(string Reason);
+    private sealed record CrawlPagesCompleted(IImmutableList<PageProcessed> Results);
+    private sealed record CrawlPagesFailed(string Reason);
     private sealed record PublishCompleted(int Published);
     private sealed record PublishFailed(string Reason);
 
@@ -39,10 +44,11 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
     private readonly IActorRef _store;
     private readonly IOptionsMonitor<FeedOptions> _feedOptions;
     private readonly TimeProvider _timeProvider;
+    private readonly IMaterializer _materializer = Context.Materializer();
     private FeedCrawlManagerState _state = new();
     private FeedCrawlRunState? _runState;
     private bool _running;
-    private IActorRef _pagePool = ActorRefs.Nobody;
+    private IActorRef[] _pageActors = [];
 
     public ITimerScheduler Timers { get; set; } = null!;
 
@@ -70,7 +76,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         Recover<RecoveryCompleted>(_ =>
         {
             _state.Apply(_feedOptions.CurrentValue);
-            _pagePool = CreatePagePool();
+            _pageActors = CreatePageActors();
 
             var self = Self;
             _feedOptions.OnChange((_, _) => self.Tell(new OptionsChanged()));
@@ -79,15 +85,6 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         });
 
         Idle();
-    }
-
-    private IActorRef CreatePagePool()
-    {
-        var concurrency = Math.Max(1, _feedOptions.CurrentValue.MaxConcurrency);
-        return Context.ActorOf(
-            Props.Create<FeedCrawlPageActor>()
-                .WithRouter(new SmallestMailboxPool(concurrency)),
-            "page-pool");
     }
 
     private void RegisterSnapshotHandlers()
@@ -116,39 +113,47 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
 
     private void Idle()
     {
-        Command<Tick>(_ => HandleTick());
+        Command<Tick>(_ =>
+        {
+            if (_state.Enabled)
+            {
+                StartProbe();
+            }
+
+            ScheduleNext(_state.Interval);
+        });
         Command<StartFeedCrawl>(_ => StartProbe());
-        Command<OptionsChanged>(_ => HandleOptionsChanged());
+        Command<OptionsChanged>(_ =>
+        {
+            var previousInterval = _state.Interval;
+            _state.Apply(_feedOptions.CurrentValue);
+
+            if (_state.Interval != previousInterval)
+            {
+                _log.Info("Feed crawl interval changed from {Old} to {New}", previousInterval, _state.Interval);
+                ScheduleNext(_state.Interval);
+            }
+        });
         RegisterStatusHandler();
         RegisterSnapshotHandlers();
-    }
-
-    private void HandleTick()
-    {
-        if (_state.Enabled)
-        {
-            StartProbe();
-        }
-
-        ScheduleNext(_state.Interval);
-    }
-
-    private void HandleOptionsChanged()
-    {
-        var previousInterval = _state.Interval;
-        _state.Apply(_feedOptions.CurrentValue);
-
-        if (_state.Interval != previousInterval)
-        {
-            _log.Info("Feed crawl interval changed from {Old} to {New}", previousInterval, _state.Interval);
-            ScheduleNext(_state.Interval);
-        }
     }
 
     private void ScheduleNext(TimeSpan delay) =>
         Timers.StartSingleTimer(TimerKey, new Tick(), delay);
 
-    // === Probing ===
+    private IActorRef[] CreatePageActors()
+    {
+        var concurrency = Math.Max(1, _feedOptions.CurrentValue.MaxConcurrency);
+        var actors = new IActorRef[concurrency];
+        for (var i = 0; i < concurrency; i++)
+        {
+            actors[i] = Context.ActorOf(Props.Create<FeedCrawlPageActor>(), $"page-{i}");
+        }
+
+        return actors;
+    }
+
+    // === Probing (probe + ruleset loading) ===
 
     private void StartProbe()
     {
@@ -176,81 +181,61 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
 
     private void Probing()
     {
-        Command<ProbeResult>(HandleProbeResult);
-        Command<ProbeFailed>(HandleProbeFailed);
-        Command<Tick>(_ => ScheduleNext(_state.Interval));
-        Command<OptionsChanged>(_ => _state.Apply(_feedOptions.CurrentValue));
-        RegisterStatusHandler();
-        RegisterSnapshotHandlers();
-    }
-
-    private void HandleProbeResult(ProbeResult probe)
-    {
-        if (probe.ListTimestamp <= 0 || probe.ListTimestamp <= _state.Cursor)
+        Command<ProbeResult>(probe =>
         {
-            _state.WithUnchangedRun(_timeProvider.GetUtcNow());
-            RecordUnchangedTelemetry();
+            if (probe.ListTimestamp <= 0 || probe.ListTimestamp <= _state.Cursor)
+            {
+                _state.WithUnchangedRun(_timeProvider.GetUtcNow());
+                RecordUnchangedTelemetry();
+                ReturnToIdle();
+                return;
+            }
+
+            var feed = _feedOptions.CurrentValue;
+            var input = new CrawlInput(
+                _state.Cursor, Math.Max(1, feed.PageSize), Math.Max(1, feed.MaxPages),
+                Math.Max(1, feed.PagePrefetch), feed.MaxConcurrency, feed.MinConfidence,
+                feed.InitialLookback, feed.MaxCatchUp, _timeProvider.GetTimestamp());
+
+            _runState = new FeedCrawlRunState(input, probe.ListTimestamp,
+                ComputeWindow(input, probe.ListTimestamp), RuleSetLookup.Empty);
+
+            _ruleSetResolver.Ask<RegisteredRuleSetsResult>(
+                    new QueryRegisteredRuleSets(), _ruleSetTimeout)
+                .PipeTo(Self,
+                    success: result => new RuleSetsLoaded(result),
+                    failure: ex => new RuleSetsFailed(ex.Message));
+        });
+
+        Command<RuleSetsLoaded>(msg =>
+        {
+            var lookup = RuleSetLookup.From(msg.Result.Entries);
+            _runState = new FeedCrawlRunState(_runState!.Input, _runState.ListTimestamp, _runState.Window, lookup);
+
+            _log.Debug("Feed crawl probed: listTimestamp={ListTimestamp}, window=[{Lower},{Upper}], truncated={Truncated}",
+                _runState.ListTimestamp, _runState.Window.LowerBound, _runState.Window.UpperBound,
+                _runState.Window.Truncated);
+
+            StartCrawling();
+        });
+
+        Command<ProbeFailed>(msg =>
+        {
+            _log.Warning("Feed probe failed: {Reason}", msg.Reason);
             ReturnToIdle();
-            return;
-        }
+        });
 
-        StartLoadingRuleSets(probe.ListTimestamp);
-    }
+        Command<RuleSetsFailed>(msg =>
+        {
+            _log.Warning("Feed ruleset loading failed: {Reason}", msg.Reason);
+            _runState = null;
+            ReturnToIdle();
+        });
 
-    private void HandleProbeFailed(ProbeFailed msg)
-    {
-        _log.Warning("Feed probe failed: {Reason}", msg.Reason);
-        ReturnToIdle();
-    }
-
-    // === LoadingRuleSets ===
-
-    private void StartLoadingRuleSets(long listTimestamp)
-    {
-        var feed = _feedOptions.CurrentValue;
-        var input = new CrawlInput(
-            _state.Cursor, Math.Max(1, feed.PageSize), Math.Max(1, feed.MaxPages),
-            Math.Max(1, feed.PagePrefetch), feed.MaxConcurrency, feed.MinConfidence,
-            feed.InitialLookback, feed.MaxCatchUp, _timeProvider.GetTimestamp());
-
-        _runState = new FeedCrawlRunState(input, listTimestamp,
-            ComputeWindow(input, listTimestamp), RuleSetLookup.Empty);
-
-        _ruleSetResolver.Ask<RegisteredRuleSetsResult>(
-                new QueryRegisteredRuleSets(), _ruleSetTimeout)
-            .PipeTo(Self,
-                success: result => new RuleSetsLoaded(result),
-                failure: ex => new RuleSetsFailed(ex.Message));
-
-        Become(LoadingRuleSets);
-    }
-
-    private void LoadingRuleSets()
-    {
-        Command<RuleSetsLoaded>(HandleRuleSetsLoaded);
-        Command<RuleSetsFailed>(HandleRuleSetsFailed);
         Command<Tick>(_ => ScheduleNext(_state.Interval));
         Command<OptionsChanged>(_ => _state.Apply(_feedOptions.CurrentValue));
         RegisterStatusHandler();
         RegisterSnapshotHandlers();
-    }
-
-    private void HandleRuleSetsLoaded(RuleSetsLoaded msg)
-    {
-        var lookup = RuleSetLookup.From(msg.Result.Entries);
-        _runState = new FeedCrawlRunState(_runState!.Input, _runState.ListTimestamp, _runState.Window, lookup);
-
-        _log.Debug("Feed crawl probed: listTimestamp={ListTimestamp}, window=[{Lower},{Upper}], truncated={Truncated}",
-            _runState.ListTimestamp, _runState.Window.LowerBound, _runState.Window.UpperBound, _runState.Window.Truncated);
-
-        StartCrawling();
-    }
-
-    private void HandleRuleSetsFailed(RuleSetsFailed msg)
-    {
-        _log.Warning("Feed ruleset loading failed: {Reason}", msg.Reason);
-        _runState = null;
-        ReturnToIdle();
     }
 
     private CrawlWindow ComputeWindow(CrawlInput input, long listTimestamp)
@@ -260,7 +245,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
 
         if (cursor <= 0)
         {
-            return new CrawlWindow(Math.Max(0, listTimestamp - (long)input.InitialLookback.TotalSeconds), listTimestamp);
+            return new CrawlWindow(Math.Max(0, listTimestamp - (long)input.InitialLookback.TotalSeconds),
+                listTimestamp);
         }
 
         if (listTimestamp - catchUp is var earliest && cursor < earliest)
@@ -271,103 +257,83 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         return new CrawlWindow(cursor, listTimestamp);
     }
 
-    // === Crawling ===
+    // === Crawling (pages + publishing) ===
 
     private void StartCrawling()
     {
         var run = _runState!;
-        var initialRequests = Math.Min(run.Input.MaxConcurrency, run.Input.MaxPages);
-        run.StartCrawling(initialRequests);
 
-        for (var i = 0; i < initialRequests; i++)
-        {
-            _pagePool.Tell(new ProcessPage(
-                i * run.Input.PageSize, run.Window, run.Input.PageSize, run.Lookup, run.Input.MinConfidence));
-        }
+        var pageActors = _pageActors;
+        var pageSize = run.Input.PageSize;
+
+        Source.From(Enumerable.Range(0, run.Input.MaxPages))
+            .Select(i => i * pageSize)
+            .SelectAsync(pageActors.Length, offset =>
+                pageActors[(offset / pageSize) % pageActors.Length].Ask<PageProcessed>(
+                    new ProcessPage(offset, run.Window, pageSize,
+                        run.Lookup, run.Input.MinConfidence),
+                    _pageTimeout))
+            .TakeWhile(r => !r.ReachedEnd, inclusive: true)
+            .RunWith(Sink.Seq<PageProcessed>(), _materializer)
+            .PipeTo(Self,
+                success: results => new CrawlPagesCompleted(results),
+                failure: ex => new CrawlPagesFailed(ex.Message));
 
         Become(Crawling);
     }
 
     private void Crawling()
     {
-        Command<PageProcessed>(HandlePageProcessed);
+        Command<CrawlPagesCompleted>(msg =>
+        {
+            var run = _runState!;
+            run.ApplyAll(msg.Results);
+
+            if (run.AcceptedEntries.Count == 0)
+            {
+                CompleteCrawl(run.GetCrawlResult(Elapsed()));
+                return;
+            }
+
+            _store.Ask<PublishFeedEntriesResponse>(
+                    new PublishFeedEntries([.. run.AcceptedEntries]), _publishTimeout)
+                .PipeTo(Self,
+                    success: response => response switch
+                    {
+                        PublishFeedEntriesCompleted c => new PublishCompleted(c.Published),
+                        PublishFeedEntriesFailed f => new PublishFailed(f.Cause.Message),
+                        _ => new PublishFailed("unexpected publish response")
+                    },
+                    failure: ex => new PublishFailed(ex.Message));
+        });
+
+        Command<PublishCompleted>(_ =>
+            CompleteCrawl(_runState!.GetCrawlResult(Elapsed())));
+
+        Command<PublishFailed>(msg =>
+        {
+            var run = _runState!;
+            CompleteCrawl(CrawlResult.ForFailed(run.ListTimestamp,
+                run.TotalNewItems, run.TotalUnmatched, 0,
+                run.Window.Truncated, Elapsed(), msg.Reason));
+        });
+
+        Command<CrawlPagesFailed>(msg =>
+        {
+            var run = _runState!;
+            CompleteCrawl(CrawlResult.ForFailed(run.ListTimestamp,
+                0, 0, 0, run.Window.Truncated, Elapsed(), msg.Reason));
+        });
+
         Command<Tick>(_ => ScheduleNext(_state.Interval));
         Command<OptionsChanged>(_ => _state.Apply(_feedOptions.CurrentValue));
         RegisterStatusHandler();
         RegisterSnapshotHandlers();
     }
 
-    private void HandlePageProcessed(PageProcessed result)
-    {
-        var run = _runState!;
-        run.Apply(result);
+    private TimeSpan Elapsed() => _timeProvider.GetElapsedTime(_runState!.Input.StartedAt);
 
-        if (run.HasMorePages && run.PendingPages < run.Input.MaxConcurrency)
-        {
-            var page = run.NextPageRequest();
-            _pagePool.Tell(page);
-        }
-
-        if (run.PendingPages > 0)
-        {
-            return;
-        }
-
-        if (run.AcceptedEntries.Count > 0)
-        {
-            StartPublishing();
-        }
-        else
-        {
-            CompleteCrawl(run.GetCrawlResult(_timeProvider.GetElapsedTime(run.Input.StartedAt)));
-        }
-    }
-
-    // === Publishing ===
-
-    private void StartPublishing()
-    {
-        var run = _runState!;
-
-        _store.Ask<PublishFeedEntriesResponse>(
-                new PublishFeedEntries([.. run.AcceptedEntries]), _publishTimeout)
-            .PipeTo(Self,
-                success: response => response switch
-                {
-                    PublishFeedEntriesCompleted c => new PublishCompleted(c.Published),
-                    PublishFeedEntriesFailed f => new PublishFailed(f.Cause.Message),
-                    _ => new PublishFailed("unexpected publish response")
-                },
-                failure: ex => new PublishFailed(ex.Message));
-
-        Become(Publishing);
-    }
-
-    private void Publishing()
-    {
-        Command<PublishCompleted>(HandlePublishCompleted);
-        Command<PublishFailed>(HandlePublishFailed);
-        Command<Tick>(_ => ScheduleNext(_state.Interval));
-        Command<OptionsChanged>(_ => _state.Apply(_feedOptions.CurrentValue));
-        RegisterStatusHandler();
-        RegisterSnapshotHandlers();
-    }
-
-    private void HandlePublishCompleted(PublishCompleted _)
-    {
-        CompleteCrawl(_runState!.GetCrawlResult(_timeProvider.GetElapsedTime(_runState.Input.StartedAt)));
-    }
-
-    private void HandlePublishFailed(PublishFailed msg)
-    {
-        var run = _runState!;
-        CompleteCrawl(CrawlResult.ForFailed(run.ListTimestamp,
-            run.TotalNewItems, run.TotalUnmatched, 0,
-            run.Window.Truncated,
-            _timeProvider.GetElapsedTime(run.Input.StartedAt), msg.Reason));
-    }
-
-    // === Result handling ===
+    // === Completion ===
 
     private void CompleteCrawl(CrawlResult result)
     {
