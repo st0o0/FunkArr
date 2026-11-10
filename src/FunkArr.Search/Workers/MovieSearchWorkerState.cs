@@ -76,7 +76,8 @@ public sealed class MovieSearchWorkerState
     public void Apply(QueryMediathekCompleted result) => Items = result.Items;
 
     public EvaluateMovies ToEvaluation(Guid evaluationId) =>
-        new(evaluationId, Source, Items, ImdbId, TmdbId, RuleSet);
+        new(evaluationId, Source, Items, ImdbId, TmdbId,
+            RuleSet?.RuleSetId, RuleSet?.MediaName, RuleSet?.Enrichment);
 
     public SearchMovieCompleted ToSearchCompleted(EvaluateMoviesCompleted evaluation) =>
         new(SearchId, evaluation.Items, evaluation.Items.Length);

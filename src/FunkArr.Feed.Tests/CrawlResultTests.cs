@@ -5,9 +5,9 @@ namespace FunkArr.Feed.Tests;
 public sealed class CrawlResultTests
 {
     [Fact]
-    public void ForCompleted_sets_status_and_fields()
+    public void Completed_sets_status_and_fields()
     {
-        var result = CrawlResult.ForCompleted(1000, 10, 2, 5, false, TimeSpan.FromSeconds(3));
+        var result = new CrawlResult(CrawlOutcome.Completed, 1000, 10, 5, 2, false, TimeSpan.FromSeconds(3), null);
 
         Assert.Multiple(
             () => Assert.Equal(CrawlOutcome.Completed, result.Status),
@@ -20,9 +20,9 @@ public sealed class CrawlResultTests
     }
 
     [Fact]
-    public void ForFailed_sets_error()
+    public void Failed_sets_error()
     {
-        var result = CrawlResult.ForFailed(500, 3, 1, 0, true, TimeSpan.FromSeconds(1), "boom");
+        var result = new CrawlResult(CrawlOutcome.Failed, 500, 3, 0, 1, true, TimeSpan.FromSeconds(1), "boom");
 
         Assert.Multiple(
             () => Assert.Equal(CrawlOutcome.Failed, result.Status),
@@ -31,9 +31,9 @@ public sealed class CrawlResultTests
     }
 
     [Fact]
-    public void ForUnchanged_has_zero_counts()
+    public void Unchanged_has_zero_counts()
     {
-        var result = CrawlResult.ForUnchanged(800, TimeSpan.FromMilliseconds(50));
+        var result = new CrawlResult(CrawlOutcome.Unchanged, 800, 0, 0, 0, false, TimeSpan.FromMilliseconds(50), null);
 
         Assert.Multiple(
             () => Assert.Equal(CrawlOutcome.Unchanged, result.Status),

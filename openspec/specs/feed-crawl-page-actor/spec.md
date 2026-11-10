@@ -8,17 +8,17 @@ Defines the FeedCrawlPageActor pool routee that fetches one MVW page, groups ite
 
 ### Requirement: FeedCrawlPageActor processes one page end-to-end
 
-FeedCrawlPageActor SHALL be a non-persistent ReceiveActor pool routee that receives a `ProcessPage` message and independently fetches one MVW page, filters by window, groups by ruleset, evaluates via Search domain, applies FeedGate, and replies with `ProcessPageResponse`.
+FeedCrawlPageActor SHALL be a non-persistent ReceiveActor pool routee that receives a `ProcessPage` message and independently fetches one MVW page, filters by window, groups by ruleset, evaluates via Search domain, applies gating logic (private static methods), and replies with `ProcessPageResponse`.
 
 #### Scenario: Successful page processing
 
 - **WHEN** FeedCrawlPageActor receives ProcessPage(offset=0, window, pageSize=1000, lookup, minConfidence=0.7)
 - **THEN** it SHALL Ask MediathekManager for the page
 - **AND** filter items by the crawl window bounds
-- **AND** deduplicate by stable ID (FeedGate.StableIdFor)
-- **AND** group filtered items by ruleset via RuleSetLookup.Match
+- **AND** deduplicate by stable ID (private static `StableIdFor`)
+- **AND** group filtered items by ruleset via TopicTargets dictionary lookup
 - **AND** Ask TvEvaluationRegion or MovieEvaluationRegion per group
-- **AND** apply FeedGate.Evaluate per group
+- **AND** apply private static `Evaluate` per group
 - **AND** reply ProcessPageCompleted with accepted entries and stats
 
 #### Scenario: No items in window
@@ -30,6 +30,59 @@ FeedCrawlPageActor SHALL be a non-persistent ReceiveActor pool routee that recei
 
 - **WHEN** all items in the window have topics that match no registered ruleset
 - **THEN** ProcessPageCompleted SHALL have empty accepted entries and unmatched equal to the filtered item count
+
+### Requirement: FetchCompleted PipeTo wrapper carries extracted data
+
+The `FetchCompleted` private PipeTo wrapper SHALL extract the fields the actor needs from `QueryMediathekCompleted` instead of wrapping the entire response message. `ProcessPage` stays on the wrapper because the actor needs the full request context for evaluation routing.
+
+#### Scenario: FetchCompleted shape
+
+- **WHEN** the MediathekManager Ask completes successfully
+- **THEN** the PipeTo success mapper SHALL extract `Items` and `ListTimestamp` from `QueryMediathekCompleted`
+- **AND** wrap them as `FetchCompleted(MediathekItem[] Items, long ListTimestamp, ProcessPage Request)`
+- **AND** NOT wrap the entire `QueryMediathekCompleted` response
+
+### Requirement: EvaluateSeries carries flat properties
+
+`EvaluateSeries` SHALL carry flat properties instead of embedding a `RuleSetResolved` response record. The message SHALL have: SearchId (Guid), Source (SearchSource), Items (MediathekItem[]), TvdbId (int?), ImdbId (string?), Season (int?), RuleSetId (string?), MediaName (string?), Enrichment (EnrichmentConfig?).
+
+#### Scenario: EvaluateSeries without RuleSetResolved
+
+- **WHEN** `EvaluateSeries` is constructed
+- **THEN** it SHALL NOT have a `RuleSet` property of type `RuleSetResolved?`
+- **AND** it SHALL have `RuleSetId (string?)`, `MediaName (string?)`, and `Enrichment (EnrichmentConfig?)` as direct properties
+
+#### Scenario: Feed domain constructs EvaluateSeries with flat fields
+
+- **WHEN** FeedCrawlPageActor constructs an EvaluateSeries message
+- **THEN** it SHALL pass `RuleSetId`, `MediaName`, and `Enrichment` as separate parameters (not wrapped in RuleSetResolved)
+
+#### Scenario: Search evaluation state reads flat fields
+
+- **WHEN** TvEvaluationState.Init receives an EvaluateSeries command
+- **THEN** it SHALL read `cmd.RuleSetId`, `cmd.MediaName`, and `cmd.Enrichment` directly
+- **AND** NOT destructure a `cmd.RuleSet` property
+
+### Requirement: EvaluateMovies carries flat properties
+
+`EvaluateMovies` SHALL carry flat properties instead of embedding a `RuleSetResolved` response record. The message SHALL have: SearchId (Guid), Source (SearchSource), Items (MediathekItem[]), ImdbId (string?), TmdbId (int?), RuleSetId (string?), MediaName (string?), Enrichment (EnrichmentConfig?).
+
+#### Scenario: EvaluateMovies without RuleSetResolved
+
+- **WHEN** `EvaluateMovies` is constructed
+- **THEN** it SHALL NOT have a `RuleSet` property of type `RuleSetResolved?`
+- **AND** it SHALL have `RuleSetId (string?)`, `MediaName (string?)`, and `Enrichment (EnrichmentConfig?)` as direct properties
+
+#### Scenario: Feed domain constructs EvaluateMovies with flat fields
+
+- **WHEN** FeedCrawlPageActor constructs an EvaluateMovies message
+- **THEN** it SHALL pass `RuleSetId`, `MediaName`, and `Enrichment` as separate parameters (not wrapped in RuleSetResolved)
+
+#### Scenario: Search evaluation state reads flat fields
+
+- **WHEN** MovieEvaluationState.Init receives an EvaluateMovies command
+- **THEN** it SHALL read `cmd.RuleSetId`, `cmd.MediaName`, and `cmd.Enrichment` directly
+- **AND** NOT destructure a `cmd.RuleSet` property
 
 ### Requirement: FeedCrawlPageActor uses Become for concurrency safety
 
@@ -86,18 +139,18 @@ When one or more evaluation Asks fail, FeedCrawlPageActor SHALL still process su
 
 ### Requirement: ProcessPage message shape
 
-ProcessPage SHALL carry flat data only: Offset (int), PageSize (int), LowerBound (long), UpperBound (long), Targets (RuleSetTarget[]), MinConfidence (double). The actor SHALL build a RuleSetLookup internally from the Targets array. These are domain-internal messages in the FunkArr.Feed namespace.
+ProcessPage SHALL carry flat data only: Offset (int), PageSize (int), LowerBound (long), UpperBound (long), Targets (RuleSetTarget[]), MinConfidence (double). The actor SHALL build a topic-to-target dictionary internally from the Targets array. These are domain-internal messages in the FunkArr.Feed namespace.
 
 #### Scenario: ProcessPage fields
 
 - **WHEN** ProcessPage is constructed
 - **THEN** it SHALL have fields: Offset (int), PageSize (int), LowerBound (long), UpperBound (long), Targets (RuleSetTarget[]), MinConfidence (double)
-- **AND** it SHALL NOT carry CrawlWindow or RuleSetLookup objects
+- **AND** it SHALL NOT carry CrawlWindow or RuleSetLookup objects (neither type exists)
 
-#### Scenario: RuleSetLookup built internally
+#### Scenario: Topic lookup built internally
 
 - **WHEN** FeedCrawlPageActor receives ProcessPage with Targets
-- **THEN** it SHALL construct a RuleSetLookup from the RuleSetTarget array
+- **THEN** it SHALL construct a topic-to-target dictionary from the RuleSetTarget array
 - **AND** use it for topic matching during item grouping
 
 ### Requirement: ProcessPageResponse message shape
@@ -108,7 +161,7 @@ ProcessPage SHALL return an abstract `ProcessPageResponse` with two subtypes. `P
 
 - **WHEN** a page is processed successfully (even with zero accepted entries)
 - **THEN** the actor SHALL reply with ProcessPageCompleted
-- **AND** Accepted SHALL contain the FeedEntry array from FeedGate
+- **AND** Accepted SHALL contain the FeedEntry array from the gating logic
 - **AND** NewItems SHALL be the count of items in the window after dedup
 - **AND** Unmatched SHALL be items that matched no ruleset
 - **AND** ReachedEnd SHALL be true if MVW returned fewer than pageSize items or items fell below the lower bound
@@ -180,14 +233,3 @@ FeedCrawlRunState.Apply SHALL accept ProcessPageResponse and use pattern matchin
 
 - **WHEN** Apply receives a ProcessPageFailed
 - **THEN** it SHALL record the error and set HasPageError
-
-### Requirement: RuleSetLookup supports ToDictionary extraction
-
-RuleSetLookup SHALL provide a ToDictionary() method that returns IReadOnlyDictionary<string, RuleSetTarget> exposing its internal topic-to-target mapping. This allows the Manager to extract flat data for ProcessPage message construction.
-
-#### Scenario: Dictionary extraction
-
-- **WHEN** a RuleSetLookup is built from RegisteredRuleSetEntry items
-- **AND** ToDictionary() is called
-- **THEN** it SHALL return the internal topic-to-target dictionary
-- **AND** the dictionary SHALL use OrdinalIgnoreCase comparison

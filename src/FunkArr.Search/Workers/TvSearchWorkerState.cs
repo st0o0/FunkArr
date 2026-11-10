@@ -78,7 +78,8 @@ public sealed class TvSearchWorkerState
     public void Apply(QueryMediathekCompleted result) => Items = result.Items;
 
     public EvaluateSeries ToEvaluation(Guid evaluationId) =>
-        new(evaluationId, Source, Items, TvdbId, ImdbId, Season, RuleSet);
+        new(evaluationId, Source, Items, TvdbId, ImdbId, Season,
+            RuleSet?.RuleSetId, RuleSet?.MediaName, RuleSet?.Enrichment);
 
     public SearchSeriesCompleted ToSearchCompleted(EvaluateSeriesCompleted evaluation) =>
         new(SearchId, evaluation.Items, evaluation.Items.Length);

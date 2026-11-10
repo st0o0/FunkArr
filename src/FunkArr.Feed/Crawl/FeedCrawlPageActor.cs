@@ -1,12 +1,17 @@
+using System.Security.Cryptography;
+using System.Text;
 using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core.Actors;
 using FunkArr.Messages;
+using FunkArr.Messages.Feed;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.Search;
 using Terp.Akka;
 
 namespace FunkArr.Feed.Crawl;
+
+internal sealed record GateResult(FeedEntry[] Accepted, IReadOnlyDictionary<RejectionReason, int> RejectedByReason);
 
 public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
 {
@@ -14,7 +19,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
     private static readonly TimeSpan _evaluationTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan _maxLead = TimeSpan.FromDays(90);
 
-    private sealed record FetchCompleted(QueryMediathekCompleted Result, ProcessPage Request);
+    private sealed record FetchCompleted(MediathekItem[] Items, long ListTimestamp, ProcessPage Request);
     private sealed record FetchFailed(string Reason);
     private sealed record EvalCompleted(string RuleSetId, MediaType MediaType, MediathekItem[] Sources, SearchResultItem[] Items, double MinConfidence);
     private sealed record EvalFailed(string RuleSetId, string Reason);
@@ -48,7 +53,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
                 .PipeTo(Self,
                     success: response => response switch
                     {
-                        QueryMediathekCompleted c => new FetchCompleted(c, msg),
+                        QueryMediathekCompleted c => new FetchCompleted(c.Items, c.ListTimestamp, msg),
                         QueryMediathekError e => new FetchFailed($"MediathekViewWeb query failed: {e.Cause.Message}"),
                         _ => new FetchFailed("MediathekViewWeb queue full")
                     },
@@ -65,13 +70,12 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
         Receive<FetchCompleted>(msg =>
         {
             var request = msg.Request;
-            var completed = msg.Result;
             var leadLimit = (DateTimeOffset.UtcNow + _maxLead).ToUnixTimeSeconds();
 
-            var items = new List<MediathekItem>(completed.Items.Length);
-            var reachedEnd = completed.Items.Length < request.PageSize;
+            var items = new List<MediathekItem>(msg.Items.Length);
+            var reachedEnd = msg.Items.Length < request.PageSize;
 
-            foreach (var item in completed.Items)
+            foreach (var item in msg.Items)
             {
                 if (item.FilmlisteTimestamp <= request.LowerBound)
                 {
@@ -102,7 +106,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
                     continue;
                 }
 
-                var stableId = FeedGate.StableIdFor(item.Channel, url);
+                var stableId = StableIdFor(item.Channel, url);
                 if (!seen.Add(stableId))
                 {
                     continue;
@@ -184,7 +188,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
 
         Receive<EvalCompleted>(result =>
         {
-            var gate = FeedGate.Evaluate(result.Items, result.Sources, result.MediaType, result.MinConfidence);
+            var gate = Evaluate(result.Items, result.Sources, result.MediaType, result.MinConfidence);
 
             foreach (var (reason, count) in gate.RejectedByReason)
             {
@@ -216,5 +220,93 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
         _replyTo.Tell(_state.GetResult());
         Stash.UnstashAll();
         Become(Ready);
+    }
+
+    private static string StableIdFor(string channel, string url)
+    {
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes($"{channel.Trim().ToLowerInvariant()}|{url.Trim()}"));
+        return Convert.ToHexStringLower(hash)[..32];
+    }
+
+    private static GateResult Evaluate(
+        IEnumerable<SearchResultItem> results,
+        IEnumerable<MediathekItem> sources,
+        MediaType mediaType,
+        double minConfidence)
+    {
+        var sourceByUrl = new Dictionary<string, MediathekItem>(StringComparer.Ordinal);
+        foreach (var source in sources)
+        {
+            foreach (var url in new[] { source.UrlVideoHd, source.UrlVideo, source.UrlVideoLow })
+            {
+                if (url is not null)
+                {
+                    sourceByUrl.TryAdd(url, source);
+                }
+            }
+        }
+
+        var accepted = new List<FeedEntry>();
+        var rejected = new Dictionary<RejectionReason, int>();
+
+        foreach (var result in results)
+        {
+            var reason = Reject(result, mediaType, minConfidence, sourceByUrl, out var source);
+            if (reason is not null)
+            {
+                rejected[reason.Value] = rejected.GetValueOrDefault(reason.Value) + 1;
+                continue;
+            }
+
+            accepted.Add(new FeedEntry(
+                StableIdFor(source!.Channel, result.Url),
+                DateTimeOffset.FromUnixTimeSeconds(source.FilmlisteTimestamp),
+                mediaType,
+                result.Title,
+                result.Channel,
+                result.Topic,
+                result.Url,
+                result.Duration,
+                result.Size,
+                result.Quality,
+                result.AiredAt,
+                result.Score,
+                result.SubtitleUrl,
+                result.Metadata?.Ids,
+                result.Metadata?.Season,
+                result.Metadata?.Episode));
+        }
+
+        return new GateResult([.. accepted], rejected);
+    }
+
+    private static RejectionReason? Reject(
+        SearchResultItem result,
+        MediaType mediaType,
+        double minConfidence,
+        Dictionary<string, MediathekItem> sourceByUrl,
+        out MediathekItem? source)
+    {
+        if (!sourceByUrl.TryGetValue(result.Url, out source))
+        {
+            return RejectionReason.UnknownSource;
+        }
+
+        if (source.FilmlisteTimestamp <= 0)
+        {
+            return RejectionReason.MissingTimestamp;
+        }
+
+        if (result.Score < minConfidence)
+        {
+            return RejectionReason.LowConfidence;
+        }
+
+        return mediaType switch
+        {
+            MediaType.Movie when result.Metadata?.Ids is not { TmdbId: not null } and not { ImdbId: not null } => RejectionReason.MissingId,
+            MediaType.Show when result.Metadata?.Season is null || result.Metadata.Episode is null => RejectionReason.MissingEpisode,
+            _ => null
+        };
     }
 }

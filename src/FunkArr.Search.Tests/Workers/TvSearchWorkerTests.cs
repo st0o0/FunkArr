@@ -53,7 +53,7 @@ public sealed class TvSearchWorkerTests : TestKit
             () => Assert.NotEqual(searchId, evaluation.SearchId),
             () => Assert.Equal(SearchSource.Sonarr, evaluation.Source),
             () => Assert.Equal("Tatort: Test", Assert.Single(evaluation.Items).Title),
-            () => Assert.Null(evaluation.RuleSet));
+            () => Assert.Null(evaluation.RuleSetId));
         var resultItem = new SearchResultItem("Tatort.S01E01.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Tatort",
             "https://x.com/1.mp4", 5400, 0, 720, null, 0.9);
         p.Evaluation.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [resultItem], 1));
@@ -86,7 +86,7 @@ public sealed class TvSearchWorkerTests : TestKit
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateSeries>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
-            () => Assert.Equal(ruleSet, evaluation.RuleSet),
+            () => Assert.Equal("tatort", evaluation.RuleSetId),
             () => Assert.Equal(83214, evaluation.TvdbId),
             () => Assert.Equal(2026, evaluation.Season));
     }

@@ -33,7 +33,7 @@ The FeedCrawlManager SHALL produce one of four crawl outcomes using the `CrawlOu
 
 ### Requirement: FeedCrawlManager Become state machine
 
-FeedCrawlManager SHALL use Become() to transition through 5 states: Idle, Probing, LoadingRuleSets, Crawling, Publishing. Every state SHALL register a handler for QueryFeedCrawlStatus. StartFeedCrawl SHALL only be accepted in Idle state.
+FeedCrawlManager SHALL use Become() to transition through its states. Every state SHALL register a handler for QueryFeedCrawlStatus. StartFeedCrawl SHALL only be accepted in Idle state.
 
 #### Scenario: Idle state
 
@@ -45,21 +45,20 @@ FeedCrawlManager SHALL use Become() to transition through 5 states: Idle, Probin
 
 - **WHEN** FeedCrawlManager enters Probing
 - **THEN** it SHALL Ask MediathekManager for the latest listTimestamp via PipeTo
-- **AND** accept QueryFeedCrawlStatus
-- **AND** NOT accept StartFeedCrawl
+- **AND** on success with a new timestamp, create FeedCrawlRunState via `Init(...)` with window parameters and options values extracted by the Manager
+- **AND** then Ask RuleSetResolver for registered rulesets via PipeTo
 
-#### Scenario: LoadingRuleSets state
+#### Scenario: RuleSets loaded
 
-- **WHEN** FeedCrawlManager enters LoadingRuleSets
-- **THEN** it SHALL Ask RuleSetResolver for registered rulesets via PipeTo
-- **AND** on success, create FeedCrawlRunState with the window and lookup, then enter Crawling
+- **WHEN** RuleSetsLoaded is received with entries
+- **THEN** the Manager SHALL call `_runState.Apply(entries)` to build TopicTargets
+- **AND** enter Crawling
 
 #### Scenario: Crawling state
 
 - **WHEN** FeedCrawlManager enters Crawling
-- **THEN** it SHALL fire initial page requests into the page-pool
-- **AND** on each PageProcessed, collect results and fire next page if needed
-- **AND** when all pages are done, enter Publishing (if entries collected) or complete the crawl
+- **THEN** it SHALL read `_runState.PageSize`, `_runState.MaxPages`, `_runState.TopicTargets`, `_runState.LowerBound`, `_runState.UpperBound`, `_runState.MinConfidence` to build ProcessPage messages
+- **AND** fire the stream pipeline
 
 #### Scenario: Publishing state
 
@@ -157,10 +156,15 @@ The FeedCrawlManager SHALL advance the cursor based on aggregated crawl results:
 
 FeedCrawlManager SHALL maintain two state objects: FeedCrawlManagerState (persistent) for cursor and failure tracking, and FeedCrawlRunState (transient, nullable) for active crawl session data. FeedCrawlRunState SHALL be null when no crawl is active and SHALL NOT be persisted.
 
+FeedCrawlRunState SHALL hold all data for an active crawl run as flat fields — no wrapper records (`CrawlInput`, `CrawlWindow`) and no helper classes (`RuleSetLookup`). It SHALL be initialized in two phases via `static Init(...)` and `Apply(entries)`.
+
 #### Scenario: Run state lifecycle
 
-- **WHEN** a crawl starts (entering Probing)
-- **THEN** FeedCrawlRunState SHALL be created
+- **WHEN** a crawl starts (after probe returns a new listTimestamp)
+- **THEN** FeedCrawlRunState SHALL be created via `FeedCrawlRunState.Init(listTimestamp, lowerBound, upperBound, truncated, pageSize, maxPages, minConfidence, startedAt)`
+- **AND** TopicTargets SHALL be null until `Apply(entries)` is called
+- **WHEN** rulesets are loaded
+- **THEN** `Apply(IReadOnlyList<RegisteredRuleSetEntry> entries)` SHALL build the topic-to-target dictionary internally
 - **WHEN** the crawl completes or fails (returning to Idle)
 - **THEN** FeedCrawlRunState SHALL be set to null
 
@@ -170,3 +174,43 @@ FeedCrawlManager SHALL maintain two state objects: FeedCrawlManagerState (persis
 - **THEN** FeedCrawlRunState SHALL be null (no active crawl)
 - **AND** only FeedCrawlManagerState is restored from the journal
 - **AND** the next timer tick starts a fresh crawl
+
+#### Scenario: FeedCrawlRunState flat fields
+
+- **WHEN** FeedCrawlRunState is inspected
+- **THEN** it SHALL have immutable fields: ListTimestamp (long), LowerBound (long), UpperBound (long), Truncated (bool), PageSize (int), MaxPages (int), MinConfidence (double), StartedAt (long), TopicTargets (IReadOnlyDictionary<string, RuleSetTarget>?)
+- **AND** mutable accumulation fields: ReachedEnd (bool), HasPageError (bool), FirstPageError (string?), TotalNewItems (int), TotalUnmatched (int), AcceptedEntries (List<FeedEntry>), RejectedByReason (Dictionary<RejectionReason, int>)
+- **AND** it SHALL NOT contain CrawlInput, CrawlWindow, or RuleSetLookup types
+
+#### Scenario: TopicTargets built from entries
+
+- **WHEN** `Apply(entries)` is called with RegisteredRuleSetEntry items containing topics, aliases, and IDs
+- **THEN** TopicTargets SHALL be a case-insensitive dictionary mapping topic and alias strings to RuleSetTarget records
+- **AND** duplicate keys SHALL be resolved by first-write-wins (TryAdd)
+
+#### Scenario: GetCrawlResult builds CrawlResult directly
+
+- **WHEN** `GetCrawlResult(TimeSpan duration)` is called
+- **THEN** it SHALL return a `CrawlResult` record constructed with `new CrawlResult(...)` directly
+- **AND** it SHALL NOT use factory methods (ForCompleted, ForFailed, etc.)
+
+### Requirement: CrawlResult is a plain DTO
+
+CrawlResult SHALL be a sealed record with fields: Status (CrawlOutcome), ListTimestamp (long), NewItems (int), Published (int), Unmatched (int), Gap (bool), Duration (TimeSpan), Error (string?). It SHALL NOT have static factory methods. Callers SHALL construct it with `new CrawlResult(...)` directly.
+
+#### Scenario: CrawlResult construction
+
+- **WHEN** code needs to create a CrawlResult
+- **THEN** it SHALL use `new CrawlResult(status, listTimestamp, newItems, published, unmatched, gap, duration, error)` directly
+- **AND** no ForCompleted, ForCompletedPartial, ForFailed, or ForUnchanged factory methods SHALL exist
+
+### Requirement: PipeTo wrapper messages carry extracted data
+
+Actor-private PipeTo wrapper messages SHALL extract the data they need from response messages instead of wrapping the entire response.
+
+#### Scenario: RuleSetsLoaded extracts entries
+
+- **WHEN** the RuleSetResolver Ask completes successfully
+- **THEN** the PipeTo success mapper SHALL extract `.Entries` from `RegisteredRuleSetsResult`
+- **AND** wrap them as `RuleSetsLoaded(IReadOnlyList<RegisteredRuleSetEntry> Entries)`
+- **AND** NOT wrap the entire `RegisteredRuleSetsResult`

@@ -8,14 +8,14 @@ Defines evaluation and gating of matched groups via FeedCrawlPageActor inline pr
 
 ### Requirement: Typed rejection reasons
 
-`FeedGate` SHALL use a `RejectionReason` enum from `FunkArr.Messages.Feed` instead of string constants for rejection reasons. The enum SHALL have members `Unknown = 0, LowConfidence = 1, MissingEpisode = 2, MissingId = 3, UnknownSource = 4, MissingTimestamp = 5`.
+Rejection reasons SHALL use the `RejectionReason` enum from `FunkArr.Messages.Feed`. The enum SHALL have members `Unknown = 0, LowConfidence = 1, MissingEpisode = 2, MissingId = 3, UnknownSource = 4, MissingTimestamp = 5`.
 
 #### Scenario: GateResult uses RejectionReason enum
 
 - **WHEN** `GateResult.RejectedByReason` is inspected
 - **THEN** its type SHALL be `IReadOnlyDictionary<RejectionReason, int>`
 
-#### Scenario: FeedGate returns enum values
+#### Scenario: Gating returns enum values
 
 - **WHEN** a result is rejected for low confidence
 - **THEN** the rejection reason SHALL be `RejectionReason.LowConfidence`
@@ -27,13 +27,13 @@ Defines evaluation and gating of matched groups via FeedCrawlPageActor inline pr
 
 ### Requirement: Evaluation and gating inside page actor
 
-Evaluation (Ask to TvEvaluationRegion / MovieEvaluationRegion) and gating (FeedGate.Evaluate) SHALL be performed inline by FeedCrawlPageActor during its Evaluating phase. FeedEvalActor SHALL be removed. The page actor groups items by ruleset, fires parallel evaluation Asks, collects results, and applies FeedGate per group — all within a single pool routee.
+Evaluation (Ask to TvEvaluationRegion / MovieEvaluationRegion) and gating SHALL be performed inline by FeedCrawlPageActor during its Evaluating phase. The gating logic (previously in `FeedGate`) SHALL exist as private static methods on `FeedCrawlPageActor`: `StableIdFor`, `Evaluate`, and `Reject`. `GateResult` SHALL be a record declared at the actor file level or as a private nested type. The standalone `FeedGate` static class SHALL be deleted.
 
 #### Scenario: Per-group evaluation
 
 - **WHEN** a page has items matching 3 different rulesets
 - **THEN** FeedCrawlPageActor SHALL fire 3 evaluation Asks (one per group)
-- **AND** collect all 3 results before applying FeedGate per group
+- **AND** collect all 3 results before applying the gating logic per group
 - **AND** aggregate accepted entries into the PageProcessed response
 
 #### Scenario: Movie vs TV routing
@@ -48,6 +48,12 @@ Evaluation (Ask to TvEvaluationRegion / MovieEvaluationRegion) and gating (FeedG
 - **WHEN** FeedCrawlPageActor is in Evaluating state
 - **THEN** it SHALL NOT accept new ProcessPage messages
 - **AND** the captured sender reference from the original ProcessPage SHALL be used for the reply
+
+#### Scenario: Gating logic is actor-private
+
+- **WHEN** the FeedCrawlPageActor source file is inspected
+- **THEN** `StableIdFor`, `Evaluate`, and `Reject` SHALL be `private static` methods on the actor class
+- **AND** no standalone `FeedGate` class SHALL exist in the codebase
 
 ### Requirement: RejectionReason persistence enum
 

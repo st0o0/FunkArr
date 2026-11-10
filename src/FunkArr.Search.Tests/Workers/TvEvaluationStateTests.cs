@@ -2,7 +2,6 @@ using Akka.Actor;
 using FunkArr.Messages;
 using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
-using FunkArr.Messages.RuleSet;
 using FunkArr.Messages.Scoring;
 using FunkArr.Messages.Search;
 using FunkArr.Search.Models;
@@ -40,7 +39,7 @@ public sealed class TvEvaluationStateTests
         var state = TvEvaluationState.From(id.ToString());
 
         state.Init(new EvaluateSeries(id, SearchSource.Sonarr, [MakeMediathekItem()],
-            RuleSet: new RuleSetResolved("tatort", "Tatort", "Tatort")), _noSender);
+            RuleSetId: "tatort", MediaName: "Tatort"), _noSender);
 
         Assert.Multiple(
             () => Assert.Equal("tatort", state.RuleSetId),

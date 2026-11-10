@@ -74,7 +74,7 @@ public sealed class TvEvaluationWorkerTests : TestKit
         var worker = CreateWorker(evaluationId);
 
         worker.Tell(new EvaluateSeries(evaluationId, SearchSource.Sonarr, [Item("Tatort", "Tatort: Test")],
-            TvdbId: 83214, RuleSet: new RuleSetResolved("tatort", "Tatort")), TestActor);
+            TvdbId: 83214, RuleSetId: "tatort"), TestActor);
 
         var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("tatort", scoreRequest.RuleSetId);
@@ -197,7 +197,7 @@ public sealed class TvEvaluationWorkerTests : TestKit
         [
             new MediathekItem("ZDF", "ZDF Magazin Royale", "Episode Title (S2026/E01)", null,
                 1788113728, 1835, 600000000, null, "https://x.com/v.mp4", null, null, null)
-        ], TvdbId: 390284, Season: 2026, RuleSet: new RuleSetResolved("zdf-magazin-royale", "ZDF Magazin Royale")), TestActor);
+        ], TvdbId: 390284, Season: 2026, RuleSetId: "zdf-magazin-royale"), TestActor);
 
         p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty,
@@ -235,7 +235,7 @@ public sealed class TvEvaluationWorkerTests : TestKit
         [
             new MediathekItem("SWR", "Tatort", "Roomservice", null, 1788113728, 5322, 1400000000,
                 null, "https://x.com/v.mp4", null, null, null)
-        ], TvdbId: 83214, Season: 2026, RuleSet: new RuleSetResolved("tatort", "Tatort")), TestActor);
+        ], TvdbId: 83214, Season: 2026, RuleSetId: "tatort"), TestActor);
 
         p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoreCompleted(Guid.Empty,

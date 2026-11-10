@@ -91,7 +91,7 @@ public sealed class MovieEvaluationWorkerTests : TestKit
         [
             new MediathekItem("ARD", "Tatort", "Tatort: Der Film", null, 1719244800, 7200, 2400000000,
                 null, "https://example.com/sd.mp4", "https://example.com/hd.mp4", null, null)
-        ], ImdbId: "tt0806910", RuleSet: new RuleSetResolved("tatort", "Tatort")), TestActor);
+        ], ImdbId: "tt0806910", RuleSetId: "tatort"), TestActor);
 
         var scoreRequest = p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal("tatort", scoreRequest.RuleSetId);
@@ -148,7 +148,7 @@ public sealed class MovieEvaluationWorkerTests : TestKit
         var worker = CreateWorker(evaluationId);
 
         worker.Tell(new EvaluateMovies(evaluationId, SearchSource.Radarr, [Item("Das Boot")],
-            RuleSet: new RuleSetResolved("das-boot", "Das Boot")), TestActor);
+            RuleSetId: "das-boot"), TestActor);
 
         p.Scoring.ExpectMsg<ScoreItems>(cancellationToken: TestContext.Current.CancellationToken);
         p.Scoring.Reply(new ScoringFailed(new Exception("Scoring error")));

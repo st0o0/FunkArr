@@ -106,7 +106,7 @@ public sealed class SearchWorkerStateTests
             () => Assert.Equal(83214, evaluation.TvdbId),
             () => Assert.Equal("tt123", evaluation.ImdbId),
             () => Assert.Equal(2026, evaluation.Season),
-            () => Assert.Equal(ruleSet, evaluation.RuleSet));
+            () => Assert.Equal("tatort", evaluation.RuleSetId));
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public sealed class SearchWorkerStateTests
             () => Assert.Equal("Das Boot", Assert.Single(evaluation.Items).Title),
             () => Assert.Equal("tt0082096", evaluation.ImdbId),
             () => Assert.Equal(387, evaluation.TmdbId),
-            () => Assert.Equal(ruleSet, evaluation.RuleSet));
+            () => Assert.Equal("das-boot", evaluation.RuleSetId));
     }
 
     [Fact]

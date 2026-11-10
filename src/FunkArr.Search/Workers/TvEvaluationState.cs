@@ -54,9 +54,9 @@ public sealed class TvEvaluationState
         Season = cmd.Season;
         Sources = [.. cmd.Items.Select(SourceInfo.From)];
 
-        if (cmd.RuleSet is { } ruleSet)
+        if (cmd.RuleSetId is { } ruleSetId)
         {
-            Apply(ruleSet.RuleSetId, ruleSet.MediaName, ruleSet.Enrichment);
+            Apply(ruleSetId, cmd.MediaName, cmd.Enrichment);
         }
     }
 

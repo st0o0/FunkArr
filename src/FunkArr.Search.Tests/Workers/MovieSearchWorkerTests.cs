@@ -50,7 +50,7 @@ public sealed class MovieSearchWorkerTests : TestKit
         Assert.Multiple(
             () => Assert.Equal(SearchSource.Radarr, evaluation.Source),
             () => Assert.Equal("Das Boot", Assert.Single(evaluation.Items).Title),
-            () => Assert.Null(evaluation.RuleSet));
+            () => Assert.Null(evaluation.RuleSetId));
         var resultItem = new SearchResultItem("Das.Boot.1981.GERMAN.720p.WEB.h264-FunkArr", "ARD", "Das Boot",
             "https://x.com/v.mp4", 7200, 0, 720, null, 0.9);
         p.Evaluation.Reply(new EvaluateMoviesCompleted(evaluation.SearchId, [resultItem], 1));
@@ -101,7 +101,7 @@ public sealed class MovieSearchWorkerTests : TestKit
 
         var evaluation = p.Evaluation.ExpectMsg<EvaluateMovies>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
-            () => Assert.Equal(ruleSet, evaluation.RuleSet),
+            () => Assert.Equal("tatort", evaluation.RuleSetId),
             () => Assert.Equal("tt0806910", evaluation.ImdbId),
             () => Assert.Equal(550, evaluation.TmdbId));
     }

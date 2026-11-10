@@ -36,7 +36,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
 
     private sealed record ProbeFailed(string Reason);
 
-    private sealed record RuleSetsLoaded(RegisteredRuleSetsResult Result);
+    private sealed record RuleSetsLoaded(IReadOnlyList<RegisteredRuleSetEntry> Entries);
 
     private sealed record RuleSetsFailed(string Reason);
 
@@ -206,30 +206,29 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
             }
 
             var feed = _feedOptions.CurrentValue;
-            var input = new CrawlInput(
-                _state.Cursor, Math.Max(1, feed.PageSize), Math.Max(1, feed.MaxPages),
-                Math.Max(1, feed.PagePrefetch), feed.MaxConcurrency, feed.MinConfidence,
-                feed.InitialLookback, feed.MaxCatchUp, _timeProvider.GetTimestamp());
+            var (lower, upper, truncated) = ComputeWindow(
+                _state.Cursor, probe.ListTimestamp, feed.MaxCatchUp, feed.InitialLookback);
 
-            _runState = new FeedCrawlRunState(input, probe.ListTimestamp,
-                ComputeWindow(input, probe.ListTimestamp), RuleSetLookup.Empty);
+            _runState = FeedCrawlRunState.Init(
+                probe.ListTimestamp, lower, upper, truncated,
+                Math.Max(1, feed.PageSize), Math.Max(1, feed.MaxPages),
+                feed.MinConfidence, _timeProvider.GetTimestamp());
 
             _ruleSetResolver.Ask<RegisteredRuleSetsResult>(
                     new QueryRegisteredRuleSets(), _ruleSetTimeout)
                 .PipeTo(Self,
-                    success: result => new RuleSetsLoaded(result),
+                    success: result => new RuleSetsLoaded(result.Entries),
                     failure: ex => new RuleSetsFailed(ex.Message));
         });
 
         Command<RuleSetsLoaded>(msg =>
         {
-            var lookup = RuleSetLookup.From(msg.Result.Entries);
-            _runState = new FeedCrawlRunState(_runState!.Input, _runState.ListTimestamp, _runState.Window, lookup);
+            _runState!.Apply(msg.Entries);
 
             _log.Debug(
                 "Feed crawl probed: listTimestamp={ListTimestamp}, window=[{Lower},{Upper}], truncated={Truncated}",
-                _runState.ListTimestamp, _runState.Window.LowerBound, _runState.Window.UpperBound,
-                _runState.Window.Truncated);
+                _runState.ListTimestamp, _runState.LowerBound, _runState.UpperBound,
+                _runState.Truncated);
 
             StartCrawling();
         });
@@ -257,36 +256,35 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         RegisterSnapshotHandlers();
     }
 
-    private CrawlWindow ComputeWindow(CrawlInput input, long listTimestamp)
+    private static (long lower, long upper, bool truncated) ComputeWindow(
+        long cursor, long listTimestamp, TimeSpan maxCatchUp, TimeSpan initialLookback)
     {
-        var cursor = input.Cursor;
-        var catchUp = (long)input.MaxCatchUp.TotalSeconds;
+        var catchUp = (long)maxCatchUp.TotalSeconds;
 
         if (cursor <= 0)
         {
-            return new CrawlWindow(Math.Max(0, listTimestamp - (long)input.InitialLookback.TotalSeconds),
-                listTimestamp);
+            return (Math.Max(0, listTimestamp - (long)initialLookback.TotalSeconds), listTimestamp, false);
         }
 
         if (listTimestamp - catchUp is var earliest && cursor < earliest)
         {
-            return new CrawlWindow(earliest, listTimestamp, Truncated: true);
+            return (earliest, listTimestamp, true);
         }
 
-        return new CrawlWindow(cursor, listTimestamp);
+        return (cursor, listTimestamp, false);
     }
 
     private void StartCrawling()
     {
         var run = _runState!;
-        var pageSize = run.Input.PageSize;
-        var topicTargets = run.Lookup.ToDictionary();
+        var pageSize = run.PageSize;
+        var topicTargets = run.TopicTargets!;
 
-        var messages = Enumerable.Range(0, run.Input.MaxPages)
+        var messages = Enumerable.Range(0, run.MaxPages)
             .Select(i => new ProcessPage(
                 i * pageSize, pageSize,
-                run.Window.LowerBound, run.Window.UpperBound,
-                topicTargets, run.Input.MinConfidence))
+                run.LowerBound, run.UpperBound,
+                topicTargets, run.MinConfidence))
             .ToArray();
 
         Source.From(messages)
@@ -331,16 +329,16 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         Command<PublishFailed>(msg =>
         {
             var run = _runState!;
-            CompleteCrawl(CrawlResult.ForFailed(run.ListTimestamp,
-                run.TotalNewItems, run.TotalUnmatched, 0,
-                run.Window.Truncated, Elapsed(), msg.Reason));
+            CompleteCrawl(new CrawlResult(CrawlOutcome.Failed, run.ListTimestamp,
+                run.TotalNewItems, 0, run.TotalUnmatched,
+                run.Truncated, Elapsed(), msg.Reason));
         });
 
         Command<CrawlPagesFailed>(msg =>
         {
             var run = _runState!;
-            CompleteCrawl(CrawlResult.ForFailed(run.ListTimestamp,
-                0, 0, 0, run.Window.Truncated, Elapsed(), msg.Reason));
+            CompleteCrawl(new CrawlResult(CrawlOutcome.Failed, run.ListTimestamp,
+                0, 0, 0, run.Truncated, Elapsed(), msg.Reason));
         });
 
         Command<Tick>(_ => ScheduleNext(_state.Interval));
@@ -353,7 +351,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         RegisterSnapshotHandlers();
     }
 
-    private TimeSpan Elapsed() => _timeProvider.GetElapsedTime(_runState!.Input.StartedAt);
+    private TimeSpan Elapsed() => _timeProvider.GetElapsedTime(_runState!.StartedAt);
 
     private void CompleteCrawl(CrawlResult result)
     {

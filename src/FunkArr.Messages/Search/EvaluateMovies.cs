@@ -1,5 +1,5 @@
+using FunkArr.Messages.Enrichment;
 using FunkArr.Messages.Mediathek;
-using FunkArr.Messages.RuleSet;
 
 namespace FunkArr.Messages.Search;
 
@@ -9,7 +9,9 @@ public sealed record EvaluateMovies(
     MediathekItem[] Items,
     string? ImdbId = null,
     int? TmdbId = null,
-    RuleSetResolved? RuleSet = null) : IWithSearchId;
+    string? RuleSetId = null,
+    string? MediaName = null,
+    EnrichmentConfig? Enrichment = null) : IWithSearchId;
 
 public abstract record EvaluateMoviesResponse;
 
