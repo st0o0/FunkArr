@@ -1,9 +1,6 @@
 using System.Diagnostics;
 using FFmpeg.Rx;
-using FFmpeg.Rx.Builder;
 using FFmpeg.Rx.Codecs;
-using FFmpeg.Rx.Models;
-using FunkArr.Messages.Download;
 using R3;
 
 namespace FunkArr.Download.Ffmpeg;

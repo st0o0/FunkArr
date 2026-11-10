@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using FunkArr.Core;
 using FunkArr.Messages.RuleSet;
 using Json.Schema;
 

@@ -1,6 +1,5 @@
 using FunkArr.ArrApi.Newznab.Models;
 using FunkArr.Messages.Search;
-using FunkArr.Messages.Shared;
 
 namespace FunkArr.ArrApi.Newznab.Services;
 

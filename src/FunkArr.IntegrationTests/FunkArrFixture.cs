@@ -6,7 +6,6 @@ using Akka.TestKit.Xunit;
 using FunkArr.Api;
 using FunkArr.Api.Infrastructure;
 using FunkArr.ArrApi;
-using FunkArr.Core;
 using FunkArr.Core.Actors;
 using FunkArr.Core.Configuration;
 using FunkArr.Core.Data;

@@ -6,7 +6,6 @@ using FunkArr.Core.Actors;
 using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 using FunkArr.Messages.Search;
-using FunkArr.Messages.Shared;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

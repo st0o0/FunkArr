@@ -4,7 +4,6 @@ using FunkArr.Api.Infrastructure;
 using FunkArr.Api.Models.System;
 using FunkArr.Api.Validation;
 using FunkArr.Core;
-using FunkArr.Core.Actors;
 using FunkArr.Core.Configuration;
 using FunkArr.Core.Data;
 using Microsoft.AspNetCore.Builder;

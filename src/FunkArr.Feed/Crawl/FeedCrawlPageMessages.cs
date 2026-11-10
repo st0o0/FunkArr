@@ -4,15 +4,20 @@ namespace FunkArr.Feed.Crawl;
 
 internal sealed record ProcessPage(
     int Offset,
-    CrawlWindow Window,
     int PageSize,
-    RuleSetLookup Lookup,
+    long LowerBound,
+    long UpperBound,
+    IReadOnlyDictionary<string, RuleSetTarget> TopicTargets,
     double MinConfidence);
 
-internal sealed record PageProcessed(
+internal abstract record ProcessPageResponse;
+
+internal sealed record ProcessPageCompleted(
     FeedEntry[] Accepted,
     int NewItems,
     int Unmatched,
     bool ReachedEnd,
-    IReadOnlyDictionary<RejectionReason, int>? RejectedByReason,
-    string? Error);
+    IReadOnlyDictionary<RejectionReason, int> RejectedByReason) : ProcessPageResponse;
+
+internal sealed record ProcessPageFailed(
+    string Reason) : ProcessPageResponse;

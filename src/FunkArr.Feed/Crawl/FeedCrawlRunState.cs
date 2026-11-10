@@ -25,7 +25,7 @@ internal sealed class FeedCrawlRunState
         Lookup = lookup;
     }
 
-    public void ApplyAll(IReadOnlyList<PageProcessed> results)
+    public void ApplyAll(IReadOnlyList<ProcessPageResponse> results)
     {
         foreach (var result in results)
         {
@@ -33,28 +33,36 @@ internal sealed class FeedCrawlRunState
         }
     }
 
-    public void Apply(PageProcessed result)
+    public void Apply(ProcessPageResponse response)
+    {
+        switch (response)
+        {
+            case ProcessPageCompleted completed:
+                ApplyCompleted(completed);
+                break;
+            case ProcessPageFailed failed:
+                ApplyFailed(failed);
+                break;
+        }
+    }
+
+    private void ApplyCompleted(ProcessPageCompleted result)
     {
         ReachedEnd = ReachedEnd || result.ReachedEnd;
-
-        if (result.Error is not null)
-        {
-            HasPageError = true;
-            FirstPageError ??= result.Error;
-            return;
-        }
-
         TotalNewItems += result.NewItems;
         TotalUnmatched += result.Unmatched;
         AcceptedEntries.AddRange(result.Accepted);
 
-        if (result.RejectedByReason is not null)
+        foreach (var (reason, count) in result.RejectedByReason)
         {
-            foreach (var (reason, count) in result.RejectedByReason)
-            {
-                RejectedByReason[reason] = RejectedByReason.GetValueOrDefault(reason) + count;
-            }
+            RejectedByReason[reason] = RejectedByReason.GetValueOrDefault(reason) + count;
         }
+    }
+
+    private void ApplyFailed(ProcessPageFailed result)
+    {
+        HasPageError = true;
+        FirstPageError ??= result.Reason;
     }
 
     public CrawlResult GetCrawlResult(TimeSpan duration)

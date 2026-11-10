@@ -66,13 +66,45 @@ public sealed class FeedCrawlManagerTests : TestKit
 
     private static void AnswerPages(Probes p, Func<int, QueryMediathekResponse> page)
     {
-        var query = p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout);
+        var query = p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         p.Mediathek.LastSender.Tell(page(query.Offset));
 
-        // Second page may or may not arrive depending on stream scheduling
         if (p.Mediathek.ReceiveOne(TimeSpan.FromSeconds(1)) is QueryMediathek q2)
         {
             p.Mediathek.LastSender.Tell(page(q2.Offset));
+        }
+    }
+
+    private void AnswerPagesAndEvaluations(
+        Probes p,
+        Func<int, QueryMediathekResponse> page,
+        Action<EvaluateSeries> handleEval)
+    {
+        var pagesAnswered = 0;
+        var evalsHandled = 0;
+        var deadline = DateTime.UtcNow + _stageTimeout + _stageTimeout;
+
+        while (pagesAnswered < 2 || evalsHandled < 1)
+        {
+            if (DateTime.UtcNow > deadline)
+            {
+                break;
+            }
+
+            var msg = p.Mediathek.ReceiveOne(TimeSpan.FromMilliseconds(100));
+            if (msg is QueryMediathek q)
+            {
+                p.Mediathek.LastSender.Tell(page(q.Offset));
+                pagesAnswered++;
+                continue;
+            }
+
+            var eval = p.Tv.ReceiveOne(TimeSpan.FromMilliseconds(100));
+            if (eval is EvaluateSeries es)
+            {
+                handleEval(es);
+                evalsHandled++;
+            }
         }
     }
 
@@ -116,14 +148,17 @@ public sealed class FeedCrawlManagerTests : TestKit
         manager.Tell(new StartFeedCrawl());
         AnswerProbe(p);
         AnswerRuleSets(p);
-        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort, unknown] : [old], 3, ListTimestamp));
 
-        var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Multiple(
-            () => Assert.Equal(SearchSource.Feed, evaluation.Source),
-            () => Assert.Equal(76290, evaluation.TvdbId),
-            () => Assert.Equal("Herz aus Eis", Assert.Single(evaluation.Items).Title));
-        p.Tv.Reply(new EvaluateSeriesCompleted(evaluation.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
+        AnswerPagesAndEvaluations(p,
+            offset => new QueryMediathekCompleted(offset == 0 ? [tatort, unknown] : [old], 3, ListTimestamp),
+            eval =>
+            {
+                Assert.Multiple(
+                    () => Assert.Equal(SearchSource.Feed, eval.Source),
+                    () => Assert.Equal(76290, eval.TvdbId),
+                    () => Assert.Equal("Herz aus Eis", Assert.Single(eval.Items).Title));
+                p.Tv.Reply(new EvaluateSeriesCompleted(eval.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
+            });
 
         var publish = p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(ListTimestamp), Assert.Single(publish.Entries).FirstSeenAt);

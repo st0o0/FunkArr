@@ -1,4 +1,3 @@
-using FFmpeg.Rx;
 using FunkArr.Download.Ffmpeg;
 
 namespace FunkArr.Download.Tests.Ffmpeg;

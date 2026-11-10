@@ -1,6 +1,5 @@
 using Akka.Actor;
 using Akka.Event;
-using FunkArr.Core;
 using FunkArr.Core.Actors;
 using FunkArr.Messages;
 using FunkArr.Messages.RuleSet;

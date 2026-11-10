@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Persistence;
+using Akka.Routing;
 using Akka.Streams;
 using Akka.Streams.Dsl;
 using FunkArr.Core.Actors;
@@ -28,14 +29,23 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
     private static readonly TimeSpan _pageTimeout = TimeSpan.FromSeconds(120);
 
     private sealed record Tick;
+
     private sealed record OptionsChanged;
+
     private sealed record ProbeResult(long ListTimestamp);
+
     private sealed record ProbeFailed(string Reason);
+
     private sealed record RuleSetsLoaded(RegisteredRuleSetsResult Result);
+
     private sealed record RuleSetsFailed(string Reason);
-    private sealed record CrawlPagesCompleted(IImmutableList<PageProcessed> Results);
+
+    private sealed record CrawlPagesCompleted(IImmutableList<ProcessPageResponse> Results);
+
     private sealed record CrawlPagesFailed(string Reason);
+
     private sealed record PublishCompleted(int Published);
+
     private sealed record PublishFailed(string Reason);
 
     private readonly ILoggingAdapter _log = Context.GetLogger();
@@ -48,7 +58,9 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
     private FeedCrawlManagerState _state = new();
     private FeedCrawlRunState? _runState;
     private bool _running;
-    private IActorRef[] _pageActors = [];
+    private IActorRef _router = ActorRefs.Nobody;
+    private int _poolSize;
+    private bool _pendingResize;
 
     public ITimerScheduler Timers { get; set; } = null!;
 
@@ -76,7 +88,12 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         Recover<RecoveryCompleted>(_ =>
         {
             _state.Apply(_feedOptions.CurrentValue);
-            _pageActors = CreatePageActors();
+
+            _poolSize = _feedOptions.CurrentValue.MaxConcurrency;
+            _router = Context.ActorOf(
+                Props.Create<FeedCrawlPageActor>()
+                    .WithRouter(new SmallestMailboxPool(_poolSize)),
+                "page-pool");
 
             var self = Self;
             _feedOptions.OnChange((_, _) => self.Tell(new OptionsChanged()));
@@ -109,8 +126,6 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
             Sender.Tell(_state.ToStatus(_state.Enabled, _running)));
     }
 
-    // === Idle ===
-
     private void Idle()
     {
         Command<Tick>(_ =>
@@ -133,27 +148,25 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
                 _log.Info("Feed crawl interval changed from {Old} to {New}", previousInterval, _state.Interval);
                 ScheduleNext(_state.Interval);
             }
+
+            AdjustPoolIfNeeded();
         });
         RegisterStatusHandler();
         RegisterSnapshotHandlers();
     }
 
-    private void ScheduleNext(TimeSpan delay) =>
-        Timers.StartSingleTimer(TimerKey, new Tick(), delay);
+    private void ScheduleNext(TimeSpan delay) => Timers.StartSingleTimer(TimerKey, new Tick(), delay);
 
-    private IActorRef[] CreatePageActors()
+    private void AdjustPoolIfNeeded()
     {
-        var concurrency = Math.Max(1, _feedOptions.CurrentValue.MaxConcurrency);
-        var actors = new IActorRef[concurrency];
-        for (var i = 0; i < concurrency; i++)
+        var newSize = _feedOptions.CurrentValue.MaxConcurrency;
+        if (newSize != _poolSize)
         {
-            actors[i] = Context.ActorOf(Props.Create<FeedCrawlPageActor>(), $"page-{i}");
+            _router.Tell(new AdjustPoolSize(newSize - _poolSize));
+            _poolSize = newSize;
+            _pendingResize = false;
         }
-
-        return actors;
     }
-
-    // === Probing (probe + ruleset loading) ===
 
     private void StartProbe()
     {
@@ -169,11 +182,12 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
                 new QueryMediathek([], "filmlisteTimestamp", "desc", Future: true, 0, 1, 300, null),
                 _mediathekTimeout)
             .PipeTo(Self,
-                success: response => response is QueryMediathekCompleted c
-                    ? new ProbeResult(c.ListTimestamp)
-                    : new ProbeFailed(response is QueryMediathekError e
-                        ? $"MediathekViewWeb query failed: {e.Cause.Message}"
-                        : "MediathekViewWeb queue full"),
+                success: response => response switch
+                {
+                    QueryMediathekCompleted c => new ProbeResult(c.ListTimestamp),
+                    QueryMediathekError e => new ProbeFailed($"MediathekViewWeb query failed: {e.Cause.Message}"),
+                    _ => new ProbeFailed("MediathekViewWeb queue full")
+                },
                 failure: ex => new ProbeFailed(ex.Message));
 
         Become(Probing);
@@ -212,7 +226,8 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
             var lookup = RuleSetLookup.From(msg.Result.Entries);
             _runState = new FeedCrawlRunState(_runState!.Input, _runState.ListTimestamp, _runState.Window, lookup);
 
-            _log.Debug("Feed crawl probed: listTimestamp={ListTimestamp}, window=[{Lower},{Upper}], truncated={Truncated}",
+            _log.Debug(
+                "Feed crawl probed: listTimestamp={ListTimestamp}, window=[{Lower},{Upper}], truncated={Truncated}",
                 _runState.ListTimestamp, _runState.Window.LowerBound, _runState.Window.UpperBound,
                 _runState.Window.Truncated);
 
@@ -233,7 +248,11 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         });
 
         Command<Tick>(_ => ScheduleNext(_state.Interval));
-        Command<OptionsChanged>(_ => _state.Apply(_feedOptions.CurrentValue));
+        Command<OptionsChanged>(_ =>
+        {
+            _state.Apply(_feedOptions.CurrentValue);
+            _pendingResize = true;
+        });
         RegisterStatusHandler();
         RegisterSnapshotHandlers();
     }
@@ -257,24 +276,23 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         return new CrawlWindow(cursor, listTimestamp);
     }
 
-    // === Crawling (pages + publishing) ===
-
     private void StartCrawling()
     {
         var run = _runState!;
-
-        var pageActors = _pageActors;
         var pageSize = run.Input.PageSize;
+        var topicTargets = run.Lookup.ToDictionary();
 
-        Source.From(Enumerable.Range(0, run.Input.MaxPages))
-            .Select(i => i * pageSize)
-            .SelectAsync(pageActors.Length, offset =>
-                pageActors[(offset / pageSize) % pageActors.Length].Ask<PageProcessed>(
-                    new ProcessPage(offset, run.Window, pageSize,
-                        run.Lookup, run.Input.MinConfidence),
-                    _pageTimeout))
-            .TakeWhile(r => !r.ReachedEnd, inclusive: true)
-            .RunWith(Sink.Seq<PageProcessed>(), _materializer)
+        var messages = Enumerable.Range(0, run.Input.MaxPages)
+            .Select(i => new ProcessPage(
+                i * pageSize, pageSize,
+                run.Window.LowerBound, run.Window.UpperBound,
+                topicTargets, run.Input.MinConfidence))
+            .ToArray();
+
+        Source.From(messages)
+            .SelectAsync(_poolSize, msg => _router.Ask<ProcessPageResponse>(msg, _pageTimeout))
+            .TakeWhile(r => r is not ProcessPageCompleted { ReachedEnd: true }, inclusive: true)
+            .RunWith(Sink.Seq<ProcessPageResponse>(), _materializer)
             .PipeTo(Self,
                 success: results => new CrawlPagesCompleted(results),
                 failure: ex => new CrawlPagesFailed(ex.Message));
@@ -326,14 +344,16 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         });
 
         Command<Tick>(_ => ScheduleNext(_state.Interval));
-        Command<OptionsChanged>(_ => _state.Apply(_feedOptions.CurrentValue));
+        Command<OptionsChanged>(_ =>
+        {
+            _state.Apply(_feedOptions.CurrentValue);
+            _pendingResize = true;
+        });
         RegisterStatusHandler();
         RegisterSnapshotHandlers();
     }
 
     private TimeSpan Elapsed() => _timeProvider.GetElapsedTime(_runState!.Input.StartedAt);
-
-    // === Completion ===
 
     private void CompleteCrawl(CrawlResult result)
     {
@@ -394,6 +414,12 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
     private void ReturnToIdle()
     {
         _running = false;
+
+        if (_pendingResize)
+        {
+            AdjustPoolIfNeeded();
+        }
+
         Become(Idle);
     }
 

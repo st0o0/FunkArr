@@ -38,6 +38,8 @@ internal sealed class RuleSetLookup
         return new RuleSetLookup(byKey);
     }
 
+    internal IReadOnlyDictionary<string, RuleSetTarget> ToDictionary() => _byKey;
+
     internal bool TryMatch(string topic, out string ruleSetId, out MediaType mediaType)
     {
         if (TryMatch(topic, out var target))

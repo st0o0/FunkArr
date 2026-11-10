@@ -2,14 +2,13 @@ using Akka.Actor;
 using Akka.Event;
 using FunkArr.Core.Actors;
 using FunkArr.Messages;
-using FunkArr.Messages.Feed;
 using FunkArr.Messages.Mediathek;
 using FunkArr.Messages.Search;
 using Terp.Akka;
 
 namespace FunkArr.Feed.Crawl;
 
-public sealed class FeedCrawlPageActor : ReceiveActor
+public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
 {
     private static readonly TimeSpan _mediathekTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan _evaluationTimeout = TimeSpan.FromSeconds(60);
@@ -27,6 +26,8 @@ public sealed class FeedCrawlPageActor : ReceiveActor
 
     private FeedCrawlPageActorState _state = FeedCrawlPageActorState.Empty;
     private IActorRef _replyTo = ActorRefs.Nobody;
+
+    public IStash Stash { get; set; } = null!;
 
     public FeedCrawlPageActor()
     {
@@ -59,10 +60,11 @@ public sealed class FeedCrawlPageActor : ReceiveActor
 
     private void Fetching()
     {
+        Receive<ProcessPage>(_ => Stash.Stash());
+
         Receive<FetchCompleted>(msg =>
         {
             var request = msg.Request;
-            var window = request.Window;
             var completed = msg.Result;
             var leadLimit = (DateTimeOffset.UtcNow + _maxLead).ToUnixTimeSeconds();
 
@@ -71,13 +73,13 @@ public sealed class FeedCrawlPageActor : ReceiveActor
 
             foreach (var item in completed.Items)
             {
-                if (item.FilmlisteTimestamp <= window.LowerBound)
+                if (item.FilmlisteTimestamp <= request.LowerBound)
                 {
                     reachedEnd = true;
                     break;
                 }
 
-                if (item.FilmlisteTimestamp <= window.UpperBound)
+                if (item.FilmlisteTimestamp <= request.UpperBound)
                 {
                     items.Add(item);
                 }
@@ -85,6 +87,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor
 
             var seen = new HashSet<string>(StringComparer.Ordinal);
             var groups = new Dictionary<string, (RuleSetTarget Target, List<MediathekItem> Items)>(StringComparer.Ordinal);
+            var topicTargets = request.TopicTargets;
 
             foreach (var item in items)
             {
@@ -105,7 +108,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor
                     continue;
                 }
 
-                if (request.Lookup.Match(item.Topic) is not { } target)
+                if (!topicTargets.TryGetValue(item.Topic, out var target))
                 {
                     continue;
                 }
@@ -169,13 +172,16 @@ public sealed class FeedCrawlPageActor : ReceiveActor
 
         Receive<FetchFailed>(msg =>
         {
-            _replyTo.Tell(new PageProcessed([], 0, 0, true, null, msg.Reason));
+            _replyTo.Tell(new ProcessPageFailed(msg.Reason));
+            Stash.UnstashAll();
             Become(Ready);
         });
     }
 
     private void Evaluating()
     {
+        Receive<ProcessPage>(_ => Stash.Stash());
+
         Receive<EvalCompleted>(result =>
         {
             var gate = FeedGate.Evaluate(result.Items, result.Sources, result.MediaType, result.MinConfidence);
@@ -208,6 +214,7 @@ public sealed class FeedCrawlPageActor : ReceiveActor
     private void ReplyAndBecomeReady()
     {
         _replyTo.Tell(_state.GetResult());
+        Stash.UnstashAll();
         Become(Ready);
     }
 }

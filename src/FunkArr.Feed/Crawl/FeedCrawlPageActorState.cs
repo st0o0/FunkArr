@@ -1,4 +1,3 @@
-using FunkArr.Messages;
 using FunkArr.Messages.Feed;
 
 namespace FunkArr.Feed.Crawl;
@@ -35,17 +34,8 @@ internal sealed class FeedCrawlPageActorState
         _pendingGroups--;
     }
 
-    public void ApplyEvalFailed()
-    {
-        _pendingGroups--;
-    }
+    public void ApplyEvalFailed() => _pendingGroups--;
 
-    public PageProcessed GetResult()
-    {
-        IReadOnlyDictionary<RejectionReason, int>? rejected = _rejectedByReason.Count > 0
-            ? _rejectedByReason
-            : null;
-
-        return new PageProcessed([.. _accepted], _totalNewItems, _totalUnmatched, _reachedEnd, rejected, null);
-    }
+    public ProcessPageCompleted GetResult() =>
+        new([.. _accepted], _totalNewItems, _totalUnmatched, _reachedEnd, _rejectedByReason);
 }
