@@ -233,8 +233,8 @@ public sealed class FeedCrawlPageActor : ReceiveActor, IWithUnboundedStash
 
     private void ReplyAndBecomeReady()
     {
-        var rejected = _rejectedByReason.Count > 0
-            ? (IReadOnlyDictionary<RejectionReason, int>)_rejectedByReason
+        IReadOnlyDictionary<RejectionReason, int>? rejected = _rejectedByReason.Count > 0
+            ? _rejectedByReason
             : null;
 
         _manager.Tell(new PageProcessed([.. _accepted], _totalNewItems, _totalUnmatched, _reachedEnd, rejected, null));
