@@ -6,17 +6,16 @@ namespace FunkArr.Feed.Store;
 
 public sealed class FeedStoreManagerState
 {
-    public static readonly IComparer<FeedEntry> NewestFirst = Comparer<FeedEntry>.Create((a, b) =>
+    private static readonly IComparer<FeedEntry> _newestFirst = Comparer<FeedEntry>.Create((a, b) =>
     {
         var byFirstSeen = b.FirstSeenAt.CompareTo(a.FirstSeenAt);
         return byFirstSeen != 0 ? byFirstSeen : StringComparer.Ordinal.Compare(a.StableId, b.StableId);
     });
 
-    public Dictionary<string, FeedEntry> Entries { get; } = new(StringComparer.Ordinal);
-    public SortedSet<FeedEntry> Newest { get; } = new(NewestFirst);
-    public Dictionary<MediaType, SortedSet<FeedEntry>> NewestByType { get; } = [];
-
-    public static FeedStoreManagerState Empty => new();
+    private Dictionary<string, FeedEntry> Entries { get; } = new(StringComparer.Ordinal);
+    private SortedSet<FeedEntry> Newest { get; } = new(_newestFirst);
+    private Dictionary<MediaType, SortedSet<FeedEntry>> NewestByType { get; } = [];
+    public int Count => Entries.Count;
 
     public static FeedStoreManagerState FromPersistence(PersistedFeedStoreState persisted)
     {
@@ -48,7 +47,7 @@ public sealed class FeedStoreManagerState
 
             if (!NewestByType.TryGetValue(entry.MediaType, out var byType))
             {
-                byType = new SortedSet<FeedEntry>(NewestFirst);
+                byType = new SortedSet<FeedEntry>(_newestFirst);
                 NewestByType[entry.MediaType] = byType;
             }
 

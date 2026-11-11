@@ -16,6 +16,9 @@ public sealed class FeedStoreManagerStateTests
         return state;
     }
 
+    private static FeedEntry[] QueryAll(FeedStoreManagerState state) =>
+        state.Query(new QueryFeed(null, 0, 10_000)).Entries;
+
     [Fact]
     public void NewEntries_skips_known_ids_and_keeps_earliest_duplicate()
     {
@@ -41,7 +44,7 @@ public sealed class FeedStoreManagerStateTests
 
         state.Apply(new FeedEntriesAdded([TestData.Entry("a", _t0.AddDays(1)).ToPersistence()]));
 
-        var entry = Assert.Single(state.Entries.Values);
+        var entry = Assert.Single(QueryAll(state));
         Assert.Equal(_t0, entry.FirstSeenAt);
     }
 
@@ -82,7 +85,9 @@ public sealed class FeedStoreManagerStateTests
 
         Assert.Equal("old", Assert.Single(expired));
         state.Apply(new FeedEntriesExpired(expired));
-        Assert.Equal("fresh", Assert.Single(state.Entries.Keys));
+        Assert.Multiple(
+            () => Assert.Equal(1, state.Count),
+            () => Assert.Equal("fresh", Assert.Single(QueryAll(state)).StableId));
     }
 
     [Fact]
@@ -105,7 +110,7 @@ public sealed class FeedStoreManagerStateTests
             () => Assert.Equal(3, all.Total),
             () => Assert.Equal(3, all.FilteredTotal),
             () => Assert.Equal(new[] { "movie", "a", "b" }, all.Entries.Select(e => e.StableId).ToArray()),
-            () => Assert.Equal(3, state.Entries.Count));
+            () => Assert.Equal(3, state.Count));
     }
 
     [Fact]
@@ -126,13 +131,7 @@ public sealed class FeedStoreManagerStateTests
     {
         var state = With(
             TestData.Entry("ard", _t0),
-            TestData.Entry("zdf", _t0.AddHours(1)));
-
-        var ardEntry = state.Entries["ard"];
-        var zdfEntry = state.Entries["zdf"] with { Channel = "ZDF" };
-        state = new FeedStoreManagerState();
-        state.Apply(new FeedEntriesAdded([ardEntry.ToPersistence()]));
-        state.Apply(new FeedEntriesAdded([zdfEntry.ToPersistence()]));
+            TestData.Entry("zdf", _t0.AddHours(1)) with { Channel = "ZDF" });
 
         var result = state.Query(new QueryFeed(null, 0, 10, Channel: "ZDF"));
 
@@ -195,7 +194,7 @@ public sealed class FeedStoreManagerStateTests
 
         var restored = FeedStoreManagerState.FromPersistence(With(original).GetPersistenceState());
 
-        var entry = Assert.Single(restored.Entries.Values);
+        var entry = Assert.Single(QueryAll(restored));
         Assert.Multiple(
             () => Assert.Equal(original.Title, entry.Title),
             () => Assert.Equal(original.Url, entry.Url),
