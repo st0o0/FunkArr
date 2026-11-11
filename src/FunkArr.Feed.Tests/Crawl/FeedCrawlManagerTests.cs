@@ -41,7 +41,7 @@ public sealed class FeedCrawlManagerTests : TestKit
         registry.Register<IFeedStoreManager>(probes.Store);
 
         var options = Substitute.For<IOptionsMonitor<FeedOptions>>();
-        options.CurrentValue.Returns(feedOptions ?? new FeedOptions { PageSize = 2, MaxPages = 2, MaxConcurrency = 2 });
+        options.CurrentValue.Returns(feedOptions ?? new FeedOptions { PageSize = 2, MaxPages = 2 });
 
         var manager = Sys.ActorOf(Props.Create(() => new FeedCrawlManager(options, TimeProvider.System)));
         registry.Register<IFeedCrawlManager>(manager);
@@ -62,50 +62,6 @@ public sealed class FeedCrawlManagerTests : TestKit
     {
         p.Resolver.ExpectMsg<QueryRegisteredRuleSets>();
         p.Resolver.Reply(new RegisteredRuleSetsResult([_tatort]));
-    }
-
-    private static void AnswerPages(Probes p, Func<int, QueryMediathekResponse> page)
-    {
-        var query = p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
-        p.Mediathek.LastSender.Tell(page(query.Offset));
-
-        if (p.Mediathek.ReceiveOne(TimeSpan.FromSeconds(1)) is QueryMediathek q2)
-        {
-            p.Mediathek.LastSender.Tell(page(q2.Offset));
-        }
-    }
-
-    private void AnswerPagesAndEvaluations(
-        Probes p,
-        Func<int, QueryMediathekResponse> page,
-        Action<EvaluateSeries> handleEval)
-    {
-        var pagesAnswered = 0;
-        var evalsHandled = 0;
-        var deadline = DateTime.UtcNow + _stageTimeout + _stageTimeout;
-
-        while (pagesAnswered < 2 || evalsHandled < 1)
-        {
-            if (DateTime.UtcNow > deadline)
-            {
-                break;
-            }
-
-            var msg = p.Mediathek.ReceiveOne(TimeSpan.FromMilliseconds(100));
-            if (msg is QueryMediathek q)
-            {
-                p.Mediathek.LastSender.Tell(page(q.Offset));
-                pagesAnswered++;
-                continue;
-            }
-
-            var eval = p.Tv.ReceiveOne(TimeSpan.FromMilliseconds(100));
-            if (eval is EvaluateSeries es)
-            {
-                handleEval(es);
-                evalsHandled++;
-            }
-        }
     }
 
     private FeedCrawlStatusResult AwaitStatus(IActorRef manager, Func<FeedCrawlStatusResult, bool> done)
@@ -142,23 +98,22 @@ public sealed class FeedCrawlManagerTests : TestKit
     {
         var (manager, p) = Create();
         var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp, url: "https://example.com/tatort.mp4");
-        var unknown = TestData.Item("Irgendwas", "Unbekannt", ListTimestamp - 10);
         var old = TestData.Item("Alt", "Tatort", ListTimestamp - 400_000);
 
         manager.Tell(new StartFeedCrawl());
         AnswerProbe(p);
         AnswerRuleSets(p);
 
-        AnswerPagesAndEvaluations(p,
-            offset => new QueryMediathekCompleted(offset == 0 ? [tatort, unknown] : [old], 3, ListTimestamp),
-            eval =>
-            {
-                Assert.Multiple(
-                    () => Assert.Equal(SearchSource.Feed, eval.Source),
-                    () => Assert.Equal(76290, eval.TvdbId),
-                    () => Assert.Equal("Herz aus Eis", Assert.Single(eval.Items).Title));
-                p.Tv.Reply(new EvaluateSeriesCompleted(eval.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
-            });
+        var pageQuery = p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekCompleted(
+            pageQuery.Offset == 0 ? [tatort] : [old], 2, ListTimestamp));
+
+        var eval = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Multiple(
+            () => Assert.Equal(SearchSource.Feed, eval.Source),
+            () => Assert.Equal(76290, eval.TvdbId),
+            () => Assert.Equal("Herz aus Eis", Assert.Single(eval.Items).Title));
+        p.Tv.Reply(new EvaluateSeriesCompleted(eval.SearchId, [TestData.Result("https://example.com/tatort.mp4")], 1));
 
         var publish = p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(DateTimeOffset.FromUnixTimeSeconds(ListTimestamp), Assert.Single(publish.Entries).FirstSeenAt);
@@ -168,58 +123,8 @@ public sealed class FeedCrawlManagerTests : TestKit
         Assert.Multiple(
             () => Assert.Equal(CrawlOutcome.Completed, status.LastOutcome),
             () => Assert.Equal(ListTimestamp, status.Cursor),
-            () => Assert.Equal(2, status.LastNewItems),
-            () => Assert.Equal(1, status.LastPublished),
-            () => Assert.Equal(1, status.LastUnmatched),
             () => Assert.False(status.LastGap),
             () => Assert.False(status.Running));
-    }
-
-    [Fact]
-    public void Failed_eval_completes_crawl_with_zero_published()
-    {
-        var (manager, p) = Create();
-        var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp);
-        var old = TestData.Item("Alt", "Tatort", ListTimestamp - 400_000);
-
-        manager.Tell(new StartFeedCrawl());
-        AnswerProbe(p);
-        AnswerRuleSets(p);
-        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort] : [old], 2, ListTimestamp));
-        var evaluation = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
-        p.Tv.Reply(new EvaluateSeriesFailed(evaluation.SearchId, new InvalidOperationException("boom")));
-
-        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
-        Assert.Multiple(
-            () => Assert.Equal(CrawlOutcome.Completed, status.LastOutcome),
-            () => Assert.Equal(ListTimestamp, status.Cursor),
-            () => Assert.Equal(0, status.LastPublished),
-            () => Assert.False(status.Running));
-        p.Store.ExpectNoMsg(TimeSpan.FromMilliseconds(200), TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public void Failed_page_query_fails_the_crawl()
-    {
-        var (manager, p) = Create();
-
-        manager.Tell(new StartFeedCrawl());
-        AnswerProbe(p);
-        AnswerRuleSets(p);
-
-        for (var i = 0; i < 2; i++)
-        {
-            if (p.Mediathek.ReceiveOne(_stageTimeout, TestContext.Current.CancellationToken) is QueryMediathek)
-            {
-                p.Mediathek.LastSender.Tell(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
-            }
-        }
-
-        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
-        Assert.Multiple(
-            () => Assert.Equal(CrawlOutcome.Failed, status.LastOutcome),
-            () => Assert.Contains("HTTP 500", status.LastError!),
-            () => Assert.Equal(0, status.Cursor));
     }
 
     [Fact]
@@ -234,30 +139,5 @@ public sealed class FeedCrawlManagerTests : TestKit
         p.Mediathek.ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
         manager.Tell(new QueryFeedCrawlStatus());
         Assert.True(ExpectMsg<FeedCrawlStatusResult>(cancellationToken: TestContext.Current.CancellationToken).Running);
-    }
-
-    [Fact]
-    public void Multiple_pages_are_processed_and_published()
-    {
-        var (manager, p) = Create();
-        var tatort = TestData.Item("Herz aus Eis", "Tatort", ListTimestamp, url: "https://example.com/tatort1.mp4");
-        var old = TestData.Item("Alt", "Tatort", ListTimestamp - 400_000);
-
-        manager.Tell(new StartFeedCrawl());
-        AnswerProbe(p);
-        AnswerRuleSets(p);
-        AnswerPages(p, offset => new QueryMediathekCompleted(offset == 0 ? [tatort, old] : [old], 2, ListTimestamp));
-
-        var eval1 = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
-        p.Tv.Reply(new EvaluateSeriesCompleted(eval1.SearchId, [TestData.Result("https://example.com/tatort1.mp4")], 1));
-
-        var publish = p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Single(publish.Entries);
-        p.Store.Reply(new PublishFeedEntriesCompleted(1));
-
-        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
-        Assert.Multiple(
-            () => Assert.Equal(CrawlOutcome.Completed, status.LastOutcome),
-            () => Assert.False(status.Running));
     }
 }

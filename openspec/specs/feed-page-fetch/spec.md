@@ -1,42 +1,54 @@
-# feed-page-fetch Specification
+# Feed Page Fetch
 
-## Purpose
+Sequential page fetch via Source.UnfoldAsync loop.
 
-Defines page fetching for the feed crawl via FeedCrawlPageActor pool routees and the sliding-window harvest.
+## Fetch Strategy
 
-## Requirements
+Sequential page fetch via `Source.UnfoldAsync`:
+- One page at a time, offset-based pagination
+- Default PageSize=1000, MaxPages=20 (from FeedOptions)
+- Pages sorted by filmlisteTimestamp desc (newest first, walk backward)
 
-### Requirement: Default page fetch parameters
+### Why Sequential
 
-The feed crawl SHALL use optimized defaults for MVW queries: `PageSize` of 1000 (MVW's maximum response size), `MaxPages` of 20, and `MaxConcurrency` of 4 concurrent page-pool routees. `PagePrefetch` is removed as a separate concept — the pool size controls concurrency directly.
+The MediathekViewWebManager has an internal `Source.Queue` with
+`maxConcurrent=3`. Regardless of how many concurrent Asks are sent,
+only 3 HTTP requests execute in parallel. The previous pool (4 actors)
+and stream dispatch added overhead without additional throughput.
 
-#### Scenario: Default configuration
+Sequential fetch also enables correct early termination: items are sorted
+by timestamp, so as soon as an item's timestamp <= lower bound, we know
+all remaining items are older — `ReachedEnd = true`.
 
-- **WHEN** the feed crawl starts with default `FeedOptions`
-- **THEN** `PageSize` is 1000
-- **AND** `MaxPages` is 20
-- **AND** `MaxConcurrency` is 4 (pool size)
-- **AND** the maximum item ceiling is 20,000 (1000 × 20)
+Normal operation (15-min interval): 1-3 pages, <1s total.
+Catch-up after downtime: up to 20 pages.
 
-#### Scenario: MVW returns fewer items than page size
+## Page Filtering
 
-- **WHEN** MVW returns fewer than `PageSize` items
-- **THEN** the PageProcessed response SHALL have `ReachedEnd=true`
-- **AND** the Manager SHALL stop dispatching new pages
+`FilterPage(response, ctx)` is a private static method on FeedHarvestActor:
 
-### Requirement: Page fetch via pool routee
+1. Extract items from QueryMediathekCompleted response
+2. Filter to window: `LowerBound < filmlisteTimestamp <= UpperBound`
+3. Skip items without any video URL (UrlVideoHd/UrlVideo/UrlVideoLow)
+4. Skip items with timestamp > lead limit (90 days ahead)
+5. Deduplicate by StableId (SHA256 of channel + URL)
+6. Set `ReachedEnd = true` if any item has timestamp <= LowerBound
+   or if returned items < PageSize
 
-Page fetching SHALL be performed by FeedCrawlPageActor pool routees. Each routee Asks MediathekManager directly (no FeedPageActor proxy). The Manager dispatches ProcessPage messages to the pool and receives PageProcessed responses. Sliding-window dispatch: fire initial batch (bounded by pool size), then fire one more on each PageProcessed until MaxPages reached or ReachedEnd.
+Returns `(MediathekItem[] items, bool reachedEnd)`.
 
-#### Scenario: Sliding window dispatch
+## Topic Grouping
 
-- **WHEN** a crawl starts with MaxConcurrency=4 and MaxPages=20
-- **THEN** the Manager SHALL fire 4 initial ProcessPage messages (offsets 0, 1000, 2000, 3000)
-- **AND** on each PageProcessed, fire the next offset if more pages remain
-- **AND** stop when MaxPages reached or any PageProcessed has ReachedEnd=true
+`GroupByTopic(items, targets)` is a private static method on FeedHarvestActor:
 
-#### Scenario: Window filtering inside page actor
+1. For each item, look up `item.Topic` in the target map
+2. Group matched items by RuleSetId
+3. Items without a matching topic are counted as unmatched
+4. Return `IReadOnlyList<ItemGroup>`
 
-- **WHEN** FeedCrawlPageActor receives items from MediathekManager
-- **THEN** it SHALL filter items to those within the CrawlWindow (LowerBound < timestamp <= UpperBound)
-- **AND** items below the lower bound SHALL cause ReachedEnd=true
+## Deleted
+
+- SmallestMailboxPool dispatch
+- FeedCrawlPageActor fetch logic
+- MaxConcurrency / PagePrefetch options (no longer used)
+- Pool resize via AdjustPoolSize

@@ -16,3 +16,7 @@ CVE-2026-56209
 # libaom: heap buffer overflow in AV1 encoder first-pass stats buffer via LAP mode
 # Not exploitable: FunkArr remuxes only, does not encode AV1
 CVE-2026-56208
+
+# zlib: infback9 buffer overflow (inftree9.c) in OSGeo GDAL's vendored zlib copy (gdal < 3.11.0)
+# Not exploitable: flaw is in GDAL's bundled code, FunkArr ships no GDAL; Alpine zlib is matched by package name only
+CVE-2026-4738

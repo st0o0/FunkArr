@@ -12,6 +12,4 @@ public sealed class FeedOptions
     public TimeSpan MaxCatchUp { get; set; } = TimeSpan.FromDays(7);
     public TimeSpan Retention { get; set; } = TimeSpan.FromDays(14);
     public double MinConfidence { get; set; } = 0.7;
-    public int PagePrefetch { get; set; } = 2;
-    public int MaxConcurrency { get; set; } = 4;
 }

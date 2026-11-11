@@ -1,65 +1,38 @@
-# feed-eval-gate Specification
+# Feed Eval Gate
 
-## Purpose
+Gate logic lives as instance methods on pipeline records.
 
-Defines evaluation and gating of matched groups via FeedCrawlPageActor inline processing and FeedGate.
+## Evaluation
 
-## Requirements
+`ItemGroup.EvaluateAsync(IActorRef eval, TimeSpan timeout)`:
+- Routes to TvEval or MovieEval based on MediaType
+- Builds EvaluateSeries or EvaluateMovies message from group data
+- Returns `Task<ScoredGroup>` (the Ask result mapped)
 
-### Requirement: Typed rejection reasons
+Evaluation parallelism via `SelectAsyncUnordered(4)` in the stream.
+Groups are independent — order does not matter.
 
-Rejection reasons SHALL use the `RejectionReason` enum from `FunkArr.Messages.Feed`. The enum SHALL have members `Unknown = 0, LowConfidence = 1, MissingEpisode = 2, MissingId = 3, UnknownSource = 4, MissingTimestamp = 5`.
+## Gating
 
-#### Scenario: GateResult uses RejectionReason enum
+`ScoredGroup.Gate(double minConfidence)`:
+- Matches scored results back to source MediathekItems via URL
+- Rejects: LowConfidence, MissingEpisode, MissingId, UnknownSource,
+  MissingTimestamp
+- Builds FeedEntry records for accepted items (StableId via SHA256)
+- Returns `GatedResult(accepted[], seenCount, unmatchedCount, rejectedByReason)`
 
-- **WHEN** `GateResult.RejectedByReason` is inspected
-- **THEN** its type SHALL be `IReadOnlyDictionary<RejectionReason, int>`
+## RejectionReason enum — unchanged
 
-#### Scenario: Gating returns enum values
+## Types
 
-- **WHEN** a result is rejected for low confidence
-- **THEN** the rejection reason SHALL be `RejectionReason.LowConfidence`
+```
+ItemGroup(string RuleSetId, MediaType MediaType, ExternalIds Ids,
+          MediathekItem[] Items)
+  method: EvaluateAsync(eval, timeout) → Task<ScoredGroup>
 
-#### Scenario: Telemetry tag uses enum ToString
+ScoredGroup(ItemGroup Source, SearchResultItem[] Results)
+  method: Gate(minConfidence) → GatedResult
 
-- **WHEN** rejection metrics are recorded
-- **THEN** the `reason` tag SHALL use the enum member name (e.g. `"LowConfidence"`)
-
-### Requirement: Evaluation and gating inside page actor
-
-Evaluation (Ask to TvEvaluationRegion / MovieEvaluationRegion) and gating SHALL be performed inline by FeedCrawlPageActor during its Evaluating phase. The gating logic (previously in `FeedGate`) SHALL exist as private static methods on `FeedCrawlPageActor`: `StableIdFor`, `Evaluate`, and `Reject`. `GateResult` SHALL be a record declared at the actor file level or as a private nested type. The standalone `FeedGate` static class SHALL be deleted.
-
-#### Scenario: Per-group evaluation
-
-- **WHEN** a page has items matching 3 different rulesets
-- **THEN** FeedCrawlPageActor SHALL fire 3 evaluation Asks (one per group)
-- **AND** collect all 3 results before applying the gating logic per group
-- **AND** aggregate accepted entries into the PageProcessed response
-
-#### Scenario: Movie vs TV routing
-
-- **WHEN** a group has MediaType.Movie
-- **THEN** FeedCrawlPageActor SHALL Ask MovieEvaluationRegion with EvaluateMovies
-- **WHEN** a group has MediaType.Show
-- **THEN** FeedCrawlPageActor SHALL Ask TvEvaluationRegion with EvaluateSeries
-
-#### Scenario: No stale-sender risk
-
-- **WHEN** FeedCrawlPageActor is in Evaluating state
-- **THEN** it SHALL NOT accept new ProcessPage messages
-- **AND** the captured sender reference from the original ProcessPage SHALL be used for the reply
-
-#### Scenario: Gating logic is actor-private
-
-- **WHEN** the FeedCrawlPageActor source file is inspected
-- **THEN** `StableIdFor`, `Evaluate`, and `Reject` SHALL be `private static` methods on the actor class
-- **AND** no standalone `FeedGate` class SHALL exist in the codebase
-
-### Requirement: RejectionReason persistence enum
-
-A `PersistedRejectionReason` enum SHALL exist in `FunkArr.Persistence` with members `Unknown = 0, LowConfidence = 1, MissingEpisode = 2, MissingId = 3, UnknownSource = 4, MissingTimestamp = 5` for forward-compatibility.
-
-#### Scenario: PersistedRejectionReason follows conventions
-
-- **WHEN** `PersistedRejectionReason` is inspected
-- **THEN** it SHALL have `Unknown = 0` and explicit int values for all members
+GatedResult(FeedEntry[] Accepted, int SeenCount, int UnmatchedCount,
+            IReadOnlyDictionary<RejectionReason, int> RejectedByReason)
+```

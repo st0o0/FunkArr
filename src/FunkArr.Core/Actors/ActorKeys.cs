@@ -38,6 +38,8 @@ public interface IEnrichmentManager;
 
 public interface IFeedCrawlManager;
 
+public interface IFeedHarvestActor;
+
 public interface IFeedStoreManager;
 
 public interface ITestScoringRegion;

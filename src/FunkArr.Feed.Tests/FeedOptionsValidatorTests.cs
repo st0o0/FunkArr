@@ -12,7 +12,6 @@ public sealed class FeedOptionsValidatorTests
         PageSize = 1000,
         MaxPages = 20,
         MaxCatchUp = TimeSpan.FromDays(7),
-        MaxConcurrency = 4,
         MinConfidence = 0.7,
         Retention = TimeSpan.FromDays(14),
         InitialLookback = TimeSpan.FromHours(48)
@@ -92,18 +91,6 @@ public sealed class FeedOptionsValidatorTests
 
         Assert.True(result.Failed);
         Assert.Contains("FunkArr:Feed:MaxCatchUp must be positive", result.FailureMessage);
-    }
-
-    [Fact]
-    public void Zero_max_concurrency_fails()
-    {
-        var options = ValidOptions();
-        options.MaxConcurrency = 0;
-
-        var result = _validator.Validate(null, options);
-
-        Assert.True(result.Failed);
-        Assert.Contains("FunkArr:Feed:MaxConcurrency must be positive", result.FailureMessage);
     }
 
     [Fact]

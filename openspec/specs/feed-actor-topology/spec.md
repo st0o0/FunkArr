@@ -1,48 +1,43 @@
-# feed-actor-topology Specification
+# Feed Actor Topology
 
-## Purpose
+Replaces the current 3-actor / pool topology with 3 actors / parent-child.
 
-Defines the Feed crawl actor topology: FeedCrawlManager with a page-pool child and FeedStoreManager.
+## Actors
 
-## Requirements
+### FeedCrawlManager (persistent singleton)
 
-### Requirement: Feed crawl actor topology
+- Timer scheduling (IWithTimers, periodic Tick)
+- Cursor persistence (FeedCursorAdvanced, FeedRunFailed events)
+- Status queries (QueryFeedCrawlStatus)
+- Options monitoring (IOptionsMonitor<FeedOptions>)
+- Creates FeedHarvestActor as long-lived child at RecoveryCompleted
 
-The Feed domain SHALL have 3 actor types across a maximum of 2 hierarchy levels:
+No Become states. No pipeline knowledge. No pool management.
 
-1. **FeedCrawlManager** — persistent cluster singleton, owns a page-pool child
-2. **FeedCrawlPageActor** — non-persistent pool routee (child of FeedCrawlManager's pool)
-3. **FeedStoreManager** — persistent cluster singleton (unchanged)
+### FeedHarvestActor (long-lived child of Manager)
 
-FeedScheduler, FeedCrawlWorker, FeedPageActor, and FeedEvalActor SHALL be removed.
+- Non-persistent ReceiveActor
+- Created once at Manager's RecoveryCompleted, lives as long as the Manager
+- Resolves dependencies via `Context.GetActor<T>()` (not constructor params)
+- Single `Receive<StartHarvest>` handler builds and runs a materialized
+  Akka.Streams pipeline, result goes via `PipeTo(Sender)` to the Manager
+- No Become states, no mutable state
 
-#### Scenario: Actor type count
+### FeedStoreManager (persistent singleton) — unchanged
 
-- **WHEN** the Feed domain actor types are enumerated
-- **THEN** there SHALL be exactly 3: FeedCrawlManager, FeedCrawlPageActor, FeedStoreManager
+## Deleted
 
-#### Scenario: Maximum hierarchy depth
+- FeedCrawlPageActor (pool routees)
+- SmallestMailboxPool router
+- FeedCrawlPageActorState
+- FeedCrawlPageMessages (ProcessPage, ProcessPageResponse)
+- FeedCrawlRunState
 
-- **WHEN** the actor hierarchy is traversed from any Feed singleton
-- **THEN** the maximum depth SHALL be 2 (singleton → pool routee)
-- **AND** no actor SHALL create child actors of its own
+## Hierarchy
 
-#### Scenario: FeedScheduler removed
-
-- **WHEN** the codebase is searched for FeedScheduler or IFeedScheduler
-- **THEN** no actor class, interface, or registration SHALL exist
-
-#### Scenario: FeedCrawlWorker removed
-
-- **WHEN** the codebase is searched for FeedCrawlWorker
-- **THEN** no actor class or state class SHALL exist
-
-#### Scenario: FeedPageActor removed
-
-- **WHEN** the codebase is searched for FeedPageActor
-- **THEN** no actor class SHALL exist
-
-#### Scenario: FeedEvalActor removed
-
-- **WHEN** the codebase is searched for FeedEvalActor
-- **THEN** no actor class SHALL exist
+```
+AkkaSetupContainer
+├── FeedCrawlManager (singleton)
+│   └── FeedHarvestActor (child, created once)
+└── FeedStoreManager (singleton)
+```
