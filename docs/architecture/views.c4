@@ -1,0 +1,61 @@
+// Static views. Embedded on the docs site with <ArchitectureView view="..." />.
+
+views {
+
+  // Applies to every view in this block:
+  // persistent actors carry a database icon.
+  style element.tag = #persistent {
+    icon bootstrap:database
+  }
+
+  view index {
+    title "System context"
+    description "FunkArr and the systems it talks to"
+
+    include *
+    autoLayout LeftRight
+  }
+
+  view containers of funkarr {
+    title "Containers"
+    description "Projects inside the FunkArr container and how they connect"
+
+    include *
+    exclude funkarr.journal, funkarr.ffmpeg
+  }
+
+  view search of funkarr.search {
+    title "Search domain"
+    include *
+  }
+
+  view ruleset of funkarr.ruleset {
+    title "RuleSet domain"
+    include *
+  }
+
+  view scoring of funkarr.scoring {
+    title "Scoring domain"
+    include *
+  }
+
+  view enrichment of funkarr.enrichment {
+    title "Enrichment domain"
+    include *
+  }
+
+  view history of funkarr.history {
+    title "History domain"
+    include *
+  }
+
+  view download of funkarr.download {
+    title "Download domain"
+    include *
+  }
+
+  view feed of funkarr.feed {
+    title "Feed domain"
+    include *
+  }
+}
