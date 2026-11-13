@@ -4,7 +4,7 @@ description: "Run the full E2E test plan against the dev stack. Handles reset, s
 
 # E2E Verification
 
-Execute the complete E2E test plan from `E2E-TEST-PLAN.md` against the dev stack.
+Execute the complete E2E test plan from `src/FunkArr.UI/e2e/E2E-TEST-PLAN.md` against the dev stack.
 
 **Every test must be PASS or FAIL. No SKIP allowed.** If a test requires specific state,
 create that state before running the test. The execution order in the test plan is
@@ -12,7 +12,7 @@ designed so each step builds the state for subsequent steps.
 
 ## How to run
 
-1. Read `E2E-TEST-PLAN.md` fully before starting
+1. Read `src/FunkArr.UI/e2e/E2E-TEST-PLAN.md` fully before starting
 2. Execute Phase 0 (environment setup) below
 3. Follow the **Test Execution Order** at the bottom of the plan (steps 1-29)
 4. Use the plan's **Setup Recipes** for creating each state
@@ -97,7 +97,7 @@ Invoke-RestMethod "http://localhost:7878/api/v3/system/status?apikey=funkarr-dev
 Invoke-RestMethod "http://localhost:9696/api/v1/system/status?apikey=funkarr-dev-api-key-01" | Select-Object version
 ```
 
-Then run the Sonarr and Radarr setup recipes from `E2E-TEST-PLAN.md` section 0
+Then run the Sonarr and Radarr setup recipes from `src/FunkArr.UI/e2e/E2E-TEST-PLAN.md` section 0
 ("Re-add Tatort to Sonarr after reset" and "Setup Recipe: Radarr movie search").
 
 After the setup wizard (Phase 1), create indexers directly in Sonarr and Radarr
@@ -477,7 +477,7 @@ Mark each test:
 
 ## Important
 
-- Don't modify E2E-TEST-PLAN.md - it's the reusable spec
+- Don't modify src/FunkArr.UI/e2e/E2E-TEST-PLAN.md - it's the reusable spec
 - Write results to a separate file
 - Follow the execution order exactly - it creates state for later tests
 - If a test fails because state setup failed, mark both the setup failure and the dependent test as FAIL

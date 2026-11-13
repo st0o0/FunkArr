@@ -1,0 +1,100 @@
+// Dynamic views: request flows through the actors.
+// Embedded on /en/contributing/architecture/request-flow.
+
+views {
+
+  // Same rule as in views.c4 - local styles only apply within their views block.
+  style element.tag = #persistent {
+    icon bootstrap:database
+  }
+
+  dynamic view search-flow {
+    title "TV search"
+    description "Sonarr searches an episode via the Newznab API"
+    autoLayout TopBottom
+
+    sonarr -> funkarr.arrapi "GET /index/api?t=tvsearch"
+    funkarr.arrapi -> funkarr.search.search-manager "search command"
+    funkarr.search.search-manager -> funkarr.search.tv-search-worker "dispatch (one entity per search ID)"
+    funkarr.search.tv-search-worker -> funkarr.ruleset.ruleset-resolver "resolve ruleset by TVDB ID"
+    funkarr.search.tv-search-worker <- funkarr.ruleset.ruleset-resolver "ruleset (topic, aliases)"
+    funkarr.search.tv-search-worker -> funkarr.search.mediathek-manager "query by topic"
+    funkarr.search.mediathek-manager -> mediathekviewweb "search API"
+    funkarr.search.mediathek-manager <- mediathekviewweb "entries"
+    funkarr.search.tv-search-worker <- funkarr.search.mediathek-manager "entries"
+    funkarr.search.tv-search-worker -> funkarr.search.tv-evaluation-worker "evaluate entries"
+    funkarr.search.tv-evaluation-worker -> funkarr.scoring.scoring-manager "score entries"
+    funkarr.scoring.scoring-manager -> funkarr.scoring.scoring-actor "evaluate rules"
+    funkarr.search.tv-evaluation-worker <- funkarr.scoring.scoring-manager "matches + confidence"
+    funkarr.search.tv-evaluation-worker -> funkarr.enrichment.enrichment-manager "enrich episodes"
+    funkarr.enrichment.enrichment-manager -> funkarr.enrichment.tvdb-actor "episode lookup"
+    funkarr.enrichment.tvdb-actor -> tvdb "episode guide"
+    funkarr.search.tv-evaluation-worker <- funkarr.enrichment.enrichment-manager "enriched matches"
+    funkarr.search.tv-evaluation-worker -> funkarr.history.history-worker "record scoring run"
+    funkarr.search.tv-search-worker <- funkarr.search.tv-evaluation-worker "releases"
+    funkarr.search.search-manager <- funkarr.search.tv-search-worker "releases"
+    funkarr.arrapi <- funkarr.search.search-manager "search result"
+    sonarr <- funkarr.arrapi "Newznab RSS response"
+  }
+
+  dynamic view download-flow {
+    title "Download"
+    description "Sonarr grabs a release and FunkArr downloads it"
+    autoLayout TopBottom
+
+    sonarr -> funkarr.arrapi "POST /download/api?mode=addfile (NZB)"
+    funkarr.arrapi -> funkarr.download.download-manager "add download"
+    funkarr.download.download-manager -> funkarr.journal "persist DownloadEnqueued"
+    funkarr.arrapi <- funkarr.download.download-manager "download ID"
+    sonarr <- funkarr.arrapi "nzo_id"
+    funkarr.download.download-scheduler -> funkarr.download.download-manager "schedule window open"
+    funkarr.download.download-manager -> funkarr.journal "persist DownloadDispatched"
+    funkarr.download.download-manager -> funkarr.download.download-worker "dispatch"
+    funkarr.download.download-worker -> funkarr.journal "persist DownloadInitialized, DownloadStarted"
+    funkarr.download.download-worker -> broadcaster-cdns "download subtitles"
+    funkarr.download.download-worker -> funkarr.ffmpeg "download + remux to MKV"
+    funkarr.ffmpeg -> broadcaster-cdns "video / HLS"
+    funkarr.download.download-worker <- funkarr.ffmpeg "progress, exit code"
+    funkarr.download.download-worker -> funkarr.journal "persist DownloadSucceeded"
+    funkarr.download.download-worker -> funkarr.download.download-history-manager "record result"
+    funkarr.download.download-worker -> funkarr.download.download-manager "completed - free slot"
+    sonarr -> funkarr.arrapi "mode=queue / mode=history (polling)"
+    funkarr.arrapi -> funkarr.download.download-history-manager "query history"
+    sonarr <- funkarr.arrapi "completed, path"
+  }
+
+  dynamic view rss-sync {
+    title "RSS feed crawl and sync"
+    description "Every 15 minutes new Mediathek entries become feed releases; Sonarr's RSS sync reads them"
+    autoLayout TopBottom
+
+    funkarr.feed.feed-crawl-manager -> funkarr.feed.feed-harvest-actor "start crawl (timer)"
+    funkarr.feed.feed-harvest-actor -> funkarr.search.mediathek-manager "entries since last run (paged)"
+    funkarr.search.mediathek-manager -> mediathekviewweb "search API"
+    funkarr.feed.feed-harvest-actor -> funkarr.ruleset.ruleset-resolver "group entries by ruleset"
+    funkarr.feed.feed-harvest-actor -> funkarr.search.tv-evaluation-worker "evaluate TV entries"
+    funkarr.search.tv-evaluation-worker -> funkarr.scoring.scoring-manager "score"
+    funkarr.search.tv-evaluation-worker -> funkarr.enrichment.enrichment-manager "enrich"
+    funkarr.feed.feed-harvest-actor <- funkarr.search.tv-evaluation-worker "releases"
+    funkarr.feed.feed-harvest-actor -> funkarr.feed.feed-store-manager "publish accepted releases"
+    funkarr.feed.feed-store-manager -> funkarr.journal "persist feed entries"
+    funkarr.feed.feed-crawl-manager -> funkarr.journal "persist crawl cursor"
+    sonarr -> funkarr.arrapi "t=tvsearch without query (RSS sync)"
+    funkarr.arrapi -> funkarr.feed.feed-store-manager "feed page"
+    sonarr <- funkarr.arrapi "Newznab RSS, newest first"
+  }
+
+  dynamic view ruleset-sync {
+    title "Community ruleset sync"
+    description "New community rulesets arrive from GitHub and become active"
+    autoLayout TopBottom
+
+    funkarr.ruleset.ruleset-updater -> github "check latest release (every 30 min)"
+    funkarr.ruleset.ruleset-updater <- github "rulesets.zip"
+    funkarr.ruleset.ruleset-updater -> funkarr.ruleset.ruleset-manager "trigger re-scan"
+    funkarr.ruleset.ruleset-manager -> funkarr.ruleset.ruleset-worker "load ruleset (one per ID)"
+    funkarr.ruleset.ruleset-worker -> funkarr.ruleset.ruleset-resolver "register topic, aliases, IDs"
+    funkarr.ruleset.ruleset-worker -> funkarr.scoring.scoring-manager "matching configuration"
+    funkarr.ruleset.ruleset-worker -> funkarr.ruleset.ruleset-manager "loaded"
+  }
+}

@@ -1,0 +1,50 @@
+name: Ruleset request
+description: Ask for a show or movie to be matched by a community ruleset
+labels: ["ruleset"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [community catalog](https://funkarr.st0o0.net/en/rulesets/catalog) first - the show may already be covered.
+        Want to write the ruleset yourself? See [Contributing Rulesets](https://funkarr.st0o0.net/en/contributing/rulesets).
+  - type: input
+    id: name
+    attributes:
+      label: Show or movie name
+      placeholder: "Babylon Berlin"
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - Show
+        - Movie
+    validations:
+      required: true
+  - type: input
+    id: channel
+    attributes:
+      label: Broadcaster / channel
+      placeholder: "ARD, ZDF, ORF, SRF, ..."
+    validations:
+      required: true
+  - type: input
+    id: ids
+    attributes:
+      label: TVDB / TMDB / IMDB ID
+      description: TVDB ID for shows, TMDB or IMDB ID for movies.
+      placeholder: "tvdb 323945"
+    validations:
+      required: true
+  - type: textarea
+    id: titles
+    attributes:
+      label: Example Mediathek titles
+      description: Two or three titles as they appear in the Mediathek (or on mediathekviewweb.de), and which season/episode they should map to.
+      placeholder: |
+        "Babylon Berlin (S04/E01)" -> S04E01
+        "Babylon Berlin (S04/E02)" -> S04E02
+    validations:
+      required: true

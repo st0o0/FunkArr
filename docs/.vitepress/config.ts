@@ -1,8 +1,29 @@
+import { fileURLToPath } from 'node:url'
+import { LikeC4VitePlugin } from 'likec4/vite-plugin'
 import { defineConfig } from 'vitepress'
+import { applyHookIdFilters } from './likec4-vite5'
+
+const repo = 'https://github.com/st0o0/funkarr'
+const editPattern = `${repo}/edit/main/docs/:path`
 
 export default defineConfig({
   base: '/',
   title: 'FunkArr',
+  vite: {
+    plugins: [
+      applyHookIdFilters(LikeC4VitePlugin({
+        workspace: fileURLToPath(new URL('../architecture', import.meta.url)),
+        ai: 'disabled'
+      }))
+    ]
+  },
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => tag.startsWith('likec4-')
+      }
+    }
+  },
   head: [
     ['link', { rel: 'icon', href: '/logo.svg' }]
   ],
@@ -16,7 +37,8 @@ export default defineConfig({
           { text: 'Anleitung', link: '/getting-started' },
           { text: 'Konfiguration', link: '/configuration' },
           { text: 'Regelwerke', link: '/rulesets/' },
-          { text: 'Vergleich', link: '/comparison' }
+          { text: 'Vergleich', link: '/comparison' },
+          { text: 'GitHub', link: repo }
         ],
         sidebar: [
           {
@@ -42,8 +64,32 @@ export default defineConfig({
               { text: 'Filter', link: '/rulesets/filters' },
               { text: 'Regelwerk-Builder', link: '/rulesets/builder' }
             ]
+          },
+          {
+            text: 'Für Entwickler',
+            collapsed: true,
+            items: [
+              { text: 'Mitwirken', link: '/develop/' },
+              { text: 'Architektur', link: '/develop/architecture' },
+              { text: 'Repository-Aufbau', link: '/develop/layout' },
+              { text: 'Bauen und testen', link: '/develop/building' },
+              { text: 'Aktoren', link: '/develop/actors' },
+              { text: 'Abläufe', link: '/develop/flows' },
+              { text: 'APIs', link: '/develop/apis' },
+              { text: 'Web-Oberfläche', link: '/develop/web-ui' },
+              { text: 'Lokale Entwicklung', link: '/develop/local-development' },
+              { text: 'Entwicklungshilfen', link: '/develop/dev-aids' },
+              { text: 'Regelwerke', link: '/develop/rulesets' },
+              { text: 'Releases', link: '/develop/releasing' }
+            ]
           }
         ],
+        editLink: {
+          pattern: editPattern,
+          text: 'Diese Seite auf GitHub bearbeiten'
+        },
+        docFooter: { prev: 'Vorherige Seite', next: 'Nächste Seite' },
+        outline: { label: 'Auf dieser Seite' },
       }
     },
     en: {
@@ -55,7 +101,8 @@ export default defineConfig({
           { text: 'Guide', link: '/en/getting-started' },
           { text: 'Config', link: '/en/configuration' },
           { text: 'Rulesets', link: '/en/rulesets/' },
-          { text: 'Comparison', link: '/en/comparison' }
+          { text: 'Comparison', link: '/en/comparison' },
+          { text: 'GitHub', link: repo }
         ],
         sidebar: [
           {
@@ -81,15 +128,37 @@ export default defineConfig({
               { text: 'Filters', link: '/en/rulesets/filters' },
               { text: 'Builder', link: '/en/rulesets/builder' }
             ]
+          },
+          {
+            text: 'For developers',
+            collapsed: true,
+            items: [
+              { text: 'Contributing', link: '/en/develop/' },
+              { text: 'Architecture', link: '/en/develop/architecture' },
+              { text: 'Repository layout', link: '/en/develop/layout' },
+              { text: 'Building and testing', link: '/en/develop/building' },
+              { text: 'Actors', link: '/en/develop/actors' },
+              { text: 'Request flows', link: '/en/develop/flows' },
+              { text: 'APIs', link: '/en/develop/apis' },
+              { text: 'Web UI', link: '/en/develop/web-ui' },
+              { text: 'Local development', link: '/en/develop/local-development' },
+              { text: 'Development aids', link: '/en/develop/dev-aids' },
+              { text: 'Rulesets', link: '/en/develop/rulesets' },
+              { text: 'Releasing', link: '/en/develop/releasing' }
+            ]
           }
         ],
+        editLink: {
+          pattern: editPattern,
+          text: 'Edit this page on GitHub'
+        },
       }
     }
   },
   themeConfig: {
     logo: '/logo.svg',
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/st0o0/funkarr' }
+      { icon: 'github', link: repo }
     ],
     search: {
       provider: 'local'

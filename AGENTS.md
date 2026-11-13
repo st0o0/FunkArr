@@ -8,6 +8,14 @@ Mediatheken via MediathekViewWeb API, downloads video + subtitles, remuxes to
 MKV via FFmpeg, and exposes Newznab-compatible indexer API (for Sonarr/Radarr/
 Prowlarr) and SABnzbd-compatible download client API.
 
+## Where to look
+
+- **Code conventions with rationale and examples:** https://anvil.st0o0.net/ (FunkArr is
+  its reference implementation). When unsure how to implement something (actor, persistence,
+  endpoint, test, metric), look it up there first. The rules below are the compact version.
+- **How FunkArr is built** (architecture, actors, flows, APIs, local dev, releasing):
+  `docs/en/develop/` (German: `docs/develop/`), published at https://funkarr.st0o0.net/en/develop/.
+
 ## Language
 
 All code, specs, docs, and communication in English. No German.
@@ -91,7 +99,15 @@ SHARD REGIONS (Sharded Entity)
 ├─ DownloadWorker (persistent, per download entity)               [Download]
 ├─ RuleSetWorker (non-persistent, per ruleset)                    [RuleSet]
 └─ HistoryWorker (persistent, per scoring history entity)         [History]
+
+LOCAL ENTITY REGIONS (Terp.Akka WithEntityRegion)
+└─ TestScoringWorker (non-persistent, per ruleset test run)       [Scoring]
 ```
+
+Adding, removing or renaming an actor or domain requires updating, in the same change:
+this topology, the LikeC4 model (`docs/architecture/model.c4`, check with
+`pnpm --dir docs exec likec4 validate architecture`), and the Actors page in both locales
+(`docs/en/develop/actors.md`, `docs/develop/actors.md`).
 
 ## Build & test
 
@@ -391,7 +407,7 @@ no multi-actor orchestration in the lambda body.
     ```
   - **Never**: unconditional `SaveSnapshot` inside every `Persist` callback
     (doubles I/O per command).
-- **Persistence mapping in domain projects**: `*MappingExtensions.cs` for
+- **Persistence mapping in domain projects**: `PersistenceMapping.cs` for
   Messages<->Persistence conversion lives in the domain project, not in Core.
   Core references Messages + Persistence but doesn't contain mapping logic.
 
@@ -448,7 +464,8 @@ Do NOT use:
   `_ => throw new ArgumentOutOfRangeException(nameof(value), value, null)`. Never convert
   between enum types with numeric casts (`(Target)(int)source`). Applies to
   Messages <-> Persistence and Api <-> Messages. Nullable enums: `x?.ToPersistence()`.
-- A missing switch arm is a compile error (CS8509 under warnings-as-errors).
+- List every member explicitly. The `_ => throw` arm silences CS8509, so the compiler does
+  not catch a missing arm - a forgotten member only fails at runtime.
 - **Every new enum starts with an explicit `Unknown = 0` member**, in every project
   (Api, ArrApi, Messages, Persistence). `default(T)` is then detectably "unset", and
   unrecognized external values bind to `Unknown` instead of failing binding (no automatic
@@ -494,12 +511,12 @@ Do NOT use:
 | History    | `FunkArr.History`   | recordings, trimmed, queries |
 | Feed       | `FunkArr.Feed`      | crawls, probes_unchanged, items_seen, unmatched, published, rejected, gaps, crawl_duration, entries |
 | RuleSet    | `FunkArr.RuleSet`   | loaded, removed, active, update_checks, updates_applied, update_errors, validation_errors, scans, file_events |
-| Host       | `FunkArr.ExternalApi`| requests, duration (HTTP client delegating handler) |
 
 ## Dev environment
 
 Run via `docker compose -f docker-compose.dev.yml up -d --build`, never `dotnet run`.
 Ports: FunkArr 6969, Sonarr 8989, Radarr 7878, Prowlarr 9696. Frontend uses pnpm.
+Manual E2E test plan: `src/FunkArr.UI/e2e/E2E-TEST-PLAN.md` (run via the `e2e-verify` skill).
 
 ## References
 

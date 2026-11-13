@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in FunkArr doesn't work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please check [Troubleshooting](https://funkarr.st0o0.net/en/troubleshooting) and existing issues first.
+        Security issues: please follow [SECURITY.md](https://github.com/st0o0/funkarr/blob/main/SECURITY.md) instead of opening a public issue.
+  - type: input
+    id: version
+    attributes:
+      label: FunkArr version
+      description: The release version you run (image tag, or the version shown in the web UI).
+      placeholder: "0.3.4"
+    validations:
+      required: true
+  - type: input
+    id: deployment
+    attributes:
+      label: Deployment
+      description: Image tag and how you run it (Docker Compose, Unraid, Kubernetes, ...). SQLite or PostgreSQL?
+      placeholder: "ghcr.io/st0o0/funkarr:latest via Docker Compose, SQLite"
+    validations:
+      required: true
+  - type: dropdown
+    id: arr
+    attributes:
+      label: Involved *arr application
+      multiple: true
+      options:
+        - Sonarr
+        - Radarr
+        - Prowlarr
+        - None (FunkArr web UI only)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Search for "..." in Sonarr
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant FunkArr log lines (web UI → Settings → Logs, or `docker logs funkarr`). Remove API keys.
+      render: text

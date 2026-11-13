@@ -1,0 +1,126 @@
+// Vocabulary of the FunkArr architecture model.
+// Rendered on the docs site under /en/contributing/architecture/.
+
+specification {
+
+  // ---- context level ----
+
+  element person {
+    notation "Person"
+    style {
+      shape person
+      color green
+    }
+  }
+
+  element external {
+    notation "External system"
+    style {
+      color gray
+    }
+  }
+
+  element system {
+    notation "Software system"
+    style {
+      color primary
+    }
+  }
+
+  // ---- container level ----
+
+  element container {
+    notation "Container (project)"
+    style {
+      color blue
+    }
+  }
+
+  element domain {
+    notation "Domain project"
+    style {
+      color indigo
+    }
+  }
+
+  element store {
+    notation "Data store"
+    style {
+      shape storage
+      color slate
+    }
+  }
+
+  element tool {
+    notation "Bundled tool"
+    style {
+      color slate
+      icon tech:ffmpeg
+    }
+  }
+
+  // ---- actors, by hosting role ----
+
+  element singleton {
+    notation "Cluster singleton (*Manager)"
+    technology "Akka cluster singleton"
+    style {
+      color primary
+      shape component
+    }
+  }
+
+  element shard {
+    notation "Shard region entity (*Worker)"
+    technology "Akka sharded entity"
+    style {
+      color secondary
+      shape component
+      multiple true
+    }
+  }
+
+  element localregion {
+    notation "Local entity region (*Worker)"
+    technology "Terp.Akka local entity region"
+    style {
+      color sky
+      shape component
+      multiple true
+    }
+  }
+
+  element child {
+    notation "Child actor / pool (*Actor)"
+    technology "Akka child actor"
+    style {
+      color slate
+      shape component
+      size sm
+    }
+  }
+
+  // ---- tags ----
+
+  tag persistent
+
+  // ---- relationship kinds ----
+
+  relationship http {
+    technology "HTTP"
+  }
+
+  relationship ask {
+    technology "Akka Ask"
+  }
+
+  relationship tell {
+    technology "Akka Tell"
+    line dashed
+  }
+
+  relationship journal {
+    technology "Akka.Persistence"
+    line dotted
+  }
+}

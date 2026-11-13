@@ -1,0 +1,329 @@
+// FunkArr architecture model: context, containers and actors.
+// Keep the actors in sync with the actor topology in AGENTS.md and
+// docs/en/contributing/architecture/actors.md.
+
+model {
+
+  // ---- people and external systems ----
+
+  user = person "User" {
+    description "Runs FunkArr next to Sonarr/Radarr and manages it in the web UI"
+  }
+
+  sonarr = external "Sonarr" {
+    description "TV series manager; uses FunkArr as indexer and download client"
+  }
+
+  radarr = external "Radarr" {
+    description "Movie manager; uses FunkArr as indexer and download client"
+  }
+
+  prowlarr = external "Prowlarr" {
+    description "Indexer manager; syncs the FunkArr indexer to Sonarr/Radarr"
+  }
+
+  mediathekviewweb = external "MediathekViewWeb" {
+    description "Search API over the German-language public broadcaster Mediatheken"
+    link https://mediathekviewweb.de/
+  }
+
+  broadcaster-cdns = external "Broadcaster CDNs" {
+    description "ARD, ZDF, ORF, SRF, ... video files, HLS streams and subtitles"
+  }
+
+  tmdb = external "TMDB" {
+    description "Movie and series metadata"
+  }
+
+  tvdb = external "TVDB" {
+    description "Episode guide metadata"
+  }
+
+  github = external "GitHub" {
+    description "Community ruleset releases (rulesets.zip)"
+    style {
+      icon tech:github
+    }
+  }
+
+  prometheus = external "Prometheus" {
+    description "Scrapes /metrics"
+    style {
+      icon tech:prometheus
+    }
+  }
+
+  // ---- FunkArr ----
+
+  funkarr = system "FunkArr" {
+    description "Mediathek integration for the *arr ecosystem - one .NET container"
+    style {
+      icon tech:dotnet
+    }
+
+    ui = container "Web UI" {
+      technology "Vue 3, Vite, Tailwind"
+      description "Download queue, activity, rulesets, settings (FunkArr.UI)"
+      style {
+        icon tech:vue
+        shape browser
+      }
+    }
+
+    api = container "Api" {
+      technology "ASP.NET Minimal APIs"
+      description "Internal REST API /api for the web UI (FunkArr.Api)"
+    }
+
+    arrapi = container "ArrApi" {
+      technology "ASP.NET controllers"
+      description "Newznab /index/api and SABnzbd /download/api adapters (FunkArr.ArrApi)"
+    }
+
+    journal = store "Journal & snapshots" {
+      technology "Akka.Persistence.Sql - SQLite / PostgreSQL"
+      description "Events and snapshots of persistent actors"
+    }
+
+    ffmpeg = tool "FFmpeg" {
+      technology "ffmpeg (in container)"
+      description "Downloads video/HLS and remuxes to MKV (stream copy)"
+    }
+
+    search = domain "Search" {
+      description "MediathekViewWeb queries and release evaluation (FunkArr.Search)"
+
+      mediathek-manager = singleton "MediathekViewWebManager" {
+        description "Owns the MediathekViewWeb connection: concurrency limit, queue, cache"
+      }
+      search-manager = singleton "SearchManager" {
+        description "Assigns search IDs and dispatches to the TV/movie search workers"
+      }
+      tv-search-worker = shard "TvSearchWorker" {
+        description "One per TV search request: resolve ruleset by ID, query Mediathek"
+      }
+      movie-search-worker = shard "MovieSearchWorker" {
+        description "One per movie search request: resolve ruleset by ID, query Mediathek"
+      }
+      tv-evaluation-worker = shard "TvEvaluationWorker" {
+        description "Evaluation pipeline for TV: ruleset, scoring, enrichment, history"
+      }
+      movie-evaluation-worker = shard "MovieEvaluationWorker" {
+        description "Evaluation pipeline for movies: ruleset, scoring, enrichment, history"
+      }
+    }
+
+    ruleset = domain "RuleSet" {
+      description "Ruleset loading, merging, resolution and GitHub sync (FunkArr.RuleSet)"
+
+      ruleset-resolver = singleton "RuleSetResolver" {
+        description "Finds the ruleset for a topic, alias or TVDB/IMDB/TMDB ID"
+      }
+      ruleset-manager = singleton "RuleSetManager" {
+        description "Scans and watches the community and local ruleset directories"
+      }
+      ruleset-updater = singleton "RuleSetUpdater" {
+        description "Checks GitHub releases every 30 minutes and downloads new rulesets"
+      }
+      ruleset-worker = shard "RuleSetWorker" {
+        description "One per ruleset: merges community + local, validates, registers"
+      }
+    }
+
+    scoring = domain "Scoring" {
+      description "Scores Mediathek entries against ruleset rules (FunkArr.Scoring)"
+
+      scoring-manager = singleton "ScoringManager" {
+        description "Holds matching configurations, routes work to the scoring pool"
+      }
+      scoring-actor = child "ScoringActor pool" {
+        description "Smallest-mailbox router pool that evaluates rules"
+        style {
+          multiple true
+        }
+      }
+      test-scoring-worker = localregion "TestScoringWorker" {
+        description "One per ruleset test run from the web UI debugger: scoring + enrichment"
+      }
+    }
+
+    enrichment = domain "Enrichment" {
+      description "TMDB/TVDB metadata enrichment (FunkArr.Enrichment)"
+
+      enrichment-manager = singleton "EnrichmentManager" {
+        description "Routes enrichment requests to the TVDB and TMDB pools"
+      }
+      tvdb-actor = child "TvdbEnrichmentActor pool" {
+        description "Resolves season/episode via TVDB"
+        style {
+          multiple true
+        }
+      }
+      tmdb-actor = child "TmdbEnrichmentActor pool" {
+        description "Resolves movies and series via TMDB"
+        style {
+          multiple true
+        }
+      }
+    }
+
+    history = domain "History" {
+      description "Scoring history and statistics (FunkArr.History)"
+
+      stats-collector = singleton "StatsCollector" {
+        description "Aggregates scoring statistics across rulesets"
+      }
+      history-worker = shard "HistoryWorker" {
+        #persistent
+        description "One per ruleset: records scoring runs (persistent)"
+      }
+    }
+
+    download = domain "Download" {
+      description "Download queue, scheduling, FFmpeg remux (FunkArr.Download)"
+
+      download-manager = singleton "DownloadManager" {
+        #persistent
+        description "Persistent queue: priorities, pause/resume, dispatch to workers"
+      }
+      download-scheduler = singleton "DownloadScheduler" {
+        description "Evaluates download time windows, enables/disables the queue"
+      }
+      download-history-manager = singleton "DownloadHistoryManager" {
+        #persistent
+        description "Persistent history of completed and failed downloads"
+      }
+      download-worker = shard "DownloadWorker" {
+        #persistent
+        description "One per download: subtitles, FFmpeg remux, move to complete/"
+      }
+    }
+
+    feed = domain "Feed" {
+      description "RSS feed crawl and feed store (FunkArr.Feed)"
+
+      feed-crawl-manager = singleton "FeedCrawlManager" {
+        #persistent
+        description "Starts a crawl every 15 minutes, tracks the crawl cursor"
+      }
+      feed-harvest-actor = child "FeedHarvestActor" {
+        description "Akka.Streams pipeline: page through new Mediathek entries, evaluate, publish"
+      }
+      feed-store-manager = singleton "FeedStoreManager" {
+        #persistent
+        description "Stores published releases, retention, serves RSS pages"
+      }
+    }
+  }
+
+  // ---- context relationships ----
+
+  user -> funkarr.ui "manages queue, rulesets, settings"
+  sonarr -[http]-> funkarr.arrapi "Newznab search, SABnzbd downloads"
+  radarr -[http]-> funkarr.arrapi "Newznab search, SABnzbd downloads"
+  prowlarr -[http]-> funkarr.arrapi "Newznab search, RSS sync"
+  prometheus -[http]-> funkarr "scrapes /metrics"
+
+  funkarr.ui -[http]-> funkarr.api "REST /api"
+  funkarr.api -[http]-> sonarr "setup: adds indexer + download client"
+  funkarr.api -[http]-> radarr "setup: adds indexer + download client"
+  funkarr.api -[http]-> prowlarr "setup: adds indexer"
+
+  // ---- adapters -> actors ----
+
+  funkarr.arrapi -[ask]-> funkarr.search.search-manager "search (t=search/tvsearch/movie)"
+  funkarr.arrapi -[ask]-> funkarr.feed.feed-store-manager "RSS sync pages"
+  funkarr.arrapi -[ask]-> funkarr.download.download-manager "addfile, queue, delete, retry"
+  funkarr.arrapi -[ask]-> funkarr.download.download-history-manager "history"
+
+  funkarr.api -[ask]-> funkarr.download.download-manager "queue operations"
+  funkarr.api -[ask]-> funkarr.download.download-history-manager "download history"
+  funkarr.api -[ask]-> funkarr.feed.feed-store-manager "feed overview"
+  funkarr.api -[ask]-> funkarr.feed.feed-crawl-manager "crawl status, start crawl"
+  funkarr.api -[ask]-> funkarr.search.mediathek-manager "Mediathek search"
+  funkarr.api -[ask]-> funkarr.ruleset.ruleset-manager "ruleset list with stats"
+  funkarr.api -[ask]-> funkarr.ruleset.ruleset-worker "detail, export, delete local"
+  funkarr.api -[ask]-> funkarr.ruleset.ruleset-resolver "registered rulesets"
+  funkarr.api -[ask]-> funkarr.scoring.test-scoring-worker "ruleset debugger"
+  funkarr.api -[ask]-> funkarr.history.history-worker "scoring history"
+  funkarr.api -[ask]-> funkarr.history.stats-collector "statistics"
+
+  // ---- Search ----
+
+  funkarr.search.search-manager -[ask]-> funkarr.search.tv-search-worker "TV search"
+  funkarr.search.search-manager -[ask]-> funkarr.search.movie-search-worker "movie search"
+  funkarr.search.tv-search-worker -[ask]-> funkarr.ruleset.ruleset-resolver "resolve ruleset by ID"
+  funkarr.search.movie-search-worker -[ask]-> funkarr.ruleset.ruleset-resolver "resolve ruleset by ID"
+  funkarr.search.tv-search-worker -[ask]-> funkarr.search.mediathek-manager "query entries"
+  funkarr.search.movie-search-worker -[ask]-> funkarr.search.mediathek-manager "query entries"
+  funkarr.search.tv-search-worker -[ask]-> funkarr.search.tv-evaluation-worker "evaluate entries"
+  funkarr.search.movie-search-worker -[ask]-> funkarr.search.movie-evaluation-worker "evaluate entries"
+  funkarr.search.mediathek-manager -[http]-> mediathekviewweb "query API"
+
+  funkarr.search.tv-evaluation-worker -[ask]-> funkarr.ruleset.ruleset-resolver "resolve ruleset by topic"
+  funkarr.search.tv-evaluation-worker -[ask]-> funkarr.scoring.scoring-manager "score entries"
+  funkarr.search.tv-evaluation-worker -[ask]-> funkarr.enrichment.enrichment-manager "enrich episodes"
+  funkarr.search.tv-evaluation-worker -[tell]-> funkarr.history.history-worker "record scoring run"
+  funkarr.search.movie-evaluation-worker -[ask]-> funkarr.ruleset.ruleset-resolver "resolve ruleset by topic"
+  funkarr.search.movie-evaluation-worker -[ask]-> funkarr.scoring.scoring-manager "score entries"
+  funkarr.search.movie-evaluation-worker -[ask]-> funkarr.enrichment.enrichment-manager "enrich movies"
+  funkarr.search.movie-evaluation-worker -[tell]-> funkarr.history.history-worker "record scoring run"
+
+  // ---- RuleSet ----
+
+  funkarr.ruleset.ruleset-updater -[http]-> github "check releases, download rulesets.zip"
+  funkarr.ruleset.ruleset-updater -[tell]-> funkarr.ruleset.ruleset-manager "trigger re-scan"
+  funkarr.ruleset.ruleset-manager -[tell]-> funkarr.ruleset.ruleset-worker "load ruleset"
+  funkarr.ruleset.ruleset-manager -[ask]-> funkarr.history.history-worker "scoring stats for ruleset list"
+  funkarr.ruleset.ruleset-worker -[tell]-> funkarr.ruleset.ruleset-resolver "register ruleset"
+  funkarr.ruleset.ruleset-worker -[tell]-> funkarr.scoring.scoring-manager "matching configuration"
+  funkarr.ruleset.ruleset-worker -[tell]-> funkarr.ruleset.ruleset-manager "loaded / failed"
+
+  // ---- Scoring ----
+
+  funkarr.scoring.scoring-manager -[ask]-> funkarr.scoring.scoring-actor "evaluate rules"
+  funkarr.scoring.test-scoring-worker -[ask]-> funkarr.scoring.scoring-manager "score test entries"
+  funkarr.scoring.test-scoring-worker -[ask]-> funkarr.enrichment.enrichment-manager "enrich test entries"
+
+  // ---- Enrichment ----
+
+  funkarr.enrichment.enrichment-manager -[ask]-> funkarr.enrichment.tvdb-actor "episode lookup"
+  funkarr.enrichment.enrichment-manager -[ask]-> funkarr.enrichment.tmdb-actor "movie/series lookup"
+  funkarr.enrichment.tvdb-actor -[http]-> tvdb "episode guide"
+  funkarr.enrichment.tmdb-actor -[http]-> tmdb "movie/series metadata"
+
+  // ---- History ----
+
+  funkarr.history.history-worker -[tell]-> funkarr.history.stats-collector "run recorded"
+  funkarr.history.stats-collector -[ask]-> funkarr.history.history-worker "backfill stats"
+  funkarr.history.stats-collector -[ask]-> funkarr.ruleset.ruleset-resolver "registered rulesets"
+
+  // ---- Download ----
+
+  funkarr.download.download-scheduler -[tell]-> funkarr.download.download-manager "enable / disable downloads"
+  funkarr.download.download-manager -[tell]-> funkarr.download.download-worker "dispatch download"
+  funkarr.download.download-manager -[tell]-> funkarr.download.download-history-manager "remove history entry"
+  funkarr.download.download-worker -[tell]-> funkarr.download.download-manager "completed / failed"
+  funkarr.download.download-worker -[tell]-> funkarr.download.download-history-manager "record result"
+  funkarr.download.download-worker -[http]-> broadcaster-cdns "subtitles"
+  funkarr.download.download-worker -> funkarr.ffmpeg "start remux"
+  funkarr.ffmpeg -[http]-> broadcaster-cdns "video / HLS"
+
+  // ---- Feed ----
+
+  funkarr.feed.feed-crawl-manager -> funkarr.feed.feed-harvest-actor "start crawl"
+  funkarr.feed.feed-harvest-actor -[ask]-> funkarr.search.mediathek-manager "new entries since last run"
+  funkarr.feed.feed-harvest-actor -[ask]-> funkarr.ruleset.ruleset-resolver "group by ruleset"
+  funkarr.feed.feed-harvest-actor -[ask]-> funkarr.search.tv-evaluation-worker "evaluate TV entries"
+  funkarr.feed.feed-harvest-actor -[ask]-> funkarr.search.movie-evaluation-worker "evaluate movie entries"
+  funkarr.feed.feed-harvest-actor -[tell]-> funkarr.feed.feed-store-manager "publish releases"
+
+  // ---- persistence ----
+
+  funkarr.download.download-manager -[journal]-> funkarr.journal "queue events"
+  funkarr.download.download-history-manager -[journal]-> funkarr.journal "history events"
+  funkarr.download.download-worker -[journal]-> funkarr.journal "download state"
+  funkarr.history.history-worker -[journal]-> funkarr.journal "scoring history"
+  funkarr.feed.feed-crawl-manager -[journal]-> funkarr.journal "crawl cursor"
+  funkarr.feed.feed-store-manager -[journal]-> funkarr.journal "feed entries"
+}

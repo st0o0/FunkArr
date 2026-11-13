@@ -1,33 +1,18 @@
 # Contributing
 
-Thanks for your interest in funkarr!
+Thanks for your interest in FunkArr!
 
-## Development
+Everything about working on FunkArr - ways to contribute, architecture, local development,
+building and testing, rulesets and releases - is on the docs site:
 
-funkarr is a .NET 10 solution using Akka.NET. All commands run from the repo root:
+- **English:** https://funkarr.st0o0.net/en/develop/
+- **Deutsch:** https://funkarr.st0o0.net/develop/
 
-```powershell
-dotnet build src/FunkArr.slnx
-dotnet format src/FunkArr.slnx --verify-no-changes
-```
+Shortcuts: [Local development](https://funkarr.st0o0.net/en/develop/local-development) ·
+[Rulesets](https://funkarr.st0o0.net/en/develop/rulesets) ·
+code conventions on [anvil](https://anvil.st0o0.net/)
 
-Tests use xUnit v3 on Microsoft Testing Platform - run with `dotnet run`, not `dotnet test`:
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, ...).
 
-```powershell
-dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
-```
-
-## Pull requests
-
-- Branch from `main` and open a PR. CI runs on pull requests.
-- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
-  (`feat:`, `fix:`, `docs:`, `ci:`, `chore:`, ...); commitlint enforces this and
-  release-please derives the version and changelog from them.
-- Keep changes focused and add or update tests for any behavior change.
-- Code must pass `dotnet format --verify-no-changes`.
-
-## Reporting bugs / requesting features
-
-Use the issue templates. For security issues see [`SECURITY.md`](SECURITY.md).
-
-By contributing you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+By contributing you agree to the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues
+through [`SECURITY.md`](SECURITY.md), not public issues.

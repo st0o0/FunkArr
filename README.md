@@ -75,7 +75,7 @@ The web UI is available at `http://localhost:8080`.
 
 Mediathek titles are messy - "Tatort" episodes might appear as "Tatort: Der letzte Schrei" with no season or episode number. Rulesets map these titles to structured season/episode format so Sonarr can match them.
 
-Community rulesets sync automatically from GitHub. **98 rulesets** covering the most popular shows and movies are included out of the box. You can also create custom rulesets in the web UI (Rulesets section), which includes a debugger to test rules against live Mediathek data.
+Community rulesets sync automatically from GitHub and cover many popular shows and movies out of the box ([catalog](https://funkarr.st0o0.net/en/rulesets/catalog)). You can also create custom rulesets in the web UI (Rulesets section), which includes a debugger to test rules against live Mediathek data.
 
 ### Confidence Levels
 
@@ -93,80 +93,19 @@ Each ruleset carries a confidence score (0.0 - 1.0) that reflects how reliably i
 
 ## Configuration
 
-All configuration is via environment variables. Defaults work out of the box - the only required setting is `FunkArr__Download__Path` if you want downloads written to a mounted volume.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `FunkArr__ApiKey` | `funkarr-default-api-key` | API key for Prowlarr/Sonarr/Radarr |
-| `FunkArr__DataPath` | `data` | Base path for database, rulesets, temp files |
-| **Downloads** | | |
-| `FunkArr__Download__Path` | `data/downloads` | Root download directory (contains `incomplete/` and `complete/`) |
-| `FunkArr__Download__ConcurrentDownloads` | `3` | Max parallel downloads |
-| `FunkArr__Download__Categories__0__Name` | - | Category name (e.g. `tv`) - map Sonarr/Radarr categories to subdirectories |
-| `FunkArr__Download__Categories__0__Dir` | - | Subdirectory for this category (e.g. `tv`) |
-| `FunkArr__Download__DownloadSchedule__0__Start` | - | Schedule window start time (e.g. `02:00`) |
-| `FunkArr__Download__DownloadSchedule__0__End` | - | Schedule window end time (e.g. `06:00`) |
-| **Container** | | |
-| `PUID` | `1654` | User ID for file ownership |
-| `PGID` | `1654` | Group ID for file ownership |
-| **RuleSets** | | |
-| `FunkArr__RuleSet__Repository` | `st0o0/funkarr` | GitHub repo for community rulesets |
-| `FunkArr__RuleSet__Version` | `latest` | Pin ruleset version or `latest` |
-| `FunkArr__RuleSet__RefreshEnabled` | `true` | Auto-sync rulesets from GitHub |
-| **Metadata** | | |
-| `FunkArr__Tmdb__ApiKey` | _(empty)_ | TMDB API key for movie/series resolution |
-| `FunkArr__Tvdb__ApiKey` | _(empty)_ | TVDB API key for episode guide resolution |
-| **Scoring** | | |
-| `FunkArr__Scoring__PoolSize` | `4` | Parallel scoring workers |
-| **Scoring History** | | |
-| `FunkArr__ScoringHistory__MaxSnapshots` | `100` | Max scoring history snapshots to retain |
-| `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Days before old snapshots are pruned |
-| `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Interval between snapshots |
-| **PostgreSQL** | | |
-| `FunkArr__Postgres__Host` | _(empty)_ | PostgreSQL host - set to switch from SQLite to Postgres |
-| `FunkArr__Postgres__Port` | `5432` | PostgreSQL port |
-| `FunkArr__Postgres__User` | _(empty)_ | PostgreSQL user |
-| `FunkArr__Postgres__Password` | _(empty)_ | PostgreSQL password |
-| `FunkArr__Postgres__Database` | `funkarr` | PostgreSQL database name |
+All configuration is via environment variables (`FunkArr__…`). Defaults work out of the box - the only required setting is `FunkArr__Download__Path` if you want downloads written to a mounted volume.
 
 See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://funkarr.st0o0.net/en/configuration).
 
 ## Image
 
 - **Registry:** `ghcr.io/st0o0/funkarr`
-- **Tags:** semantic version (`0.3.1`), `latest`
+- **Tags:** semantic version (`X.Y.Z`), `latest`
 - **Architectures:** `linux/amd64`
 
 ## Development
 
-```powershell
-dotnet build src/FunkArr.slnx
-```
-
-Tests use xUnit v3 on Microsoft Testing Platform - run with `dotnet run`, not `dotnet test`:
-
-```powershell
-dotnet run --project src/FunkArr.Search.Tests/FunkArr.Search.Tests.csproj
-dotnet run --project src/FunkArr.Download.Tests/FunkArr.Download.Tests.csproj
-dotnet run --project src/FunkArr.RuleSet.Tests/FunkArr.RuleSet.Tests.csproj
-dotnet run --project src/FunkArr.Scoring.Tests/FunkArr.Scoring.Tests.csproj
-dotnet run --project src/FunkArr.History.Tests/FunkArr.History.Tests.csproj
-dotnet run --project src/FunkArr.Enrichment.Tests/FunkArr.Enrichment.Tests.csproj
-dotnet run --project src/FunkArr.MetadataResolver.Tests/FunkArr.MetadataResolver.Tests.csproj
-dotnet run --project src/FunkArr.Persistence.Tests/FunkArr.Persistence.Tests.csproj
-dotnet run --project src/FunkArr.Api.Tests/FunkArr.Api.Tests.csproj
-dotnet run --project src/FunkArr.ArrApi.Tests/FunkArr.ArrApi.Tests.csproj
-dotnet run --project src/FunkArr.Architecture.Tests/FunkArr.Architecture.Tests.csproj
-dotnet run --project src/FunkArr.IntegrationTests/FunkArr.IntegrationTests.csproj
-```
-
-Format check (CI enforces this):
-
-```powershell
-dotnet format src/FunkArr.slnx --verify-no-changes
-```
-
-Commits follow [Conventional Commits](https://www.conventionalcommits.org/); releases and the GHCR image are cut automatically by release-please.
+Want to help? Start with [Contributing](https://funkarr.st0o0.net/en/develop/) ([Deutsch](https://funkarr.st0o0.net/develop/)): architecture, local development with the dev stack, building and testing, rulesets and releases. Code conventions are on [anvil](https://anvil.st0o0.net/).
 
 ## Alternatives
 
@@ -175,7 +114,7 @@ Other projects in this space:
 |                | FunkArr           | MediathekArr        | RundfunkArr          |
 |----------------|-------------------|---------------------|----------------------|
 | Stack          | .NET / Akka.NET   | .NET                | Node.js / Next.js    |
-| Status         | v0.3.1            | Beta                | Dormant (since 2024) |
+| Status         | 0.x               | Beta                | Dormant (since 2024) |
 | Sonarr         | Yes               | Yes                 | Yes                  |
 | Radarr         | Yes               | Limited             | Yes                  |
 | ORF/SRF        | Yes               | Yes                 | No                   |
