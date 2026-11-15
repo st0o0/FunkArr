@@ -25,10 +25,14 @@ public sealed class DownloadManagerPauseTests : TestKit
         registry.Register<IDownloadHistoryManager>(historyProbe);
     }
 
-    private IActorRef CreateManager(int concurrentDownloads = 3) =>
-        Sys.ActorOf(Props.Create(() => new DownloadManager(
+    private IActorRef CreateManager(int concurrentDownloads = 3)
+    {
+        var manager = Sys.ActorOf(Props.Create(() => new DownloadManager(
             new TestOptionsMonitor<DownloadOptions>(
                 new DownloadOptions { ConcurrentDownloads = concurrentDownloads }))));
+        manager.Tell(new ScheduleEnabled());
+        return manager;
+    }
 
     [Fact]
     public void Pause_stops_new_dispatches()

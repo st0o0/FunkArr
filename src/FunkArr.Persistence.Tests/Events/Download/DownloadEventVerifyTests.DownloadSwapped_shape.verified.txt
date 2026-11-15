@@ -1,0 +1,4 @@
+﻿{
+  "DownloadId1": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "DownloadId2": "11223344-5566-7788-9900-aabbccddeeff"
+}

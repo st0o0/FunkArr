@@ -140,4 +140,123 @@ public sealed class FeedCrawlManagerTests : TestKit
         manager.Tell(new QueryFeedCrawlStatus());
         Assert.True(ExpectMsg<FeedCrawlStatusResult>(cancellationToken: TestContext.Current.CancellationToken).Running);
     }
+
+    [Fact]
+    public void Three_failures_with_valid_timestamp_advances_cursor_with_gap()
+    {
+        var (manager, p) = Create();
+
+        for (var i = 0; i < 3; i++)
+        {
+            manager.Tell(new StartFeedCrawl());
+            AnswerProbe(p);
+            AnswerRuleSets(p);
+
+            p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout,
+                cancellationToken: TestContext.Current.CancellationToken);
+            p.Mediathek.Reply(new QueryMediathekError(new InvalidOperationException("503")));
+
+            AwaitStatus(manager, s => !s.Running);
+        }
+
+        var status = AwaitStatus(manager, s => s.Cursor > 0);
+        Assert.Multiple(
+            () => Assert.Equal(ListTimestamp, status.Cursor),
+            () => Assert.True(status.LastGap),
+            () => Assert.Equal(0, status.ConsecutiveFailures));
+    }
+
+    [Fact]
+    public void Three_probe_failures_do_not_advance_cursor()
+    {
+        var (manager, p) = Create();
+
+        for (var i = 0; i < 3; i++)
+        {
+            manager.Tell(new StartFeedCrawl());
+
+            p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout,
+                cancellationToken: TestContext.Current.CancellationToken);
+            p.Mediathek.Reply(new QueryMediathekError(new InvalidOperationException("timeout")));
+
+            AwaitStatus(manager, s => !s.Running);
+        }
+
+        var status = AwaitStatus(manager, s => s.ConsecutiveFailures == 3);
+        Assert.Multiple(
+            () => Assert.Equal(0, status.Cursor),
+            () => Assert.Equal(CrawlOutcome.Failed, status.LastOutcome),
+            () => Assert.Equal(3, status.ConsecutiveFailures));
+    }
+
+    [Fact]
+    public void Two_failures_then_success_resets_consecutive_count()
+    {
+        var (manager, p) = Create();
+        var item = TestData.Item("Test", "Tatort", ListTimestamp, url: "https://example.com/a.mp4");
+
+        for (var i = 0; i < 2; i++)
+        {
+            manager.Tell(new StartFeedCrawl());
+
+            p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout,
+                cancellationToken: TestContext.Current.CancellationToken);
+            p.Mediathek.Reply(new QueryMediathekError(new InvalidOperationException("503")));
+
+            AwaitStatus(manager, s => !s.Running);
+        }
+
+        manager.Tell(new StartFeedCrawl());
+        AnswerProbe(p);
+        AnswerRuleSets(p);
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekCompleted([item], 1, ListTimestamp));
+
+        var eval = p.Tv.ExpectMsg<EvaluateSeries>(_stageTimeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Tv.Reply(new EvaluateSeriesCompleted(eval.SearchId,
+            [TestData.Result("https://example.com/a.mp4")], 1));
+
+        p.Store.ExpectMsg<PublishFeedEntries>(_stageTimeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Store.Reply(new PublishFeedEntriesCompleted(1));
+
+        var status = AwaitStatus(manager, s => s.LastOutcome == CrawlOutcome.Completed);
+        Assert.Multiple(
+            () => Assert.Equal(0, status.ConsecutiveFailures),
+            () => Assert.Equal(ListTimestamp, status.Cursor));
+    }
+
+    [Fact]
+    public void Unchanged_crawl_persists_last_run_at()
+    {
+        var (manager, p) = Create();
+
+        manager.Tell(new StartFeedCrawl());
+        AnswerProbe(p, listTimestamp: 0);
+
+        var status = AwaitStatus(manager, s => s.LastOutcome != CrawlOutcome.Unknown);
+        Assert.Multiple(
+            () => Assert.Equal(CrawlOutcome.Unchanged, status.LastOutcome),
+            () => Assert.NotNull(status.LastRunAt));
+    }
+
+    [Fact]
+    public void Page_failure_does_not_advance_cursor()
+    {
+        var (manager, p) = Create();
+
+        manager.Tell(new StartFeedCrawl());
+        AnswerProbe(p);
+        AnswerRuleSets(p);
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(_stageTimeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekError(new InvalidOperationException("503")));
+
+        var status = AwaitStatus(manager, s => s.LastOutcome == CrawlOutcome.Failed);
+        Assert.Equal(0, status.Cursor);
+    }
 }

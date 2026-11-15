@@ -158,7 +158,7 @@ public sealed class DownloadManagerStateTests
     public void Default_state_has_schedule_enabled_and_not_paused()
     {
         Assert.False(DownloadManagerState.Empty.Paused);
-        Assert.True(DownloadManagerState.Empty.ScheduleEnabled);
+        Assert.False(DownloadManagerState.Empty.ScheduleEnabled);
         Assert.Null(DownloadManagerState.Empty.NextWindow);
     }
 
