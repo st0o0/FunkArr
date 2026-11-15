@@ -157,7 +157,10 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             var partial = pending.TvResult ?? pending.MovieResult;
             if (partial is not null)
             {
-                pending.OriginalSender.Tell(partial);
+                var failedShard = pending.TvResult is null ? "TV" : "Movie";
+                _log.Warning("Search {SearchId} returning partial results ({FailedShard} shard failed): {Cause}",
+                    searchId, failedShard, cause.Message);
+                pending.OriginalSender.Tell(partial with { IsPartial = true });
                 _state.Apply(new SearchManagerState.RemoveSearch(searchId));
                 return;
             }
@@ -182,7 +185,10 @@ public sealed class SearchManager : ReceiveActor, IWithTimers
             var partial = pending.TvResult ?? pending.MovieResult;
             if (partial is not null)
             {
-                pending.OriginalSender.Tell(partial);
+                var timedOutShard = pending.TvResult is null ? "TV" : "Movie";
+                _log.Warning("Search {SearchId} returning partial results ({TimedOutShard} shard timed out after {Timeout}s)",
+                    timeout.SearchId, timedOutShard, _searchTimeout.TotalSeconds);
+                pending.OriginalSender.Tell(partial with { IsPartial = true });
                 _state.Apply(new SearchManagerState.RemoveSearch(timeout.SearchId));
                 return;
             }

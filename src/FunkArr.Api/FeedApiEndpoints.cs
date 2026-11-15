@@ -9,6 +9,7 @@ using FunkArr.Core.Actors;
 using FunkArr.Messages.Feed;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace FunkArr.Api;
 
@@ -52,10 +53,11 @@ public static class FeedApiEndpoints
         .ProducesProblem(500)
         .ProducesProblem(504);
 
-        group.MapPost("/crawl", async (IActorRegistry registry, CancellationToken ct) =>
+        group.MapPost("/crawl", async (IActorRegistry registry, IOutputCacheStore cache, CancellationToken ct) =>
         {
             var ingest = await registry.GetAsync<IFeedCrawlManager>(ct);
             ingest.Tell(new StartFeedCrawl());
+            await cache.EvictByTagAsync("feed", ct);
             return Results.Accepted();
         })
         .WithSummary("Start a feed ingest run")

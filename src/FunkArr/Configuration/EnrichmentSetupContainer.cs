@@ -28,6 +28,8 @@ public sealed class EnrichmentSetupContainer : ISetup<IServiceCollection>
             options.Retry.DelayGenerator = RetryAfterDefaults.DelayGenerator;
             options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
             options.CircuitBreaker.FailureRatio = 0.25;
+            options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+            options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(8);
         });
 
         services.AddHttpClient<TmdbClient>(client =>
@@ -40,6 +42,8 @@ public sealed class EnrichmentSetupContainer : ISetup<IServiceCollection>
             options.Retry.DelayGenerator = RetryAfterDefaults.DelayGenerator;
             options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
             options.CircuitBreaker.FailureRatio = 0.25;
+            options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(5);
+            options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(8);
         });
     }
 }

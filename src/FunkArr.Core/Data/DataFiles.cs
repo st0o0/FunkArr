@@ -42,6 +42,18 @@ public sealed class DataFiles(IFileSystem fs, ILogger<DataFiles> log) : IDataFil
 
     public void Move(string source, string destination)
     {
+        if (source.Contains("..", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Move source path contains traversal sequences: '{source}'.");
+        }
+
+        if (destination.Contains("..", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Move destination path contains traversal sequences: '{destination}'.");
+        }
+
         fs.File.Move(source, destination, overwrite: true);
         SetFilePermissions(destination);
     }

@@ -199,7 +199,7 @@ public sealed class DownloadManager : ReceivePersistentActor
             return;
         }
 
-        Persist(new DownloadEnqueued(cmd.DownloadId, DownloadPriority.Normal.ToPersistence()), e =>
+        Persist(new DownloadEnqueued(cmd.DownloadId, DownloadPriority.Normal.ToPersistence(), cmd.Category?.ToPersistence()), e =>
         {
             _state.Apply(e);
             MaybeSnapshot();

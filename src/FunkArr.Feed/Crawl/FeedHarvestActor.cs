@@ -69,6 +69,7 @@ public sealed class FeedHarvestActor : ReceiveActor
             var tvEval = _tvEvaluation;
             var movieEval = _movieEvaluation;
             var store = _store;
+            var probeTimestamp = 0L;
 
             Source.Single(cursor)
                 .SelectAsync(1, _ => mediathek.Ask<QueryMediathekResponse>(
@@ -77,8 +78,16 @@ public sealed class FeedHarvestActor : ReceiveActor
                 .Select(response => response switch
                 {
                     QueryMediathekCompleted { ListTimestamp: > 0 } ok
-                        when ok.ListTimestamp > cursor => ok.ListTimestamp,
-                    _ => -1L
+                        when ok.ListTimestamp > cursor => probeTimestamp = ok.ListTimestamp,
+                    QueryMediathekCompleted => -1L,
+                    QueryMediathekError err =>
+                        throw new InvalidOperationException(
+                            $"Mediathek probe failed: {err.Cause.Message}"),
+                    QueryMediathekQueueFull =>
+                        throw new InvalidOperationException(
+                            "Mediathek probe failed: query queue full"),
+                    _ => throw new InvalidOperationException(
+                        $"Mediathek probe returned unexpected response: {response.GetType().Name}")
                 })
                 .Where(timestamp => timestamp > 0)
                 .SelectAsync(1, async timestamp =>
@@ -96,7 +105,9 @@ public sealed class FeedHarvestActor : ReceiveActor
                         targets, pageSize, maxPages, options.MinConfidence);
                 })
                 .ConcatMany(ctx =>
-                    Source.UnfoldAsync<int, MediathekItem[]>(0, async offset =>
+                {
+                    var hitMaxPages = false;
+                    return Source.UnfoldAsync<int, MediathekItem[]>(0, async offset =>
                         {
                             if (offset < 0)
                             {
@@ -109,9 +120,13 @@ public sealed class FeedHarvestActor : ReceiveActor
                                 _pageTimeout);
 
                             var (items, reachedEnd) = FilterPage(response, ctx);
-                            var next = reachedEnd || offset / ctx.PageSize >= ctx.MaxPages - 1
-                                ? -1
-                                : offset + ctx.PageSize;
+                            var atMaxPages = !reachedEnd && offset / ctx.PageSize >= ctx.MaxPages - 1;
+                            if (atMaxPages)
+                            {
+                                hitMaxPages = true;
+                            }
+
+                            var next = (reachedEnd || atMaxPages) ? -1 : offset + ctx.PageSize;
 
                             return Option<(int, MediathekItem[])>.Create((next, items));
                         })
@@ -126,6 +141,11 @@ public sealed class FeedHarvestActor : ReceiveActor
                             (acc, g) => acc.Add(g))
                         .SelectAsync(1, async acc =>
                         {
+                            if (hitMaxPages)
+                            {
+                                acc.MarkTruncated();
+                            }
+
                             if (acc.HasEntries)
                             {
                                 await store.Ask<PublishFeedEntriesResponse>(
@@ -133,14 +153,15 @@ public sealed class FeedHarvestActor : ReceiveActor
                             }
 
                             return acc;
-                        }))
+                        });
+                })
                 .RunWith(Sink.FirstOrDefault<HarvestAccumulator>(), _materializer)
                 .PipeTo(replyTo,
                     success: acc => acc is not null
                         ? new HarvestCompleted(
                             acc.ToSummary(_timeProvider.GetElapsedTime(startedAt)))
                         : (HarvestResponse)new HarvestUnchanged(),
-                    failure: ex => new HarvestFailed(ex.Message));
+                    failure: ex => new HarvestFailed(ex.Message, probeTimestamp));
         });
     }
 
@@ -189,7 +210,13 @@ public sealed class FeedHarvestActor : ReceiveActor
     {
         if (response is not QueryMediathekCompleted completed)
         {
-            return ([], true);
+            var reason = response switch
+            {
+                QueryMediathekError err => err.Cause.Message,
+                QueryMediathekQueueFull => "query queue full",
+                _ => $"unexpected response: {response.GetType().Name}"
+            };
+            throw new InvalidOperationException($"Mediathek page fetch failed: {reason}");
         }
 
         var leadLimit = (DateTimeOffset.UtcNow + _maxLead).ToUnixTimeSeconds();

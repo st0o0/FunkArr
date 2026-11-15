@@ -20,7 +20,8 @@ public abstract record SearchCommandResponse;
 public sealed record SearchCommandCompleted(
     Guid SearchId,
     SearchResultItem[] Items,
-    int Total) : SearchCommandResponse;
+    int Total,
+    bool IsPartial = false) : SearchCommandResponse;
 
 public sealed record SearchCommandFailed(
     Guid SearchId,

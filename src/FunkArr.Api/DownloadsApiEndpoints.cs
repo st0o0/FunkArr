@@ -174,7 +174,10 @@ public static class DownloadsApiEndpoints
         group.MapPost("/queue/{id:guid}/retry", async (Guid id, IActorRegistry registry, CancellationToken ct) =>
         {
             var manager = await registry.GetAsync<IDownloadManager>(ct);
-            var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(id), ct);
+            var historyManager = await registry.GetAsync<IDownloadHistoryManager>(ct);
+            var historyResult = await historyManager.Ask<SingleHistoryItemResult>(new QuerySingleHistoryItem(id), ct);
+            var category = historyResult.Item?.Completion.Category;
+            var result = await manager.Ask<RetryDownloadResult>(new RetryDownload(id, category), ct);
             return result.Success
                 ? Results.Ok(new OperationResult(true))
                 : Results.BadRequest(new OperationResult(false, result.Error));

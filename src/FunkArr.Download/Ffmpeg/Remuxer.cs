@@ -23,26 +23,35 @@ internal sealed class Remuxer(
         {
             if (options.SubtitleUrl is not null)
             {
-                var result = await subtitleDownloader.DownloadAsync(
-                    options.SubtitleUrl, Path.GetDirectoryName(options.OutputPath)!, route.Name, ct);
-                switch (result)
+                try
                 {
-                    case SubtitleResult.Succeeded s:
-                        subtitlePath = s.FilePath;
-                        subtitleLanguage = s.Track.Language;
-                        break;
-                    case SubtitleResult.Failed f:
-                        logger.LogWarning("Subtitle failed for {Url}: {Reason} {Detail}",
-                            options.SubtitleUrl, f.Reason, f.Detail);
-                        break;
+                    var subtitleResult = await subtitleDownloader.DownloadAsync(
+                        options.SubtitleUrl, Path.GetDirectoryName(options.OutputPath)!, route.Name, ct);
+                    switch (subtitleResult)
+                    {
+                        case SubtitleResult.Succeeded s:
+                            subtitlePath = s.FilePath;
+                            subtitleLanguage = s.Track.Language;
+                            break;
+                        case SubtitleResult.Failed f:
+                            logger.LogWarning("Subtitle failed for {Url}: {Reason} {Detail}",
+                                options.SubtitleUrl, f.Reason, f.Detail);
+                            break;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    return new FfmpegResult(false, -1, "Cancelled", 0);
                 }
             }
 
+            var hasSubtitle = subtitlePath is not null;
             var input = new FfmpegInput(
                 options.VideoUrl, subtitlePath, options.OutputPath,
                 route.ProxyUrl, subtitleLanguage, options.IsHls);
 
-            return await ffmpegProcess.ExecuteAsync(input, onProgress, ct);
+            var result = await ffmpegProcess.ExecuteAsync(input, onProgress, ct);
+            return result with { SubtitleMuxed = hasSubtitle && result.Success };
         }
         finally
         {

@@ -39,21 +39,31 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
         log.LogDebug("TVDB cache miss for series {SeriesId}, fetching", seriesId);
         Telemetry.Requests.Up(_apiTag, new KeyValuePair<string, object?>("status", "miss"));
         var sw = Stopwatch.StartNew();
-        var episodes = await FetchEpisodesAsync(seriesId);
+        var (episodes, isComplete) = await FetchEpisodesAsync(seriesId);
         Telemetry.Duration.Record(sw.Elapsed.TotalSeconds, _apiTag);
-        cache.Set(cacheKey, episodes, new MemoryCacheEntryOptions
+
+        if (isComplete)
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7),
-            Size = 1
-        });
+            cache.Set(cacheKey, episodes, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7),
+                Size = 1
+            });
+        }
+        else
+        {
+            log.LogWarning("TVDB fetch for series {SeriesId} was incomplete, not caching", seriesId);
+        }
+
         return episodes;
     }
 
-    private async Task<TvdbEpisode[]> FetchEpisodesAsync(int seriesId)
+    private async Task<(TvdbEpisode[] Episodes, bool IsComplete)> FetchEpisodesAsync(int seriesId)
     {
         await EnsureAuthenticated();
 
         var episodes = new List<TvdbEpisode>();
+        var isComplete = true;
         var page = 0;
 
         while (true)
@@ -75,12 +85,14 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
                     if (!response.IsSuccessStatusCode)
                     {
                         log.LogWarning("TVDB request failed after re-auth: {StatusCode} for {Url}", (int)response.StatusCode, url);
+                        isComplete = false;
                         break;
                     }
                 }
                 else
                 {
                     log.LogWarning("TVDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
+                    isComplete = false;
                     break;
                 }
             }
@@ -88,6 +100,7 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
             var result = await response.Content.ReadFromJsonAsync<TvdbSeriesEpisodesResponse>(_jsonOptions);
             if (result?.Data?.Episodes is null)
             {
+                isComplete = false;
                 break;
             }
 
@@ -101,7 +114,7 @@ public sealed class TvdbClient(HttpClient httpClient, IOptionsMonitor<TvdbOption
             page++;
         }
 
-        return [.. episodes];
+        return ([.. episodes], isComplete);
     }
 
     private async Task EnsureAuthenticated()

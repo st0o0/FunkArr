@@ -45,7 +45,7 @@ internal static class VariantDetector
 
         try
         {
-            return pattern.IsMatch(value);
+            return pattern.IsMatch(value.Normalize(System.Text.NormalizationForm.FormC));
         }
         catch (RegexMatchTimeoutException)
         {
