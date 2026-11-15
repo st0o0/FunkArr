@@ -45,7 +45,7 @@ services:
 
   radarr:
     container_name: radarr
-    image: ghcr.io/home-operations/radarr:rolling@sha256:69ea515df6e2a3ea1490cfa127ffaaf9597a9db84fffa2fa150a6fae98fe04cb
+    image: ghcr.io/home-operations/radarr:rolling@sha256:25b5c149bee74ac7f404d6015e0146d09b35ea91d639834624642e23df22f8c0
     ports:
       - "7878:7878"
     volumes:
