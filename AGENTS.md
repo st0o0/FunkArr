@@ -72,7 +72,7 @@ src/
 
 ```
 SINGLETONS (Cluster Singleton)
-├─ MediathekViewWebManager (non-persistent, IWithUnboundedStash)  [Search]
+├─ MediathekViewWebManager (non-persistent)                       [Search]
 │  └─ Manages MediathekViewWeb API connection state
 ├─ SearchManager (non-persistent, IWithTimers)                    [Search]
 │  └─ Orchestrates search across shard regions

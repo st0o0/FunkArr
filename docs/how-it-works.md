@@ -126,7 +126,7 @@ Sonarr, Radarr und Prowlarr senden für den RSS-Sync und für den "Test"-Button 
 4. **Prüfung:** Veröffentlicht werden nur Releases mit einem Score von mindestens `MinConfidence` und mit Staffel/Folge (Serien) bzw. TMDB-/IMDB-ID (Filme).
 5. **Feed:** Der `FeedStoreManager` speichert veröffentlichte Releases mit stabiler GUID und dem Zeitpunkt der ersten Sichtung als `pubDate` und entfernt sie nach der Aufbewahrungsdauer.
 
-RSS-Anfragen liefern den Feed mit den neuesten Einträgen zuerst, sodass Sonarr und Radarr lückenlos blättern können. Feed-Seiten werden pro Seite, Kategorie, API-Schlüssel und Host zwischengespeichert, sodass RSS-Syncs und mehrere Clients aus dem Speicher beantwortet werden. Der `FeedStoreManager` leert diesen Zwischenspeicher, sobald sich der Feed ändert (neue Releases, Aufräumen nach Aufbewahrungsdauer, Neustart), neue Releases erscheinen also sofort; Einträge verfallen außerdem nach 30 Minuten. Antworten, die gegeben wurden, während der Feed nicht erreichbar war, werden nie zwischengespeichert. Enthält der Feed für die angefragte Kategorie noch keine Releases (zum Beispiel direkt nach der Installation), antwortet FunkArr mit einem einzelnen Validierungseintrag (`FunkArr.Validation.…`), damit der Indexer-Test erfolgreich ist. Sein Download-Link wird abgelehnt, er löst also nie einen Download aus. Die Seite **Feed** in der Weboberfläche zeigt die veröffentlichten Releases und den letzten Abruf.
+RSS-Anfragen liefern den Feed mit den neuesten Einträgen zuerst, sodass Sonarr und Radarr lückenlos blättern können. Feed-Seiten werden pro Seite, Kategorie, API-Schlüssel und Host zwischengespeichert, sodass RSS-Syncs und mehrere Clients aus dem Speicher beantwortet werden. Der `FeedStoreManager` leert diesen Zwischenspeicher, sobald sich der Feed ändert (neue Releases, Aufräumen nach Aufbewahrungsdauer, Neustart), neue Releases erscheinen also sofort; Einträge verfallen außerdem nach 5 Minuten. Antworten, die gegeben wurden, während der Feed nicht erreichbar war, werden nie zwischengespeichert. Enthält der Feed für die angefragte Kategorie noch keine Releases (zum Beispiel direkt nach der Installation), antwortet FunkArr mit einem einzelnen Validierungseintrag (`FunkArr.Validation.…`), damit der Indexer-Test erfolgreich ist. Sein Download-Link wird abgelehnt, er löst also nie einen Download aus. Die Seite **Feed** in der Weboberfläche zeigt die veröffentlichten Releases und den letzten Abruf.
 
 ## Download-Pipeline
 
@@ -235,7 +235,7 @@ Der `EnrichmentManager` (Singleton) leitet Anfragen an zwei Aktor-Pools (je zwei
 
 **Airdate-Matching:** Wenn der Mediathek-Eintrag ein Ausstrahlungsdatum hat, wird die TVDB-Episode mit dem nächsten passenden Datum gesucht. Standard-Toleranz: 7 Tage. Dieses Matching wird nur durchgeführt, wenn der beste Titel-Score mindestens 0.3 beträgt (Sicherheitsnetz gegen völlig falsche Zuordnungen).
 
-Die TVDB-Episodenlisten werden zwischengespeichert. Serien mit zukünftigen Episoden werden 2 Tage gecacht, abgeschlossene Serien 7 Tage.
+TVDB-Episodenlisten werden 7 Tage zwischengespeichert. Fehlgeschlagene Abrufe werden nicht zwischengespeichert.
 
 Konfiguration: `FunkArr__Tvdb__ApiKey`
 
@@ -246,7 +246,7 @@ Für Filme fragt FunkArr TMDB ab, um Filmdaten aufzulösen (Titel, Erscheinungsj
 - **Titel-Ähnlichkeit** über Levenshtein-Distanz (Schwellwert: 0.5)
 - **Jahres-Validierung** mit einer Standard-Toleranz von 1 Jahr
 
-TMDB-Filmdaten werden 30 Tage zwischengespeichert.
+TMDB-Filmdaten werden 7 Tage zwischengespeichert.
 
 Konfiguration: `FunkArr__Tmdb__ApiKey`
 

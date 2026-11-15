@@ -10,6 +10,7 @@ Die Standardwerte funktionieren sofort für die lokale Entwicklung. Für den Pro
 |----------|----------|-------------|
 | `FunkArr__ApiKey` | `funkarr-default-api-key` | API-Schlüssel für Prowlarr/Sonarr/Radarr |
 | `FunkArr__DataPath` | `data` | Basispfad für Datenbank, Regelwerke, temporäre Dateien |
+| `FunkArr__BaseUrl` | _(leer)_ | Basis-URL für FunkArr (wird von der Setup-API für die Auto-Konfiguration verwendet) |
 
 ### API-Schlüssel
 
@@ -83,14 +84,14 @@ Wenn Sonarr eine Download-Anfrage mit der Kategorie `tv` sendet, landet die fert
 
 ### Download-Zeitplan
 
-Optionale Zeitfenster, in denen Downloads gestartet werden duerfen. Ausserhalb der Fenster bleiben Downloads in der Warteschlange und starten automatisch, sobald das naechste Fenster beginnt. Ohne konfigurierte Zeitfenster laeuft der Download rund um die Uhr.
+Optionale Zeitfenster, in denen Downloads gestartet werden dürfen. Außerhalb der Fenster bleiben Downloads in der Warteschlange und starten automatisch, sobald das nächste Fenster beginnt. Ohne konfigurierte Zeitfenster läuft der Download rund um die Uhr.
 
 | Variable | Standard | Beschreibung |
 |----------|----------|-------------|
 | `FunkArr__Download__DownloadSchedule__N__Start` | - | Startzeit des Zeitfensters (Format: `HH:mm`) |
 | `FunkArr__Download__DownloadSchedule__N__End` | - | Endzeit des Zeitfensters (Format: `HH:mm`) |
 
-Das `N` ist ein nullbasierter Index. Zeitfenster koennen Mitternacht ueberbruecken (z.B. `23:00` bis `02:00`). Mehrere Zeitfenster sind moeglich.
+Das `N` ist ein nullbasierter Index. Zeitfenster können Mitternacht überbrücken (z.B. `23:00` bis `02:00`). Mehrere Zeitfenster sind möglich.
 
 ```
 FunkArr__Download__DownloadSchedule__0__Start=23:00
@@ -99,7 +100,7 @@ FunkArr__Download__DownloadSchedule__0__End=06:00
 
 ## Netzwerk-Routen
 
-FunkArr kann verschiedene Mediatheken uber verschiedene Netzwerkwege erreichen. Das ist notwendig, um auf geo-beschrankte Inhalte von ORF (Osterreich) oder SRF (Schweiz) zuzugreifen. FunkArr selbst unterstuzt nur HTTP-Proxys - die VPN-Infrastruktur (z.B. WireGuard + AirVPN) wird ausserhalb von FunkArr in Docker betrieben.
+FunkArr kann verschiedene Mediatheken über verschiedene Netzwerkwege erreichen. Das ist notwendig, um auf geo-beschränkte Inhalte von ORF (Österreich) oder SRF (Schweiz) zuzugreifen. FunkArr selbst unterstützt nur HTTP-Proxys - die VPN-Infrastruktur (z.B. WireGuard + AirVPN) wird außerhalb von FunkArr in Docker betrieben.
 
 ### Routen-Definitionen
 
@@ -109,7 +110,7 @@ Benannte Netzwerkwege mit optionalem HTTP-Proxy:
 |----------|----------|-------------|
 | `FunkArr__Routes__Definitions__N__Name` | `Direct` | Name der Route |
 | `FunkArr__Routes__Definitions__N__Proxy` | _(leer)_ | HTTP-Proxy-URI (leer = direkte Verbindung) |
-| `FunkArr__Routes__Default` | `Direct` | Standard-Route fur nicht zugeordnete Sender |
+| `FunkArr__Routes__Default` | `Direct` | Standard-Route für nicht zugeordnete Sender |
 
 ### Sender-Zuordnung
 
@@ -117,10 +118,10 @@ Glob-Muster ordnen Mediathek-Sender einer Route zu. Das erste passende Muster ge
 
 | Variable | Standard | Beschreibung |
 |----------|----------|-------------|
-| `FunkArr__Routes__ChannelRoutes__N__Pattern` | - | Glob-Muster fur den Sendernamen (z.B. `ORF*`) |
+| `FunkArr__Routes__ChannelRoutes__N__Pattern` | - | Glob-Muster für den Sendernamen (z.B. `ORF*`) |
 | `FunkArr__Routes__ChannelRoutes__N__Route` | - | Name der zugeordneten Route |
 
-Die Muster verwenden einfaches Glob-Matching (`*` fur beliebige Zeichen). MediathekViewWeb liefert folgende Sendernamen: `ARD`, `ARD-alpha`, `BR`, `ZDF`, `ZDFneo`, `ZDFinfo`, `3Sat`, `ARTE.DE`, `ORF`, `SRF`, `Funk.net`, `KiKA`, `DW` und weitere.
+Die Muster verwenden einfaches Glob-Matching (`*` für beliebige Zeichen). MediathekViewWeb liefert folgende Sendernamen: `ARD`, `ARD-alpha`, `BR`, `ZDF`, `ZDFneo`, `ZDFinfo`, `3Sat`, `ARTE.DE`, `ORF`, `SRF`, `Funk.net`, `KiKA`, `DW` und weitere.
 
 Beispiel-Konfiguration:
 
@@ -139,17 +140,17 @@ FunkArr__Routes__ChannelRoutes__1__Route=Switzerland
 FunkArr__Routes__Default=Direct
 ```
 
-Mit dieser Konfiguration werden ORF-Inhalte uber einen osterreichischen Proxy geladen, SRF-Inhalte uber einen Schweizer Proxy, und alle anderen Sender (ARD, ZDF, 3Sat, ...) direkt.
+Mit dieser Konfiguration werden ORF-Inhalte über einen österreichischen Proxy geladen, SRF-Inhalte über einen Schweizer Proxy, und alle anderen Sender (ARD, ZDF, 3Sat, ...) direkt.
 
 ::: warning
-Wenn ein Proxy nicht erreichbar ist, schlagt der Download fehl - es gibt keinen automatischen Fallback auf eine direkte Verbindung. Das ist beabsichtigt: ein stiller Fallback wurde die geografische Einschrankung umgehen, die du explizit konfiguriert hast.
+Wenn ein Proxy nicht erreichbar ist, schlägt der Download fehl - es gibt keinen automatischen Fallback auf eine direkte Verbindung. Das ist beabsichtigt: ein stiller Fallback würde die geografische Einschränkung umgehen, die du explizit konfiguriert hast.
 :::
 
-Die Route gilt fur die gesamte Download-Pipeline: sowohl der Untertitel-Download als auch FFmpeg verwenden den konfigurierten Proxy.
+Die Route gilt für die gesamte Download-Pipeline: sowohl der Untertitel-Download als auch FFmpeg verwenden den konfigurierten Proxy.
 
 ### Docker Compose mit Proxy-Infrastruktur
 
-Ein vollstandiges Beispiel mit FunkArr und gluetun-VPN-Gateways, die jeweils einen HTTP-Proxy bereitstellen:
+Ein vollständiges Beispiel mit FunkArr und gluetun-VPN-Gateways, die jeweils einen HTTP-Proxy bereitstellen:
 
 ```yaml
 services:
@@ -176,7 +177,7 @@ services:
       - FunkArr__Routes__ChannelRoutes__1__Route=Switzerland
       - FunkArr__Routes__Default=Direct
 
-  # Osterreich: gluetun-WireGuard-Gateway mit eingebautem HTTP-Proxy
+  # Österreich: gluetun-WireGuard-Gateway mit eingebautem HTTP-Proxy
   gluetun-at:
     image: qmcgaw/gluetun:latest
     restart: unless-stopped
@@ -187,7 +188,7 @@ services:
     environment:
       - VPN_SERVICE_PROVIDER=<dein Anbieter>
       - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=<dein Schluessel>
+      - WIREGUARD_PRIVATE_KEY=<dein Schlüssel>
       - WIREGUARD_ADDRESSES=<deine Adresse>
       - SERVER_COUNTRIES=Austria
       - HTTPPROXY=on
@@ -203,7 +204,7 @@ services:
     environment:
       - VPN_SERVICE_PROVIDER=<dein Anbieter>
       - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=<dein Schluessel>
+      - WIREGUARD_PRIVATE_KEY=<dein Schlüssel>
       - WIREGUARD_ADDRESSES=<deine Adresse>
       - SERVER_COUNTRIES=Switzerland
       - HTTPPROXY=on
@@ -213,11 +214,11 @@ volumes:
 ```
 
 ::: tip
-Jeder gluetun-Container leitet seinen Verkehr durch WireGuard und stellt den HTTP-Proxy selbst bereit (`HTTPPROXY=on`, Port 8888). FunkArr erreicht ihn uber das interne Docker-Netzwerk - die Proxys mussen nicht offentlich erreichbar sein.
+Jeder gluetun-Container leitet seinen Verkehr durch WireGuard und stellt den HTTP-Proxy selbst bereit (`HTTPPROXY=on`, Port 8888). FunkArr erreicht ihn über das interne Docker-Netzwerk - die Proxys müssen nicht öffentlich erreichbar sein.
 :::
 
 ::: warning
-Verwende ein gluetun-Image, das mit Go 1.26.9 / 1.27.2 oder neuer gebaut wurde. Altere Builds antworten auf `CONNECT` mit `Transfer-Encoding: chunked`, wodurch FFmpeg den TLS-Handshake uber den Proxy nicht abschliessen kann ([gluetun#3489](https://github.com/passteque/gluetun/issues/3489)). Jeder andere HTTP-Proxy mit `CONNECT`-Unterstutzung (z. B. tinyproxy) funktioniert ebenfalls.
+Verwende ein gluetun-Image, das mit Go 1.26.9 / 1.27.2 oder neuer gebaut wurde. Ältere Builds antworten auf `CONNECT` mit `Transfer-Encoding: chunked`, wodurch FFmpeg den TLS-Handshake über den Proxy nicht abschließen kann ([gluetun#3489](https://github.com/passteque/gluetun/issues/3489)). Jeder andere HTTP-Proxy mit `CONNECT`-Unterstützung (z. B. tinyproxy) funktioniert ebenfalls.
 :::
 
 ## Regelwerke
@@ -270,12 +271,11 @@ Beide Schlüssel sind optional, aber empfohlen. Ohne sie verlässt sich FunkArr 
 | `FunkArr__Feed__Enabled` | `true` | Neue Mediathek-Einträge für den RSS-Sync von Sonarr und Radarr sammeln |
 | `FunkArr__Feed__Interval` | `00:15:00` | Abstand zwischen zwei Abrufen |
 | `FunkArr__Feed__InitialLookback` | `2.00:00:00` | Wie weit der allererste Abruf zurückschaut |
-| `FunkArr__Feed__PageSize` | `100` | Einträge pro MediathekViewWeb-Seite (1-500) |
-| `FunkArr__Feed__MaxPages` | `200` | Maximale Seiten pro Abruf (Schutzgrenze) |
+| `FunkArr__Feed__PageSize` | `1000` | Einträge pro MediathekViewWeb-Seite (1-1000) |
+| `FunkArr__Feed__MaxPages` | `20` | Maximale Seiten pro Abruf (Schutzgrenze) |
 | `FunkArr__Feed__MaxCatchUp` | `7.00:00:00` | Wie weit ein Abruf nach einem Ausfall höchstens nachholt |
 | `FunkArr__Feed__Retention` | `14.00:00:00` | Wie lange veröffentlichte Releases im Feed bleiben |
 | `FunkArr__Feed__MinConfidence` | `0.7` | Mindest-Score für die Veröffentlichung (0-1) |
-| `FunkArr__Feed__MaxConcurrency` | `4` | Parallel ausgewertete Regelwerk-Gruppen |
 
 Ein Abruf ohne neues Filmlisten-Update kostet nur eine kleine Anfrage. Kann ein Abruf nicht alle neuen Einträge innerhalb von `MaxPages` abdecken, zeigt die Feed-Seite eine Lücke an; passiert das regelmäßig, `MaxPages` erhöhen.
 
@@ -316,11 +316,9 @@ Der Match-Verlauf verfolgt, welche Regelwerk-Zuordnungen erfolgreiche Downloads 
 
 | Variable | Standard | Beschreibung |
 |----------|----------|-------------|
-| `FunkArr__ArrApi__SearchTimeoutSeconds` | `30` | Timeout in Sekunden fuer Newznab-Suchanfragen |
-| `FunkArr__ArrApi__DownloadTimeoutSeconds` | `10` | Timeout in Sekunden fuer SABnzbd-Download-Anfragen |
 | `FunkArr__ArrApi__SearchCacheTtlSeconds` | `60` | Dauer in Sekunden, die Suchergebnisse zwischengespeichert werden |
 
-Diese Timeouts gelten fuer die externen API-Endpunkte (`/index/api` und `/download/api`), die Prowlarr, Sonarr und Radarr ansprechen. Der Search-Cache verhindert, dass eine Pagination-Folgeanfrage die gesamte Suche erneut ausloest.
+Der Search-Cache gilt für die externe Indexer-API (`/index/api`), die Prowlarr, Sonarr und Radarr ansprechen. Er verhindert, dass eine Pagination-Folgeanfrage die gesamte Suche erneut auslöst.
 
 ## PostgreSQL
 
@@ -347,7 +345,7 @@ FunkArr verwendet [Serilog](https://serilog.net/) für strukturiertes Logging. L
 | `Serilog__MinimumLevel__Default` | `Information` | Globales Mindest-Log-Level |
 | `Serilog__MinimumLevel__Override__Akka` | `Warning` | Akka.NET Actor-System Log-Level |
 | `Serilog__MinimumLevel__Override__Microsoft.AspNetCore` | `Warning` | ASP.NET Core Request Log-Level |
-| `Serilog__MinimumLevel__Override__Microsoft.AspNetCore.Hosting.Diagnostics` | `Information` | Log-Level der ASP.NET Core Hosting-Diagnose (Request-Zusammenfassung) |
+| `Serilog__MinimumLevel__Override__Microsoft.AspNetCore.HttpLogging` | `Information` | Log-Level des ASP.NET Core HTTP-Request-Loggings |
 
 Gültige Level: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, `Fatal`.
 
@@ -370,7 +368,7 @@ FFmpeg muss im `PATH` verfügbar sein - es ist im offiziellen Docker-Image entha
 - Nach MKV zu remuxen (kopiert Video-/Audio-Codecs ohne Neucodierung)
 - Untertitel als SRT-Spuren mit deutschem Sprach-Tag einzubetten
 
-Wenn fur den Sender eine [Netzwerk-Route](#netzwerk-routen) mit Proxy konfiguriert ist, wird FFmpeg automatisch mit dem entsprechenden HTTP-Proxy gestartet (`-http_proxy`). Es gibt keine separaten Konfigurationsoptionen fur das FFmpeg-Verhalten. Der Setup-Health-Check (`/api/system/setup`) überprüft, ob FFmpeg verfügbar ist.
+Wenn für den Sender eine [Netzwerk-Route](#netzwerk-routen) mit Proxy konfiguriert ist, wird FFmpeg automatisch mit dem entsprechenden HTTP-Proxy gestartet (`-http_proxy`). Es gibt keine separaten Konfigurationsoptionen für das FFmpeg-Verhalten. Der Setup-Health-Check (`/api/system/setup`) überprüft, ob FFmpeg verfügbar ist.
 
 ## Health Checks
 
