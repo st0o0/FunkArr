@@ -21,11 +21,11 @@ features:
   - title: Community-Regelwerke
     details: Chaotische Mediathek-Titel werden in strukturiertes Staffel-/Episodenformat umgewandelt. Automatisch von GitHub synchronisiert.
   - title: Proxy und Geo-Routing
-    details: Leite Sender-spezifischen Traffic uber VPN oder Proxy - ideal fur geo-eingeschrankte Inhalte von ORF, SRF und anderen.
+    details: Leite Sender-spezifischen Traffic über VPN oder Proxy - ideal für geo-eingeschränkte Inhalte von ORF, SRF und anderen.
   - title: Observability
-    details: Prometheus-`/metrics`-Endpunkt mit Metriken fur Downloads, Suche, Scoring, Enrichment, Regelwerke und externe API. Health Checks fur FFmpeg, Verzeichnisse und MediathekViewWeb.
+    details: Prometheus-`/metrics`-Endpunkt mit Metriken für Downloads, Suche, Scoring, Enrichment, Regelwerke und externe API. Health Checks für FFmpeg, Verzeichnisse und MediathekViewWeb.
   - title: Ein Container
-    details: Läuft auf jedem Docker-Host mit SQLite als Standard. Optionales PostgreSQL fur grossere Setups. PUID/PGID-Support.
+    details: Läuft auf jedem Docker-Host mit SQLite als Standard. Optionales PostgreSQL für größere Setups. PUID/PGID-Support.
   - title: MediathekViewWeb
     details: Suche wird von [MediathekViewWeb](https://mediathekviewweb.de/#everywhere=true) bereitgestellt - ein freies Community-Projekt, das die Mediatheken von ARD, ZDF, ORF, SRF und weiteren Sendern durchsuchbar macht.
 ---

@@ -1,6 +1,6 @@
 # Observability
 
-FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit lassen sich Downloads, Suchen, Scoring, Enrichment, Rulesets und externe API-Aufrufe mit jedem Prometheus-kompatiblen Monitoring-Stack ueberwachen.
+FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit lassen sich Downloads, Suchen, Scoring, Enrichment, und Rulesets mit jedem Prometheus-kompatiblen Monitoring-Stack überwachen.
 
 ## Metriken
 
@@ -31,7 +31,7 @@ FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit la
 | `funkarr_search_matches_total` | Counter | Suchanfragen mit akzeptierten Ergebnissen (Tag: `source`) |
 | `funkarr_search_no_match_total` | Counter | Suchanfragen ohne akzeptierte Ergebnisse (Tag: `source`) |
 | `funkarr_search_duration_seconds` | Histogram | End-to-End Suchdauer (Tags: `source`, `type`) |
-| `funkarr_search_timeouts_total` | Counter | Such-Timeouts (Tag: `source`, nicht immer gesetzt) |
+| `funkarr_search_timeouts_total` | Counter | Such-Timeouts (Tag: `source`) |
 | `funkarr_search_failed_total` | Counter | Fehlgeschlagene Suchen (Tag: `source`) |
 | `funkarr_search_mediathek_errors_total` | Counter | MediathekViewWeb API-Fehler |
 | `funkarr_search_results_per_request` | Histogram | Ergebnisanzahl pro Suchanfrage |
@@ -44,12 +44,12 @@ FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit la
 
 | Metrik | Typ | Beschreibung |
 |--------|-----|-------------|
-| `funkarr_feed_crawls_total` | Counter | Einlese-Läufe nach Ergebnis |
+| `funkarr_feed_crawls_total` | Counter | Einlese-Läufe nach Ergebnis (Tag: `status`) |
 | `funkarr_feed_probes_unchanged_total` | Counter | Läufe ohne neues Filmlisten-Update |
 | `funkarr_feed_items_seen_total` | Counter | Neu eingesammelte Mediathek-Einträge |
 | `funkarr_feed_unmatched_total` | Counter | Neue Einträge ohne passendes Regelwerk |
 | `funkarr_feed_published_total` | Counter | In den Feed veröffentlichte Releases |
-| `funkarr_feed_rejected_total` | Counter | Vom Feed-Filter abgelehnte Releases (Tag: `reason`) |
+| `funkarr_feed_rejected_total` | Counter | Vom Feed-Filter abgelehnte Releases (Tag: `reason`; derzeit nicht befüllt) |
 | `funkarr_feed_gaps_total` | Counter | Läufe, die das Zeitfenster nicht vollständig abdecken konnten |
 | `funkarr_feed_crawl_duration_seconds` | Histogram | Dauer eines Einlese-Laufs |
 | `funkarr_feed_entries` | Gauge | Aktuell im Feed enthaltene Releases |
@@ -73,13 +73,16 @@ FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit la
 | `funkarr_enrichment_failed_total` | Counter | Fehlgeschlagene Enrichments (Tag: `api`) |
 | `funkarr_enrichment_duration_seconds` | Histogram | API-Aufruf-Dauer (Tag: `api`) |
 | `funkarr_enrichment_items_enriched_total` | Counter | Angereicherte Items (Tag: `api`) |
+| `funkarr_enrichment_cache_entries` | Gauge | Aktuelle Cache-Einträge |
+| `funkarr_enrichment_cache_hits_total` | Counter | Cache-Treffer |
+| `funkarr_enrichment_cache_misses_total` | Counter | Cache-Fehlzugriffe |
 
 ### History (`FunkArr.History`)
 
 | Metrik | Typ | Beschreibung |
 |--------|-----|-------------|
 | `funkarr_history_recordings_total` | Counter | Aufgezeichnete Scoring-Ergebnisse |
-| `funkarr_history_trimmed_total` | Counter | Bereingte alte Eintraege |
+| `funkarr_history_trimmed_total` | Counter | Bereinigte alte Einträge |
 | `funkarr_history_queries_total` | Counter | Abgerufene History-Anfragen (Tag: `type`) |
 
 ### RuleSet (`FunkArr.RuleSet`)
@@ -89,23 +92,16 @@ FunkArr stellt einen Prometheus-kompatiblen `/metrics`-Endpunkt bereit. Damit la
 | `funkarr_ruleset_loaded_total` | Counter | Geladene Rulesets (Tag: `source`) |
 | `funkarr_ruleset_removed_total` | Counter | Entfernte Rulesets |
 | `funkarr_ruleset_active` | Gauge | Aktive Rulesets |
-| `funkarr_ruleset_update_checks_total` | Counter | Community-Update-Pruefungen |
+| `funkarr_ruleset_update_checks_total` | Counter | Community-Update-Prüfungen |
 | `funkarr_ruleset_updates_applied_total` | Counter | Angewendete Community-Updates |
 | `funkarr_ruleset_update_errors_total` | Counter | Fehlgeschlagene Community-Updates |
 | `funkarr_ruleset_validation_errors_total` | Counter | Validierungsfehler |
 | `funkarr_ruleset_scans_total` | Counter | Scan/Rescan-Aufrufe |
 | `funkarr_ruleset_file_events_total` | Counter | Dateisystem-Watcher-Events (Tag: `type`) |
 
-### Externe API (`FunkArr.ExternalApi`)
-
-| Metrik | Typ | Beschreibung |
-|--------|-----|-------------|
-| `funkarr_external_api_requests_total` | Counter | Externe API-Aufrufe (Tags: `api`, `status_code` = Statusklasse wie `2xx`, `4xx`, `5xx` oder `error` bei Ausnahmen) |
-| `funkarr_external_api_duration_seconds` | Histogram | Externe API-Latenz (Tag: `api`) |
-
 ### Standardmetriken
 
-Zusaetzlich werden ASP.NET Core HTTP-Metriken und .NET Runtime-Metriken (CPU, Speicher, GC, Threads) unter ihren Standard-OpenTelemetry-Namen exportiert. Die Unterscheidung zu anderen .NET-Services erfolgt ueber das Prometheus `job`-Label in der Scrape-Konfiguration.
+Zusätzlich werden ASP.NET Core HTTP-Metriken und .NET Runtime-Metriken (CPU, Speicher, GC, Threads) unter ihren Standard-OpenTelemetry-Namen exportiert. Die Unterscheidung zu anderen .NET-Services erfolgt über das Prometheus `job`-Label in der Scrape-Konfiguration.
 
 ## Konfiguration
 
@@ -113,15 +109,15 @@ Der `/metrics`-Endpunkt ist immer aktiv und erfordert keine Konfiguration. Er is
 
 ## Health-Checks
 
-`/healthz` fuehrt folgende Pruefungen aus:
+`/healthz` führt folgende Prüfungen aus:
 
-| Pruefung | Status bei Fehler |
+| Prüfung | Status bei Fehler |
 |----------|-------------------|
-| `data-directory`, `complete-directory`, `incomplete-directory` (muessen beschreibbar sein) | Unhealthy (503) |
+| `data-directory`, `complete-directory`, `incomplete-directory` (müssen beschreibbar sein) | Unhealthy (503) |
 | `ffmpeg` (im `PATH` gefunden) | Unhealthy (503) |
 | `mediathekviewweb` (erreichbar, 3 s Timeout) | Degraded (weiterhin 200) |
 
-`/alive` ist ein einfacher Liveness-Probe und gibt immer 200 zurueck.
+`/alive` ist ein einfacher Liveness-Probe und gibt immer 200 zurück.
 
 ## Prometheus Scrape-Konfiguration
 
@@ -140,7 +136,6 @@ Die Metriken lassen sich direkt in Grafana visualisieren. Beispiel-Queries:
 - **Download-Rate**: `rate(funkarr_download_completed_total[5m])`
 - **Sucherfolgsrate**: `rate(funkarr_search_matches_total[5m]) / rate(funkarr_search_requests_total[5m])`
 - **Scoring-Dauer (p95)**: `histogram_quantile(0.95, rate(funkarr_scoring_duration_seconds_bucket[5m]))`
-- **Externe API-Latenz (p95)**: `histogram_quantile(0.95, rate(funkarr_external_api_duration_seconds_bucket[5m]))`
 - **Untertitel-Fehlerrate**: `rate(funkarr_download_subtitle_total{status="failed"}[5m])`
 - **MediathekViewWeb Cache-Trefferrate**: `rate(funkarr_search_mediathek_cache_hits_total[5m]) / (rate(funkarr_search_mediathek_cache_hits_total[5m]) + rate(funkarr_search_mediathek_cache_misses_total[5m]))`
 - **Enrichment Cache-Trefferrate**: `rate(funkarr_enrichment_requests_total{status="hit"}[5m]) / rate(funkarr_enrichment_requests_total[5m])`

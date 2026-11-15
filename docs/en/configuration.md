@@ -10,6 +10,7 @@ Defaults work out of the box for local development. For production, you typicall
 |----------|---------|-------------|
 | `FunkArr__ApiKey` | `funkarr-default-api-key` | API key for Prowlarr/Sonarr/Radarr |
 | `FunkArr__DataPath` | `data` | Base path for database, rulesets, temp files |
+| `FunkArr__BaseUrl` | _(empty)_ | Base URL for FunkArr (used by setup API for auto-configuration) |
 
 ### API Key
 
@@ -270,12 +271,11 @@ Both keys are optional but recommended. Without them, FunkArr relies solely on r
 | `FunkArr__Feed__Enabled` | `true` | Collect new Mediathek entries for the RSS sync of Sonarr and Radarr |
 | `FunkArr__Feed__Interval` | `00:15:00` | Time between two crawl runs |
 | `FunkArr__Feed__InitialLookback` | `2.00:00:00` | How far back the very first run looks |
-| `FunkArr__Feed__PageSize` | `100` | Entries per MediathekViewWeb page (1-500) |
-| `FunkArr__Feed__MaxPages` | `200` | Maximum pages per run (safety limit) |
+| `FunkArr__Feed__PageSize` | `1000` | Entries per MediathekViewWeb page (1-1000) |
+| `FunkArr__Feed__MaxPages` | `20` | Maximum pages per run (safety limit) |
 | `FunkArr__Feed__MaxCatchUp` | `7.00:00:00` | How far a run catches up after an outage at most |
 | `FunkArr__Feed__Retention` | `14.00:00:00` | How long published releases stay in the feed |
 | `FunkArr__Feed__MinConfidence` | `0.7` | Minimum match score for publishing (0-1) |
-| `FunkArr__Feed__MaxConcurrency` | `4` | Ruleset groups evaluated in parallel |
 
 A run that finds no new Filmliste update costs a single small request. If a run cannot cover all new entries within `MaxPages`, the Feed page reports a gap; increase `MaxPages` if this happens regularly.
 
@@ -316,11 +316,9 @@ Match history tracks which ruleset mappings produced successful downloads over t
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `FunkArr__ArrApi__SearchTimeoutSeconds` | `30` | Timeout in seconds for Newznab search requests |
-| `FunkArr__ArrApi__DownloadTimeoutSeconds` | `10` | Timeout in seconds for SABnzbd download requests |
 | `FunkArr__ArrApi__SearchCacheTtlSeconds` | `60` | Duration in seconds that search results are cached |
 
-These timeouts apply to the external API endpoints (`/index/api` and `/download/api`) that Prowlarr, Sonarr and Radarr call. The search cache prevents a pagination follow-up request from re-triggering the full search.
+The search cache applies to the external indexer API (`/index/api`) that Prowlarr, Sonarr and Radarr call. It prevents a pagination follow-up request from re-triggering the full search.
 
 ## PostgreSQL
 
@@ -347,7 +345,7 @@ FunkArr uses [Serilog](https://serilog.net/) for structured logging. Log levels 
 | `Serilog__MinimumLevel__Default` | `Information` | Global minimum log level |
 | `Serilog__MinimumLevel__Override__Akka` | `Warning` | Akka.NET actor system log level |
 | `Serilog__MinimumLevel__Override__Microsoft.AspNetCore` | `Warning` | ASP.NET Core request log level |
-| `Serilog__MinimumLevel__Override__Microsoft.AspNetCore.Hosting.Diagnostics` | `Information` | ASP.NET Core hosting diagnostics (request summary) log level |
+| `Serilog__MinimumLevel__Override__Microsoft.AspNetCore.HttpLogging` | `Information` | ASP.NET Core HTTP request logging log level |
 
 Valid levels: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, `Fatal`.
 

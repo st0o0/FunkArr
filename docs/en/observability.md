@@ -1,6 +1,6 @@
 # Observability
 
-FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Prometheus-compatible monitoring stack to observe download queues, search activity, scoring results, enrichment caching, ruleset management, and external API health.
+FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Prometheus-compatible monitoring stack to observe download queues, search activity, scoring results, enrichment caching, and ruleset management.
 
 ## Metrics
 
@@ -31,7 +31,7 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 | `funkarr_search_matches_total` | Counter | Searches with accepted results (tag: `source`) |
 | `funkarr_search_no_match_total` | Counter | Searches with no accepted results (tag: `source`) |
 | `funkarr_search_duration_seconds` | Histogram | End-to-end search duration (tags: `source`, `type`) |
-| `funkarr_search_timeouts_total` | Counter | Search timeouts (tag: `source`, not always set) |
+| `funkarr_search_timeouts_total` | Counter | Search timeouts (tag: `source`) |
 | `funkarr_search_failed_total` | Counter | Search failures (tag: `source`) |
 | `funkarr_search_mediathek_errors_total` | Counter | MediathekViewWeb API errors |
 | `funkarr_search_results_per_request` | Histogram | Result count distribution |
@@ -44,12 +44,12 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `funkarr_feed_crawls_total` | Counter | Feed ingest runs by outcome |
+| `funkarr_feed_crawls_total` | Counter | Feed ingest runs by outcome (tag: `status`) |
 | `funkarr_feed_probes_unchanged_total` | Counter | Ingest runs that found no new Filmliste update |
 | `funkarr_feed_items_seen_total` | Counter | New Mediathek entries collected by the ingest |
 | `funkarr_feed_unmatched_total` | Counter | New entries without a matching ruleset |
 | `funkarr_feed_published_total` | Counter | Releases published to the feed |
-| `funkarr_feed_rejected_total` | Counter | Releases rejected by the feed gate (tag: `reason`) |
+| `funkarr_feed_rejected_total` | Counter | Releases rejected by the feed gate (tag: `reason`; currently not populated) |
 | `funkarr_feed_gaps_total` | Counter | Ingest runs that could not cover the whole window |
 | `funkarr_feed_crawl_duration_seconds` | Histogram | Ingest run duration |
 | `funkarr_feed_entries` | Gauge | Releases currently in the feed |
@@ -73,6 +73,9 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 | `funkarr_enrichment_failed_total` | Counter | Enrichment failures (tag: `api`) |
 | `funkarr_enrichment_duration_seconds` | Histogram | API call duration (tag: `api`) |
 | `funkarr_enrichment_items_enriched_total` | Counter | Items enriched (tag: `api`) |
+| `funkarr_enrichment_cache_entries` | Gauge | Current cache entries |
+| `funkarr_enrichment_cache_hits_total` | Counter | Cache hits |
+| `funkarr_enrichment_cache_misses_total` | Counter | Cache misses |
 
 ### History (`FunkArr.History`)
 
@@ -95,13 +98,6 @@ FunkArr exposes a Prometheus-compatible `/metrics` endpoint. Use it with any Pro
 | `funkarr_ruleset_validation_errors_total` | Counter | Ruleset validation errors |
 | `funkarr_ruleset_scans_total` | Counter | Scan/rescan invocations |
 | `funkarr_ruleset_file_events_total` | Counter | Filesystem watcher events (tag: `type`) |
-
-### External API (`FunkArr.ExternalApi`)
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| `funkarr_external_api_requests_total` | Counter | External API calls (tags: `api`, `status_code` = status class such as `2xx`, `4xx`, `5xx`, or `error` on exceptions) |
-| `funkarr_external_api_duration_seconds` | Histogram | External API latency (tag: `api`) |
 
 ### Standard metrics
 
@@ -140,7 +136,6 @@ The metrics can be visualized directly in Grafana. Example queries:
 - **Download rate**: `rate(funkarr_download_completed_total[5m])`
 - **Search success rate**: `rate(funkarr_search_matches_total[5m]) / rate(funkarr_search_requests_total[5m])`
 - **Scoring duration (p95)**: `histogram_quantile(0.95, rate(funkarr_scoring_duration_seconds_bucket[5m]))`
-- **External API latency (p95)**: `histogram_quantile(0.95, rate(funkarr_external_api_duration_seconds_bucket[5m]))`
 - **Subtitle failure rate**: `rate(funkarr_download_subtitle_total{status="failed"}[5m])`
 - **MediathekViewWeb cache hit rate**: `rate(funkarr_search_mediathek_cache_hits_total[5m]) / (rate(funkarr_search_mediathek_cache_hits_total[5m]) + rate(funkarr_search_mediathek_cache_misses_total[5m]))`
 - **Enrichment cache hit rate**: `rate(funkarr_enrichment_requests_total{status="hit"}[5m]) / rate(funkarr_enrichment_requests_total[5m])`

@@ -120,13 +120,13 @@ Search results are cached so that follow-up requests with pagination don't re-tr
 
 Sonarr, Radarr and Prowlarr send a search without a search term and without a media ID for their RSS sync and for the "Test" button (for example `t=tvsearch` without `q`). FunkArr answers these from its RSS feed:
 
-1. **Crawl:** every 15 minutes the `FeedCrawlManager` starts a crawl, an Akka.NET stream: it asks MediathekViewWeb whether a new Filmliste update has been completed and, if so, pages through every entry that appeared since the last run (up to three pages in flight, stopping at the first page that reaches the last run), using the `filmlisteTimestamp` of each entry (the time it first appeared in the list, not its broadcast time). This includes episodes published ahead of their broadcast, so Sonarr can grab them as soon as they are downloadable. They keep their scheduled broadcast date; to wait for the broadcast, turn on the air date restriction in a Sonarr release profile. Entries more than 90 days ahead are dropped as data errors. After an outage the crawl catches up on at most the last 7 days (`MaxCatchUp`).
+1. **Crawl:** every 15 minutes the `FeedCrawlManager` starts a crawl, an Akka.NET stream: it asks MediathekViewWeb whether a new Filmliste update has been completed and, if so, pages through every entry that appeared since the last run (one page at a time, stopping at the first page that reaches the last run), using the `filmlisteTimestamp` of each entry (the time it first appeared in the list, not its broadcast time). This includes episodes published ahead of their broadcast, so Sonarr can grab them as soon as they are downloadable. They keep their scheduled broadcast date; to wait for the broadcast, turn on the air date restriction in a Sonarr release profile. Entries more than 90 days ahead are dropped as data errors. After an outage the crawl catches up on at most the last 7 days (`MaxCatchUp`).
 2. **Grouping:** new entries are matched to rulesets by topic and aliases. Entries without a ruleset are counted but not published.
 3. **Evaluation:** entries are grouped per ruleset and each group runs, several in parallel, through the same evaluation workers as search (scoring, enrichment, broadcast variants, match history with source `Feed`), so feed releases are identical to search results.
 4. **Gate:** only releases with a score of at least `MinConfidence` and season/episode (TV) or a TMDB/IMDB ID (movies) are published.
 5. **Feed:** accepted releases are published in batches to the `FeedStoreManager`, which stores them with a stable GUID and the first-seen time as `pubDate`, and removes them after the retention period.
 
-RSS requests return the feed newest first, so Sonarr and Radarr can page through it without gaps. Feed pages are output-cached per page, category, API key and host, so RSS syncs and several clients are answered from memory. The `FeedStoreManager` clears this cache whenever the feed changes (new releases, retention cleanup, restart), so new releases show up immediately; cache entries also expire after 30 minutes. Answers given while the feed was unavailable are never cached. If the feed has no releases for the requested category yet (for example right after installation), FunkArr returns a single validation entry (`FunkArr.Validation.…`) so the indexer test succeeds. Its download link is rejected, so it never starts a download. The **Feed** page in the web UI shows the published releases and the last crawl.
+RSS requests return the feed newest first, so Sonarr and Radarr can page through it without gaps. Feed pages are output-cached per page, category, API key and host, so RSS syncs and several clients are answered from memory. The `FeedStoreManager` clears this cache whenever the feed changes (new releases, retention cleanup, restart), so new releases show up immediately; cache entries also expire after 5 minutes. Answers given while the feed was unavailable are never cached. If the feed has no releases for the requested category yet (for example right after installation), FunkArr returns a single validation entry (`FunkArr.Validation.…`) so the indexer test succeeds. Its download link is rejected, so it never starts a download. The **Feed** page in the web UI shows the published releases and the last crawl.
 
 ## Download Pipeline
 
@@ -235,7 +235,7 @@ The `EnrichmentManager` (singleton) forwards requests to two actor pools (two wo
 
 **Airdate matching:** If the Mediathek entry has an air date, the TVDB episode with the closest matching date is found. Default tolerance: 7 days. This matching is only performed if the best title score is at least 0.3 (a safety net against completely wrong matches).
 
-TVDB episode lists are cached. Shows with upcoming episodes are cached for 2 days, completed shows for 7 days.
+TVDB episode lists are cached for 7 days. Failed fetches are not cached.
 
 Configuration: `FunkArr__Tvdb__ApiKey`
 
@@ -246,7 +246,7 @@ For movies, FunkArr queries TMDB to resolve movie data (title, release year, IMD
 - **Title similarity** via Levenshtein distance (threshold: 0.5)
 - **Year validation** with a default tolerance of 1 year
 
-TMDB movie data is cached for 30 days.
+TMDB movie data is cached for 7 days.
 
 Configuration: `FunkArr__Tmdb__ApiKey`
 
