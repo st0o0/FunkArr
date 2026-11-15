@@ -5,7 +5,7 @@ namespace FunkArr.Feed.Crawl;
 internal sealed class HarvestAccumulator
 {
     public long ListTimestamp { get; }
-    public bool Truncated { get; }
+    public bool Truncated { get; private set; }
     public List<FeedEntry> Accepted { get; } = [];
     public int TotalSeen { get; private set; }
     public int TotalUnmatched { get; private set; }
@@ -17,6 +17,8 @@ internal sealed class HarvestAccumulator
         ListTimestamp = listTimestamp;
         Truncated = truncated;
     }
+
+    public void MarkTruncated() => Truncated = true;
 
     public HarvestAccumulator Add(GatedResult gated)
     {

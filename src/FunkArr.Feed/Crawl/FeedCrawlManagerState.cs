@@ -58,9 +58,9 @@ public sealed class FeedCrawlManagerState
         ConsecutiveFailures = evt.ConsecutiveFailures;
     }
 
-    public void WithUnchangedRun(DateTimeOffset at)
+    public void Apply(FeedUnchangedRun evt)
     {
-        LastRunAt = at;
+        LastRunAt = evt.Timestamp;
         LastOutcome = CrawlOutcome.Unchanged;
         LastError = null;
     }

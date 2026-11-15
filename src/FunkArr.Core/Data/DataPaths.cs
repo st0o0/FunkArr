@@ -6,6 +6,40 @@ namespace FunkArr.Core.Data;
 
 public sealed partial class DataPaths
 {
+    private static readonly HashSet<char> _explicitInvalidChars =
+        ['/', '\\', ':', '*', '?', '"', '<', '>', '|', '\0'];
+
+    internal static string SanitizeFileName(string input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var chars = input.ToCharArray();
+
+        for (var i = 0; i < chars.Length; i++)
+        {
+            if (Array.IndexOf(invalidChars, chars[i]) >= 0 || _explicitInvalidChars.Contains(chars[i]))
+            {
+                chars[i] = '_';
+            }
+        }
+
+        var result = new string(chars);
+        result = result.Replace("..", "_");
+        result = CollapseUnderscores().Replace(result, "_");
+        result = result.Trim('.', ' ', '_');
+
+        if (result.Length > 200)
+        {
+            result = result[..200].TrimEnd('.', ' ', '_');
+        }
+
+        return result.Length == 0 ? "unnamed" : result;
+    }
+
+    [GeneratedRegex(@"_{2,}")]
+    private static partial Regex CollapseUnderscores();
+
     public string DataRoot { get; }
     public string Database { get; }
     public string CommunityRuleSets { get; }
@@ -70,9 +104,10 @@ public sealed partial class DataPaths
     public ResolvedDownload ResolveDownload(string entityId, string title, string? category,
         List<DownloadCategory> categories)
     {
+        var sanitized = SanitizeFileName(title);
         var categoryDir = ResolveCategoryDir(category, categories);
-        var dirName = HasEpisodeIdentifier(title) ? title : $"{title}-{entityId[..8]}";
-        var fileName = title + ".mkv";
+        var dirName = HasEpisodeIdentifier(sanitized) ? sanitized : $"{sanitized}-{entityId[..8]}";
+        var fileName = sanitized + ".mkv";
 
         var relativePath = string.IsNullOrEmpty(categoryDir)
             ? Path.Join(dirName, fileName)
@@ -80,6 +115,21 @@ public sealed partial class DataPaths
 
         var incompletePath = Path.Join(Incomplete, entityId, fileName);
         var completePath = Path.Join(Complete, relativePath);
+
+        var fullIncomplete = Path.GetFullPath(incompletePath);
+        var fullComplete = Path.GetFullPath(completePath);
+
+        if (!fullIncomplete.StartsWith(Incomplete, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Path confinement violation: incomplete path '{fullIncomplete}' escapes '{Incomplete}'.");
+        }
+
+        if (!fullComplete.StartsWith(Complete, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Path confinement violation: complete path '{fullComplete}' escapes '{Complete}'.");
+        }
 
         return new ResolvedDownload(incompletePath, completePath, relativePath);
     }

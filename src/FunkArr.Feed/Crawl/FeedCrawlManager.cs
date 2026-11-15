@@ -47,6 +47,7 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         });
         Recover<FeedCursorAdvanced>(evt => _state.Apply(evt));
         Recover<FeedRunFailed>(evt => _state.Apply(evt));
+        Recover<FeedUnchangedRun>(evt => _state.Apply(evt));
         Recover<RecoveryCompleted>(_ =>
         {
             _state.Apply(_feedOptions.CurrentValue);
@@ -94,13 +95,18 @@ public sealed class FeedCrawlManager : ReceivePersistentActor, IWithTimers
         Command<HarvestCompleted>(msg => CompleteHarvest(msg.Summary));
         Command<HarvestUnchanged>(_ =>
         {
-            _state.WithUnchangedRun(_timeProvider.GetUtcNow());
-            RecordUnchangedTelemetry();
+            var evt = new FeedUnchangedRun(_timeProvider.GetUtcNow());
+            Persist(evt, e =>
+            {
+                _state.Apply(e);
+                RecordUnchangedTelemetry();
+                MaybeSnapshot();
+            });
             _harvesting = false;
         });
         Command<HarvestFailed>(msg =>
         {
-            var summary = new IngestSummary(CrawlOutcome.Failed, 0,
+            var summary = new IngestSummary(CrawlOutcome.Failed, msg.ListTimestamp,
                 0, 0, 0, false, TimeSpan.Zero, msg.Reason);
             CompleteHarvest(summary);
         });

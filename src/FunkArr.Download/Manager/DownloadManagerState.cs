@@ -13,7 +13,7 @@ public sealed class DownloadManagerState
     public List<QueueEntry> Queued { get; private set; } = [];
     public Dictionary<Guid, DispatchedEntry> Dispatched { get; private set; } = [];
     public bool Paused { get; private set; }
-    public bool ScheduleEnabled { get; private set; } = true;
+    public bool ScheduleEnabled { get; private set; }
     public DateTimeOffset? NextWindow { get; private set; }
     public int MaxConcurrent { get; private set; }
 

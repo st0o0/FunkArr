@@ -10,4 +10,4 @@ internal sealed record HarvestCompleted(IngestSummary Summary) : HarvestResponse
 
 internal sealed record HarvestUnchanged : HarvestResponse;
 
-internal sealed record HarvestFailed(string Reason) : HarvestResponse;
+internal sealed record HarvestFailed(string Reason, long ListTimestamp) : HarvestResponse;

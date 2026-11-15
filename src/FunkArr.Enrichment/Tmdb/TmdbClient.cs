@@ -105,7 +105,22 @@ public sealed class TmdbClient(HttpClient httpClient, IOptionsMonitor<TmdbOption
         var response = await httpClient.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
-            log.LogWarning("TMDB request failed: {StatusCode} for {Url}", (int)response.StatusCode, url);
+            var urlPath = url.Split('?')[0];
+            var statusCode = (int)response.StatusCode;
+
+            if (statusCode == 404)
+            {
+                log.LogDebug("TMDB not found: {StatusCode} for {UrlPath}", statusCode, urlPath);
+                return null;
+            }
+
+            if (statusCode == 429 || statusCode >= 500)
+            {
+                log.LogWarning("TMDB transient error: {StatusCode} for {UrlPath}", statusCode, urlPath);
+                response.EnsureSuccessStatusCode();
+            }
+
+            log.LogWarning("TMDB request failed: {StatusCode} for {UrlPath}", statusCode, urlPath);
             return null;
         }
 

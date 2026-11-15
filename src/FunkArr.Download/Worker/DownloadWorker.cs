@@ -79,20 +79,49 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
 
     private void HandleStart(StartDownload cmd)
     {
-        if (!_state.IsInitialized || _state.Status != WorkerStatus.Initialized)
+        if (!_state.IsInitialized)
         {
             return;
         }
 
+        if (_state.Status == WorkerStatus.Completed)
+        {
+            _log.Info("Download {DownloadId} already completed, releasing slot", cmd.DownloadId);
+            _downloadManager.Tell(new SlotFree(cmd.DownloadId));
+            return;
+        }
+
+        if (_state.Status == WorkerStatus.Failed)
+        {
+            _log.Info("Download {DownloadId} resetting from Failed state after recovery", cmd.DownloadId);
+            Timers.Cancel(RetryTimerKey);
+            Persist(new DownloadInitialized(_downloadId, _state.Media!.ToPersistence()), e =>
+            {
+                _state.Apply(e);
+                StartDownloadFlow(cmd.DownloadId);
+            });
+            return;
+        }
+
+        if (_state.Status != WorkerStatus.Initialized)
+        {
+            return;
+        }
+
+        StartDownloadFlow(cmd.DownloadId);
+    }
+
+    private void StartDownloadFlow(Guid downloadId)
+    {
         if (string.IsNullOrEmpty(_state.Media!.VideoUrl))
         {
-            _log.Warning("Download {DownloadId} failed - video URL is empty: {Title}", cmd.DownloadId,
+            _log.Warning("Download {DownloadId} failed - video URL is empty: {Title}", downloadId,
                 _state.Media.Title);
-            Persist(new DownloadFaulted(cmd.DownloadId, "Video URL is empty"),
+            Persist(new DownloadFaulted(downloadId, "Video URL is empty"),
                 e => _state.Apply(e));
             DeferAsync("notify", _ =>
             {
-                _downloadManager.Tell(new SlotFree(cmd.DownloadId));
+                _downloadManager.Tell(new SlotFree(downloadId));
                 _downloadHistory.Tell(_state.ToRecordDownload(_downloadId, _timeProvider, 0, null));
             });
             return;
@@ -101,8 +130,8 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         var paths = ResolvePaths();
         _dataFiles.CreateDirectory(Path.GetDirectoryName(paths.IncompletePath)!);
 
-        _log.Info("Download {DownloadId} started: {Title}", cmd.DownloadId, _state.Media.Title);
-        Persist(new DownloadAttemptStarted(cmd.DownloadId, 1), e => _state.Apply(e));
+        _log.Info("Download {DownloadId} started: {Title}", downloadId, _state.Media.Title);
+        Persist(new DownloadAttemptStarted(downloadId, 1), e => _state.Apply(e));
         DeferAsync("start", _ => StartFfmpeg(paths.IncompletePath));
     }
 
@@ -131,7 +160,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
             _state.Media!.Title,
             _state.Media.Category,
             _state.Media.Channel,
-            _state.Media.SubtitleUrl is not null,
+            _state.SubtitleMuxed,
             _state.Media.Size,
             _state.Status,
             _state.Progress,
@@ -161,6 +190,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         }
 
         var paths = ResolvePaths();
+        _state.SubtitleMuxed = msg.SubtitleMuxed;
 
         if (msg.Success)
         {
@@ -240,7 +270,7 @@ public sealed class DownloadWorker : ReceivePersistentActor, IWithTimers
         var opts = _optionsMonitor.CurrentValue;
         return opts.RetryEnabled
                && failureKind == FailureKind.Transient
-               && _state.Attempt < opts.MaxRetries;
+               && _state.Attempt <= opts.MaxRetries;
     }
 
     private void StartFfmpeg(string outputPath)

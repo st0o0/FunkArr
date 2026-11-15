@@ -68,6 +68,7 @@ internal static class PersistenceMapping
             DownloadStatus.Processing => PersistedDownloadStatus.Processing,
             DownloadStatus.Completed => PersistedDownloadStatus.Completed,
             DownloadStatus.Failed => PersistedDownloadStatus.Failed,
+            DownloadStatus.Cancelled => PersistedDownloadStatus.Cancelled,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
         };
 
@@ -78,6 +79,7 @@ internal static class PersistenceMapping
             PersistedDownloadStatus.Processing => DownloadStatus.Processing,
             PersistedDownloadStatus.Completed => DownloadStatus.Completed,
             PersistedDownloadStatus.Failed => DownloadStatus.Failed,
+            PersistedDownloadStatus.Cancelled => DownloadStatus.Cancelled,
             _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
         };
 

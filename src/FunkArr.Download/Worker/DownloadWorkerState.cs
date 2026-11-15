@@ -18,6 +18,7 @@ public sealed class DownloadWorkerState
     public string? FailMessage { get; private set; }
     public FailureKind? LastFailureKind { get; private set; }
     public DownloadProgress Progress { get; private set; } = new(0, 0, 0.0);
+    public bool SubtitleMuxed { get; set; }
 
     public static DownloadWorkerState Empty => new();
 
@@ -32,6 +33,7 @@ public sealed class DownloadWorkerState
         FailMessage = null;
         LastFailureKind = null;
         Progress = new DownloadProgress(0, 0, 0.0);
+        SubtitleMuxed = false;
     }
 
     public void Apply(DownloadStarted _)
@@ -94,7 +96,9 @@ public sealed class DownloadWorkerState
             Media!.Title,
             Media.Category,
             Media.Size,
-            Status == WorkerStatus.Completed ? DownloadStatus.Completed : DownloadStatus.Failed,
+            Status == WorkerStatus.Completed ? DownloadStatus.Completed
+                : FailMessage == "Cancelled" ? DownloadStatus.Cancelled
+                : DownloadStatus.Failed,
             paths?.RelativePath,
             FailMessage,
             elapsedSeconds,

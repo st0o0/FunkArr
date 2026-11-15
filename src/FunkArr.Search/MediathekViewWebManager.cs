@@ -100,7 +100,10 @@ public sealed class MediathekViewWebManager : ReceiveActor
         });
 
         Receive<StreamComplete>(_ =>
+        {
+            _log.Error("MediathekViewWeb stream completed unexpectedly, {PendingCount} requests orphaned", _state.Pending.Count);
             throw new InvalidOperationException(
-                $"MediathekViewWeb stream completed unexpectedly, {_state.Pending.Count} requests orphaned"));
+                $"MediathekViewWeb stream completed unexpectedly, {_state.Pending.Count} requests orphaned");
+        });
     }
 }
