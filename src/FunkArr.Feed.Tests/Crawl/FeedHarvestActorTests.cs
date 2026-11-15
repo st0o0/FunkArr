@@ -150,7 +150,7 @@ public sealed class FeedHarvestActorTests : TestKit
     }
 
     [Fact]
-    public void Page_fetch_error_response_completes_with_zero_entries()
+    public void Page_fetch_error_response_produces_HarvestFailed()
     {
         var (harvester, p) = Create();
 
@@ -168,11 +168,11 @@ public sealed class FeedHarvestActorTests : TestKit
             cancellationToken: TestContext.Current.CancellationToken);
         p.Mediathek.Reply(new QueryMediathekError(new InvalidOperationException("HTTP 500")));
 
-        var result = ExpectMsg<HarvestCompleted>(_timeout,
+        var result = ExpectMsg<HarvestFailed>(_timeout,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Multiple(
-            () => Assert.Equal(CrawlOutcome.Completed, result.Summary.Status),
-            () => Assert.Equal(0, result.Summary.Accepted));
+            () => Assert.Contains("HTTP 500", result.Reason),
+            () => Assert.Equal(ListTimestamp, result.ListTimestamp));
     }
 
     [Fact]
@@ -210,5 +210,82 @@ public sealed class FeedHarvestActorTests : TestKit
 
         ExpectMsg<HarvestCompleted>(_timeout,
             cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public void Probe_error_produces_HarvestFailed()
+    {
+        var (harvester, p) = Create();
+
+        harvester.Tell(new StartHarvest(Cursor, _defaultOptions));
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekError(new InvalidOperationException("connection refused")));
+
+        var result = ExpectMsg<HarvestFailed>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Multiple(
+            () => Assert.Contains("connection refused", result.Reason),
+            () => Assert.Equal(0, result.ListTimestamp));
+    }
+
+    [Fact]
+    public void Probe_queue_full_produces_HarvestFailed()
+    {
+        var (harvester, p) = Create();
+
+        harvester.Tell(new StartHarvest(Cursor, _defaultOptions));
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekQueueFull());
+
+        var result = ExpectMsg<HarvestFailed>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Multiple(
+            () => Assert.Contains("queue full", result.Reason),
+            () => Assert.Equal(0, result.ListTimestamp));
+    }
+
+    [Fact]
+    public void Probe_unchanged_timestamp_produces_HarvestUnchanged()
+    {
+        var (harvester, p) = Create();
+
+        harvester.Tell(new StartHarvest(Cursor, _defaultOptions));
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekCompleted([], 0, Cursor));
+
+        ExpectMsg<HarvestUnchanged>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public void Page_queue_full_produces_HarvestFailed()
+    {
+        var (harvester, p) = Create();
+
+        harvester.Tell(new StartHarvest(Cursor, _defaultOptions));
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekCompleted([], 0, ListTimestamp));
+
+        p.Resolver.ExpectMsg<QueryRegisteredRuleSets>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Resolver.Reply(new RegisteredRuleSetsResult([_tatort]));
+
+        p.Mediathek.ExpectMsg<QueryMediathek>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        p.Mediathek.Reply(new QueryMediathekQueueFull());
+
+        var result = ExpectMsg<HarvestFailed>(_timeout,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Multiple(
+            () => Assert.Contains("queue full", result.Reason),
+            () => Assert.Equal(ListTimestamp, result.ListTimestamp));
     }
 }

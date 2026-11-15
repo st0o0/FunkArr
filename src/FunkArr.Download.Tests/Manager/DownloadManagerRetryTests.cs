@@ -30,7 +30,9 @@ public sealed class DownloadManagerRetryTests : TestKit
     {
         var options = new TestOptionsMonitor<DownloadOptions>(
             new DownloadOptions { ConcurrentDownloads = concurrentDownloads });
-        return Sys.ActorOf(Props.Create(() => new DownloadManager(options)));
+        var manager = Sys.ActorOf(Props.Create(() => new DownloadManager(options)));
+        manager.Tell(new ScheduleEnabled());
+        return manager;
     }
 
     private Guid EnqueueAndComplete(IActorRef manager)

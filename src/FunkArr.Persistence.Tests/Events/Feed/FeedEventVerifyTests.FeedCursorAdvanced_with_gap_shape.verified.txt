@@ -1,0 +1,8 @@
+﻿{
+  "Cursor": 1700000000,
+  "CompletedAt": "2026-11-15T12:00:00+00:00",
+  "NewItems": 0,
+  "Published": 0,
+  "Unmatched": 0,
+  "Gap": true
+}

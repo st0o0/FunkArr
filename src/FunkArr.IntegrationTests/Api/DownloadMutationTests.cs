@@ -58,6 +58,10 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         var task = fixture.Client.PostAsync($"/api/downloads/queue/{id}/retry", null, TestContext.Current.CancellationToken);
 
+        var historyProbe = fixture.GetProbe<IDownloadHistoryManager>();
+        historyProbe.ExpectMsg<QuerySingleHistoryItem>(cancellationToken: TestContext.Current.CancellationToken);
+        historyProbe.Reply(new SingleHistoryItemResult(null));
+
         var managerProbe = fixture.GetProbe<IDownloadManager>();
         var managerMsg = managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(id, managerMsg.DownloadId);
@@ -65,8 +69,6 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         var response = await task;
 
-        // History cleanup is owned by the DownloadManager, not the endpoint
-        fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);
@@ -81,13 +83,16 @@ public sealed class DownloadMutationTests(FunkArrFixture fixture)
 
         var task = fixture.Client.PostAsync($"/api/downloads/queue/{id}/retry", null, TestContext.Current.CancellationToken);
 
+        var historyProbe = fixture.GetProbe<IDownloadHistoryManager>();
+        historyProbe.ExpectMsg<QuerySingleHistoryItem>(cancellationToken: TestContext.Current.CancellationToken);
+        historyProbe.Reply(new SingleHistoryItemResult(null));
+
         var managerProbe = fixture.GetProbe<IDownloadManager>();
         managerProbe.ExpectMsg<RetryDownload>(cancellationToken: TestContext.Current.CancellationToken);
         managerProbe.Reply(new RetryDownloadResult(false, "Not failed"));
 
         var response = await task;
 
-        fixture.GetProbe<IDownloadHistoryManager>().ExpectNoMsg(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         var result = await response.Content.ReadFromJsonAsync<OperationResult>(cancellationToken: TestContext.Current.CancellationToken);

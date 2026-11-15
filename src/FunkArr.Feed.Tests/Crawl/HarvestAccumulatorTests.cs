@@ -90,4 +90,18 @@ public sealed class HarvestAccumulatorTests
             () => Assert.Equal(CrawlOutcome.CompletedWithGap, summary.Status),
             () => Assert.True(summary.Truncated));
     }
+
+    [Fact]
+    public void MarkTruncated_sets_flag_for_MaxPages_cap()
+    {
+        var acc = new HarvestAccumulator(1000, false);
+        Assert.False(acc.Truncated);
+
+        acc.MarkTruncated();
+
+        var summary = acc.ToSummary(TimeSpan.FromSeconds(1));
+        Assert.Multiple(
+            () => Assert.True(acc.Truncated),
+            () => Assert.Equal(CrawlOutcome.CompletedWithGap, summary.Status));
+    }
 }

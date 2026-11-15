@@ -1,0 +1,7 @@
+﻿{
+  "StableIds": [
+    "stable-001",
+    "stable-002",
+    "stable-003"
+  ]
+}

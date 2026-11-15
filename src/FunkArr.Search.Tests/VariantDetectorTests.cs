@@ -54,6 +54,39 @@ public sealed class VariantDetectorTests
     }
 
     [Fact]
+    public void Detect_nfd_audiodeskription()
+    {
+        // ä as a + combining diaeresis (U+0308) — NFD form
+        var nfd = "Herz aus Eis (Audiodeskription)".Normalize(System.Text.NormalizationForm.FormD);
+        Assert.Equal(MediathekVariant.AudioDescription, VariantDetector.Detect(nfd, null));
+    }
+
+    [Fact]
+    public void Detect_nfd_hoerfassung()
+    {
+        var nfd = "Herz aus Eis (Hörfassung)".Normalize(System.Text.NormalizationForm.FormD);
+        Assert.Equal(MediathekVariant.AudioDescription, VariantDetector.Detect(nfd, null));
+    }
+
+    [Fact]
+    public void Detect_nfd_gebaerdensprache()
+    {
+        var nfd = "mit Gebärdensprache".Normalize(System.Text.NormalizationForm.FormD);
+        Assert.Equal(MediathekVariant.SignLanguage, VariantDetector.Detect(nfd, null));
+    }
+
+    [Theory]
+    [InlineData("ADGS Verein", MediathekVariant.Standard)]
+    [InlineData("DGS-Version", MediathekVariant.SignLanguage)]
+    [InlineData("LOVE Story", MediathekVariant.Standard)]
+    [InlineData("NOVA", MediathekVariant.Standard)]
+    [InlineData("OV-Fassung", MediathekVariant.OriginalVersion)]
+    public void Detect_word_boundary_edge_cases(string title, MediathekVariant expected)
+    {
+        Assert.Equal(expected, VariantDetector.Detect(title, null));
+    }
+
+    [Fact]
     public void SourceInfo_from_ignores_description()
     {
         var item = new MediathekItem("ARD", "Tatort", "Herz aus Eis", "Auch mit Audiodeskription verfügbar",

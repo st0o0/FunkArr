@@ -192,4 +192,156 @@ public sealed class DownloadEventVerifyTests
         var result = JsonConvert.DeserializeObject<HistoryRemoved>(json)!;
         Assert.Equal(original.DownloadId, result.DownloadId);
     }
+
+    [Fact]
+    public Task DownloadMoved_shape()
+    {
+        var evt = new DownloadMoved(_testId, 3);
+        var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void DownloadMoved_roundtrip()
+    {
+        var original = new DownloadMoved(_testId, 3);
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<DownloadMoved>(json)!;
+        Assert.Equal(original.DownloadId, result.DownloadId);
+        Assert.Equal(original.Position, result.Position);
+    }
+
+    [Fact]
+    public Task DownloadSwapped_shape()
+    {
+        var id2 = new Guid("11223344-5566-7788-9900-aabbccddeeff");
+        var evt = new DownloadSwapped(_testId, id2);
+        var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void DownloadSwapped_roundtrip()
+    {
+        var id2 = new Guid("11223344-5566-7788-9900-aabbccddeeff");
+        var original = new DownloadSwapped(_testId, id2);
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<DownloadSwapped>(json)!;
+        Assert.Equal(original.DownloadId1, result.DownloadId1);
+        Assert.Equal(original.DownloadId2, result.DownloadId2);
+    }
+
+    [Fact]
+    public Task DownloadPriorityChanged_shape()
+    {
+        var evt = new DownloadPriorityChanged(_testId, PersistedDownloadPriority.High);
+        var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void DownloadPriorityChanged_roundtrip()
+    {
+        var original = new DownloadPriorityChanged(_testId, PersistedDownloadPriority.High);
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<DownloadPriorityChanged>(json)!;
+        Assert.Equal(original.DownloadId, result.DownloadId);
+        Assert.Equal(original.Priority, result.Priority);
+    }
+
+    [Fact]
+    public Task DownloadsPaused_shape()
+    {
+        var evt = new DownloadsPaused();
+        var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void DownloadsPaused_roundtrip()
+    {
+        var original = new DownloadsPaused();
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<DownloadsPaused>(json)!;
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public Task DownloadsResumed_shape()
+    {
+        var evt = new DownloadsResumed();
+        var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void DownloadsResumed_roundtrip()
+    {
+        var original = new DownloadsResumed();
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<DownloadsResumed>(json)!;
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public Task DownloadAttemptStarted_shape()
+    {
+        var evt = new DownloadAttemptStarted(_testId, 2);
+        var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void DownloadAttemptStarted_roundtrip()
+    {
+        var original = new DownloadAttemptStarted(_testId, 2);
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<DownloadAttemptStarted>(json)!;
+        Assert.Equal(original.DownloadId, result.DownloadId);
+        Assert.Equal(original.Attempt, result.Attempt);
+    }
+
+    [Fact]
+    public Task PersistedDownloadManagerState_shape()
+    {
+        var state = new PersistedDownloadManagerState(
+            [new PersistedQueueEntry(_testId, PersistedDownloadPriority.Normal, PersistedMediaType.Show)],
+            [new PersistedDispatchedEntry(new Guid("11223344-5566-7788-9900-aabbccddeeff"), PersistedDownloadPriority.High, PersistedMediaType.Movie)],
+            false);
+        var json = JsonConvert.SerializeObject(state, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void PersistedDownloadManagerState_roundtrip()
+    {
+        var original = new PersistedDownloadManagerState(
+            [new PersistedQueueEntry(_testId, PersistedDownloadPriority.Normal)],
+            [new PersistedDispatchedEntry(new Guid("11223344-5566-7788-9900-aabbccddeeff"), PersistedDownloadPriority.High)],
+            true);
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<PersistedDownloadManagerState>(json)!;
+        Assert.Single(result.Queued);
+        Assert.Equal(_testId, result.Queued[0].DownloadId);
+        Assert.Equal(PersistedDownloadPriority.Normal, result.Queued[0].Priority);
+        Assert.Single(result.Dispatched);
+        Assert.True(result.Paused);
+    }
+
+    [Fact]
+    public Task HistoryTrimmed_shape()
+    {
+        var evt = new HistoryTrimmed(5);
+        var json = JsonConvert.SerializeObject(evt, Formatting.Indented);
+        return Verify(json);
+    }
+
+    [Fact]
+    public void HistoryTrimmed_roundtrip()
+    {
+        var original = new HistoryTrimmed(5);
+        var json = JsonConvert.SerializeObject(original);
+        var result = JsonConvert.DeserializeObject<HistoryTrimmed>(json)!;
+        Assert.Equal(original.Count, result.Count);
+    }
 }

@@ -1,0 +1,11 @@
+﻿{
+  "Cursor": 1700000000,
+  "LastRunAt": "2026-11-15T12:00:00+00:00",
+  "LastOutcome": 1,
+  "LastError": null,
+  "LastNewItems": 42,
+  "LastPublished": 38,
+  "LastUnmatched": 4,
+  "LastGap": false,
+  "ConsecutiveFailures": 0
+}

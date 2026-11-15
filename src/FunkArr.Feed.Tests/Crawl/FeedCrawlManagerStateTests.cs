@@ -64,7 +64,7 @@ public sealed class FeedCrawlManagerStateTests
     public void Unchanged_run_updates_timestamp_only()
     {
         var state = new FeedCrawlManagerState();
-        state.WithUnchangedRun(_now);
+        state.Apply(new FeedUnchangedRun(_now));
 
         Assert.Multiple(
             () => Assert.Equal(_now, state.LastRunAt),

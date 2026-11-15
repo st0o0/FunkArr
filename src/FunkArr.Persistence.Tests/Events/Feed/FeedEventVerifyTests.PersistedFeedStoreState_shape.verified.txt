@@ -1,0 +1,24 @@
+﻿{
+  "Entries": [
+    {
+      "StableId": "stable-789",
+      "FirstSeenAt": "2026-11-15T12:00:00+00:00",
+      "MediaType": 2,
+      "Title": "Film",
+      "Channel": "ZDF",
+      "Topic": "Spielfilm",
+      "Url": "https://example.com/movie.mp4",
+      "Duration": 7200,
+      "Size": 2000000000,
+      "Quality": 1080,
+      "AiredAt": null,
+      "Score": 0.5,
+      "SubtitleUrl": null,
+      "TvdbId": null,
+      "ImdbId": null,
+      "TmdbId": null,
+      "Season": null,
+      "Episode": null
+    }
+  ]
+}

@@ -195,7 +195,9 @@ public sealed class SearchManagerTests : TestKit
 
         var result = ExpectMsg<SearchCommandCompleted>(cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
-        Assert.Equal("TV Show", item.Title);
+        Assert.Multiple(
+            () => Assert.Equal("TV Show", item.Title),
+            () => Assert.True(result.IsPartial));
     }
 
     [Fact]
@@ -240,6 +242,32 @@ public sealed class SearchManagerTests : TestKit
 
         var result = ExpectMsg<SearchCommandCompleted>(TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
         var item = Assert.Single(result.Items);
-        Assert.Equal("TV Show", item.Title);
+        Assert.Multiple(
+            () => Assert.Equal("TV Show", item.Title),
+            () => Assert.True(result.IsPartial));
+    }
+
+    [Fact]
+    public void Fan_out_full_result_has_IsPartial_false()
+    {
+        var tvProbe = CreateTestProbe();
+        var movieProbe = CreateTestProbe();
+        var gateway = CreateGateway(tvProbe, movieProbe);
+
+        gateway.Tell(new SearchCommand(SearchSource.Prowlarr, "test", null, null, null, null), TestActor);
+
+        var tvCmd = tvProbe.ExpectMsg<SearchSeries>(cancellationToken: TestContext.Current.CancellationToken);
+        var movieCmd = movieProbe.ExpectMsg<SearchMovie>(cancellationToken: TestContext.Current.CancellationToken);
+
+        var tvItem = new SearchResultItem("TV Show", "ARD", "Topic", "url", 5400, 100, 720, null, 0.9);
+        var movieItem = new SearchResultItem("Movie", "ZDF", "Film", "url2", 7200, 200, 1080, null, 0.8);
+
+        gateway.Tell(new SearchSeriesCompleted(tvCmd.SearchId, [tvItem], 1));
+        gateway.Tell(new SearchMovieCompleted(movieCmd.SearchId, [movieItem], 1));
+
+        var result = ExpectMsg<SearchCommandCompleted>(cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Multiple(
+            () => Assert.Equal(2, result.Items.Length),
+            () => Assert.False(result.IsPartial));
     }
 }

@@ -1,0 +1,17 @@
+﻿{
+  "Queued": [
+    {
+      "DownloadId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "Priority": 3,
+      "Category": 1
+    }
+  ],
+  "Dispatched": [
+    {
+      "DownloadId": "11223344-5566-7788-9900-aabbccddeeff",
+      "Priority": 4,
+      "Category": 2
+    }
+  ],
+  "Paused": false
+}
