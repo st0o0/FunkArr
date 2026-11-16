@@ -4,10 +4,10 @@ using Akka.Actor;
 using Akka.TestKit.Xunit;
 using FunkArr.Core.Configuration;
 using FunkArr.Core.Data;
+using FunkArr.RuleSet.Updater;
 using FunkArr.Tests.Shared;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using FunkArr.RuleSet.Updater;
 
 namespace FunkArr.RuleSet.Tests.Updater;
 
