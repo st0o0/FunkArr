@@ -2,10 +2,11 @@ namespace FunkArr.Download.Subtitles;
 
 internal enum SubtitleFailureReason
 {
-    DownloadFailed = 0,
-    EmptyContent = 1,
-    UnrecognizedFormat = 2,
-    ConversionFailed = 3
+    Unknown = 0,
+    DownloadFailed = 1,
+    EmptyContent = 2,
+    UnrecognizedFormat = 3,
+    ConversionFailed = 4
 }
 
 internal abstract record SubtitleResult
