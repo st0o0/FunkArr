@@ -9,7 +9,7 @@
     "preview": "vitepress preview"
   },
   "devDependencies": {
-    "likec4": "1.60.0",
+    "likec4": "1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "vitepress": "^1.6.4",
