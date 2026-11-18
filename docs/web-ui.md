@@ -179,7 +179,7 @@ Beim Laden der Seite werden die letzten Einträge per HTTP-Anfrage geladen, dana
 
 Erreichbar über das Regelwerk-Detail (`/rulesets/:id/history`). Listet alle Scoring-Durchläufe für ein Regelwerk:
 
-- Quelle (Sonarr, Radarr, Prowlarr oder Test)
+- Quelle (Sonarr, Radarr, Prowlarr oder Feed)
 - Suchanfrage
 - Zeitpunkt
 - Anzahl der Kandidaten und getroffenen Matches

@@ -54,7 +54,7 @@ Der Such-Worker löst nur das Regelwerk per ID auf (falls die Anfrage eine enth�
 
 Der MediathekViewWebManager (Cluster-Singleton) sendet die Suchanfrage an die MediathekViewWeb-API. Diese durchsucht die Mediathek-Datenbank (ARD, ZDF, ORF, SRF und weitere Sender).
 
-Die Abfragen filtern nach Topic (Sendungsname), sind nach Datum absteigend sortiert, schließen Einträge mit Sendetermin in der Zukunft aus und ignorieren Einträge unter 5 Minuten Länge. Sonarr und Radarr suchen nur nach bereits ausgestrahlten Folgen und Filmen, kommende Einträge würden also nur Platz im Ergebnisfenster belegen. Folgen, die Sender vorab in der Mediathek veröffentlichen, erreichen Sonarr stattdessen über den RSS-Feed (siehe unten). API-Antworten werden 5 Minuten zwischengespeichert. Die Ergebnisse enthalten für jeden Eintrag:
+Die Abfragen filtern nach Topic (Sendungsname), sind nach Datum absteigend sortiert, schließen Einträge mit Sendetermin in der Zukunft aus und ignorieren Einträge unter 5 Minuten (Serien) bzw. 60 Minuten (Filme) Länge. Sonarr und Radarr suchen nur nach bereits ausgestrahlten Folgen und Filmen, kommende Einträge würden also nur Platz im Ergebnisfenster belegen. Folgen, die Sender vorab in der Mediathek veröffentlichen, erreichen Sonarr stattdessen über den RSS-Feed (siehe unten). API-Antworten werden 5 Minuten zwischengespeichert. Die Ergebnisse enthalten für jeden Eintrag:
 
 - Sender, Thema, Titel, Beschreibung
 - Video-URLs in verschiedenen Qualitäten (HD, normal, niedrig)
@@ -203,7 +203,7 @@ Diese Traces sind in der Web-UI einsehbar und helfen beim Debuggen von Regelwerk
 
 Jede Suchanfrage, die über ein Regelwerk ausgewertet wird, wird im Scoring-Verlauf des jeweiligen Regelwerks gespeichert. Der Auswertungs-Worker sendet das Ergebnis an einen geshardeten, persistenten `HistoryWorker` (einer pro Regelwerk), der die Snapshots speichert und nach Anzahl und Alter beschneidet. Nach jeder Aufzeichnung meldet er aktualisierte Statistiken an den `StatsCollector` (Singleton), der die Statistiken aller Regelwerke für die UI im Speicher hält und sie beim Start aus den History-Workern wiederherstellt. Pro Snapshot werden aufgezeichnet:
 
-- Quelle der Suche (Sonarr, Radarr, Prowlarr oder Test)
+- Quelle der Suche (Sonarr, Radarr, Prowlarr oder Feed)
 - Suchbegriff
 - Zeitstempel
 - Anzahl der Kandidaten, Treffer und angereicherten Ergebnisse
@@ -244,7 +244,6 @@ Konfiguration: `FunkArr__Tvdb__ApiKey`
 Für Filme fragt FunkArr TMDB ab, um Filmdaten aufzulösen (Titel, Erscheinungsjahr, IMDB-ID). Dabei werden auch alternative Titel berücksichtigt. Die Zuordnung verwendet:
 
 - **Titel-Ähnlichkeit** über Levenshtein-Distanz (Schwellwert: 0.5)
-- **Jahres-Validierung** mit einer Standard-Toleranz von 1 Jahr
 
 TMDB-Filmdaten werden 7 Tage zwischengespeichert.
 

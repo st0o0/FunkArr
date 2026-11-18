@@ -306,11 +306,11 @@ Mediatheken often publish the same broadcast in several variants. FunkArr detect
 | `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Days before old snapshots are pruned |
 | `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Interval between snapshots |
 
-Match history tracks which ruleset mappings produced successful downloads over time. This data feeds back into scoring - rules that historically produced correct matches get a confidence boost.
+Match history records which ruleset mappings were evaluated and their outcomes. The data is diagnostic — it powers the statistics and traces in the web UI but does not influence scoring. The scoring engine evaluates rules deterministically using only the ruleset's configured confidence values.
 
-- **MaxSnapshots** - limits storage for match history. Higher values give more historical data for scoring but use more disk.
+- **MaxSnapshots** - limits storage for match history. Higher values retain more history for diagnostics but use more disk.
 - **MaxAgeDays** - removes snapshots older than this many days. Mediathek content changes regularly, so old match data becomes less relevant.
-- **SnapshotInterval** - controls how often new snapshots are taken. Lower values capture more granular data but increase database writes.
+- **SnapshotInterval** - journal checkpoint interval for faster recovery. A snapshot is saved every N recordings. Does not affect what data is captured.
 
 ## Arr API
 

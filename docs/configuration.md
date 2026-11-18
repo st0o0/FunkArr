@@ -306,11 +306,11 @@ Mediatheken veröffentlichen dieselbe Sendung oft in mehreren Fassungen. FunkArr
 | `FunkArr__ScoringHistory__MaxAgeDays` | `30` | Tage, bevor alte Snapshots gelöscht werden |
 | `FunkArr__ScoringHistory__SnapshotInterval` | `20` | Intervall zwischen Snapshots |
 
-Der Match-Verlauf verfolgt, welche Regelwerk-Zuordnungen erfolgreiche Downloads erzeugt haben. Diese Daten fließen zurück in das Scoring - Regeln, die historisch korrekte Matches erzeugt haben, erhalten einen Konfidenz-Boost.
+Der Match-Verlauf speichert, welche Regelwerk-Zuordnungen ausgewertet wurden und deren Ergebnisse. Die Daten sind diagnostisch — sie liefern Statistiken und Traces für die Web-UI, beeinflussen aber nicht das Scoring. Die Scoring-Engine wertet Regeln deterministisch aus und nutzt ausschließlich die konfigurierten Konfidenzwerte des Regelwerks.
 
-- **MaxSnapshots** - begrenzt den Speicher für den Match-Verlauf. Höhere Werte liefern mehr historische Daten für das Scoring, verbrauchen aber mehr Speicherplatz.
+- **MaxSnapshots** - begrenzt den Speicher für den Match-Verlauf. Höhere Werte behalten mehr Verlauf für die Diagnose, verbrauchen aber mehr Speicherplatz.
 - **MaxAgeDays** - entfernt Snapshots, die älter als diese Anzahl Tage sind. Mediathek-Inhalte ändern sich regelmäßig, sodass alte Match-Daten weniger relevant werden.
-- **SnapshotInterval** - steuert, wie oft neue Snapshots erstellt werden. Niedrigere Werte erfassen detailliertere Daten, erhöhen aber die Datenbankschreibvorgänge.
+- **SnapshotInterval** - Journal-Checkpoint-Intervall für schnellere Wiederherstellung. Alle N Aufzeichnungen wird ein Snapshot gespeichert. Hat keinen Einfluss darauf, welche Daten erfasst werden.
 
 ## Arr-API
 

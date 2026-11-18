@@ -54,7 +54,7 @@ The search worker only resolves the ruleset by ID (if the request carries one) a
 
 The MediathekViewWebManager (cluster singleton) sends the search query to the MediathekViewWeb API. This searches the Mediathek database (ARD, ZDF, ORF, SRF and other broadcasters).
 
-Queries filter by topic (show name), are sorted by date (newest first), exclude entries whose broadcast lies in the future and ignore entries shorter than 5 minutes. Sonarr and Radarr only search for episodes and movies that have already aired, so upcoming entries would only take up room in the result window. Episodes that broadcasters publish in the Mediathek ahead of the broadcast reach Sonarr through the RSS feed instead (see below). API responses are cached for 5 minutes. Each result contains:
+Queries filter by topic (show name), are sorted by date (newest first), exclude entries whose broadcast lies in the future and ignore entries shorter than 5 minutes (TV) or 60 minutes (movies). Sonarr and Radarr only search for episodes and movies that have already aired, so upcoming entries would only take up room in the result window. Episodes that broadcasters publish in the Mediathek ahead of the broadcast reach Sonarr through the RSS feed instead (see below). API responses are cached for 5 minutes. Each result contains:
 
 - Channel, topic, title, description
 - Video URLs in different qualities (HD, normal, low)
@@ -94,7 +94,7 @@ The scoring engine evaluates each Mediathek entry against the ruleset's rules. T
 - `AbsoluteEpisodeNumber` - extracts an absolute episode number via regex
 - `TitleExact` - reconstructs the expected title from parts and checks for an exact match
 - `TitleIncludes` - checks if a constructed title is contained in the Mediathek title (with umlaut normalization)
-- `AirdateExtraction` - extracts a German date from the title (e.g. "15.03.2026" or "15. Maerz 2026")
+- `AirdateExtraction` - extracts a German date from the title (e.g. "15.03.2026" or "15. März 2026")
 
 **Score assignment:** Each match receives a confidence value (0.0-1.0). This value comes from the rule itself or the ruleset's default confidence.
 
@@ -203,7 +203,7 @@ These traces are viewable in the web UI and help when debugging rulesets.
 
 Every search request evaluated against a ruleset is recorded in that ruleset's scoring history. The evaluation worker sends the result to a sharded, persistent `HistoryWorker` (one per ruleset), which stores the snapshots and trims them by count and age. After each recording it reports updated statistics to the `StatsCollector` (singleton), which keeps the statistics of all rulesets in memory for the UI and rebuilds them from the history workers at startup. Each snapshot records:
 
-- Search source (Sonarr, Radarr, Prowlarr or test)
+- Search source (Sonarr, Radarr, Prowlarr or Feed)
 - Search query
 - Timestamp
 - Number of candidates, matches and enriched results
@@ -244,7 +244,6 @@ Configuration: `FunkArr__Tvdb__ApiKey`
 For movies, FunkArr queries TMDB to resolve movie data (title, release year, IMDB ID). Alternative titles are also considered. The matching uses:
 
 - **Title similarity** via Levenshtein distance (threshold: 0.5)
-- **Year validation** with a default tolerance of 1 year
 
 TMDB movie data is cached for 7 days.
 

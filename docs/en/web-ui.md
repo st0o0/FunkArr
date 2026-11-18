@@ -179,7 +179,7 @@ On page load the most recent entries are fetched via HTTP, after which new entri
 
 Accessible from the ruleset detail page (`/rulesets/:id/history`). Lists all scoring runs for a ruleset:
 
-- Source (Sonarr, Radarr, Prowlarr or Test)
+- Source (Sonarr, Radarr, Prowlarr or Feed)
 - Search query
 - Time
 - Number of candidates and matches
