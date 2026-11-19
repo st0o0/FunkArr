@@ -55,4 +55,6 @@ VOLUME /app/data
 VOLUME /media
 ENV ASPNETCORE_URLS=http://+:6969
 EXPOSE 6969
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO /dev/null http://localhost:6969/healthz || exit 1
 ENTRYPOINT ["/entrypoint.sh"]

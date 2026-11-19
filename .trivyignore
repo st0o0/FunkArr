@@ -20,3 +20,8 @@ CVE-2026-56208
 # zlib: infback9 buffer overflow (inftree9.c) in OSGeo GDAL's vendored zlib copy (gdal < 3.11.0)
 # Not exploitable: flaw is in GDAL's bundled code, FunkArr ships no GDAL; Alpine zlib is matched by package name only
 CVE-2026-4738
+
+# DS002: Image user should not be root
+# False positive: entrypoint.sh starts as root to create user/group and chown volumes,
+# then drops to non-root via su-exec (PUID/PGID). Standard *arr ecosystem pattern.
+DS002
