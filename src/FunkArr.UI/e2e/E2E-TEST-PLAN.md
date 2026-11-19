@@ -988,11 +988,6 @@ doesn't already have. Feed crawl completed with entries published.
 - [ ] **36.6a** Newznab `t=get` with crafted NZB payload containing `file:///etc/passwd` as URL → `t=get` returns error (payload rejected at decode)
 - [ ] **36.6b** SABnzbd `addfile` with NZB containing `<meta type="X-FunkArr-Url">file:///etc/shadow</meta>` → addfile responds with error (URL empty after validation), item not queued
 
-### Legacy Redirects
-- [ ] **36.7** Navigate to `/queue` → redirects to `/activity`
-- [ ] **36.8** Navigate to `/history` → redirects to `/activity`
-- [ ] **36.9** Navigate to `/search` → redirects to `/rulesets`
-
 ### API Key Log Redaction
 - [ ] **36.10a** Make a Newznab request with apikey → `docker logs funkarr` does NOT contain the raw API key value in any log line from `Microsoft.AspNetCore.HttpLogging`
 - [ ] **36.10b** Make a SABnzbd request with apikey → same check: no raw API key in HttpLogging output
@@ -1019,8 +1014,7 @@ the state required by subsequent steps.
 4. **Sidebar**: Collapse/expand, language switch all 4 locales, navigation links incl. Feed (section 2)
 5. **Settings page**: All sections visible, download config, routes, **broadcast variants**, log viewer (sections 24, 29.1-29.4)
 6. **Variants API**: `GET /api/system/variants` returns 4 variants with Exclude policy (section 29.5-29.6)
-7. **Legacy redirects**: /queue, /history, /search redirect correctly (section 36.7-36.9)
-8. **Feed page (empty)**: Browser check — may show populated feed if auto-crawl fired after Step 0. If Step 0 API checks passed, a populated feed here is acceptable (section 30.1-30.4)
+7. **Feed page (empty)**: Browser check — may show populated feed if auto-crawl fired after Step 0. If Step 0 API checks passed, a populated feed here is acceptable (section 30.1-30.4)
 9. **Feed API (empty)**: Verify empty entries if not already tested in step 0 (section 31.1, 31.5)
 10. **Create local ruleset**: Via UI (section 9) - creates state for source filters + delete tests
 11. **Edit Tatort**: Via UI editor, add alias, save - creates merged ruleset (section 8).

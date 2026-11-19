@@ -17,7 +17,7 @@ Below that, the "Recent Activity" section lists the last 10 downloads with statu
 
 ## Activity
 
-The activity page has two tabs: **Queue** and **History**. A search field at the top right filters by title, and the current total download speed is shown next to the page title while downloads are running. The old paths `/queue` and `/history` redirect here.
+The activity page has two tabs: **Queue** and **History**. A search field at the top right filters by title, and the current total download speed is shown next to the page title while downloads are running.
 
 ### Queue
 
@@ -106,8 +106,6 @@ Each selected service gets its own step with two options:
 **Manual:** "Configure manually" expands all required values (Name, Host, Port, URL Base, API Key, Category) ready to copy, plus hints such as enabling *Show Advanced* in the *arr app and testing the connection. For Sonarr there is also a tip about the *Daily* series type for shows identified by air date.
 
 ## Rulesets
-
-The old path `/search` redirects to the ruleset list.
 
 ### List
 

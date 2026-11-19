@@ -29,7 +29,7 @@ API subagents in two waves to avoid state conflicts.
 ```
 Main Agent (Opus):
   Phase 0: Docker setup, health, Sonarr/Radarr config
-  Phase 1: Browser - Setup Wizard, Dashboard, Sidebar, Settings, Redirects
+  Phase 1: Browser - Setup Wizard, Dashboard, Sidebar, Settings
   Phase 2: Browser - Ruleset CRUD (Create, Edit, List, Detail, Export, Delete)
   Phase 3: Downloads - Pause, Queue ops, Resume, Active, Wait, History
   Phase 4: Scoring history + Dashboard post-search + Pagination + Radarr

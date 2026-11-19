@@ -17,7 +17,7 @@ Darunter listet der Bereich "Letzte Aktivität" die letzten 10 Downloads mit Sta
 
 ## Aktivität
 
-Die Aktivitäts-Seite hat zwei Tabs: **Warteschlange** und **Verlauf**. Ein Suchfeld oben rechts filtert nach Titel, und neben dem Seitentitel wird während laufender Downloads die aktuelle Gesamtgeschwindigkeit angezeigt. Die alten Pfade `/queue` und `/history` leiten hierher weiter.
+Die Aktivitäts-Seite hat zwei Tabs: **Warteschlange** und **Verlauf**. Ein Suchfeld oben rechts filtert nach Titel, und neben dem Seitentitel wird während laufender Downloads die aktuelle Gesamtgeschwindigkeit angezeigt.
 
 ### Warteschlange
 
@@ -106,8 +106,6 @@ Jeder ausgewählte Dienst bekommt einen eigenen Schritt mit zwei Optionen:
 **Manuell:** "Manuell konfigurieren" klappt alle nötigen Werte (Name, Host, Port, URL Base, API Key, Kategorie) zum Kopieren auf, dazu Hinweise wie *Show Advanced* in der *arr-App zu aktivieren und die Verbindung zu testen. Bei Sonarr gibt es außerdem einen Tipp zum Serientyp *Daily* für Sendungen, die per Ausstrahlungsdatum identifiziert werden.
 
 ## Regelwerke
-
-Der alte Pfad `/search` leitet zur Regelwerk-Liste weiter.
 
 ### Liste
 
