@@ -296,9 +296,9 @@ public sealed class RuleSetManagerTests : TestKit
     private void Cleanup()
     {
         try { Directory.Delete(_tempDir, recursive: true); }
-        catch
+        catch (Exception ex)
         {
-            // ignored
+            System.Diagnostics.Trace.WriteLine($"Test cleanup failed: {ex.Message}");
         }
     }
 }

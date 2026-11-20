@@ -28,7 +28,7 @@ internal sealed partial class TtmlFormat : ISubtitleFormat
         }
         catch (System.Xml.XmlException)
         {
-            // noop
+            return false;
         }
 
         return false;

@@ -124,7 +124,10 @@ public sealed class RuleSetUpdaterDegradedTests : TestKit, IDisposable
     {
         base.Dispose();
         try { Directory.Delete(_tempDir, true); }
-        catch { /* cleanup best effort */ }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"Test cleanup failed: {ex.Message}");
+        }
     }
 
     private sealed class StubHttpMessageHandler(HttpStatusCode statusCode) : HttpMessageHandler

@@ -128,9 +128,9 @@ public sealed class FunkArrFixture : IAsyncLifetime
         {
             Directory.Delete(_tempDir, true);
         }
-        catch
+        catch (Exception ex)
         {
-            // noop
+            System.Diagnostics.Trace.WriteLine($"Test cleanup failed: {ex.Message}");
         }
     }
 

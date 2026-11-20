@@ -11,6 +11,7 @@ using FunkArr.Core.Configuration;
 using FunkArr.Messages.Download;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace FunkArr.Api;
@@ -45,8 +46,9 @@ public static class DownloadsApiEndpoints
         .ProducesProblem(502)
         .ProducesProblem(504);
 
-        group.MapGet("/queue/stream", async (HttpContext ctx, IActorRegistry registry) =>
+        group.MapGet("/queue/stream", async (HttpContext ctx, IActorRegistry registry, ILoggerFactory loggerFactory) =>
         {
+            var logger = loggerFactory.CreateLogger("FunkArr.Api.DownloadsApi");
             ctx.Response.ContentType = "text/event-stream";
             ctx.Response.Headers.CacheControl = "no-cache";
             ctx.Response.Headers.Connection = "keep-alive";
@@ -74,9 +76,10 @@ public static class DownloadsApiEndpoints
                 {
                     break;
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Skip this tick on actor timeout, retry next interval
+                    logger.LogWarning(ex, "Download queue SSE tick failed; retrying next interval");
                 }
 
                 try

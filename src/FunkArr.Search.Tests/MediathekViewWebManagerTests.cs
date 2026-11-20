@@ -82,7 +82,7 @@ public sealed class MediathekViewWebManagerTests : TestKit
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            await Task.Delay(TimeSpan.FromMinutes(10), cancellationToken);
+            await new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously).Task.WaitAsync(cancellationToken);
             return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
         }
     }

@@ -61,9 +61,9 @@ internal sealed class Remuxer(
                 {
                     File.Delete(subtitlePath);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // noop
+                    logger.LogDebug(ex, "Failed to delete temporary subtitle file {Path}", subtitlePath);
                 }
             }
         }

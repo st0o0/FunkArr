@@ -1,11 +1,15 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using FunkArr.Api.Models.Setup;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace FunkArr.Api.Infrastructure;
 
-public sealed class ArrSetupClient(HttpClient httpClient)
+public sealed class ArrSetupClient(HttpClient httpClient, ILogger<ArrSetupClient>? logger = null)
 {
+    private readonly ILogger<ArrSetupClient> _logger = logger ?? NullLogger<ArrSetupClient>.Instance;
+
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -77,7 +81,7 @@ public sealed class ArrSetupClient(HttpClient httpClient)
         }
     }
 
-    private static ArrResourceResponse ParseErrorResponse(string body, HttpResponseMessage response)
+    private ArrResourceResponse ParseErrorResponse(string body, HttpResponseMessage response)
     {
         try
         {
@@ -113,9 +117,9 @@ public sealed class ArrSetupClient(HttpClient httpClient)
                 return new ArrResourceResponse(false, Error: msg.GetString());
             }
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            // noop
+            _logger.LogDebug(ex, "Failed to parse error response body as JSON (HTTP {StatusCode})", (int)response.StatusCode);
         }
 
         return new ArrResourceResponse(false,

@@ -23,6 +23,7 @@ jobs:
     with:
       solution-file: FunkArr.slnx
       locked-mode: false
+      slopwatch: true
 
   commits:
     uses: st0o0/github-workflows/.github/workflows/commitlint.yml@main
