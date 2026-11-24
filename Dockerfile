@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
 
-FROM --platform=$BUILDPLATFORM node:26-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS ui
+FROM --platform=$BUILDPLATFORM node:26-slim@sha256:615a27817f7b9508f0de73eb1cc8fc8894ab122bee56c1a7a568b72cd1032067 AS ui
 RUN npm install -g pnpm@12.15.0
 WORKDIR /ui
 COPY src/FunkArr.UI/package.json src/FunkArr.UI/pnpm-lock.yaml ./
