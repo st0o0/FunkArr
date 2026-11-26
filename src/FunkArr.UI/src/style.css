@@ -25,7 +25,7 @@
   --color-status-fail: #ef6b6b;
   --color-status-info: #6098e0;
 
-  --font-sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter Variable", -apple-system, "Segoe UI", system-ui, sans-serif;
   --font-mono: ui-monospace, "Cascadia Code", "JetBrains Mono", Menlo, monospace;
 }
 

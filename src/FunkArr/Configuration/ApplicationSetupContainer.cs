@@ -23,6 +23,8 @@ public sealed class ApplicationSetupContainer : ISetup<WebApplication>
             options.HideModels = true;
             options.DefaultHttpClient =
                 new KeyValuePair<ScalarTarget, ScalarClient>(ScalarTarget.CSharp, ScalarClient.HttpClient);
+            options.Telemetry = false;
+            options.DefaultFonts = false;
         });
 
         app.UseForwardedHeaders();
