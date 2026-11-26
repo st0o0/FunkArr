@@ -9,6 +9,8 @@ COPY src/FunkArr.UI/ .
 RUN pnpm run build
 
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-alpine@sha256:0294f285d062afacc8b5f6d7febb0cd4ee879320e5585fa15f2f4ebf1feb9ba7 AS build
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1
 ARG TARGETARCH
 ARG VERSION=0.0.0-dev
 WORKDIR /src
