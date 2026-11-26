@@ -1,4 +1,5 @@
-import DefaultTheme from 'vitepress/theme'
+import DefaultTheme from 'vitepress/theme-without-fonts'
+import '@fontsource-variable/inter'
 import './custom.css'
 import ArchitectureView from './components/ArchitectureView.vue'
 import RulesetBuilder from './components/RulesetBuilder.vue'

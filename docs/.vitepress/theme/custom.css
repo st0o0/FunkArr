@@ -1,4 +1,5 @@
 :root {
+  --vp-font-family-base: 'Inter Variable', -apple-system, 'Segoe UI', system-ui, sans-serif;
   --vp-c-brand-1: #e67e22;
   --vp-c-brand-2: #d35400;
   --vp-c-brand-3: #e67e22;
