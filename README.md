@@ -97,6 +97,25 @@ All configuration is via environment variables (`FunkArr__…`). Defaults work o
 
 See [docker-compose.example.yml](docker-compose.example.yml) for a copy-paste ready template with all options. For the full configuration reference including network routes, logging, and health checks, see the [documentation site](https://funkarr.st0o0.net/en/configuration).
 
+## Privacy / Network Connections
+
+FunkArr makes outbound connections to these hosts during normal operation:
+
+| Host | Purpose | Required |
+|------|---------|----------|
+| `mediathekviewweb.de` | Mediathek search and health check | Yes |
+| `api.themoviedb.org` | TMDB metadata resolution (needs API key) | Optional |
+| `api4.thetvdb.com` | TVDB metadata resolution (needs API key) | Optional |
+| `api.github.com` | Community ruleset updates (every 30 min) | Optional |
+
+The ruleset updater sends `User-Agent: FunkArr/<version>` to GitHub. To disable it, set:
+
+```
+FunkArr__RuleSet__RefreshEnabled=false
+```
+
+No analytics or telemetry data is sent to any third party.
+
 ## Image
 
 - **Registry:** `ghcr.io/st0o0/funkarr`
